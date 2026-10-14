@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getJson, withDeadline } from '../lib.ts';
+import { DEFAULT_DEADLINE_MS, deadlineFor, getJson, withDeadline } from '../lib.ts';
 import { mockFetch } from './mock.ts';
 
 afterEach(() => {
@@ -53,5 +53,16 @@ describe('withDeadline', () => {
 		const result = withDeadline(Promise.reject(new Error('HTTP 500')), 90_000, 'tiempo agotado (90 s)');
 		await expect(result).rejects.toThrow('HTTP 500');
 		expect(vi.getTimerCount()).toBe(0);
+	});
+});
+
+describe('deadlineFor', () => {
+	it('usa 90 s si la fuente no pide otro plazo', () => {
+		expect(DEFAULT_DEADLINE_MS).toBe(90_000);
+		expect(deadlineFor({})).toBe(90_000);
+	});
+
+	it('respeta el plazo propio de una fuente lenta', () => {
+		expect(deadlineFor({ deadlineMs: 180_000 })).toBe(180_000);
 	});
 });

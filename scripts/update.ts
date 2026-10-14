@@ -9,15 +9,13 @@
 // - si una descarga falla, se reutiliza la copia publicada, aunque sea antigua, y se avisa.
 import { mkdir, writeFile } from 'node:fs/promises';
 import type { Dataset, SourceStatus } from '../src/lib/data.ts';
-import { checkShrink, withDeadline, writeExtra, type Source } from './lib.ts';
+import { checkShrink, deadlineFor, withDeadline, writeExtra, type Source } from './lib.ts';
 import { sources } from './sources/index.ts';
 
 const OUT_DIR = 'static/data';
 // En los PR, una muestra de cada fuente al final del registro, para revisar la forma real de los datos.
 const samples: string[] = [];
 const PUBLISHED = 'https://srgicmps.github.io/arc-terminal/data';
-// Plazo total de cada fuente (con todos sus reintentos): una API colgada no puede retener la Action.
-const SOURCE_DEADLINE_MS = 90_000;
 
 async function published(name: string): Promise<Dataset<unknown> | null> {
 	try {
@@ -75,10 +73,11 @@ async function run(source: Source): Promise<SourceStatus> {
 
 	try {
 		const started = Date.now();
+		const deadline = deadlineFor(source);
 		const data = await withDeadline(
 			source.fetch(previous?.data),
-			SOURCE_DEADLINE_MS,
-			`tiempo agotado (${SOURCE_DEADLINE_MS / 1000} s)`
+			deadline,
+			`tiempo agotado (${deadline / 1000} s)`
 		);
 		// Vacío o encogido de golpe: se trata como un fallo (camino «stale», con la copia anterior).
 		const suspicious = checkShrink(data, previous?.data, source);
