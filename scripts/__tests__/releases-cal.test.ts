@@ -1,7 +1,7 @@
 // Calendarios de publicación (Eurostat, BLS, INE) y su relación con las series de la terminal.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextFor, nextMap, shortDay, topicOf } from '../../src/lib/nextrelease.ts';
-import { releasesCal, upcoming } from '../sources/releases-cal.ts';
+import { pastEvents, releasesCal, upcoming } from '../sources/releases-cal.ts';
 import { mockFetch } from './mock.ts';
 
 beforeEach(() => {
@@ -115,5 +115,21 @@ describe('releases-cal', () => {
 			'cpi-us': { date: '2026-11-13T13:30:00.000Z', title: 'Consumer Price Index for October 2026' },
 			'core-cpi-us': { date: '2026-11-13T13:30:00.000Z', title: 'Consumer Price Index for October 2026' }
 		});
+	});
+});
+
+describe('pastEvents', () => {
+	const ev = (date: string, title: string) => ({ date, allDay: false, title, source: 'INE' as const, topic: 'ipc' });
+	it('guarda las de los últimos 8 días, sin repetir y por fecha', () => {
+		const from = new Date('2026-10-14T00:00:00Z');
+		const previous = {
+			past: [ev('2026-10-01T07:00:00Z', 'muy vieja'), ev('2026-10-10T07:00:00Z', 'IPC')],
+			events: [ev('2026-10-10T07:00:00Z', 'IPC'), ev('2026-10-13T07:00:00Z', 'EPA'), ev('2026-10-14T07:00:00Z', 'hoy')]
+		};
+		expect(pastEvents(previous, from).map((e) => e.title)).toEqual(['IPC', 'EPA']);
+	});
+
+	it('sin copia anterior, nada', () => {
+		expect(pastEvents(undefined, new Date())).toEqual([]);
 	});
 });
