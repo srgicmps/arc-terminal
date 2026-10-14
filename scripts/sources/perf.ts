@@ -5,7 +5,7 @@
 // finnhub.ts ya ha terminado, y de una en una cada 2,5 s (24 por minuto). Una vez cada 12 horas: son
 // datos de cierre diario.
 import type { PerfData } from '../../src/lib/types.ts';
-import { TICKERS } from '../../src/lib/commands.ts';
+import { TICKERS } from '../../src/lib/tickers.ts';
 import { getJson, num, type Source } from '../lib.ts';
 import { WATCH } from './finnhub.ts';
 

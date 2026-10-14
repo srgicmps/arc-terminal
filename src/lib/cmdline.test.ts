@@ -17,7 +17,8 @@ import {
 	type Option
 } from './cmdline.ts';
 import { parseSymbols, PERF_PERIODS } from './cmp.ts';
-import { COMMANDS, TICKERS } from './commands.ts';
+import { COMMANDS } from './commands.ts';
+import { TICKERS } from './tickers.ts';
 
 const ALL: Option[] = [
 	...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función', aliases: c.aliases })),

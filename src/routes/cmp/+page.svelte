@@ -13,7 +13,7 @@
 	import Note from '#lib/components/ui/Note.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
 	import { parseSymbols, PERF_PERIODS } from '#lib/cmp.ts';
-	import { TICKERS, tvSymbol } from '#lib/commands.ts';
+	import { TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import { urlState } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
