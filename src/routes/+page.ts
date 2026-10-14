@@ -6,6 +6,7 @@ import type {
 	HnItem,
 	NewsData,
 	PowerData,
+	PredictionsData,
 	Quake,
 	SeriesData,
 	WeatherData
@@ -15,7 +16,7 @@ import type { PageLoad } from './$types';
 const SECTIONS = ['es', 'eco', 'geo', 'ws', 'tech', 'ai'] as const;
 
 export const load: PageLoad = async () => {
-	const [news, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn] = await Promise.all([
+	const [news, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn, predictions] = await Promise.all([
 		Promise.all(SECTIONS.map((s) => dataset<NewsData>(`news-${s}`))),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('eurostat'),
@@ -26,7 +27,8 @@ export const load: PageLoad = async () => {
 		dataset<FuelData>('fuel'),
 		dataset<BoeData>('boe'),
 		dataset<Quake[]>('quakes'),
-		dataset<HnItem[]>('hn')
+		dataset<HnItem[]>('hn'),
+		dataset<PredictionsData>('predictions')
 	]);
 
 	// Titulares de portada: los 3 más recientes de cada sección, mezclados por hora.
@@ -34,5 +36,5 @@ export const load: PageLoad = async () => {
 		(news[i]?.data.items ?? []).slice(0, 3).map((item) => ({ ...item, section: section.toUpperCase() }))
 	).sort((a, b) => (b.time ?? '').localeCompare(a.time ?? ''));
 
-	return { headlines, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn };
+	return { headlines, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn, predictions };
 };

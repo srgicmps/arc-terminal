@@ -52,7 +52,7 @@ function toSection(raw: Raw): BoeSection {
 export const boe: Source<BoeData> = {
 	name: 'boe',
 	label: 'Sumario del BOE · Agencia Estatal Boletín Oficial del Estado',
-	maxAgeMinutes: 55,
+	maxAgeMinutes: 25,
 	async fetch() {
 		// El BOE sale de lunes a sábado hacia las 7:30. Si hoy aún no hay, se busca el anterior.
 		for (let offset = 0; offset >= -7; offset--) {

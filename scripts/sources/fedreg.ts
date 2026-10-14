@@ -39,7 +39,7 @@ async function documents(type: string, count: number): Promise<FedRegDoc[]> {
 export const fedreg: Source<FedRegData> = {
 	name: 'fedreg',
 	label: 'Federal Register · National Archives (EE. UU.)',
-	maxAgeMinutes: 55,
+	maxAgeMinutes: 25,
 	async fetch() {
 		const [presidential, rules] = await Promise.all([
 			documents('PRESDOCU', 25),
