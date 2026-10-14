@@ -14,6 +14,7 @@ describe('SIPRI', () => {
 		expect(countryCode('Korea, South')).toBe('KR');
 		expect(countryCode('Türkiye')).toBe('TR');
 		expect(countryCode('Spain')).toBe('ES');
+		expect(countryCode('United Kingdom')).toBe('GB');
 		expect(countryCode('Saudi Arabia')).toBe('SA');
 		expect(countryCode('Atlantis')).toBeNull();
 	});
@@ -34,7 +35,12 @@ describe('SIPRI', () => {
 				['Russia', 83, 'xxx', 150000, '...']
 			]),
 			sheet('Constant (2024) US$', [['Spain', 89, 21000, 22000, 24200]]),
-			sheet('Share of GDP', [['Spain', 89, 0.012, 0.013, 0.0145]])
+			// Un valor por encima de 1 (datos raros) no cambia la escala: manda la mediana.
+			sheet('Share of GDP', [
+				['Spain', 89, 0.012, 0.013, 0.0145],
+				['Atlantis', '', 1.2, 1.3, 1.4],
+				['United States of America', 44, 0.03, 0.03, 0.031]
+			])
 		]);
 		expect(data?.year).toBe(2025);
 		expect(data?.rows.map((r) => [r.rank, r.code, r.name])).toEqual([
@@ -43,7 +49,7 @@ describe('SIPRI', () => {
 			[3, null, 'Atlantis']
 		]);
 		expect(data?.rows[1]).toMatchObject({ usd: 25000, gdp: 1.45, real: 10 });
-		expect(data?.rows[0]).toMatchObject({ gdp: null, real: null });
+		expect(data?.rows[0]).toMatchObject({ gdp: 3.1, real: null });
 	});
 
 	it('sin la hoja en dólares corrientes, null', () => {

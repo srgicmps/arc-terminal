@@ -85,17 +85,22 @@ let byName: Map<string, string> | null = null;
 /** Código ISO de un país a partir de su nombre en inglés (como lo escribe el SIPRI); null si no lo conoce. */
 export function countryCode(name: string): string | null {
 	if (!byName) {
+		// Gana el primero: antes los nombres de la terminal y luego los de Intl, que también llama «United
+		// Kingdom» al código reservado UK (y no debe pisar a GB).
 		byName = new Map();
+		const add = (label: string, code: string) => {
+			if (!byName!.has(fold(label))) byName!.set(fold(label), code);
+		};
+		for (const c of COUNTRIES) for (const a of c.aliases ?? []) add(a, c.code);
 		const en = new Intl.DisplayNames('en', { type: 'region' });
 		const A = 'A'.charCodeAt(0);
 		for (let i = 0; i < 26; i++) {
 			for (let j = 0; j < 26; j++) {
 				const code = String.fromCharCode(A + i, A + j);
 				const label = en.of(code);
-				if (label && label !== code) byName.set(fold(label), code);
+				if (label && label !== code) add(label, code);
 			}
 		}
-		for (const c of COUNTRIES) for (const a of c.aliases ?? []) if (!byName.has(fold(a))) byName.set(fold(a), c.code);
 	}
 	const key = fold(name);
 	return SIPRI_NAMES[key] ?? byName.get(key) ?? null;
@@ -144,9 +149,10 @@ export function parseMilex(sheets: Sheet[]): MilexData | null {
 	const us = cur.values.get('United States of America');
 	const year = Math.max(...(us ? [...us.keys()] : [0]));
 	if (!year) return null;
-	// El % del PIB viene como fracción (0,013 = 1,3 %); si alguna vez viniera en %, se deja como está.
-	const allShares = [...share.values.values()].flatMap((m) => [...m.values()]);
-	const factor = allShares.length && Math.max(...allShares) <= 1 ? 100 : 1;
+	// El % del PIB viene como fracción (0,013 = 1,3 %); si alguna vez viniera en %, se deja como está. Se
+	// mira la mediana del último año: algún país (en guerra, con datos raros) puede pasar de 1.
+	const shares = [...share.values.values()].flatMap((m) => m.get(year) ?? []).sort((a, b) => a - b);
+	const factor = shares.length && shares[Math.floor(shares.length / 2)] < 0.5 ? 100 : 1;
 	const rows = [...cur.values.entries()]
 		.flatMap(([sipri, byYear]) => {
 			const usd = byYear.get(year);
