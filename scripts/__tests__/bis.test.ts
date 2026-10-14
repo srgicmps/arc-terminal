@@ -16,7 +16,7 @@ describe('bis', () => {
 				['US', '2026-09-19', '4.125'],
 				['XM', '2026-06-11', '2.00'],
 				['XM', '2026-06-12', ''],
-				['XM', '2026-06-13', '2.00']
+				['XM', '2026-07-01', '2.00']
 			])
 		);
 		const { series } = await bis.fetch(undefined);
@@ -31,8 +31,8 @@ describe('bis', () => {
 			],
 			source: 'BIS'
 		});
-		// La zona euro se guarda como EA y, sin cambios, queda con un solo punto.
-		expect(series[1]).toMatchObject({ geo: 'EA', points: [{ t: '2026-06', v: 2 }] });
+		// La zona euro se guarda como EA y, sin cambios, queda con un solo punto fechado en el último dato.
+		expect(series[1]).toMatchObject({ geo: 'EA', points: [{ t: '2026-07', v: 2 }] });
 		const url = String(fetch.mock.calls[0][0]);
 		expect(url).toContain('/WS_CBPOL/D.US+XM+');
 		expect(url).toContain('format=csv');
