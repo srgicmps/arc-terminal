@@ -1,7 +1,7 @@
 # Arc Terminal
 
 Terminal personal de mercados y actualidad, al estilo Bloomberg: economía, geopolítica, Wall Street,
-tecnología, IA y utilidades del día a día, como las gasolineras más baratas de Menorca.
+tecnología, IA y utilidades del día a día, como las gasolineras más baratas de donde eligas.
 Se maneja desde una barra de comandos: escribes `NVDA`, `ECO` o `FUEL` y se abre.
 
 > En construcción. La maqueta de diseño está en [`docs/maqueta.html`](docs/maqueta.html) (datos de ejemplo).
