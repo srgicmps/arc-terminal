@@ -6,7 +6,8 @@
   Svelte es nuevo para él (en el trabajo usa Vue 3 + TypeScript): cuando ayude, compáralo con Vue.
 - Primero el plan y el porqué; luego, paso a paso.
 - Sergi suele trabajar desde el móvil: respuestas claras y cortas, sin bloques de código enormes en el chat.
-- Trabaja en **una rama por tarea** y abre un PR. Sergi revisa y hace el merge.
+- Trabaja en **una rama por tarea** y abre un PR. Los agentes tienen permiso para hacer el merge ellos mismos
+  cuando pasen `pnpm check` y `pnpm build`: trae main antes y resuelve conflictos (puede haber varias sesiones a la vez).
 - Un commit por cada cambio probado. Mensajes cortos y claros, en español.
 - Si Sergi pide algo que no es de la tarea en curso, avísale de que es mejor hacerlo aparte y apúntalo en
   «Aparcado», al final de este archivo.
