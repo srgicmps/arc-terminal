@@ -24,6 +24,24 @@ export interface Command {
 	 * (/news?q=inflación), qué hace con él y un ejemplo para la ayuda.
 	 */
 	arg?: { param: string; label: string; example: string };
+	/** Su ficha en el MANUAL (src/routes/manual): un test falla si falta. */
+	manual?: Manual;
+}
+
+/** Secciones del MANUAL, en el orden en que salen. */
+export const MANUAL_SECTIONS = ['Portada y resumen', 'Economía y mercados', 'Mundo', 'España', 'Tecnología', 'Utilidades', 'Sistema'] as const;
+export type ManualSection = (typeof MANUAL_SECTIONS)[number];
+
+/** Ficha de un comando en el MANUAL. */
+export interface Manual {
+	section: ManualSection;
+	/** Qué es y para qué sirve, en una o dos frases. */
+	what: string;
+	/** Qué acepta detrás. Cada ejemplo es una entrada completa de la barra («FUEL Madrid»). */
+	args?: { label: string; examples: string[]; options?: string[] }[];
+	tips?: string[];
+	/** Sus paneles: el título tal y como sale y qué enseña. */
+	panels?: { name: string; what: string }[];
 }
 
 const modules = import.meta.glob<Command>('./commands/*.ts', { eager: true, import: 'default' });
