@@ -1,6 +1,6 @@
 // FRED, Banco de la Reserva Federal de San Luis: series macro de EE. UU. https://fred.stlouisfed.org/docs/api/fred/
 // Necesita una clave gratuita (FRED_API_KEY, en GitHub Secrets). Sin ella, la fuente se salta.
-// Límite: unas 120 consultas por minuto por clave; aquí son 17 cada 3 horas.
+// Límite: unas 120 consultas por minuto por clave; aquí son 20 cada 3 horas.
 // Condiciones: hay que avisar de que se usa la API de FRED sin su respaldo, y algunas series son de
 // terceros con copyright (el VIX de Cboe): solo se guardan unos pocos puntos con enlace a FRED.
 import { at } from '../../src/lib/series.ts';
@@ -28,6 +28,10 @@ interface Wanted {
 
 const WANTED: Wanted[] = [
 	{ code: 'DFF', id: 'fedfunds-us', label: 'Fondos federales (efectivo)', unit: '%', freq: 'd', last: 260 },
+	// Mercado monetario: el repo a un día con garantía de deuda pública, lo que la Fed paga por las reservas y la letra a 3 meses.
+	{ code: 'SOFR', id: 'sofr-us', label: 'SOFR', unit: '%', freq: 'd', last: 260 },
+	{ code: 'IORB', id: 'iorb-us', label: 'Remuneración de las reservas (IORB)', unit: '%', freq: 'd', last: 260 },
+	{ code: 'DTB3', id: 'tbill3m-us', label: 'Letra del Tesoro a 3 meses', unit: '%', freq: 'd', last: 260 },
 	{ code: 'T10Y2Y', id: 't10y2y-us', label: 'Diferencial 10 años − 2 años', unit: '%', freq: 'd', last: 260 },
 	{ code: 'PCEPILFE', id: 'core-pce-us', label: 'PCE subyacente, interanual', unit: '%', freq: 'm', units: 'pc1', last: 36 },
 	{ code: 'GDPC1', id: 'gdp-us', label: 'PIB real, tasa anualizada', unit: '%', freq: 'q', units: 'pca', last: 16 },

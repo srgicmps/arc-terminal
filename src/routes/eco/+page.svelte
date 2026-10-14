@@ -44,6 +44,8 @@
 
 	// Prima de España a diario (Banco de España): último día hábil y cambio en una semana.
 	const daily = $derived(seriesMap(data.bde));
+	// Diferencial SOFR − IORB en pb: si el repo cobra más que las reservas en la Fed, falta liquidez.
+	const sofrIorb = $derived(spread(get('sofr-us'), get('iorb-us'), 'sofr-iorb', 'SOFR − IORB'));
 	const premiumDay = $derived(last(daily('premium-es-d')));
 	const premiumWeek = $derived(diffDays(daily('premium-es-d'), 7));
 </script>
@@ -255,6 +257,25 @@
 			{#snippet note()}
 				Fuente: FRED, Fed de San Luis (usa su API sin estar respaldado por ella)
 				{#if data.fred}· <Updated at={data.fred.fetchedAt} source="fred" />{/if}
+			{/snippet}
+		</Panel>
+		<Panel title="Mercado monetario" meta="Tipos a corto plazo · zona euro y EE. UU.">
+			<SeriesTable
+				next={data.next}
+				head="Tipo"
+				rows={[
+					{ series: get('estr'), name: '€STR (a un día)', decimals: 3 },
+					{ series: get('euribor-3m'), name: 'Euríbor 3 meses', decimals: 3 },
+					{ series: get('euribor-12m'), name: 'Euríbor 12 meses', decimals: 3 },
+					{ series: get('sofr-us'), name: 'SOFR (repo a un día)', decimals: 2 },
+					{ series: get('fedfunds-us'), name: 'Fondos federales (EFFR)', decimals: 2 },
+					{ series: get('iorb-us'), name: 'Reservas en la Fed (IORB)', decimals: 2 },
+					{ series: get('tbill3m-us'), name: 'Letra a 3 meses', decimals: 2 },
+					{ series: sofrIorb, name: 'SOFR − IORB (pb)', decimals: 0, inverse: true }
+				]}
+			/>
+			{#snippet note()}
+				SOFR por encima de IORB es señal de tensión en la liquidez del dólar. Fuentes: BCE y FRED (Fed de San Luis)
 			{/snippet}
 		</Panel>
 		{#if data.fred}

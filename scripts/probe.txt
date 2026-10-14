@@ -76,3 +76,5 @@ https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next 
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
 # GEO/PAIS: gasto militar del SIPRI (Milex), enlace al Excel
 https://www.sipri.org/databases/milex ~ [^"' <>]{0,200}\.xlsx[^"' <>]{0,40}
+# ECO: euríbor a 3 meses (BCE), para el monitor del mercado monetario
+https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.RT.MM.EURIBOR3MD_.HSTA?lastNObservations=3&format=csvdata&detail=dataonly
