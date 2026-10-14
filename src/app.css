@@ -260,29 +260,21 @@ kbd {
 .col > .panel + .panel {
 	border-top: 1px solid var(--line);
 }
-.grid-2 {
-	grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-}
-.grid-2e {
-	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
+/* Columnas que se reparten todo el ancho: caben tantas como permita la pantalla (mínimo 340 px). */
+.grid-2,
+.grid-2e,
 .grid-3 {
-	grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.5fr) minmax(0, 1fr);
+	grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
 }
 @media (max-width: 1100px) {
+	/* En pantallas medianas y en el móvil, la columna central (titulares) va primero, a todo el ancho,
+	   y las otras dos debajo. Con 420 px de mínimo nunca caben tres y no queda un hueco a la derecha. */
 	.grid-3 {
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
 	}
 	.grid-3 > .col:nth-child(2) {
 		grid-column: 1 / -1;
 		order: -1;
-	}
-}
-@media (max-width: 860px) {
-	.grid-2,
-	.grid-2e,
-	.grid-3 {
-		grid-template-columns: minmax(0, 1fr);
 	}
 }
 .grid + .grid {

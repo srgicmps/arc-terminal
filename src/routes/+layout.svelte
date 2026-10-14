@@ -121,11 +121,6 @@
 </div>
 
 <style>
-	.app {
-		max-width: 1600px;
-		margin-inline: auto;
-	}
-
 	.top {
 		display: flex;
 		flex-wrap: wrap;
