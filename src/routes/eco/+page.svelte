@@ -103,6 +103,17 @@
 				{/snippet}
 			</Panel>
 		{/if}
+		{#if data.uncertainty?.data.series.length}
+			{@const epu = data.uncertainty}
+			<Panel title="Incertidumbre económica" meta="Índice EPU · 100 = media histórica">
+				<SeriesTable head="Índice" rows={epu.data.series.map((series) => ({ series, name: series.label, inverse: true }))} spark={36} />
+				{#snippet note()}
+					Fuente: <a href="https://www.policyuncertainty.com/" target="_blank" rel="noopener">Economic Policy Uncertainty</a> (Baker,
+					Bloom y Davis), menciones en prensa de la incertidumbre sobre la política económica ·
+					<Updated at={epu.fetchedAt} source="uncertainty" />
+				{/snippet}
+			</Panel>
+		{/if}
 	</div>
 	<div class="col">
 		<Panel title="Próximas reuniones" meta="Decisión de tipos · hora de España" jump={{ code: 'CAL', href: resolve('/cal') }}>
