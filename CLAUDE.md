@@ -74,7 +74,8 @@ Un cambio de estética se hace en un solo sitio.
 - **Componentes base** en `src/lib/components/ui/`:
   `Seg` (botones de opción), `Select` (desplegable con etiqueta), `Tiles` + `Tile` (cifras grandes), `Table`
   (tabla densa: celdas `.l`, `.name`, `.sub`, `.mut`), `Bar` (barra de comparación), `Change` (variación
-  verde/roja con signo) y `Note` (nota al pie). Además, `Panel` y `ViewHeader` para paneles y cabeceras de vista.
+  verde/roja con signo), `Note` (nota al pie) y `Share` (botón «Compartir»; se usa con la prop `share` de `Panel`,
+  y su lógica está en `src/lib/share.ts`). Además, `Panel` y `ViewHeader` para paneles y cabeceras de vista.
   Antes de escribir CSS para algo que ya existe, se usa el componente.
 - **`app.css`** solo tiene el reset, la tipografía base y lo que comparten todas las vistas: rejillas (`.grid`,
   `.grid-2`, `.grid-2e`, `.grid-3`, `.col`), listas `.mini`, `.empty` y los colores `.up`, `.down`, `.mut`.
@@ -89,6 +90,7 @@ La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`)
 | Comando | Qué abre | Fuentes |
 |---|---|---|
 | `TOP` | Portada | Resumen de todas |
+| `IMP` | Lo más importante de hoy, la semana, el mes y el año (puntuación propia, sin IA) | Todos los titulares, BOE, Federal Register, Wikipedia |
 | `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FRED*, RSS |
 | `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket |
 | `ES` | España en cifras, BOE, luz | INE, BOE, REE, RSS |
@@ -117,6 +119,7 @@ sin ella el panel no sale y no se rompe nada.
 8. **Pulido y fiabilidad**: tema claro, sistema de diseño, vista modular, tests y avisos de fuentes caídas. ← en curso
 
 Arc Terminal es **mundial**: lo de Menorca que ya existe se queda, pero no se añade nada nuevo centrado en Menorca.
+Excepción aprobada por Sergi: puertos AIS de Maó y Ciutadella (D1).
 
 Cuando termine una fase, actualiza esta lista.
 
