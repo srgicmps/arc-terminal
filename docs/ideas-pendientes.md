@@ -135,7 +135,7 @@ Ninguna fuente está comprobada en vivo: confirmarlas con probe. Ninguna limita 
 5. **axe-core en la prueba de humo** (contraste y etiquetas).
 6. **Presupuesto de peso por vista** en el job `checks`.
 
-## 2e. Mejora continua 1–4, consolidado: 16 ideas PREAPROBADAS, sin clave (por prioridad)
+## 2e. Mejora continua 1–5, consolidado: 18 ideas PREAPROBADAS, sin clave (por prioridad)
 
 **Datos que ya se descargan y no se ven**
 1. GEO, «Señales de riesgo»: advisories, gdacs, ioda y who-don.
@@ -161,6 +161,13 @@ Ninguna fuente está comprobada en vivo: confirmarlas con probe. Ninguna limita 
 15. «Próximo dato» más completo (BEA, paro semanal, H.4.1, avance del INE): misma sesión que M10 y el lote 18.
 16. WX: avisos por provincia y país (adaptándose a la rama `wx-aire-avisos`).
 
+**Lote 5 de Mejora continua** (preaprobado)
+17. TOP: el tiempo y la gasolina con «Tu sitio» en vez de Maó fijo. El tiempo, con Open-Meteo desde el navegador,
+    como WX; la gasolina, con la media provincial de fuel-es y las 3 más baratas. Archivos: src/routes/+page.svelte,
+    +page.server.ts y src/lib/place.svelte.ts.
+18. «Mi mañana»: los datos macro de hoy (dataset releases) en hora de Madrid. Archivos: Morning.svelte y
+    +page.server.ts.
+
 Fusionadas o quitadas: hicp-ea (ya en #165); alias de LIDER (Prog 5, F1); HELP generada (va con MANUAL);
 statuspage (dentro del #175); diplomacia (entra en FEEDS.intl en lugar de la tarea 5 de la lista 1); orden de ECO y
 vista modular (misma sesión). El fallo del ejemplo de WX en HELP ya lo tiene QA.
@@ -181,5 +188,5 @@ vista modular (misma sesión). El fallo del ejemplo de WX en HELP ya lo tiene QA
 ## 4. Cómo se trabaja
 
 Cada idea dice si se ha comprobado en vivo y si limita por IP; lo que necesite clave, registro, dinero o datos
-personales va aparte, como decisión. Ideas propone → Decisiones se lo enseña a Sergi → lo aprobado va **solo a Coordinación**, que lo reparte. Las
+personales va aparte, como decisión. Ideas propone → Decisiones (ahora «Arc · Decisiones 2») se lo enseña a Sergi → lo aprobado va **solo a Coordinación**, que lo reparte. Las
 sesiones de Mejora continua 1–4 mandan sus lotes a Ideas, que quita lo repetido y los pasa a Decisiones.
