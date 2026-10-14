@@ -43,3 +43,6 @@ https://www.nasdaqomxnordic.com/webproxy/DataFeedProxy.aspx?SubSystem=History&Ac
 https://www.bolsasymercados.es/bme-exchange/es/Mercados-y-Cotizaciones/Acciones/Mercado-Continuo/Ficha/Indra-A-ES0118594417 ~ .{0,80}(Último|Cierre|Precio).{0,80}
 # Datos abiertos con licencia: Deutsche Börse (dataset público en AWS)
 https://deutsche-boerse-xetra-pds.s3.amazonaws.com/?list-type=2&max-keys=3&prefix=2026-10-13/
+# Calibrar la alerta de apagón: demanda real y prevista el 28/04/2025 (apagón a las 12:33) y un día normal
+https://apidatos.ree.es/es/datos/demanda/demanda-tiempo-real?start_date=2025-04-28T12:00&end_date=2025-04-28T13:30&time_trunc=hour
+https://apidatos.ree.es/es/datos/demanda/demanda-tiempo-real?start_date=2026-10-13T17:00&end_date=2026-10-13T23:59&time_trunc=hour
