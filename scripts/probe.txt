@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-# QA (borrador, no se mezcla): estado publicado y RSS que fallan en main.
-https://srgicmps.github.io/arc-terminal/data/status-history.json
-https://srgicmps.github.io/arc-terminal/data/status.json
-https://e00-expansion.uecdn.es/rss/economia.xml
-https://www.eldiario.es/rss/
-https://e00-elmundo.uecdn.es/elmundo/rss/espana.xml
-https://www.europarl.europa.eu/rss/doc/top-stories/es.xml
-=======
 # URL que la Action de los PR consulta para explorar APIs nuevas (ver scripts/probe.ts).
 # Formato: «URL» o «URL ~ patrón».
 https://apidatos.ree.es/es/datos/generacion/estructura-generacion?start_date=2026-10-13T00:00&end_date=2026-10-14T23:59&time_trunc=day&geo_trunc=electric_system&geo_limit=baleares&geo_ids=8743
@@ -36,4 +27,3 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
->>>>>>> origin/main
