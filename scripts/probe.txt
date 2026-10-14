@@ -27,3 +27,9 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
+# Alertas: euríbor diario (BCE en diario y EMMI, que lo publica con un día de retraso)
+https://data-api.ecb.europa.eu/service/data/FM/D.U2.EUR.RT.MM.EURIBOR1YD_.HSTA?lastNObservations=5&format=csvdata&detail=dataonly
+https://data-api.ecb.europa.eu/service/data/FM/B.U2.EUR.RT.MM.EURIBOR1YD_.HSTA?lastNObservations=5&format=csvdata&detail=dataonly
+https://data-api.ecb.europa.eu/service/dataflow/ECB/FM ~ EURIBOR.{0,200}
+https://www.emmi-benchmarks.eu/euribor-org/euribor-rates.html ~ .{0,80}12 ?M.{0,200}
+https://www.euribor-rates.eu/en/current-euribor-rates/4/euribor-rate-12-months/ ~ .{0,40}\d{2}/\d{2}/\d{4}.{0,40}
