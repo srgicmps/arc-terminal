@@ -105,7 +105,13 @@ describe('RULES', () => {
 			'3:tomorrow',
 			'3:dst',
 			'4:morning',
-			'4:evening'
+			'4:evening',
+			// scripts/alerts/world.ts
+			'1:gdacs',
+			'1:blackout',
+			'1:ioda',
+			'2:status',
+			'2:who'
 		]);
 	});
 
