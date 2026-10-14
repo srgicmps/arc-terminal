@@ -12,6 +12,8 @@ export interface Option {
 	aliases?: string[];
 	/** Lo que se ejecuta al elegirla, si no es el código (p. ej. una entrada del historial). */
 	run?: string;
+	/** Enlace a otra web (resultados de búsqueda: titulares y BOE). Se abre en una pestaña nueva. */
+	url?: string;
 }
 
 /** Sin tildes y en mayúsculas, para comparar. */
@@ -64,7 +66,7 @@ export function suggest(raw: string, all: Option[], limit = 8): Option[] {
 export type Target = { kind: 'command'; command: Command; arg?: string } | { kind: 'symbol'; sym: string };
 
 /** «NEWS inflación», «gasolina Madrid»: un comando que acepta texto, seguido del texto. */
-function commandWithArg(raw: string): { command: Command; arg: string } | null {
+export function commandWithArg(raw: string): { command: Command; arg: string } | null {
 	if (findCommand(raw)) return null; // «wall street» es un alias entero, no WALL + «street»
 	const { head, arg } = splitInput(raw);
 	const command = findCommand(head);

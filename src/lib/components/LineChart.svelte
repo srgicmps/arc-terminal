@@ -3,6 +3,7 @@
 	resaltado. Al pasar el dedo o el ratón muestra el valor de cada punto.
 -->
 <script lang="ts">
+	import { axisTicks } from '#lib/chart.ts';
 	import { nf, period } from '#lib/format.ts';
 
 	interface Line {
@@ -52,10 +53,12 @@
 		return out;
 	});
 
-	// Como mucho 6 etiquetas en el eje X.
+	// Etiquetas del eje X: tantas como quepan sin pisarse. Cada carácter de la letra de datos (11 px) mide
+	// unos 7 px; la primera y la última se alinean al borde, así que se deja hueco y medio entre ellas.
 	const xLabels = $derived.by(() => {
-		const every = Math.max(1, Math.ceil(ts.length / 6));
-		return ts.map((t, i) => ({ t, i })).filter(({ i }) => i % every === 0 || i === ts.length - 1);
+		const longest = Math.max(0, ...ts.map((t) => period(t).length));
+		const gap = longest * 7 * 1.5 + 8;
+		return axisTicks(ts.length, width - pad.l - pad.r, gap).map((i) => ({ t: ts[i], i }));
 	});
 
 	const path = (line: Line) =>
