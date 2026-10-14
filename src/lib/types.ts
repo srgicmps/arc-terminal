@@ -89,9 +89,14 @@ export interface NewsItem {
 	also?: { source: string; url: string }[];
 }
 
+/** Cómo fue la última descarga de cada canal RSS de una sección. */
 export interface FeedStatus {
 	name: string;
-	count: number;
+	/** true si el canal respondió con al menos un titular. */
+	ok: boolean;
+	/** Titulares que se han guardado de este canal. */
+	items: number;
+	/** Resumen corto del fallo («HTTP 404», «tiempo agotado», «XML no válido»…), sin URL. */
 	error?: string;
 }
 
@@ -399,6 +404,24 @@ export interface Release {
 	time: string | null;
 	/** Página de la release en GitHub, con las notas. */
 	url: string;
+}
+
+// ---------- Crisis y desastres activos (ReliefWeb, OCHA) ----------
+
+export interface Disaster {
+	id: string;
+	/** «Afghanistan: Floods - Oct 2026» */
+	name: string;
+	/** País principal, en inglés como lo da ReliefWeb. */
+	country: string;
+	/** Tipo principal en inglés («Flood», «Epidemic»…): la vista lo traduce. */
+	type: string;
+	/** Cuándo empezó (ISO 8601). */
+	date: string | null;
+	/** Ficha en ReliefWeb, con los informes y sus fuentes originales. */
+	url: string;
+	/** Código GLIDE del desastre, si lo tiene. */
+	glide: string;
 }
 
 // ---------- Rutas marítimas clave (IMF PortWatch) ----------

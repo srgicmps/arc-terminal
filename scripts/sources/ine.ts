@@ -29,6 +29,10 @@ interface Wanted {
 	id: string;
 	label: string;
 	geo: string;
+	/** Unidad de la serie; por defecto, «%». */
+	unit?: string;
+	/** Divide cada valor (para pasar personas a millones). */
+	scale?: number;
 	/** Código de la serie (estable) o tabla + patrón del nombre (cuando el código no se conoce). */
 	code?: string;
 	table?: number;
@@ -48,7 +52,13 @@ const WANTED: Wanted[] = [
 		// «Ambos sexos. Balears, Illes. Total. Tasa de paro…»: el orden de las partes puede variar.
 		match: /^(?=.*Balears)(?=.*Ambos sexos)(?=.*(Total|Todas las edades))(?!.*(De \d|\d+ y más|Menores))/i,
 		last: 13
-	}
+	},
+	// Turistas internacionales que llegan cada mes (FRONTUR), en millones.
+	{ id: 'turistas-es', label: 'Turistas internacionales', geo: 'ES', code: 'FREG286', unit: 'mill.', scale: 1e6, last: 25 },
+	{ id: 'turistas-ib', label: 'Turistas internacionales', geo: 'IB', code: 'FREG350', unit: 'mill.', scale: 1e6, last: 25 },
+	// Índice de Precios de Vivienda, trimestral: variación anual del índice general (tabla 79563).
+	{ id: 'ipv-es', label: 'Precio de la vivienda (IPV)', geo: 'ES', code: 'IPV1376', last: 9 },
+	{ id: 'ipv-ib', label: 'Precio de la vivienda (IPV)', geo: 'IB', code: 'IPV1670', last: 9 }
 ];
 
 async function fetchSeries(w: Wanted): Promise<Series | null> {
@@ -63,12 +73,12 @@ async function fetchSeries(w: Wanted): Promise<Series | null> {
 			throw new Error(`sin serie que encaje; candidatas: ${JSON.stringify(sample)}`);
 		}
 	}
-	const pts = points(serie);
+	const pts = points(serie).map((p) => (w.scale ? { t: p.t, v: p.v / w.scale } : p));
 	if (!pts.length) return null;
 	return {
 		id: w.id,
 		label: w.label,
-		unit: '%',
+		unit: w.unit ?? '%',
 		geo: w.geo,
 		points: pts,
 		source: 'INE',
@@ -78,7 +88,7 @@ async function fetchSeries(w: Wanted): Promise<Series | null> {
 
 export const ine: Source<SeriesData> = {
 	name: 'ine',
-	label: 'IPC y paro (EPA) de España y Baleares · Instituto Nacional de Estadística',
+	label: 'IPC, paro (EPA), turistas (FRONTUR) y precio de la vivienda (IPV) de España y Baleares · INE',
 	maxAgeMinutes: 355,
 	async fetch() {
 		const series = await settle('ine', WANTED, (w) => w.id, fetchSeries);

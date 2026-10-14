@@ -28,6 +28,19 @@ export interface Source<T = unknown> {
 	allowEmpty?: true;
 	/** Mínimo de elementos (ver countItems) para dar los datos por buenos. */
 	minItems?: number;
+	/**
+	 * Plazo total de la descarga, en milisegundos (por defecto, DEFAULT_DEADLINE_MS). Solo para fuentes
+	 * lentas de verdad, como un ZIP grande; conviene acompañarlo de un maxAgeMinutes alto.
+	 */
+	deadlineMs?: number;
+}
+
+/** Plazo por defecto de cada fuente, con todos sus reintentos: una API colgada no retiene la Action. */
+export const DEFAULT_DEADLINE_MS = 90_000;
+
+/** Plazo de una fuente: el suyo, si lo define, o el de por defecto. */
+export function deadlineFor(source: Pick<Source, 'deadlineMs'>): number {
+	return source.deadlineMs ?? DEFAULT_DEADLINE_MS;
 }
 
 /**
@@ -66,6 +79,19 @@ export function checkShrink(
 		return `solo ${count} elementos (antes ${before}): parece una respuesta incompleta`;
 	}
 	return null;
+}
+
+/**
+ * Espera a `promise` como mucho `ms` milisegundos; si tarda más, falla con `message`. El temporizador se
+ * limpia siempre, para no dejar el proceso esperando. Ojo: la descarga de fondo no se cancela (las
+ * fuentes no reciben una señal de aborto), pero `request()` ya corta cada petición a los 45 s.
+ */
+export function withDeadline<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const deadline = new Promise<never>((_, reject) => {
+		timer = setTimeout(() => reject(new Error(message)), ms);
+	});
+	return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
 }
 
 /** Escribe un archivo extra de una fuente en static/data/<path>. */

@@ -28,7 +28,7 @@
 	});
 	const strongestQuake = $derived([...(data.quakes?.data ?? [])].sort((a, b) => b.mag - a.mag)[0]);
 
-	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.count).map((f) => f.name).join(', '));
+	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
 </script>
 
 <ViewHeader code="ES" title="España" sub={sources} />
@@ -73,6 +73,21 @@
 				{/if}
 			</ul>
 			{#snippet note()}Fuentes: INE, Eurostat, BCE, Ministerio para la Transición Ecológica, REE e IGN{/snippet}
+		</Panel>
+		<Panel title="Turismo y vivienda" meta="INE · último dato">
+			<SeriesTable
+				head="Indicador"
+				rows={[
+					{ series: get('turistas-es'), name: 'Turistas internacionales (mill.)', decimals: 2 },
+					{ series: get('turistas-ib'), name: 'Turistas en Baleares (mill.)', decimals: 2 },
+					{ series: get('ipv-es'), name: 'Precio de la vivienda, var. anual' },
+					{ series: get('ipv-ib'), name: 'Vivienda Baleares, var. anual' }
+				]}
+			/>
+			{#snippet note()}
+				Turistas que llegan en el mes (FRONTUR) e Índice de Precios de Vivienda, trimestral. Fuente: INE ·
+				<Updated at={data.ine?.fetchedAt} source="ine" />
+			{/snippet}
 		</Panel>
 		<Panel title="BOE de hoy" meta="Disposiciones generales" jump={{ code: 'BOE', href: resolve('/boe') }}>
 			{#if general.length}
