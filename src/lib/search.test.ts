@@ -52,7 +52,9 @@ describe('searchOptions', () => {
 		{ code: 'NEWS', desc: 'Buscar en los titulares', kind: 'Función' },
 		{ code: 'NVDA', desc: 'NVIDIA', kind: 'Valor' }
 	];
-	const opts = (raw: string) => searchOptions(raw, suggest(raw, ALL), index);
+	// Los resultados del índice, sin la última fila («Buscar en el archivo»), que tiene su propio test.
+	const found = (...args: Parameters<typeof searchOptions>) => searchOptions(...args).filter((o) => o.kind !== 'Archivo');
+	const opts = (raw: string) => found(raw, suggest(raw, ALL), index);
 
 	it('convierte titulares y BOE en enlaces externos con su etiqueta', () => {
 		const hits = opts('aranceles');
@@ -62,32 +64,43 @@ describe('searchOptions', () => {
 	});
 
 	it('no busca si lo escrito es un comando, un comando con texto o empieza por un comando', () => {
-		expect(searchOptions('ECO', [], index)).toEqual([]);
-		expect(searchOptions('bolsa', [], prepare([entry('La bolsa sube')]))).toEqual([]); // alias de WS
-		expect(searchOptions('sube bolsa', [], prepare([entry('La bolsa sube')]))).toHaveLength(1);
-		expect(searchOptions('NEWS aranceles', [], index)).toEqual([]);
-		expect(searchOptions('ECO aranceles', [], index)).toEqual([]);
+		expect(found('ECO', [], index)).toEqual([]);
+		expect(found('bolsa', [], prepare([entry('La bolsa sube')]))).toEqual([]); // alias de WS
+		expect(found('sube bolsa', [], prepare([entry('La bolsa sube')]))).toHaveLength(1);
+		expect(found('NEWS aranceles', [], index)).toEqual([]);
+		expect(found('ECO aranceles', [], index)).toEqual([]);
 	});
 
 	it('no repite un valor que ya está entre las sugerencias', () => {
 		expect(opts('nvidia')).toEqual([]);
-		expect(searchOptions('berkshire', [], index)).toEqual([{ code: 'BRK.B', desc: 'Berkshire Hathaway', kind: 'Valor', run: 'BRK.B' }]);
+		expect(found('berkshire', [], index)).toEqual([{ code: 'BRK.B', desc: 'Berkshire Hathaway', kind: 'Valor', run: 'BRK.B' }]);
 	});
 
 	it('con un código corto sin sugerencias, la ficha del valor va primero', () => {
-		const hits = searchOptions('UE', [], prepare([entry('Trump y la UEFA')]));
+		const hits = found('UE', [], prepare([entry('Trump y la UEFA')]));
 		expect(hits).toEqual([]); // menos de 3 letras: no se busca
-		const pymes = searchOptions('pymes', [], index);
+		const pymes = found('pymes', [], index);
 		expect(pymes[0]).toEqual({ code: 'PYMES', desc: 'Ficha del valor', kind: 'Valor', run: 'PYMES' });
 		expect(pymes[1].code).toBe('NEWS');
 		// Un alias de comando («trump» abre LIDER) no busca: lo ejecuta la barra.
-		expect(searchOptions('trump', [], index)).toEqual([]);
+		expect(found('trump', [], index)).toEqual([]);
 		// Más de 5 caracteres: ya no parece un valor y el primero es el titular.
-		expect(searchOptions('aranceles', [], index)[0].code).toBe('NEWS');
+		expect(found('aranceles', [], index)[0].code).toBe('NEWS');
 	});
 
 	it('sin índice (aún no cargado) no hay resultados', () => {
-		expect(searchOptions('aranceles', [], null)).toEqual([]);
+		expect(found('aranceles', [], null)).toEqual([]);
+	});
+
+	it('acaba con «Buscar en el archivo», también sin índice, si no es un comando y hay 3 letras', () => {
+		const archive = { code: 'NEWS', desc: 'Buscar «aranceles» en el archivo de 3 meses', kind: 'Archivo', run: 'NEWS aranceles' };
+		expect(searchOptions('aranceles', [], index).at(-1)).toEqual(archive);
+		expect(searchOptions(' aranceles ', [], null)).toEqual([archive]);
+		expect(searchOptions('UE', [], index)).toEqual([]);
+		expect(searchOptions('ECO', [], index)).toEqual([]);
+		expect(searchOptions('NEWS aranceles', [], index)).toEqual([]);
+		// Un código corto que no está en el índice: primero su ficha, para que Intro haga lo de siempre.
+		expect(searchOptions('AMZN', [], null).map((o) => o.kind)).toEqual(['Valor', 'Archivo']);
 	});
 
 	it('symbolOf lee el valor de un enlace interno', () => {

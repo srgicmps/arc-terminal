@@ -2,8 +2,8 @@
 // https://fiscaldata.treasury.gov/api-documentation/ · https://home.treasury.gov/treasury-daily-interest-rate-xml-feed
 // Dominio público.
 import { XMLParser } from 'fast-xml-parser';
-import type { SeriesData, YieldCurveData } from '../../src/lib/types.ts';
-import { getJson, getText, list, num, type Source } from '../lib.ts';
+import type { Auction, AuctionsData, SeriesData, YieldCurveData } from '../../src/lib/types.ts';
+import { getJson, getText, list, madridDay, num, type Source } from '../lib.ts';
 
 const DEBT_API =
 	'https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_to_penny';
@@ -75,11 +75,108 @@ export const uscurve: Source<YieldCurveData> = {
 	label: 'Curva de tipos diaria · Tesoro de EE. UU.',
 	maxAgeMinutes: 115,
 	async fetch() {
-		// Mes actual y anterior, para tener siempre al menos un mes de historia.
-		const months = await Promise.all([curveMonth(month(-1)), curveMonth(month(0))]);
+		// Mes actual y anterior, para tener siempre al menos un mes de historia, y los mismos meses de hace un
+		// año, para comparar la curva de hoy con la de entonces (WS).
+		const months = await Promise.all([-13, -12, -1, 0].map((m) => curveMonth(month(m))));
 		const byDate = new Map(months.flat().map((d) => [d.date, d]));
 		const days = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 		if (!days.length) throw new Error('curva vacía');
 		return { tenors: TENORS.map(([, label]) => label), days };
+	}
+};
+
+// ---------- Subastas de deuda (Fiscal Data, auctions_query) ----------
+// Una fila por subasta. Las anunciadas que aún no se han hecho vienen con los resultados a «null».
+// Resultados: solo bonos y notas (de 2 a 30 años), que son los que mira el mercado; las letras salen cada
+// semana. En las próximas, todas.
+
+const AUCTIONS_API = 'https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query';
+const AUCTION_FIELDS = [
+	'auction_date',
+	'security_type',
+	'security_term',
+	'reopening',
+	'offering_amt',
+	'high_yield',
+	'bid_to_cover_ratio',
+	'indirect_bidder_accepted',
+	'comp_accepted',
+	'floating_rate'
+];
+
+/** Cuántas subastas anteriores del mismo plazo hacen la media del bid-to-cover. */
+export const BTC_LOOKBACK = 6;
+
+type RawAuction = Record<string, string | undefined>;
+
+/** De la fila de la API a una subasta. Separada para poder probarla. */
+export function toAuction(r: RawAuction): Auction | null {
+	if (!r.auction_date || !r.security_term) return null;
+	const comp = num(r.comp_accepted);
+	const indirect = num(r.indirect_bidder_accepted);
+	// Las de tipo flotante (FRN) se marcan aparte: su bid-to-cover no se compara con el de las notas.
+	const kind = r.floating_rate === 'Yes' ? 'FRN' : (r.security_type ?? '');
+	return {
+		date: r.auction_date,
+		term: r.security_term,
+		kind,
+		reopening: r.reopening === 'Yes',
+		offering: num(r.offering_amt),
+		highYield: num(r.high_yield),
+		bidToCover: num(r.bid_to_cover_ratio),
+		indirectPct: comp && indirect !== null ? Math.round((indirect / comp) * 1000) / 10 : null
+	};
+}
+
+/**
+ * Separa las próximas (sin resultado y desde hoy) de las ya hechas, y a cada hecha le pone la media del
+ * bid-to-cover de sus `BTC_LOOKBACK` subastas anteriores del mismo plazo y tipo (si hay al menos 3).
+ */
+export function splitAuctions(all: Auction[], today: string, recent = 10): AuctionsData {
+	const sorted = [...all].sort((a, b) => a.date.localeCompare(b.date));
+	const upcoming = sorted.filter((a) => a.bidToCover === null && a.date >= today);
+	const done = sorted.filter((a) => a.bidToCover !== null);
+	const withAvg = done.map((a, i) => {
+		const prev = done
+			.slice(0, i)
+			.filter((b) => b.term === a.term && b.kind === a.kind)
+			.slice(-BTC_LOOKBACK)
+			.map((b) => b.bidToCover!);
+		const avg = prev.length >= 3 ? Math.round((prev.reduce((s, v) => s + v, 0) / prev.length) * 100) / 100 : null;
+		return { ...a, avgBidToCover: avg };
+	});
+	return { upcoming, recent: withAvg.slice(-recent).reverse() };
+}
+
+export const auctions: Source<AuctionsData> = {
+	name: 'auctions',
+	label: 'Subastas de bonos y notas · Tesoro de EE. UU. (Fiscal Data)',
+	maxAgeMinutes: 175,
+	async fetch() {
+		const params = new URLSearchParams({
+			fields: AUCTION_FIELDS.join(','),
+			filter: 'security_type:in:(Note,Bond)',
+			sort: '-auction_date',
+			// ~2 años: de sobra para tener 6 subastas anteriores de cada plazo (el de 20 años sale cada mes).
+			'page[size]': '250'
+		});
+		// Las próximas, de todos los tipos (letras incluidas): de bonos y notas a veces no hay ninguna anunciada.
+		const today = madridDay();
+		const soon = new URLSearchParams({
+			fields: AUCTION_FIELDS.join(','),
+			filter: `auction_date:gte:${today}`,
+			sort: 'auction_date',
+			'page[size]': '30'
+		});
+		const [body, next] = await Promise.all([
+			getJson<{ data: RawAuction[] }>(`${AUCTIONS_API}?${params}`),
+			getJson<{ data: RawAuction[] }>(`${AUCTIONS_API}?${soon}`)
+		]);
+		const read = (rows: RawAuction[] | undefined) => (rows ?? []).map(toAuction).filter((a): a is Auction => a !== null);
+		const all = read(body.data);
+		if (!all.length) throw new Error('sin subastas');
+		const { recent } = splitAuctions(all, today);
+		const upcoming = read(next.data).filter((a) => a.bidToCover === null);
+		return { upcoming: upcoming.slice(0, 12), recent };
 	}
 };

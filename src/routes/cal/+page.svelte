@@ -8,7 +8,7 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
-	import { compact, dm, nf, weekday } from '#lib/format.ts';
+	import { compact, dm, hm, nf, weekday } from '#lib/format.ts';
 	import { bmeHolidays, nyseHolidays } from '#lib/markets.ts';
 	import { madridDate } from '#lib/meetings.ts';
 	import type { PageProps } from './$types';
@@ -21,12 +21,18 @@
 	};
 
 	const earnings = $derived(data.finnhub?.data.earnings ?? []);
+
 	const HOUR: Record<string, string> = { bmo: 'Pre', amc: 'Post', dmh: 'Sesión' };
 
 	// Festivos de los próximos 12 meses: España y Baleares (Nager.Date) y días sin bolsa (por reglas).
 	// Fecha de hoy en Madrid. Hasta que arranca el reloj en el navegador se usa la fecha en la que se
 	// construyó la página.
 	const today = $derived(madridDate(clock.now || Date.now()));
+
+	// Próximos datos de los calendarios oficiales (con tema), desde hoy en hora de Madrid.
+	const releases = $derived(
+		(data.releases?.data.events ?? []).filter((e) => e.topic && madridDate(Date.parse(e.date)) >= today).slice(0, 14)
+	);
 	const days = $derived.by(() => {
 		const year = Number(today.slice(0, 4));
 		const limit = `${year + 1}${today.slice(4)}`;
@@ -49,7 +55,11 @@
 	const inDays = (date: string) => Math.round((Date.parse(date) - Date.parse(today)) / 86_400_000);
 </script>
 
-<ViewHeader code="CAL" title="Agenda económica" sub="Datos macro de la semana (TradingView) y resultados empresariales (Finnhub)" />
+<ViewHeader
+	code="CAL"
+	title="Agenda económica"
+	sub="Datos macro de la semana (TradingView) y resultados empresariales (Finnhub)"
+/>
 
 <div class="grid grid-2">
 	<div class="col">
@@ -61,6 +71,35 @@
 		<Panel title="Bancos centrales" meta="Próximas reuniones · BCE y Fed">
 			<MeetingList mode="list" limit={6} />
 			{#snippet note()}Decisión de tipos, en hora de España. Fuentes: calendarios oficiales del BCE y de la Fed.{/snippet}
+		</Panel>
+		<Panel title="Próximos datos" meta="Calendarios oficiales · hora de España">
+			{#if releases.length}
+				<Table>
+					<thead><tr><th>Día</th><th>Hora</th><th class="l">Dato</th><th class="l">Fuente</th></tr></thead>
+					<tbody>
+						{#each releases as e (e.source + e.date + e.title)}
+							<tr>
+								<td class="mut">{weekday(madridDate(Date.parse(e.date)))} {dm(e.date).split(' ')[1]}</td>
+								<td class="mut">{e.allDay ? '—' : hm(e.date)}</td>
+								<td class="l name wrap"
+									>{#if e.url}<a href={e.url} target="_blank" rel="noopener">{e.title}</a>{:else}{e.title}{/if}</td
+								>
+								<td class="l mut">{e.source}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
+			{:else}
+				<p class="empty">
+					{data.releases
+						? 'Sin publicaciones de los datos que sigue la terminal en las próximas semanas.'
+						: 'Sin datos todavía.'}
+				</p>
+			{/if}
+			{#snippet note()}
+				IPC y empleo de EE. UU. (BLS, fechas vía FRED) e IPC, EPA, vivienda y turistas del INE.
+				{#if data.releases}<Updated at={data.releases.fetchedAt} source="releases-cal" />{/if}
+			{/snippet}
 		</Panel>
 		<Panel title="Festivos" meta="Próximos 12 meses">
 			{#if next}
@@ -88,15 +127,15 @@
 				</Table>
 			{/if}
 			{#snippet note()}
-				ES: festivo en toda España · IB: en Baleares · NYSE y BME: sin bolsa en Nueva York o en Madrid.
-				Festivos: Nager.Date{#if data.holidays}&nbsp;· <Updated at={data.holidays.fetchedAt} />{/if}.
-				Días sin bolsa calculados con las reglas de la NYSE y del calendario TARGET2 (BME).
-				Los festivos locales de cada municipio no están incluidos.
+				ES: festivo en toda España · IB: en Baleares · NYSE y BME: sin bolsa en Nueva York o en Madrid. Festivos:
+				Nager.Date{#if data.holidays}&nbsp;· <Updated at={data.holidays.fetchedAt} />{/if}. Días sin bolsa calculados
+				con las reglas de la NYSE y del calendario TARGET2 (BME). Los festivos locales de cada municipio no están
+				incluidos.
 			{/snippet}
 		</Panel>
 		<Panel title="Resultados" meta="Grandes empresas de EE. UU. · próximas 2 semanas">
 			{#if !data.finnhub}
-				<p class="empty">Falta la clave FINNHUB_API_KEY en GitHub Secrets.</p>
+				<p class="empty">{data.finnhubMissing}</p>
 			{:else if earnings.length}
 				<Table>
 					<thead>
@@ -113,11 +152,16 @@
 						{#each earnings as e, i (e.symbol + e.date)}
 							<tr>
 								<td class="mut">{i === 0 || earnings[i - 1].date !== e.date ? weekday(e.date) : ''}</td>
-								<td class="l"><a class="sym" href="{resolve('/s')}?sym={encodeURIComponent(e.symbol)}">{e.symbol}</a></td>
+								<td class="l"
+									><a class="sym" href="{resolve('/s')}?sym={encodeURIComponent(e.symbol)}">{e.symbol}</a></td
+								>
 								<td class="mut h">{HOUR[e.hour] ?? ''}</td>
 								<td>{nf(e.epsEstimate)}</td>
 								<td>
-									<Change value={e.epsActual !== null && e.epsEstimate !== null ? e.epsActual - e.epsEstimate : null} text={nf(e.epsActual)} />
+									<Change
+										value={e.epsActual !== null && e.epsEstimate !== null ? e.epsActual - e.epsEstimate : null}
+										text={nf(e.epsActual)}
+									/>
 								</td>
 								<td class="mut rev">{e.revenueEstimate ? compact(e.revenueEstimate) : '—'}</td>
 							</tr>
