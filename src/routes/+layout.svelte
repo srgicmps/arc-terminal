@@ -18,6 +18,7 @@
 	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
 	import { initPlace } from '#lib/place.svelte.ts';
 	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
+	import { initFolded } from '#lib/folded.svelte.ts';
 	import { tvSymbol } from '#lib/tickers.ts';
 	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
 	import { parseTv, routeOf } from '#lib/tv.ts';
@@ -28,6 +29,7 @@
 	// El reloj arranca en el navegador (como onMounted en Vue) y se para al salir.
 	$effect(startClock);
 	$effect(initWatchlist);
+	$effect(initFolded);
 	$effect(initPlace);
 	$effect(initTheme);
 	$effect(initFit);
@@ -585,7 +587,7 @@
 		     menor: ninguno se queda en 2-3 filas;
 		   - el alto que sobra se reparte a partes iguales, sin que ningún panel pase de su contenido: lo
 		     que no usa una tabla corta se lo quedan las listas largas, que hacen scroll por dentro. */
-		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max)) {
+		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max, .folded)) {
 			flex: 1 0 auto;
 			height: var(--fit-panel-min);
 			max-height: fit-content;
@@ -593,7 +595,7 @@
 		}
 
 		/* Gráficos, mapas y widgets tienen un alto fijo: recortados no se leen, así que van enteros. */
-		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max):has(.chart, .map, .tv, .curve, .bars)) {
+		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max, .folded):has(.chart, .map, .tv, .curve, .bars)) {
 			height: auto;
 		}
 	}
@@ -610,7 +612,7 @@
 			background: var(--line);
 		}
 
-		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max)) {
+		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max, .folded)) {
 			height: auto;
 			max-height: none;
 			border-top: 0;
@@ -619,7 +621,7 @@
 		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con
 		   su fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. Los gráficos,
 		   mapas y widgets van enteros, como en una columna. */
-		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max):not(:has(.chart, .map, .tv, .curve, .bars))) {
+		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max, .folded):not(:has(.chart, .map, .tv, .curve, .bars))) {
 			contain: size;
 			contain-intrinsic-block-size: var(--fit-panel-min);
 		}
@@ -638,7 +640,7 @@
 			background: var(--line);
 		}
 
-		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max)) {
+		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max, .folded)) {
 			height: auto;
 			max-height: none;
 			border-top: 0;
@@ -647,7 +649,7 @@
 		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con
 		   su fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. Los gráficos,
 		   mapas y widgets van enteros, como en una columna. */
-		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max):not(:has(.chart, .map, .tv, .curve, .bars))) {
+		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max, .folded):not(:has(.chart, .map, .tv, .curve, .bars))) {
 			contain: size;
 			contain-intrinsic-block-size: var(--fit-panel-min);
 		}

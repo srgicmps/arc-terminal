@@ -25,6 +25,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-news-prefs', storage: 'local', what: 'Medios silenciados e idioma original de los titulares', where: 'NEWS, «Tus medios»', kind: 'ajuste' },
 	{ key: 'arc-ref-country', storage: 'local', what: 'País de referencia para paro, inflación y deuda', where: 'TOP, panel «Macro»', kind: 'ajuste' },
 	{ key: 'arc-chart-period', storage: 'local', what: 'Último periodo elegido en los gráficos de línea', where: 'Botones 1M · 6M · 1A · 5A · Máx', kind: 'ajuste' },
+	{ key: 'arc-folded', storage: 'local', what: 'Paneles plegados de cada vista', where: 'Título de cada panel', kind: 'ajuste' },
 	{ key: 'arc-ws-heatmap', storage: 'local', what: 'Último mapa de calor elegido', where: 'WS', kind: 'ajuste' },
 	{ key: 'arc-tv', storage: 'local', what: 'Vistas y segundos del modo TV', where: 'TV', kind: 'ajuste' },
 	{ key: 'arc-cal', storage: 'local', what: 'Países e importancia del calendario económico', where: 'CAL', kind: 'ajuste' },

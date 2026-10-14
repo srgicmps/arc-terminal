@@ -6,6 +6,8 @@
 	Dentro de una <ModularGrid>, si tiene id, la cabecera lleva además el asa ⋮⋮ y el ✕.
 -->
 <script lang="ts">
+	import { page } from '$app/state';
+	import { foldKey, isFolded, toggleFold } from '#lib/folded.svelte.ts';
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import type { Snippet } from 'svelte';
 	import { getModular, type Span } from '#lib/layout.svelte.ts';
@@ -41,6 +43,9 @@
 	const SPANS: Span[] = [1, 2, 3];
 
 	let max = $state(false);
+	// Plegado (M20): tocar el título lo pliega o despliega y se recuerda por vista y panel. Ampliar pasa a ⤢ y M.
+	const fkey = $derived(foldKey(page.route.id, title));
+	const shut = $derived(!max && isFolded(fkey));
 	let titleButton: HTMLButtonElement;
 	let section: HTMLElement;
 	let closeButton = $state<HTMLButtonElement>();
@@ -115,29 +120,31 @@
 	<div class="scrim" aria-hidden="true" onclick={close}></div>
 {/if}
 
-<section bind:this={section} class="panel" class:max role={max ? 'dialog' : undefined} aria-modal={max ? 'true' : undefined} aria-label={max ? title : undefined}>
+<section bind:this={section} class="panel" class:max class:folded={shut} role={max ? 'dialog' : undefined} aria-modal={max ? 'true' : undefined} aria-label={max ? title : undefined}>
 	<header class="ph">
 		<h2>
 			<button
 				bind:this={titleButton}
 				class="ttl"
 				type="button"
-				aria-expanded={max}
-				title={max ? 'Volver a la vista (Esc)' : 'Ampliar el panel (M)'}
-				onclick={() => (max ? close() : open())}
+				aria-expanded={max || !shut}
+				title={max ? 'Volver a la vista (Esc)' : shut ? 'Desplegar' : 'Plegar · M para ampliar'}
+				onclick={() => (max ? close() : toggleFold(fkey))}
 				onkeydown={titleKeydown}
 			>
-				{title}<span class="ico" aria-hidden="true">⤢</span>
+				{#if !max}<span class="fold" aria-hidden="true">{shut ? '▸' : '▾'}</span>{/if}{title}
 			</button>
 		</h2>
-		{#if meta || jump || share || tools || max}
-			<div class="ph-r">
+		<div class="ph-r">
 				{#if meta}<span class:accent>{meta}</span>{/if}
 				{#if share}<Share source={share} />{/if}
 				{#if jump}<a class="jump" href={jump.href}>{jump.code} ›</a>{/if}
 				{#if max}
 					<button bind:this={closeButton} class="close" type="button" aria-label="Cerrar el panel ampliado" onclick={close}>✕</button>
-				{:else if tools && id}
+				{:else}
+					<button class="tool grow" type="button" aria-label="Ampliar {title}" title="Ampliar (M)" onclick={open}>⤢</button>
+				{/if}
+				{#if tools && id && !max}
 					<button
 						class="tool grip"
 						type="button"
@@ -154,8 +161,7 @@
 					>
 					<button class="tool" type="button" aria-label="Ocultar {title}" title="Ocultar" onclick={() => tools.hide(id)}>✕</button>
 				{/if}
-			</div>
-		{/if}
+		</div>
 	</header>
 	{#if tools && id && menu && !max}
 		<div class="menu">
@@ -170,9 +176,11 @@
 			</span>
 		</div>
 	{/if}
-	{@render children()}
-	{#if note}
-		<Note>{@render note()}</Note>
+	{#if !shut}
+		{@render children()}
+		{#if note}
+			<Note>{@render note()}</Note>
+		{/if}
 	{/if}
 </section>
 
@@ -333,17 +341,16 @@
 		outline-offset: var(--sp-2);
 	}
 
-	/* ⤢ solo se insinúa al pasar por encima o con el foco. */
-	.ico {
-		margin-left: var(--sp-6);
-		opacity: 0;
+	/* ▾ / ▸ delante del título: plegado o no, en --faint como los de ui/Disclosure. */
+	.fold {
+		display: inline-block;
+		width: var(--sp-12);
 		color: var(--faint);
 		font-weight: var(--fw-regular);
 	}
 
-	.ttl:hover .ico,
-	.ttl:focus-visible .ico {
-		opacity: 1;
+	.folded .ph {
+		border-bottom: 0;
 	}
 
 	.scrim {
@@ -431,7 +438,7 @@
 			break-inside: avoid;
 		}
 
-		.ico,
+		.fold,
 		.ph-r :global(button),
 		.menu {
 			display: none;
