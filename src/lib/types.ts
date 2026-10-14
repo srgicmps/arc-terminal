@@ -615,6 +615,29 @@ export interface Chokepoint {
 	spark: number[];
 }
 
+// ---------- Próximas elecciones (Wikidata) ----------
+
+/** general: generales o legislativas · presidential: presidenciales · referendum: referéndum. */
+export type ElectionKind = 'general' | 'presidential' | 'referendum';
+
+export interface Election {
+	/** Día de la votación (AAAA-MM-DD). */
+	date: string;
+	/** Nombre del país, en español (o en inglés si Wikidata no lo tiene en español). */
+	country: string;
+	/** Código ISO 3166-1 alfa-2 del país («ES»), si Wikidata lo tiene. */
+	iso: string | null;
+	kind: ElectionKind;
+	/** Nombre de la elección, en español o inglés. */
+	name: string;
+	/** Ficha en Wikidata. */
+	url: string;
+}
+
+export interface ElectionsData {
+	items: Election[];
+}
+
 // ---------- Barcos en los puertos (AIS, aisstream.io) ----------
 
 export interface Ship {
