@@ -29,11 +29,13 @@ const WANTED: Wanted[] = [
 		params: { age: 'Y_LT25', sex: 'T', s_adj: 'SA', unit: 'PC_ACT', lastTimePeriod: '25' }
 	},
 	{
-		dataset: 'prc_hicp_manr',
+		// Desde 2026 el IPCA va con la clasificación COICOP 2018 (ECOICOP v2): prc_hicp_manr se quedó en 2025-12.
+		// En prc_hicp_minr, el índice general es TOTAL y la variación anual, RCH_A.
+		dataset: 'prc_hicp_minr',
 		id: 'inflation',
 		label: 'Inflación (IPCA)',
 		unit: '%',
-		params: { coicop: 'CP00', lastTimePeriod: '25' }
+		params: { coicop18: 'TOTAL', unit: 'RCH_A', lastTimePeriod: '25' }
 	},
 	{
 		dataset: 'namq_10_gdp',
