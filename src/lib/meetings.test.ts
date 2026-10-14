@@ -79,7 +79,7 @@ describe('meetingOdds', () => {
 });
 
 describe('decisionTime', () => {
-	it('da la hora de España, también con los cambios de hora desfasados', () => {
+	it('da la hora de Madrid, también con los cambios de hora desfasados', () => {
 		expect(decisionTime({ bank: 'ecb', date: '2026-10-29' })).toBe('14:15');
 		expect(decisionTime({ bank: 'fed', date: '2026-07-29' })).toBe('20:00');
 		expect(decisionTime({ bank: 'fed', date: '2026-12-09' })).toBe('20:00');

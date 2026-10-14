@@ -91,7 +91,9 @@
 	const mao = $derived(
 		data.weather?.data.places.find((p) => p.name === place.current.name) ?? data.weather?.data.places.find((p) => p.name === 'Maó')
 	);
-	// Gasolina: la provincia de «Tu sitio» si lo has elegido y está en España (fuera de Menorca); si no, Menorca.
+	// Gasolina: la provincia de «Tu sitio» si lo has elegido y está en España (fuera de Menorca); fuera de España,
+	// la media de España; si no lo has elegido, Menorca.
+	const fuelAbroad = $derived(place.chosen && !inSpain(place.current));
 	const fuelProvince = $derived.by(() => {
 		const id = place.chosen ? zoneFor(place.current, data.fuelProvinces) : null;
 		return id && id !== 'menorca' ? (data.fuelProvinces.find((p) => p.id === id) ?? null) : null;
@@ -327,9 +329,11 @@
 {/snippet}
 
 {#snippet gasolina()}
-	<Panel id="fuel" title="Gasolina 95 · {fuelProvince?.name ?? 'Menorca'}" meta="€/L" jump={{ code: 'FUEL', href: resolve('/fuel') }}>
+	<Panel id="fuel" title="Gasolina 95 · {fuelAbroad ? 'España' : (fuelProvince?.name ?? 'Menorca')}" meta="€/L" jump={{ code: 'FUEL', href: resolve('/fuel') }}>
 		<ul class="mini">
-			{#if fuelProvince}
+			{#if fuelAbroad}
+				<li><span class="l">Media de España</span><b>{nf(data.fuelSpain, 3)}</b></li>
+			{:else if fuelProvince}
 				<li><span class="l">Media de la provincia</span><b>{nf(fuelProvince.avg, 3)}</b></li>
 				<li><span class="l">La más barata</span><b class="up">{nf(fuelProvince.min, 3)}</b></li>
 			{:else}

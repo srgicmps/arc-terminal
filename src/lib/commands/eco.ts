@@ -16,7 +16,7 @@ export default {
 			{ name: 'Ofertas de empleo (Indeed)', what: 'Ofertas publicadas en Indeed por país (Indeed Hiring Lab), índice semanal.' },
 			{ name: 'Deuda pública', what: 'En % del PIB.' },
 			{ name: 'Precios de los alimentos', what: 'Índice de la FAO.' },
-			{ name: 'Próximas reuniones', what: 'Fechas de decisión de tipos, en hora de España.' },
+			{ name: 'Próximas reuniones', what: 'Fechas de decisión de tipos, en hora de Madrid.' },
 			{ name: 'BCE', what: 'Tipos oficiales y euríbor.' },
 			{ name: 'Vivienda en el mundo', what: 'Precio de la vivienda, variación interanual.' },
 			{ name: 'Tu hipoteca', what: 'Calculadora de hipoteca variable con el euríbor a 12 meses; recuerda lo que escribes.' },

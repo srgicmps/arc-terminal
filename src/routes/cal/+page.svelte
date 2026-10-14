@@ -103,7 +103,7 @@
 		</Panel>
 	</div>
 	<div class="col">
-		<Panel title="Bancos centrales" meta="Próximas decisiones de tipos · hora de España">
+		<Panel title="Bancos centrales" meta="Próximas decisiones de tipos · hora de Madrid">
 			<Table>
 				<thead><tr><th>Día</th><th>Hora</th><th class="l">Banco</th><th class="l"></th></tr></thead>
 				<tbody>
@@ -124,7 +124,7 @@
 				calendarios oficiales de cada banco.
 			{/snippet}
 		</Panel>
-		<Panel title="Próximos datos" meta="Calendarios oficiales · hora de España">
+		<Panel title="Próximos datos" meta="Calendarios oficiales · hora de Madrid">
 			{#if releases.length}
 				<Table>
 					<thead><tr><th>Día</th><th>Hora</th><th class="l">Dato</th><th class="l">Fuente</th></tr></thead>

@@ -192,7 +192,7 @@
 		{/if}
 	</div>
 	<div class="col">
-		<Panel title="Próximas reuniones" meta="Decisión de tipos · hora de España" jump={{ code: 'CAL', href: resolve('/cal') }}>
+		<Panel title="Próximas reuniones" meta="Decisión de tipos · hora de Madrid" jump={{ code: 'CAL', href: resolve('/cal') }}>
 			<MeetingList
 				markets={[
 					...(data.predictions?.data.rates ?? []),
