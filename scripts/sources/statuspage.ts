@@ -5,33 +5,12 @@
 // servicio). Si un servicio falla, se deja su estado anterior marcado como `stale`.
 import { list, plain, request, settle, type Source } from '../lib.ts';
 
+import { RANK, type Indicator, type ServiceIncident, type ServiceStatus } from '../../src/lib/statuspage.ts';
+
+// Los tipos viven en src/lib/statuspage.ts, porque también los usa el panel de TECH.
+export type { Indicator, ServiceIncident, ServiceStatus };
+
 type Raw = Record<string, any>;
-
-/** none = todo bien; minor/major/critical = incidencia; maintenance = mantenimiento programado. */
-export type Indicator = 'none' | 'minor' | 'major' | 'critical' | 'maintenance';
-
-export interface ServiceIncident {
-	id: string;
-	name: string;
-	impact: Indicator;
-	/** Fase: investigating, identified, monitoring… (la de cada página, sin traducir). */
-	status: string;
-	started: string | null;
-	updated: string | null;
-	url: string;
-}
-
-export interface ServiceStatus {
-	id: string;
-	name: string;
-	indicator: Indicator;
-	/** Texto de la página, p. ej. «All Systems Operational». */
-	description: string;
-	incidents: ServiceIncident[];
-	page: string;
-	/** true si esta pasada no se pudo leer y es el estado de la vez anterior. */
-	stale?: true;
-}
 
 type Kind = 'statuspage' | 'gcp' | 'aws';
 
@@ -46,8 +25,6 @@ export const SERVICES: { id: string; name: string; kind: Kind; url: string; page
 	{ id: 'gcp', name: 'Google Cloud', kind: 'gcp', url: 'https://status.cloud.google.com/incidents.json', page: 'https://status.cloud.google.com' },
 	{ id: 'aws', name: 'AWS', kind: 'aws', url: 'https://health.aws.amazon.com/public/currentevents', page: 'https://health.aws.amazon.com/health/status' }
 ];
-
-const RANK: Record<Indicator, number> = { none: 0, maintenance: 1, minor: 2, major: 3, critical: 4 };
 
 const indicator = (value: unknown): Indicator => {
 	const s = String(value ?? '').toLowerCase();
