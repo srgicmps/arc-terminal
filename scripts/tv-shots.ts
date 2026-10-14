@@ -78,7 +78,7 @@ try {
 			for (let m = 0; m < (await maps.count()); m++) {
 				await maps.nth(m).click();
 				await page.waitForTimeout(5000);
-				const el = page.locator('.tv[data-widget$="heatmap"]').first();
+				const el = page.locator('.tv[data-widget*="heat"]').first();
 				const png = await el.screenshot();
 				const label = (await maps.nth(m).textContent())?.trim() ?? String(m);
 				writeFileSync(`shots/${theme}-map-${label.replace(/\W+/g, '_')}.png`, png);
