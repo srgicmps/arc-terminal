@@ -1,9 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import type { SourceHistory, SourceStatus } from '../../src/lib/data.ts';
-import type { Chokepoint, Prediction, Quake, SeriesData } from '../../src/lib/types.ts';
+import type { FuelData, FuelPrices, FuelSpainData, FuelStation } from '../../src/lib/fuel.ts';
+import type {
+	Chokepoint,
+	HolidaysData,
+	PowerData,
+	PowerDay,
+	Prediction,
+	PricePoint,
+	Quake,
+	SeriesData
+} from '../../src/lib/types.ts';
 import { appendSpan } from '../history.ts';
 import {
+	addDays,
+	cheapestDiesel,
 	crisisRule,
+	dieselExtremeRule,
+	dieselGapRule,
+	dieselLines,
+	dieselTrendRule,
+	dstRule,
 	downRule,
 	earningsRule,
 	emptyLog,
@@ -11,6 +28,8 @@ import {
 	fedregRule,
 	gasRule,
 	impRule,
+	lastSunday,
+	luzRule,
 	macroRule,
 	madrid,
 	marketRule,
@@ -22,6 +41,8 @@ import {
 	readAsset,
 	RULES,
 	straitRule,
+	tomorrowRule,
+	type FuelZone,
 	type Inputs,
 	type NotifyLog,
 	type Rule,
@@ -73,10 +94,16 @@ describe('RULES', () => {
 			'2:market',
 			'2:fedreg',
 			'2:gas',
+			'2:diesel-trend',
+			'2:diesel-extreme',
+			'2:diesel-gap',
 			'3:poly',
 			'3:earnings',
 			'3:crisis',
 			'3:down',
+			'3:luz',
+			'3:tomorrow',
+			'3:dst',
 			'4:morning',
 			'4:evening'
 		]);
@@ -325,6 +352,205 @@ describe('P2', () => {
 	});
 });
 
+// ---------- Diésel ----------
+
+/** Precios con la forma de FuelPrices (src/lib/fuel.ts): solo importa el diésel. */
+const prices = (diesel: number | null): FuelPrices => ({ g95: 1.6, diesel, g98: 1.75, glp: 0.9 });
+
+/** Días seguidos que acaban el 14 oct 2026; `value(i)` da el diésel del día i (0 = el más antiguo). */
+const days = (n: number, value: (i: number, date: string) => number, end = '2026-10-14') =>
+	Array.from({ length: n }, (_, i) => {
+		const date = addDays(end, i - n + 1);
+		return { date, v: value(i, date) };
+	});
+
+/** fuel-es.json con la media de España y, si se da, la provincia 07 en el historial. */
+function fuelEs(es: { date: string; v: number }[], zone07?: { date: string; v: number }[]): FuelSpainData {
+	const z = new Map(zone07?.map((p) => [p.date, p.v]));
+	const last = es.at(-1)?.v ?? null;
+	return {
+		sourceDate: '14/10/2026 12:30:05',
+		avg: prices(last),
+		provinces: [
+			{ id: '07', name: 'Illes Balears', count: 180, lat: 39.6, lon: 2.9, avg: prices(1.5), min: prices(1.39) },
+			{ id: '28', name: 'Madrid', count: 800, lat: 40.4, lon: -3.7, avg: prices(1.42), min: prices(1.3) }
+		],
+		history: es.map((p) => ({
+			date: p.date,
+			avg: prices(p.v),
+			provinces: {
+				'28': prices(1.42),
+				...(z.has(p.date) ? { '07': prices(z.get(p.date)!) } : {})
+			} as Record<string, FuelPrices>
+		}))
+	};
+}
+
+const station = (name: string, town: string, diesel: number | null): FuelStation => ({
+	id: name,
+	name,
+	address: 'Calle de prueba 1',
+	town,
+	schedule: 'L-D: 24H',
+	lat: 39.9,
+	lon: 4.2,
+	prices: prices(diesel)
+});
+
+const ZONE_07: FuelZone = {
+	id: '07',
+	name: 'Illes Balears',
+	stations: [station('Cara', 'Palma', 1.52), station('Barata', 'Inca', 1.399), station('Sin diésel', 'Sóller', null)]
+};
+
+describe('P2: diésel', () => {
+	// Una semana a 1,400 y la siguiente a 1,435: +3,5 cts en la media de 7 días.
+	const rising = days(14, (i) => (i < 7 ? 1.4 : 1.435));
+
+	it('a) la media de 7 días sube o baja 3 cts o más frente a la semana anterior', () => {
+		const { alerts } = run(dieselTrendRule, { fuelEs: fuelEs(rising) });
+		expect(alerts.map((a) => a.id)).toEqual(['diesel:trend:es:2026-10-14']);
+		expect(alerts[0].title).toBe('Diésel en España: +3,5 cts en una semana');
+		expect(alerts[0].body).toContain('Media de 7 días: 1,435 €/L, frente a 1,400 €/L');
+		expect(run(dieselTrendRule, { fuelEs: fuelEs(days(14, (i) => (i < 7 ? 1.4 : 1.425))) }).ids).toEqual([]);
+		expect(run(dieselTrendRule, { fuelEs: fuelEs(days(14, (i) => (i < 7 ? 1.44 : 1.405))) }).alerts[0].title).toBe(
+			'Diésel en España: −3,5 cts en una semana'
+		);
+		// Con pocos días en alguna de las dos semanas, no compara.
+		expect(run(dieselTrendRule, { fuelEs: fuelEs(rising.slice(4)) }).ids).toEqual([]);
+	});
+
+	it('a) también en la zona (Menorca sale de fuel.json); como mucho una vez por semana', () => {
+		const fuel: FuelData = {
+			sourceDate: '14/10/2026 12:30:05',
+			stations: [station('Barata', 'Maó', 1.45)],
+			history: days(14, (i) => (i < 7 ? 1.5 : 1.46)).map((p) => ({ date: p.date, avg: prices(p.v), min: prices(1.4) }))
+		};
+		const d: Inputs = { fuelEs: fuelEs(days(14, () => 1.4)), fuel, zone: { id: 'menorca', name: 'Menorca' } };
+		const first = run(dieselTrendRule, d);
+		expect(first.ids).toEqual(['diesel:trend:zona:2026-10-14']);
+		expect(first.alerts[0].title).toBe('Diésel en Menorca: −4,0 cts en una semana');
+		const log = emptyLog();
+		first.alerts[0].commit!(log);
+		expect(log.last).toEqual({ 'diesel:trend:zona': '2026-10-14' });
+		const later = (end: string) => ({
+			...d,
+			fuel: {
+				...fuel,
+				history: days(14, (i) => (i < 7 ? 1.5 : 1.46), end).map((p) => ({
+					date: p.date,
+					avg: prices(p.v),
+					min: prices(1.4)
+				}))
+			}
+		});
+		expect(run(dieselTrendRule, later('2026-10-20'), log).ids).toEqual([]);
+		expect(run(dieselTrendRule, later('2026-10-21'), log).ids).toEqual(['diesel:trend:zona:2026-10-21']);
+	});
+
+	it('b) mínimo de 90 días, con el mes de la última vez que estuvo así de bajo', () => {
+		// Desde el 1 de junio: 1,450, con un 1,385 el 10 de julio; en los últimos 90 días, de 1,400 a 1,450; hoy 1,389.
+		const s = days(136, (i, date) =>
+			date === '2026-10-14' ? 1.389 : date === '2026-07-10' ? 1.385 : date >= '2026-07-17' ? 1.4 + (i % 6) / 100 : 1.45
+		);
+		const { alerts } = run(dieselExtremeRule, { fuelEs: fuelEs(s) });
+		expect(alerts.map((a) => a.id)).toEqual(['diesel:low:es:2026-10-14']);
+		expect(alerts[0].title).toBe('Diésel en España, en su mínimo desde julio: 1,389 €/L');
+		expect(alerts[0].body).toContain('Precio medio del 14 de octubre');
+		// Sin historial de 90 días no hay mínimo de 90 días.
+		expect(run(dieselExtremeRule, { fuelEs: fuelEs(s.slice(-80)) }).ids).toEqual([]);
+		// Si nunca estuvo tan bajo, lo dice con los días de historial.
+		const never = s.map((p) => (p.date === '2026-07-10' ? { ...p, v: 1.45 } : p));
+		expect(run(dieselExtremeRule, { fuelEs: fuelEs(never) }).alerts[0].title).toBe(
+			'Diésel en España, en su mínimo de los últimos 136 días: 1,389 €/L'
+		);
+		// Igualar el mínimo no cuenta.
+		const tie = s.map((p) => (p.date === '2026-10-14' ? { ...p, v: 1.4 } : p));
+		expect(run(dieselExtremeRule, { fuelEs: fuelEs(tie) }).ids).toEqual([]);
+	});
+
+	it('b) máximo de 90 días en la zona; como mucho una vez por semana', () => {
+		const es = days(100, () => 1.42);
+		const zone = days(100, (i) => (i === 99 ? 1.61 : 1.5 + (i % 3) / 100));
+		const d: Inputs = { fuelEs: fuelEs(es, zone), zone: ZONE_07 };
+		const { alerts } = run(dieselExtremeRule, d);
+		expect(alerts.map((a) => a.title)).toEqual([
+			'Diésel en Illes Balears, en su máximo de los últimos 100 días: 1,610 €/L'
+		]);
+		expect(alerts[0].id).toBe('diesel:high:zona:2026-10-14');
+		expect(run(dieselExtremeRule, d, withLast({ 'diesel:high:zona': '2026-10-10' })).ids).toEqual([]);
+		expect(run(dieselExtremeRule, d, withLast({ 'diesel:high:zona': '2026-10-07' })).ids).toHaveLength(1);
+	});
+
+	it('c) la zona se separa 5 cts o más de la media de España, como mucho una vez por semana', () => {
+		const es = days(3, () => 1.44);
+		const d = (v: number): Inputs => ({
+			fuelEs: fuelEs(
+				es,
+				days(3, () => v)
+			),
+			zone: ZONE_07
+		});
+		const { alerts } = run(dieselGapRule, d(1.512));
+		expect(alerts.map((a) => a.id)).toEqual(['diesel:gap:2026-10-14']);
+		expect(alerts[0].title).toBe('Diésel en Illes Balears: +7,2 cts por encima de España');
+		expect(alerts[0].body).toBe(
+			'1,512 €/L frente a 1,440 €/L de media en España (Ministerio para la Transición Ecológica).'
+		);
+		expect(run(dieselGapRule, d(1.385)).alerts[0].title).toBe('Diésel en Illes Balears: −5,5 cts por debajo de España');
+		expect(run(dieselGapRule, d(1.48)).ids).toEqual([]);
+		expect(
+			run(dieselGapRule, {
+				fuelEs: fuelEs(
+					es,
+					days(3, () => 1.6)
+				)
+			}).ids
+		).toEqual([]); // sin zona
+		const log = emptyLog();
+		alerts[0].commit!(log);
+		expect(run(dieselGapRule, d(1.512), log).ids).toEqual([]);
+	});
+
+	it('los ids y las claves del historial dicen «zona», nunca cuál', () => {
+		const d: Inputs = {
+			fuelEs: fuelEs(
+				rising,
+				days(14, (i) => (i < 7 ? 1.5 : 1.6))
+			),
+			zone: ZONE_07
+		};
+		const all = [dieselTrendRule, dieselGapRule].flatMap((rule) => run(rule, d).alerts);
+		expect(all.map((a) => a.id)).toEqual([
+			'diesel:trend:es:2026-10-14',
+			'diesel:trend:zona:2026-10-14',
+			'diesel:gap:2026-10-14'
+		]);
+		const log = emptyLog();
+		for (const a of all) a.commit!(log);
+		expect(JSON.stringify(log)).not.toMatch(/07|Balears/);
+	});
+
+	it('«Buenos días» lleva siempre el diésel y la gasolinera más barata de la zona', () => {
+		const es = days(14, (i) => (i === 13 ? 1.412 : 1.424));
+		const d: Inputs = {
+			fuelEs: fuelEs(
+				es,
+				days(14, () => 1.5)
+			),
+			zone: ZONE_07
+		};
+		const at = Date.parse('2026-10-14T06:05:00Z'); // 08:05 CEST
+		const body = run(morningRule, d, emptyLog(), at).alerts[0].body;
+		expect(body).toContain('**Vida diaria**');
+		expect(body).toContain('- Diésel: 1,412 €/L (−1,2 cts en 7 días)');
+		expect(body).toContain('- Diésel en Illes Balears: 1,500 €/L (0,0 cts en 7 días)');
+		expect(body).toContain('- Más barato en Illes Balears: Barata (Inca), 1,399 €/L');
+		expect(cheapestDiesel(undefined)).toBeNull();
+		expect(dieselLines({ fuelEs: fuelEs(es.slice(-3)) })).toEqual(['Diésel: 1,412 €/L']);
+	});
+});
+
 describe('P3', () => {
 	const market = (p: number, volume = 2e6): Prediction => ({
 		id: 'm1',
@@ -416,6 +642,113 @@ describe('P3', () => {
 		const { alerts } = run(downRule, { status: [a.status, b.status], history: [a.history, b.history] });
 		expect(alerts.map((x) => x.id)).toEqual([`down:fred:${a.history.history[0].t}`]);
 		expect(alerts[0].body).not.toContain('HTTP 500');
+	});
+});
+
+// ---------- P3: vida diaria ----------
+
+/** 24 horas de PVPC de un día, con la forma de power.json (€/MWh, hora de Madrid). */
+const pvpcDay = (date: string, mwh: (hour: number) => number): PricePoint[] =>
+	Array.from({ length: 24 }, (_, h) => ({
+		t: `${date}T${String(h).padStart(2, '0')}:00:00.000+02:00`,
+		v: mwh(h)
+	}));
+
+/** Historial de power.json: `n` días seguidos hasta el 14 oct con la misma media (€/kWh). */
+const powerHistory = (n: number, avg: number): PowerDay[] =>
+	days(n, () => avg).map((p) => ({ date: p.date, avg, min: avg / 2, max: avg * 2 }));
+
+describe('P3: vida diaria', () => {
+	it('a) luz de mañana un 30 % o más por debajo de la media de 30 días, con la hora más barata', () => {
+		const power: PowerData = {
+			pvpc: [...pvpcDay('2026-10-14', () => 130), ...pvpcDay('2026-10-15', (h) => (h === 14 ? 40 : 80))],
+			spot: [],
+			history: powerHistory(30, 0.13)
+		};
+		const { alerts } = run(luzRule, { power });
+		expect(alerts.map((a) => a.id)).toEqual(['luz:2026-10-15']);
+		expect(alerts[0].title).toBe('Luz de mañana: −40 % (0,078 €/kWh)');
+		expect(alerts[0].body).toBe(
+			'Media del PVPC de mañana: 0,078 €/kWh, frente a 0,130 €/kWh de media de 30 días (Red Eléctrica). La hora más barata, las 14 h (0,040 €/kWh).'
+		);
+		// Mañana aún no publicada (antes de las 20:15): no aplica.
+		expect(run(luzRule, { power: { ...power, pvpc: pvpcDay('2026-10-14', () => 130) } }).ids).toEqual([]);
+	});
+
+	it('a) luz de mañana por encima, del historial; con menos de 30 días usa lo que haya (mínimo 3)', () => {
+		const tomorrow = { date: '2026-10-15', avg: 0.18, min: 0.1, max: 0.3 };
+		const power = (n: number, avg = 0.13): PowerData => ({
+			pvpc: [],
+			spot: [],
+			history: [...powerHistory(n, avg), tomorrow]
+		});
+		const five = run(luzRule, { power: power(5) });
+		expect(five.alerts[0].title).toBe('Luz de mañana: +38 % (0,180 €/kWh)');
+		expect(five.alerts[0].body).toContain('de media de los últimos 5 días');
+		expect(run(luzRule, { power: power(2) }).ids).toEqual([]);
+		expect(run(luzRule, { power: power(30, 0.15) }).ids).toEqual([]); // +20 %
+	});
+
+	it('b) mañana es festivo (holidays.json), desde las 19:00 de la víspera', () => {
+		const holidays: HolidaysData = { items: [{ date: '2026-10-12', name: 'Fiesta Nacional de España', scope: 'ES' }] };
+		const at = Date.parse('2026-10-11T17:00:00Z'); // domingo 11, 19:00 CEST
+		const { alerts } = run(tomorrowRule, { holidays }, emptyLog(), at);
+		expect(alerts.map((a) => a.id)).toEqual(['manana:2026-10-12']);
+		expect(alerts[0].title).toBe('Mañana es festivo: Fiesta Nacional de España');
+		expect(alerts[0].body).toBe('Lunes 12 de octubre. Festivo en España: Fiesta Nacional de España.');
+		expect(run(tomorrowRule, { holidays }, emptyLog(), at - 60_000).ids).toEqual([]);
+	});
+
+	it('b) mañana no abre NYSE o BME; con festivo y bolsas cerradas, todo en un aviso', () => {
+		const thanksgiving = run(tomorrowRule, {}, emptyLog(), Date.parse('2026-11-25T19:00:00Z'));
+		expect(thanksgiving.alerts[0].title).toBe('Mañana no abre la bolsa de Nueva York (NYSE)');
+		expect(thanksgiving.alerts[0].body).toBe(
+			'Jueves 26 de noviembre. Sin bolsa en Nueva York (NYSE): Acción de Gracias.'
+		);
+		const holidays: HolidaysData = { items: [{ date: '2026-12-25', name: 'Navidad', scope: 'ES' }] };
+		const xmas = run(tomorrowRule, { holidays }, emptyLog(), Date.parse('2026-12-24T19:00:00Z'));
+		expect(xmas.ids).toEqual(['manana:2026-12-25']);
+		expect(xmas.alerts[0].body).toBe(
+			'Viernes 25 de diciembre. Festivo en España: Navidad. Sin bolsa en Nueva York (NYSE): Navidad. Sin bolsa en Madrid (BME): Navidad.'
+		);
+		// Un sábado sin festivo no avisa (el fin de semana ya está cerrada).
+		expect(run(tomorrowRule, {}, emptyLog(), Date.parse('2026-10-16T19:00:00Z')).ids).toEqual([]);
+	});
+
+	it('c) cambio de hora: el viernes anterior al último domingo de marzo y de octubre', () => {
+		expect([lastSunday(2026, 3), lastSunday(2026, 10), lastSunday(2027, 3)]).toEqual([
+			'2026-03-29',
+			'2026-10-25',
+			'2027-03-28'
+		]);
+		const oct = run(dstRule, {}, emptyLog(), Date.parse('2026-10-23T08:00:00Z')); // viernes 23, 10:00 CEST
+		expect(oct.ids).toEqual(['dst:2026-10-25']);
+		expect(oct.alerts[0].title).toBe('Cambio de hora este domingo: se atrasa una hora');
+		expect(oct.alerts[0].body).toBe(
+			'La madrugada del domingo 25 de octubre, a las 3:00 serán las 2:00 (una hora más de sueño).'
+		);
+		const mar = run(dstRule, {}, emptyLog(), Date.parse('2027-03-26T12:00:00Z'));
+		expect(mar.alerts[0].title).toBe('Cambio de hora este domingo: se adelanta una hora');
+		expect(run(dstRule, {}, emptyLog(), Date.parse('2026-10-23T07:59:00Z')).ids).toEqual([]); // 9:59
+		expect(run(dstRule, {}, emptyLog(), Date.parse('2026-10-22T12:00:00Z')).ids).toEqual([]); // jueves
+		expect(run(dstRule, {}, emptyLog(), Date.parse('2026-10-16T12:00:00Z')).ids).toEqual([]); // otro viernes
+	});
+
+	it('los resúmenes de las 8:05 y las 22:15 llevan la línea de vida diaria: diésel, luz de hoy y festivo', () => {
+		const d: Inputs = {
+			fuelEs: fuelEs(days(14, (i) => (i === 13 ? 1.412 : 1.424))),
+			power: { pvpc: pvpcDay('2026-10-12', (h) => (h === 3 ? 50 : 100)), spot: [], history: [] },
+			holidays: { items: [{ date: '2026-10-12', name: 'Fiesta Nacional de España', scope: 'ES' }] }
+		};
+		const morning = run(morningRule, d, emptyLog(), Date.parse('2026-10-12T06:05:00Z')).alerts[0].body;
+		expect(morning).toContain('- Diésel: 1,412 €/L');
+		expect(morning).toContain('- Luz hoy: 0,098 €/kWh de media; la hora más barata, las 3 h (0,050 €/kWh)');
+		expect(morning).toContain('- Hoy es festivo en España: Fiesta Nacional de España');
+		expect(morning).not.toContain('- Festivo en España'); // no se repite en «Hoy»
+		const evening = run(eveningRule, d, emptyLog(), Date.parse('2026-10-12T20:15:00Z')).alerts[0].body;
+		expect(evening).toContain('**Vida diaria**');
+		expect(evening).toContain('- Luz hoy: 0,098 €/kWh');
+		expect(evening).toContain('- Hoy es festivo en España: Fiesta Nacional de España');
 	});
 });
 
