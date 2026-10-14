@@ -54,13 +54,14 @@
 			{:else if !alerts.length}
 				<p class="empty">Sin avisos.</p>
 			{:else}
-				<ul class="alerts">
+				<ul class="mini">
 					{#each alerts as a (a.id)}
 						<li class="al al-{a.level}">
-							<a href={a.url} target="_blank" rel="noopener">
-								<span class="al-h"><b>{ALERT_NAMES[a.level]}</b> · {a.hazard}</span>
-								<span class="al-m">{a.area} · {at(a.onset)}{#if a.expires} → {at(a.expires)}{/if}</span>
+							<a class="l" href={a.url} target="_blank" rel="noopener">
+								{a.hazard}
+								<small>{a.area} · {at(a.onset)}{#if a.expires} → {at(a.expires)}{/if}</small>
 							</a>
+							<b>{ALERT_NAMES[a.level]}</b>
 						</li>
 					{/each}
 				</ul>
@@ -117,17 +118,25 @@
 		{#if mao?.sun}
 			{@const sun = mao.sun}
 			<Panel title="Sol y luna · Maó" meta={`${luna.name} · ${nf(luna.illumination * 100, 0)} %`}>
-				<div class="sky">
+				<div class="tile">
 					<SunArc sunrise={sun.sunrise} sunset={sun.sunset} now={clock.now} />
-					<ul>
-						<li>Sale <span>{hm(sun.sunrise)}</span></li>
-						<li>Se pone <span>{hm(sun.sunset)}</span></li>
-						<li>
-							Día <span>{hoursMinutes(sun.daylight)}</span>
-							{#if sun.delta !== null}<span class="mut">({signedMinSec(sun.delta)} que ayer)</span>{/if}
-						</li>
-						<li>Luna <span>{luna.name}, {nf(luna.illumination * 100, 0)} % iluminada</span></li>
-					</ul>
+				</div>
+				<div class="tiles">
+					<div class="tile">
+						<span class="lbl">Sol</span>
+						<b>{hm(sun.sunrise)} – {hm(sun.sunset)}</b>
+						<span class="sub">Salida y puesta</span>
+					</div>
+					<div class="tile">
+						<span class="lbl">Duración del día</span>
+						<b>{hoursMinutes(sun.daylight)}</b>
+						<span class="sub">{sun.delta === null ? '' : `${signedMinSec(sun.delta)} que ayer`}</span>
+					</div>
+					<div class="tile">
+						<span class="lbl">Luna</span>
+						<b>{nf(luna.illumination * 100, 0)} %</b>
+						<span class="sub">{luna.name} · iluminada</span>
+					</div>
 				</div>
 			</Panel>
 		{/if}
@@ -138,15 +147,22 @@
 			{#if !air}
 				<p class="empty">Sin datos de calidad del aire todavía.</p>
 			{:else}
-				<div class="now">
-					<b>{nf(air.now.aqi, 0)}</b>
-					{#if aqiNow}<span class="lv lv-{aqiNow.tone}">{aqiNow.label}</span>{/if}
-					<ul>
-						<li>PM2,5 <span>{nf(air.now.pm25, 0)}</span></li>
-						<li>PM10 <span>{nf(air.now.pm10, 0)}</span></li>
-						<li>O₃ <span>{nf(air.now.o3, 0)}</span></li>
-						<li>NO₂ <span>{nf(air.now.no2, 0)}</span></li>
-					</ul>
+				<div class="tiles">
+					<div class="tile">
+						<span class="lbl">Índice</span>
+						<b>{nf(air.now.aqi, 0)}</b>
+						{#if aqiNow}<span class="sub"><span class="lv lv-{aqiNow.tone}">{aqiNow.label}</span></span>{/if}
+					</div>
+					<div class="tile">
+						<span class="lbl">PM2,5 · PM10</span>
+						<b>{nf(air.now.pm25, 0)} · {nf(air.now.pm10, 0)}</b>
+						<span class="sub">Partículas, µg/m³</span>
+					</div>
+					<div class="tile">
+						<span class="lbl">O₃ · NO₂</span>
+						<b>{nf(air.now.o3, 0)} · {nf(air.now.no2, 0)}</b>
+						<span class="sub">Gases, µg/m³</span>
+					</div>
 				</div>
 				<div class="scroll">
 					<table class="t">
@@ -299,40 +315,10 @@
 		color: var(--amber);
 	}
 
-	@container (max-width: 420px) {
+	/* En el móvil, la tabla del mar se queda con lo esencial (como .t .sub en app.css). */
+	@container (max-width: 390px) {
 		.wide {
 			display: none;
-		}
-	}
-
-	.sky {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		align-items: center;
-		gap: 12px 16px;
-		padding: 12px;
-	}
-
-	.sky ul {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		color: var(--muted);
-		font-size: var(--fs-s);
-		line-height: 1.7;
-	}
-
-	.sky li span {
-		color: var(--fg);
-	}
-
-	.sky li span.mut {
-		color: var(--muted);
-	}
-
-	@container (max-width: 420px) {
-		.sky {
-			grid-template-columns: minmax(0, 1fr);
 		}
 	}
 
@@ -342,20 +328,14 @@
 
 	/* Niveles: discreto, ámbar o rojo. El punto acompaña al texto, que es el que manda. */
 	.lv {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
 		font-family: var(--sans);
 		font-size: var(--fs-s);
 	}
 
 	.lv::before {
-		content: '';
-		width: 6px;
-		height: 6px;
-		border-radius: 50%;
-		background: currentColor;
-		opacity: 0.8;
+		content: "●";
+		margin-right: 0.4em;
+		font-size: var(--fs-xs);
 	}
 
 	.lv-ok {
@@ -370,32 +350,16 @@
 		color: var(--down);
 	}
 
-	/* Avisos: una línea fina del color del aviso a la izquierda. */
-	.alerts {
-		list-style: none;
-		margin: 0;
-		padding: 0;
+	/* Avisos (lista .mini): una línea fina del color del aviso a la izquierda y el nivel en ese color. */
+	.al {
+		border-left: 1px solid var(--c);
 	}
 
-	.al + .al {
-		border-top: 1px solid var(--line);
+	.al b {
+		color: var(--c);
 	}
 
-	.al a {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		padding: 8px 12px 8px 10px;
-		border-left: 2px solid var(--c);
-		color: var(--fg);
-		text-decoration: none;
-	}
-
-	.al a:hover {
-		background: var(--raise);
-	}
-
-	/* Colores de los avisos sacados de los tokens del tema: amarillo = ámbar aclarado. */
+	/* Colores sacados de los tokens del tema: amarillo = ámbar aclarado. */
 	.al-yellow {
 		--c: color-mix(in srgb, var(--amber) 55%, var(--fg));
 	}
@@ -408,26 +372,10 @@
 		--c: var(--down);
 	}
 
-	.al-h {
-		font-family: var(--sans);
-		font-size: var(--fs-m);
-	}
-
-	.al-h b {
-		color: var(--c);
-		font-weight: 500;
-	}
-
-	.al-m {
-		color: var(--muted);
-		font-size: var(--fs-xs);
-	}
-
 	.foot {
 		margin: 8px 0 0;
 		color: var(--faint);
 		font-size: var(--fs-xs);
-		line-height: 1.6;
 	}
 
 	.foot a {

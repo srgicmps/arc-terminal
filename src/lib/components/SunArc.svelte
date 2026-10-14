@@ -39,9 +39,10 @@
 <style>
 	svg {
 		display: block;
-		width: 100%;
-		max-width: 260px;
-		height: auto;
+		/* Alto proporcional al texto; el ancho sale del viewBox. */
+		height: 5em;
+		width: auto;
+		max-width: 100%;
 		margin: 0 auto;
 		overflow: visible;
 	}
