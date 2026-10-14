@@ -39,3 +39,4 @@ for (const url of URLS) {
 		console.log(`  getText ERROR ${e}`);
 	}
 }
+await import('./qa.ts');
