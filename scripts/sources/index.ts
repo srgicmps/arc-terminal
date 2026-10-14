@@ -77,4 +77,3 @@ export const sources: Source<any>[] = [
 	imp,
 	search
 ];
-import { energycharts } from './energycharts.ts'; sources.push(energycharts); // Quitar cuando entre el #137.
