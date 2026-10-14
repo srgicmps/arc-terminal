@@ -1,0 +1,12 @@
+# Generado o descargado: no se formatea
+build
+.svelte-kit
+static/data
+node_modules
+pnpm-lock.yaml
+
+# Maqueta de referencia: se deja tal cual
+docs/maqueta.html
+
+# Textos escritos a mano (tablas, listas): Prettier los reescribiría casi enteros
+*.md

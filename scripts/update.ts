@@ -22,6 +22,7 @@ import {
 	type Source,
 	type SourceContext
 } from './lib.ts';
+import { buildNewsIndex } from './news-index.ts';
 import { sources } from './sources/index.ts';
 
 const OUT_DIR = 'static/data';
@@ -143,6 +144,13 @@ if (!wanted.length) {
 	const before = await published('status-history');
 	const history = withHistory(statuses, before?.data as SourceHistory[] | undefined, now);
 	await save({ name: 'status-history', fetchedAt: new Date(now).toISOString(), data: history });
+}
+
+// «En las noticias» de cada valor, con los titulares que acaban de guardarse.
+if (selected.some((s) => s.name.startsWith('news-'))) {
+	const index = await buildNewsIndex(OUT_DIR);
+	await save(index);
+	console.log(`✓ news-index: ${Object.keys(index.data).length} valores con titulares`);
 }
 
 const failed = statuses.filter((s) => s.state === 'error' || s.state === 'stale');
