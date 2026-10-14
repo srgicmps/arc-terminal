@@ -38,3 +38,6 @@ https://www.worldbank.org/en/news/all?displayconttype_exact=Press%20Release&form
 https://search.worldbank.org/api/v2/news?format=json&rows=3&lang_exact=English
 https://www.opec.org/rss.xml
 https://www.opec.org/press-releases.rss
+# CMP: precios diarios sin clave, para la variación a 1 mes, 1 año y en lo que va de año
+https://stooq.com/q/d/l/?s=nvda.us&i=d
+https://stooq.com/q/l/?s=nvda.us+amd.us&f=sd2t2ohlc&h&e=csv
