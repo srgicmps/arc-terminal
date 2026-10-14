@@ -97,7 +97,7 @@
 			{:else}
 				<p class="empty">Nada en el calendario estos días.</p>
 			{/if}
-			{#snippet note()}Hora de España · <Updated at={data.releasesAt} source="releases-cal" />{/snippet}
+			{#snippet note()}Hora de Madrid · <Updated at={data.releasesAt} source="releases-cal" />{/snippet}
 		</Panel>
 	</div>
 </div>

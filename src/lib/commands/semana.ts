@@ -10,7 +10,7 @@ export default {
 			{ name: 'Lo más importante', what: 'Los 10 temas que más sumaron en IMP en 7 días.' },
 			{ name: 'Mercados', what: 'Último dato y variación en 7 días: % en precios, puntos básicos en tipos.' },
 			{ name: 'Datos de la semana', what: 'Datos macro publicados en los últimos 7 días.' },
-			{ name: 'Agenda', what: 'Datos que se publican en los próximos 7 días, en hora de España.' }
+			{ name: 'Agenda', what: 'Datos que se publican en los próximos 7 días, en hora de Madrid.' }
 		]
 	}
 } satisfies Command;

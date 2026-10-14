@@ -9,7 +9,7 @@ export default {
 		panels: [
 			{ name: 'Calendario', what: 'Datos de importancia media y alta, en hora local (TradingView).' },
 			{ name: 'Bancos centrales', what: 'Próximas reuniones del BCE y la Fed.' },
-			{ name: 'Próximos datos', what: 'De los calendarios oficiales, en hora de España.' },
+			{ name: 'Próximos datos', what: 'De los calendarios oficiales, en hora de Madrid.' },
 			{ name: 'Festivos', what: 'España, Baleares y días sin bolsa de los próximos 12 meses.' },
 			{ name: 'Resultados', what: 'Grandes empresas de EE. UU., próximas 2 semanas.' }
 		]
