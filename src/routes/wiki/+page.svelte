@@ -1,23 +1,38 @@
 <script lang="ts">
 	import Panel from '#lib/components/Panel.svelte';
 	import Updated from '#lib/components/Updated.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { compact } from '#lib/format.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
-	const wiki = $derived(data.wiki?.data);
+	let lang = $state<'es' | 'en'>('es');
+	const langs = [
+		{ value: 'es', label: 'ES' },
+		{ value: 'en', label: 'EN' }
+	] as const;
+
+	// La edición elegida: la española va arriba en el JSON y la inglesa en `en` (si respondió).
+	const wiki = $derived(lang === 'en' && data.wiki?.data.en ? data.wiki.data.en : data.wiki?.data);
+	const site = $derived(lang === 'en' ? 'en.wikipedia.org' : 'es.wikipedia.org');
 </script>
 
-<ViewHeader code="WIKI" title="Wikipedia hoy" sub="Lo más leído ayer en español, efemérides y artículo destacado" />
+<ViewHeader code="WIKI" title="Wikipedia hoy" sub="Lo más leído ayer, efemérides y artículo destacado, en español o en inglés" />
+
+{#if data.wiki?.data.en}
+	<div class="controls">
+		<Seg label="Idioma" options={langs} bind:value={lang} />
+	</div>
+{/if}
 
 {#if !wiki}
 	<p class="empty">Sin datos todavía.</p>
 {:else}
 	<div class="grid grid-2">
 		<div class="col">
-			<Panel title="Lo más leído" meta="Ayer, en es.wikipedia.org">
+			<Panel title="Lo más leído" meta="Ayer, en {site}">
 				<ol class="wl">
 					{#each wiki.mostRead as p, i (p.url)}
 						<li>
@@ -34,6 +49,17 @@
 			</Panel>
 		</div>
 		<div class="col">
+			{#if wiki.news?.length}
+				<Panel title="In the news" meta="Portada de en.wikipedia.org">
+					<ul class="itn">
+						{#each wiki.news as n, i (i)}
+							<li>
+								{#if n.url}<a href={n.url} target="_blank" rel="noopener">{n.text}</a>{:else}<span>{n.text}</span>{/if}
+							</li>
+						{/each}
+					</ul>
+				</Panel>
+			{/if}
 			{#if wiki.featured}
 				<Panel title="Artículo destacado">
 					<div class="feat">
@@ -57,7 +83,12 @@
 {/if}
 
 <style>
+	.controls {
+		margin-bottom: var(--sp-12);
+	}
+
 	.wl,
+	.itn,
 	.otd {
 		list-style: none;
 		margin: 0;
@@ -73,6 +104,7 @@
 	}
 
 	.wl li:last-child,
+	.itn li:last-child,
 	.otd li:last-child {
 		border-bottom: 0;
 	}
@@ -120,10 +152,22 @@
 		border-bottom: var(--border);
 	}
 
+	.itn li {
+		padding: var(--sp-7) var(--pad-x);
+		border-bottom: var(--border);
+	}
+
+	.itn a,
+	.itn span,
 	.otd a,
 	.otd span {
 		font-size: var(--fs-m);
 		line-height: var(--lh-text);
+	}
+
+	.itn span,
+	.otd span:not(.year) {
+		font-family: var(--sans);
 	}
 
 	.year {
