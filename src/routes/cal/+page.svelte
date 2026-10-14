@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { clock } from '#lib/clock.svelte.ts';
-	import MeetingList from '#lib/components/MeetingList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -10,6 +9,7 @@
 	import Table from '#lib/components/ui/Table.svelte';
 	import { compact, dm, hm, nf, weekday } from '#lib/format.ts';
 	import { bmeHolidays, nyseHolidays } from '#lib/markets.ts';
+	import { CB, cbUpcoming } from '#lib/cb-calendar.ts';
 	import { madridDate } from '#lib/meetings.ts';
 	import type { PageProps } from './$types';
 
@@ -39,6 +39,9 @@
 	// Fecha de hoy en Madrid. Hasta que arranca el reloj en el navegador se usa la fecha en la que se
 	// construyó la página.
 	const today = $derived(madridDate(clock.now || Date.now()));
+
+	// Próximas decisiones de tipos de los grandes bancos centrales (src/lib/cb-calendar.ts).
+	const decisions = $derived(cbUpcoming(today).slice(0, 10));
 
 	// Próximos datos de los calendarios oficiales (con tema), desde hoy en hora de Madrid.
 	const releases = $derived(
@@ -79,9 +82,26 @@
 		</Panel>
 	</div>
 	<div class="col">
-		<Panel title="Bancos centrales" meta="Próximas reuniones · BCE y Fed">
-			<MeetingList mode="list" limit={6} />
-			{#snippet note()}Decisión de tipos, en hora de España. Fuentes: calendarios oficiales del BCE y de la Fed.{/snippet}
+		<Panel title="Bancos centrales" meta="Próximas decisiones de tipos · hora de España">
+			<Table>
+				<thead><tr><th>Día</th><th>Hora</th><th class="l">Banco</th><th class="l"></th></tr></thead>
+				<tbody>
+					{#each decisions as m (m.bank + m.date)}
+						<tr>
+							<td class="mut">{weekday(m.date)} {dm(`${m.date}T12:00:00Z`).split(' ')[1]}</td>
+							<td class="mut">{m.at ? hm(m.at) : '—'}</td>
+							<td class="l name"
+								><a href={CB[m.bank].url} target="_blank" rel="noopener" title={CB[m.bank].long}>{CB[m.bank].name}</a></td
+							>
+							<td class="l mut">{m.report ? (m.bank === 'fed' ? 'Proyecciones' : 'Informe') : ''}</td>
+						</tr>
+					{/each}
+				</tbody>
+			</Table>
+			{#snippet note()}
+				BCE, Fed, Inglaterra, Japón (sin hora fija), Suiza, Canadá, Australia y el LPR de China (día 20). Fuentes:
+				calendarios oficiales de cada banco.
+			{/snippet}
 		</Panel>
 		<Panel title="Próximos datos" meta="Calendarios oficiales · hora de España">
 			{#if releases.length}
