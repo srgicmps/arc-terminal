@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Maqueta de Arc Terminal (2026-10-14). Todos los datos son de ejemplo. Referencia de diseño: tokens en :root. -->
+<title>Arc Terminal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap">
+<style>
+/* Layout: terminal de una pantalla. Barra de comandos, cinta de cotizaciones y rejilla de paneles separados por líneas de 1 px; en móvil, una columna. */
+:root{
+  color-scheme:dark;
+  --bg:#080a0d;
+  --panel:#0d1116;
+  --raise:#151b23;
+  --line:#1d242d;
+  --fg:#dce1e7;
+  --muted:#808a97;
+  --faint:#56606c;
+  --amber:#f2a83b;
+  --amber-soft:rgba(242,168,59,.13);
+  --amber-edge:rgba(242,168,59,.42);
+  --on-amber:#120c02;
+  --up:#4cc48a;
+  --down:#f0646f;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans Condensed","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --fs-xs:11px;--fs-s:12px;--fs-m:13px;--fs-l:14.5px;--fs-xl:20px;--fs-xxl:28px;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{
+  font-family:var(--mono);font-size:var(--fs-m);line-height:1.45;
+  font-variant-numeric:tabular-nums;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:10px 0;
+}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:1px solid var(--amber);outline-offset:2px}
+.app{max-width:1600px;margin-inline:auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Cabecera */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding-block:4px 10px}
+.brand{display:flex;align-items:center;gap:8px;font-size:var(--fs-s);font-weight:600;letter-spacing:.18em;text-transform:uppercase}
+.mark{display:block;width:22px;height:22px;fill:none;stroke:var(--amber);stroke-width:2;stroke-linecap:round}
+.brand-sub{color:var(--muted);font-weight:400}
+.cmd{position:relative;flex:1 1 380px;min-width:0;display:flex;align-items:stretch;height:34px;border:1px solid var(--line);background:var(--panel)}
+.cmd:focus-within{border-color:var(--amber)}
+.cmd .prompt{display:grid;place-items:center;padding-inline:10px;color:var(--amber);font-weight:600}
+.cmd input{flex:1;min-width:0;background:transparent;border:0;outline:none;font-size:var(--fs-m);text-transform:uppercase;letter-spacing:.04em}
+.cmd input::placeholder{text-transform:none;letter-spacing:0;color:var(--faint)}
+.go{background:var(--amber);color:var(--on-amber);border:0;font-weight:600;font-size:var(--fs-s);letter-spacing:.08em;padding-inline:14px;cursor:pointer}
+.suggest{position:absolute;left:-1px;right:-1px;top:100%;z-index:20;margin:0;padding:4px 0;list-style:none;background:var(--raise);border:1px solid var(--amber);border-top-color:var(--line);max-height:320px;overflow:auto}
+.suggest li{display:grid;grid-template-columns:7ch minmax(0,1fr) auto;gap:12px;padding:6px 12px;cursor:pointer;align-items:baseline}
+.suggest li[aria-selected="true"]{background:var(--amber-soft)}
+.suggest .code{color:var(--amber);font-weight:500}
+.suggest .desc{font-family:var(--sans);font-size:var(--fs-m)}
+.suggest .kind{color:var(--faint);font-size:var(--fs-xs)}
+.clocks{display:flex;align-items:center;gap:14px;font-size:var(--fs-s);color:var(--muted)}
+.today{color:var(--fg);text-transform:capitalize}
+.clock{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.clock b{color:var(--fg);font-weight:500}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--faint)}
+.dot.on{background:var(--up)}
+.demo{font-size:var(--fs-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--amber);border:1px solid var(--amber-edge);padding:3px 8px;white-space:nowrap}
+
+/* Teclas de función */
+.keys{display:flex;flex-wrap:wrap;gap:6px;padding-block:2px 10px}
+.key{font-size:var(--fs-s);font-weight:500;letter-spacing:.06em;color:var(--amber);background:transparent;border:1px solid var(--line);padding:4px 10px;cursor:pointer}
+.key span{margin-left:7px;color:var(--muted);font-family:var(--sans);font-weight:400;letter-spacing:0}
+.key:hover{border-color:var(--amber-edge)}
+.key[aria-current="page"]{background:var(--amber);border-color:var(--amber);color:var(--on-amber)}
+.key[aria-current="page"] span{color:var(--on-amber)}
+
+/* Cinta de cotizaciones */
+.tape{overflow:hidden;border:1px solid var(--line);background:var(--panel);padding-left:12px;margin-bottom:12px}
+.tape-track{display:flex;width:max-content;animation:tape 80s linear infinite}
+.tape:hover .tape-track{animation-play-state:paused}
+.tape-set{display:flex}
+.tick{padding:7px 34px 7px 0;white-space:nowrap;font-size:var(--fs-s)}
+.tick b{font-family:var(--sans);font-size:var(--fs-m);font-weight:400;color:var(--muted);margin-right:8px}
+.tick em{font-style:normal;margin-left:8px}
+@keyframes tape{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.tape{overflow-x:auto}.tape-track{animation:none}.tape-set.dup{display:none}}
+
+/* Vistas y paneles */
+#view{padding-bottom:16px;outline:none}
+.vh{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px;padding-block:2px 12px}
+.vh h1{margin:0;display:flex;align-items:baseline;gap:12px;font-family:var(--sans);font-weight:500;font-size:var(--fs-xl);text-wrap:balance}
+.vh h1 .code{font-family:var(--mono);font-size:var(--fs-l);font-weight:600;letter-spacing:.06em;color:var(--amber)}
+.vh p{margin:4px 0 0;color:var(--muted);font-size:var(--fs-xs)}
+.quote{display:flex;align-items:baseline;gap:12px}
+.quote b{font-size:var(--fs-xxl);font-weight:500}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.grid-top{grid-template-columns:minmax(0,1.1fr) minmax(0,1.5fr) minmax(0,1fr)}
+.grid-2{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.grid-sym{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.col{background:var(--panel);min-width:0;display:flex;flex-direction:column}
+.panel{background:var(--panel);min-width:0;container-type:inline-size}
+.col>.panel+.panel{border-top:1px solid var(--line)}
+.ph{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;padding:8px 12px;border-bottom:1px solid var(--line)}
+.ph h2{margin:0;font-size:var(--fs-xs);font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+.ph-r{display:flex;align-items:center;gap:12px;font-size:var(--fs-xs);color:var(--faint)}
+.jump{background:none;border:0;padding:0;cursor:pointer;color:var(--muted);font-size:var(--fs-xs);letter-spacing:.06em}
+.jump:hover{color:var(--amber)}
+.scroll{overflow-x:auto}
+.pnote{margin:0;padding:8px 12px 10px;border-top:1px solid var(--line);color:var(--faint);font-family:var(--sans);font-size:var(--fs-s)}
+.empty{margin:0;padding:14px 12px;color:var(--muted);font-family:var(--sans)}
+.up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--muted)}.mut{color:var(--muted)}
+
+/* Tablas */
+.t{width:100%;border-collapse:collapse;font-size:var(--fs-s)}
+.t th,.t td{padding:5px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+.t tbody tr:last-child td{border-bottom:0}
+.t th{padding-block:6px;font-weight:400;font-size:var(--fs-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.t th:first-child,.t td:first-child{text-align:left}
+.t.left td,.t.left th{text-align:left;white-space:normal}
+.t .name{font-family:var(--sans);font-size:var(--fs-m)}
+.t .sym{display:inline-block;min-width:6ch;color:var(--amber);font-weight:500}
+.t .sub{margin-left:6px;color:var(--muted);font-family:var(--sans);font-size:var(--fs-s)}
+.t tr.row{cursor:pointer}
+.t tr.row:hover td,.t tr.row:focus-visible td{background:var(--raise)}
+.t tr.row:focus-visible{outline:1px solid var(--amber);outline-offset:-1px}
+.t tr.grp td{padding-top:10px;color:var(--amber);font-size:var(--fs-xs);letter-spacing:.12em;text-transform:uppercase}
+.t td.sp,.t th.sp{width:72px;padding-block:0}
+.spark{display:block;margin-left:auto}
+.spark polyline{fill:none;stroke:currentColor;stroke-width:1.2;stroke-linejoin:round}
+@container (max-width:390px){.t .sub{display:none}}
+@container (max-width:300px){.t .sp{display:none}}
+
+/* Titulares */
+.news{list-style:none;margin:0;padding:0}
+.news li{display:grid;grid-template-columns:40px 44px minmax(0,1fr);gap:10px;align-items:start;padding:8px 12px;border-bottom:1px solid var(--line)}
+.news li.nocat{grid-template-columns:40px minmax(0,1fr)}
+.news li:last-child{border-bottom:0}
+.news time{padding-top:2px;color:var(--faint);font-size:var(--fs-xs);line-height:1.35}
+.news time small{display:block;font-size:inherit}
+.news .cat{background:none;border:1px solid var(--line);padding:1px 0;cursor:pointer;color:var(--muted);font-size:var(--fs-xs);letter-spacing:.04em}
+.news .cat:hover{color:var(--amber);border-color:var(--amber-edge)}
+.news .h{margin:0;font-family:var(--sans);font-size:var(--fs-l);line-height:1.3;text-wrap:pretty}
+.news .m{margin:3px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;color:var(--muted);font-family:var(--sans);font-size:var(--fs-s)}
+.tk{border:0;padding:1px 5px;cursor:pointer;background:var(--amber-soft);color:var(--amber);font-family:var(--mono);font-size:var(--fs-xs)}
+
+/* Agenda */
+.agenda{list-style:none;margin:0;padding:4px 0}
+.agenda li{display:grid;grid-template-columns:42px 24px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:5px 12px;font-size:var(--fs-s)}
+.agenda time{color:var(--muted)}
+.agenda .cc{color:var(--faint);font-size:var(--fs-xs)}
+.agenda .ev{font-family:var(--sans);font-size:var(--fs-m)}
+.imp{display:inline-flex;gap:3px;align-self:center}
+.imp i{width:5px;height:5px;border-radius:50%;background:var(--line)}
+.imp i.on{background:var(--amber)}
+
+/* Gasolina */
+.fmini{list-style:none;margin:0;padding:4px 0}
+.fmini li{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:6px 12px}
+.fmini .rk{color:var(--faint);font-size:var(--fs-xs)}
+.fmini .st{font-family:var(--sans);font-size:var(--fs-m)}
+.fmini .st span{display:block;color:var(--muted);font-size:var(--fs-s)}
+.fmini b{font-weight:500}
+.fmini li:first-child b{color:var(--up)}
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.seg{display:inline-flex;border:1px solid var(--line)}
+.seg button{background:none;border:0;padding:5px 12px;cursor:pointer;color:var(--muted);font-size:var(--fs-s)}
+.seg button[aria-pressed="true"]{background:var(--amber);color:var(--on-amber);font-weight:500}
+.sel{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:var(--fs-s)}
+.sel select{background:var(--raise);border:1px solid var(--line);color:var(--fg);padding:4px 8px;font-size:var(--fs-s)}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border-bottom:1px solid var(--line)}
+.tile{background:var(--panel);padding:12px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.tile .lbl{color:var(--muted);font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase}
+.tile b{font-size:var(--fs-xl);font-weight:500}
+.tile .sub{color:var(--muted);font-family:var(--sans);font-size:var(--fs-s)}
+.bar{display:block;position:relative;height:6px;min-width:80px;background:var(--raise)}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--faint)}
+tr.best .bar i{background:var(--up)}
+
+/* Mapa de calor */
+.heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:1px;background:var(--line)}
+.ht{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:0;padding:12px 10px;cursor:pointer;color:var(--fg);text-align:left}
+.ht b{font-weight:600;letter-spacing:.04em}
+.ht span{font-size:var(--fs-s)}
+.ht:hover{outline:1px solid var(--fg);outline-offset:-1px}
+
+/* Ficha de un valor */
+.ranges{display:flex;gap:2px}
+.ranges button{background:none;border:1px solid transparent;padding:2px 7px;cursor:pointer;color:var(--muted);font-size:var(--fs-xs)}
+.ranges button[aria-pressed="true"]{color:var(--amber);border-color:var(--amber-edge)}
+.chart{position:relative;padding-block:8px 4px}
+.chart svg{display:block;width:100%;height:auto;touch-action:pan-y}
+.tip{position:absolute;top:12px;left:14px;display:flex;gap:10px;padding:4px 8px;background:var(--raise);border:1px solid var(--line);font-size:var(--fs-xs);pointer-events:none}
+.tip span{color:var(--muted)}
+.c-grid{stroke:var(--line);stroke-width:1}
+.c-tick{stroke:var(--faint)}
+.c-lbl{fill:var(--muted);font-family:var(--mono);font-size:11px}
+.c-line{fill:none;stroke-width:1.6;stroke-linejoin:round}
+.c-line.up{stroke:var(--up)}.c-line.down{stroke:var(--down)}
+.c-prev{stroke:var(--faint);stroke-dasharray:3 4}
+.c-x{stroke:var(--muted);stroke-dasharray:2 3}
+.c-dot{fill:var(--fg);stroke:var(--bg);stroke-width:2}
+.c-tag.up{fill:var(--up)}.c-tag.down{fill:var(--down)}
+.c-tagt{fill:var(--bg);font-family:var(--mono);font-size:11px;font-weight:600}
+.stats{margin:0;padding:4px 0}
+.stats div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:5px 12px;font-size:var(--fs-s)}
+.stats dt{color:var(--muted);font-family:var(--sans);font-size:var(--fs-m)}
+.stats dd{margin:0;text-align:right}
+.rng{padding:10px 12px 12px;border-top:1px solid var(--line)}
+.rng-l{color:var(--muted);font-size:var(--fs-xs);letter-spacing:.06em;text-transform:uppercase}
+.rng-bar{position:relative;height:4px;margin:10px 0 6px;background:var(--raise)}
+.rng-bar i{position:absolute;top:-4px;width:2px;height:12px;background:var(--amber);transform:translateX(-1px)}
+.rng-v{display:flex;justify-content:space-between;color:var(--muted);font-size:var(--fs-xs)}
+
+/* Ayuda */
+.notice{margin-bottom:12px;padding:10px 12px;border:1px solid var(--amber-edge);background:var(--amber-soft);font-family:var(--sans);font-size:var(--fs-m)}
+.notice b{color:var(--amber);font-weight:500}
+.kh{list-style:none;margin:0;padding:6px 0}
+.kh li{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 12px;font-family:var(--sans);font-size:var(--fs-m)}
+.kh li span{margin-left:auto;color:var(--muted)}
+kbd{font-family:var(--mono);font-size:var(--fs-xs);color:var(--fg);background:var(--raise);border:1px solid var(--line);border-bottom-width:2px;padding:0 5px}
+.how{margin:0;padding:10px 14px 14px 34px;display:grid;gap:8px;font-family:var(--sans);font-size:var(--fs-m);max-width:70ch}
+.how li::marker{color:var(--amber);font-family:var(--mono)}
+
+/* Barra de estado */
+.status{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 20px;padding-block:10px 18px;border-top:1px solid var(--line);color:var(--faint);font-size:var(--fs-xs)}
+.status .live{color:var(--amber)}
+
+@media (max-width:1100px){
+  .grid-top{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .grid-top>.col:nth-child(2){grid-column:1/-1;order:-1}
+}
+@media (max-width:860px){
+  .grid-2,.grid-sym{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:720px){
+  .grid-top{grid-template-columns:minmax(0,1fr)}
+  .demo{order:1;margin-left:auto}
+  .cmd{order:2;flex-basis:100%}
+  .clocks{order:3;width:100%;justify-content:space-between}
+  .today{display:none}
+  .key span{display:none}
+  .tiles{grid-template-columns:minmax(0,1fr)}
+  .quote b{font-size:var(--fs-xl)}
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><svg class="mark" viewBox="0 0 22 22" width="22" height="22" aria-hidden="true"><path d="M4 16a7 7 0 0 1 14 0"/><path d="M8 16a3 3 0 0 1 6 0"/></svg><span>Arc <span class="brand-sub">Terminal</span></span></div>
+    <form class="cmd" id="cmdForm" role="search" autocomplete="off">
+      <label class="prompt" for="cmd">&gt;<span class="sr">Comando</span></label>
+      <input id="cmd" name="cmd" type="text" spellcheck="false" autocapitalize="characters" placeholder="Escribe un comando o un valor: NVDA, ECO, FUEL…" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggest">
+      <button class="go" type="submit">GO</button>
+      <ul class="suggest" id="suggest" role="listbox" aria-label="Sugerencias" hidden></ul>
+    </form>
+    <div class="clocks" id="clocks" aria-label="Hora y estado de las bolsas"></div>
+    <span class="demo">Maqueta · datos de ejemplo</span>
+  </header>
+  <nav class="keys" id="keys" aria-label="Funciones"></nav>
+  <div class="tape" aria-label="Cotizaciones de ejemplo"><div class="tape-track" id="tape"></div></div>
+  <main id="view" tabindex="-1"></main>
+  <footer class="status">
+    <span><span class="live">●</span> Maqueta: ningún precio ni titular es real.</span>
+    <span>Versión real: datos cada 15–30 min con GitHub Actions · cotizaciones en directo con TradingView</span>
+    <span><kbd>/</kbd> comando · <kbd>Esc</kbd> portada</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- Datos de ejemplo ---------- */
+const INDICES=[
+  {s:'SPX',n:'S&P 500',px:6712.35,c:0.42},
+  {s:'NDX',n:'Nasdaq 100',px:24890.10,c:0.71},
+  {s:'DJI',n:'Dow Jones',px:46210.55,c:0.18},
+  {s:'IBEX',n:'IBEX 35',px:15420.80,c:-0.23},
+  {s:'SX5E',n:'Euro Stoxx 50',px:5610.40,c:-0.11},
+  {s:'DAX',n:'DAX',px:24305.70,c:0.05},
+  {s:'N225',n:'Nikkei 225',px:47120.00,c:1.02}
+];
+const COMMOD=[
+  {s:'BRENT',n:'Brent',u:'$/barril',px:64.80,c:-1.10},
+  {s:'WTI',n:'WTI',u:'$/barril',px:61.20,c:-1.25},
+  {s:'TTF',n:'Gas TTF',u:'€/MWh',px:31.40,c:0.80},
+  {s:'XAU',n:'Oro',u:'$/onza',px:4010.50,c:0.35},
+  {s:'CU',n:'Cobre',u:'$/t',px:10650,c:0.60,d:0},
+  {s:'ZW',n:'Trigo',u:'$/bushel',px:5.12,c:-0.30}
+];
+const FX=[
+  {s:'EURUSD',n:'EUR/USD',px:1.1720,c:-0.08,d:4},
+  {s:'USDJPY',n:'USD/JPY',px:151.30,c:0.22},
+  {s:'EURGBP',n:'EUR/GBP',px:0.8710,c:0.05,d:4},
+  {s:'USDCNY',n:'USD/CNY',px:7.1200,c:-0.02,d:4},
+  {s:'BTC',n:'Bitcoin',px:112450,c:1.80,d:0}
+];
+const STOCKS=[
+  {s:'NVDA',n:'NVIDIA',px:186.40,c:1.85,cur:'USD',ex:'NASDAQ',sec:'Semiconductores',mcap:'4,5 bill.',pe:'52,3',vol:'182 M',tech:1},
+  {s:'AAPL',n:'Apple',px:252.30,c:-0.35,cur:'USD',ex:'NASDAQ',sec:'Hardware y servicios',mcap:'3,7 bill.',pe:'38,1',vol:'48 M',tech:1},
+  {s:'MSFT',n:'Microsoft',px:515.20,c:0.60,cur:'USD',ex:'NASDAQ',sec:'Software y nube',mcap:'3,8 bill.',pe:'37,8',vol:'21 M',tech:1},
+  {s:'GOOGL',n:'Alphabet',px:244.10,c:1.10,cur:'USD',ex:'NASDAQ',sec:'Internet y publicidad',mcap:'2,9 bill.',pe:'25,9',vol:'35 M',tech:1},
+  {s:'AMZN',n:'Amazon',px:221.70,c:-0.48,cur:'USD',ex:'NASDAQ',sec:'Comercio y nube',mcap:'2,4 bill.',pe:'33,7',vol:'39 M',tech:1},
+  {s:'META',n:'Meta',px:712.90,c:0.92,cur:'USD',ex:'NASDAQ',sec:'Redes sociales',mcap:'1,8 bill.',pe:'25,8',vol:'11 M',tech:1},
+  {s:'TSLA',n:'Tesla',px:432.10,c:-2.15,cur:'USD',ex:'NASDAQ',sec:'Automóvil y energía',mcap:'1,4 bill.',pe:'245,0',vol:'96 M',tech:0},
+  {s:'TSM',n:'TSMC',px:298.50,c:2.40,cur:'USD',ex:'NYSE',sec:'Semiconductores',mcap:'1,5 bill.',pe:'31,2',vol:'14 M',tech:1},
+  {s:'ASML',n:'ASML',px:1012.00,c:1.30,cur:'USD',ex:'NASDAQ',sec:'Equipos para chips',mcap:'400.000 M',pe:'36,4',vol:'1,9 M',tech:1},
+  {s:'AVGO',n:'Broadcom',px:345.60,c:0.75,cur:'USD',ex:'NASDAQ',sec:'Semiconductores',mcap:'1,6 bill.',pe:'88,0',vol:'22 M',tech:1},
+  {s:'ITX',n:'Inditex',px:47.30,c:-0.40,cur:'EUR',ex:'BME',sec:'Moda',mcap:'147.000 M',pe:'24,5',vol:'2,1 M',tech:0},
+  {s:'SAN',n:'Santander',px:8.92,c:0.55,cur:'EUR',ex:'BME',sec:'Banca',mcap:'133.000 M',pe:'9,6',vol:'38 M',tech:0}
+];
+const EARN=[
+  {s:'ASML',d:'15 oct.',w:'antes de la apertura'},
+  {s:'TSM',d:'16 oct.',w:'antes de la apertura'},
+  {s:'TSLA',d:'22 oct.',w:'tras el cierre'},
+  {s:'GOOGL',d:'28 oct.',w:'tras el cierre'},
+  {s:'MSFT',d:'29 oct.',w:'tras el cierre'},
+  {s:'META',d:'29 oct.',w:'tras el cierre'},
+  {s:'SAN',d:'29 oct.',w:'antes de la apertura'},
+  {s:'AAPL',d:'30 oct.',w:'tras el cierre'},
+  {s:'AMZN',d:'30 oct.',w:'tras el cierre'},
+  {s:'NVDA',d:'19 nov.',w:'tras el cierre'},
+  {s:'ITX',d:'10 dic.',w:'antes de la apertura'},
+  {s:'AVGO',d:'11 dic.',w:'tras el cierre'}
+];
+const SRC={BBC:'BBC',AJE:'Al Jazeera',DW:'DW',F24:'France 24',CNBC:'CNBC',WSJ:'WSJ',MW:'MarketWatch',FT:'Financial Times',EXP:'Expansión',EPA:'El País',HN:'Hacker News',TC:'TechCrunch',VRG:'The Verge',ARS:'Ars Technica',MIT:'MIT Technology Review',HF:'Hugging Face'};
+const NEWS=[
+  {d:0,t:'09:30',cat:'GEO',src:'BBC',h:'Washington y Pekín abren una nueva ronda de negociaciones comerciales'},
+  {d:0,t:'09:25',cat:'AI',src:'MIT',h:'Los modelos pequeños ganan terreno dentro de los móviles'},
+  {d:0,t:'09:20',cat:'WS',src:'CNBC',h:'Los futuros del S&P 500 suben antes de los resultados de la banca'},
+  {d:0,t:'09:12',cat:'ECO',src:'EXP',h:'El BCE mantiene los tipos y pide prudencia con la inflación de servicios'},
+  {d:0,t:'09:05',cat:'TECH',src:'TC',h:'Una startup europea de chips cierra una ronda de 400 millones'},
+  {d:0,t:'08:55',cat:'GEO',src:'DW',h:'La UE prepara un paquete de ayudas energéticas para el invierno'},
+  {d:0,t:'08:50',cat:'WS',src:'WSJ',h:'TSMC supera las previsiones de ingresos de septiembre',tk:['TSM']},
+  {d:0,t:'08:45',cat:'AI',src:'TC',h:'NVIDIA amplía su acuerdo de suministro con un gran proveedor de nube',tk:['NVDA']},
+  {d:0,t:'08:40',cat:'ECO',src:'FT',h:'El crecimiento de la eurozona se modera en el tercer trimestre'},
+  {d:0,t:'08:35',cat:'TECH',src:'HN',h:'Show HN: un terminal de mercados que cabe en una web estática'},
+  {d:0,t:'08:20',cat:'AI',src:'HF',h:'Nuevo ranking abierto de modelos para programar'},
+  {d:0,t:'08:15',cat:'WS',src:'MW',h:'El petróleo cae por segundo día por las dudas sobre la demanda'},
+  {d:0,t:'08:10',cat:'GEO',src:'AJE',h:'El tráfico de mercancías por el mar Rojo se recupera poco a poco'},
+  {d:0,t:'08:05',cat:'ECO',src:'EPA',h:'El paro sube en septiembre con el final de la temporada turística'},
+  {d:0,t:'08:00',cat:'TECH',src:'VRG',h:'Microsoft lleva más funciones de IA a Windows 11',tk:['MSFT']},
+  {d:0,t:'07:55',cat:'AI',src:'VRG',h:'Google añade agentes de IA a su buscador en Europa',tk:['GOOGL']},
+  {d:0,t:'07:45',cat:'GEO',src:'F24',h:'Los ministros de Exteriores del G7 se reúnen esta semana'},
+  {d:0,t:'07:40',cat:'WS',src:'CNBC',h:'Tesla cae en la preapertura tras sus entregas del trimestre',tk:['TSLA']},
+  {d:0,t:'07:30',cat:'ECO',src:'CNBC',h:'El mercado espera el IPC de EE. UU. para medir el ritmo de bajadas de la Fed'},
+  {d:0,t:'07:25',cat:'TECH',src:'ARS',h:'Los centros de datos disparan la demanda eléctrica en EE. UU.'},
+  {d:0,t:'07:10',cat:'TECH',src:'TC',h:'ASML recibe más pedidos de máquinas de litografía EUV',tk:['ASML']},
+  {d:0,t:'06:50',cat:'GEO',src:'BBC',h:'Taiwán y los chips, en el centro del debate de seguridad en Asia',tk:['TSM']},
+  {d:1,t:'22:30',cat:'WS',src:'MW',h:'Wall Street cierra mixto y el Nasdaq marca un nuevo máximo'},
+  {d:1,t:'21:35',cat:'AI',src:'MIT',h:'Cuánta energía gasta de verdad una consulta a un chatbot'},
+  {d:1,t:'21:10',cat:'GEO',src:'DW',h:'La OPEP+ mantendrá su producción hasta final de año'},
+  {d:1,t:'20:15',cat:'WS',src:'WSJ',h:'Las salidas a bolsa repuntan en el último trimestre'},
+  {d:1,t:'19:40',cat:'TECH',src:'TC',h:'Amazon amplía su red de satélites de internet',tk:['AMZN']},
+  {d:1,t:'18:20',cat:'ECO',src:'FT',h:'El dólar se debilita frente al euro tras un dato de empleo flojo'},
+  {d:1,t:'17:45',cat:'ECO',src:'EXP',h:'El Tesoro coloca deuda a diez años con menos rentabilidad'},
+  {d:1,t:'17:10',cat:'AI',src:'TC',h:'Meta abre su nuevo modelo de lenguaje a los desarrolladores',tk:['META']},
+  {d:1,t:'16:40',cat:'TECH',src:'VRG',h:'Apple abre la beta pública de su próxima versión de iOS',tk:['AAPL']},
+  {d:1,t:'16:05',cat:'WS',src:'CNBC',h:'Santander e Inditex tiran del IBEX en una sesión plana',tk:['SAN','ITX']}
+];
+const MACRO=[
+  {k:'Tipos Fed (techo)',v:'4,00 %',p:'4,25 %',dir:-1},
+  {k:'Depósito BCE',v:'2,00 %',p:'2,00 %',dir:0},
+  {k:'IPC EE. UU.',v:'2,9 %',p:'2,9 %',dir:0},
+  {k:'IPC España',v:'2,9 %',p:'2,7 %',dir:1},
+  {k:'Paro EE. UU.',v:'4,3 %',p:'4,2 %',dir:1},
+  {k:'Euríbor 12 meses',v:'2,18 %',p:'2,15 %',dir:1},
+  {k:'Bono EE. UU. 10 años',v:'4,05 %',p:'4,03 %',dir:1}
+];
+const CAL=[
+  {day:0,t:'08:00',cc:'ES',e:'IPC final (sep.), interanual',imp:2,prev:'2,7 %',fc:'2,9 %'},
+  {day:0,t:'11:00',cc:'DE',e:'Índice ZEW de expectativas',imp:2,prev:'37,3',fc:'35,0'},
+  {day:0,t:'14:30',cc:'US',e:'IPC (sep.), interanual',imp:3,prev:'2,9 %',fc:'3,0 %'},
+  {day:0,t:'14:30',cc:'US',e:'IPC subyacente (sep.), mensual',imp:3,prev:'0,3 %',fc:'0,3 %'},
+  {day:0,t:'18:00',cc:'US',e:'Discurso de un miembro de la Fed',imp:1,prev:'',fc:''},
+  {day:1,t:'04:00',cc:'CN',e:'PIB del 3.er trimestre, interanual',imp:3,prev:'5,2 %',fc:'4,8 %'},
+  {day:1,t:'11:00',cc:'EZ',e:'Producción industrial (ago.)',imp:1,prev:'0,3 %',fc:'−0,1 %'},
+  {day:1,t:'14:30',cc:'US',e:'Ventas minoristas (sep.), mensual',imp:3,prev:'0,6 %',fc:'0,4 %'},
+  {day:1,t:'16:30',cc:'US',e:'Inventarios de crudo (EIA)',imp:2,prev:'+1,8 M',fc:'+0,9 M'}
+];
+const FUEL=[
+  {mun:'Maó',name:'Polígono industrial',road:'Me-1, km 1',g95:1.579,dsl:1.479,h:'24 h'},
+  {mun:'Maó',name:'Carretera de Sant Lluís',road:'Salida sur',g95:1.609,dsl:1.509,h:'06–22 h'},
+  {mun:'Maó',name:'Carretera del aeropuerto',road:'Salida oeste',g95:1.629,dsl:1.529,h:'24 h'},
+  {mun:'Alaior',name:'Entrada de Alaior',road:'Me-1, km 12',g95:1.595,dsl:1.489,h:'07–22 h'},
+  {mun:'Es Mercadal',name:'Centro de la isla',road:'Me-1, km 21',g95:1.619,dsl:1.515,h:'07–21 h'},
+  {mun:'Ferreries',name:'Polígono de Ferreries',road:'Me-1, km 29',g95:1.599,dsl:1.495,h:'07–22 h'},
+  {mun:'Ciutadella',name:'Polígono industrial',road:'Me-1, km 43',g95:1.565,dsl:1.469,h:'24 h'},
+  {mun:'Ciutadella',name:'Ronda de Ciutadella',road:'Acceso norte',g95:1.589,dsl:1.489,h:'06–23 h'},
+  {mun:'Sant Lluís',name:'Entrada del pueblo',road:'Acceso desde Maó',g95:1.649,dsl:1.549,h:'07–21 h'},
+  {mun:'Es Castell',name:'Avenida principal',road:'Acceso desde Maó',g95:1.635,dsl:1.535,h:'07–21 h'},
+  {mun:'Es Migjorn Gran',name:'Entrada del pueblo',road:'Acceso desde Es Mercadal',g95:1.659,dsl:1.559,h:'08–20 h'}
+];
+const CMDS=[
+  {c:'TOP',k:'Portada',d:'Portada: lo más importante de cada sección'},
+  {c:'ECO',k:'Economía',d:'Economía y macro'},
+  {c:'GEO',k:'Geopolítica',d:'Geopolítica'},
+  {c:'WS',k:'Wall Street',d:'Wall Street e inversión'},
+  {c:'TECH',k:'Tecnología',d:'Noticias de tecnología'},
+  {c:'AI',k:'IA',d:'Inteligencia artificial'},
+  {c:'CAL',k:'Agenda',d:'Agenda económica y resultados'},
+  {c:'FUEL',k:'Gasolina',d:'Gasolineras más baratas de Menorca'},
+  {c:'HELP',k:'Ayuda',d:'Comandos y atajos'}
+];
+const INFO={
+  TOP:{t:'Portada',src:'Resumen de todas las fuentes'},
+  ECO:{t:'Economía y macro',src:'FRED, BCE, Financial Times, Expansión, El País'},
+  GEO:{t:'Geopolítica',src:'BBC, Al Jazeera, DW, France 24 y GDELT'},
+  WS:{t:'Wall Street',src:'Finnhub, TradingView, CNBC, WSJ, MarketWatch'},
+  TECH:{t:'Tecnología',src:'Hacker News, TechCrunch, The Verge, Ars Technica'},
+  AI:{t:'Inteligencia artificial',src:'MIT Technology Review, Hugging Face, TechCrunch, The Verge'},
+  CAL:{t:'Agenda económica',src:'Calendario económico de TradingView y resultados de Finnhub'},
+  FUEL:{t:'Gasolineras de Menorca',src:'API abierta de precios de carburantes del Ministerio'},
+  HELP:{t:'Comandos y atajos',src:''}
+};
+const BYSYM=Object.fromEntries(STOCKS.map(s=>[s.s,s]));
+
+/* ---------- Utilidades ---------- */
+const $=(s,el)=>(el||document).querySelector(s);
+const NF={};
+function fmt(v,d){d=d==null?2:d;if(!NF[d])NF[d]=new Intl.NumberFormat('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d});return NF[d].format(v);}
+function pct(v){return (v>0?'+':v<0?'−':'')+fmt(Math.abs(v),2)+' %';}
+function cls(v){return v>0?'up':v<0?'down':'flat';}
+function arrow(v){return v>0?'▲':v<0?'▼':'■';}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function plain(s){return String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();}
+function hhmm(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
+function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){let u=0,v=0;while(u===0)u=r();while(v===0)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+/* Serie de ejemplo reproducible que empieza en `start` y termina exactamente en `end`. */
+function series(key,n,start,end,vol){
+  const r=rng(hash(key));const w=[0];
+  for(let i=1;i<n;i++)w.push(w[i-1]+gauss(r)*vol);
+  const last=w[n-1];
+  return w.map((v,i)=>{const t=i/(n-1);return (start+(end-start)*t)*Math.exp(v-last*t);});
+}
+const fDay=new Intl.DateTimeFormat('es-ES',{weekday:'short',day:'numeric'});
+const fDM=new Intl.DateTimeFormat('es-ES',{day:'numeric',month:'short'});
+const fMon=new Intl.DateTimeFormat('es-ES',{month:'short'});
+const fFull=new Intl.DateTimeFormat('es-ES',{day:'numeric',month:'short',year:'numeric'});
+const fToday=new Intl.DateTimeFormat('es-ES',{weekday:'short',day:'numeric',month:'short',timeZone:'Europe/Madrid'});
+const TD={};
+function tradingDays(n){
+  if(TD[n])return TD[n];
+  const out=[];const d=new Date();d.setHours(12,0,0,0);
+  while(out.length<n){const wd=d.getDay();if(wd!==0&&wd!==6)out.unshift(new Date(d));d.setDate(d.getDate()-1);}
+  return TD[n]=out;
+}
+
+/* ---------- Relojes y estado de las bolsas (horario normal, sin festivos) ---------- */
+const CLOCKS=[
+  {c:'NYC',tz:'America/New_York',o:[570,960]},
+  {c:'LON',tz:'Europe/London',o:[480,990]},
+  {c:'MAD',tz:'Europe/Madrid',o:[540,1050]},
+  {c:'TYO',tz:'Asia/Tokyo',o:[540,930],lunch:[690,750]}
+];
+function tzNow(tz){
+  const p=new Intl.DateTimeFormat('en-GB',{timeZone:tz,hour:'2-digit',minute:'2-digit',weekday:'short',hourCycle:'h23'}).formatToParts(new Date());
+  const g=k=>(p.find(x=>x.type===k)||{}).value;
+  return {h:+g('hour'),m:+g('minute'),wd:g('weekday')};
+}
+function paintClocks(){
+  const html=CLOCKS.map(c=>{
+    const n=tzNow(c.tz),mins=n.h*60+n.m;
+    let open=n.wd!=='Sat'&&n.wd!=='Sun'&&mins>=c.o[0]&&mins<c.o[1];
+    if(open&&c.lunch&&mins>=c.lunch[0]&&mins<c.lunch[1])open=false;
+    return `<span class="clock" title="Bolsa ${open?'abierta':'cerrada'} (horario normal, sin contar festivos)"><i class="dot${open?' on':''}"></i>${c.c} <b>${hhmm(mins)}</b><span class="sr">${open?'abierta':'cerrada'}</span></span>`;
+  }).join('');
+  $('#clocks').innerHTML=`<span class="today">${fToday.format(new Date())}</span>`+html;
+}
+
+/* ---------- Piezas ---------- */
+function panel(title,meta,body,jump){
+  return `<section class="panel"><header class="ph"><h2>${title}</h2><div class="ph-r">${meta?`<span>${meta}</span>`:''}${jump?`<button class="jump" type="button" data-go="${jump}">${jump} ›</button>`:''}</div></header>${body}</section>`;
+}
+function spark(q){
+  const n=32,w=56,h=18,prev=q.px/(1+q.c/100);
+  const pts=series(q.s+':sp',n,prev,q.px,0.004);
+  const mn=Math.min(...pts),mx=Math.max(...pts);
+  const P=pts.map((v,i)=>(i/(n-1)*w).toFixed(1)+','+(h-1-(v-mn)/((mx-mn)||1)*(h-2)).toFixed(1)).join(' ');
+  return `<svg class="spark ${cls(q.c)}" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><polyline points="${P}"/></svg>`;
+}
+function tblQuotes(list,sub){
+  const rows=list.map(q=>`<tr><td><span class="name">${esc(q.n)}</span>${sub?`<span class="sub">${esc(sub(q))}</span>`:''}</td><td>${fmt(q.px,q.d==null?2:q.d)}</td><td class="${cls(q.c)}">${pct(q.c)}</td><td class="sp">${spark(q)}</td></tr>`).join('');
+  return `<div class="scroll"><table class="t"><thead><tr><th>Nombre</th><th>Último</th><th>Var.</th><th class="sp"><span class="sr">Tendencia</span></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function tblStocks(list){
+  const rows=list.map(s=>`<tr class="row" data-go="${s.s}" tabindex="0"><td><span class="sym">${s.s}</span><span class="sub">${esc(s.n)}</span></td><td>${fmt(s.px,2)}</td><td class="${cls(s.c)}">${pct(s.c)}</td><td class="sp">${spark(s)}</td></tr>`).join('');
+  return `<div class="scroll"><table class="t"><thead><tr><th>Valor</th><th>Último</th><th>Var.</th><th class="sp"><span class="sr">Tendencia</span></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function tblMacro(){
+  const rows=MACRO.map(m=>`<tr><td><span class="name">${m.k}</span></td><td>${m.v} <span class="mut" aria-hidden="true">${m.dir>0?'▲':m.dir<0?'▼':'='}</span></td><td class="mut">${m.p}</td></tr>`).join('');
+  return `<div class="scroll"><table class="t"><thead><tr><th>Indicador</th><th>Último</th><th>Anterior</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function dots(n){return `<span class="imp" role="img" aria-label="Importancia ${n} de 3">${[1,2,3].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</span>`;}
+function listAgenda(items){
+  return `<ul class="agenda">${items.map(c=>`<li><time>${c.t}</time><span class="cc">${c.cc}</span><span class="ev">${esc(c.e)}</span>${dots(c.imp)}</li>`).join('')}</ul>`;
+}
+function sortNews(a,b){return (a.d*1440-toMin(a.t))-(b.d*1440-toMin(b.t));}
+function toMin(t){const p=t.split(':');return +p[0]*60+ +p[1];}
+function listNews(items,showCat){
+  if(!items.length)return `<p class="empty">No hay titulares de ejemplo para esto.</p>`;
+  return `<ul class="news">${items.slice().sort(sortNews).map(n=>`<li class="${showCat?'':'nocat'}"><time>${n.d?'<small>ayer</small>':''}${n.t}</time>${showCat?`<button class="cat" type="button" data-go="${n.cat}">${n.cat}</button>`:''}<div><p class="h">${esc(n.h)}</p><p class="m"><span>${SRC[n.src]}</span>${(n.tk||[]).map(t=>`<button class="tk" type="button" data-go="${t}">${t}</button>`).join('')}</p></div></li>`).join('')}</ul>`;
+}
+function fuelMini(){
+  const l=FUEL.slice().sort((a,b)=>a.g95-b.g95).slice(0,3);
+  return `<ol class="fmini">${l.map((s,i)=>`<li><span class="rk">${i+1}</span><span class="st">${s.mun}<span>${s.name}</span></span><b>${fmt(s.g95,3)}</b></li>`).join('')}</ol>`;
+}
+function heat(list){
+  return `<div class="heat">${list.map(s=>{
+    const a=Math.min(1,Math.abs(s.c)/2.5),v=s.c>=0?'--up':'--down';
+    return `<button class="ht" type="button" data-go="${s.s}" style="background:color-mix(in srgb, var(${v}) ${Math.round(14+a*44)}%, var(--panel))"><b>${s.s}</b><span>${pct(s.c)}</span></button>`;
+  }).join('')}</div>`;
+}
+function vh(code,title,src,right){
+  return `<div class="vh"><div><h1><span class="code">${code}</span>${esc(title)}</h1>${src?`<p>Fuentes previstas: ${esc(src)}</p>`:''}</div>${right||''}</div>`;
+}
+
+/* ---------- Vistas ---------- */
+function viewTop(){
+  return `<div class="grid grid-top">
+    <div class="col">${panel('Mercados','Índices',tblQuotes(INDICES),'WS')}${panel('Acciones','Tu lista',tblStocks(STOCKS),'WS')}</div>
+    <div class="col">${panel('Titulares','Todas las secciones',listNews(NEWS.slice().sort(sortNews).slice(0,14),true))}</div>
+    <div class="col">${panel('Macro','EE. UU. y zona euro',tblMacro(),'ECO')}${panel('Agenda de hoy','Hora de Madrid',listAgenda(CAL.filter(c=>c.day===0)),'CAL')}${panel('Gasolina 95 · Menorca','€/L',fuelMini(),'FUEL')}</div>
+  </div>`;
+}
+function viewNews(cat){
+  const items=NEWS.filter(n=>n.cat===cat);
+  let side='',lead='';
+  if(cat==='ECO')side=panel('Macro','EE. UU. y zona euro',tblMacro())+panel('Agenda de hoy','Hora de Madrid',listAgenda(CAL.filter(c=>c.day===0)),'CAL');
+  if(cat==='GEO')side=panel('Materias primas','',tblQuotes(COMMOD,q=>q.u))+panel('Divisas y cripto','',tblQuotes(FX));
+  if(cat==='WS'){side=panel('Índices','',tblQuotes(INDICES))+panel('Acciones','Tu lista',tblStocks(STOCKS));lead=panel('Mapa de calor','Tu lista · var. del día',heat(STOCKS)+'<p class="pnote">En la versión real, el mapa del S&amp;P 500 de TradingView, en directo.</p>');}
+  if(cat==='TECH'||cat==='AI')side=panel('Acciones del sector','',tblStocks(STOCKS.filter(s=>s.tech)))+panel('Índices','',tblQuotes(INDICES.slice(0,2)));
+  return vh(cat,INFO[cat].t,INFO[cat].src)+`<div class="grid grid-2"><div class="col">${lead}${panel('Titulares',items.length+' de ejemplo',listNews(items,false))}</div><div class="col">${side}</div></div>`;
+}
+function viewCal(){
+  const grp=(day,label)=>`<tr class="grp"><td colspan="6">${label}</td></tr>`+CAL.filter(c=>c.day===day).map(c=>`<tr><td>${c.t}</td><td class="mut">${c.cc}</td><td><span class="name">${esc(c.e)}</span></td><td>${dots(c.imp)}</td><td class="mut">${c.prev||'—'}</td><td>${c.fc||'—'}</td></tr>`).join('');
+  const macro=`<div class="scroll"><table class="t"><thead><tr><th>Hora</th><th>País</th><th>Dato</th><th>Imp.</th><th>Anterior</th><th>Previsión</th></tr></thead><tbody>${grp(0,'Hoy')}${grp(1,'Mañana')}</tbody></table></div>`;
+  const earn=`<div class="scroll"><table class="t"><thead><tr><th>Valor</th><th>Fecha</th><th>Cuándo</th></tr></thead><tbody>${EARN.map(e=>`<tr class="row" data-go="${e.s}" tabindex="0"><td><span class="sym">${e.s}</span><span class="sub">${esc(BYSYM[e.s].n)}</span></td><td>${e.d}</td><td class="mut">${e.w}</td></tr>`).join('')}</tbody></table></div>`;
+  return vh('CAL',INFO.CAL.t,INFO.CAL.src)+`<div class="grid grid-2"><div class="col">${panel('Datos macro','Hora de Madrid',macro)}</div><div class="col">${panel('Resultados de empresas','Tu lista',earn)}</div></div>`;
+}
+function viewFuel(){
+  const f=state.fuel,mun=state.mun;
+  const all=FUEL.map(s=>s[f]);
+  const avg=all.reduce((a,b)=>a+b,0)/all.length,minA=Math.min(...all),maxA=Math.max(...all);
+  const list=FUEL.filter(s=>mun==='ALL'||s.mun===mun).sort((a,b)=>a[f]-b[f]);
+  const best=list[0],save=(avg-best[f])*50;
+  const muns=[...new Set(FUEL.map(s=>s.mun))].sort((a,b)=>a.localeCompare(b,'es'));
+  const controls=`<div class="controls">
+    <div class="seg" role="group" aria-label="Combustible"><button type="button" data-fuel="g95" aria-pressed="${f==='g95'}">Gasolina 95</button><button type="button" data-fuel="dsl" aria-pressed="${f==='dsl'}">Diésel</button></div>
+    <label class="sel" for="mun">Municipio <select id="mun"><option value="ALL"${mun==='ALL'?' selected':''}>Toda la isla</option>${muns.map(m=>`<option value="${m}"${m===mun?' selected':''}>${m}</option>`).join('')}</select></label>
+  </div>`;
+  const tiles=`<div class="tiles">
+    <div class="tile"><span class="lbl">Más barata${mun==='ALL'?'':' en '+mun}</span><b>${fmt(best[f],3)} €/L</b><span class="sub">${best.mun} · ${best.name}</span></div>
+    <div class="tile"><span class="lbl">Media de Menorca</span><b>${fmt(avg,3)} €/L</b><span class="sub">${FUEL.length} estaciones de ejemplo</span></div>
+    <div class="tile"><span class="lbl">${save>=0?'Ahorras':'Pagas de más'} en un depósito de 50 L</span><b>${fmt(Math.abs(save),2)} €</b><span class="sub">en la más barata, frente a la media</span></div>
+  </div>`;
+  const rows=list.map((s,i)=>{
+    const p=s[f],d=p-avg,w=20+80*(p-minA)/((maxA-minA)||1);
+    return `<tr class="${i===0?'best':''}"><td class="mut">${i+1}</td><td><span class="name">${s.name}</span><span class="sub">${s.road}</span></td><td>${s.mun}</td><td>${fmt(p,3)}</td><td><span class="bar" aria-hidden="true"><i style="width:${w.toFixed(0)}%"></i></span></td><td class="${d<0?'up':d>0?'down':'flat'}">${d<0?'−':'+'}${fmt(Math.abs(d),3)}</td><td class="mut">${s.h}</td></tr>`;
+  }).join('');
+  const table=`<div class="scroll"><table class="t"><thead><tr><th>#</th><th>Estación</th><th>Municipio</th><th>€/L</th><th><span class="sr">Comparativa</span></th><th>Frente a la media</th><th>Horario</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  const note=`<p class="pnote">En la versión real, los precios llegan de la API del Ministerio y la lista se puede ordenar por distancia a donde estés.</p>`;
+  return vh('FUEL',INFO.FUEL.t,INFO.FUEL.src)+`<div class="grid"><div class="col">${panel(f==='g95'?'Gasolina 95':'Diésel',list.length+(list.length===1?' estación':' estaciones'),controls+tiles+table+note)}</div></div>`;
+}
+const RANGES={'1D':{n:79,vol:0.0018},'5D':{n:66,vol:0.004},'1M':{n:22,vol:0.014},'6M':{n:126,vol:0.014},'1A':{n:252,vol:0.015}};
+function rangeChange(s,k){
+  if(k==='1D')return s.c;
+  const r=rng(hash(s.s+':chg:'+k));
+  const span={'5D':6,'1M':12,'6M':28,'1A':55}[k],bias={'5D':0.5,'1M':1.5,'6M':6,'1A':14}[k];
+  return +((r()*2-1)*span+bias).toFixed(2);
+}
+function rangeSeries(s,k){const chg=rangeChange(s,k);return series(s.s+':'+k,RANGES[k].n,s.px/(1+chg/100),s.px,RANGES[k].vol);}
+function viewSym(){
+  const s=BYSYM[state.sym],e=EARN.find(x=>x.s===s.s),cur=s.cur==='USD'?'$':'€';
+  const yr=rangeSeries(s,'1A'),hi=Math.max(...yr),lo=Math.min(...yr),pos=(s.px-lo)/((hi-lo)||1)*100;
+  const right=`<div class="quote"><b>${fmt(s.px,2)}</b><span class="${cls(s.c)}">${arrow(s.c)} ${pct(s.c)}</span></div>`;
+  const ranges=`<div class="ranges" role="group" aria-label="Periodo">${Object.keys(RANGES).map(k=>`<button type="button" data-range="${k}" aria-pressed="${k===state.range}">${k}</button>`).join('')}</div>`;
+  const chg=rangeChange(s,state.range);
+  const chartPanel=`<section class="panel"><header class="ph"><h2>Gráfico</h2><div class="ph-r"><span id="rchg" class="${cls(chg)}">${state.range} ${pct(chg)}</span>${ranges}</div></header><div class="chart" id="chart"></div><p class="pnote">En la versión real, gráfico de TradingView en directo, con indicadores.</p></section>`;
+  const stats=[['Cap. bursátil',s.mcap+' '+cur],['PER',s.pe],['Volumen medio',s.vol],['Máx. 52 semanas',fmt(hi,2)],['Mín. 52 semanas',fmt(lo,2)],['Próximos resultados',e?e.d+', '+e.w:'—'],['Bolsa',s.ex]];
+  const statsBody=`<dl class="stats">${stats.map(r=>`<div><dt>${r[0]}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl><div class="rng"><div class="rng-l">Rango de 52 semanas</div><div class="rng-bar" role="img" aria-label="El precio está al ${Math.round(pos)} % del rango"><i style="left:${pos.toFixed(1)}%"></i></div><div class="rng-v"><span>${fmt(lo,2)}</span><span>${fmt(hi,2)}</span></div></div>`;
+  const news=NEWS.filter(n=>(n.tk||[]).includes(s.s));
+  return `<div class="vh"><div><h1><span class="code">${s.s}</span>${esc(s.n)}</h1><p>${s.ex} · ${esc(s.sec)} · ${s.cur} · Fuentes previstas: TradingView y Finnhub</p></div>${right}</div>
+  <div class="grid grid-sym"><div class="col">${chartPanel}</div><div class="col">${panel('Datos clave','',statsBody)}${panel('Noticias',news.length?'':'',listNews(news,true))}</div></div>`;
+}
+function viewHelp(){
+  const rows=CMDS.map(c=>`<tr class="row" data-go="${c.c}" tabindex="0"><td><span class="sym">${c.c}</span></td><td>${esc(c.d)}</td><td class="mut">${esc(INFO[c.c].src||'—')}</td></tr>`).join('')
+    +`<tr><td><span class="sym">NVDA…</span></td><td>Ficha de una acción: gráfico, datos clave y noticias</td><td class="mut">TradingView y Finnhub</td></tr>`;
+  const cmds=`<div class="scroll"><table class="t left"><thead><tr><th>Comando</th><th>Qué abre</th><th>Fuentes previstas</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  const keys=`<ul class="kh"><li><kbd>/</kbd> o empieza a escribir<span>Ir a la barra de comandos</span></li><li><kbd>↑</kbd><kbd>↓</kbd><span>Moverte por las sugerencias</span></li><li><kbd>Intro</kbd><span>Abrir el comando</span></li><li><kbd>Esc</kbd><span>Volver a la portada</span></li></ul>`;
+  const how=`<ol class="how"><li>Cada 15–30 minutos, GitHub Actions descarga noticias, cotizaciones, datos macro y precios de la gasolina. Las claves de las APIs se guardan en GitHub Secrets y nunca llegan al navegador.</li><li>Guarda todo en archivos JSON y vuelve a publicar la web en GitHub Pages.</li><li>Al abrir el terminal, la web lee esos archivos. Las cotizaciones y los gráficos en directo llegan de los widgets de TradingView.</li></ol>`;
+  return vh('HELP',INFO.HELP.t,'')+`<div class="grid grid-2"><div class="col">${panel('Comandos','',cmds)}</div><div class="col">${panel('Atajos de teclado','',keys)}${panel('Cómo se actualizará','',how)}</div></div>`;
+}
+function viewMiss(){
+  return `<div class="notice" role="status"><b>No encuentro «${esc(state.miss)}».</b> No es una función ni un valor de la lista de ejemplo. Prueba con NVDA, ECO o FUEL, o elige uno de la tabla.</div>`+viewHelp();
+}
+
+/* ---------- Gráfico ---------- */
+let chartRO=null;
+function niceStep(x){const e=Math.pow(10,Math.floor(Math.log10(x)));const f=x/e;return (f<1.5?1:f<3?2:f<7?5:10)*e;}
+function xLabels(k,n){
+  const out=[];
+  if(k==='1D'){for(let i=0;i<n;i++){const m=570+5*i;if(m%60===0)out.push([i,hhmm(m)]);}}
+  else if(k==='5D'){const days=tradingDays(5);for(let d=0;d<5;d++)out.push([d*13,fDay.format(days[d])]);}
+  else{
+    const days=tradingDays(n);
+    if(k==='1M'){for(let i=0;i<n;i+=5)out.push([i,fDM.format(days[i])]);}
+    else{let pm=days[0].getMonth();for(let i=1;i<n;i++){const m=days[i].getMonth();if(m!==pm){out.push([i,fMon.format(days[i])]);pm=m;}}}
+  }
+  return out;
+}
+function tipLabel(k,i,n){
+  if(k==='1D')return hhmm(570+5*i)+' h (Nueva York)';
+  if(k==='5D'){const days=tradingDays(5),di=Math.min(4,Math.floor(i/13));return fDay.format(days[di])+', '+hhmm(570+(i-di*13)*30)+' h';}
+  return fFull.format(tradingDays(n)[i]);
+}
+function drawChart(box){
+  const s=BYSYM[state.sym],k=state.range,chg=rangeChange(s,k),start=s.px/(1+chg/100);
+  const data=rangeSeries(s,k),n=data.length;
+  const W=Math.max(260,Math.round(box.clientWidth)),H=Math.round(Math.min(360,Math.max(220,W*0.42)));
+  const pad={l:10,r:68,t:16,b:28},iw=W-pad.l-pad.r,ih=H-pad.t-pad.b;
+  let mn=Math.min(...data),mx=Math.max(...data);
+  if(k==='1D'){mn=Math.min(mn,start);mx=Math.max(mx,start);}
+  const step=niceStep((mx-mn)/4||1),lo=Math.floor(mn/step)*step,hi=Math.ceil(mx/step)*step;
+  const dec=step>=1?0:step>=0.1?1:2;
+  const X=i=>pad.l+iw*i/(n-1),Y=v=>pad.t+ih*(1-(v-lo)/((hi-lo)||1));
+  const dir=chg>=0?'up':'down';
+  let g='';
+  const count=Math.round((hi-lo)/step);
+  for(let j=0;j<=count;j++){const v=lo+j*step,y=Y(v).toFixed(1);g+=`<line class="c-grid" x1="${pad.l}" x2="${pad.l+iw}" y1="${y}" y2="${y}"/><text class="c-lbl" x="${pad.l+iw+8}" y="${(+y+4).toFixed(1)}">${fmt(v,dec)}</text>`;}
+  let xl=xLabels(k,n);if(iw<480&&xl.length>5)xl=xl.filter((_,i)=>i%2===0);
+  xl.forEach(([i,txt])=>{const x=X(i),a=x<pad.l+24?'start':x>pad.l+iw-24?'end':'middle';g+=`<line class="c-tick" x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${pad.t+ih}" y2="${pad.t+ih+4}"/><text class="c-lbl" text-anchor="${a}" x="${x.toFixed(1)}" y="${H-8}">${txt}</text>`;});
+  const line=data.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+','+Y(v).toFixed(1)).join('');
+  const area=line+`L${X(n-1).toFixed(1)},${pad.t+ih}L${X(0).toFixed(1)},${pad.t+ih}Z`;
+  let prev='';
+  if(k==='1D'){const y=Y(start).toFixed(1);prev=`<line class="c-prev" x1="${pad.l}" x2="${pad.l+iw}" y1="${y}" y2="${y}"/><text class="c-lbl" x="${pad.l+4}" y="${(+y-5).toFixed(1)}">Cierre anterior ${fmt(start,2)}</text>`;}
+  const ly=Y(s.px);
+  const tag=`<rect class="c-tag ${dir}" x="${pad.l+iw+2}" y="${(ly-9).toFixed(1)}" width="${pad.r-4}" height="18" rx="2"/><text class="c-tagt" x="${pad.l+iw+8}" y="${(ly+4).toFixed(1)}">${fmt(s.px,2)}</text>`;
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Gráfico de ${esc(s.n)}, periodo ${k}, variación ${pct(chg)}">
+    <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--${dir});stop-opacity:.22"/><stop offset="1" style="stop-color:var(--${dir});stop-opacity:0"/></linearGradient></defs>
+    ${g}<path d="${area}" fill="url(#cg)"/>${prev}<path class="c-line ${dir}" d="${line}"/>${tag}
+    <line class="c-x" y1="${pad.t}" y2="${pad.t+ih}" x1="0" x2="0" style="display:none"/><circle class="c-dot" r="3.5" cx="0" cy="0" style="display:none"/>
+  </svg><div class="tip" hidden></div>`;
+  const svg=box.querySelector('svg'),tip=box.querySelector('.tip'),vx=svg.querySelector('.c-x'),dot=svg.querySelector('.c-dot');
+  svg.addEventListener('pointermove',ev=>{
+    const r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)*(W/r.width);
+    const i=Math.max(0,Math.min(n-1,Math.round((px-pad.l)/iw*(n-1)))),x=X(i).toFixed(1),y=Y(data[i]).toFixed(1);
+    vx.setAttribute('x1',x);vx.setAttribute('x2',x);vx.style.display='';
+    dot.setAttribute('cx',x);dot.setAttribute('cy',y);dot.style.display='';
+    tip.innerHTML=`<span>${tipLabel(k,i,n)}</span><b>${fmt(data[i],2)}</b>`;tip.hidden=false;
+  });
+  svg.addEventListener('pointerleave',()=>{vx.style.display='none';dot.style.display='none';tip.hidden=true;});
+}
+function mountChart(){
+  const box=$('#chart');if(!box)return;
+  drawChart(box);
+  if('ResizeObserver' in window){let last=box.clientWidth;chartRO=new ResizeObserver(()=>{if(Math.abs(box.clientWidth-last)>2){last=box.clientWidth;drawChart(box);}});chartRO.observe(box);}
+}
+
+/* ---------- Navegación ---------- */
+const state={view:'TOP',sym:null,range:'1D',fuel:'g95',mun:'ALL',miss:null};
+const view=$('#view');
+function norm(raw){return String(raw||'').trim().toUpperCase().replace(/\s*<\s*GO\s*>$/,'').replace(/\s+GO$/,'').trim();}
+function current(){return state.view==='SYM'?state.sym:state.view;}
+function render(){
+  if(chartRO){chartRO.disconnect();chartRO=null;}
+  const v=state.view;
+  view.innerHTML=v==='TOP'?viewTop():v==='SYM'?viewSym():v==='CAL'?viewCal():v==='FUEL'?viewFuel():v==='HELP'?viewHelp():v==='MISS'?viewMiss():viewNews(v);
+  document.querySelectorAll('.key').forEach(k=>{if(k.dataset.go===v)k.setAttribute('aria-current','page');else k.removeAttribute('aria-current');});
+  if(v==='SYM')mountChart();
+}
+function navigate(raw,fromHash){
+  const q=norm(raw);if(!q)return;
+  if(INFO[q]){state.view=q;state.sym=null;}
+  else if(BYSYM[q]){if(state.sym!==q)state.range='1D';state.view='SYM';state.sym=q;}
+  else{state.view='MISS';state.miss=q;}
+  render();
+  if(!fromHash){
+    window.scrollTo(0,0);
+    if(state.view!=='MISS'){try{history.replaceState(null,'','#'+current().toLowerCase());}catch(_){}}
+  }
+}
+window.addEventListener('hashchange',()=>{const h=norm(location.hash.slice(1));if(h&&h!==current())navigate(h,true);});
+
+/* Clics, teclado y filtros dentro de la vista */
+view.addEventListener('click',e=>{
+  const b=e.target.closest('[data-go],[data-range],[data-fuel]');if(!b)return;
+  if(b.dataset.range){
+    state.range=b.dataset.range;
+    view.querySelectorAll('[data-range]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.range===state.range)));
+    const s=BYSYM[state.sym],chg=rangeChange(s,state.range),rc=$('#rchg');
+    if(rc){rc.className=cls(chg);rc.textContent=state.range+' '+pct(chg);}
+    const box=$('#chart');if(box)drawChart(box);
+    return;
+  }
+  if(b.dataset.fuel){state.fuel=b.dataset.fuel;render();const f=view.querySelector(`[data-fuel="${state.fuel}"]`);if(f)f.focus();return;}
+  navigate(b.dataset.go);
+});
+view.addEventListener('keydown',e=>{if(e.key==='Enter'){const r=e.target.closest('tr[data-go]');if(r)navigate(r.dataset.go);}});
+view.addEventListener('change',e=>{if(e.target.id==='mun'){state.mun=e.target.value;render();const m=$('#mun');if(m)m.focus();}});
+
+/* Teclas de función */
+$('#keys').innerHTML=CMDS.map(c=>`<button class="key" type="button" data-go="${c.c}">${c.c}<span>${c.k}</span></button>`).join('');
+$('#keys').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)navigate(b.dataset.go);});
+
+/* Barra de comandos con sugerencias */
+const input=$('#cmd'),list=$('#suggest'),form=$('#cmdForm');
+const ALL=CMDS.map(c=>({code:c.c,desc:c.d,kind:'Función'})).concat(STOCKS.map(s=>({code:s.s,desc:s.n,kind:'Valor · '+s.ex})));
+let sugg=[],sel=-1;
+function suggest(raw){
+  const q=plain(norm(raw));if(!q)return [];
+  const a=ALL.filter(x=>x.code.startsWith(q)),b=ALL.filter(x=>!x.code.startsWith(q)&&plain(x.desc).includes(q));
+  return a.concat(b).slice(0,8);
+}
+function paintSuggest(){
+  if(!sugg.length){list.hidden=true;list.innerHTML='';input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');return;}
+  list.innerHTML=sugg.map((x,i)=>`<li role="option" id="opt${i}" aria-selected="${i===sel}" data-code="${x.code}"><span class="code">${x.code}</span><span class="desc">${esc(x.desc)}</span><span class="kind">${x.kind}</span></li>`).join('');
+  list.hidden=false;input.setAttribute('aria-expanded','true');
+  if(sel>=0)input.setAttribute('aria-activedescendant','opt'+sel);
+}
+function run(code){input.value='';sugg=[];sel=-1;paintSuggest();input.blur();navigate(code);}
+input.addEventListener('input',()=>{sugg=suggest(input.value);sel=sugg.length?0:-1;paintSuggest();});
+input.addEventListener('keydown',e=>{
+  if(e.key==='ArrowDown'&&sugg.length){e.preventDefault();sel=(sel+1)%sugg.length;paintSuggest();}
+  else if(e.key==='ArrowUp'&&sugg.length){e.preventDefault();sel=(sel-1+sugg.length)%sugg.length;paintSuggest();}
+  else if(e.key==='Escape'){e.preventDefault();if(sugg.length){sugg=[];sel=-1;paintSuggest();}else if(input.value){input.value='';}else{input.blur();navigate('TOP');}}
+});
+input.addEventListener('blur',()=>{setTimeout(()=>{if(document.activeElement!==input){sugg=[];sel=-1;paintSuggest();}},120);});
+form.addEventListener('submit',e=>{e.preventDefault();const pick=sel>=0&&sugg[sel]?sugg[sel].code:input.value;if(norm(pick))run(pick);});
+list.addEventListener('mousedown',e=>{const li=e.target.closest('li');if(!li)return;e.preventDefault();run(li.dataset.code);});
+
+/* Atajos globales: "/" o empezar a escribir abre la barra; Esc vuelve a la portada */
+document.addEventListener('keydown',e=>{
+  const tag=(document.activeElement&&document.activeElement.tagName)||'';
+  if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA')return;
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.key==='/'){e.preventDefault();input.focus();return;}
+  if(e.key==='Escape'){navigate('TOP');return;}
+  if(e.key.length===1&&/[a-z0-9]/i.test(e.key))input.focus();
+});
+
+/* Cinta de cotizaciones */
+function tapeItems(){
+  const items=INDICES.concat([FX[0],COMMOD[0],COMMOD[3],FX[4]]).map(q=>`<span class="tick"><b>${esc(q.n)}</b>${fmt(q.px,q.d==null?2:q.d)}<em class="${cls(q.c)}">${pct(q.c)}</em></span>`);
+  items.push(`<span class="tick"><b>Bono EE. UU. 10 años</b>4,05 %<em class="up">+2 pb</em></span>`);
+  return items.join('');
+}
+$('#tape').innerHTML=`<div class="tape-set">${tapeItems()}</div><div class="tape-set dup" aria-hidden="true">${tapeItems()}</div>`;
+
+paintClocks();setInterval(paintClocks,15000);
+navigate(location.hash.slice(1)||'TOP',true);
+})();
+</script>
