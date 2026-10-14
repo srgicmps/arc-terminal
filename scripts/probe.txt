@@ -5,3 +5,7 @@ https://apidatos.ree.es/es/datos/generacion/no-renovables-detalle-emisiones-CO2?
 https://stats.bis.org/api/v1/data/WS_CBPOL/D.US+XM+JP/all?lastNObservations=2&detail=dataonly&format=csv
 https://huggingface.co/api/daily_papers?limit=2
 https://data.sec.gov/submissions/CIK0001045810.json
+https://gamma-api.polymarket.com/events?active=true&closed=false&limit=6&order=volume24hr&ascending=false&tag_slug=fed-rates
+https://gamma-api.polymarket.com/events?active=true&closed=false&limit=20&order=volume24hr&ascending=false&tag_slug=economy ~ ecb|fed decision|fomc
+https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm ~ \d{4} FOMC Meetings.{0,400}
+https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html ~ .{0,30}Monetary policy meeting.{0,40}

@@ -311,6 +311,8 @@ export interface Prediction {
 export interface PredictionsData {
 	geopolitics: Prediction[];
 	economy: Prediction[];
+	/** Decisiones de tipos de interés (etiqueta «fed-rates»). Opcional: las copias antiguas no lo traen. */
+	rates?: Prediction[];
 }
 
 // ---------- Documentos presentados en la SEC (EDGAR) ----------
