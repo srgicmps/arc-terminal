@@ -65,6 +65,28 @@ export function redact(message: string, secrets: (string | undefined)[]): string
 /** Variables de entorno con claves: nunca deben acabar en un issue público. */
 const SECRET_ENV = ['FRED_API_KEY', 'FINNHUB_API_KEY', 'HF_TOKEN', 'SEC_USER_AGENT', 'GITHUB_TOKEN'];
 
+const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+/** «2026-10-14T10:22:00Z» → «14 oct 2026, 12:22 (hora de Madrid)». Sergi lee siempre la hora de Madrid. */
+export function madridTime(iso: string): string {
+	const date = new Date(iso);
+	if (Number.isNaN(date.getTime())) return iso;
+	const parts = Object.fromEntries(
+		new Intl.DateTimeFormat('en-GB', {
+			timeZone: 'Europe/Madrid',
+			year: 'numeric',
+			month: 'numeric',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+			hourCycle: 'h23'
+		})
+			.formatToParts(date)
+			.map((p) => [p.type, p.value])
+	);
+	return `${Number(parts.day)} ${MONTHS[Number(parts.month) - 1]} ${parts.year}, ${parts.hour}:${parts.minute} (hora de Madrid)`;
+}
+
 /** Texto del issue: último error, desde cuándo falla y enlace a STATUS. */
 export function body(
 	status: SourceStatus,
@@ -72,12 +94,12 @@ export function body(
 	secrets: (string | undefined)[] = []
 ): string {
 	const span = history?.history?.at(-1);
-	const since = span?.t ?? '—';
+	const since = span?.t ? madridTime(span.t) : '—';
 	const error = redact(status.error ?? 'sin detalle', secrets);
 	return [
 		`La fuente **${status.name}** (${status.label}) lleva ${span?.runs ?? '?'} pasadas seguidas sin datos.`,
 		'',
-		`- Falla desde: ${since.replace('T', ' ').replace('Z', ' UTC')}`,
+		`- Falla desde: ${since}`,
 		`- Último error: \`${error.replaceAll('`', "'")}\``,
 		'',
 		`Estado de todas las fuentes: ${STATUS_URL}`,

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SourceHistory, SourceStatus } from '../../src/lib/data.ts';
 import { appendSpan } from '../history.ts';
-import { body, decide, downSpan, redact, sync, title } from '../issues.ts';
+import { body, decide, downSpan, madridTime, redact, sync, title } from '../issues.ts';
 import { mockFetch } from './mock.ts';
 
 afterEach(() => {
@@ -92,7 +92,8 @@ describe('body', () => {
 		const text = body(status, history, ['SECRETO']);
 		expect(text).toContain('**fred**');
 		expect(text).toContain('3 pasadas seguidas');
-		expect(text).toContain('Falla desde: 2026-10-14 10:22 UTC');
+		expect(text).toContain('Falla desde: 14 oct 2026, 12:22 (hora de Madrid)');
+		expect(text).not.toContain('UTC');
 		expect(text).toContain('`HTTP 403 en https://f.org/s`');
 		expect(text).toContain('https://srgicmps.github.io/arc-terminal/status');
 		expect(text).not.toContain('SECRETO');
@@ -180,5 +181,17 @@ describe('sync', () => {
 	it('falla si GitHub responde con error', async () => {
 		mockFetch(() => undefined);
 		await expect(sync([], [], { repo: REPO, token: 'tok' })).rejects.toThrow('HTTP 404');
+	});
+});
+
+describe('madridTime', () => {
+	it('pasa la hora a Madrid en verano (UTC+2) y en invierno (UTC+1)', () => {
+		expect(madridTime('2026-10-14T10:22:00Z')).toBe('14 oct 2026, 12:22 (hora de Madrid)');
+		expect(madridTime('2026-10-25T02:30:00Z')).toBe('25 oct 2026, 03:30 (hora de Madrid)');
+		expect(madridTime('2026-12-31T23:30:00Z')).toBe('1 ene 2027, 00:30 (hora de Madrid)');
+	});
+
+	it('deja tal cual una fecha que no se entiende', () => {
+		expect(madridTime('—')).toBe('—');
 	});
 });
