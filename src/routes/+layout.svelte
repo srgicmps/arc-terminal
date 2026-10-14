@@ -72,6 +72,13 @@
 		e.stopImmediatePropagation();
 	}
 
+	// En el móvil los accesos van en una fila con scroll: el de la vista actual, siempre a la vista.
+	$effect(() => {
+		void page.route.id;
+		if (!matchMedia('(max-width: 720px)').matches) return;
+		document.querySelector('.keys [aria-current="page"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+	});
+
 	/** En modo TV, tocar la pantalla pausa o sigue (menos en los botones del aviso de pausa). */
 	function onTvTap(e: PointerEvent) {
 		if (tv.on && !(e.target as Element | null)?.closest('.tv-chip')) togglePause();
@@ -499,6 +506,23 @@
 
 		.key span {
 			display: none;
+		}
+
+		/* Accesos en una sola fila que se desliza en horizontal: la cabecera ocupa una línea menos. Un fundido
+		   muy leve a la derecha avisa de que hay más; el de la vista actual se trae a la vista al cambiar. */
+		.keys {
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			scrollbar-width: none;
+			mask-image: linear-gradient(to right, var(--bg) calc(100% - var(--sp-24)), transparent);
+		}
+
+		.keys::-webkit-scrollbar {
+			display: none;
+		}
+
+		.key {
+			flex: none;
 		}
 
 		.top :global(.cmd) {
