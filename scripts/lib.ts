@@ -160,7 +160,8 @@ export function tidy(value: string | undefined, keepShort = false): string {
 			if (i > 0 && SMALL_WORDS.has(word)) return word;
 			if (/^(n|s|e|w|o|ne|nw|se|sw|no|so|nne|nnw|sse|ssw|ene|ese|wnw|wsw)$/.test(word)) return word.toUpperCase();
 			if (/\d/.test(word) || (keepShort && word.length <= 3)) return word.toUpperCase();
-			return word.charAt(0).toUpperCase() + word.slice(1);
+			// «atlántico-marruecos» → «Atlántico-Marruecos»
+			return word.replace(/(^|-)(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toUpperCase());
 		})
 		.join(' ');
 }

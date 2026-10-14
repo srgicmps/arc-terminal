@@ -84,7 +84,7 @@
 	}
 
 	.kind.storm {
-		color: var(--down);
+		color: var(--amber);
 	}
 
 	a {
