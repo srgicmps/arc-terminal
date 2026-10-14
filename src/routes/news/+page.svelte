@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -9,6 +10,11 @@
 
 	let query = $state('');
 	let section = $state<string>('all');
+
+	// «NEWS inflación» en la barra abre /news?q=inflación y rellena el buscador (solo en el navegador).
+	$effect(() => {
+		query = page.url.searchParams.get('q') ?? '';
+	});
 
 	const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 

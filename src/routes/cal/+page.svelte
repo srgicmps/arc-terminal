@@ -8,6 +8,7 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { compact, dm, nf, trend, weekday } from '#lib/format.ts';
 	import { bmeHolidays, nyseHolidays } from '#lib/markets.ts';
+	import { madridDate } from '#lib/meetings.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -21,8 +22,9 @@
 	const HOUR: Record<string, string> = { bmo: 'Pre', amc: 'Post', dmh: 'Sesión' };
 
 	// Festivos de los próximos 12 meses: España y Baleares (Nager.Date) y días sin bolsa (por reglas).
-	// Hasta que arranca el reloj en el navegador se usa la fecha en la que se construyó la página.
-	const today = $derived(new Date(clock.now || Date.now()).toISOString().slice(0, 10));
+	// Fecha de hoy en Madrid. Hasta que arranca el reloj en el navegador se usa la fecha en la que se
+	// construyó la página.
+	const today = $derived(madridDate(clock.now || Date.now()));
 	const days = $derived.by(() => {
 		const year = Number(today.slice(0, 4));
 		const limit = `${year + 1}${today.slice(4)}`;
