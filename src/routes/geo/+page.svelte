@@ -11,6 +11,9 @@
 	import NewsList from '#lib/components/NewsList.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import Table from '#lib/components/ui/Table.svelte';
+	import { foodCountry, peopleRange } from '#lib/food.ts';
+	import { period } from '#lib/format.ts';
 	import TradeList from '#lib/components/TradeList.svelte';
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
 	import RefugeeTables from '#lib/components/RefugeeTables.svelte';
@@ -83,6 +86,28 @@
 					Refugiados y solicitantes de asilo. Fuente: <a href="https://www.unhcr.org/refugee-statistics/" target="_blank" rel="noopener"
 						>ACNUR, Refugee Data Finder</a
 					> · <Updated at={r.fetchedAt} source="unhcr" />
+				{/snippet}
+			</Panel>
+		{/if}
+		{#if data.food?.data.length}
+			{@const food = data.food}
+			<Panel title="Hambre aguda" meta="Personas en fase IPC 3 o peor · FEWS NET">
+				<Table>
+					<thead><tr><th class="l">País</th><th>Personas</th><th>Periodo</th></tr></thead>
+					<tbody>
+						{#each food.data as f (f.code)}
+							<tr>
+								<td class="l name">{foodCountry(f.code, f.country)}</td>
+								<td>{peopleRange(f.low, f.high)}</td>
+								<td class="mut">{period(f.from.slice(0, 7))}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
+				{#snippet note()}
+					Fase 3 (crisis), 4 (emergencia) o 5 (hambruna) de la clasificación IPC; horquilla de FEWS NET. Solo cubre
+					los países que sigue FEWS NET. Fuente: <a href="https://fews.net" target="_blank" rel="noopener">FEWS NET</a> ·
+					<Updated at={food.fetchedAt} source="fewsnet" />
 				{/snippet}
 			</Panel>
 		{/if}

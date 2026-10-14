@@ -2,6 +2,9 @@
 <script lang="ts">
 	import { clock } from '#lib/clock.svelte.ts';
 	import { nf, when } from '#lib/format.ts';
+	import { sortBy } from '#lib/sort.ts';
+	import { Sorter } from '#lib/sorter.svelte.ts';
+	import SortTh from './ui/SortTh.svelte';
 	import Table from './ui/Table.svelte';
 	import type { Quake } from '#lib/types.ts';
 
@@ -15,15 +18,25 @@
 	}
 
 	let { quakes, empty }: Props = $props();
+
+	// Sin ordenar, como llegan (los más recientes primero).
+	const COLS = { mag: (q: Quake) => q.mag, place: (q: Quake) => q.place, depth: (q: Quake) => q.depth, time: (q: Quake) => Date.parse(q.time) };
+	const sort = new Sorter<keyof typeof COLS>();
+	const shown = $derived(sort.key ? sortBy(quakes, COLS[sort.key], sort.dir) : quakes);
 </script>
 
 {#if quakes.length}
 	<Table>
 		<thead>
-			<tr><th>Mag.</th><th class="l">Lugar</th><th>Prof.</th><th>Cuándo</th></tr>
+			<tr>
+				<SortTh {sort} key="mag">Mag.</SortTh>
+				<SortTh {sort} key="place" first="asc" class="l">Lugar</SortTh>
+				<SortTh {sort} key="depth">Prof.</SortTh>
+				<SortTh {sort} key="time">Cuándo</SortTh>
+			</tr>
 		</thead>
 		<tbody>
-			{#each quakes as q (q.id)}
+			{#each shown as q (q.id)}
 				<tr>
 					<td class:strong={q.mag >= 6}>{nf(q.mag, 1)}</td>
 					<td class="l">

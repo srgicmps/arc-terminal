@@ -1048,6 +1048,8 @@ export interface ReleaseEvent {
 export interface ReleaseCalData {
 	/** Próximas publicaciones de los datos que enseña la terminal (con tema), por fecha. */
 	events: ReleaseEvent[];
+	/** Las publicadas en los últimos 8 días (de la copia anterior), por fecha: para el resumen SEMANA. */
+	past?: ReleaseEvent[];
 }
 
 // ---------- NOVEDADES: lo fusionado en Arc Terminal (PR de GitHub) ----------
@@ -1162,4 +1164,56 @@ export interface UnhcrData {
 	/** Año del dato (fin de año). */
 	year: number;
 	countries: UnhcrCountry[];
+}
+
+// ---------- Asteroides que pasan cerca de la Tierra (NASA JPL CNEOS, scripts/sources/neo.ts) ----------
+
+export interface NeoPass {
+	/** Designación: «2026 TP6». */
+	des: string;
+	/** Momento de máximo acercamiento, en ISO (UTC). */
+	date: string;
+	/** Distancia mínima en distancias lunares (1 = 384 400 km). */
+	ld: number;
+	/** Velocidad relativa, en km/s. */
+	speed: number | null;
+	/** Tamaño en metros: el medido si lo hay; si no, la horquilla que sale de su brillo (albedo 0,25 a 0,05). */
+	size: { min: number; max: number; measured: boolean } | null;
+}
+
+// ---------- Red de bitcoin (mempool.space, scripts/sources/bitcoin.ts) ----------
+
+export interface BitcoinNet {
+	/** Comisión para entrar en el próximo bloque, en sat/vB. */
+	feeFast: number | null;
+	/** La del tercer bloque (unos 30 min). */
+	feeHalfHour: number | null;
+	/** Transacciones esperando (mempool) y su tamaño en vMB. */
+	mempoolTx: number | null;
+	mempoolVmb: number | null;
+	/** Potencia de minado, en EH/s. */
+	hashrate: number | null;
+	/** Altura del último bloque. */
+	height: number;
+	/** Próximo halving: su altura, bloques que faltan y fecha estimada (10 min por bloque). */
+	halving: { height: number; blocks: number; date: string };
+}
+
+// ---------- Inseguridad alimentaria aguda (FEWS NET, scripts/sources/fewsnet.ts) ----------
+
+export interface FoodInsecurity {
+	/** ISO 3166-1 alfa-2: «SO». */
+	code: string;
+	/** Nombre en inglés, como lo da FEWS NET. */
+	country: string;
+	/** Personas en fase IPC 3 o peor («crisis» o más), horquilla de FEWS NET. */
+	low: number;
+	high: number;
+	/** Periodo al que se refiere: «2026-08-01» a «2026-09-30». */
+	from: string;
+	to: string;
+	/** Situación actual, proyección o picos de necesidad del año. */
+	scenario: string;
+	/** Frente a hace un año: «Higher», «Similar», «Lower»… si lo da. */
+	vsYear: string | null;
 }
