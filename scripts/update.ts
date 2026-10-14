@@ -23,7 +23,7 @@ import {
 	type SourceContext
 } from './lib.ts';
 import { buildNewsIndex } from './news-index.ts';
-import { sources } from './sources/index.ts';
+import { loadSources } from './registry.ts';
 
 const OUT_DIR = 'static/data';
 // En los PR, una muestra de cada fuente al final del registro, para revisar la forma real de los datos.
@@ -122,6 +122,7 @@ async function run(source: Source, ctx: SourceContext = NO_CONTEXT): Promise<Sou
 }
 
 const wanted = process.argv.slice(2);
+const sources = await loadSources();
 const selected = wanted.length ? sources.filter((s) => wanted.includes(s.name)) : sources;
 
 await mkdir(OUT_DIR, { recursive: true });
