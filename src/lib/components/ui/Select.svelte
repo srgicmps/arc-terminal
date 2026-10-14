@@ -36,7 +36,8 @@
 		background: var(--raise);
 		border: var(--border);
 		color: var(--fg);
-		padding: var(--sp-4) var(--sp-8);
+		height: var(--control-h);
+		padding: 0 var(--sp-8);
 		font-size: var(--fs-s);
 		max-width: var(--select-max);
 	}

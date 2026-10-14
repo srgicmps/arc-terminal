@@ -8,7 +8,8 @@
 	import { toggleFullscreen } from '#lib/fit.svelte.ts';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { COMMANDS, TICKERS } from '#lib/commands.ts';
+	import { COMMANDS } from '#lib/commands.ts';
+	import { TICKERS } from '#lib/tickers.ts';
 	import {
 		canonical,
 		historyOptions,

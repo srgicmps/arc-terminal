@@ -17,7 +17,8 @@ import {
 	writeHistory,
 	type Option
 } from './cmdline.ts';
-import { COMMANDS, TICKERS } from './commands.ts';
+import { COMMANDS } from './commands.ts';
+import { TICKERS } from './tickers.ts';
 
 const ALL: Option[] = [
 	...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función', aliases: c.aliases })),

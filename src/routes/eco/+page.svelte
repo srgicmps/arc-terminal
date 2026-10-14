@@ -11,8 +11,8 @@
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { compact, period } from '#lib/format.ts';
-	import { diffDays, last, seriesMap, spread } from '#lib/series.ts';
+	import { compact, dm, period } from '#lib/format.ts';
+	import { change, diffDays, last, seriesMap, spread } from '#lib/series.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -78,6 +78,23 @@
 			<SeriesTable next={data.next} head="País" rows={byGeo('debt')} />
 			{#snippet note()}Fuente: Eurostat · <Updated at={data.eurostat?.fetchedAt} source="eurostat" />{/snippet}
 		</Panel>
+		{#if data.fao?.data.series.length}
+			{@const fao = data.fao}
+			<Panel title="Precios de los alimentos" meta="Índice FAO · 2014–2016 = 100">
+				<SeriesTable
+					head="Índice"
+					rows={fao.data.series.map((series) => ({ series, name: series.label, inverse: true }))}
+					spark={36}
+					pct
+					extra={[{ head: 'Año', value: (s) => change(s, 12), unit: ' %', digits: 1 }]}
+				/>
+				{#snippet note()}
+					Fuente: <a href="https://www.fao.org/worldfoodsituation/foodpricesindex/en/" target="_blank" rel="noopener">FAO</a>, precios
+					internacionales en dólares · variación mensual y anual{fao.data.released ? ` · publicado el ${dm(fao.data.released)}` : ''} ·
+					<Updated at={fao.fetchedAt} source="fao" />
+				{/snippet}
+			</Panel>
+		{/if}
 	</div>
 	<div class="col">
 		<Panel title="Próximas reuniones" meta="Decisión de tipos · hora de España" jump={{ code: 'CAL', href: resolve('/cal') }}>
@@ -215,6 +232,25 @@
 				{#if data.fred}· <Updated at={data.fred.fetchedAt} source="fred" />{/if}
 			{/snippet}
 		</Panel>
+		{#if data.fred}
+			<Panel title="Inflación esperada y tipos reales" meta="EE. UU. · mercado de bonos">
+				<SeriesTable
+					next={data.next}
+					head="Indicador"
+					spark={60}
+					rows={[
+						{ series: get('breakeven5-us'), name: 'Inflación esperada a 5 años', decimals: 2, inverse: true },
+						{ series: get('breakeven10-us'), name: 'Inflación esperada a 10 años', decimals: 2, inverse: true },
+						{ series: get('forward5y5y-us'), name: 'A 5 años, dentro de 5', decimals: 2, inverse: true },
+						{ series: get('real10-us'), name: 'Tipo real a 10 años (TIPS)', decimals: 2 }
+					]}
+				/>
+				{#snippet note()}
+					Inflación esperada: diferencia entre el bono del Tesoro y el ligado a la inflación (TIPS) del mismo plazo.
+					Fuente: FRED · <Updated at={data.fred?.fetchedAt} source="fred" />
+				{/snippet}
+			</Panel>
+		{/if}
 		{#if data.gie?.data.series.length}
 			<Panel title="Gas almacenado" meta="% de llenado · en puntos">
 				<SeriesTable
