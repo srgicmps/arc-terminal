@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { asset, resolve } from '$app/paths';
+	import { latestWatched } from '#lib/boe.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
-	import { nf, when } from '#lib/format.ts';
-	import { cheapestNow, cheapestWindow, hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
+	import { dm, nf, when } from '#lib/format.ts';
+	import { cheapestNow, hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
 	import { seriesMap, spread } from '#lib/series.ts';
 	import { compass, sky } from '#lib/weather.ts';
 	import ModularGrid from '#lib/components/ModularGrid.svelte';
@@ -13,6 +14,8 @@
 	import Markets from '#lib/components/top/Markets.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
+	import type { BoeWeek } from '#lib/types.ts';
+	import { initWatchwords, watchwords } from '#lib/watchwords.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
 	import type { PageProps } from './$types';
 
@@ -51,8 +54,6 @@
 	const today = $derived(pvpc.filter((p) => p.day === (now?.day ?? pvpc[0]?.day)));
 	const current = $derived(now ? today.find((p) => isHour(p, now)) : undefined);
 	const cheapest = $derived([...today].sort((a, b) => a.kwh - b.kwh)[0]);
-	// Las 2 horas seguidas más baratas del día, como en LUZ.
-	const window2 = $derived(today[0] ? cheapestWindow(pvpc, today[0].day, 2) : null);
 	// El PVPC de mañana se publica hacia las 20:30: si ya está, su media.
 	const tomorrow = $derived.by(() => {
 		const day = today[0]?.day;
@@ -75,6 +76,19 @@
 
 	const boeGeneral = $derived(data.boe?.data.sections.find((s) => s.code === '1'));
 	const boeTotal = $derived((data.boe?.data.sections ?? []).reduce((n, s) => n + s.total, 0));
+
+	// Palabras vigiladas (las de la vista BOE, guardadas en este navegador): cuántas disposiciones del último
+	// sumario las nombran. boe-week.json se pide en el navegador y solo si hay alguna palabra.
+	let boeWeek = $state.raw<BoeWeek | null>(null);
+	$effect(() => initWatchwords());
+	$effect(() => {
+		if (!watchwords.ready || !watchwords.words.length || boeWeek) return;
+		fetch(asset('data/boe-week.json' as Parameters<typeof asset>[0]))
+			.then((res) => (res.ok ? (res.json() as Promise<BoeWeek>) : null))
+			.then((w) => (boeWeek = w))
+			.catch(() => {});
+	});
+	const boeWatch = $derived(latestWatched(boeWeek, watchwords.words));
 
 	// Línea de arriba: titulares nuevos desde la última visita y la franja de luz más barata.
 	const fresh = $derived(clock.now && visit.ready ? newSinceText(newCount(data.headlines, visit.last), visit.last, clock.now) : '');
@@ -197,7 +211,7 @@
 		<ul class="mini">
 			{#if current}<li><span class="l">Ahora</span><b>{nf(current.kwh, 3)}</b></li>{/if}
 			{#if cheapest}<li><span class="l">Más barata hoy</span><b class="up">{hourLabel(cheapest)} · {nf(cheapest.kwh, 3)}</b></li>{/if}
-			{#if window2}<li><span class="l">Mejor franja de 2 h</span><b class="up">{hourLabel(window2.first)}–{hourLabel(window2.after)} · {nf(window2.avg, 3)}</b></li>{/if}
+			{#if cheapWindow}<li><span class="l">Franja de 2 h{cheapWindow.tomorrow ? ', mañana' : ''}</span><b class="up">{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)} · {nf(cheapWindow.avg, 3)}</b></li>{/if}
 			{#if tomorrow !== null}
 				<li>
 					<span class="l">Mañana, media</span>
@@ -225,6 +239,14 @@
 {#snippet boe()}
 	<Panel id="boe" title="BOE de hoy" meta="{boeTotal} publicaciones" jump={{ code: 'BOE', href: resolve('/boe') }}>
 		<ul class="mini">
+			{#if boeWatch}
+				<li>
+					<a class="l" href={resolve('/boe')}
+						>Con tus palabras vigiladas{#if boeWatch.date !== now?.day}<small>BOE del {dm(boeWatch.date)}</small>{/if}</a
+					>
+					<b class:strong={boeWatch.count > 0}>{boeWatch.count}</b>
+				</li>
+			{/if}
 			{#each (boeGeneral?.items ?? []).slice(0, 4) as item (item.id)}
 				<li><a class="l" href={item.html} target="_blank" rel="noopener">{item.title}</a></li>
 			{:else}

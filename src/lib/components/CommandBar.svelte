@@ -4,6 +4,7 @@
 	Atajos globales: «/» o empezar a escribir enfoca la barra; Esc vuelve a la portada; Mayús+F, pantalla completa.
 -->
 <script lang="ts">
+	import { isShortcut } from '#lib/shortcuts.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import { toggleFullscreen } from '#lib/fit.svelte.ts';
 	import { goto } from '$app/navigation';
@@ -151,14 +152,14 @@
 	function onWindowKeydown(e: KeyboardEvent) {
 		const tag = (document.activeElement?.tagName ?? '').toUpperCase();
 		if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || e.ctrlKey || e.metaKey || e.altKey) return;
-		if (e.key === '/') {
+		if (isShortcut(e, 'bar')) {
 			e.preventDefault();
 			input.focus();
-		} else if (e.key === 'F' && e.shiftKey) {
+		} else if (isShortcut(e, 'fullscreen')) {
 			// Mayúsculas + F: pantalla completa. La f sola sigue escribiendo comandos (FUEL…).
 			e.preventDefault();
 			toggleFullscreen();
-		} else if (e.key === 'Escape') {
+		} else if (isShortcut(e, 'home')) {
 			goto(resolve('/'));
 		} else if (e.key.length === 1 && /[a-z0-9]/i.test(e.key)) {
 			input.focus();

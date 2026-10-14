@@ -6,6 +6,7 @@
 	Dentro de una <ModularGrid>, si tiene id, la cabecera lleva además el asa ⋮⋮ y el ✕.
 -->
 <script lang="ts">
+	import { isShortcut } from '#lib/shortcuts.ts';
 	import type { Snippet } from 'svelte';
 	import { getModular, type Span } from '#lib/layout.svelte.ts';
 	import type { ShareSource } from '#lib/share.ts';
@@ -26,9 +27,11 @@
 		note?: Snippet;
 		/** Id estable del panel en la vista modular («luz», «boe»…). */
 		id?: string;
+		/** Se abre ya ampliado (p. ej. «NVDA GP» en la barra abre el gráfico de la ficha así). */
+		expand?: boolean;
 	}
 
-	let { title, meta, accent, jump, share, children, note, id }: Props = $props();
+	let { title, meta, accent, jump, share, children, note, id, expand = false }: Props = $props();
 
 	// La vista modular, si este panel está en una (si no, undefined: el panel se ve como siempre).
 	const modular = getModular();
@@ -46,6 +49,11 @@
 		max = true;
 	}
 
+	// Como un watch de Vue con immediate: si llega `expand`, se amplía al montarse (y si cambia a true).
+	$effect(() => {
+		if (expand) open();
+	});
+
 	function close() {
 		max = false;
 		titleButton?.focus();
@@ -53,7 +61,7 @@
 
 	/** M con el foco en el título: abre o cierra. No llega a la barra de comandos (que escribiría la m). */
 	function titleKeydown(e: KeyboardEvent) {
-		if ((e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+		if (isShortcut(e, 'panel') && !e.ctrlKey && !e.metaKey && !e.altKey) {
 			e.preventDefault();
 			e.stopPropagation();
 			if (max) close();
