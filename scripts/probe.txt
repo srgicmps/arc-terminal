@@ -88,3 +88,11 @@ https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-switzerland ~ <title>[
 https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-greece ~ <title>[^<]{0,80}
 # M40: ¿trae cada mercado de Polymarket su cambio en 24 h (oneDayPriceChange)?
 https://gamma-api.polymarket.com/events?active=true&closed=false&limit=2&order=volume24hr&ascending=false&tag_slug=geopolitics ~ oneDayPriceChange
+# TECH/AI: mejores fuentes (M38): DeepMind, NVIDIA, Meta AI, Anthropic, Microsoft Research
+https://deepmind.google/blog/rss.xml ~ <title>[^<]{0,100}
+https://blogs.nvidia.com/feed/ ~ <title>[^<]{0,100}
+https://nvidianews.nvidia.com/releases.xml ~ <title>[^<]{0,100}
+https://ai.meta.com/blog/rss/ ~ <title>[^<]{0,100}
+https://engineering.fb.com/feed/ ~ <title>[^<]{0,100}
+https://www.anthropic.com/news/rss.xml ~ <title>[^<]{0,100}
+https://www.microsoft.com/en-us/research/feed/ ~ <title>[^<]{0,100}
