@@ -22,6 +22,7 @@
 	import { tvSymbol } from '#lib/tickers.ts';
 	import { initTaste, taste } from '#lib/taste.svelte.ts';
 	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
+	import { crossedNow, initThresholds } from '#lib/thresholds.svelte.ts';
 	import { parseTv, routeOf } from '#lib/tv.ts';
 	import type { LayoutProps } from './$types';
 
@@ -30,6 +31,9 @@
 	// El reloj arranca en el navegador (como onMounted en Vue) y se para al salir.
 	$effect(startClock);
 	$effect(initWatchlist);
+	$effect(initThresholds);
+	// Umbrales cruzados (lote 25): un contador discreto en la barra, con sus nombres al pasar por encima.
+	const crossedRules = $derived(crossedNow());
 	$effect(initTaste);
 	$effect(initPlace);
 	$effect(initTheme);
@@ -181,6 +185,12 @@
 		{#if !online}<span class="offline" title="Se muestra la última copia guardada">Sin conexión</span>{/if}
 		<PlacePicker />
 		<Clocks />
+		{#if crossedRules.length}
+			<span class="limits" role="status" title={crossedRules.map(([, r]) => `${r.name} ${r.op === '>' ? 'por encima de' : 'por debajo de'} ${r.v.toLocaleString('es-ES', { maximumFractionDigits: 3 })}`).join(' · ')}>
+				<span aria-hidden="true">⚑</span>
+				{crossedRules.length}<span class="sr"> {crossedRules.length === 1 ? 'umbral cruzado' : 'umbrales cruzados'}</span>
+			</span>
+		{/if}
 		{#if page.route.id === '/'}
 			<!-- General / Modular: de momento solo la portada se puede personalizar. -->
 			<button
@@ -352,6 +362,14 @@
 		color: var(--amber);
 		border: var(--hair) solid var(--amber-edge);
 		padding: var(--sp-2) var(--sp-7);
+	}
+
+	/* Umbrales cruzados: cifra pequeña en ámbar, sin caja, para que no grite. */
+	.limits {
+		color: var(--amber);
+		font-family: var(--mono);
+		font-size: var(--fs-s);
+		cursor: default;
 	}
 
 	/* Teclas de función */

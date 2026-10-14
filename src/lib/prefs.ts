@@ -28,6 +28,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-home', storage: 'local', what: 'Vista que se abre al entrar', where: 'HELP, «Vista de inicio»', kind: 'ajuste' },
 	{ key: 'arc-home-done', storage: 'session', what: 'Esta pestaña ya ha abierto la vista de inicio (luego TOP es la portada)', where: 'Al entrar', kind: 'dato' },
 	{ key: 'arc-chart-period', storage: 'local', what: 'Último periodo elegido en los gráficos de línea', where: 'Botones 1M · 6M · 1A · 5A · Máx', kind: 'ajuste' },
+	{ key: 'arc-thresholds', storage: 'local', what: 'Umbrales «resáltame si pasa de X» de las tablas de series', where: 'Tocar la cifra «Último» de una serie', kind: 'ajuste' },
 	{ key: 'arc-accent', storage: 'local', what: 'Color de acento: ámbar, cian o azul', where: 'HELP, «A tu gusto»', kind: 'ajuste' },
 	{ key: 'arc-keys', storage: 'local', what: 'Secciones de la fila de arriba', where: 'HELP, «A tu gusto»', kind: 'ajuste' },
 	{ key: 'arc-thumb', storage: 'local', what: 'Las 4 secciones de la barra inferior del móvil', where: 'HELP, «A tu gusto»', kind: 'ajuste' },
