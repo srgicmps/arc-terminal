@@ -24,6 +24,7 @@ import { portwatch } from './portwatch.ts';
 import { predictions } from './predictions.ts';
 import { powerMix } from './ree-mix.ts';
 import { reliefweb } from './reliefweb.ts';
+import { releasesCal } from './releases-cal.ts';
 import { releases } from './releases.ts';
 import { sanctions } from './sanctions.ts';
 import { search } from './search.ts';
@@ -71,6 +72,7 @@ export const sources: Source<any>[] = [
 	hn,
 	hfpapers,
 	releases,
+	releasesCal,
 	wiki,
 	...newsSources,
 	// Derivadas: se calculan después, con los datos de las anteriores.

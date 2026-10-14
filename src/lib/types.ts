@@ -585,3 +585,22 @@ export interface LeaderAgenda {
 	source: { name: string; url: string };
 	error?: string;
 }
+
+// ---------- Calendarios de publicación: próximo dato (Eurostat, BLS, INE) ----------
+
+export interface ReleaseEvent {
+	/** Inicio en ISO UTC. */
+	date: string;
+	/** Si el organismo no da la hora. */
+	allDay: boolean;
+	title: string;
+	source: 'Eurostat' | 'BLS' | 'INE';
+	/** Tema (src/lib/nextrelease.ts) si es uno de los datos que enseña la terminal, o null. */
+	topic: string | null;
+	url?: string;
+}
+
+export interface ReleaseCalData {
+	/** Próximas publicaciones, por fecha. */
+	events: ReleaseEvent[];
+}

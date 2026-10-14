@@ -8,7 +8,7 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
-	import { compact, dm, nf, weekday } from '#lib/format.ts';
+	import { compact, dm, hm, nf, weekday } from '#lib/format.ts';
 	import { bmeHolidays, nyseHolidays } from '#lib/markets.ts';
 	import { madridDate } from '#lib/meetings.ts';
 	import type { PageProps } from './$types';
@@ -21,6 +21,11 @@
 	};
 
 	const earnings = $derived(data.finnhub?.data.earnings ?? []);
+
+	// Próximos datos de los calendarios oficiales: solo los que enseña la terminal (con tema), desde hoy.
+	const releases = $derived(
+		(data.releases?.data.events ?? []).filter((e) => e.topic && e.date >= new Date(clock.now || Date.now()).toISOString().slice(0, 10)).slice(0, 14)
+	);
 	const HOUR: Record<string, string> = { bmo: 'Pre', amc: 'Post', dmh: 'Sesión' };
 
 	// Festivos de los próximos 12 meses: España y Baleares (Nager.Date) y días sin bolsa (por reglas).
@@ -61,6 +66,29 @@
 		<Panel title="Bancos centrales" meta="Próximas reuniones · BCE y Fed">
 			<MeetingList mode="list" limit={6} />
 			{#snippet note()}Decisión de tipos, en hora de España. Fuentes: calendarios oficiales del BCE y de la Fed.{/snippet}
+		</Panel>
+		<Panel title="Próximos datos" meta="Calendarios oficiales · hora de España">
+			{#if releases.length}
+				<Table>
+					<thead><tr><th>Día</th><th>Hora</th><th class="l">Dato</th><th class="l">Fuente</th></tr></thead>
+					<tbody>
+						{#each releases as e (e.source + e.date + e.title)}
+							<tr>
+								<td class="mut">{weekday(madridDate(Date.parse(e.date)))} {dm(e.date).split(' ')[1]}</td>
+								<td class="mut">{e.allDay ? '—' : hm(e.date)}</td>
+								<td class="l name wrap">{#if e.url}<a href={e.url} target="_blank" rel="noopener">{e.title}</a>{:else}{e.title}{/if}</td>
+								<td class="l mut">{e.source}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
+			{:else}
+				<p class="empty">{data.releases ? 'Sin publicaciones de los datos que sigue la terminal en las próximas semanas.' : 'Sin datos todavía.'}</p>
+			{/if}
+			{#snippet note()}
+				Inflación, paro y PIB de Eurostat, IPC y empleo del BLS, e IPC, EPA, vivienda y turistas del INE.
+				{#if data.releases}<Updated at={data.releases.fetchedAt} source="releases-cal" />{/if}
+			{/snippet}
 		</Panel>
 		<Panel title="Festivos" meta="Próximos 12 meses">
 			{#if next}
