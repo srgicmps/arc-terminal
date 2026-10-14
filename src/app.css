@@ -7,7 +7,8 @@
 	--line: #1d242d;
 	--fg: #dce1e7;
 	--muted: #808a97;
-	--faint: #56606c;
+	/* Gris más tenue para texto: 4,6:1 sobre --panel (WCAG AA). Antes #56606c (2,96:1). */
+	--faint: #747e8a;
 	--amber: #f2a83b;
 	--amber-soft: rgba(242, 168, 59, 0.13);
 	--amber-edge: rgba(242, 168, 59, 0.42);
@@ -54,6 +55,8 @@ select {
 	color: inherit;
 }
 
+/* Foco con teclado: contorno ámbar fino. Solo con :focus-visible, para que el ratón y el dedo no lo muestren.
+   Si un componente quita el outline, tiene que poner otra señal (borde ámbar, fondo…). */
 :focus-visible {
 	outline: 1px solid var(--amber);
 	outline-offset: 2px;
@@ -333,5 +336,17 @@ kbd {
 @media (max-width: 720px) {
 	.tiles {
 		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+/* Quien pide menos movimiento en su sistema no ve animaciones ni transiciones. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
 	}
 }
