@@ -27,3 +27,9 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
+# FUEL: Weekly Oil Bulletin de la Comisión Europea (enlaces a los .xlsx y fecha)
+https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en ~ [^"' <>]{0,200}\.xlsx[^"' <>]{0,40}
+https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en ~ .{0,80}(prices with taxes|prices without taxes|history).{0,80}
+https://ec.europa.eu/energy/observatory/reports/latest_prices_with_taxes.xlsx ~ ZZZ
+https://ec.europa.eu/energy/observatory/reports/latest_prices_without_taxes.xlsx ~ ZZZ
+https://ec.europa.eu/energy/observatory/reports/Oil_Bulletin_Prices_History.xlsx ~ ZZZ
