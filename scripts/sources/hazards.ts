@@ -50,6 +50,8 @@ export const hazards: Source<HazardsData> = {
 	name: 'hazards',
 	label: 'Huracanes (NOAA) y eventos naturales: incendios, volcanes, tormentas (NASA EONET)',
 	maxAgeMinutes: 25,
+	// Fuera de la temporada de huracanes y sin desastres activos, las dos listas pueden venir vacías.
+	allowEmpty: true,
 	async fetch() {
 		const [nhc, eonet] = await Promise.all([
 			getJson<Raw>('https://www.nhc.noaa.gov/CurrentStorms.json').catch(() => null),

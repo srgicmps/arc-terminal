@@ -58,7 +58,7 @@ function summary(data: unknown): string {
 }
 
 async function run(source: Source): Promise<SourceStatus> {
-	const base = { name: source.name, label: source.label, maxAgeMinutes: source.maxAgeMinutes };
+	const base = { name: source.name, label: source.label, maxAgeMinutes: source.maxAgeMinutes, requires: source.requires };
 	if (source.requires && !process.env[source.requires]) {
 		console.log(`- ${source.name}: sin clave ${source.requires}, se salta`);
 		return { ...base, state: 'off', fetchedAt: null, error: `Falta la clave ${source.requires} en GitHub Secrets` };

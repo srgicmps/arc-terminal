@@ -95,6 +95,12 @@ describe('checkShrink', () => {
 describe('fuentes', () => {
 	it('solo las que pueden venir vacías llevan allowEmpty', () => {
 		const allowed = sources.filter((s) => s.allowEmpty).map((s) => s.name);
-		expect(allowed.sort()).toEqual(['hfpapers', 'quakes-es']);
+		expect(allowed.sort()).toEqual(['alerts', 'hazards', 'hfpapers', 'quakes-es']);
+	});
+
+	it('un día sin avisos ni desastres no es un fallo', () => {
+		const byName = (name: string) => sources.find((s) => s.name === name)!;
+		expect(checkShrink({ zone: 'Menorca', alerts: [] }, { zone: 'Menorca', alerts: items(3) }, byName('alerts'))).toBeNull();
+		expect(checkShrink({ storms: [], events: [] }, { storms: items(2), events: items(40) }, byName('hazards'))).toBeNull();
 	});
 });
