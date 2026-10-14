@@ -19,9 +19,11 @@
 	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
 	import { initPlace } from '#lib/place.svelte.ts';
 	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
+	import { initFolded } from '#lib/folded.svelte.ts';
 	import { tvSymbol } from '#lib/tickers.ts';
 	import { initTaste, taste } from '#lib/taste.svelte.ts';
 	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
+	import { crossedNow, initThresholds } from '#lib/thresholds.svelte.ts';
 	import { parseTv, routeOf } from '#lib/tv.ts';
 	import type { LayoutProps } from './$types';
 
@@ -30,6 +32,10 @@
 	// El reloj arranca en el navegador (como onMounted en Vue) y se para al salir.
 	$effect(startClock);
 	$effect(initWatchlist);
+	$effect(initThresholds);
+	// Umbrales cruzados (lote 25): un contador discreto en la barra, con sus nombres al pasar por encima.
+	const crossedRules = $derived(crossedNow());
+	$effect(initFolded);
 	$effect(initTaste);
 	$effect(initPlace);
 	$effect(initTheme);
@@ -74,6 +80,13 @@
 		e.preventDefault();
 		e.stopImmediatePropagation();
 	}
+
+	// En el móvil los accesos van en una fila con scroll: el de la vista actual, siempre a la vista.
+	$effect(() => {
+		void page.route.id;
+		if (!matchMedia('(max-width: 720px)').matches) return;
+		document.querySelector('.keys [aria-current="page"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+	});
 
 	// Deslizar entre vistas en el móvil (lote 22): a izquierda o derecha, a la vista de al lado de la fila de
 	// arriba. No cuenta si el dedo empieza en algo que ya se desliza en horizontal (tablas anchas, mapas,
@@ -181,6 +194,12 @@
 		{#if !online}<span class="offline" title="Se muestra la última copia guardada">Sin conexión</span>{/if}
 		<PlacePicker />
 		<Clocks />
+		{#if crossedRules.length}
+			<span class="limits" role="status" title={crossedRules.map(([, r]) => `${r.name} ${r.op === '>' ? 'por encima de' : 'por debajo de'} ${r.v.toLocaleString('es-ES', { maximumFractionDigits: 3 })}`).join(' · ')}>
+				<span aria-hidden="true">⚑</span>
+				{crossedRules.length}<span class="sr"> {crossedRules.length === 1 ? 'umbral cruzado' : 'umbrales cruzados'}</span>
+			</span>
+		{/if}
 		{#if page.route.id === '/'}
 			<!-- General / Modular: de momento solo la portada se puede personalizar. -->
 			<button
@@ -352,6 +371,14 @@
 		color: var(--amber);
 		border: var(--hair) solid var(--amber-edge);
 		padding: var(--sp-2) var(--sp-7);
+	}
+
+	/* Umbrales cruzados: cifra pequeña en ámbar, sin caja, para que no grite. */
+	.limits {
+		color: var(--amber);
+		font-family: var(--mono);
+		font-size: var(--fs-s);
+		cursor: default;
 	}
 
 	/* Teclas de función */
@@ -564,6 +591,23 @@
 			display: none;
 		}
 
+		/* Accesos en una sola fila que se desliza en horizontal: la cabecera ocupa una línea menos. Un fundido
+		   muy leve a la derecha avisa de que hay más; el de la vista actual se trae a la vista al cambiar. */
+		.keys {
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			scrollbar-width: none;
+			mask-image: linear-gradient(to right, var(--bg) calc(100% - var(--sp-24)), transparent);
+		}
+
+		.keys::-webkit-scrollbar {
+			display: none;
+		}
+
+		.key {
+			flex: none;
+		}
+
 		.top :global(.cmd) {
 			order: 2;
 			flex-basis: 100%;
@@ -648,7 +692,7 @@
 		     menor: ninguno se queda en 2-3 filas;
 		   - el alto que sobra se reparte a partes iguales, sin que ningún panel pase de su contenido: lo
 		     que no usa una tabla corta se lo quedan las listas largas, que hacen scroll por dentro. */
-		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max)) {
+		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max, .folded)) {
 			flex: 1 0 auto;
 			height: var(--fit-panel-min);
 			max-height: fit-content;
@@ -656,7 +700,7 @@
 		}
 
 		/* Gráficos, mapas y widgets tienen un alto fijo: recortados no se leen, así que van enteros. */
-		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max):has(.chart, .map, .tv, .curve, .bars)) {
+		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max, .folded):has(.chart, .map, .tv, .curve, .bars)) {
 			height: auto;
 		}
 	}
@@ -673,7 +717,7 @@
 			background: var(--line);
 		}
 
-		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max)) {
+		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max, .folded)) {
 			height: auto;
 			max-height: none;
 			border-top: 0;
@@ -682,7 +726,7 @@
 		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con
 		   su fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. Los gráficos,
 		   mapas y widgets van enteros, como en una columna. */
-		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max):not(:has(.chart, .map, .tv, .curve, .bars))) {
+		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max, .folded):not(:has(.chart, .map, .tv, .curve, .bars))) {
 			contain: size;
 			contain-intrinsic-block-size: var(--fit-panel-min);
 		}
@@ -701,7 +745,7 @@
 			background: var(--line);
 		}
 
-		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max)) {
+		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max, .folded)) {
 			height: auto;
 			max-height: none;
 			border-top: 0;
@@ -710,7 +754,7 @@
 		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con
 		   su fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. Los gráficos,
 		   mapas y widgets van enteros, como en una columna. */
-		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max):not(:has(.chart, .map, .tv, .curve, .bars))) {
+		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max, .folded):not(:has(.chart, .map, .tv, .curve, .bars))) {
 			contain: size;
 			contain-intrinsic-block-size: var(--fit-panel-min);
 		}

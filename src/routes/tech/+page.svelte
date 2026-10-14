@@ -49,6 +49,15 @@
 		</Panel>
 		<InternetStatusPanel />
 		<LaunchesPanel />
+		{#if data.reg?.data.items.length}
+			<Panel title="Regulación" meta="UE · ley de IA, mercado digital y multas de datos">
+				<NewsList items={data.reg.data.items} />
+				{#snippet note()}
+					Comisión Europea (estrategia digital) y Comité Europeo de Protección de Datos ·
+					<Updated at={data.reg?.fetchedAt} source="news-reg" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Hacker News" meta="Portada, por puntos">
 			<div class="topics"><Seg label="Tema" options={HN_TOPICS} bind:value={topic} /></div>
 			{#if hn.length}<HnTable items={hn} />{:else}<p class="empty">Nada de este tema en la portada ahora mismo.</p>{/if}

@@ -9,6 +9,12 @@
 	import Table from '#lib/components/ui/Table.svelte';
 	import { keyJoin, SHORTCUTS } from '#lib/shortcuts.ts';
 	import { FUNCTIONS } from '#lib/functions.ts';
+	import Select from '#lib/components/ui/Select.svelte';
+	import { HOME_KEY, homeChoices, isHomeCode } from '#lib/home.ts';
+	import { persisted } from '#lib/persisted.svelte.ts';
+
+	// Vista de inicio (home.ts): la que se abre al entrar, guardada en este navegador.
+	const home = persisted(HOME_KEY, 'TOP', isHomeCode);
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Share from '#lib/components/ui/Share.svelte';
 	import { collect, decode, encode, HASH } from '#lib/transfer.ts';
@@ -93,6 +99,12 @@
 				<dd><Seg label="Secciones de la fila de arriba" options={sections} bind:values={() => taste.top, setTop} /></dd>
 				<dt>Barra del móvil <small>({taste.thumb.length} de {THUMB_MAX})</small></dt>
 				<dd><Seg label="Secciones de la barra inferior del móvil" options={sections} bind:values={() => taste.thumb, setThumb} /></dd>
+				<dt>Al entrar</dt>
+				<dd>
+					<Select label="Vista" bind:value={() => home.value, (v) => (home.value = v)}>
+						{#each homeChoices() as c (c.code)}<option value={c.code}>{c.code} · {c.key}</option>{/each}
+					</Select>
+				</dd>
 				<dt>Otro dispositivo</dt>
 				<dd class="send"><Share source={transferLink} /> Enlace con todo lo tuyo: estos ajustes, MIS, palabras vigiladas, tu sitio…</dd>
 			</dl>
@@ -273,4 +285,5 @@
 			margin-block: 0;
 		}
 	}
+
 </style>

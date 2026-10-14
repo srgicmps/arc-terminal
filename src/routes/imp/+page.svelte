@@ -6,6 +6,7 @@
 	import { urlState } from '#lib/urlstate.svelte.ts';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import Listen from '#lib/components/ui/Listen.svelte';
 	import { IMP_GROUPS, IMP_PERIODS, aggregate, inGroup, minus, topImportant, type ImpGroup, type ImpTotal } from '#lib/imp.ts';
 	import { NEWS_SECTIONS } from '#lib/news.ts';
 	import { headlineList } from '#lib/titles.svelte.ts';
@@ -56,7 +57,20 @@
 	const toggle = (k: string) => (open.has(k) ? open.delete(k) : open.add(k));
 </script>
 
-<ViewHeader code="IMP" title="Lo más importante" sub="Lo que cuentan más medios, en más secciones y durante más tiempo; sin IA" />
+<ViewHeader code="IMP" title="Lo más importante" sub="Lo que cuentan más medios, en más secciones y durante más tiempo; sin IA">
+	{#snippet aside()}
+		<!-- «Escuchar» (lote 25): los 5 primeros de la pestaña y la sección elegidas, como se ven (ES o EN). -->
+		<Listen
+			lines={() => [
+				{ text: `Lo más importante: ${IMP_PERIODS.find((p) => p.key === period)!.label.toLowerCase()}.`, lang: 'es' },
+				...items.slice(0, 5).map((item) => {
+					const t = list.link(item, item.k);
+					return { text: `${t.text}.`, lang: t.lang === 'en' ? ('en' as const) : ('es' as const) };
+				})
+			]}
+		/>
+	{/snippet}
+</ViewHeader>
 
 <div class="controls">
 	<Seg label="Periodo" options={periods} bind:value={periodSel.value} />
