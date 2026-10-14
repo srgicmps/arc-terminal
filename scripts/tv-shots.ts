@@ -5,7 +5,7 @@
 // repiten en cada widget, junto a los tokens --panel y --line, para compararlos sin abrir las imágenes.
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { chromium, type Browser, type Page } from 'playwright-core';
+import { chromium, type Browser, type Locator, type Page } from 'playwright-core';
 
 const PORT = 4318;
 const ROOT = `http://localhost:${PORT}/arc-terminal`;
@@ -54,6 +54,17 @@ function topColors(page: Page, png: Buffer): Promise<string[]> {
 	}, png.toString('base64'));
 }
 
+/** Principio del texto que muestra el widget dentro de su iframe (avisos como «símbolo no disponible»). */
+async function frameText(el: Locator): Promise<string> {
+	try {
+		const frame = await (await el.locator('iframe').first().elementHandle())?.contentFrame();
+		const text = (await frame?.locator('body').innerText({ timeout: 3000 })) ?? '';
+		return text.replace(/\s+/g, ' ').trim().slice(0, 400);
+	} catch {
+		return '(sin texto)';
+	}
+}
+
 const server = spawn('pnpm', ['exec', 'vite', 'preview', '--port', String(PORT), '--strictPort'], { stdio: 'ignore' });
 mkdirSync('shots', { recursive: true });
 
@@ -92,6 +103,7 @@ try {
 				const label = (await maps.nth(m).textContent())?.trim() ?? String(m);
 				writeFileSync(`shots/${theme}-map-${label.replace(/\W+/g, '_')}.png`, png);
 				console.log(`  mapa ${label}: ${(await topColors(page, png)).join(' · ')}`);
+				if (theme === 'dark') console.log(`    texto: ${await frameText(el)}`);
 			}
 			for (let i = 0; i < n; i++) {
 				const el = widgets.nth(i);
@@ -101,6 +113,7 @@ try {
 				const file = `shots/${theme}-${path.replace(/\W+/g, '_') || 'top'}-${i}-${name}.png`;
 				writeFileSync(file, png);
 				console.log(`  ${name}: ${(await topColors(page, png)).join(' · ')}`);
+				if (theme === 'dark') console.log(`    texto: ${await frameText(el)}`);
 			}
 			await page.close();
 		}
