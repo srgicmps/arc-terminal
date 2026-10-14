@@ -77,9 +77,9 @@ export const load: PageServerLoad = async () => {
 		power: trim(power, (d) => ({ pvpc: d.pvpc, spot: [] })),
 		// Todas las ciudades (para «Mi mañana» con la de «Tu sitio»), con solo hoy y mañana.
 		weather: trim(weather, (d) => ({ places: d.places.map((p) => ({ ...p, daily: p.daily.slice(0, 2) })) })),
-		// Avisos meteorológicos que siguen en vigor al construir (los caducados los descarta también «Mi mañana»).
 		// Publicaciones de datos de hoy y mañana (para «Mi mañana»): el calendario entero llega a 45 días.
 		releases: (releases?.data.events ?? []).filter((e) => madridDate(Date.parse(e.date)) <= tomorrow),
+		// Avisos meteorológicos que siguen en vigor al construir (los caducados los descarta también «Mi mañana»).
 		alerts: trim(alerts, (d) => ({ ...d, alerts: d.alerts.filter((a) => Date.parse(a.expires) > Date.now()) })),
 		// Las 3 más baratas de gasolina 95 (sin el historial ni el resto de gasolineras).
 		fuel: trim(fuel, (d) => ({

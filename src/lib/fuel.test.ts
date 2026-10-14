@@ -1,6 +1,6 @@
 // FUEL: qué provincia abre «FUEL Madrid» o «FUEL 28», y lectura del Weekly Oil Bulletin.
 import { describe, expect, it } from 'vitest';
-import { findProvince, parseOilBulletin, taxShare } from './fuel.ts';
+import { findProvince, parseOilBulletin, taxShare, zoneFor } from './fuel.ts';
 
 // Nombres como los publica el Ministerio.
 const PROVINCES = [
@@ -62,5 +62,20 @@ describe('Weekly Oil Bulletin', () => {
 		expect(taxShare({ tax: 1.6, net: 0.8 })).toBe(50);
 		expect(taxShare({ tax: 1.5, net: null })).toBeNull();
 		expect(taxShare({ tax: null, net: 0.8 })).toBeNull();
+	});
+});
+
+describe('zoneFor', () => {
+	const at = (name: string, admin2: string | undefined, lat = 40, lon = -3, cc = 'ES') => ({ name, cc, lat, lon, admin2 });
+	it('la provincia de «Tu sitio», también con el nombre al revés que el Ministerio', () => {
+		expect(zoneFor(at('Madrid', 'Madrid'), PROVINCES)).toBe('28');
+		expect(zoneFor(at('Palma', 'Illes Balears', 39.57, 2.65), PROVINCES)).toBe('07');
+		expect(zoneFor(at('Santiago', 'A Coruña', 42.88, -8.54), PROVINCES)).toBe('15');
+	});
+
+	it('Menorca por coordenadas; fuera de España o sin provincia que encaje, null', () => {
+		expect(zoneFor(at('Maó', 'Illes Balears', 39.89, 4.26), PROVINCES)).toBe('menorca');
+		expect(zoneFor(at('Tokio', undefined, 35.69, 139.69, 'JP'), PROVINCES)).toBeNull();
+		expect(zoneFor(at('Soria', 'Soria'), PROVINCES)).toBeNull();
 	});
 });

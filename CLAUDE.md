@@ -168,3 +168,5 @@ Cuando termine una fase, actualiza esta lista.
 - Bonos a 10 años de Reino Unido, Japón y China: TradingView no da rentabilidades en sus widgets; hacen falta
   fuentes oficiales (BoE, MOF de Japón, ChinaBond). De momento no se hacen.
 - «Próximo dato» de Eurostat (M10): el .ics `cache/RELEASE_CALENDAR/calendar_EN.ics` da 404 y no se ha encontrado el nuevo. El de INE y EE. UU. (fechas de FRED; el .ics del BLS prohíbe robots) sí funcionan.
+- Oro de los bancos centrales en toneladas (lote 24.5): la API nueva del FMI (2025) tiene el flujo IRFCL, pero su lista de
+  indicadores no incluye el oro (seis sondeos en el #282). El World Gold Council pide registro.

@@ -12,7 +12,9 @@ const MAX_FAVORITES = 5;
 export const place = $state({
 	current: DEFAULT_PLACE,
 	favorites: [] as Place[],
-	ready: false
+	ready: false,
+	/** Si el sitio lo ha elegido alguien (guardado o por la URL) y no es el de partida. */
+	chosen: false
 });
 
 function save() {
@@ -26,7 +28,9 @@ export function initPlace() {
 	if (place.ready) return;
 	try {
 		const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null');
-		place.current = toPlace(saved?.current) ?? DEFAULT_PLACE;
+		const current = toPlace(saved?.current);
+		place.current = current ?? DEFAULT_PLACE;
+		place.chosen = current !== null;
 		if (Array.isArray(saved?.favorites)) {
 			place.favorites = saved.favorites
 				.map(toPlace)
@@ -42,6 +46,7 @@ export function initPlace() {
 /** Cambia de sitio y lo guarda. */
 export function setPlace(p: Place) {
 	place.current = p;
+	place.chosen = true;
 	save();
 }
 

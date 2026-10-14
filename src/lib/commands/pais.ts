@@ -11,6 +11,7 @@ export default {
 			{ name: 'Tipos y deuda', what: 'Tipo oficial, bono y deuda.' },
 			{ name: 'Moneda', what: 'Su cambio y la variación en un mes.' },
 			{ name: 'Previsiones del FMI', what: 'PIB e inflación previstos.' },
+			{ name: 'Ofertas de empleo (Indeed)', what: 'Ofertas publicadas en Indeed en el país (Indeed Hiring Lab), si las hay.' },
 			{ name: 'En las noticias', what: 'Titulares que lo nombran.' }
 		]
 	}
