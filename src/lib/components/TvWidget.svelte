@@ -1,7 +1,9 @@
 <!--
 	Widget de TradingView (gratis y sin clave). TradingView los distribuye como un <script> que lee su
-	configuración del propio texto del script: aquí se crea ese script al montar el componente.
-	Solo funciona en el navegador; en el HTML generado al construir queda el hueco vacío.
+	configuración del propio texto del script: aquí se crea ese script en el navegador.
+	Carga perezosa: el script (y el iframe que crea) solo se pide cuando el widget está a ~200 px de verse.
+	Mientras tanto se reserva el hueco con su altura para que el diseño no salte.
+	En el HTML generado al construir queda el hueco con el aviso «Cargando TradingView…».
 -->
 <script lang="ts">
 	interface Props {
@@ -15,9 +17,37 @@
 
 	let { widget, config, height = 500, credit = true }: Props = $props();
 
+	let frame: HTMLDivElement;
 	let box: HTMLDivElement;
+	/** El widget ya está cerca de la vista: se puede cargar. */
+	let near = $state(false);
+	/** El script de TradingView ya ha llegado (o ha fallado): se quita el aviso. */
+	let ready = $state(false);
 
+	// 1) Vigila cuándo se acerca a la vista. Una sola vez: al verlo, desconecta.
 	$effect(() => {
+		if (near) return;
+		if (typeof IntersectionObserver === 'undefined') {
+			near = true;
+			return;
+		}
+		const io = new IntersectionObserver(
+			(entries) => {
+				if (entries.some((e) => e.isIntersecting)) {
+					near = true;
+					io.disconnect();
+				}
+			},
+			{ rootMargin: '200px 0px' }
+		);
+		io.observe(frame);
+		return () => io.disconnect();
+	});
+
+	// 2) Cuando está cerca, crea el script. Se rehace si cambian widget o config (p. ej. otro símbolo).
+	$effect(() => {
+		if (!near) return;
+		ready = false;
 		const script = document.createElement('script');
 		script.src = `https://s3.tradingview.com/external-embedding/embed-widget-${widget}.js`;
 		script.async = true;
@@ -29,14 +59,23 @@
 			height: '100%',
 			...config
 		});
+		script.onload = script.onerror = () => (ready = true);
 		const inner = document.createElement('div');
 		inner.className = 'tradingview-widget-container__widget';
 		box.replaceChildren(inner, script);
-		return () => box.replaceChildren();
+		return () => {
+			script.onload = script.onerror = null;
+			box.replaceChildren();
+		};
 	});
 </script>
 
-<div class="tv tradingview-widget-container" style:height="{height}px" bind:this={box}></div>
+<div class="tv" style:height="{height}px" bind:this={frame}>
+	{#if !ready}
+		<span class="wait" aria-hidden="true">Cargando TradingView…</span>
+	{/if}
+	<div class="box tradingview-widget-container" bind:this={box}></div>
+</div>
 {#if credit}
 	<p class="pnote">
 		Datos y gráficos de <a href="https://es.tradingview.com/" target="_blank" rel="noopener">TradingView</a>.
@@ -45,6 +84,27 @@
 
 <style>
 	.tv {
+		position: relative;
 		width: 100%;
+	}
+	.box {
+		position: relative;
+		width: 100%;
+		height: 100%;
+	}
+	/* Aviso discreto mientras llega el widget: mismo fondo y borde de 1 px que el resto de paneles. */
+	.wait {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--panel);
+		box-shadow: inset 0 0 0 1px var(--line);
+		color: var(--faint);
+		font-family: var(--mono);
+		font-size: var(--fs-xs);
+		letter-spacing: 0.04em;
+		pointer-events: none;
 	}
 </style>
