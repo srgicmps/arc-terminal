@@ -15,6 +15,7 @@
 	--muted: #808a97; /* texto secundario */
 	--faint: #747e8a; /* texto terciario: 4,6:1 sobre --panel (WCAG AA) */
 	--amber: #f2a83b; /* acento */
+	--amber-dim: #c99447; /* ámbar tenue, para texto destacado sin gritar: 7:1 sobre --panel */
 	--amber-soft: rgba(242, 168, 59, 0.13); /* fondo con acento */
 	--amber-edge: rgba(242, 168, 59, 0.42); /* borde con acento */
 	--on-amber: #120c02; /* texto sobre ámbar */
@@ -103,6 +104,12 @@
 	--fit-panel-min: 280px; /* «encajar en pantalla»: alto mínimo de un panel (cabecera y unas 9 filas) */
 	--col-split: 400px; /* ancho mínimo de una subcolumna: una columna de más del doble se parte en dos o más */
 
+	/* ── Capas (z-index) y fondo atenuado ────────────────────────────────────────────────── */
+	--z-sticky: 1; /* cabeceras fijas dentro de un panel con scroll */
+	--z-modal: 100; /* panel maximizado, por encima de todo */
+	--scrim: rgba(8, 10, 13, 0.72); /* fondo atenuado detrás del panel maximizado */
+	--dur-fast: 120ms; /* aparición breve (se quita con prefers-reduced-motion) */
+
 	/*
 	 * Puntos de corte (las @media no aceptan variables, así que se documentan aquí):
 	 *   720 px  móvil: una columna, barra inferior, cabecera compacta
@@ -127,6 +134,7 @@
 	--muted: #5b636e;
 	--faint: #636a74;
 	--amber: #9a5a00;
+	--amber-dim: #8a5d2c;
 	--amber-soft: rgba(154, 90, 0, 0.1);
 	--amber-edge: rgba(154, 90, 0, 0.4);
 	--on-amber: #ffffff;
@@ -141,4 +149,5 @@
 	--piece-b-edge: #23272d;
 	--series-2: #2f639e;
 	--series-3: #7449a0;
+	--scrim: rgba(22, 25, 29, 0.42);
 }

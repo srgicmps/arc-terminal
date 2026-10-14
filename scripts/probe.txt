@@ -69,3 +69,5 @@ https://api.mymemory.translated.net/get?q=Oil%20prices%20rise%20as%20Middle%20Ea
 https://mymemory.translated.net/doc/usagelimits.php ~ .{0,250}(chars|characters|words)/?\s*(per\s*)?day.{0,250}
 # ECO: inflación del G20, copia de la OCDE en DBnomics (la API de la OCDE da 500 desde los runners de GitHub)
 https://api.db.nomics.world/v22/series/OECD/DSD_G20_PRICES@DF_G20_PRICES?dimensions=%7B%22FREQ%22%3A%5B%22M%22%5D%2C%22TRANSFORMATION%22%3A%5B%22GY%22%5D%7D&observations=1&metadata=false&limit=50 ~ "series_code":"[^"]+"|.{0,24}\],"period_start_day"
+# ECO: precio de la vivienda del BIS (WS_SPP), variación interanual nominal (N) y real (R): forma de la clave
+https://stats.bis.org/api/v1/data/WS_SPP/Q.US+ES+KR.N+R.771/all?lastNObservations=2&detail=dataonly&format=csv

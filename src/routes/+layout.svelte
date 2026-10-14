@@ -7,11 +7,13 @@
 	import { COMMANDS } from '#lib/commands.ts';
 	import Clocks from '#lib/components/Clocks.svelte';
 	import CommandBar from '#lib/components/CommandBar.svelte';
+	import PlacePicker from '#lib/components/PlacePicker.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { fit, initFit, toggleFit } from '#lib/fit.svelte.ts';
 	import { initMode, mode, toggleMode } from '#lib/layout.svelte.ts';
 	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
+	import { initPlace } from '#lib/place.svelte.ts';
 	import { initWatchlist } from '#lib/watchlist.svelte.ts';
 	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
 	import { parseTv, routeOf } from '#lib/tv.ts';
@@ -22,6 +24,7 @@
 	// El reloj arranca en el navegador (como onMounted en Vue) y se para al salir.
 	$effect(startClock);
 	$effect(initWatchlist);
+	$effect(initPlace);
 	$effect(initTheme);
 	$effect(initFit);
 	$effect(initMode);
@@ -109,6 +112,7 @@
 		</a>
 		<CommandBar />
 		{#if !online}<span class="offline" title="Se muestra la última copia guardada">Sin conexión</span>{/if}
+		<PlacePicker />
 		<Clocks />
 		{#if page.route.id === '/'}
 			<!-- General / Modular: de momento solo la portada se puede personalizar. -->
@@ -485,13 +489,19 @@
 			flex-basis: 100%;
 		}
 
-		/* Como antes del tema: logo, relojes y barra de comandos, cada uno en su línea. El botón del tema va en la
-		   línea del logo, a la derecha, y sus márgenes negativos evitan que esa línea crezca por él. */
+		/* Como antes del tema: logo, relojes y barra de comandos, cada uno en su línea. El chip de tu sitio y el
+		   botón del tema van en la línea del logo, a la derecha; sus márgenes negativos evitan que esa línea crezca. */
 		.brand {
 			order: -2;
 		}
 
 		.theme {
+			order: -1;
+			margin-block: calc((var(--logo) - var(--btn-sm)) / 2);
+		}
+
+		/* El chip de «Tu sitio» va delante del tema, empujado a la derecha, con los mismos márgenes negativos. */
+		.top :global(.place) {
 			order: -1;
 			margin-left: auto;
 			margin-block: calc((var(--logo) - var(--btn-sm)) / 2);
@@ -558,7 +568,7 @@
 		     menor: ninguno se queda en 2-3 filas;
 		   - el alto que sobra se reparte a partes iguales, sin que ningún panel pase de su contenido: lo
 		     que no usa una tabla corta se lo quedan las listas largas, que hacen scroll por dentro. */
-		:global(html[data-fit] main > .grid:last-child > .col > .panel) {
+		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max)) {
 			flex: 1 0 auto;
 			height: var(--fit-panel-min);
 			max-height: fit-content;
@@ -566,7 +576,7 @@
 		}
 
 		/* Gráficos, mapas y widgets tienen un alto fijo: recortados no se leen, así que van enteros. */
-		:global(html[data-fit] main > .grid:last-child > .col > .panel:has(.chart, .map, .tv, .curve, .bars)) {
+		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max):has(.chart, .map, .tv, .curve, .bars)) {
 			height: auto;
 		}
 	}

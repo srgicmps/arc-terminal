@@ -517,6 +517,12 @@ export interface Release {
 
 // ---------- Lo más importante (IMP, scripts/sources/imp.ts) ----------
 
+/** El titular de un medio dentro de un tema. */
+export interface ImpLink {
+	source: string;
+	url: string;
+}
+
 /** Un tema importante, tal como se guarda en el histórico diario: lo mínimo para listarlo. */
 export interface ImpEntry {
 	/** Clave estable del tema entre pasadas y días (para desduplicar). */
@@ -530,6 +536,8 @@ export interface ImpEntry {
 	sources: string[];
 	/** Puntuación (ver scripts/sources/imp.ts). */
 	score: number;
+	/** El enlace de cada medio. Solo en el top de ahora y en el día de hoy (no en días anteriores). */
+	links?: ImpLink[];
 }
 
 /** Un tema del top actual, con el detalle de la puntuación. */
@@ -613,6 +621,29 @@ export interface Chokepoint {
 	change: number | null;
 	/** Media móvil de 7 días de los últimos 90 días, para el minigráfico. */
 	spark: number[];
+}
+
+// ---------- Próximas elecciones (Wikidata) ----------
+
+/** general: generales o legislativas · presidential: presidenciales · referendum: referéndum. */
+export type ElectionKind = 'general' | 'presidential' | 'referendum';
+
+export interface Election {
+	/** Día de la votación (AAAA-MM-DD). */
+	date: string;
+	/** Nombre del país, en español (o en inglés si Wikidata no lo tiene en español). */
+	country: string;
+	/** Código ISO 3166-1 alfa-2 del país («ES»), si Wikidata lo tiene. */
+	iso: string | null;
+	kind: ElectionKind;
+	/** Nombre de la elección, en español o inglés. */
+	name: string;
+	/** Ficha en Wikidata. */
+	url: string;
+}
+
+export interface ElectionsData {
+	items: Election[];
 }
 
 // ---------- Barcos en los puertos (AIS, aisstream.io) ----------
@@ -736,4 +767,23 @@ export interface TravelAdvisory {
 
 export interface AdvisoriesData {
 	items: TravelAdvisory[];
+}
+
+// ---------- Calendarios de publicación: próximo dato (Eurostat, BLS, INE) ----------
+
+export interface ReleaseEvent {
+	/** Inicio en ISO UTC. */
+	date: string;
+	/** Si el organismo no da la hora. */
+	allDay: boolean;
+	title: string;
+	source: 'Eurostat' | 'BLS' | 'INE';
+	/** Tema (src/lib/nextrelease.ts) si es uno de los datos que enseña la terminal, o null. */
+	topic: string | null;
+	url?: string;
+}
+
+export interface ReleaseCalData {
+	/** Próximas publicaciones de los datos que enseña la terminal (con tema), por fecha. */
+	events: ReleaseEvent[];
 }
