@@ -56,13 +56,11 @@ export const MACRO = [
 ] as const;
 
 /**
- * Riesgo macro (fred.json; las series llegan con los PR #173 y #179: sin ellas, no hay aviso).
- * - Diferencial high yield de EE. UU. ('hy-us', en %): sube al menos HY_JUMP_PB puntos básicos en 7 días
- *   naturales. No se repite mientras siga por encima, salvo que pasen HY_REPEAT_DAYS días.
- * - Liquidez neta de la Fed ('fed-net-liquidity', semanal, en millones de $): cae al menos LIQUIDITY_DROP_M
- *   en 4 semanas (el último dato frente al de 4 datos antes).
+ * Riesgo macro (fred.json; la serie llega con el PR #179: sin ella, no hay aviso).
+ * Liquidez neta de la Fed ('fed-net-liquidity', semanal, en millones de $): cae al menos LIQUIDITY_DROP_M
+ * en 4 semanas (el último dato frente al de 4 datos antes).
  */
-export const MACRO_RISK = { HY_JUMP_PB: 50, HY_REPEAT_DAYS: 7, LIQUIDITY_DROP_M: 100_000 };
+export const MACRO_RISK = { LIQUIDITY_DROP_M: 100_000 };
 
 /** Hipoteca tipo del aviso del euríbor: variable, sistema francés, euríbor + diferencial (puntos). */
 export const MORTGAGE = { capital: 150_000, years: 25, spread: 0.8 };

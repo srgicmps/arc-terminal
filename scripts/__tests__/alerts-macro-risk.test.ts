@@ -1,10 +1,9 @@
-// Avisos de riesgo macro (P2) con fred.json: diferencial high yield y liquidez neta de la Fed. Las series
+// Aviso de riesgo macro (P2) con fred.json: liquidez neta de la Fed. Las series
 // de ejemplo tienen la forma de Series (src/lib/types.ts): points del más antiguo al más reciente.
 import { describe, expect, it } from 'vitest';
 import {
 	addDays,
 	emptyLog,
-	hyRule,
 	liquidityRule,
 	madrid,
 	RULES,
@@ -25,79 +24,10 @@ function run(rule: Rule['run'], d: Inputs, log: NotifyLog = emptyLog()) {
 	return { alerts, ids: alerts.map((a) => a.id), after };
 }
 
-/** Commit del aviso sobre una copia del historial, como hace notify.ts al intentarlo. */
-function committed(log: NotifyLog, alert: { commit?: (l: NotifyLog) => void }): NotifyLog {
-	const next = structuredClone(log);
-	alert.commit?.(next);
-	return next;
-}
-
 const fred = (id: string, points: [string, number][]): Inputs => ({
 	fred: {
 		series: [{ id, name: id, unit: '', source: 'FRED', points: points.map(([t, v]) => ({ t, v })) }]
 	} as unknown as Inputs['fred']
-});
-
-describe('Diferencial high yield', () => {
-	const hy = (points: [string, number][]) => fred('hy-us', points);
-
-	it('avisa si sube 50 pb o más en 7 días naturales', () => {
-		const { alerts, ids } = run(
-			hyRule,
-			hy([
-				['2026-10-05', 3.05],
-				['2026-10-06', 3.1],
-				['2026-10-09', 3.4],
-				['2026-10-13', 3.72]
-			])
-		);
-		expect(ids).toEqual(['hy:2026-10-13']);
-		expect(alerts[0].title).toBe('Crédito: el diferencial high yield sube 62 pb en una semana (hasta 3,72 %)');
-		expect(alerts[0].click).toMatch(/\/eco$/);
-	});
-
-	it('justo 50 pb cuenta; 49 no llega', () => {
-		expect(run(hyRule, hy([['2026-10-06', 3.1], ['2026-10-13', 3.6]])).ids).toEqual(['hy:2026-10-13']);
-		expect(run(hyRule, hy([['2026-10-06', 3.1], ['2026-10-13', 3.59]])).ids).toEqual([]);
-	});
-
-	it('con un festivo hace 7 días, compara con el último dato anterior', () => {
-		// 2026-10-06 no hay dato: vale el del 5.
-		const { alerts } = run(
-			hyRule,
-			hy([
-				['2026-10-02', 2.5],
-				['2026-10-05', 3.0],
-				['2026-10-07', 3.4],
-				['2026-10-13', 3.55]
-			])
-		);
-		expect(alerts[0].title).toContain('sube 55 pb');
-	});
-
-	it('sin serie, sin fred.json o con menos de una semana de datos, no hace nada', () => {
-		expect(run(hyRule, {}).ids).toEqual([]);
-		expect(run(hyRule, fred('vix', [['2026-10-06', 15], ['2026-10-13', 30]])).ids).toEqual([]);
-		expect(run(hyRule, hy([['2026-10-08', 3.0], ['2026-10-13', 4.0]])).ids).toEqual([]);
-	});
-
-	it('no repite mientras siga por encima; vuelve a avisar tras bajar del umbral o a los 7 días', () => {
-		const first = run(hyRule, hy([['2026-10-06', 3.1], ['2026-10-13', 3.72]]));
-		const log = committed(emptyLog(), first.alerts[0]);
-		expect(log.last.hy).toBe('2026-10-13');
-
-		// Al día siguiente sigue por encima: nada.
-		expect(run(hyRule, hy([['2026-10-07', 3.1], ['2026-10-14', 3.8]]), log).ids).toEqual([]);
-
-		// Baja del umbral: se borra la marca y el siguiente salto sí avisa.
-		const calm = run(hyRule, hy([['2026-10-08', 3.6], ['2026-10-15', 3.7]]), log);
-		expect(calm.ids).toEqual([]);
-		expect(calm.after.last.hy).toBeUndefined();
-		expect(run(hyRule, hy([['2026-10-09', 3.2], ['2026-10-16', 3.9]]), calm.after).ids).toEqual(['hy:2026-10-16']);
-
-		// Sin bajar nunca, a los 7 días vuelve a avisar.
-		expect(run(hyRule, hy([['2026-10-13', 3.72], ['2026-10-20', 4.3]]), log).ids).toEqual(['hy:2026-10-20']);
-	});
 });
 
 describe('Liquidez neta de la Fed', () => {
@@ -144,6 +74,6 @@ describe('Liquidez neta de la Fed', () => {
 	});
 });
 
-it('las dos reglas están en RULES como P2', () => {
-	for (const type of ['hy', 'liquidity']) expect(RULES.find((r) => r.type === type)?.level).toBe(2);
+it('la regla está en RULES como P2', () => {
+	expect(RULES.find((r) => r.type === 'liquidity')?.level).toBe(2);
 });
