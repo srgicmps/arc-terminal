@@ -107,6 +107,8 @@ export const alerts: Source<AlertsData> = {
 	name: 'alerts',
 	label: 'Avisos meteorológicos en Menorca · MeteoAlarm (EUMETNET) con datos de AEMET',
 	maxAgeMinutes: 25,
+	// Sin avisos en vigor, la lista viene vacía: es lo normal casi todos los días.
+	allowEmpty: true,
 	async fetch() {
 		return parseAlerts(await getText(ALERTS_URL));
 	}
