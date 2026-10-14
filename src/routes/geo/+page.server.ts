@@ -23,9 +23,8 @@ import type {
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, gov, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who] = await Promise.all([
+	const [news, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who] = await Promise.all([
 		dataset<NewsData>('news-geo'),
-		dataset<NewsData>('news-gov'),
 		dataset<NewsData>('news-intl'),
 		dataset<Quake[]>('quakes'),
 		dataset<Quake[]>('quakes-es'),
@@ -59,8 +58,8 @@ export const load: PageServerLoad = async () => {
 	return {
 		layers,
 		news,
-		gov: headlines(gov, 15),
-		intl: headlines(intl, 15),
+		// Organismos y diplomacia salen del mismo canal: 40 titulares para que haya de los dos paneles.
+		intl: headlines(intl, 40),
 		quakes,
 		quakesEs,
 		hazards,

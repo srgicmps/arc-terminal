@@ -76,12 +76,3 @@ https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next 
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
 # GEO/PAIS: gasto militar del SIPRI (Milex), enlace al Excel
 https://www.sipri.org/databases/milex ~ [^"' <>]{0,200}\.xlsx[^"' <>]{0,40}
-# GEO: diplomacia (M34): Departamento de Estado, Exteriores del Reino Unido (FCDO), Servicio Europeo de Acción Exterior y OIEA
-https://www.state.gov/rss-feed/press-releases/feed/ ~ <title>[^<]{0,120}
-https://www.state.gov/feed/ ~ <title>[^<]{0,120}
-https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom ~ <title>[^<]{0,120}
-https://www.eeas.europa.eu/eeas/rss_en ~ <title>[^<]{0,120}
-https://www.eeas.europa.eu/rss_en ~ <title>[^<]{0,120}
-https://www.eeas.europa.eu/eeas/press-material_en ~ [^"' <>]{0,120}rss[^"' <>]{0,80}
-https://www.iaea.org/feeds/topnews ~ <title>[^<]{0,120}
-https://www.iaea.org/newscenter/pressreleases/feed ~ <title>[^<]{0,120}

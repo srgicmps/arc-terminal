@@ -8,6 +8,8 @@ import { getText, list, plain, type Source } from '../lib.ts';
 interface Feed {
 	name: string;
 	url: string;
+	/** Entradas que no se quieren, por su enlace (p. ej., los avisos de viaje del FCDO). */
+	skip?: RegExp;
 }
 
 const FEEDS: Record<string, Feed[]> = {
@@ -71,7 +73,15 @@ const FEEDS: Record<string, Feed[]> = {
 		// Comunicados y crónicas de las reuniones: Consejo de Seguridad, Asamblea General…
 		{ name: 'ONU', url: 'https://press.un.org/en/rss.xml' },
 		{ name: 'Noticias ONU', url: 'https://news.un.org/feed/subscribe/en/news/topic/peace-and-security/feed/rss.xml' },
-		{ name: 'OMC', url: 'https://www.wto.org/library/rss/latest_news_e.xml' }
+		{ name: 'OMC', url: 'https://www.wto.org/library/rss/latest_news_e.xml' },
+		// Diplomacia (M34, comprobados con probe el 14-10-2026). Descartados: Departamento de Estado (403 desde
+		// Actions) y Servicio Europeo de Acción Exterior (sin RSS). Del FCDO se quitan los avisos de viaje.
+		{
+			name: 'Exteriores británico',
+			url: 'https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom',
+			skip: /\/foreign-travel-advice\//
+		},
+		{ name: 'OIEA', url: 'https://www.iaea.org/feeds/topnews' }
 	]
 };
 
@@ -100,7 +110,9 @@ export const ENGLISH = new Set([
 	'Google',
 	'Simon Willison',
 	'Casa Blanca',
-	'Reserva Federal'
+	'Reserva Federal',
+	'Exteriores británico',
+	'OIEA'
 ]);
 
 /** Marca los titulares de un medio en inglés. */
@@ -211,7 +223,9 @@ async function section(feeds: Feed[]): Promise<NewsData> {
 						headers: { Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml' }
 					}),
 					feed.name
-				).slice(0, PER_FEED),
+				)
+					.filter((item) => !feed.skip?.test(item.url))
+					.slice(0, PER_FEED),
 				feed.name
 			)
 		)
