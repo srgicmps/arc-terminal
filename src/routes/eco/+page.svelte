@@ -95,7 +95,8 @@
 			const pts = get(x.id)?.points ?? [];
 			const now = pts.at(-1);
 			if (!now) return [];
-			const prev = pts.at(-2);
+			// El tipo del BCE es diario y casi nunca cambia: su «antes» es el último valor distinto (el último cambio).
+			const prev = x.inverse === null ? pts.findLast((p) => p.v !== now.v) : pts.at(-2);
 			const diff = prev ? now.v - prev.v : 0;
 			// Paro e inflación: bajar es buena noticia. Un tipo de interés va sin color (ni bueno ni malo).
 			const tone: 'up' | 'down' | 'flat' | undefined =
@@ -115,7 +116,7 @@
 				label={x.label}
 				value="{nf(x.now.v, x.d)} %"
 				tone={x.tone}
-				sub="{period(x.now.t)}{x.prev ? ` · antes ${nf(x.prev.v, x.d)} %` : ''}{x.id === 'ecb-dfr' && fedNow ? ` · Fed ${nf(fedNow.v, 2)} %` : ''}"
+				sub="{period(x.now.t)}{x.prev ? ` · ${x.inverse === null ? `hasta el ${dm(`${x.prev.t}T12:00:00Z`)}` : 'antes'} ${nf(x.prev.v, x.d)} %` : ''}{x.id === 'ecb-dfr' && fedNow ? ` · Fed ${nf(fedNow.v, 2)} %` : ''}"
 			/>
 		{/each}
 	</Tiles>
