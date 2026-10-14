@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { uscurve, usdebt } from '../sources/treasury.ts';
+import { auctions, toAuction, uscurve, usdebt } from '../sources/treasury.ts';
 import { mockFetch } from './mock.ts';
 
 beforeEach(() => {
@@ -78,5 +78,50 @@ describe('uscurve', () => {
 		expect((await uscurve.fetch(undefined)).days).toHaveLength(1);
 		mockFetch(() => curveFeed([]));
 		await expect(uscurve.fetch(undefined)).rejects.toThrow('curva vacía');
+	});
+});
+
+describe('auctions', () => {
+	const row = (date: string, term: string, btc: string, extra: Record<string, string> = {}) => ({
+		auction_date: date,
+		security_type: 'Note',
+		security_term: term,
+		reopening: 'No',
+		offering_amt: '58000000000',
+		high_yield: btc === 'null' ? 'null' : '4.100',
+		bid_to_cover_ratio: btc,
+		indirect_bidder_accepted: btc === 'null' ? 'null' : '40000000000',
+		comp_accepted: btc === 'null' ? 'null' : '57900000000',
+		floating_rate: 'No',
+		...extra
+	});
+
+	it('lee una subasta: % de indirectos, FRN y las pendientes con resultado vacío', () => {
+		expect(toAuction(row('2026-10-08', '10-Year', '2.52'))).toEqual({
+			date: '2026-10-08',
+			term: '10-Year',
+			kind: 'Note',
+			reopening: false,
+			offering: 58e9,
+			highYield: 4.1,
+			bidToCover: 2.52,
+			indirectPct: 69.1
+		});
+		expect(toAuction(row('2026-10-29', '2-Year', 'null', { floating_rate: 'Yes' }))).toMatchObject({ kind: 'FRN', bidToCover: null, indirectPct: null });
+		expect(toAuction({ security_term: '2-Year' })).toBeNull();
+	});
+
+	it('separa las próximas, ordena las últimas y compara con la media de las 6 anteriores', async () => {
+		const tens = ['2.40', '2.50', '2.60', '2.70', '2.80', '2.90', '3.00'].map((b, i) => row(`2026-0${i + 1}-10`, '10-Year', b));
+		mockFetch(() => ({
+			data: [...tens, row('2026-08-12', '10-Year', '2.10'), row('2026-10-20', '20-Year', 'null'), row('2026-09-01', '30-Year', 'null')]
+		}));
+		const data = await auctions.fetch(undefined);
+		// La de septiembre sin resultado ya pasó: no es «próxima».
+		expect(data.upcoming.map((a) => a.date)).toEqual(['2026-10-20']);
+		expect(data.recent[0]).toMatchObject({ date: '2026-08-12', bidToCover: 2.1, avgBidToCover: 2.75 });
+		// Con menos de 3 anteriores no hay media.
+		expect(data.recent.at(-1)).toMatchObject({ date: '2026-01-10', avgBidToCover: null });
+		expect(data.recent).toHaveLength(8);
 	});
 });

@@ -21,6 +21,7 @@
 	--up: #4cc48a; /* sube (solo para subidas) */
 	--down: #f0646f; /* baja (solo para bajadas) */
 	--neutral: #3a434e; /* relleno gris de barras y gráficos */
+	--amber-dim: #c99447; /* ámbar tenue, para texto destacado sin gritar: 7:1 sobre --panel */
 
 	/* ── Tipografía ──────────────────────────────────────────────────────────────────────── */
 	--mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; /* datos y comandos */
@@ -119,4 +120,5 @@
 	--up: #147345;
 	--down: #c3303c;
 	--neutral: #b9b4a8;
+	--amber-dim: #8a5d2c;
 }

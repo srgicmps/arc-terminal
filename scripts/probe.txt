@@ -27,3 +27,6 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
+# WS: subastas del Tesoro: tipos de valor y campos de las notas ya subastadas
+https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?fields=auction_date,security_type,security_term,floating_rate,high_yield,bid_to_cover_ratio,indirect_bidder_accepted,comp_accepted,offering_amt&filter=security_type:in:(Note,Bond),auction_date:lt:2026-10-14&sort=-auction_date&page[size]=12
+https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?fields=security_type,security_term&filter=auction_date:gte:2026-07-01&page[size]=200 ~ TIPS|FRN|CMB

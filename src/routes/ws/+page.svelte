@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AuctionList from '#lib/components/AuctionList.svelte';
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
 	import FxConvert from '#lib/components/FxConvert.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
@@ -134,6 +135,13 @@
 		<Panel title="Cripto" meta="Por capitalización">
 			<CryptoTable coins={data.crypto?.data.coins ?? []} />
 			{#snippet note()}Fuente: CoinGecko · <Updated at={data.crypto?.fetchedAt} source="crypto" />{/snippet}
+		</Panel>
+		<Panel title="Subastas del Tesoro" meta="Bonos y notas de EE. UU.">
+			{#if data.auctions}<AuctionList data={data.auctions.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
+			{#snippet note()}
+				B/C (bid-to-cover): demanda frente a lo adjudicado; en ámbar, por debajo de la media de sus 6 subastas anteriores ·
+				Fuente: Tesoro de EE. UU. · <Updated at={data.auctions?.fetchedAt} source="auctions" />
+			{/snippet}
 		</Panel>
 	</div>
 </div>
