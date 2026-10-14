@@ -164,10 +164,11 @@ jobs:
           files=$(git diff --name-only HEAD^1 HEAD)
           echo "$files"
           echo "scripts=$(grep -q '^scripts/' <<< "$files" && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          # TradingView: el propio script de capturas, TvWidget o un archivo que lo use.
+          # TradingView: el propio script de capturas, o un archivo de src/ que use TvWidget (la documentación,
+          # que también lo nombra, no cuenta).
           tv=false
           for f in $files; do
-            if [[ "$f" == scripts/tv-shots.ts ]] || { [[ -f "$f" ]] && grep -q 'TvWidget' "$f"; }; then tv=true; fi
+            if [[ "$f" == scripts/tv-shots.ts ]] || { [[ "$f" == src/* && -f "$f" ]] && grep -q 'TvWidget' "$f"; }; then tv=true; fi
           done
           echo "tv=$tv" >> "$GITHUB_OUTPUT"
 
