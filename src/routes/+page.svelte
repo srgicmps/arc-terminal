@@ -10,6 +10,8 @@
 	import { seriesMap, spread } from '#lib/series.ts';
 	import { compass, sky } from '#lib/weather.ts';
 	import ModularGrid from '#lib/components/ModularGrid.svelte';
+	import MarketSessions from '#lib/components/MarketSessions.svelte';
+	import RiskGauge from '#lib/components/RiskGauge.svelte';
 	import Agenda from '#lib/components/top/Agenda.svelte';
 	import Markets from '#lib/components/top/Markets.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
@@ -37,7 +39,10 @@
 		{ id: 'hn', title: 'Hacker News' },
 		// Solo en la portada modular (en la general ya están la cinta de cotizaciones y CAL).
 		{ id: 'agenda', title: 'Hoy en la agenda' },
-		{ id: 'markets', title: 'Mercados' }
+		{ id: 'markets', title: 'Mercados' },
+		{ id: 'sessions', title: 'Sesiones de las bolsas' },
+		{ id: 'risk', title: 'Termómetro de riesgo' },
+		{ id: 'puzzle', title: 'Problema del día' }
 	]);
 	// Como onMounted en Vue: lo guardado en el navegador se lee al arrancar en él.
 	$effect(() => top.load());
@@ -187,6 +192,25 @@
 	<Markets />
 {/snippet}
 
+{#snippet sessions()}
+	<Panel id="sessions" title="Sesiones de las bolsas" meta="24 h · hora de Madrid" jump={{ code: 'WS', href: resolve('/ws') }}>
+		<MarketSessions />
+	</Panel>
+{/snippet}
+
+{#snippet risk()}
+	<RiskGauge id="risk" risk={data.risk} />
+{/snippet}
+
+{#snippet puzzle()}
+	<!-- Se carga aparte (import dinámico): lleva chess.js, unos 17 KB que la portada no necesita si no está este panel. -->
+	{#await import('#lib/components/PuzzleCard.svelte')}
+		<Panel id="puzzle" title="Problema del día"><p class="empty">Cargando…</p></Panel>
+	{:then { default: PuzzleCard }}
+		<PuzzleCard id="puzzle" puzzle={data.puzzle} />
+	{/await}
+{/snippet}
+
 {#snippet titulares()}
 	<Panel id="news" title="Titulares" meta="Todas las secciones">
 		<NewsList items={data.headlines} tag={(i) => tags.get(i.url)} />
@@ -307,7 +331,7 @@
 {#if mode.modular}
 	<ModularGrid
 		layout={top}
-		panels={{ rates: tipos, macro, fx: divisas, important: importante, news: titulares, weather: menorca, power: luz, fuel: gasolina, boe, quakes: terremotos, predictions: predicciones, hn, agenda, markets }}
+		panels={{ rates: tipos, macro, fx: divisas, important: importante, news: titulares, weather: menorca, power: luz, fuel: gasolina, boe, quakes: terremotos, predictions: predicciones, hn, agenda, markets, sessions, risk, puzzle }}
 	/>
 {:else}
 	<div class="grid grid-3">
