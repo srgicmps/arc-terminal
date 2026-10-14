@@ -7,7 +7,7 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { nf, signed, trend } from '#lib/format.ts';
-	import { distanceKm, findProvince, FUELS, type FuelKey, type FuelStation } from '#lib/fuel.ts';
+	import { distanceKm, findProvince, FUELS, type FuelKey, type FuelProvinceDay, type FuelStation } from '#lib/fuel.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -25,6 +25,8 @@
 	let message = $state('');
 	// Gasolineras de cada provincia ya descargadas (se piden al elegir la provincia).
 	let loaded = $state<Record<string, FuelStation[]>>({});
+	// Y su historial de precios medios (otro archivo pequeño, para el gráfico).
+	let histories = $state<Record<string, FuelProvinceDay[]>>({});
 
 	const provinces = $derived(data.spain?.data.provinces ?? []);
 	const zoneName = $derived(zone === MENORCA ? 'Menorca' : (provinces.find((p) => p.id === zone)?.name ?? ''));
@@ -38,6 +40,7 @@
 		} catch {}
 		if (id === MENORCA || loaded[id]) return;
 		message = 'Cargando…';
+		loadHistory(id);
 		try {
 			// El archivo existe tras `pnpm data`; su ruta no se conoce al comprobar tipos.
 			const url = asset(`data/fuel/${id}.json` as Parameters<typeof asset>[0]);
@@ -48,6 +51,15 @@
 		} catch {
 			message = 'No se han podido cargar las gasolineras de esa provincia.';
 		}
+	}
+
+	/** El historial no es imprescindible: si falla, el gráfico enseña solo la media de España. */
+	async function loadHistory(id: string) {
+		try {
+			const url = asset(`data/fuel/history/${id}.json` as Parameters<typeof asset>[0]);
+			const res = await fetch(url);
+			if (res.ok) histories = { ...histories, [id]: await res.json() };
+		} catch {}
 	}
 
 	// Al abrir la vista en el navegador, recupera la última zona elegida (igual que onMounted en Vue).
@@ -132,7 +144,7 @@
 	const zoneHistory = $derived(
 		zone === MENORCA
 			? (data.fuel?.data.history ?? []).map((d) => ({ t: d.date, v: d.avg[fuel] }))
-			: spainHistory.map((d) => ({ t: d.date, v: d.provinces?.[zone]?.[fuel] ?? null }))
+			: (histories[zone] ?? []).map((d) => ({ t: d.date, v: d.avg[fuel] }))
 	);
 	const historyLines = $derived([
 		{

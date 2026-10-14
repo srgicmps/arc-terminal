@@ -32,7 +32,7 @@
 		['{#snippet} + {@render}', 'slots (<slot>, v-slot)'],
 		['{#if} / {#each}', 'v-if / v-for'],
 		['bind:value', 'v-model'],
-		['+page.ts → load', 'pedir los datos antes de pintar (useAsyncData en Nuxt)']
+		['+page.server.ts → load', 'pedir los datos antes de pintar (useAsyncData en Nuxt)']
 	];
 
 	const s = $derived(data.snippets);
@@ -143,14 +143,14 @@
 				</li>
 				<li>
 					<span class="l">
-						<code>dataset('fuel')</code> lee ese JSON. Vite lo convierte en un trozo aparte que solo descarga la vista que lo pide.
+						<code>dataset('fuel')</code> lee ese JSON al construir la web, en el <code>load</code> de <code>+page.server.ts</code>.
 						<small><code>src/lib/data.ts</code></small>
 					</span>
 					<b>5</b>
 				</li>
 				<li>
 					<span class="l">
-						La función <code>load</code> pide los datos antes de pintar la vista.
+						La función <code>load</code> elige lo que la vista pinta (y nada más): ese recorte va dentro del HTML y en <code>__data.json</code>, así el móvil no descarga los JSON enteros.
 						{#if s.load}<small><code>{s.load.file}:{s.load.line}</code></small><pre><code>{s.load.code}</code></pre>{/if}
 					</span>
 					<b>6</b>
@@ -164,8 +164,8 @@
 				</li>
 			</ul>
 			{#snippet note()}
-				Esta vista usa <code>+page.server.ts</code> en lugar de <code>+page.ts</code>: lee el código del repo al construir y
-				el navegador solo recibe el resultado.
+				Todas las vistas usan <code>+page.server.ts</code> en lugar de <code>+page.ts</code>: se ejecuta solo al construir
+				y el navegador recibe el resultado ya recortado. Esta, además, lee el código del repo.
 			{/snippet}
 		</Panel>
 	</div>
