@@ -6,7 +6,7 @@
 	import QuoteBoard from '#lib/components/QuoteBoard.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { BIG_TECH } from '#lib/commands.ts';
+	import { BIG_TECH } from '#lib/tickers/bigtech.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
