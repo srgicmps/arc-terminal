@@ -1,5 +1,6 @@
 <script lang="ts">
 	import HnTable from '#lib/components/HnTable.svelte';
+	import LaunchesPanel from '#lib/components/LaunchesPanel.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import ReleaseList from '#lib/components/ReleaseList.svelte';
@@ -22,6 +23,7 @@
 		</Panel>
 	</div>
 	<div class="col">
+		<LaunchesPanel />
 		<Panel title="Hacker News" meta="Portada, por puntos">
 			<HnTable items={data.hn?.data ?? []} />
 			{#snippet note()}Fuente: Hacker News (API de Algolia) · <Updated at={data.hn?.fetchedAt} source="hn" />{/snippet}
