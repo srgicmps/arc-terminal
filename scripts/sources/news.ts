@@ -90,6 +90,12 @@ const FEEDS: Record<string, Feed[]> = {
 			skip: /\/foreign-travel-advice\//
 		},
 		{ name: DIPLOMACY_FEEDS[1], url: 'https://www.iaea.org/feeds/topnews' }
+	],
+	// Análisis de conflictos (M35, comprobados con probe el 14-10-2026). Descartados: Real Instituto Elcano (403 desde
+	// Actions), Chatham House, ECFR e IISS (403 de Cloudflare) y CFR (sin RSS en la ruta habitual).
+	analysis: [
+		{ name: 'Crisis Group', url: 'https://www.crisisgroup.org/rss.xml' },
+		{ name: 'Foreign Affairs', url: 'https://www.foreignaffairs.com/rss.xml' }
 	]
 };
 
@@ -123,6 +129,8 @@ export const ENGLISH = new Set([
 	'Google DeepMind',
 	'Meta',
 	'Microsoft Research',
+	'Crisis Group',
+	'Foreign Affairs',
 	...DIPLOMACY_FEEDS
 ]);
 
@@ -274,7 +282,8 @@ const LABELS: Record<string, string> = {
 	tech: 'Tecnología',
 	ai: 'Inteligencia artificial',
 	gov: 'Gobiernos e instituciones',
-	intl: 'Organismos internacionales'
+	intl: 'Organismos internacionales',
+	analysis: 'Análisis de conflictos'
 };
 
 export const newsSources: Source<NewsData>[] = Object.entries(FEEDS).map(([key, feeds]) => ({

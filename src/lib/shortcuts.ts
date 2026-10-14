@@ -2,7 +2,7 @@
 // escuchan la barra de comandos y el modo TV: si cambia una tecla, se cambia aquí y cambia en todas partes.
 // Lógica pura, sin Svelte, para probarla con Vitest.
 
-export type ShortcutGroup = 'Barra' | 'Paneles' | 'Pantalla' | 'TV';
+export type ShortcutGroup = 'Barra' | 'Paneles' | 'Listas' | 'Pantalla' | 'TV';
 
 export interface Shortcut {
 	id: string;
@@ -29,6 +29,10 @@ export const SHORTCUTS = [
 	{ id: 'panel-close', group: 'Paneles', keys: ['Esc', '✕'], how: 'con un panel ampliado', action: 'Cerrarlo' },
 	{ id: 'options', group: 'Paneles', keys: ['←', '→'], how: 'en un grupo de opciones', action: 'Cambiar de opción' },
 	{ id: 'clear', group: 'Paneles', keys: ['Esc'], how: 'en un buscador', action: 'Vaciarlo' },
+	{ id: 'row-next', group: 'Listas', keys: ['J', '↓'], how: 'con el foco en un titular o una fila (entra con Tab)', action: 'Siguiente', match: { key: 'j' } },
+	{ id: 'row-prev', group: 'Listas', keys: ['K', '↑'], how: 'con el foco en un titular o una fila', action: 'Anterior', match: { key: 'k' } },
+	{ id: 'row-open', group: 'Listas', keys: ['Intro'], how: 'con el foco en un titular o una fila', action: 'Abrir' },
+	{ id: 'row-open-source', group: 'Listas', keys: ['O'], how: 'con el foco en un titular o una fila', action: 'Abrir la fuente en otra pestaña', match: { key: 'o' } },
 	{ id: 'fullscreen', group: 'Pantalla', keys: ['⇧', 'F'], combo: true, action: 'Pantalla completa', match: { key: 'F', shift: true } },
 	{ id: 'tv-pause', group: 'TV', keys: ['Espacio'], how: 'en modo TV', action: 'Pausar o seguir', match: { key: ' ' } },
 	{ id: 'tv-exit', group: 'TV', keys: ['Esc'], how: 'en modo TV', action: 'Salir', match: { key: 'Escape' } }

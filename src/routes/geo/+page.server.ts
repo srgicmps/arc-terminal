@@ -4,12 +4,15 @@ import type { ClimateData } from '#lib/climate.ts';
 import { advisoryCountry, levelCounts, recentChanges } from '#lib/advisories.ts';
 import type { MilexData } from '#lib/milex.ts';
 import { riskSignals } from '#lib/risk-signals.ts';
+import { mergeSanctions } from '#lib/sanctions.ts';
+import { top } from '#lib/unhcr.ts';
 import { headlines, trim } from '#lib/trim.ts';
 import type {
 	AdvisoriesData,
 	Chokepoint,
 	Disaster,
 	ElectionsData,
+	EuLexDoc,
 	GdacsEvent,
 	HazardsData,
 	IodaOutage,
@@ -18,14 +21,16 @@ import type {
 	PredictionsData,
 	Quake,
 	SwpcData,
-	TradeDoc
+	TradeDoc,
+	UnhcrData
 } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, intl, quakes, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who] = await Promise.all([
+	const [news, intl, analysis, quakes, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex, unhcr] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-intl'),
+		dataset<NewsData>('news-analysis'),
 		dataset<Quake[]>('quakes'),
 		dataset<HazardsData>('hazards'),
 		dataset<PredictionsData>('predictions'),
@@ -39,8 +44,14 @@ export const load: PageServerLoad = async () => {
 		dataset<MilexData>('sipri'),
 		dataset<GdacsEvent[]>('gdacs'),
 		dataset<IodaOutage[]>('ioda'),
-		dataset<OutbreakNews[]>('who-don')
+		dataset<OutbreakNews[]>('who-don'),
+		dataset<TradeDoc[]>('sanctions-uk'),
+		dataset<EuLexDoc[]>('eurlex'),
+		dataset<UnhcrData>('unhcr')
 	]);
+	// Sanciones y aranceles: EE. UU. (Federal Register), Reino Unido (OFSI) y UE (actos de la serie L con el tema
+	// «Sanciones»), juntos y de lo más reciente a lo más antiguo (M41).
+	const trade = mergeSanctions(sanctions?.data, sanctionsUk?.data, eurlex?.data);
 	// Los comunicados oficiales y los de organismos internacionales: solo los 15 que se pintan, sin resumen.
 	// De Polymarket, los 8 mercados de geopolítica que se pintan (economía y tipos son de ECO).
 	// Sanciones y aranceles: los 8 que se pintan. Tormentas solares: el aviso no pinta el Kp de 24 h.
@@ -51,7 +62,7 @@ export const load: PageServerLoad = async () => {
 		storms: stormPoints(hazards?.data.storms ?? []),
 		events: eventPoints(hazards?.data.events ?? []),
 		straits: straitPoints(portwatch?.data ?? []),
-		sanctions: sanctionPoints(sanctions?.data ?? []),
+		sanctions: sanctionPoints(trade),
 		crises: crisisPoints(reliefweb?.data ?? [])
 	};
 	return {
@@ -59,12 +70,15 @@ export const load: PageServerLoad = async () => {
 		news,
 		// Organismos y diplomacia salen del mismo canal: 40 titulares para que haya de los dos paneles.
 		intl: headlines(intl, 40),
+		analysis: headlines(analysis, 12),
 		quakes,
 		hazards,
 		predictions: trim(predictions, (d) => ({ geopolitics: d.geopolitics.slice(0, 8), economy: [] })),
 		portwatch,
 		reliefweb,
-		sanctions: trim(sanctions, (d) => d.slice(0, 8)),
+		sanctions: sanctions || sanctionsUk || eurlex
+			? { fetchedAt: sanctions?.fetchedAt, ukAt: sanctionsUk?.fetchedAt, euAt: eurlex?.fetchedAt, data: trade.slice(0, 10) }
+			: null,
 		climate,
 		elections,
 		swpc: trim(swpc, (d) => ({ ...d, kp24: [] })),
@@ -77,6 +91,13 @@ export const load: PageServerLoad = async () => {
 						fetchedAt: { gdacs: gdacs?.fetchedAt, ioda: ioda?.fetchedAt, who: who?.fetchedAt }
 					}
 				: null,
+		// Refugiados (ACNUR): los 8 países de los que más gente huye y los 8 que más acogen.
+		refugees: unhcr && {
+			fetchedAt: unhcr.fetchedAt,
+			year: unhcr.data.year,
+			from: top(unhcr.data, 'from', 8),
+			hosted: top(unhcr.data, 'hosted', 8)
+		},
 		// Gasto militar: los 15 países que más gastan.
 		sipri: trim(sipri, (d) => ({ ...d, rows: d.rows.slice(0, 15) }))
 	};

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onRowKey } from '#lib/rownav.ts';
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import '../app.css';
@@ -16,7 +17,8 @@
 	import { initMode, mode, toggleMode } from '#lib/layout.svelte.ts';
 	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
 	import { initPlace } from '#lib/place.svelte.ts';
-	import { initWatchlist } from '#lib/watchlist.svelte.ts';
+	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
+	import { tvSymbol } from '#lib/tickers.ts';
 	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
 	import { parseTv, routeOf } from '#lib/tv.ts';
 	import type { LayoutProps } from './$types';
@@ -49,6 +51,13 @@
 		}, 250);
 		return () => clearInterval(id);
 	});
+
+	/** j/k, ↓/↑ y «o» con el foco en una fila (rownav.ts): antes que la barra de comandos, que se quedaría la letra. */
+	function onListKey(e: KeyboardEvent) {
+		if (tv.on || !onRowKey(e)) return;
+		e.preventDefault();
+		e.stopImmediatePropagation();
+	}
 
 	/** En modo TV, Esc sale (antes de que la barra de comandos lo lleve a la portada) y Espacio pausa. */
 	function onTvKey(e: KeyboardEvent) {
@@ -95,9 +104,15 @@
 		showSymbolLogo: false,
 		displayMode: 'compact'
 	};
+	// Si en MIS has elegido llevar tu lista a la cinta (y tiene algo), la cinta enseña tus valores.
+	const tapeConfig = $derived(
+		watchlist.tape && watchlist.codes.length
+			? { ...tape, symbols: watchlist.codes.map((code) => ({ proName: tvSymbol(code), title: code })) }
+			: tape
+	);
 </script>
 
-<svelte:window bind:online onkeydowncapture={onTvKey} onpointerdown={onTvTap} />
+<svelte:window bind:online onkeydowncapture={(e) => (onTvKey(e), onListKey(e))} onpointerdown={onTvTap} />
 
 <svelte:head>
 	<link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
@@ -166,7 +181,7 @@
 	</nav>
 
 	<div class="tape">
-		<TvWidget widget="ticker-tape" config={tape} height={44} credit={false} />
+		<TvWidget widget="ticker-tape" config={tapeConfig} height={44} credit={false} />
 	</div>
 
 	<!-- Aviso discreto cuando la Action ha publicado una versión nueva (datos o mejoras). -->
@@ -591,31 +606,19 @@
 		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel)) {
 			display: grid;
 			grid-template-columns: repeat(2, minmax(0, 1fr));
-			grid-auto-rows: auto;
 			gap: var(--hair);
 			background: var(--line);
 		}
-	}
 
-	@media (min-width: 2500px) {
-		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel)) {
-			display: grid;
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-			grid-auto-rows: auto;
-			gap: var(--hair);
-			background: var(--line);
-		}
-	}
-
-	@media (min-width: 1680px) {
 		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max)) {
 			height: auto;
 			max-height: none;
 			border-top: 0;
 		}
 
-		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con su
-		   fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. */
+		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con
+		   su fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. Los gráficos,
+		   mapas y widgets van enteros, como en una columna. */
 		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max):not(:has(.chart, .map, .tv, .curve, .bars))) {
 			contain: size;
 			contain-intrinsic-block-size: var(--fit-panel-min);
@@ -626,15 +629,24 @@
 		}
 	}
 
+	/* Las mismas reglas para la rejilla de 3 columnas, que tiene las columnas más estrechas. */
 	@media (min-width: 2500px) {
+		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel)) {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: var(--hair);
+			background: var(--line);
+		}
+
 		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max)) {
 			height: auto;
 			max-height: none;
 			border-top: 0;
 		}
 
-		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con su
-		   fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. */
+		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con
+		   su fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. Los gráficos,
+		   mapas y widgets van enteros, como en una columna. */
 		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max):not(:has(.chart, .map, .tv, .curve, .bars))) {
 			contain: size;
 			contain-intrinsic-block-size: var(--fit-panel-min);
@@ -642,6 +654,19 @@
 
 		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:last-child:nth-child(odd)) {
 			grid-column: 1 / -1;
+		}
+	}
+
+	/* Informe impreso (TOP, IMP…): solo el contenido, sin cabecera, barras, cinta de cotizaciones ni pie. */
+	@media print {
+		.top,
+		.keys,
+		.tape,
+		.thumb,
+		.status,
+		.tv-progress,
+		.tv-chip {
+			display: none;
 		}
 	}
 </style>

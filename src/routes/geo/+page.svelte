@@ -13,6 +13,7 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import TradeList from '#lib/components/TradeList.svelte';
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
+	import RefugeeTables from '#lib/components/RefugeeTables.svelte';
 	import RiskSignals from '#lib/components/RiskSignals.svelte';
 	import StormNotice from '#lib/components/StormNotice.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -74,6 +75,17 @@
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-geo" />{/snippet}
 		</Panel>
 		<ClimatePanel climate={data.climate} />
+		{#if data.refugees}
+			{@const r = data.refugees}
+			<Panel title="Refugiados" meta="ACNUR · fin de {r.year}">
+				<RefugeeTables from={r.from} hosted={r.hosted} />
+				{#snippet note()}
+					Refugiados y solicitantes de asilo. Fuente: <a href="https://www.unhcr.org/refugee-statistics/" target="_blank" rel="noopener"
+						>ACNUR, Refugee Data Finder</a
+					> · <Updated at={r.fetchedAt} source="unhcr" />
+				{/snippet}
+			</Panel>
+		{/if}
 		{#if data.sipri?.data.rows.length}
 			{@const sipri = data.sipri}
 			<Panel title="Gasto militar" meta="Los 15 que más gastan · {sipri.data.year}">
@@ -132,9 +144,20 @@
 				{/snippet}
 			</Panel>
 		{/if}
-		<Panel title="Sanciones y aranceles de EE. UU." meta="OFAC, USTR e ITA" jump={{ code: 'USGOV', href: resolve('/usgov') }}>
-			<TradeList items={data.sanctions?.data.slice(0, 8) ?? []} />
-			{#snippet note()}Fuente: Federal Register · <Updated at={data.sanctions?.fetchedAt} source="sanctions" />{/snippet}
+		<Panel title="Sanciones y aranceles" meta="EE. UU., UE y Reino Unido" jump={{ code: 'USGOV', href: resolve('/usgov') }}>
+			<TradeList items={data.sanctions?.data ?? []} />
+			{#snippet note()}
+				Fuentes: Federal Register (OFAC, USTR, ITA y BIS){#if data.sanctions?.fetchedAt}&nbsp;· <Updated
+						at={data.sanctions.fetchedAt}
+						source="sanctions"
+					/>{/if}; EUR-Lex, actos de sanciones del Diario Oficial de la UE{#if data.sanctions?.euAt}&nbsp;· <Updated
+						at={data.sanctions.euAt}
+						source="eurlex"
+					/>{/if}; OFSI en GOV.UK, Open Government Licence v3.0{#if data.sanctions?.ukAt}&nbsp;· <Updated
+						at={data.sanctions.ukAt}
+						source="sanctions-uk"
+					/>{/if}.
+			{/snippet}
 		</Panel>
 		{#if data.advisories}
 			<Panel title="Avisos de viaje de EE. UU." meta="Departamento de Estado · nivel 1 a 4">
@@ -144,6 +167,12 @@
 						>Departamento de Estado de EE. UU.</a
 					>, para viajeros estadounidenses · <Updated at={data.advisories?.fetchedAt} source="advisories" />
 				{/snippet}
+			</Panel>
+		{/if}
+		{#if data.analysis?.data.items.length}
+			<Panel title="Análisis" meta="Crisis Group y Foreign Affairs">
+				<NewsList items={data.analysis.data.items} />
+				{#snippet note()}Informes y artículos de fondo sobre conflictos · <Updated at={data.analysis?.fetchedAt} source="news-analysis" />{/snippet}
 			</Panel>
 		{/if}
 		<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">
