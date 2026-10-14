@@ -77,7 +77,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 ## Sistema de diseño
 Un cambio de estética se hace en un solo sitio.
 - **Tokens** en `src/styles/tokens.css` (lo importa `src/app.css`): colores, tipografía (`--fs-*`, `--fw-*`,
-  `--lh*`, `--track-*`), escala de espaciado (`--sp-N`, donde N son los px), ritmo principal (`--pad-x`,
+  `--lh*`, `--track-*`), escala de espaciado (`--sp-N`, donde N son los px), ritmo principal (`--pad-x`, `--head-y`,
   `--row-y`, `--gutter`), líneas (`--hair`, `--border`) y medidas (`--control-h`, `--touch`…). Los puntos de corte
   están documentados en el mismo archivo. El tema de día solo redefine colores en `:root[data-theme='light']`.
 - **Regla: nada de valores fijos.** Ni colores, ni fuentes, ni px de espaciado, bordes o letra en vistas y

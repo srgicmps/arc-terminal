@@ -196,7 +196,7 @@
 <div class="grid">
 	<Panel
 		title="{fuelLabel} · {zoneName}"
-		meta="{list.length} {list.length === 1 ? 'estación' : 'estaciones'}"
+		meta={list.length > SHOWN && !showAll ? `${SHOWN} de ${list.length} estaciones` : `${list.length} ${list.length === 1 ? 'estación' : 'estaciones'}`}
 		{share}
 	>
 
@@ -288,8 +288,10 @@
 						{/each}
 					</tbody>
 				</Table>
-				{#if list.length > SHOWN && !showAll}
-					<button class="more" type="button" onclick={() => (showAll = true)}>Ver las {list.length}</button>
+				{#if list.length > SHOWN}
+					<button class="more" type="button" aria-expanded={showAll} onclick={() => (showAll = !showAll)}
+						>{showAll ? `Ver solo las ${SHOWN} primeras` : `Ver las ${list.length}`}</button
+					>
 				{/if}
 			{:else if !message}
 				<p class="empty">Ninguna estación de {town === 'ALL' ? zoneName : town} vende {fuelLabel.toLowerCase()}.</p>

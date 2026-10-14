@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { clock } from '#lib/clock.svelte.ts';
 	import HnTable from '#lib/components/HnTable.svelte';
 	import InternetStatusPanel from '#lib/components/InternetStatusPanel.svelte';
@@ -30,7 +31,7 @@
 
 <div class="grid grid-2e">
 	<div class="col">
-		<Panel title="Titulares" meta="Tecnología">
+		<Panel title="Titulares" meta="Tecnología" jump={{ code: 'NEWS', href: `${resolve('/news')}?s=tech` }}>
 			<NewsList items={data.news?.data.items ?? []} summaries />
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-tech" />{/snippet}
 		</Panel>
