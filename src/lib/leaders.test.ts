@@ -24,8 +24,13 @@ describe('leaders', () => {
 			{ title: 'Remarks', url: 'u3', source: 'Casa Blanca', time: '2026-10-13T20:00:00Z', summary: '' }
 		];
 		const fedreg = [{ id: '1', title: 'Executive Order 14999', type: '', subtype: '', abstract: '', agencies: [], date: '2026-10-14', url: 'u4', pdf: '' }];
-		const [sanchez, trump] = LEADERS;
-		expect(recent(sanchez, gov, fedreg).map((i) => i.url)).toEqual(['u1']);
-		expect(recent(trump, gov, fedreg).map((i) => i.url)).toEqual(['u4', 'u3']);
+		const eco = [
+			{ title: 'Christine Lagarde: Where AI risks meet', url: 'u5', source: 'BCE', time: '2026-10-01T15:30:00Z', summary: '' },
+			{ title: 'Monetary policy decisions', url: 'u6', source: 'BCE', time: '2026-10-02T12:15:00Z', summary: '' }
+		];
+		const [sanchez, trump, lagarde] = LEADERS;
+		expect(recent(sanchez, { gov }, fedreg).map((i) => i.url)).toEqual(['u1']);
+		expect(recent(trump, { gov }, fedreg).map((i) => i.url)).toEqual(['u4', 'u3']);
+		expect(recent(lagarde, { gov, eco }).map((i) => i.url)).toEqual(['u5']);
 	});
 });

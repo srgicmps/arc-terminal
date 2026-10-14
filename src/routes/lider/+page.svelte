@@ -29,7 +29,7 @@
 				// Si hoy ya no queda nada, el siguiente acto (mañana) sale aparte.
 				later: next && !day.includes(next) ? next : null,
 				next,
-				recent: recent(leader, data.gov?.data.items ?? [], data.fedreg?.data.presidential ?? [])
+				recent: recent(leader, { gov: data.gov?.data.items, eco: data.eco?.data.items }, data.fedreg?.data.presidential ?? [])
 			};
 		})
 	);

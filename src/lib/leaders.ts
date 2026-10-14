@@ -7,8 +7,11 @@ export interface Leader {
 	id: string;
 	name: string;
 	role: string;
-	/** Comunicados de news-gov que cuentan como «lo último» (por medio y, si hace falta, por texto). */
-	news: { source: string; match?: RegExp }[];
+	/**
+	 * Titulares que cuentan como «lo último»: de qué sección (news-gov, news-eco…), de qué medio y, si
+	 * hace falta, qué texto tienen que llevar.
+	 */
+	news: { section: 'gov' | 'eco'; source: string; match?: RegExp }[];
 	/** Si los documentos presidenciales del Federal Register son suyos. */
 	fedreg?: boolean;
 	/** De dónde sale «Lo último», para la cabecera del panel. */
@@ -20,16 +23,23 @@ export const LEADERS: Leader[] = [
 		id: 'sanchez',
 		name: 'Pedro Sánchez',
 		role: 'Presidente del Gobierno · España',
-		news: [{ source: 'La Moncloa', match: /\b(presidente del gobierno|s[aá]nchez)\b/i }],
+		news: [{ section: 'gov', source: 'La Moncloa', match: /\b(presidente del gobierno|s[aá]nchez)\b/i }],
 		recentLabel: 'Comunicados de La Moncloa'
 	},
 	{
 		id: 'trump',
 		name: 'Donald Trump',
 		role: 'Presidente · Estados Unidos',
-		news: [{ source: 'Casa Blanca' }],
+		news: [{ section: 'gov', source: 'Casa Blanca' }],
 		fedreg: true,
 		recentLabel: 'Casa Blanca y Federal Register'
+	},
+	{
+		id: 'lagarde',
+		name: 'Christine Lagarde',
+		role: 'Presidenta · Banco Central Europeo',
+		news: [{ section: 'eco', source: 'BCE', match: /\bLagarde\b/i }],
+		recentLabel: 'Discursos y entrevistas del BCE'
 	}
 ];
 
@@ -58,9 +68,14 @@ export function nowNext(events: AgendaEvent[], now: number): { current: AgendaEv
 }
 
 /** Lo último que ha hecho: sus comunicados y, si toca, sus documentos del Federal Register. */
-export function recent(leader: Leader, gov: NewsItem[], fedreg: FedRegDoc[] = [], max = 8): NewsItem[] {
-	const news = gov.filter((item) =>
-		leader.news.some((n) => item.source === n.source && (!n.match || n.match.test(`${item.title} ${item.summary}`)))
+export function recent(
+	leader: Leader,
+	sections: Partial<Record<'gov' | 'eco', NewsItem[]>>,
+	fedreg: FedRegDoc[] = [],
+	max = 8
+): NewsItem[] {
+	const news = leader.news.flatMap((n) =>
+		(sections[n.section] ?? []).filter((item) => item.source === n.source && (!n.match || n.match.test(`${item.title} ${item.summary}`)))
 	);
 	const docs: NewsItem[] = leader.fedreg
 		? fedreg.map((d) => ({ title: d.title, url: d.url, source: 'Federal Register', time: `${d.date}T12:00:00Z`, summary: '' }))
