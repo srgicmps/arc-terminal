@@ -51,7 +51,7 @@
 
 <style>
 	.map {
-		padding: 8px 12px 4px;
+		padding: var(--sp-8) var(--pad-x) var(--sp-4);
 	}
 
 	svg {
@@ -100,28 +100,28 @@
 	.legend {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px 16px;
-		margin: 6px 0 2px;
+		gap: var(--sp-4) var(--sp-16);
+		margin: var(--sp-6) 0 var(--sp-2);
 		color: var(--muted);
 		font-size: var(--fs-xs);
 	}
 
 	.legend i {
 		display: inline-block;
-		width: 8px;
-		height: 8px;
-		margin-right: 6px;
+		width: var(--swatch);
+		height: var(--swatch);
+		margin-right: var(--sp-6);
 		border-radius: 50%;
-		vertical-align: -1px;
+		vertical-align: calc(-1 * var(--hair));
 	}
 
 	.legend i.eq {
 		background: var(--amber-soft);
-		border: 1px solid var(--amber);
+		border: var(--hair) solid var(--amber);
 	}
 
 	.legend i.st {
-		border: 1px solid var(--fg);
+		border: var(--hair) solid var(--fg);
 	}
 
 	.legend i.ev {

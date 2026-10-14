@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import Table from '#lib/components/ui/Table.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -40,9 +41,36 @@
 		[
 			{ title: '$state y $derived ≈ ref y computed', parts: [s.state, s.derived] },
 			{ title: '$props ≈ defineProps', parts: [s.props] },
-			{ title: '{@render} de un snippet ≈ <slot name="note">', parts: [s.snippet] }
+			{ title: '{@render} de un snippet ≈ <slot name="note">', parts: [s.snippet] },
+			{ title: '$state en un .svelte.ts ≈ un composable con ref() o un store de Pinia', parts: [s.store] }
 		].filter((e) => e.parts.every(Boolean))
 	);
+
+	// Piezas que cuidan los datos. Si un fragmento ya no está en el código, se oculta solo él.
+	const pieces = $derived([
+		{
+			tag: 'Guardia',
+			title: 'Datos vacíos o encogidos',
+			text: 'Una API puede responder «200 OK» con la lista vacía. checkShrink lo trata como fallo y se publica la copia anterior. allowEmpty: la fuente puede venir vacía (avisos, alertas). minItems: mínimo para darla por buena.',
+			file: 'scripts/lib.ts',
+			code: s.shrink
+		},
+		{
+			tag: 'Claves',
+			title: 'Claves opcionales',
+			text: 'Una fuente con requires necesita esa clave de GitHub Secrets. Si falta, se salta sin llamar a la API y STATUS la marca «Sin clave», sin contar como fallo.',
+			file: 'scripts/lib.ts · src/routes/status',
+			code: s.requires
+		},
+		{
+			tag: 'Cluster',
+			title: 'Titulares agrupados',
+			text: 'La misma noticia en varios medios sale una vez. cluster compara las palabras de los titulares (Jaccard ≥ 0,5, menos de 12 h) y guarda los demás medios en also. NewsList los despliega con «+3 medios».',
+			file: 'scripts/cluster.ts',
+			code: s.cluster,
+			extra: s.also
+		}
+	]);
 </script>
 
 <ViewHeader code="DOC" title="Cómo funciona" sub="Cómo está hecho Arc Terminal, de la descarga de datos a la pantalla" />
@@ -146,20 +174,18 @@
 	<div class="col">
 		<Panel title="3 · Fuentes" meta="{data.sources.length} fuentes">
 			{#if data.sources.length}
-				<div class="scroll">
-					<table class="t">
-						<thead><tr><th>Fuente</th><th class="l">Qué trae</th><th>Reutiliza</th></tr></thead>
-						<tbody>
-							{#each data.sources as src (src.name)}
-								<tr>
-									<td class="mut">{src.name}</td>
-									<td class="l wrap">{src.label}{#if src.requires}<small>Clave {src.requires}</small>{/if}</td>
-									<td class="mut">{age(src.maxAgeMinutes)}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+				<Table>
+					<thead><tr><th>Fuente</th><th class="l">Qué trae</th><th>Reutiliza</th></tr></thead>
+					<tbody>
+						{#each data.sources as src (src.name)}
+							<tr>
+								<td class="mut">{src.name}</td>
+								<td class="l wrap">{src.label}{#if src.requires}<small>Clave {src.requires}</small>{/if}</td>
+								<td class="mut">{age(src.maxAgeMinutes)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
 			{:else}
 				<p class="empty">Sin datos todavía: se generan con <code>pnpm data</code>.</p>
 			{/if}
@@ -172,16 +198,14 @@
 		</Panel>
 
 		<Panel title="4 · Svelte 5 frente a Vue 3">
-			<div class="scroll">
-				<table class="t">
-					<thead><tr><th>Svelte 5</th><th class="l">Vue 3</th></tr></thead>
-					<tbody>
-						{#each VS as [svelte, vue] (svelte)}
-							<tr><td><code>{svelte}</code></td><td class="l wrap">{vue}</td></tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
+			<Table>
+				<thead><tr><th>Svelte 5</th><th class="l">Vue 3</th></tr></thead>
+				<tbody>
+					{#each VS as [svelte, vue] (svelte)}
+						<tr><td><code>{svelte}</code></td><td class="l wrap">{vue}</td></tr>
+					{/each}
+				</tbody>
+			</Table>
 			<ul class="mini">
 				{#each examples as ex (ex.title)}
 					<li>
@@ -197,6 +221,27 @@
 			</ul>
 			{#snippet note()}
 				Las runas ($state, $derived…) solo funcionan en archivos <code>.svelte</code> y <code>.svelte.ts</code>.
+			{/snippet}
+		</Panel>
+
+		<Panel title="5 · Cuidar los datos" meta="3 piezas">
+			<ul class="mini">
+				{#each pieces as p (p.tag)}
+					<li>
+						<span class="l">
+							{p.title}. {p.text}
+							<small><code>{p.file}</code></small>
+							{#each [p.code, p.extra].filter(Boolean) as part (part!.file + part!.line)}
+								<small><code>{part!.file}:{part!.line}</code></small>
+								<pre><code>{part!.code}</code></pre>
+							{/each}
+						</span>
+						<b>{p.tag}</b>
+					</li>
+				{/each}
+			</ul>
+			{#snippet note()}
+				Fragmentos copiados del código al construir: si cambian, esta vista cambia con ellos.
 			{/snippet}
 		</Panel>
 	</div>
@@ -223,7 +268,7 @@
 
 	pre code {
 		color: var(--muted);
-		line-height: 1.5;
+		line-height: var(--lh-loose);
 	}
 
 	.wrap {

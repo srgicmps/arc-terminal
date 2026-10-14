@@ -6,6 +6,10 @@ import deployYml from '../../../.github/workflows/deploy.yml?raw';
 import panelSrc from '#lib/components/Panel.svelte?raw';
 import fuelLoadSrc from '../fuel/+page.ts?raw';
 import fuelPageSrc from '../fuel/+page.svelte?raw';
+import updateSrc from '../../../scripts/update.ts?raw';
+import newsSrc from '../../../scripts/sources/news.ts?raw';
+import newsListSrc from '#lib/components/NewsList.svelte?raw';
+import watchlistSrc from '#lib/watchlist.svelte.ts?raw';
 import type { PageServerLoad } from './$types';
 
 export interface Excerpt {
@@ -37,7 +41,12 @@ export const load: PageServerLoad = async () => {
 			state: excerpt('src/routes/fuel/+page.svelte', fuelPageSrc, '$state<FuelKey>', 2),
 			derived: excerpt('src/routes/fuel/+page.svelte', fuelPageSrc, 'const provinces = $derived', 2),
 			props: excerpt('src/lib/components/Panel.svelte', panelSrc, '= $props()', 1),
-			snippet: excerpt('src/lib/components/Panel.svelte', panelSrc, '{#if note}', 3)
+			snippet: excerpt('src/lib/components/Panel.svelte', panelSrc, '{#if note}', 3),
+			store: excerpt('src/lib/watchlist.svelte.ts', watchlistSrc, 'export const watchlist = $state', 1),
+			shrink: excerpt('scripts/update.ts', updateSrc, 'const suspicious = checkShrink', 2),
+			requires: excerpt('scripts/update.ts', updateSrc, 'if (source.requires && !process.env', 3),
+			cluster: excerpt('scripts/sources/news.ts', newsSrc, 'cluster(items)', 1),
+			also: excerpt('src/lib/components/NewsList.svelte', newsListSrc, '{#if item.also?.length}', 3)
 		}
 	};
 };

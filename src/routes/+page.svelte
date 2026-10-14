@@ -4,10 +4,11 @@
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
-	import { nf, signed, trend, when } from '#lib/format.ts';
+	import { nf, when } from '#lib/format.ts';
 	import { hourly, madridNow } from '#lib/power.ts';
 	import { seriesMap, spread } from '#lib/series.ts';
 	import { compass, sky } from '#lib/weather.ts';
+	import Change from '#lib/components/ui/Change.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -92,14 +93,14 @@
 						{@const d = pts.length > 1 ? ((pts.at(-1)!.v / pts.at(-2)!.v - 1) * 100) : null}
 						<li>
 							<span class="l">{s.label}</span>
-							<b>{nf(pts.at(-1)!.v, 4)} <em class={trend(d)}>{signed(d, 2)} %</em></b>
+							<b>{nf(pts.at(-1)!.v, 4)} <em><Change value={d} unit=" %" /></em></b>
 						</li>
 					{/if}
 				{/each}
 				{#each (data.crypto?.data.coins ?? []).slice(0, 2) as c (c.id)}
 					<li>
 						<span class="l">{c.name}</span>
-						<b>{nf(c.usd, 0)} $ <em class={trend(c.change24h)}>{signed(c.change24h, 1)} %</em></b>
+						<b>{nf(c.usd, 0)} $ <em><Change value={c.change24h} digits={1} unit=" %" /></em></b>
 					</li>
 				{/each}
 			</ul>
@@ -197,9 +198,9 @@
 	}
 
 	em {
-		margin-left: 6px;
+		margin-left: var(--sp-6);
 		font-style: normal;
-		font-weight: 400;
+		font-weight: var(--fw-regular);
 		font-size: var(--fs-s);
 	}
 </style>

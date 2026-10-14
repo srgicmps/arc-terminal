@@ -53,13 +53,36 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - Gráficos propios, si hacen falta: uPlot o Lightweight Charts.
 
 ## Diseño
-- Referencia: `docs/maqueta.html` (se abre directamente en el navegador). Colores y tipografías en `:root`.
+- Referencia: `docs/maqueta.html` (se abre directamente en el navegador). Colores y tipografías, en
+  `src/styles/tokens.css` (ver «Sistema de diseño»).
 - Estética de terminal: fondo casi negro, ámbar como acento, verde y rojo solo para subidas y bajadas,
   separaciones de 1 px, mucha densidad de información.
 - Tipografías: IBM Plex Mono (datos y comandos) e IBM Plex Sans Condensed (titulares y textos).
 - Sergi quiere detalles **sutiles y elegantes**, nada grueso ni llamativo. Un mismo elemento mide lo mismo
   en todas las vistas.
 - Tiene que funcionar bien en el móvil (Sergi lo mirará mucho desde ahí).
+
+## Sistema de diseño
+Un cambio de estética se hace en un solo sitio.
+- **Tokens** en `src/styles/tokens.css` (lo importa `src/app.css`): colores, tipografía (`--fs-*`, `--fw-*`,
+  `--lh*`, `--track-*`), escala de espaciado (`--sp-N`, donde N son los px), ritmo principal (`--pad-x`,
+  `--row-y`, `--gutter`), líneas (`--hair`, `--border`) y medidas (`--control-h`, `--touch`…). Los puntos de corte
+  están documentados en el mismo archivo. El tema de día solo redefine colores en `:root[data-theme='light']`.
+- **Regla: nada de valores fijos.** Ni colores, ni fuentes, ni px de espaciado, bordes o letra en vistas y
+  componentes: siempre `var(--…)`. Solo puede ir en px la geometría propia de un componente (el ancho de una
+  columna, el alto de un gráfico). Si falta un valor, se añade un token.
+- **Componentes base** en `src/lib/components/ui/`:
+  `Seg` (botones de opción), `Select` (desplegable con etiqueta), `Tiles` + `Tile` (cifras grandes), `Table`
+  (tabla densa: celdas `.l`, `.name`, `.sub`, `.mut`), `Bar` (barra de comparación), `Change` (variación
+  verde/roja con signo) y `Note` (nota al pie). Además, `Panel` y `ViewHeader` para paneles y cabeceras de vista.
+  Antes de escribir CSS para algo que ya existe, se usa el componente.
+- **`app.css`** solo tiene el reset, la tipografía base y lo que comparten todas las vistas: rejillas (`.grid`,
+  `.grid-2`, `.grid-2e`, `.grid-3`, `.col`), listas `.mini`, `.empty` y los colores `.up`, `.down`, `.mut`.
+  El resto va en el `<style>` de su componente.
+- **Cambiar la estética**, por ejemplo el acento: `--amber` en `tokens.css` (y su versión de día, abajo en el
+  mismo archivo). Para una web más densa o más aireada: `--pad-x` y `--row-y`, o la escala `--sp-*`.
+  Lo único fuera de los tokens son los iconos (`static/favicon.svg` y los PNG de la PWA): llevan el ámbar
+  escrito y hay que rehacerlos si cambia el acento.
 
 ## Comandos y fuentes
 La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`). Resumen:
@@ -107,3 +130,4 @@ Cuando termine una fase, actualiza esta lista.
 - Festivos locales de Menorca: Sergi ha decidido no añadirlos.
 - Formato y lint en CI (Prettier + ESLint): un PR propio, cuando haya pocas ramas abiertas.
 - Descartadas: GDELT (429 desde Actions) y RSS de la CNMV (no responde).
+- ReliefWeb: falta el appname aprobado (RELIEFWEB_APPNAME); aparcado por Sergi.
