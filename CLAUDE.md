@@ -39,7 +39,8 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - **Probar una fuente sin la pasada completa**: Actions → «Publicar en Pages» → Run workflow, con «fuentes»
   (p. ej. `fao climate`). Descarga solo esas fuentes, sin copia guardada, y lanza el sondeo, sin publicar.
 - En los PR, la Action va en jobs a la vez: `checks` (check, test, build: el verde o el rojo rápido), `smoke`
-  (datos reales y prueba de humo) y, solo si hacen falta, `probe`, `tv-shots` y `compare` (vistas del PR frente a main).
+  (datos reales y prueba de humo) y `probe` solo si el PR toca `scripts/`. `compare` (vistas del PR frente a
+  main) y `tv-shots` se lanzan a mano: Run workflow sobre la rama, con «herramienta».
 
 ## Arquitectura
 - **GitHub Pages** sirve la web estática en https://srgicmps.github.io/arc-terminal/ (por eso hay que
