@@ -71,10 +71,3 @@ https://mymemory.translated.net/doc/usagelimits.php ~ .{0,250}(chars|characters|
 https://api.db.nomics.world/v22/series/OECD/DSD_G20_PRICES@DF_G20_PRICES?dimensions=%7B%22FREQ%22%3A%5B%22M%22%5D%2C%22TRANSFORMATION%22%3A%5B%22GY%22%5D%7D&observations=1&metadata=false&limit=50 ~ "series_code":"[^"]+"|.{0,24}\],"period_start_day"
 # ECO: precio de la vivienda del BIS (WS_SPP), variación interanual nominal (N) y real (R): forma de la clave
 https://stats.bis.org/api/v1/data/WS_SPP/Q.US+ES+KR.N+R.771/all?lastNObservations=2&detail=dataonly&format=csv
-# ECO (M3 b): prima de riesgo diaria. Banco de España, tabla 1.2 (indicadores financieros diarios: bono a 10 años y diferencial con Alemania)
-https://www.bde.es/webbe/es/estadisticas/otras-clasificaciones/publicaciones/sintesis-indicadores/capitulo-1.html ~ [^"' <>]{0,160}si_1_2[^"' <>]{0,40}
-https://www.bde.es/webbe/es/estadisticas/compartido/datos/csv/si_1_2.csv
-https://www.bde.es/webbe/es/estadisticas/compartido/datos/csv/si_1_2.csv ~ [^\n]{0,20}(OCT|oct|10)[^\n]{0,20}2026[^\n]{0,300}
-# Bundesbank: bono federal alemán a 10 años, diario (respaldo para calcular la prima)
-https://api.statistiken.bundesbank.de/rest/data/BBSSY/D.REN.EUR.A630.000000WT1010.A?lastNObservations=3&format=csv
-https://api.statistiken.bundesbank.de/rest/data/BBSIS/D.I.ZAR.ZI.EUR.S1311.B.A604.R10XX.R.A.A._Z._Z.A?lastNObservations=3
