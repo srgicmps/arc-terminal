@@ -209,6 +209,15 @@
 		color: var(--faint);
 	}
 
+	/* En un panel estrecho (el móvil), los periodos van en su propia línea, encima de las series: así la
+	   leyenda no pasa a una tercera línea. */
+	@container (max-width: 480px) {
+		.periods {
+			order: -1;
+			flex-basis: 100%;
+		}
+	}
+
 	.empty {
 		padding-inline: 0;
 	}
