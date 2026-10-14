@@ -1,0 +1,34 @@
+# Evita que GitHub desactive los cron de este repo.
+#
+# En un repo público, GitHub apaga las Actions programadas tras 60 días sin actividad
+# (sin commits). Volver a «activar» un workflow por la API, aunque ya esté activo,
+# reinicia esa cuenta de 60 días. Esta Action lo hace con todos los workflows del
+# repo, incluida ella misma, así que no hace falta ningún commit de relleno.
+name: Mantener los cron activos
+
+on:
+  # Los lunes a las 06:23 UTC. Una vez por semana sobra para no llegar nunca a 60 días.
+  schedule:
+    - cron: '23 6 * * 1'
+  # Permite lanzarla a mano desde la pestaña Actions.
+  workflow_dispatch:
+
+# Solo necesita poder activar workflows.
+permissions:
+  actions: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      # Se salta los que se hayan desactivado a mano: esos se respetan.
+      - name: Volver a activar todos los workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          for id in $(gh api "repos/$REPO/actions/workflows" \
+              --jq '.workflows[] | select(.state != "disabled_manually") | .id'); do
+            gh api -X PUT "repos/$REPO/actions/workflows/$id/enable"
+            echo "Activado: $id"
+          done
