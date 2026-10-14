@@ -10,10 +10,36 @@
 	import { keyJoin, SHORTCUTS } from '#lib/shortcuts.ts';
 	import { FUNCTIONS } from '#lib/functions.ts';
 	import Seg from '#lib/components/ui/Seg.svelte';
+	import Share from '#lib/components/ui/Share.svelte';
+	import { collect, decode, encode, HASH } from '#lib/transfer.ts';
 	import { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, resetTaste, setAccent, setThumb, setTop, taste, THUMB_MAX } from '#lib/taste.svelte.ts';
 
 	// «A tu gusto»: todas las vistas que se abren sin texto detrás pueden ir en la fila de arriba o abajo.
 	const sections = COMMANDS.map((c) => ({ value: c.code, label: c.code }));
+	// Llevar los ajustes a otro dispositivo (M21): un enlace a esta página con todo en el #.
+	const transferLink = () => {
+		const url = new URL(location.href);
+		url.search = '';
+		url.hash = HASH.slice(1) + encode(collect(localStorage));
+		return { title: 'Mis ajustes de Arc Terminal', url: url.href };
+	};
+	// Al abrir ese enlace: se pregunta antes de tocar nada.
+	let incoming = $state<Record<string, string> | null>(null);
+	$effect(() => {
+		if (location.hash.startsWith(HASH)) incoming = decode(location.hash.slice(HASH.length));
+	});
+	function forget() {
+		incoming = null;
+		history.replaceState(history.state, '', location.pathname + location.search);
+	}
+	function bring() {
+		if (!incoming) return;
+		try {
+			for (const [key, value] of Object.entries(incoming)) localStorage.setItem(key, value);
+		} catch {}
+		forget();
+		location.reload();
+	}
 	const custom = $derived(
 		taste.accent !== 'amber' || taste.top.join() !== DEFAULT_TOP.join() || taste.thumb.join() !== DEFAULT_THUMB.join()
 	);
@@ -52,6 +78,14 @@
 			</ul>
 		</Panel>
 		<Panel title="A tu gusto" meta="Solo en este navegador">
+			{#if incoming}
+				{@const n = Object.keys(incoming).length}
+				<div class="incoming" role="status">
+					<p>Este enlace trae {n} {n === 1 ? 'ajuste' : 'ajustes'} de otro dispositivo. {n === 1 ? 'Sustituye al' : 'Sustituyen a los'} de aquí.</p>
+					<button type="button" class="go" onclick={bring}>Traerlos</button>
+					<button type="button" class="no" onclick={forget}>No</button>
+				</div>
+			{/if}
 			<dl class="taste">
 				<dt>Acento</dt>
 				<dd><Seg label="Color de acento" options={ACCENTS} bind:value={() => taste.accent, setAccent} /></dd>
@@ -59,9 +93,12 @@
 				<dd><Seg label="Secciones de la fila de arriba" options={sections} bind:values={() => taste.top, setTop} /></dd>
 				<dt>Barra del móvil <small>({taste.thumb.length} de {THUMB_MAX})</small></dt>
 				<dd><Seg label="Secciones de la barra inferior del móvil" options={sections} bind:values={() => taste.thumb, setThumb} /></dd>
+				<dt>Otro dispositivo</dt>
+				<dd class="send"><Share source={transferLink} /> Enlace con todo lo tuyo: estos ajustes, MIS, palabras vigiladas, tu sitio…</dd>
 			</dl>
 			{#snippet note()}
-				En la barra del móvil caben {THUMB_MAX}: al elegir otra, sale la primera de la lista.
+				En la barra del móvil caben {THUMB_MAX}: al elegir otra, sale la primera de la lista. El enlace de
+				«Otro dispositivo» lleva tu sitio y tus favoritos: es para ti, no lo compartas en público.
 				{#if custom}<button class="reset" type="button" onclick={resetTaste}>Volver a lo de siempre</button>{/if}
 			{/snippet}
 		</Panel>
@@ -134,6 +171,40 @@
 		.taste dd + dt {
 			margin-top: var(--sp-8);
 		}
+	}
+
+	.send {
+		display: flex;
+		align-items: center;
+		gap: var(--sp-8);
+		color: var(--faint);
+		font-size: var(--fs-s);
+	}
+
+	.incoming {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--sp-8);
+		padding: var(--sp-10) var(--pad-x);
+		border-bottom: var(--border);
+		background: var(--amber-soft);
+	}
+
+	.incoming p {
+		flex: 1 1 100%;
+		margin: 0;
+		font-size: var(--fs-s);
+	}
+
+	.incoming .no {
+		height: var(--control-h);
+		padding: 0 var(--pad-x);
+		border: var(--hair) solid var(--amber-edge);
+		background: none;
+		color: var(--amber);
+		font-size: var(--fs-s);
+		cursor: pointer;
 	}
 
 	.reset {
