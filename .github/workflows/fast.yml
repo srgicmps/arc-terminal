@@ -91,6 +91,15 @@ jobs:
           path: .notify-cache
           key: notify-log-${{ github.run_id }}-${{ github.run_attempt }}
 
+      # Miniaturas del MANUAL: las últimas que guardó deploy.yml (aquí no se capturan). Sin ellas, esta
+      # publicación quitaría las imágenes del manual hasta la siguiente pasada normal.
+      - uses: actions/cache/restore@v4
+        continue-on-error: true
+        with:
+          path: static/manual
+          key: thumbs-solo-restaurar
+          restore-keys: thumbs-
+
       - run: pnpm build --logLevel warn
 
       - if: github.event_name != 'pull_request'
