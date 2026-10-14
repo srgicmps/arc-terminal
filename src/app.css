@@ -339,6 +339,53 @@ kbd {
 	}
 }
 
+/* Lista de tickers de HELP: cada enlace ocupa 24 px de alto (mínimo de WCAG 2.2) y las filas solo se separan 4 px más. */
+.tickers a {
+	display: block;
+	padding-block: 4px;
+	margin-block: -2px;
+}
+
+/* Pantallas táctiles: zonas pulsables de al menos 44 px sin engordar el diseño más de lo necesario. */
+@media (pointer: coarse) {
+	button,
+	select,
+	.cmd {
+		min-height: 44px;
+	}
+
+	/* Listas de enlaces: toda la fila es pulsable (el ::after invisible del enlace la cubre). */
+	.mini li:has(> a) {
+		position: relative;
+		min-height: 44px;
+		align-items: center;
+	}
+	.mini li > a::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+	}
+
+	.tickers a {
+		display: flex;
+		align-items: center;
+		min-height: 44px;
+		margin-block: 0;
+	}
+
+	/* Tablas: la celda que empieza por un enlace o botón (y no tiene otro) crece hasta 44 px
+	   y el ::after invisible del enlace la cubre entera. */
+	.t td:has(> :is(a, button):first-child):not(:has(:is(a, button) ~ :is(a, button))) {
+		position: relative;
+		height: 44px;
+	}
+	.t td:not(:has(:is(a, button) ~ :is(a, button))) > :is(a, button):first-child::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+	}
+}
+
 /* Quien pide menos movimiento en su sistema no ve animaciones ni transiciones. */
 @media (prefers-reduced-motion: reduce) {
 	*,
