@@ -46,22 +46,49 @@ describe('releases-cal', () => {
 		]);
 	});
 
-	it('junta los tres calendarios y, si uno falla, usa su copia anterior', async () => {
-		mockFetch((url) => (url.includes('eurostat') ? EUROSTAT : url.includes('ine.es') ? INE : undefined));
+	it('junta INE, Eurostat y el BLS (fechas de FRED); si uno falla, usa su copia anterior', async () => {
+		vi.stubEnv('FRED_API_KEY', 'clave');
+		const fetch = mockFetch((url) => {
+			if (url.includes('ine.es')) return INE;
+			if (url.includes('release_id=10')) return { release_dates: [{ date: '2026-11-13' }, { date: '2027-03-01' }] };
+			if (url.includes('release_id=50')) return { release_dates: [{ date: '2026-11-06' }] };
+			return undefined; // Eurostat no responde
+		});
 		const previous = {
 			events: [
-				{ date: '2026-11-13T13:30:00.000Z', allDay: false, title: 'CPI', source: 'BLS' as const, topic: 'us-cpi' },
-				{ date: '2026-10-01T12:30:00.000Z', allDay: false, title: 'viejo', source: 'BLS' as const, topic: 'us-cpi' }
+				{
+					date: '2026-10-30T10:00:00.000Z',
+					allDay: false,
+					title: 'Inflation',
+					source: 'Eurostat' as const,
+					topic: 'ea-inflation'
+				},
+				{
+					date: '2026-10-01T09:00:00.000Z',
+					allDay: false,
+					title: 'viejo',
+					source: 'Eurostat' as const,
+					topic: 'ea-inflation'
+				}
 			]
 		};
 		const { events } = await releasesCal.fetch(previous);
-		expect(events.map((e) => [e.source, e.date])).toEqual(
-			[
-				['Eurostat', '2026-10-30T10:00:00.000Z'],
-				['INE', '2026-10-29T23:00:00.000Z'],
-				['BLS', '2026-11-13T13:30:00.000Z']
-			].sort((a, b) => a[1].localeCompare(b[1]))
-		);
+		expect(events.map((e) => [e.source, e.date, e.topic])).toEqual([
+			['INE', '2026-10-29T23:00:00.000Z', 'es-ipc'],
+			['Eurostat', '2026-10-30T10:00:00.000Z', 'ea-inflation'],
+			['BLS', '2026-11-06T13:30:00.000Z', 'us-jobs'],
+			['BLS', '2026-11-13T13:30:00.000Z', 'us-cpi']
+		]);
+		// La clave va en la consulta a FRED, que no se publica.
+		expect(String(fetch.mock.calls.find((c) => String(c[0]).includes('stlouisfed'))?.[0])).toContain('api_key=clave');
+		vi.unstubAllEnvs();
+	});
+
+	it('sin la clave de FRED, sin el BLS', async () => {
+		mockFetch((url) => (url.includes('ine.es') ? INE : url.includes('eurostat') ? EUROSTAT : undefined));
+		const { events } = await releasesCal.fetch(undefined);
+		expect(events.some((e) => e.source === 'BLS')).toBe(false);
+		expect(events).toHaveLength(2);
 	});
 
 	it('falla si no responde ninguno', async () => {
