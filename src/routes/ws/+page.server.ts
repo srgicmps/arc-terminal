@@ -5,11 +5,12 @@ import { pickSeries, trim } from '#lib/trim.ts';
 import { computeRisk } from '#lib/risk.ts';
 import type { CotData } from '#lib/cot.ts';
 import type { AuctionsData, CryptoData, NewsData, PredictionsData, SeriesData, VixData, YieldCurveData } from '#lib/types.ts';
+import type { PinkSheetData } from '#lib/pinksheet.ts';
 import type { StablecoinsData } from '#lib/stablecoins.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, curve, eacurve, jgb, ecb, crypto, fred, predictions, auctions, stables, cot, vix] = await Promise.all([
+	const [news, curve, eacurve, jgb, ecb, crypto, fred, predictions, auctions, stables, cot, vix, pinksheet] = await Promise.all([
 		dataset<NewsData>('news-ws'),
 		dataset<YieldCurveData>('uscurve'),
 		dataset<YieldCurveData>('eacurve'),
@@ -22,7 +23,9 @@ export const load: PageServerLoad = async () => {
 		dataset<StablecoinsData>('stablecoins'),
 		dataset<CotData>('cot'),
 		// VIX y su curva: 30 días de 5 plazos, pequeño.
-		dataset<VixData>('vix')
+		dataset<VixData>('vix'),
+		// Materias primas del Banco Mundial: 21 filas de 13 meses, pequeño.
+		dataset<PinkSheetData>('pinksheet')
 	]);
 	// El termómetro de riesgo se calcula aquí, al construir: al navegador solo llega el resultado y su desglose.
 	const risk = computeRisk({ fred: fred?.data, ecb: ecb?.data, crypto: crypto?.data, predictions: predictions?.data });
@@ -46,6 +49,7 @@ export const load: PageServerLoad = async () => {
 		auctions,
 		stables,
 		cot,
-		vix
+		vix,
+		pinksheet
 	};
 };
