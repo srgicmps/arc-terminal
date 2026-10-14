@@ -30,7 +30,7 @@
 						</li>
 					{/each}
 				</ol>
-				{#snippet note()}Fuente: Wikipedia (CC BY-SA 4.0) · <Updated at={data.wiki?.fetchedAt} />{/snippet}
+				{#snippet note()}Fuente: Wikipedia (CC BY-SA 4.0) · <Updated at={data.wiki?.fetchedAt} source="wiki" />{/snippet}
 			</Panel>
 		</div>
 		<div class="col">

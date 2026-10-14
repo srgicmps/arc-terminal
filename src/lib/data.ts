@@ -18,6 +18,8 @@ export interface SourceStatus {
 	 */
 	state: 'ok' | 'cached' | 'stale' | 'error' | 'off';
 	fetchedAt: string | null;
+	/** Cada cuánto se refresca como mucho (maxAgeMinutes de scripts/sources). Lo usa <Updated>. */
+	maxAgeMinutes?: number;
 	error?: string;
 	/** Minutos durante los que se reutiliza la copia publicada sin volver a descargar. */
 	maxAgeMinutes?: number;

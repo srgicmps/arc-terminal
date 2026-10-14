@@ -3,14 +3,15 @@ import type { NewsData, PredictionsData, SeriesData } from '#lib/types.ts';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async () => {
-	const [eurostat, ecb, bls, usdebt, fred, news, predictions] = await Promise.all([
+	const [eurostat, ecb, bls, usdebt, fred, bis, news, predictions] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
 		dataset<SeriesData>('usdebt'),
 		dataset<SeriesData>('fred'),
+		dataset<SeriesData>('bis'),
 		dataset<NewsData>('news-eco'),
 		dataset<PredictionsData>('predictions')
 	]);
-	return { eurostat, ecb, bls, usdebt, fred, news, predictions };
+	return { eurostat, ecb, bls, usdebt, fred, bis, news, predictions };
 };

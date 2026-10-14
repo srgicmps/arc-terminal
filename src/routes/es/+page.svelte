@@ -17,7 +17,7 @@
 	const official = $derived((data.gov?.data.items ?? []).filter((i) => spainEu.has(i.source)));
 	// Del BOE, las disposiciones generales (leyes, reales decretos, órdenes).
 	const general = $derived(data.boe?.data.sections.find((s) => s.code === '1')?.items ?? []);
-	const get = $derived(seriesMap(data.eurostat, data.ecb));
+	const get = $derived(seriesMap(data.eurostat, data.ecb, data.ine));
 	const premium = $derived(spread(get('bond10-es'), get('bond10-de'), 'premium-es', 'Prima de riesgo'));
 	const fuelAvg = $derived(data.fuel?.data.avg);
 	const pvpc = $derived(hourly(data.power?.data.pvpc ?? []));
@@ -37,7 +37,7 @@
 	<div class="col">
 		<Panel title="Titulares" meta="{items.length} noticias">
 			<NewsList {items} summaries />
-			{#snippet note()}<Updated at={data.news?.fetchedAt} />{/snippet}
+			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-es" />{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
@@ -45,7 +45,11 @@
 			<SeriesTable
 				head="Indicador"
 				rows={[
-					{ series: get('unemployment-es'), name: 'Paro', inverse: true },
+					{ series: get('ipc-es'), name: 'IPC (INE)', inverse: true },
+					{ series: get('ipc-ib'), name: 'IPC Baleares', inverse: true },
+					{ series: get('epa-es'), name: 'Paro (EPA)', decimals: 2, inverse: true },
+					{ series: get('epa-ib'), name: 'Paro Baleares (EPA)', decimals: 2, inverse: true },
+					{ series: get('unemployment-es'), name: 'Paro mensual (Eurostat)', inverse: true },
 					{ series: get('youth-unemployment-es'), name: 'Paro juvenil', inverse: true },
 					{ series: get('inflation-es'), name: 'Inflación (IPCA)', inverse: true },
 					{ series: get('gdp-es'), name: 'PIB, trimestral' },
@@ -68,7 +72,7 @@
 					</li>
 				{/if}
 			</ul>
-			{#snippet note()}Fuentes: Eurostat, BCE, Ministerio para la Transición Ecológica, REE e IGN{/snippet}
+			{#snippet note()}Fuentes: INE, Eurostat, BCE, Ministerio para la Transición Ecológica, REE e IGN{/snippet}
 		</Panel>
 		<Panel title="BOE de hoy" meta="Disposiciones generales" jump={{ code: 'BOE', href: resolve('/boe') }}>
 			{#if general.length}

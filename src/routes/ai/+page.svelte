@@ -13,7 +13,7 @@
 	const AI = /\b(ai|a\.i\.|llms?|gpt|openai|anthropic|claude|gemini|llama|mistral|deepseek|transformer|neural|machine learning|agents?|diffusion|copilot|inference|model)\b/i;
 	const hnAi = $derived((data.hn?.data ?? []).filter((i) => AI.test(i.title)));
 	const papers = $derived(data.papers?.data ?? []);
-	const sources =$derived((data.news?.data.feeds ?? []).filter((f) => f.count).map((f) => f.name).join(', '));
+	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.count).map((f) => f.name).join(', '));
 </script>
 
 <ViewHeader code="AI" title="Inteligencia artificial" sub={sources} />
@@ -22,7 +22,7 @@
 	<div class="col">
 		<Panel title="Titulares" meta="IA">
 			<NewsList items={data.news?.data.items ?? []} summaries />
-			{#snippet note()}<Updated at={data.news?.fetchedAt} />{/snippet}
+			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-ai" />{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
@@ -31,7 +31,7 @@
 		</Panel>
 		<Panel title="Papers del día · Hugging Face" meta={papers.length ? `${papers.length} papers` : undefined}>
 			<PaperList items={papers} />
-			{#snippet note()}<Updated at={data.papers?.fetchedAt} />{/snippet}
+			{#snippet note()}<Updated at={data.papers?.fetchedAt} source="hfpapers" />{/snippet}
 		</Panel>
 	</div>
 </div>
