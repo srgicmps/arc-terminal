@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { withDeadline } from '../lib.ts';
+import { getJson, withDeadline } from '../lib.ts';
+import { mockFetch } from './mock.ts';
 
 afterEach(() => {
 	vi.useRealTimers();
@@ -25,6 +26,26 @@ describe('withDeadline', () => {
 		await vi.advanceTimersByTimeAsync(1);
 		await check;
 		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	it.each([401, 403])('un %i dentro del plazo falla a la primera, sin reintentos', async (status) => {
+		vi.useFakeTimers();
+		const fetch = mockFetch(() => new Response('', { status }));
+		const result = withDeadline(getJson('https://example.org/api'), 90_000, 'tiempo agotado (90 s)');
+		const check = expect(result).rejects.toThrow(`HTTP ${status} en https://example.org/api`);
+		await vi.runAllTimersAsync();
+		await check;
+		expect(fetch).toHaveBeenCalledTimes(1);
+	});
+
+	it('el plazo no repite la descarga: un 500 se reintenta solo lo que manda request()', async () => {
+		vi.useFakeTimers();
+		const fetch = mockFetch(() => new Response('', { status: 500 }));
+		const result = withDeadline(getJson('https://example.org/api'), 90_000, 'tiempo agotado (90 s)');
+		const check = expect(result).rejects.toThrow('HTTP 500');
+		await vi.runAllTimersAsync();
+		await check;
+		expect(fetch).toHaveBeenCalledTimes(3);
 	});
 
 	it('deja pasar el error de la propia fuente y limpia el temporizador', async () => {

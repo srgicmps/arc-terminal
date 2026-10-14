@@ -1,5 +1,6 @@
 // Forma de los datos de static/data/*.json. La comparten los scripts que los descargan (scripts/sources/)
 // y las vistas que los muestran.
+import type { SeaState, SunDay } from './weather.ts';
 
 // ---------- Series temporales (macro, tipos, divisas) ----------
 
@@ -84,6 +85,8 @@ export interface NewsItem {
 	/** ISO 8601, o null si el feed no trae fecha. */
 	time: string | null;
 	summary: string;
+	/** La misma noticia en otros medios (scripts/cluster.ts), sin el de `source`. */
+	also?: { source: string; url: string }[];
 }
 
 export interface FeedStatus {
@@ -183,10 +186,14 @@ export interface WeatherPlace {
 	daily: WeatherDay[];
 	/** Temperatura del agua del mar, si la hay. */
 	sea: number | null;
+	/** Salida y puesta del sol de hoy (puede faltar en copias antiguas). */
+	sun?: SunDay | null;
 }
 
 export interface WeatherData {
 	places: WeatherPlace[];
+	/** Oleaje en las costas norte y sur de Menorca (puede faltar en copias antiguas). */
+	coasts?: SeaState[];
 }
 
 // ---------- Cripto (CoinGecko) ----------
@@ -311,6 +318,8 @@ export interface Prediction {
 export interface PredictionsData {
 	geopolitics: Prediction[];
 	economy: Prediction[];
+	/** Decisiones de tipos de interés (etiqueta «fed-rates»). Opcional: las copias antiguas no lo traen. */
+	rates?: Prediction[];
 }
 
 // ---------- Documentos presentados en la SEC (EDGAR) ----------

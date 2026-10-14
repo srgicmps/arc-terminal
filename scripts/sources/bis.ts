@@ -50,6 +50,9 @@ export const bis: Source<SeriesData> = {
 			for (const p of daily) {
 				if (changes.at(-1)?.v !== p.v) changes.push({ t: p.t.slice(0, 7), v: p.v });
 			}
+			// Sin cambios en todo el periodo: el único punto es el inicio de la descarga, no un cambio.
+			// Se fecha con el último dato, como el resto de tablas.
+			if (changes.length === 1) changes[0].t = daily[daily.length - 1].t.slice(0, 7);
 			return [
 				{
 					id: `policy-${area.toLowerCase()}`,
