@@ -36,9 +36,11 @@
 		<Panel title="PIB" meta="Variación trimestral">
 			<SeriesTable head="País" rows={byGeo('gdp')} />
 		</Panel>
-		<Panel title="PIB interanual" meta="Frente al mismo trimestre del año anterior">
-			<SeriesTable head="País" rows={byGeo('gdp-yoy')} />
-		</Panel>
+		{#if get('gdp-yoy-es')}
+			<Panel title="PIB interanual" meta="Frente al mismo trimestre del año anterior">
+				<SeriesTable head="País" rows={byGeo('gdp-yoy')} />
+			</Panel>
+		{/if}
 		<Panel title="Paro juvenil" meta="Menores de 25 años">
 			<SeriesTable head="País" rows={byGeo('youth-unemployment')} />
 		</Panel>

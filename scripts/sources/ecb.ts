@@ -61,6 +61,8 @@ export const ecb: Source<SeriesData> = {
 	name: 'ecb',
 	label: 'Tipos, euríbor, bonos y divisas · Banco Central Europeo',
 	maxAgeMinutes: 175,
+	// Si a la copia le falta alguna serie (p. ej., una recién añadida), se descarga de nuevo sin esperar.
+	isStale: (previous) => WANTED.some((w) => !previous.series?.some((s) => s.id === w.id)),
 	async fetch() {
 		const found = await settle('ecb', WANTED, (w) => w.key, series);
 		if (!found.length) throw new Error('ninguna serie del BCE');
