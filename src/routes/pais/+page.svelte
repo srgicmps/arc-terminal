@@ -51,7 +51,7 @@
 	code="PAIS"
 	title={country?.name ?? 'Ficha de país'}
 	sub={country
-		? `${country.code} · ${country.currency}${country.euro ? ' · zona euro' : ''} · Eurostat, BLS, FRED, BCE, BIS, FMI y titulares`
+		? `${country.code} · ${country.currency}${country.euro ? ' · zona euro' : ''}`
 		: 'Cifras, tipos, moneda, previsiones y titulares de cada país'}
 >
 	{#snippet aside()}
@@ -72,7 +72,7 @@
 					<tbody>
 						{#each sorted as c (c.code)}
 							<tr>
-								<td class="name"><a href="{resolve('/pais')}?c={c.code}">{c.name}</a></td>
+								<td class="name"><a class="pick" href="{resolve('/pais')}?c={c.code}">{c.name}</a></td>
 								<td>{c.code}</td>
 								<td class="mut">{c.currency}</td>
 							</tr>
@@ -84,12 +84,11 @@
 	</div>
 {:else if profile}
 	{#if profile.kpis.length}
-		<Tiles>
+		<Tiles cols={profile.kpis.length}>
 			{#each profile.kpis as k (k.key)}
 				{@const d = k.prev === null ? null : k.value - k.prev}
 				<Tile label={k.label} value="{nf(k.value, 1)} %">
-					{period(k.t)}{#if d !== null}
-						· <Change value={d * better[k.key]} text="{signed(d, 1)} pp" />{/if} · {k.detail} · {k.source}
+					{period(k.t)}{#if d !== null}{' · '}<Change value={d * better[k.key]} text="{signed(d, 1)} pp" />{/if}{' · '}{k.detail} · {k.source}
 				</Tile>
 			{/each}
 		</Tiles>
@@ -114,7 +113,9 @@
 							{/each}
 						</tbody>
 					</Table>
-					{#snippet note()}Tipo oficial: BIS (último cambio). Bono: BCE, media mensual{country.code === 'US' ? '; EE. UU., Tesoro, diario' : ''}. Var.: frente al dato anterior, en puntos básicos.{/snippet}
+					{#snippet note()}{#if profile.policy}Tipo oficial: BIS, con el mes del último cambio.{/if}
+						{#if profile.bond}Bono: {profile.bond.source === 'BCE' ? 'BCE, media mensual' : 'Tesoro de EE. UU., diario'}.{/if}
+						Var.: frente al dato anterior, en puntos básicos.{/snippet}
 				</Panel>
 			{/if}
 
@@ -177,6 +178,15 @@
 {/if}
 
 <style>
+	.pick {
+		color: var(--fg);
+		text-decoration: none;
+	}
+
+	.pick:hover {
+		color: var(--amber);
+	}
+
 	.own td {
 		color: var(--amber);
 	}
