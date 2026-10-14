@@ -3,11 +3,11 @@ import { crisisPoints, eventPoints, quakePoints, sanctionPoints, stormPoints, st
 import type { ClimateData } from '#lib/climate.ts';
 import type { MilexData } from '#lib/milex.ts';
 import { headlines, trim } from '#lib/trim.ts';
-import type { Chokepoint, Disaster, ElectionsData, HazardsData, NewsData, PredictionsData, Quake, TradeDoc } from '#lib/types.ts';
+import type { Chokepoint, Disaster, ElectionsData, HazardsData, NewsData, PredictionsData, Quake, SwpcData, TradeDoc } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, gov, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, sipri] = await Promise.all([
+	const [news, gov, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, sipri] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-gov'),
 		dataset<NewsData>('news-intl'),
@@ -20,11 +20,12 @@ export const load: PageServerLoad = async () => {
 		dataset<TradeDoc[]>('sanctions'),
 		dataset<ClimateData>('climate'),
 		dataset<ElectionsData>('elections'),
+		dataset<SwpcData>('swpc'),
 		dataset<MilexData>('sipri')
 	]);
 	// Los comunicados oficiales y los de organismos internacionales: solo los 15 que se pintan, sin resumen.
 	// De Polymarket, los 8 mercados de geopolítica que se pintan (economía y tipos son de ECO).
-	// Sanciones y aranceles: los 8 que se pintan.
+	// Sanciones y aranceles: los 8 que se pintan. Tormentas solares: el aviso no pinta el Kp de 24 h.
 	// Capas del mapa: se calculan aquí con los datos completos (las sanciones, antes de recortarlas a 8)
 	// y a la página solo le llegan los puntos.
 	const layers: Record<LayerId, MapPoint[]> = {
@@ -49,6 +50,7 @@ export const load: PageServerLoad = async () => {
 		sanctions: trim(sanctions, (d) => d.slice(0, 8)),
 		climate,
 		elections,
+		swpc: trim(swpc, (d) => ({ ...d, kp24: [] })),
 		// Gasto militar: los 15 países que más gastan.
 		sipri: trim(sipri, (d) => ({ ...d, rows: d.rows.slice(0, 15) }))
 	};

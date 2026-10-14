@@ -66,7 +66,7 @@
 					<tbody>
 						{#each models as m (m.id)}
 							<tr>
-								<td class="name"
+								<td class="name mname" title={m.id}
 									><a class="model" href={m.url} target="_blank" rel="noopener">{m.name}</a><span class="sub"
 										>{m.author}</span
 									></td
@@ -100,10 +100,18 @@
 		color: var(--amber);
 	}
 
-	/* En el móvil, la tabla de modelos se queda con lo esencial (como .t .sub en ui/Table.svelte). */
+	/* En el móvil, la tabla de modelos se queda con lo esencial (como .t .sub en ui/Table.svelte), y un
+	   nombre largo se corta con «…» para que likes y descargas no se salgan (el nombre entero, en el title). */
 	@container (max-width: 390px) {
 		.wide {
 			display: none;
+		}
+
+		.mname {
+			max-width: 45cqi;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
 		}
 	}
 </style>
