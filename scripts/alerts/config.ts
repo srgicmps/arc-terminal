@@ -124,6 +124,23 @@ export const FEDREG = /\b(tariffs?|duties|sanctions?|export controls?|embargo|re
 /** Gas de la UE (GIE): bajada diaria mínima del llenado, en puntos, y umbrales que se vigilan al cruzarlos. */
 export const GAS = { drop: 1, levels: [90, 80, 50] };
 
+/**
+ * Diésel (fuel-es.json para España y las provincias; fuel.json para Menorca). La zona de Sergi va en el
+ * secreto ALERT_FUEL_ZONE («07», «28»… o «menorca»); sin él, solo se vigila España.
+ */
+export const DIESEL = {
+	/** a) La media de 7 días cambia al menos tantos céntimos/L frente a la de los 7 días anteriores. */
+	trendCts: 3,
+	/** Días con dato que hacen falta en cada una de las dos semanas para comparar. */
+	minDays: 5,
+	/** b) Mínimo o máximo de tantos días (hace falta un historial al menos así de largo). */
+	extremeDays: 90,
+	/** c) La zona se separa de la media de España al menos tantos céntimos/L. */
+	gapCts: 5,
+	/** Cada aviso (tendencia, mínimo, máximo, separación) sale como mucho una vez cada tantos días. */
+	everyDays: 7
+};
+
 // ---------- P3 ----------
 
 /** Polymarket: volumen mínimo en 24 h ($) y cambio mínimo de probabilidad (0–1) en 24 h. */
@@ -143,6 +160,19 @@ export const CRISIS = { levels: ['high', 'red'], hours: 48 };
 
 /** Fuente caída: pasadas seguidas en «error» (el mismo número que scripts/issues.ts). */
 export const DOWN = { days: 3 };
+
+/**
+ * Luz de mañana (PVPC): avisa si su media se separa al menos `change` % de la media de los `days` días
+ * anteriores. El historial de power.json lo acumula la web: mientras tenga menos de `days` días se usa lo
+ * que haya, con un mínimo de `minDays`.
+ */
+export const LUZ = { change: 30, days: 30, minDays: 3 };
+
+/** «Mañana es festivo / no abre la bolsa»: hora de Madrid desde la que sale la víspera. */
+export const TOMORROW = { from: '19:00', until: '23:59' };
+
+/** Cambio de hora: el viernes anterior, desde esta hora de Madrid. */
+export const DST = { from: '10:00', until: '23:59' };
 
 // ---------- P4 ----------
 
