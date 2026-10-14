@@ -6,6 +6,7 @@
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import WorldMap from '#lib/components/WorldMap.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -18,6 +19,14 @@
 </script>
 
 <ViewHeader code="GEO" title="Geopolítica" sub={sources} />
+
+<div class="grid">
+	<div class="col">
+		<Panel title="Mapa" meta="Últimos 7 días">
+			<WorldMap quakes={quakes} storms={data.hazards?.data.storms} events={data.hazards?.data.events} />
+		</Panel>
+	</div>
+</div>
 
 <div class="grid grid-2">
 	<div class="col">

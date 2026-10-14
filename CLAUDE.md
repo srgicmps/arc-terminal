@@ -6,7 +6,8 @@
   Svelte es nuevo para él (en el trabajo usa Vue 3 + TypeScript): cuando ayude, compáralo con Vue.
 - Primero el plan y el porqué; luego, paso a paso.
 - Sergi suele trabajar desde el móvil: respuestas claras y cortas, sin bloques de código enormes en el chat.
-- Trabaja en **una rama por tarea** y abre un PR. Sergi revisa y hace el merge.
+- Trabaja en **una rama por tarea** y abre un PR. Los agentes tienen permiso para hacer el merge ellos mismos
+  cuando pasen `pnpm check` y `pnpm build`: trae main antes y resuelve conflictos (puede haber varias sesiones a la vez).
 - Un commit por cada cambio probado. Mensajes cortos y claros, en español.
 - Si Sergi pide algo que no es de la tarea en curso, avísale de que es mejor hacerlo aparte y apúntalo en
   «Aparcado», al final de este archivo.
@@ -77,13 +78,10 @@ Cuando termine una fase, actualiza esta lista.
 - El repo y la web son **públicos**: nada privado, ninguna clave, ninguna URL interna.
 - Comprueba cada fuente al usarla: si el RSS sigue vivo, límites del plan gratuito, términos de uso.
 - Los datos de ejemplo se marcan siempre como de ejemplo; nunca se presentan como reales.
-- GitHub desactiva los cron de un repo público tras 60 días sin actividad: tenerlo en cuenta en las Actions.
+- GitHub desactiva los cron de un repo público tras 60 días sin actividad: lo evita `.github/workflows/keepalive.yml`.
 
 ## Aparcado
-- Evitar que GitHub desactive el cron tras 60 días sin commits (aviso o «keepalive» en la Action).
 - INE: el IPC de las series probadas acaba en diciembre de 2025 (cambio de base); buscar las nuevas series
   para paro (EPA), IPC y turismo de Baleares.
 - AEMET (avisos y predicción oficial) y FRED necesitan clave gratuita: GitHub Secrets.
 - Finnhub para cotizaciones y resultados de empresas (clave en GitHub Secrets).
-- Mapa del mundo con los terremotos, huracanes e incendios.
-- Mercados de predicción (Polymarket) en `GEO`: la API funciona, falta filtrar por política.
