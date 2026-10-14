@@ -22,6 +22,8 @@ const WANTED: Wanted[] = [
 	{ key: 'EST.B.EU000A2X2A25.WT', id: 'estr', label: '€STR', unit: '%', geo: 'EA', last: 90 },
 	{ key: 'FM.M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA', id: 'euribor-12m', label: 'Euríbor a 12 meses', unit: '%', geo: 'EA', last: 36 },
 	{ key: 'ICP.M.U2.N.000000.4.ANR', id: 'hicp-ea', label: 'Inflación (IPCA)', unit: '%', geo: 'EA', last: 36 },
+	{ key: 'MIR.M.ES.B.A2C.AM.R.A.2250.EUR.N', id: 'mortgage-es', label: 'Hipotecas nuevas', unit: '%', geo: 'ES', last: 36 },
+	{ key: 'MIR.M.U2.B.A2C.AM.R.A.2250.EUR.N', id: 'mortgage-ea', label: 'Hipotecas nuevas', unit: '%', geo: 'EA', last: 36 },
 	{ key: 'IRS.M.ES.L.L40.CI.0000.EUR.N.Z', id: 'bond10-es', label: 'Bono a 10 años', unit: '%', geo: 'ES', last: 36 },
 	{ key: 'IRS.M.DE.L.L40.CI.0000.EUR.N.Z', id: 'bond10-de', label: 'Bono a 10 años', unit: '%', geo: 'DE', last: 36 },
 	{ key: 'IRS.M.IT.L.L40.CI.0000.EUR.N.Z', id: 'bond10-it', label: 'Bono a 10 años', unit: '%', geo: 'IT', last: 36 },

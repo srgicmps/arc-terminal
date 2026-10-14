@@ -1,0 +1,12 @@
+# URL que la Action de los PR consulta para explorar APIs nuevas (ver scripts/probe.ts).
+https://servicios.ine.es/wstempus/js/ES/DATOS_TABLA/50902?nult=2&tip=A
+https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPC251856?nult=3
+https://servicios.ine.es/wstempus/js/ES/OPERACIONES_DISPONIBLES
+https://www.ign.es/ign/RssTools/sismologia.xml
+https://www.boe.es/datosabiertos/api/borme/sumario/20261014
+https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=3
+https://www.nhc.noaa.gov/CurrentStorms.json
+https://gamma-api.polymarket.com/events?active=true&closed=false&order=volume24hr&ascending=false&limit=2
+https://api.gdeltproject.org/api/v2/doc/doc?query=spain&mode=artlist&maxrecords=3&format=json
+https://www.lamoncloa.gob.es/Paginas/rss.aspx?tipo=16
+https://www.aemet.es/xml/avisos/es/avisos_cap_es.xml

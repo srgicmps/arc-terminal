@@ -10,7 +10,7 @@ import type {
 	WeatherData,
 	WeatherPlace
 } from '../../src/lib/types.ts';
-import { getJson, list, madridDate, num, plain, type Source } from '../lib.ts';
+import { appendDaily, getJson, list, madridDate, num, plain, type Source } from '../lib.ts';
 
 type Raw = Record<string, any>;
 
@@ -53,7 +53,7 @@ export const power: Source<PowerData> = {
 	name: 'power',
 	label: 'Precio de la luz (PVPC y mayorista) · Red Eléctrica',
 	maxAgeMinutes: 55,
-	async fetch() {
+	async fetch(previous) {
 		const params = new URLSearchParams({
 			start_date: iso(madridDate(0), '00:00'),
 			end_date: iso(madridDate(1), '23:59'),
@@ -68,9 +68,25 @@ export const power: Source<PowerData> = {
 				.map((v) => ({ t: String(v.datetime), v: Number(v.value) }))
 				.filter((p) => Number.isFinite(p.v));
 		};
-		const data = { pvpc: pick(/pvpc/i), spot: pick(/spot|mercado/i) };
-		if (!data.pvpc.length && !data.spot.length) throw new Error('sin precios');
-		return data;
+		const pvpc = pick(/pvpc/i);
+		const spot = pick(/spot|mercado/i);
+		if (!pvpc.length && !spot.length) throw new Error('sin precios');
+
+		// Una entrada de historial por cada día completo de PVPC (hoy y, por la noche, mañana).
+		let history = previous?.history;
+		const byDay = new Map<string, number[]>();
+		for (const p of pvpc) byDay.set(p.t.slice(0, 10), [...(byDay.get(p.t.slice(0, 10)) ?? []), p.v / 1000]);
+		for (const [date, values] of byDay) {
+			if (values.length < 23) continue;
+			const r = (n: number) => Math.round(n * 10000) / 10000;
+			history = appendDaily(history, {
+				date,
+				avg: r(values.reduce((a, b) => a + b, 0) / values.length),
+				min: r(Math.min(...values)),
+				max: r(Math.max(...values))
+			});
+		}
+		return { pvpc, spot, history };
 	}
 };
 

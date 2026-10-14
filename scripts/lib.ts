@@ -9,7 +9,8 @@ export interface Source<T = unknown> {
 	label: string;
 	/** Si la última copia publicada tiene menos de estos minutos, se reutiliza sin llamar a la API. */
 	maxAgeMinutes: number;
-	fetch: () => Promise<T>;
+	/** Recibe los datos publicados la vez anterior (si los hay), para ir acumulando historial. */
+	fetch: (previous: T | undefined) => Promise<T>;
 }
 
 const USER_AGENT = 'ArcTerminal/1.0 (+https://github.com/srgicmps/arc-terminal)';
@@ -116,4 +117,19 @@ export async function settle<T, R>(
 		}
 	});
 	return ok;
+}
+
+/** Día de hoy en Madrid: «2026-10-14». */
+export function madridDay(): string {
+	const d = madridDate(0);
+	return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
+}
+
+/**
+ * Añade (o sustituye, si ya existe ese día) un punto al historial diario y deja solo los últimos `keep`.
+ * Así, aunque las APIs solo den el dato de hoy, la web va guardando su propia evolución.
+ */
+export function appendDaily<P extends { date: string }>(history: P[] | undefined, point: P, keep = 400): P[] {
+	const rest = (history ?? []).filter((p) => p.date !== point.date);
+	return [...rest, point].sort((a, b) => a.date.localeCompare(b.date)).slice(-keep);
 }

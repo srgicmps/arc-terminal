@@ -49,7 +49,12 @@ jobs:
           SAMPLE: ${{ github.event_name == 'pull_request' && '1' || '' }}
 
       - run: pnpm check
-      - run: pnpm build
+      - run: pnpm build --logLevel warn
+
+      # Solo en los PR: explora las URL de scripts/probe.txt (herramienta de desarrollo).
+      - if: github.event_name == 'pull_request'
+        run: node scripts/probe.ts
+        continue-on-error: true
 
       # Empaqueta la carpeta build/ en el formato que espera Pages.
       - if: github.event_name != 'pull_request'

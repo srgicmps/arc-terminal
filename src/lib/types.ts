@@ -133,9 +133,19 @@ export interface PricePoint {
 	v: number;
 }
 
+export interface PowerDay {
+	date: string;
+	/** Media diaria del PVPC, en €/kWh. */
+	avg: number;
+	min: number;
+	max: number;
+}
+
 export interface PowerData {
 	pvpc: PricePoint[];
 	spot: PricePoint[];
+	/** Historial diario que va acumulando la propia web. */
+	history?: PowerDay[];
 }
 
 // ---------- Tiempo (Open-Meteo) ----------
@@ -183,4 +193,21 @@ export interface YieldCurveData {
 	tenors: string[];
 	/** Una fila por día, del más antiguo al más reciente. */
 	days: { date: string; values: (number | null)[] }[];
+}
+
+// ---------- Wikipedia: lo más leído y efemérides ----------
+
+export interface WikiPage {
+	title: string;
+	url: string;
+	extract: string;
+	views?: number;
+}
+
+export interface WikiData {
+	date: string;
+	/** Artículo destacado del día, si lo hay. */
+	featured: WikiPage | null;
+	mostRead: WikiPage[];
+	onThisDay: { year: number; text: string; url: string }[];
 }

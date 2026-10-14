@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { clock } from '#lib/clock.svelte.ts';
+	import LineChart from '#lib/components/LineChart.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import PriceBars from '#lib/components/PriceBars.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -28,6 +29,13 @@
 		const avg = prices.reduce((a, p) => a + p.kwh, 0) / (prices.length || 1);
 		return { min: sorted[0], max: sorted.at(-1), avg, cheap: sorted.slice(0, 3) };
 	}
+
+	const history = $derived(data.power?.data.history ?? []);
+	const historyLines = $derived([
+		{ label: 'Media', points: history.map((d) => ({ t: d.date, v: d.avg })) },
+		{ label: 'Mínimo', color: '--up', points: history.map((d) => ({ t: d.date, v: d.min })) },
+		{ label: 'Máximo', color: '--down', points: history.map((d) => ({ t: d.date, v: d.max })) }
+	]);
 
 	const hh = (h: number) => `${String(h).padStart(2, '0')}:00`;
 	const currentPrice = $derived(
@@ -81,6 +89,14 @@
 			</Panel>
 		</div>
 	{/each}
+</div>
+
+<div class="grid">
+	<div class="col">
+		<Panel title="Evolución del PVPC" meta="Por días · €/kWh">
+			<LineChart lines={historyLines} decimals={3} />
+		</Panel>
+	</div>
 </div>
 
 <style>

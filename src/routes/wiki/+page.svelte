@@ -1,0 +1,134 @@
+<script lang="ts">
+	import Panel from '#lib/components/Panel.svelte';
+	import Updated from '#lib/components/Updated.svelte';
+	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import { compact } from '#lib/format.ts';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
+
+	const wiki = $derived(data.wiki?.data);
+</script>
+
+<ViewHeader code="WIKI" title="Wikipedia hoy" sub="Lo más leído ayer en español, efemérides y artículo destacado" />
+
+{#if !wiki}
+	<p class="empty">Sin datos todavía.</p>
+{:else}
+	<div class="grid grid-2">
+		<div class="col">
+			<Panel title="Lo más leído" meta="Ayer, en es.wikipedia.org">
+				<ol class="wl">
+					{#each wiki.mostRead as p, i (p.url)}
+						<li>
+							<span class="rk">{i + 1}</span>
+							<div>
+								<a href={p.url} target="_blank" rel="noopener">{p.title}</a>
+								{#if p.extract}<p>{p.extract}</p>{/if}
+							</div>
+							{#if p.views}<span class="views">{compact(p.views)}</span>{/if}
+						</li>
+					{/each}
+				</ol>
+				{#snippet note()}Fuente: Wikipedia (CC BY-SA 4.0) · <Updated at={data.wiki?.fetchedAt} />{/snippet}
+			</Panel>
+		</div>
+		<div class="col">
+			{#if wiki.featured}
+				<Panel title="Artículo destacado">
+					<div class="feat">
+						<a href={wiki.featured.url} target="_blank" rel="noopener">{wiki.featured.title}</a>
+						<p>{wiki.featured.extract}</p>
+					</div>
+				</Panel>
+			{/if}
+			<Panel title="Tal día como hoy" meta="Efemérides">
+				<ul class="otd">
+					{#each wiki.onThisDay as e, i (i)}
+						<li>
+							<span class="year">{e.year}</span>
+							{#if e.url}<a href={e.url} target="_blank" rel="noopener">{e.text}</a>{:else}<span>{e.text}</span>{/if}
+						</li>
+					{/each}
+				</ul>
+			</Panel>
+		</div>
+	</div>
+{/if}
+
+<style>
+	.wl,
+	.otd {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.wl li {
+		display: grid;
+		grid-template-columns: 24px minmax(0, 1fr) auto;
+		gap: 10px;
+		padding: 8px 12px;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.wl li:last-child,
+	.otd li:last-child {
+		border-bottom: 0;
+	}
+
+	.rk {
+		color: var(--faint);
+		font-size: var(--fs-xs);
+		padding-top: 3px;
+	}
+
+	.views {
+		color: var(--muted);
+		font-size: var(--fs-s);
+		white-space: nowrap;
+	}
+
+	a {
+		color: var(--fg);
+		text-decoration: none;
+		font-family: var(--sans);
+		font-size: var(--fs-l);
+	}
+
+	a:hover {
+		color: var(--amber);
+	}
+
+	p {
+		margin: 3px 0 0;
+		color: var(--muted);
+		font-family: var(--sans);
+		font-size: var(--fs-m);
+		line-height: 1.4;
+	}
+
+	.feat {
+		padding: 10px 12px;
+	}
+
+	.otd li {
+		display: grid;
+		grid-template-columns: 44px minmax(0, 1fr);
+		gap: 10px;
+		padding: 7px 12px;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.otd a,
+	.otd span {
+		font-size: var(--fs-m);
+		line-height: 1.4;
+	}
+
+	.year {
+		color: var(--amber);
+		font-family: var(--mono);
+		font-size: var(--fs-s);
+	}
+</style>

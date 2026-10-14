@@ -1,7 +1,7 @@
 // Gasolineras de Menorca: API abierta de precios de carburantes del Ministerio para la Transición
 // Ecológica (sin clave). Reutilización libre citando la fuente y la fecha de los datos.
-import type { FuelData, FuelStation } from '../../src/lib/fuel.ts';
-import { getJson, num, type Source } from '../lib.ts';
+import type { FuelData, FuelKey, FuelStation } from '../../src/lib/fuel.ts';
+import { appendDaily, getJson, madridDay, num, type Source } from '../lib.ts';
 
 // Estaciones de la provincia 07 (Illes Balears). No necesita clave.
 const API_URL =
@@ -63,7 +63,7 @@ export const fuel: Source<FuelData> = {
 	name: 'fuel',
 	label: 'Precios de carburantes · Ministerio para la Transición Ecológica',
 	maxAgeMinutes: 25,
-	async fetch() {
+	async fetch(previous) {
 		const body = await getJson<RawResponse>(API_URL);
 		if (!Array.isArray(body.ListaEESSPrecio)) throw new Error('respuesta sin ListaEESSPrecio');
 		const stations = body.ListaEESSPrecio.filter((raw) => MENORCA_CP.test(raw['C.P.'] ?? ''))
@@ -71,6 +71,17 @@ export const fuel: Source<FuelData> = {
 			.filter((station) => station !== null);
 		// Menorca tiene unas 25 gasolineras: si no sale ninguna, algo ha cambiado en la API.
 		if (stations.length === 0) throw new Error('ninguna estación de Menorca');
-		return { sourceDate: body.Fecha, stations };
+		const stat = (key: FuelKey, f: (v: number[]) => number) => {
+			const v = stations.map((s) => s.prices[key]).filter((p): p is number => p !== null);
+			return v.length ? Math.round(f(v) * 1000) / 1000 : null;
+		};
+		const avg = (v: number[]) => v.reduce((a, b) => a + b, 0) / v.length;
+		const min = (v: number[]) => Math.min(...v);
+		const history = appendDaily(previous?.history, {
+			date: madridDay(),
+			avg: { g95: stat('g95', avg), diesel: stat('diesel', avg) },
+			min: { g95: stat('g95', min), diesel: stat('diesel', min) }
+		});
+		return { sourceDate: body.Fecha, stations, history };
 	}
 };

@@ -20,8 +20,17 @@ export interface FuelStation {
 	prices: Record<FuelKey, number | null>;
 }
 
+/** Un día del historial: precio medio y mínimo de Menorca. */
+export interface FuelDay {
+	date: string;
+	avg: Record<FuelKey, number | null>;
+	min: Record<FuelKey, number | null>;
+}
+
 export interface FuelData {
 	/** Fecha de los datos según el Ministerio, tal cual la publica: «14/10/2026 12:30:05». */
 	sourceDate: string;
 	stations: FuelStation[];
+	/** Historial diario que va acumulando la propia web (la API solo da el precio de hoy). */
+	history?: FuelDay[];
 }

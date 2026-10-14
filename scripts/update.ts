@@ -13,6 +13,8 @@ import type { Source } from './lib.ts';
 import { sources } from './sources/index.ts';
 
 const OUT_DIR = 'static/data';
+// En los PR, una muestra de cada fuente al final del registro, para revisar la forma real de los datos.
+const samples: string[] = [];
 const PUBLISHED = 'https://srgicmps.github.io/arc-terminal/data';
 
 async function published(name: string): Promise<Dataset<unknown> | null> {
@@ -55,12 +57,11 @@ async function run(source: Source): Promise<SourceStatus> {
 
 	try {
 		const started = Date.now();
-		const data = await source.fetch();
+		const data = await source.fetch(previous?.data);
 		const dataset = { name: source.name, fetchedAt: new Date().toISOString(), data };
 		await save(dataset);
 		console.log(`✓ ${source.name}: ${summary(data)} (${Date.now() - started} ms)`);
-		// En los PR, una muestra de los datos en el registro, para revisar su forma real.
-		if (process.env.SAMPLE) console.log(`  muestra: ${JSON.stringify(data).slice(0, 1500)}`);
+		if (process.env.SAMPLE) samples.push(`${source.name}: ${JSON.stringify(data).slice(0, 1500)}`);
 		return { ...base, state: 'ok', fetchedAt: dataset.fetchedAt };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
@@ -86,3 +87,4 @@ if (!wanted.length) {
 
 const failed = statuses.filter((s) => s.state === 'error' || s.state === 'stale');
 console.log(`\n${statuses.length - failed.length}/${statuses.length} fuentes al día.`);
+if (samples.length) console.log(`\nMuestras:\n${samples.join('\n\n')}`);

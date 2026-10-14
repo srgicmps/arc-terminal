@@ -1,4 +1,6 @@
 <script lang="ts">
+	import LineChart from '#lib/components/LineChart.svelte';
+	import Panel from '#lib/components/Panel.svelte';
 	import { FUELS, type FuelKey, type FuelStation } from '#lib/fuel.ts';
 	import type { PageProps } from './$types';
 
@@ -42,6 +44,15 @@
 
 	const mapUrl = (s: FuelStation) =>
 		`https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lon}`;
+
+	const history = $derived(data.fuel?.data.history ?? []);
+	const historyLines = $derived(
+		FUELS.map((f, i) => ({
+			label: `${f.label}, media`,
+			color: i ? '--muted' : '--amber',
+			points: history.flatMap((d) => (d.avg[f.key] === null ? [] : [{ t: d.date, v: d.avg[f.key]! }]))
+		}))
+	);
 
 	// Ancho de la barra: la más barata, corta; la más cara, entera.
 	const barWidth = (price: number) => 20 + (80 * (price - min)) / (max - min || 1);
@@ -158,6 +169,14 @@
 			</p>
 		{/if}
 	</section>
+</div>
+
+<div class="grid">
+	<div class="col">
+		<Panel title="Evolución en Menorca" meta="Precio medio diario · €/L">
+			<LineChart lines={historyLines} decimals={3} />
+		</Panel>
+	</div>
 </div>
 
 <style>
