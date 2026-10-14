@@ -7,7 +7,9 @@
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import RiskGauge from '#lib/components/RiskGauge.svelte';
 	import YieldCurve from '#lib/components/YieldCurve.svelte';
+	import { computeRisk } from '#lib/risk.ts';
 	import { seriesMap } from '#lib/series.ts';
 	import { rgba, token } from '#lib/color.ts';
 	import { theme } from '#lib/theme.svelte.ts';
@@ -120,6 +122,9 @@
 		</Panel>
 	</div>
 	<div class="col">
+		<RiskGauge
+			risk={computeRisk({ fred: data.fred?.data, ecb: data.ecb?.data, crypto: data.crypto?.data, predictions: data.predictions?.data })}
+		/>
 		<Panel title="Curva de tipos de EE. UU." meta="Hoy frente a hace un mes">
 			{#if data.curve}<YieldCurve curve={data.curve.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
 			{#snippet note()}Fuente: Tesoro de EE. UU. · <Updated at={data.curve?.fetchedAt} source="uscurve" />{/snippet}
