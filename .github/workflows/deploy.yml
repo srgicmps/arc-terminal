@@ -1,10 +1,15 @@
 # Descarga los datos, construye la web y la publica en GitHub Pages.
+# - push a main, cron y lanzamiento a mano sin «fuentes»: pasada completa y publicación (job build + deploy).
+# - PR: comprobaciones en jobs separados que corren a la vez, para que el verde o el rojo llegue antes:
+#   checks (check, test, build, sin datos) · smoke (datos + prueba de humo) · probe (solo si el PR toca
+#   scripts/). Menos jobs a la vez = menos cola en los runners, que comparten todas las sesiones.
+# - A mano con «herramienta» (compare o tv-shots), sobre la rama que se elija: esa revisión, sin publicar.
+# - A mano con «fuentes»: solo `pnpm data <fuentes>` y el sondeo, para probar una fuente sin la pasada completa.
 name: Publicar en Pages
 
 on:
   push:
     branches: [main]
-  # En los PR solo construye (con datos reales), sin publicar: sirve de prueba antes del merge.
   pull_request:
   # Cada 15 minutos, para refrescar los datos. Minutos 7, 22, 37 y 52 para evitar las horas en
   # punto, cuando GitHub va más cargado. Ojo: GitHub desactiva los cron de un repo público tras
@@ -13,6 +18,16 @@ on:
     - cron: '7,22,37,52 * * * *'
   # Permite lanzarla a mano desde la pestaña Actions.
   workflow_dispatch:
+    inputs:
+      fuentes:
+        description: 'Solo estas fuentes, separadas por espacios (p. ej. «fao climate»): pnpm data + sondeo, sin publicar. Vacío = pasada completa.'
+        required: false
+        default: ''
+      herramienta:
+        description: 'Herramienta de revisión sobre esta rama, sin publicar: compare (vistas frente a main) o tv-shots (capturas de TradingView).'
+        type: choice
+        options: [ninguna, compare, tv-shots]
+        default: ninguna
 
 # Permisos mínimos que necesita el despliegue en Pages.
 permissions:
@@ -22,17 +37,24 @@ permissions:
   # Para abrir y cerrar los issues «Fuente caída» (scripts/issues.ts).
   issues: write
 
-# Un solo despliegue a la vez: si llega otro, espera a que acabe el que está en marcha.
-# Cada PR va por su lado y no hace esperar a main.
+# Un solo despliegue a la vez: si llega otro, espera a que acabe el que está en marcha. En un PR, un push
+# nuevo cancela la pasada anterior, que ya no sirve. La prueba de fuentes va en su propio grupo para no
+# quitarle el turno a una publicación pendiente.
 concurrency:
-  group: pages-${{ github.ref }}
-  cancel-in-progress: false
+  group: pages-${{ github.ref }}${{ inputs.fuentes && '-fuentes' || '' }}${{ inputs.herramienta && inputs.herramienta != 'ninguna' && '-herramienta' || '' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Pasada completa y publicación: push a main, cron y lanzamiento a mano sin «fuentes».
+  # A mano, solo desde main: lanzarla sobre otra rama no la publica en la web.
   build:
+    if: >-
+      github.event_name != 'pull_request' && !inputs.fuentes &&
+      (!inputs.herramienta || inputs.herramienta == 'ninguna') &&
+      (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     # Red de seguridad: si algo se cuelga, la Action no se queda horas esperando.
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 
@@ -50,7 +72,6 @@ jobs:
       # Descarga los datos en static/data/. Si una fuente falla, se reutiliza su última copia publicada.
       - run: pnpm data
         env:
-          SAMPLE: ${{ github.event_name == 'pull_request' && '1' || '' }}
           # Claves opcionales (Settings → Secrets and variables → Actions). Sin ellas, esas fuentes se saltan.
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
@@ -62,10 +83,9 @@ jobs:
           # aisstream.io (barcos en los puertos, AIS en directo).
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
 
-      # Abre un issue si una fuente lleva 3 pasadas sin datos y lo cierra cuando vuelve. No en los PR.
+      # Abre un issue si una fuente lleva 3 pasadas sin datos y lo cierra cuando vuelve.
       # Si falla, no frena la publicación. Las claves van para taparlas si salen en un error.
-      - if: github.event_name != 'pull_request'
-        run: node scripts/issues.ts
+      - run: node scripts/issues.ts
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -76,29 +96,27 @@ jobs:
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
 
       # Avisos al móvil con ntfy (scripts/notify.ts y scripts/alerts/): niveles P1–P4 con cupos y un tope
-      # de 50 al día. No en los PR. Si falla, no frena la publicación. Sin el secreto NTFY_TOPIC no hace
-      # nada. El tema es la única protección del canal: el script nunca lo registra.
+      # de 50 al día. Si falla, no frena la publicación. Sin el secreto NTFY_TOPIC no hace nada. El tema es
+      # la única protección del canal: el script nunca lo registra.
       #
       # El historial de avisos se guarda también en la caché de Actions, justo después de enviar: si luego
       # falla el check, los tests, el build o el deploy, la web no se publica, pero la pasada siguiente lee
       # la caché y no repite lo enviado. Una clave por pasada; restore-keys trae la más reciente. La caché
       # solo lleva el historial (ids, horas y valores), nunca el tema ni la zona del diésel.
-      - if: github.event_name != 'pull_request'
-        uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v4
         continue-on-error: true
         with:
           path: .notify-cache
           key: notify-log-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: notify-log-
-      - if: github.event_name != 'pull_request'
-        run: node scripts/notify.ts
+      - run: node scripts/notify.ts
         continue-on-error: true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           NOTIFY_CACHE: .notify-cache/notify-log.json
           # Opcional: zona del diésel, «07» (provincia) o «menorca». Tampoco se registra ni se publica.
           ALERT_FUEL_ZONE: ${{ secrets.ALERT_FUEL_ZONE }}
-      - if: github.event_name != 'pull_request' && hashFiles('.notify-cache/notify-log.json') != ''
+      - if: hashFiles('.notify-cache/notify-log.json') != ''
         uses: actions/cache/save@v4
         continue-on-error: true
         with:
@@ -109,51 +127,12 @@ jobs:
       - run: pnpm test
       - run: pnpm build --logLevel warn
 
-      # Solo en los PR: abre todas las vistas a 390 y 1280 px con el Chrome del runner y falla si alguna
-      # da errores en la consola, tiene scroll horizontal en el móvil o se queda sin datos (scripts/smoke.ts).
-      - if: github.event_name == 'pull_request'
-        run: pnpm smoke
-
-      # Solo en los PR: explora las URL de scripts/probe.txt (herramienta de desarrollo).
-      - if: github.event_name == 'pull_request'
-        run: node scripts/probe.ts
-        continue-on-error: true
-
-      # Solo en los PR: capturas de los widgets de TradingView en tema oscuro y claro (scripts/tv-shots.ts).
-      # Los colores salen en el registro y las imágenes, en el artefacto «tradingview».
-      - if: github.event_name == 'pull_request'
-        run: node scripts/tv-shots.ts
-        continue-on-error: true
-      - if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: tradingview
-          path: shots/*.png
-          if-no-files-found: ignore
-
-      # Solo en los PR: construye main con los mismos datos y compara cada vista a 390 px (filas de tabla y
-      # elementos de lista, por panel). La tabla sale en el resumen de la Action y las capturas de las dos
-      # versiones, en el artefacto «vistas» (scripts/compare-views.ts).
-      - if: github.event_name == 'pull_request'
-        run: node scripts/compare-views.ts
-        continue-on-error: true
-      - if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: vistas
-          path: shots/vistas/
-          if-no-files-found: ignore
-
       # Empaqueta la carpeta build/ en el formato que espera Pages.
-      - if: github.event_name != 'pull_request'
-        uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: build
 
   deploy:
-    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -162,3 +141,177 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # PR: lo rápido. No descarga datos ni usa claves: check, test y build funcionan sin static/data.
+  checks:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm test
+      - run: pnpm build --logLevel warn
+
+  # PR: datos reales y prueba de humo. Abre todas las vistas a 390 y 1280 px con el Chrome del runner y
+  # falla si alguna da errores en la consola, tiene scroll horizontal en el móvil o se queda sin datos.
+  smoke:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm data
+        env:
+          SAMPLE: '1'
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+      - run: pnpm build --logLevel warn
+      - run: pnpm smoke
+
+  # PR: si toca scripts/, para lanzar el sondeo solo cuando hace falta.
+  changes:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      scripts: ${{ steps.diff.outputs.scripts }}
+    steps:
+      # La Action de un PR trabaja sobre el commit de merge: su primer padre es la base del PR.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+      - id: diff
+        run: |
+          files=$(git diff --name-only HEAD^1 HEAD)
+          echo "$files"
+          echo "scripts=$(grep -q '^scripts/' <<< "$files" && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+  # PR que toca scripts/: explora las URL de scripts/probe.txt (herramienta de desarrollo).
+  probe:
+    needs: changes
+    if: needs.changes.outputs.scripts == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Herramienta de exploración: si una URL falla, no pone el PR en rojo.
+      - run: node scripts/probe.ts
+        continue-on-error: true
+
+  # A mano (herramienta «tv-shots»): capturas de los widgets de TradingView en tema oscuro y claro
+  # (scripts/tv-shots.ts). Los colores salen en el registro y las imágenes, en el artefacto «tradingview».
+  tv-shots:
+    if: github.event_name == 'workflow_dispatch' && inputs.herramienta == 'tv-shots'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm data
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+      - run: pnpm build --logLevel warn
+      - run: node scripts/tv-shots.ts
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tradingview
+          path: shots/*.png
+          if-no-files-found: ignore
+
+  # A mano (herramienta «compare»): construye main con los mismos datos y compara cada vista a 390 px
+  # (filas de tabla y elementos de lista, por panel). La tabla sale en el resumen de la Action y las
+  # capturas de las dos versiones, en el artefacto «vistas» (scripts/compare-views.ts).
+  compare:
+    if: github.event_name == 'workflow_dispatch' && inputs.herramienta == 'compare'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm data
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+      - run: pnpm build --logLevel warn
+      - run: node scripts/compare-views.ts
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vistas
+          path: shots/vistas/
+          if-no-files-found: ignore
+
+  # A mano con «fuentes»: descarga solo esas fuentes (sin usar la copia guardada) y lanza el sondeo.
+  # No construye ni publica.
+  fuentes:
+    if: github.event_name == 'workflow_dispatch' && inputs.fuentes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # El input va por una variable de entorno, nunca pegado en el comando (evita inyección de órdenes), y
+      # solo se aceptan nombres de fuente: letras, números y guiones.
+      - run: |
+          if [[ ! "$FUENTES" =~ ^[a-z0-9\ -]+$ ]]; then echo "Nombres de fuente no válidos: $FUENTES"; exit 1; fi
+          read -ra names <<< "$FUENTES"
+          pnpm data "${names[@]}"
+        env:
+          FUENTES: ${{ inputs.fuentes }}
+          FORCE_REFRESH: '1'
+          SAMPLE: '1'
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+      - run: node scripts/probe.ts
+        continue-on-error: true
