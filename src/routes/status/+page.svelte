@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { clock } from '#lib/clock.svelte.ts';
 	import Panel from '#lib/components/Panel.svelte';
+	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { lastRuns } from '#lib/data.ts';
-	import { when } from '#lib/format.ts';
+	import { dm, nf, when } from '#lib/format.ts';
+	import { G_LABEL, stormLevel } from '#lib/space.ts';
 	import Table from '#lib/components/ui/Table.svelte';
 	import type { FeedStatus } from '#lib/types.ts';
 	import type { PageProps } from './$types';
@@ -25,6 +27,14 @@
 	// Canales RSS. Los JSON anteriores a este cambio no traen `ok`: cuenta como caído solo si hay error.
 	const feedOk = (f: FeedStatus) => f.ok !== false && !f.error;
 	const feedsAll = $derived(data.rss.reduce((n, s) => n + s.feeds.length, 0));
+	// Tormentas solares (NOAA SWPC): una línea con el Kp, la escala G de ahora y la prevista.
+	const swpc = $derived(data.swpc?.data);
+	const storm = $derived(stormLevel(swpc));
+	const forecastWhen = $derived(
+		storm?.forecast && swpc?.gForecastDate ? dm(`${swpc.gForecastDate}T12:00:00Z`) : G_LABEL[storm?.forecast ?? 0]
+	);
+	const kpMax = $derived(swpc?.kp24.length ? Math.max(...swpc.kp24.map((p) => p.v)) : null);
+
 	const feedsOk = $derived(data.rss.reduce((n, s) => n + s.feeds.filter(feedOk).length, 0));
 </script>
 
@@ -32,6 +42,21 @@
 
 <div class="grid">
 	<div class="col">
+		<Panel title="Tormentas solares" meta="NOAA SWPC">
+			{#if swpc && storm}
+				<p class="space">
+					<span>Kp <b>{nf(swpc.kp, 1)}</b>{#if kpMax !== null}<small>· máx. 24 h {nf(kpMax, 1)}</small>{/if}</span>
+					<span>Ahora <b class:hot={storm.now >= 3}>G{storm.now}</b><small>· {G_LABEL[storm.now]}</small></span>
+					<span>Prevista <b class:hot={storm.forecast >= 3}>G{storm.forecast}</b><small>· {forecastWhen}</small></span>
+				</p>
+			{:else}
+				<p class="empty">Sin datos todavía.</p>
+			{/if}
+			{#snippet note()}
+				Escala G de 0 a 5: desde G3 hay auroras a latitudes medias y puede fallar el GPS · <Updated at={data.swpc?.fetchedAt} source="swpc" />
+			{/snippet}
+		</Panel>
+
 		<Panel title="Fuentes" meta="{ok} de {active} al día">
 			{#if rows.length}
 				<Table>
@@ -99,6 +124,33 @@
 </div>
 
 <style>
+	.space {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--sp-4) var(--sp-20);
+		margin: 0;
+		padding: var(--row-y) var(--pad-x);
+		color: var(--muted);
+		font-size: var(--fs-s);
+	}
+
+	.space b {
+		color: var(--fg);
+		font-weight: var(--fw-medium);
+	}
+
+	.space b.hot {
+		color: var(--amber);
+	}
+
+	.space small {
+		display: inline;
+		margin-left: var(--sp-4);
+		color: var(--muted);
+		font-family: var(--sans);
+		font-size: var(--fs-s);
+	}
+
 	.wrap {
 		white-space: normal;
 		font-family: var(--sans);
