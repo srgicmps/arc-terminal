@@ -357,14 +357,16 @@
 			flex-basis: 100%;
 		}
 
-		/* El botón del tema, en la línea del logo; los relojes, debajo. */
-		.theme {
-			order: 1;
-			margin-left: auto;
+		/* Como antes del tema: logo, relojes y barra de comandos, cada uno en su línea. El botón del tema va en la
+		   línea del logo, a la derecha, y sus márgenes negativos evitan que esa línea crezca por él. */
+		.brand {
+			order: -2;
 		}
 
-		.top :global(.clocks) {
-			order: 3;
+		.theme {
+			order: -1;
+			margin-left: auto;
+			margin-block: calc((var(--logo) - var(--btn-sm)) / 2);
 		}
 	}
 

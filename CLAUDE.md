@@ -45,6 +45,9 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - Las claves de las APIs van en **GitHub Secrets** y solo las usa el script de Actions. Nunca en el código
   que llega al navegador.
 - Cotizaciones y gráficos en directo: widgets de TradingView (sin clave).
+- **Avisos al móvil** con ntfy (`scripts/notify.ts`, tras `pnpm data`): reglas P1–P4 en la lista `RULES` de
+  `scripts/alerts/rules.ts`, umbrales y cupos en `scripts/alerts/config.ts`. El tema
+  va en el Secret `NTFY_TOPIC` y es la única protección: nunca en el repo, en registros ni en JSON.
 
 ## Stack
 - SvelteKit con `adapter-static` + TypeScript, Svelte 5 (runes).
@@ -74,7 +77,8 @@ Un cambio de estética se hace en un solo sitio.
 - **Componentes base** en `src/lib/components/ui/`:
   `Seg` (botones de opción), `Select` (desplegable con etiqueta), `Tiles` + `Tile` (cifras grandes), `Table`
   (tabla densa: celdas `.l`, `.name`, `.sub`, `.mut`), `Bar` (barra de comparación), `Change` (variación
-  verde/roja con signo) y `Note` (nota al pie). Además, `Panel` y `ViewHeader` para paneles y cabeceras de vista.
+  verde/roja con signo), `Note` (nota al pie) y `Share` (botón «Compartir»; se usa con la prop `share` de `Panel`,
+  y su lógica está en `src/lib/share.ts`). Además, `Panel` y `ViewHeader` para paneles y cabeceras de vista.
   Antes de escribir CSS para algo que ya existe, se usa el componente.
 - **Modo «encajar en pantalla»** (≥1280 px): la última rejilla de la vista llena el alto; cada panel parte de
   `--fit-panel-min` (o de su contenido, si es menor), el alto que sobra se reparte sin pasar del contenido, y los
@@ -93,6 +97,7 @@ La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`)
 | Comando | Qué abre | Fuentes |
 |---|---|---|
 | `TOP` | Portada | Resumen de todas |
+| `IMP` | Lo más importante de hoy, la semana, el mes y el año (puntuación propia, sin IA) | Todos los titulares, BOE, Federal Register, Wikipedia |
 | `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FRED*, RSS |
 | `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket |
 | `ES` | España en cifras, BOE, luz | INE, BOE, REE, RSS |
@@ -121,6 +126,7 @@ sin ella el panel no sale y no se rompe nada.
 8. **Pulido y fiabilidad**: tema claro, sistema de diseño, vista modular, tests y avisos de fuentes caídas. ← en curso
 
 Arc Terminal es **mundial**: lo de Menorca que ya existe se queda, pero no se añade nada nuevo centrado en Menorca.
+Excepción aprobada por Sergi: puertos AIS de Maó y Ciutadella (D1).
 
 Cuando termine una fase, actualiza esta lista.
 
@@ -133,5 +139,6 @@ Cuando termine una fase, actualiza esta lista.
 ## Aparcado
 - Festivos locales de Menorca: Sergi ha decidido no añadirlos.
 - Formato y lint en CI (Prettier + ESLint): un PR propio, cuando haya pocas ramas abiertas.
-- Descartadas: GDELT (429 desde Actions) y RSS de la CNMV (no responde).
+- Descartadas: GDELT (429 desde Actions), RSS de la CNMV (no responde) y RSS del Parlamento Europeo (todo
+  europarl.europa.eu responde 202 vacío desde Actions: muro anti-robots).
 - ReliefWeb: falta el appname aprobado (RELIEFWEB_APPNAME); aparcado por Sergi.

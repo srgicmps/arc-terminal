@@ -159,6 +159,7 @@ kbd {
 @media (pointer: coarse) {
 	button,
 	select,
+	input:not([type='checkbox'], [type='radio']),
 	.cmd {
 		min-height: var(--touch);
 	}
