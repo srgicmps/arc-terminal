@@ -60,10 +60,12 @@ export interface FuelProvince {
 	min: FuelPrices;
 }
 
-/** Un día del historial de España: precio medio de todas las gasolineras. */
+/** Un día del historial de España: precio medio de todas las gasolineras y de cada provincia. */
 export interface FuelSpainDay {
 	date: string;
 	avg: FuelPrices;
+	/** Precio medio de cada provincia, por su id. */
+	provinces?: Record<string, FuelPrices>;
 }
 
 export interface FuelSpainData {

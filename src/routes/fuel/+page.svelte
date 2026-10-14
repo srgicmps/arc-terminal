@@ -111,17 +111,25 @@
 		return time ? `${day}, ${time.slice(0, 5)}` : day;
 	});
 
-	// Menorca frente a la media de España, con el combustible elegido. Los dos historiales los va guardando
-	// la propia web, día a día.
-	const history = $derived(data.fuel?.data.history ?? []);
+	// La zona elegida frente a la media de España, con el combustible elegido. Los historiales los va
+	// guardando la propia web, día a día: Menorca con sus gasolineras y cada provincia con la media del día.
 	const spainHistory = $derived(data.spain?.data.history ?? []);
-	const menorcaToday = $derived(history.at(-1)?.avg[fuel] ?? null);
-	const gapCents = $derived(menorcaToday !== null && spainAvg !== null ? (menorcaToday - spainAvg) * 100 : null);
+	const zoneToday = $derived(
+		zone === MENORCA
+			? (data.fuel?.data.history?.at(-1)?.avg[fuel] ?? null)
+			: (provinces.find((p) => p.id === zone)?.avg[fuel] ?? null)
+	);
+	const gapCents = $derived(zoneToday !== null && spainAvg !== null ? (zoneToday - spainAvg) * 100 : null);
+	const zoneHistory = $derived(
+		zone === MENORCA
+			? (data.fuel?.data.history ?? []).map((d) => ({ t: d.date, v: d.avg[fuel] }))
+			: spainHistory.map((d) => ({ t: d.date, v: d.provinces?.[zone]?.[fuel] ?? null }))
+	);
 	const historyLines = $derived([
 		{
-			label: 'Menorca',
+			label: zoneName,
 			color: '--amber',
-			points: history.flatMap((d) => (d.avg[fuel] == null ? [] : [{ t: d.date, v: d.avg[fuel]! }]))
+			points: zoneHistory.flatMap((p) => (p.v == null ? [] : [{ t: p.t, v: p.v }]))
 		},
 		{
 			label: 'España',
@@ -271,11 +279,11 @@
 
 <div class="grid grid-2e">
 	<div class="col">
-		<Panel title="Menorca frente a España" meta="{fuelLabel} · precio medio diario · €/L">
+		<Panel title="{zoneName} frente a España" meta="{fuelLabel} · precio medio diario · €/L">
 			{#if gapCents !== null}
 				<div class="tiles">
 					<div class="tile">
-						<span class="lbl">Menorca, hoy</span>
+						<span class="lbl">{zoneName}, hoy</span>
 						<b>{nf(gapCents >= 0 ? gapCents : -gapCents, 1)} cts/L</b>
 						<span class="sub">{gapCents >= 0 ? 'más cara' : 'más barata'} que la media de España</span>
 					</div>
@@ -283,7 +291,8 @@
 			{/if}
 			<LineChart lines={historyLines} decimals={3} />
 			{#snippet note()}
-				El historial de la media de España empieza el 14 de octubre de 2026: la web lo guarda día a día.
+				El historial de la media de España y de cada provincia empieza el 14 de octubre de 2026: la web lo
+				guarda día a día.
 			{/snippet}
 		</Panel>
 	</div>

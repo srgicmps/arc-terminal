@@ -116,8 +116,10 @@ export const fuelSpain: Source<FuelSpainData> = {
 		provinces.sort((a, b) => a.name.localeCompare(b.name, 'es'));
 		const all = [...byProvince.values()].flatMap((p) => p.stations);
 		const avg = stats(all).avg;
-		// La API solo da el precio de hoy: el historial se va guardando día a día.
-		const history = appendDaily(previous?.history, { date: madridDay(), avg });
+		// La API solo da el precio de hoy: el historial se va guardando día a día, con la media de España y
+		// la de cada provincia. Medio año basta y así el archivo no crece demasiado.
+		const byId = Object.fromEntries(provinces.map((p) => [p.id, p.avg]));
+		const history = appendDaily(previous?.history, { date: madridDay(), avg, provinces: byId }, 180);
 		return { sourceDate: body.Fecha, provinces, avg, history };
 	}
 };
