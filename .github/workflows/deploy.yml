@@ -43,8 +43,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Descarga los datos en data/. Si falla, no se publica nada y la web se queda como estaba.
-      - run: pnpm fuel
+      # Descarga los datos en static/data/. Si una fuente falla, se reutiliza su última copia publicada.
+      - run: pnpm data
 
       - run: pnpm check
       - run: pnpm build

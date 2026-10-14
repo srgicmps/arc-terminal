@@ -9,7 +9,7 @@
 	let town = $state('ALL');
 
 	// Valores calculados (como computed() en Vue): se recalculan solos cuando cambia fuel o town.
-	const stations = $derived(data.fuel?.stations ?? []);
+	const stations = $derived(data.fuel?.data.stations ?? []);
 	const towns = $derived(
 		[...new Set(stations.map((s) => s.town))].sort((a, b) => a.localeCompare(b, 'es'))
 	);
@@ -33,7 +33,7 @@
 	const fuelLabel = $derived(FUELS.find((f) => f.key === fuel)?.label);
 	// «14/10/2026 12:30:05» → «14/10/2026, 12:30»
 	const sourceDate = $derived.by(() => {
-		const [day, time = ''] = (data.fuel?.sourceDate ?? '').split(' ');
+		const [day, time = ''] = (data.fuel?.data.sourceDate ?? '').split(' ');
 		return time ? `${day}, ${time.slice(0, 5)}` : day;
 	});
 
@@ -68,7 +68,7 @@
 		</header>
 
 		{#if !data.fuel}
-			<p class="empty">Todavía no hay datos. En local, ejecuta <code>pnpm fuel</code> y recarga.</p>
+			<p class="empty">Todavía no hay datos. En local, ejecuta <code>pnpm data</code> y recarga.</p>
 		{:else}
 			<div class="controls">
 				<div class="seg" role="group" aria-label="Combustible">
