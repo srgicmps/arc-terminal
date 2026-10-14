@@ -61,26 +61,39 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   en todas las vistas.
 - Tiene que funcionar bien en el móvil (Sergi lo mirará mucho desde ahí).
 
-## Comandos y fuentes previstas
+## Comandos y fuentes
+La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`). Resumen:
 | Comando | Qué abre | Fuentes |
 |---|---|---|
 | `TOP` | Portada | Resumen de todas |
-| `ECO` | Economía y macro | FRED, BCE, Financial Times, Expansión, El País |
-| `GEO` | Geopolítica | BBC, Al Jazeera, DW, France 24, GDELT |
-| `WS` | Wall Street, mapa de calor | Finnhub, TradingView, CNBC, WSJ, MarketWatch |
-| `NVDA`… | Ficha de una acción | TradingView, Finnhub |
-| `TECH` / `AI` | Tecnología e IA | Hacker News, TechCrunch, The Verge, Ars Technica, MIT Technology Review, Hugging Face |
-| `CAL` | Agenda económica y resultados | TradingView, Finnhub |
-| `FUEL` | Gasolineras más baratas de Menorca | API abierta de precios de carburantes del Ministerio |
+| `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FRED*, RSS |
+| `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket |
+| `ES` | España en cifras, BOE, luz | INE, BOE, REE, RSS |
+| `WS` | Wall Street, mapa de calor, curva de tipos, divisas, cripto | TradingView, Tesoro de EE. UU., BCE, CoinGecko |
+| `NVDA`… | Ficha de un valor | TradingView, SEC* |
+| `MIS` | Tu lista de valores (en el navegador) | TradingView |
+| `TECH` / `AI` | Tecnología e IA | Hacker News, Hugging Face, RSS |
+| `BOE` / `USGOV` | Boletines oficiales | BOE, Federal Register |
+| `LUZ` | Precio de la luz y mix de generación | REE |
+| `WX` | Tiempo, mar, aire, avisos, sol y luna | Open-Meteo, MeteoAlarm |
+| `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica |
+| `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
+| `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
+
+\* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`):
+sin ella el panel no sale y no se rompe nada.
 
 ## Plan por fases
 1. ~~**Esqueleto publicado**: proyecto SvelteKit + GitHub Action que construye y publica en Pages.~~ Hecho.
 2. ~~**Primer dato real de punta a punta**: `FUEL` (una fuente, sin clave).~~ Hecho.
 3. ~~**Estilo de la maqueta y barra de comandos** con sugerencias y atajos de teclado.~~ Hecho.
 4. ~~**Noticias por RSS**: `ECO`, `GEO`, `TECH`, `AI`.~~ Hecho (y `ES`, `NEWS`).
-5. **Mercados**: ~~TradingView~~ hecho; falta Finnhub (primera clave en GitHub Secrets). ← siguiente
-6. ~~**Macro** (BCE, Eurostat, BLS, Tesoro) y **portada `TOP`**.~~ Hecho. FRED queda pendiente (necesita clave).
+5. ~~**Mercados**: TradingView, y Finnhub con clave opcional.~~ Hecho.
+6. ~~**Macro** (BCE, Eurostat, BLS, Tesoro, INE, BIS, FRED con clave opcional) y **portada `TOP`**.~~ Hecho.
 7. ~~**Gobiernos**: `BOE`, `USGOV` (Federal Register), comunicados de La Moncloa, BdE, UE, Casa Blanca y Fed.~~ Hecho.
+8. **Pulido y fiabilidad**: tema claro, sistema de diseño, vista modular, tests y avisos de fuentes caídas. ← en curso
+
+Arc Terminal es **mundial**: lo de Menorca que ya existe se queda, pero no se añade nada nuevo centrado en Menorca.
 
 Cuando termine una fase, actualiza esta lista.
 
@@ -91,9 +104,6 @@ Cuando termine una fase, actualiza esta lista.
 - GitHub desactiva los cron de un repo público tras 60 días sin actividad: lo evita `.github/workflows/keepalive.yml`.
 
 ## Aparcado
-- INE: el IPC de las series probadas acaba en diciembre de 2025 (cambio de base); buscar las nuevas series
-  para paro (EPA), IPC y turismo de Baleares.
-- AEMET (avisos y predicción oficial) y FRED necesitan clave gratuita: GitHub Secrets.
-- Finnhub para cotizaciones y resultados de empresas (clave en GitHub Secrets).
-- Festivos locales de Menorca (dos por municipio) en CAL: pendiente de comprobar en el BOIB. La prensa
-  (menorca.info) los publica, pero hay discrepancias entre fuentes y no se han podido contrastar.
+- Festivos locales de Menorca: Sergi ha decidido no añadirlos.
+- Formato y lint en CI (Prettier + ESLint): un PR propio, cuando haya pocas ramas abiertas.
+- Descartadas: GDELT (429 desde Actions) y RSS de la CNMV (no responde).
