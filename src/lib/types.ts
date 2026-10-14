@@ -105,6 +105,10 @@ export interface NewsItem {
 	/** ISO 8601, o null si el feed no trae fecha. */
 	time: string | null;
 	summary: string;
+	/** 'en' si el medio publica en inglés (scripts/sources/news.ts). */
+	lang?: 'en';
+	/** El titular traducido al español (scripts/translate.ts), si lo hay. */
+	titleEs?: string;
 	/** La misma noticia en otros medios (scripts/cluster.ts), sin el de `source`. */
 	also?: { source: string; url: string }[];
 }
@@ -303,12 +307,20 @@ export interface WikiPage {
 	views?: number;
 }
 
-export interface WikiData {
-	date: string;
+/** Lo del día en una Wikipedia (español o inglés). */
+export interface WikiEdition {
 	/** Artículo destacado del día, si lo hay. */
 	featured: WikiPage | null;
 	mostRead: WikiPage[];
 	onThisDay: { year: number; text: string; url: string }[];
+	/** «In the news» (solo la Wikipedia en inglés lo tiene en el feed). */
+	news?: { text: string; url: string }[];
+}
+
+/** Arriba, la Wikipedia en español; en `en`, la inglesa (si respondió). */
+export interface WikiData extends WikiEdition {
+	date: string;
+	en?: WikiEdition;
 }
 
 // ---------- Riesgos naturales: huracanes (NOAA) y eventos (NASA EONET) ----------
@@ -482,6 +494,9 @@ export interface ImpEntry {
 	/** Clave estable del tema entre pasadas y días (para desduplicar). */
 	k: string;
 	title: string;
+	/** 'en' si el titular está en inglés, y su traducción (scripts/translate.ts). */
+	lang?: 'en';
+	titleEs?: string;
 	url: string;
 	/** Medios distintos que lo dan. */
 	sources: string[];
@@ -633,4 +648,43 @@ export interface LeaderAgenda {
 	/** De dónde sale la agenda. */
 	source: { name: string; url: string };
 	error?: string;
+}
+
+// ---------- Diario Oficial de la UE, serie L (scripts/sources/eurlex.ts) ----------
+
+export type EuLexType = 'Reglamento' | 'Directiva' | 'Decisión' | 'Otro';
+
+/** Un acto de la serie L del Diario Oficial de la UE. */
+export interface EuLexDoc {
+	/** Número CELEX: «32026R1753». */
+	id: string;
+	/** Título oficial, en inglés. */
+	title: string;
+	type: EuLexType;
+	/** Temas (Sanciones, Aranceles, Energía…), por palabras del título. */
+	tags: string[];
+	/** Día de publicación: «2026-10-14». */
+	date: string;
+	/** Ficha en EUR-Lex, en español. */
+	url: string;
+}
+
+// ---------- Archivo de titulares (scripts/sources/archive.ts) ----------
+
+/** Un titular archivado. Claves cortas: un mes son miles. */
+export interface ArchiveEntry {
+	/** Titular. */
+	t: string;
+	/** Medio. */
+	s: string;
+	/** Hora UTC al minuto: «2026-10-14T14:05Z». */
+	d: string;
+	/** Enlace. */
+	u: string;
+}
+
+/** Índice del archivo (news-archive.json). Cada mes está en news-archive/AAAA-MM.json. */
+export interface NewsArchive {
+	/** Del más reciente al más antiguo. */
+	months: { month: string; count: number; bytes: number }[];
 }

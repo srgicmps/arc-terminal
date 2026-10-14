@@ -89,6 +89,7 @@ describe('fechas (hora de Madrid)', () => {
 	it('period: meses, trimestres y días de las series', () => {
 		expect(period('2026-09')).toBe('sep 26');
 		expect(period('2026-Q2')).toBe('T2 26');
+		expect(period('2026-W41')).toBe('sem 41 26');
 		expect(period('2026-10-14')).toBe('14 oct');
 		expect(period('2026-01-05')).toBe('5 ene');
 		expect(period('2026')).toBe('2026');

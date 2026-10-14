@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
+	import ClimatePanel from '#lib/components/ClimatePanel.svelte';
 	import ChokepointTable from '#lib/components/ChokepointTable.svelte';
 	import DisasterList from '#lib/components/DisasterList.svelte';
 	import HazardList from '#lib/components/HazardList.svelte';
@@ -50,6 +51,7 @@
 			<NewsList {items} summaries />
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-geo" />{/snippet}
 		</Panel>
+		<ClimatePanel climate={data.climate} />
 	</div>
 	<div class="col">
 		<Panel title="Mercados de predicción" meta="Probabilidad que da el mercado">
@@ -79,6 +81,10 @@
 		<Panel title="Sanciones y aranceles de EE. UU." meta="OFAC, USTR e ITA" jump={{ code: 'USGOV', href: resolve('/usgov') }}>
 			<TradeList items={data.sanctions?.data.slice(0, 8) ?? []} />
 			{#snippet note()}Fuente: Federal Register · <Updated at={data.sanctions?.fetchedAt} source="sanctions" />{/snippet}
+		</Panel>
+		<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">
+			<NewsList items={data.intl?.data.items.slice(0, 15) ?? []} />
+			{#snippet note()}<Updated at={data.intl?.fetchedAt} source="news-intl" />{/snippet}
 		</Panel>
 		<Panel title="Gobiernos e instituciones" meta="Comunicados oficiales">
 			<NewsList items={data.gov?.data.items.slice(0, 15) ?? []} />
