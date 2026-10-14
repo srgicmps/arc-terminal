@@ -5,6 +5,7 @@
 	import BalanceSheets from '#lib/components/BalanceSheets.svelte';
 	import HousingTable from '#lib/components/HousingTable.svelte';
 	import ImfTable from '#lib/components/ImfTable.svelte';
+	import IndeedPanel from '#lib/components/IndeedPanel.svelte';
 	import LineChart from '#lib/components/LineChart.svelte';
 	import MortgageCalc from '#lib/components/MortgageCalc.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
@@ -121,6 +122,7 @@
 		<Panel title="Paro juvenil" meta="Menores de 25 años">
 			<SeriesTable next={data.next} head="País" rows={byGeo('youth-unemployment')} />
 		</Panel>
+		<IndeedPanel series={data.indeed?.data.series ?? []} fetchedAt={data.indeed?.fetchedAt} />
 		<Panel title="Deuda pública" meta="% del PIB">
 			<SeriesTable next={data.next} head="País" rows={byGeo('debt')} />
 			{#snippet note()}Fuente: Eurostat · <Updated at={data.eurostat?.fetchedAt} source="eurostat" />{/snippet}

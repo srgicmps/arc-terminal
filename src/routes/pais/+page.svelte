@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
 	import EuPowerTable from '#lib/components/EuPowerTable.svelte';
+	import IndeedPanel from '#lib/components/IndeedPanel.svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -48,8 +49,9 @@
 	const hasPower = $derived(!!country && data.eupower.some((z) => z.country === country.code));
 	const rates = $derived(profile ? [profile.policy, profile.bond, profile.premium].filter((r): r is Rate => r !== null) : []);
 	const military = $derived(country ? (data.military[country.code] ?? null) : null);
+	const jobs = $derived(country ? data.jobs[country.code] : undefined);
 	const empty = $derived(
-		profile && !profile.kpis.length && !rates.length && !profile.fx.length && !profile.imf && !military && !news.length
+		profile && !profile.kpis.length && !rates.length && !profile.fx.length && !profile.imf && !military && !jobs && !news.length
 	);
 
 	// Para la lista y el desplegable, por orden alfabético.
@@ -224,6 +226,8 @@
 					{#snippet note()}World Economic Outlook: crecimiento del PIB real e inflación media del año.{/snippet}
 				</Panel>
 			{/if}
+
+			{#if jobs}<IndeedPanel series={[jobs]} fetchedAt={data.jobsAt ?? undefined} />{/if}
 
 			{#if military}
 				<Panel title="Gasto militar" meta={data.militaryYear ? String(data.militaryYear) : undefined}>

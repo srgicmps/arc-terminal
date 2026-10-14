@@ -8,7 +8,7 @@ import { nextMap } from '#lib/nextrelease.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal, fao, bde, eupower, uncertainty, g4] = await Promise.all([
+	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal, fao, bde, eupower, uncertainty, g4, indeed] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -31,7 +31,9 @@ export const load: PageServerLoad = async () => {
 		dataset<EuPowerData>('energycharts'),
 		dataset<UncertaintyData>('uncertainty'),
 		// Paro y PIB de EE. UU., Reino Unido, Japón y China (OCDE vía DBnomics), para las tablas por país.
-		dataset<SeriesData>('oecd-g4')
+		dataset<SeriesData>('oecd-g4'),
+		// Ofertas de empleo de Indeed (provisional): un punto por semana; con 60 llega para comparar con hace un año.
+		dataset<SeriesData>('indeed')
 	]);
 	// Del BCE, todo menos los tipos de cambio (están en WS); de los titulares, los 25 que se pintan.
 	const fx = (ecb?.data.series ?? [])
@@ -65,6 +67,7 @@ export const load: PageServerLoad = async () => {
 		speeches: headlines(speeches, 12),
 		fao,
 		uncertainty,
+		indeed: pickSeries(indeed, null, 60),
 		eupower,
 		// Próximo dato de cada serie, calculado aquí: al navegador solo le llega la fecha y el título.
 		next: nextMap(
