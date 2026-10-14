@@ -81,18 +81,35 @@ export function num(value: unknown): number | null {
 	return Number.isFinite(n) ? n : null;
 }
 
+const ENTITIES: Record<string, string> = {
+	nbsp: ' ',
+	amp: '&',
+	quot: '"',
+	apos: '’',
+	lt: '<',
+	gt: '>'
+};
+
+/** Traduce una entidad («amp», «#39», «#x27»); si no la conoce, la deja como estaba. */
+function entity(match: string, body: string): string {
+	if (body[0] !== '#') return ENTITIES[body.toLowerCase()] ?? match;
+	const hex = body[1] === 'x' || body[1] === 'X';
+	const code = Number.parseInt(body.slice(hex ? 2 : 1), hex ? 16 : 10);
+	if (!(code > 0 && code <= 0x10ffff)) return match;
+	// El apóstrofo recto se cambia por el tipográfico, como el resto de la web.
+	return code === 39 ? '’' : String.fromCodePoint(code);
+}
+
 /** Quita etiquetas HTML y entidades sencillas, y recorta espacios. */
 export function plain(value: unknown, max = 400): string {
 	const text = String(value ?? '')
 		.replace(/<!\[CDATA\[|\]\]>/g, '')
+		// Una etiqueta pegada a la puntuación no deja hueco: «<b>2%</b>.» → «2%.», «(<b>x</b>)» → «(x)».
+		.replace(/<[^>]*>(?=[.,;:!?)\]»”’%])/g, '')
+		.replace(/(?<=[(\[«“¿¡])<[^>]*>/g, '')
 		.replace(/<[^>]*>/g, ' ')
-		.replace(/&nbsp;/g, ' ')
-		.replace(/&amp;/g, '&')
-		.replace(/&quot;/g, '"')
-		.replace(/&#0?39;|&apos;|&#8217;/g, '’')
-		.replace(/&lt;/g, '<')
-		.replace(/&gt;/g, '>')
-		.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+		// Todas las entidades de una pasada: «&amp;lt;» se queda en «&lt;», no en «<».
+		.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, entity)
 		.replace(/\s+/g, ' ')
 		.trim();
 	return text.length > max ? text.slice(0, max - 1).trimEnd() + '…' : text;

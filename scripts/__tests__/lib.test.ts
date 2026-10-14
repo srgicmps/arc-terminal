@@ -49,6 +49,27 @@ describe('plain', () => {
 		expect(plain('Espa&#241;a')).toBe('España');
 	});
 
+	it('no deja espacio antes de la puntuación cuando una etiqueta cierra justo antes', () => {
+		expect(plain('Sube un <b>2%</b>.')).toBe('Sube un 2%.');
+		expect(plain('<a href="x">BCE</a>, <i>Fed</i>; y <em>BoE</em>: hoy')).toBe('BCE, Fed; y BoE: hoy');
+		expect(plain('(<b>dato</b>)')).toBe('(dato)');
+		// Entre palabras, las etiquetas siguen separando.
+		expect(plain('uno<br>dos')).toBe('uno dos');
+	});
+
+	it('descodifica las entidades una sola vez', () => {
+		expect(plain('&amp;lt;b&amp;gt;')).toBe('&lt;b&gt;');
+		expect(plain('&amp;amp;')).toBe('&amp;');
+	});
+
+	it('entiende entidades hexadecimales y emojis', () => {
+		expect(plain('It&#x27;s')).toBe('It’s');
+		expect(plain('&#x41;&#X42;')).toBe('AB');
+		expect(plain('&#128640; &#x1F680;')).toBe('🚀 🚀');
+		// Códigos imposibles o entidades desconocidas se dejan como están.
+		expect(plain('&#x110000; &foo;')).toBe('&#x110000; &foo;');
+	});
+
 	it('junta espacios y recorta con puntos suspensivos', () => {
 		expect(plain('  a \n\t b  ')).toBe('a b');
 		expect(plain('abcdefghij', 5)).toBe('abcd…');
