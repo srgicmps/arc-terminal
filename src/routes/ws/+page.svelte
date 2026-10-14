@@ -86,6 +86,9 @@
 
 	// Materias primas y bonos a 10 años del mundo (widget «market-quotes»). Símbolos de TradingView:
 	// futuros continuos («1!») donde no hay índice de contado.
+	// PRUEBA TEMPORAL de símbolos (se quita antes del merge)
+	const COMMODITIES_TEST = [{name: 'OANDA:NATGASUSD', displayName: 'OANDA:NATGASUSD'}, {name: 'CAPITALCOM:NATURALGAS', displayName: 'CAPITALCOM:NATURALGAS'}, {name: 'PEPPERSTONE:NATGAS', displayName: 'PEPPERSTONE:NATGAS'}, {name: 'CAPITALCOM:DUTCHTTF', displayName: 'CAPITALCOM:DUTCHTTF'}, {name: 'ICEENDEX:TFM1!', displayName: 'ICEENDEX:TFM1!'}, {name: 'OANDA:XCUUSD', displayName: 'OANDA:XCUUSD'}, {name: 'CAPITALCOM:COPPER', displayName: 'CAPITALCOM:COPPER'}, {name: 'PEPPERSTONE:COPPER', displayName: 'PEPPERSTONE:COPPER'}, {name: 'OANDA:WHEATUSD', displayName: 'OANDA:WHEATUSD'}, {name: 'CAPITALCOM:WHEAT', displayName: 'CAPITALCOM:WHEAT'}, {name: 'OANDA:CORNUSD', displayName: 'OANDA:CORNUSD'}, {name: 'CAPITALCOM:CORN', displayName: 'CAPITALCOM:CORN'}, {name: 'TVC:NATGAS', displayName: 'TVC:NATGAS'}, {name: 'TVC:COPPER', displayName: 'TVC:COPPER'}];
+	const BONDS_TEST = [{name: 'TVC:US10', displayName: 'TVC:US10'}, {name: 'FRED:DGS10', displayName: 'FRED:DGS10'}, {name: 'OANDA:USB10YUSD', displayName: 'OANDA:USB10YUSD'}, {name: 'OANDA:DE10YBEUR', displayName: 'OANDA:DE10YBEUR'}, {name: 'OANDA:UK10YBGBP', displayName: 'OANDA:UK10YBGBP'}, {name: 'EUREX:FGBL1!', displayName: 'EUREX:FGBL1!'}, {name: 'CAPITALCOM:US10Y', displayName: 'CAPITALCOM:US10Y'}, {name: 'PEPPERSTONE:US10Y', displayName: 'PEPPERSTONE:US10Y'}, {name: 'BOND:US10Y', displayName: 'BOND:US10Y'}, {name: 'ECONOMICS:US10Y', displayName: 'ECONOMICS:US10Y'}, {name: 'TVC:TNX', displayName: 'TVC:TNX'}, {name: 'CBOE:TNX', displayName: 'CBOE:TNX'}, {name: 'NASDAQ:TNX', displayName: 'NASDAQ:TNX'}, {name: 'TVC:DE10', displayName: 'TVC:DE10'}, {name: 'TVC:ES10', displayName: 'TVC:ES10'}];
 	const COMMODITIES = [
 		{ name: 'TVC:UKOIL', displayName: 'Brent' },
 		{ name: 'TVC:USOIL', displayName: 'WTI' },
@@ -140,10 +143,10 @@
 			<TvWidget widget="market-overview" config={overview} height={520} />
 		</Panel>
 		<Panel title="Materias primas" meta="Futuros y contado · en directo">
-			<TvWidget widget="market-quotes" config={quotes('Materias primas', COMMODITIES)} height={quotesHeight(COMMODITIES.length)} />
+			<TvWidget widget="market-quotes" config={quotes('Materias primas', COMMODITIES_TEST)} height={quotesHeight(COMMODITIES_TEST.length)} />
 		</Panel>
 		<Panel title="Bonos a 10 años" meta="Rentabilidad · en directo">
-			<TvWidget widget="market-quotes" config={quotes('Bonos a 10 años', BONDS)} height={quotesHeight(BONDS.length)} />
+			<TvWidget widget="market-quotes" config={quotes('Bonos a 10 años', BONDS_TEST)} height={quotesHeight(BONDS_TEST.length)} />
 		</Panel>
 	</div>
 </div>
