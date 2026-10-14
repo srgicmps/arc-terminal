@@ -84,7 +84,8 @@ export function parseAlerts(body: string, now = Date.now()): AlertsData {
 		if (seen.has(key)) continue;
 		seen.add(key);
 
-		// El enlace del feed apunta al XML del aviso (CAP); si es así, mejor la página de avisos de AEMET.
+		// Cada entrada trae la página de la zona en MeteoAlarm (?geocode=…) y el XML del aviso (CAP, /api/):
+		// nos quedamos con la página; si no la hay, la de avisos de AEMET.
 		const link = list<Raw>(e.link).find((l) => l?.['@href'] && !/\/api\//.test(l['@href']));
 		alerts.push({
 			id: text(e.identifier) || text(e.id) || key,
@@ -106,6 +107,8 @@ export const alerts: Source<AlertsData> = {
 	name: 'alerts',
 	label: 'Avisos meteorológicos en Menorca · MeteoAlarm (EUMETNET) con datos de AEMET',
 	maxAgeMinutes: 25,
+	// Sin avisos en vigor, la lista viene vacía: es lo normal casi todos los días.
+	allowEmpty: true,
 	async fetch() {
 		return parseAlerts(await getText(ALERTS_URL));
 	}

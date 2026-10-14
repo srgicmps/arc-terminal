@@ -85,6 +85,8 @@ export interface NewsItem {
 	/** ISO 8601, o null si el feed no trae fecha. */
 	time: string | null;
 	summary: string;
+	/** La misma noticia en otros medios (scripts/cluster.ts), sin el de `source`. */
+	also?: { source: string; url: string }[];
 }
 
 export interface FeedStatus {
@@ -371,4 +373,30 @@ export interface PowerMix {
 }
 export interface PowerMixData {
 	systems: PowerMix[];
+}
+
+/** Un festivo: nacional (ES) o de Baleares (IB). */
+export interface Holiday {
+	/** «2026-12-08» */
+	date: string;
+	name: string;
+	scope: 'ES' | 'IB';
+}
+export interface HolidaysData {
+	items: Holiday[];
+}
+
+// ---------- Versiones de herramientas (releases de GitHub) ----------
+
+export interface Release {
+	/** «vuejs/core» */
+	repo: string;
+	/** Nombre para enseñar: «Vue». */
+	name: string;
+	/** Versión sin prefijos: «3.5.22». */
+	version: string;
+	/** Cuándo se publicó (ISO 8601), si el feed lo dice. */
+	time: string | null;
+	/** Página de la release en GitHub, con las notas. */
+	url: string;
 }
