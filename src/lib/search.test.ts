@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { suggest, type Option } from './cmdline.ts';
-import { prepare, searchIndex, searchOptions, symbolOf } from './search.ts';
+import { hasWords, prepare, queryWords, searchIndex, searchOptions, symbolOf } from './search.ts';
 import type { SearchEntry } from './types.ts';
 
 const entry = (t: string, s: SearchEntry['s'] = 'NEWS', u = `https://a.example/${encodeURIComponent(t)}`): SearchEntry => ({ t, u, s });
@@ -106,5 +106,17 @@ describe('searchOptions', () => {
 	it('symbolOf lee el valor de un enlace interno', () => {
 		expect(symbolOf('/s?sym=BME%3AREP')).toBe('BME:REP');
 		expect(symbolOf('https://a.example/s?sym=X')).toBeNull();
+	});
+});
+
+describe('queryWords y hasWords', () => {
+	it('separa palabras sin tildes ni mayúsculas', () => {
+		expect(queryWords('  Banco   de ESPAÑA ')).toEqual(['banco', 'de', 'espana']);
+		expect(queryWords('   ')).toEqual([]);
+	});
+	it('encaja con todas las palabras en cualquier orden', () => {
+		expect(hasWords('Ayudas a la vivienda en Menorca', queryWords('menorca vivienda'))).toBe(true);
+		expect(hasWords('Ayudas a la vivienda', queryWords('vivienda menorca'))).toBe(false);
+		expect(hasWords('Cualquier cosa', [])).toBe(true);
 	});
 });

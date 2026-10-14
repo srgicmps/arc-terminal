@@ -3,7 +3,9 @@
 	import { page } from '$app/state';
 	import Panel from '#lib/components/Panel.svelte';
 	import Updated from '#lib/components/Updated.svelte';
+	import Search from '#lib/components/ui/Search.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
+	import { hasWords, queryWords } from '#lib/search.ts';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { dm, longDay } from '#lib/format.ts';
 	import { dayData } from '#lib/boe.ts';
@@ -24,18 +26,14 @@
 		query = page.url.searchParams.get('q') ?? '';
 	});
 
-	const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-
-	// Filtra por texto en el título, el ministerio o el epígrafe.
-	const sections = $derived.by(() => {
-		const q = norm(query.trim());
-		return (boe?.sections ?? []).map((s) => ({
+	// Filtra por palabras sueltas en el título, el ministerio o el epígrafe.
+	const words = $derived(queryWords(query));
+	const sections = $derived(
+		(boe?.sections ?? []).map((s) => ({
 			...s,
-			items: q
-				? s.items.filter((i) => norm(`${i.title} ${i.dept} ${i.epigraph}`).includes(q))
-				: s.items
-		}));
-	});
+			items: s.items.filter((i) => hasWords(`${i.title} ${i.dept} ${i.epigraph}`, words))
+		}))
+	);
 	onMount(initWatchwords);
 	let newWord = $state('');
 
@@ -68,13 +66,12 @@
 	// «Semana»: un panel por día. Sin búsqueda, solo las disposiciones generales (sección I), para no pintar
 	// más de mil filas; con búsqueda, todo lo que coincida.
 	const days = $derived.by(() => {
-		const q = norm(query.trim());
 		return (week ?? []).map((d) => ({
 			date: d.date,
 			items: d.sections
-				.filter((s) => q || s.code === '1')
+				.filter((s) => words.length || s.code === '1')
 				.flatMap((s) => s.items)
-				.filter((i) => !q || norm(`${i.title} ${i.dept} ${i.epigraph}`).includes(q))
+				.filter((i) => hasWords(`${i.title} ${i.dept} ${i.epigraph}`, words))
 		}));
 	});
 
@@ -87,6 +84,7 @@
 	const shown = $derived(
 		weekly ? days.reduce((n, d) => n + d.items.length, 0) : sections.reduce((n, s) => n + s.items.length, 0)
 	);
+	const listed = $derived((boe?.sections ?? []).reduce((n, s) => n + s.items.length, 0));
 	const total = $derived((boe?.sections ?? []).reduce((n, s) => n + s.total, 0));
 
 	// Diario Oficial de la UE (serie L): filtro por tema, solo con los temas que hay.
@@ -124,11 +122,12 @@
 	<div class="views"><Seg label="Periodo" options={views} bind:value={view.value} /></div>
 
 	<div class="search">
-		<label>
-			<span class="sr">{weekly ? 'Buscar en el BOE de la semana' : 'Buscar en el BOE de hoy'}</span>
-			<input type="search" bind:value={query} placeholder="Buscar: ayudas, Menorca, oposiciones, Hacienda…" />
-		</label>
-		<span class="count">{shown} {shown === 1 ? 'resultado' : 'resultados'}</span>
+		<Search
+			label={weekly ? 'Buscar en el BOE de la semana' : 'Buscar en el BOE de hoy'}
+			placeholder="Buscar: ayudas, Menorca, oposiciones, Hacienda…"
+			bind:value={query}
+		/>
+		{#if words.length}<span class="count">{weekly ? `${shown} ${shown === 1 ? 'resultado' : 'resultados'}` : `${shown} de ${listed}`}</span>{/if}
 	</div>
 
 	{#snippet entry(item: BoeItem, date = '')}
@@ -201,7 +200,7 @@
 							{#each s.items as item (item.id)}{@render entry(item)}{/each}
 						</ol>
 						{#snippet note()}
-							{#if s.items.length < s.total && !query}
+							{#if s.items.length < s.total && !words.length}
 								Solo se muestran los primeros {s.items.length}: el resto, en el sumario en PDF.
 							{/if}
 						{/snippet}
@@ -254,10 +253,6 @@
 		align-items: center;
 		gap: var(--sp-12);
 		margin-bottom: var(--sp-12);
-	}
-
-	.search label {
-		flex: 1;
 	}
 
 	input {
