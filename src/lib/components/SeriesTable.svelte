@@ -22,6 +22,10 @@
 		head: string;
 		/** Variación en las unidades de la serie, o null si no hay dato con qué comparar. */
 		value: (s: Series) => number | null;
+		/** Se añade detrás del número (« %»…); por defecto, nada. */
+		unit?: string;
+		/** Decimales; por defecto, los de la fila. */
+		digits?: number;
 	}
 
 	interface Props {
@@ -64,7 +68,7 @@
 					</td>
 					<td>{nf(last.v, d)}{row.series.unit === '%' ? ' %' : ''}</td>
 					<td><Change value={diff} digits={d} invert={row.inverse} /></td>
-					{#each extra as x (x.head)}<td><Change value={x.value(row.series)} digits={d} invert={row.inverse} /></td>{/each}
+					{#each extra as x (x.head)}<td><Change value={x.value(row.series)} digits={x.digits ?? d} unit={x.unit ?? ''} invert={row.inverse} /></td>{/each}
 					<td class="mut per">{period(last.t)}</td>
 					<td class="sp"><Spark values={pts.slice(-spark).map((p) => p.v)} /></td>
 				</tr>
