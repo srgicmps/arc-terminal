@@ -4,6 +4,7 @@
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
 	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
 	import PinkSheetTable from '#lib/components/PinkSheetTable.svelte';
+	import TicTable from '#lib/components/TicTable.svelte';
 	import FxConvert from '#lib/components/FxConvert.svelte';
 	import FxTable from '#lib/components/FxTable.svelte';
 	import HotLists from '#lib/components/HotLists.svelte';
@@ -217,6 +218,18 @@
 				<Updated at={data.jgb?.fetchedAt} source="jgb" />
 			{/snippet}
 		</Panel>
+		{#if data.tic?.data.holders.length}
+			<Panel title="Quién tiene la deuda de EE. UU." meta="Bonos y letras en manos extranjeras · {period(data.tic.data.months.at(-1) ?? '')}">
+				<TicTable data={data.tic.data} />
+				{#snippet note()}
+					Miles de millones de dólares, a fin de mes; sale con dos meses de retraso. «Oficial»: bancos centrales y gobiernos. Es donde están custodiados los
+					títulos, no siempre quién es el dueño: Bélgica, Luxemburgo o las Caimán guardan los de otros. Fuente: Tesoro de
+					EE. UU.,
+					<a href="https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt" target="_blank" rel="noopener">TIC, tabla 5</a>
+					· <Updated at={data.tic?.fetchedAt} source="tic" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Divisas" meta="Frente al euro · cambio de referencia del BCE">
 			<FxTable rows={fx.map((id) => ({ series: get(id), week: data.fxChange[id]?.week ?? null, year: data.fxChange[id]?.year ?? null }))} />
 			{#snippet note()}Si el par sube, el euro se aprecia frente a esa moneda · <Updated at={data.ecb?.fetchedAt} source="ecb" />{/snippet}
