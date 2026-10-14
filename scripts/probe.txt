@@ -1,14 +1,8 @@
 # URL que la Action de los PR consulta para explorar APIs nuevas (ver scripts/probe.ts).
 # Formato: «URL» o «URL ~ patrón».
-# ES (M11): consultas «Afiliados medios» del PXWeb de la Seguridad Social: título y primeras filas
-https://w6.seg-social.es/PXWeb/sq/cde33df7-48ac-4cf0-b244-067aac01dce7 ~ ^.{0,400}
-https://w6.seg-social.es/PXWeb/sq/123e67c2-d10c-4ab5-9f17-99721c7b6a4f ~ ^.{0,400}
-https://w6.seg-social.es/PXWeb/sq/1834ba47-f00a-4ac1-801e-b7e3748f6713 ~ ^.{0,400}
-https://w6.seg-social.es/PXWeb/sq/60ed7cc9-221b-44ee-af84-9c3c1e6beca8 ~ ^.{0,400}
-https://w6.seg-social.es/PXWeb/sq/0b1ce7aa-d9e2-4135-835e-e561ca43d30c ~ ^.{0,400}
-https://w6.seg-social.es/PXWeb/sq/bd578aa1-9638-4f46-991b-a132266d7c48 ~ ^.{0,400}
-https://w6.seg-social.es/PXWeb/sq/c459066d-091f-4120-b74f-f7a246eb346b ~ ^.{0,400}
-https://w6.seg-social.es/PXWeb/sq/32ae72f2-64eb-4f1d-b960-92d72a75542d ~ ^.{0,400}
+# ES (M11): afiliados medios RG+RETA (PXWeb SS): ¿llega a 2026 y trae «Total Nacional»?
+https://w6.seg-social.es/PXWeb/sq/32ae72f2-64eb-4f1d-b960-92d72a75542d ~ "20\d\d\d\d";"[^"]*(Total|TOTAL|Nacional)[^"]*";[\d.]+
+https://w6.seg-social.es/PXWeb/sq/c459066d-091f-4120-b74f-f7a246eb346b ~ "20\d\d\d\d";"TODAS LAS SECCIONES";[\d.]+
 https://apidatos.ree.es/es/datos/generacion/estructura-generacion?start_date=2026-10-13T00:00&end_date=2026-10-14T23:59&time_trunc=day&geo_trunc=electric_system&geo_limit=baleares&geo_ids=8743
 https://apidatos.ree.es/es/datos/generacion/no-renovables-detalle-emisiones-CO2?start_date=2026-10-13T00:00&end_date=2026-10-14T23:59&time_trunc=day
 https://stats.bis.org/api/v1/data/WS_CBPOL/D.US+XM+JP/all?lastNObservations=2&detail=dataonly&format=csv
