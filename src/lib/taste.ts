@@ -1,11 +1,11 @@
 // «A tu gusto»: la parte sin Svelte (para probarla con Vitest). El estado está en taste.svelte.ts.
 import { COMMANDS } from './commands.ts';
 
-export type Accent = 'amber' | 'green' | 'blue';
+export type Accent = 'amber' | 'cyan' | 'blue';
 
 export const ACCENTS: { value: Accent; label: string }[] = [
 	{ value: 'amber', label: 'Ámbar' },
-	{ value: 'green', label: 'Verde' },
+	{ value: 'cyan', label: 'Cian' },
 	{ value: 'blue', label: 'Azul' }
 ];
 

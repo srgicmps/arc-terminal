@@ -23,7 +23,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-layout-<vista>', prefix: 'arc-layout-', storage: 'local', what: 'Paneles ocultos, orden y ancho de la vista modular', where: 'TOP en modo modular', kind: 'ajuste' },
 	{ key: 'arc-titles', storage: 'local', what: 'Idioma de los titulares (ES traducido o EN original)', where: 'Selector ES / EN de IMP', kind: 'ajuste' },
 	{ key: 'arc-chart-period', storage: 'local', what: 'Último periodo elegido en los gráficos de línea', where: 'Botones 1M · 6M · 1A · 5A · Máx', kind: 'ajuste' },
-	{ key: 'arc-accent', storage: 'local', what: 'Color de acento: ámbar, verde o azul', where: 'HELP, «A tu gusto»', kind: 'ajuste' },
+	{ key: 'arc-accent', storage: 'local', what: 'Color de acento: ámbar, cian o azul', where: 'HELP, «A tu gusto»', kind: 'ajuste' },
 	{ key: 'arc-keys', storage: 'local', what: 'Secciones de la fila de arriba', where: 'HELP, «A tu gusto»', kind: 'ajuste' },
 	{ key: 'arc-thumb', storage: 'local', what: 'Las 4 secciones de la barra inferior del móvil', where: 'HELP, «A tu gusto»', kind: 'ajuste' },
 	{ key: 'arc-ws-heatmap', storage: 'local', what: 'Último mapa de calor elegido', where: 'WS', kind: 'ajuste' },

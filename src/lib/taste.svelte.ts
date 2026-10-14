@@ -40,7 +40,7 @@ function json(key: string): unknown {
 /** Se llama al arrancar en el navegador (desde el layout). */
 export function initTaste() {
 	const accent = read(KEYS.accent);
-	if (accent === 'green' || accent === 'blue') taste.accent = accent;
+	if (accent === 'cyan' || accent === 'blue') taste.accent = accent;
 	taste.top = cleanCodes(json(KEYS.top)) ?? [...DEFAULT_TOP];
 	taste.thumb = cleanCodes(json(KEYS.thumb), THUMB_MAX) ?? [...DEFAULT_THUMB];
 }
