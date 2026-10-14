@@ -83,6 +83,13 @@ const FEEDS: Record<string, Feed[]> = {
 			skip: /\/foreign-travel-advice\//
 		},
 		{ name: DIPLOMACY_FEEDS[1], url: 'https://www.iaea.org/feeds/topnews' }
+	],
+	// Regulación tecnológica (M39, comprobados con probe el 14-10-2026): ley de IA y mercado digital de la UE, y
+	// multas de protección de datos (EDPB). Descartados: FTC (403 desde Actions), Departamento de Justicia (su RSS
+	// no filtra por antimonopolio) y competencia de la Comisión (400).
+	reg: [
+		{ name: 'Comisión Europea (digital)', url: 'https://digital-strategy.ec.europa.eu/en/rss.xml' },
+		{ name: 'EDPB', url: 'https://www.edpb.europa.eu/feed/news_en' }
 	]
 };
 
@@ -112,6 +119,8 @@ export const ENGLISH = new Set([
 	'Simon Willison',
 	'Casa Blanca',
 	'Reserva Federal',
+	'Comisión Europea (digital)',
+	'EDPB',
 	...DIPLOMACY_FEEDS
 ]);
 
@@ -263,7 +272,8 @@ const LABELS: Record<string, string> = {
 	tech: 'Tecnología',
 	ai: 'Inteligencia artificial',
 	gov: 'Gobiernos e instituciones',
-	intl: 'Organismos internacionales'
+	intl: 'Organismos internacionales',
+	reg: 'Regulación tecnológica'
 };
 
 export const newsSources: Source<NewsData>[] = Object.entries(FEEDS).map(([key, feeds]) => ({
