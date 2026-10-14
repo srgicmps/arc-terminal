@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { asset } from '$app/paths';
+	import { page } from '$app/state';
 	import LineChart from '#lib/components/LineChart.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { nf, signed, trend } from '#lib/format.ts';
-	import { distanceKm, FUELS, type FuelKey, type FuelStation } from '#lib/fuel.ts';
+	import { distanceKm, findProvince, FUELS, type FuelKey, type FuelStation } from '#lib/fuel.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -51,10 +52,18 @@
 
 	// Al abrir la vista en el navegador, recupera la última zona elegida (igual que onMounted en Vue).
 	onMount(() => {
+		if (page.url.searchParams.has('zona')) return; // la elige el $effect de abajo
 		try {
 			const saved = localStorage.getItem('fuel-zone');
 			if (saved && saved !== MENORCA && provinces.some((p) => p.id === saved)) choose(saved);
 		} catch {}
+	});
+
+	// «FUEL Madrid» o «FUEL 28» en la barra abre /fuel?zona=…. Solo en el navegador (los efectos no
+	// se ejecutan al prerenderizar); untrack evita que se repita al cargar la provincia.
+	$effect(() => {
+		const id = findProvince(page.url.searchParams.get('zona'), provinces);
+		if (id) untrack(() => choose(id));
 	});
 
 	/** «Cerca de mí»: pide la ubicación al navegador y abre la provincia más cercana. */
@@ -111,14 +120,32 @@
 		return time ? `${day}, ${time.slice(0, 5)}` : day;
 	});
 
-	const history = $derived(data.fuel?.data.history ?? []);
-	const historyLines = $derived(
-		FUELS.slice(0, 2).map((f, i) => ({
-			label: `${f.label}, media`,
-			color: i ? '--muted' : '--amber',
-			points: history.flatMap((d) => (d.avg[f.key] == null ? [] : [{ t: d.date, v: d.avg[f.key]! }]))
-		}))
+	// La zona elegida frente a la media de España, con el combustible elegido. Los historiales los va
+	// guardando la propia web, día a día: Menorca con sus gasolineras y cada provincia con la media del día.
+	const spainHistory = $derived(data.spain?.data.history ?? []);
+	const zoneToday = $derived(
+		zone === MENORCA
+			? (data.fuel?.data.history?.at(-1)?.avg[fuel] ?? null)
+			: (provinces.find((p) => p.id === zone)?.avg[fuel] ?? null)
 	);
+	const gapCents = $derived(zoneToday !== null && spainAvg !== null ? (zoneToday - spainAvg) * 100 : null);
+	const zoneHistory = $derived(
+		zone === MENORCA
+			? (data.fuel?.data.history ?? []).map((d) => ({ t: d.date, v: d.avg[fuel] }))
+			: spainHistory.map((d) => ({ t: d.date, v: d.provinces?.[zone]?.[fuel] ?? null }))
+	);
+	const historyLines = $derived([
+		{
+			label: zoneName,
+			color: '--amber',
+			points: zoneHistory.flatMap((p) => (p.v == null ? [] : [{ t: p.t, v: p.v }]))
+		},
+		{
+			label: 'España',
+			color: '--muted',
+			points: spainHistory.flatMap((d) => (d.avg[fuel] == null ? [] : [{ t: d.date, v: d.avg[fuel]! }]))
+		}
+	]);
 
 	// Provincias ordenadas por el precio medio del combustible elegido.
 	const ranking = $derived(
@@ -261,8 +288,21 @@
 
 <div class="grid grid-2e">
 	<div class="col">
-		<Panel title="Evolución en Menorca" meta="Precio medio diario · €/L">
+		<Panel title="{zoneName} frente a España" meta="{fuelLabel} · precio medio diario · €/L">
+			{#if gapCents !== null}
+				<div class="tiles">
+					<div class="tile">
+						<span class="lbl">{zoneName}, hoy</span>
+						<b>{nf(gapCents >= 0 ? gapCents : -gapCents, 1)} cts/L</b>
+						<span class="sub">{gapCents >= 0 ? 'más cara' : 'más barata'} que la media de España</span>
+					</div>
+				</div>
+			{/if}
 			<LineChart lines={historyLines} decimals={3} />
+			{#snippet note()}
+				El historial de la media de España y de cada provincia empieza el 14 de octubre de 2026: la web lo
+				guarda día a día.
+			{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
