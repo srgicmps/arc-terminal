@@ -6,7 +6,7 @@
 // 60 consultas por minuto y la fuente `finnhub` ya gasta unas 16 en cada pasada, así que aquí se reparte:
 // cada valor se refresca una vez al día y, en cada pasada, como mucho PER_RUN valores, a una consulta por
 // segundo. Los demás conservan lo de la vez anterior. La clave va en una cabecera (X-Finnhub-Token).
-import { TICKERS } from '../../src/lib/commands.ts';
+import { TICKERS } from '../../src/lib/tickers.ts';
 import type {
 	EarningsSurprise,
 	AnalystsData,
