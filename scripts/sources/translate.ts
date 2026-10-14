@@ -10,6 +10,7 @@ export const translations: Source<TranslationCache> = {
 	// Cada pasada mira si hay titulares nuevos; lo ya traducido no se vuelve a pedir.
 	maxAgeMinutes: 0,
 	requires: 'MYMEMORY_EMAIL',
-	after: true,
+	// Nivel 2: detrás de IMP (after: true), que ya habrá escrito imp.json (scripts/lib.ts, waves).
+	after: 2,
 	fetch: (previous) => translateHeadlines({ dir: 'static/data', email: process.env.MYMEMORY_EMAIL, previous })
 };
