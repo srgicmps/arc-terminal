@@ -12,6 +12,7 @@ import type {
 	Chokepoint,
 	Disaster,
 	ElectionsData,
+	FoodInsecurity,
 	EuLexDoc,
 	GdacsEvent,
 	HazardsData,
@@ -27,7 +28,7 @@ import type {
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, intl, analysis, world, quakes, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex, unhcr] = await Promise.all([
+	const [news, intl, analysis, world, quakes, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex, unhcr, food] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-intl'),
 		dataset<NewsData>('news-analysis'),
@@ -48,7 +49,8 @@ export const load: PageServerLoad = async () => {
 		dataset<OutbreakNews[]>('who-don'),
 		dataset<TradeDoc[]>('sanctions-uk'),
 		dataset<EuLexDoc[]>('eurlex'),
-		dataset<UnhcrData>('unhcr')
+		dataset<UnhcrData>('unhcr'),
+		dataset<FoodInsecurity[]>('fewsnet')
 	]);
 	// Sanciones y aranceles: EE. UU. (Federal Register), Reino Unido (OFSI) y UE (actos de la serie L con el tema
 	// «Sanciones»), juntos y de lo más reciente a lo más antiguo (M41).
@@ -100,6 +102,8 @@ export const load: PageServerLoad = async () => {
 			from: top(unhcr.data, 'from', 8),
 			hosted: top(unhcr.data, 'hosted', 8)
 		},
+		// Inseguridad alimentaria aguda (FEWS NET): los 10 países con más personas en fase IPC 3 o peor.
+		food: trim(food, (d) => d.slice(0, 10)),
 		// Gasto militar: los 15 países que más gastan.
 		sipri: trim(sipri, (d) => ({ ...d, rows: d.rows.slice(0, 15) }))
 	};

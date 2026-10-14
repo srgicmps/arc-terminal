@@ -1195,4 +1195,21 @@ export interface BitcoinNet {
 	height: number;
 	/** Próximo halving: su altura, bloques que faltan y fecha estimada (10 min por bloque). */
 	halving: { height: number; blocks: number; date: string };
+// ---------- Inseguridad alimentaria aguda (FEWS NET, scripts/sources/fewsnet.ts) ----------
+
+export interface FoodInsecurity {
+	/** ISO 3166-1 alfa-2: «SO». */
+	code: string;
+	/** Nombre en inglés, como lo da FEWS NET. */
+	country: string;
+	/** Personas en fase IPC 3 o peor («crisis» o más), horquilla de FEWS NET. */
+	low: number;
+	high: number;
+	/** Periodo al que se refiere: «2026-08-01» a «2026-09-30». */
+	from: string;
+	to: string;
+	/** Situación actual, proyección o picos de necesidad del año. */
+	scenario: string;
+	/** Frente a hace un año: «Higher», «Similar», «Lower»… si lo da. */
+	vsYear: string | null;
 }
