@@ -56,7 +56,6 @@ export const sources: Source<any>[] = [
 	uscurve,
 	fred,
 	finnhub,
-	perf,
 	sec,
 	// Mundo
 	imf,
@@ -79,3 +78,4 @@ export const sources: Source<any>[] = [
 	imp,
 	search
 ];
+sources.push(perf); // CMP (Prog 8). Se quita cuando el registro deje de exigir esta lista.
