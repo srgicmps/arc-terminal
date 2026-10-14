@@ -1,8 +1,10 @@
 // Últimos documentos que las empresas presentan en la SEC (EDGAR): resultados (8-K), informes
 // trimestrales y anuales (10-Q, 10-K, 6-K, 20-F) y operaciones de directivos (Form 4).
 // API pública sin clave: https://www.sec.gov/search-filings/edgar-application-programming-interfaces
-// Condiciones (https://www.sec.gov/os/accessing-edgar-data): un User-Agent que diga quién eres y cómo
-// contactarte (el de lib.ts, con la URL del repo) y como mucho 10 peticiones por segundo.
+// Condiciones (https://www.sec.gov/os/accessing-edgar-data): un User-Agent con nombre y correo de
+// contacto («Nombre correo@ejemplo.com») y como mucho 10 peticiones por segundo. Con solo la URL del
+// repo la SEC responde 403, y como el repo es público el correo va en el secreto SEC_USER_AGENT:
+// sin él, la fuente se salta.
 import { TICKERS } from '../../src/lib/commands.ts';
 import type { SecCompany, SecData, SecFiling } from '../../src/lib/types.ts';
 import { getJson, type Source } from '../lib.ts';
@@ -102,7 +104,9 @@ export const sec: Source<SecData> = {
 	name: 'sec',
 	label: 'SEC EDGAR · documentos de las empresas (EE. UU.)',
 	maxAgeMinutes: 60,
+	requires: 'SEC_USER_AGENT',
 	async fetch() {
+		const headers = { 'User-Agent': process.env.SEC_USER_AGENT ?? '' };
 		const companies: Record<string, SecCompany> = {};
 		const listed = TICKERS.filter((t) => t.cik);
 
@@ -110,7 +114,7 @@ export const sec: Source<SecData> = {
 		for (const [i, t] of listed.entries()) {
 			if (i > 0) await wait(PAUSE_MS);
 			try {
-				const body = await getJson(`${API}/CIK${t.cik}.json`);
+				const body = await getJson(`${API}/CIK${t.cik}.json`, { headers });
 				// Comprobación de que el CIK es el del valor (la SEC escribe «BRK-B» en vez de «BRK.B»).
 				const tickers: string[] = body?.tickers ?? [];
 				if (tickers.length && !tickers.includes(t.code.replace('.', '-'))) {
