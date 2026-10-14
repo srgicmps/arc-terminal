@@ -18,6 +18,15 @@ Terminal personal al estilo Bloomberg para el día a día de Sergi: economía y 
 tecnología, IA, acciones importantes y utilidades como las gasolineras más baratas de Menorca. Se maneja con
 una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 
+## Cómo está hecho
+- `scripts/update.ts` (`pnpm data`) ejecuta las fuentes de `scripts/sources/` y guarda cada una en
+  `static/data/<nombre>.json` como `{ name, fetchedAt, data }`. Las fuentes reciben la copia anterior para
+  acumular historial (gasolina, luz). Los tipos compartidos están en `src/lib/types.ts` y `src/lib/fuel.ts`.
+- Cada vista lee sus datos en `+page.ts` con `dataset('nombre')` (`src/lib/data.ts`).
+- Componentes comunes en `src/lib/components/` (Panel, NewsList, SeriesTable, LineChart, TvWidget…).
+- `scripts/probe.ts` + `scripts/probe.txt`: en los PR la Action consulta esas URL y deja la respuesta en el
+  registro. Sirve para explorar APIs nuevas cuando el entorno de desarrollo no tiene red.
+
 ## Arquitectura
 - **GitHub Pages** sirve la web estática en https://srgicmps.github.io/arc-terminal/ (por eso hay que
   configurar `paths.base` en SvelteKit).
@@ -56,11 +65,12 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 
 ## Plan por fases
 1. ~~**Esqueleto publicado**: proyecto SvelteKit + GitHub Action que construye y publica en Pages.~~ Hecho.
-2. **Primer dato real de punta a punta**: `FUEL` (una fuente, sin clave). ← siguiente
-3. **Estilo de la maqueta y barra de comandos** con sugerencias y atajos de teclado.
-4. **Noticias por RSS**: `ECO`, `GEO`, `TECH`, `AI`.
-5. **Mercados**: TradingView + Finnhub (primera clave en GitHub Secrets).
-6. **Macro** (FRED, BCE) y **portada `TOP`**.
+2. ~~**Primer dato real de punta a punta**: `FUEL` (una fuente, sin clave).~~ Hecho.
+3. ~~**Estilo de la maqueta y barra de comandos** con sugerencias y atajos de teclado.~~ Hecho.
+4. ~~**Noticias por RSS**: `ECO`, `GEO`, `TECH`, `AI`.~~ Hecho (y `ES`, `NEWS`).
+5. **Mercados**: ~~TradingView~~ hecho; falta Finnhub (primera clave en GitHub Secrets). ← siguiente
+6. ~~**Macro** (BCE, Eurostat, BLS, Tesoro) y **portada `TOP`**.~~ Hecho. FRED queda pendiente (necesita clave).
+7. ~~**Gobiernos**: `BOE`, `USGOV` (Federal Register), comunicados de La Moncloa, BdE, UE, Casa Blanca y Fed.~~ Hecho.
 
 Cuando termine una fase, actualiza esta lista.
 
@@ -68,7 +78,10 @@ Cuando termine una fase, actualiza esta lista.
 - El repo y la web son **públicos**: nada privado, ninguna clave, ninguna URL interna.
 - Comprueba cada fuente al usarla: si el RSS sigue vivo, límites del plan gratuito, términos de uso.
 - Los datos de ejemplo se marcan siempre como de ejemplo; nunca se presentan como reales.
-- GitHub desactiva los cron de un repo público tras 60 días sin actividad: tenerlo en cuenta en las Actions.
+- GitHub desactiva los cron de un repo público tras 60 días sin actividad: lo evita `.github/workflows/keepalive.yml`.
 
 ## Aparcado
-- (nada todavía)
+- INE: el IPC de las series probadas acaba en diciembre de 2025 (cambio de base); buscar las nuevas series
+  para paro (EPA), IPC y turismo de Baleares.
+- AEMET (avisos y predicción oficial) y FRED necesitan clave gratuita: GitHub Secrets.
+- Finnhub para cotizaciones y resultados de empresas (clave en GitHub Secrets).
