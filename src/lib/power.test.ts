@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bestWindow, cheapestNow, cheapestWindow, days, dayStats, hourLabel, hourly, isHour, madridNow, windowLabel } from './power.ts';
+import { cheapestNow, cheapestWindow, days, dayStats, hourLabel, hourly, isHour, madridNow } from './power.ts';
 
 const t = (day: string, h: number, m = 0) => `${day}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00.000+02:00`;
 
@@ -134,40 +134,15 @@ describe('franja más barata', () => {
 	});
 });
 
-describe('bestWindow', () => {
-	const day = (kwh: number[], d = '2026-10-14') => kwh.map((k, hour) => ({ day: d, hour, kwh: k, repeat: false }));
-
-	it('las n horas seguidas más baratas y el ahorro frente a la media del día', () => {
-		const prices = day([0.2, 0.1, 0.05, 0.06, 0.3, 0.29]);
-		const w2 = bestWindow(prices, 2)!;
-		expect([w2.first.hour, w2.last.hour]).toEqual([2, 3]);
-		expect(w2.avg).toBeCloseTo(0.055, 6);
-		expect(w2.dayAvg).toBeCloseTo(0.1666667, 6);
-		expect(w2.saving).toBeCloseTo(67, 0);
-		const w3 = bestWindow(prices, 3)!;
-		expect([w3.first.hour, w3.last.hour]).toEqual([1, 3]);
+describe('cheapestWindow: etiqueta de la franja el día del cambio de hora', () => {
+	// 25 de octubre: 00, 01, 02, 02 ², 03, 04. La franja barata son la 02:00 y la 02:00 ².
+	const hours = [0, 1, 2, 2, 3, 4].map((hour, i) => ({ day: '2026-10-25', hour, kwh: [0.2, 0.2, 0.05, 0.04, 0.2, 0.2][i], repeat: i === 3 }));
+	it('acaba a las 03:00 si la franja incluye la segunda 02:00', () => {
+		const w = cheapestWindow(hours, '2026-10-25', 2)!;
+		expect(`${hourLabel(w.first)}–${hourLabel(w.after)}`).toBe('02:00–03:00');
 	});
-
-	it('empate: la primera; y nada si el día es más corto que la franja', () => {
-		expect(bestWindow(day([0.1, 0.1, 0.1]), 2)?.first.hour).toBe(0);
-		expect(bestWindow(day([0.1]), 2)).toBeNull();
-		expect(bestWindow([], 1)).toBeNull();
-	});
-
-	it('día de 25 horas: cuenta por posición, con las dos 02:00', () => {
-		const hours = [0, 1, 2, 2, 3, 4].map((hour, i) => ({ day: '2026-10-25', hour, kwh: [0.2, 0.2, 0.05, 0.04, 0.2, 0.2][i], repeat: i === 3 }));
-		const w = bestWindow(hours, 2)!;
-		expect(w.first).toBe(hours[2]);
-		expect(w.last).toBe(hours[3]); // la segunda 02:00
-	});
-});
-
-describe('windowLabel', () => {
-	const h = (hour: number, repeat = false) => ({ day: '2026-10-14', hour, kwh: 0.1, repeat });
-	it('de la primera hora al final de la última', () => {
-		expect(windowLabel({ first: h(3), last: h(4) })).toBe('03:00–05:00');
-		expect(windowLabel({ first: h(22), last: h(23) })).toBe('22:00–24:00');
-		// La segunda 02:00 del cambio de hora lleva su marca.
-		expect(windowLabel({ first: h(2, true), last: h(3) })).toBe('02:00 ²–04:00');
+	it('acaba en la segunda 02:00 si la franja termina justo antes', () => {
+		const w = cheapestWindow(hours.map((h, i) => ({ ...h, kwh: i === 1 || i === 2 ? 0.01 : 0.3 })), '2026-10-25', 2)!;
+		expect(`${hourLabel(w.first)}–${hourLabel(w.after)}`).toBe('01:00–02:00 ²');
 	});
 });

@@ -7,7 +7,7 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { dm, longDay, nf } from '#lib/format.ts';
-	import { bestWindow, days, dayStats, hourLabel, hourly, isHour, madridNow, windowLabel } from '#lib/power.ts';
+	import { cheapestWindow, days, dayStats, hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
 	import { luzShare, relativeDay, type ShareInfo } from '#lib/share.ts';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
@@ -24,12 +24,14 @@
 		days([...pvpc, ...spot]).map((day) => {
 			const fromPvpc = pvpc.filter((p) => p.day === day);
 			const prices = fromPvpc.length ? fromPvpc : spot.filter((p) => p.day === day);
-			// La franja de 2 y de 3 horas seguidas más barata, para la lavadora o el lavavajillas.
+			const stats = dayStats(prices);
+			// La franja de 2 y de 3 horas seguidas más barata, para la lavadora o el lavavajillas, y cuánto más
+			// barata es que la media del día.
 			const windows = [2, 3].flatMap((n) => {
-				const w = bestWindow(prices, n);
-				return w ? [{ n, w }] : [];
+				const w = cheapestWindow(prices, day, n);
+				return w ? [{ n, w, saving: stats.avg ? ((stats.avg - w.avg) / stats.avg) * 100 : 0 }] : [];
 			});
-			return { day, prices, kind: fromPvpc.length ? 'PVPC' : 'Mayorista', stats: dayStats(prices), windows };
+			return { day, prices, kind: fromPvpc.length ? 'PVPC' : 'Mayorista', stats, windows };
 		})
 	);
 
@@ -82,11 +84,11 @@
 						<span class="l">Horas más baratas</span>
 						<b>{b.stats.cheap.map(hourLabel).join(' · ')}</b>
 					</li>
-					{#each b.windows as { n, w } (n)}
+					{#each b.windows as { n, w, saving } (n)}
 						<li>
 							<span class="l">Mejor franja de {n} h</span>
 							<span title="Precio medio de la franja y cuánto más barata es que la media del día"
-								><b>{windowLabel(w)}</b> <span class="mut">{nf(w.avg, 3)} · −{nf(w.saving, 0)} %</span></span
+								><b>{hourLabel(w.first)}–{hourLabel(w.after)}</b> <span class="mut">{nf(w.avg, 3)} · −{nf(saving, 0)} %</span></span
 							>
 						</li>
 					{/each}
