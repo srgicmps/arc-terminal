@@ -30,6 +30,24 @@ export const TOPICS: Topic[] = [
 	{ id: 'es-tourism', source: 'INE', match: /FRONTUR|Movimientos Turísticos en Fronteras/i, series: /^turistas-/ }
 ];
 
+/** Nombre corto de cada tema, para «Mi mañana». */
+export const TOPIC_LABEL: Record<string, string> = {
+	'es-gdp': 'PIB de España',
+	'ea-inflation': 'Inflación zona euro',
+	'ea-unemployment': 'Paro zona euro',
+	'ea-gdp': 'PIB zona euro',
+	'us-cpi': 'IPC de EE. UU.',
+	'us-jobs': 'Empleo de EE. UU.',
+	'us-gdp': 'PIB de EE. UU.',
+	'us-pce': 'PCE de EE. UU.',
+	'us-claims': 'Paro semanal de EE. UU.',
+	'us-h41': 'Balance de la Fed',
+	'es-ipc': 'IPC de España',
+	'es-epa': 'EPA',
+	'es-ipv': 'Precio de la vivienda',
+	'es-tourism': 'Turistas (FRONTUR)'
+};
+
 /** Tema de un evento por su organismo y su título, o null. */
 export function topicOf(source: ReleaseEvent['source'], title: string): string | null {
 	return TOPICS.find((t) => t.source === source && t.match.test(title))?.id ?? null;

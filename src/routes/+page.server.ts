@@ -22,6 +22,7 @@ import type {
 	PowerData,
 	PredictionsData,
 	Quake,
+	ReleaseCalData,
 	SeriesData,
 	WeatherData
 } from '#lib/types.ts';
@@ -34,7 +35,7 @@ const TAIL = 40;
 export const load: PageServerLoad = async () => {
 	const today = madridDate(Date.now());
 	const tomorrow = minus(today, -1);
-	const [news, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn, predictions, imp, finnhub, holidays, fred, lichess, alerts] = await Promise.all([
+	const [news, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn, predictions, imp, finnhub, holidays, fred, lichess, alerts, releases] = await Promise.all([
 		Promise.all(SECTIONS.map((s) => dataset<NewsData>(`news-${s}`))),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('eurostat'),
@@ -52,7 +53,8 @@ export const load: PageServerLoad = async () => {
 		dataset<HolidaysData>('holidays'),
 		dataset<SeriesData>('fred'),
 		dataset<Puzzle>('lichess'),
-		dataset<AlertsData>('alerts')
+		dataset<AlertsData>('alerts'),
+		dataset<ReleaseCalData>('releases-cal')
 	]);
 
 	// Titulares de portada: los 3 más recientes de cada sección, mezclados por hora (sin el resumen, que no se pinta).
@@ -76,6 +78,8 @@ export const load: PageServerLoad = async () => {
 		// Todas las ciudades (para «Mi mañana» con la de «Tu sitio»), con solo hoy y mañana.
 		weather: trim(weather, (d) => ({ places: d.places.map((p) => ({ ...p, daily: p.daily.slice(0, 2) })) })),
 		// Avisos meteorológicos que siguen en vigor al construir (los caducados los descarta también «Mi mañana»).
+		// Publicaciones de datos de hoy y mañana (para «Mi mañana»): el calendario entero llega a 45 días.
+		releases: (releases?.data.events ?? []).filter((e) => madridDate(Date.parse(e.date)) <= tomorrow),
 		alerts: trim(alerts, (d) => ({ ...d, alerts: d.alerts.filter((a) => Date.parse(a.expires) > Date.now()) })),
 		// Las 3 más baratas de gasolina 95 (sin el historial ni el resto de gasolineras).
 		fuel: trim(fuel, (d) => ({

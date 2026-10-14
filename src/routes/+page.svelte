@@ -397,6 +397,7 @@
 	earnings={data.earnings}
 	holidays={{ items: data.holidays }}
 	alerts={data.alerts?.data}
+	releases={data.releases}
 	city={place.current.name}
 />
 
