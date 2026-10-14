@@ -1,6 +1,7 @@
 // Titulares por RSS. Solo se guardan el título, el enlace, la fecha y un resumen corto de cada noticia,
 // siempre con su medio: para leerla entera hay que ir a la web original.
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
+import { DIPLOMACY_FEEDS } from '../../src/lib/news.ts';
 import type { FeedStatus, NewsData, NewsItem } from '../../src/lib/types.ts';
 import { cluster } from '../cluster.ts';
 import { getText, list, plain, type Source } from '../lib.ts';
@@ -8,6 +9,10 @@ import { getText, list, plain, type Source } from '../lib.ts';
 interface Feed {
 	name: string;
 	url: string;
+	/** Entradas que no se quieren, por su enlace (p. ej., los avisos de viaje del FCDO). */
+	skip?: RegExp;
+	/** Máximo de titulares de este canal (por defecto, PER_FEED): para que un medio que publica mucho no llene el panel. */
+	max?: number;
 }
 
 const FEEDS: Record<string, Feed[]> = {
@@ -71,18 +76,33 @@ const FEEDS: Record<string, Feed[]> = {
 		// Comunicados y crónicas de las reuniones: Consejo de Seguridad, Asamblea General…
 		{ name: 'ONU', url: 'https://press.un.org/en/rss.xml' },
 		{ name: 'Noticias ONU', url: 'https://news.un.org/feed/subscribe/en/news/topic/peace-and-security/feed/rss.xml' },
-		{ name: 'OMC', url: 'https://www.wto.org/library/rss/latest_news_e.xml' }
+		{ name: 'OMC', url: 'https://www.wto.org/library/rss/latest_news_e.xml' },
+		// Diplomacia (M34, comprobados con probe el 14-10-2026). Descartados: Departamento de Estado (403 desde
+		// Actions) y Servicio Europeo de Acción Exterior (sin RSS). Del FCDO se quitan los avisos de viaje.
+		{
+			name: DIPLOMACY_FEEDS[0],
+			url: 'https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom',
+			skip: /\/foreign-travel-advice\//
+		},
+		{ name: DIPLOMACY_FEEDS[1], url: 'https://www.iaea.org/feeds/topnews' }
+	],
+	// Análisis de conflictos (M35, comprobados con probe el 14-10-2026). Descartados: Real Instituto Elcano (403 desde
+	// Actions), Chatham House, ECFR e IISS (403 de Cloudflare) y CFR (sin RSS en la ruta habitual).
+	analysis: [
+		{ name: 'Crisis Group', url: 'https://www.crisisgroup.org/rss.xml' },
+		{ name: 'Foreign Affairs', url: 'https://www.foreignaffairs.com/rss.xml' }
 	],
 	// Medios de Ucrania, China, Japón y África (M36), comprobados en la Action el 14-10-2026. Descartados: Mail &
-	// Guardian (404), Caixin (403 desde Actions) y NHK World (solo reportajes en su RSS en inglés).
+	// Guardian (404), Caixin (403 desde Actions) y NHK World (solo reportajes en su RSS en inglés). Como mucho, 4
+	// titulares por medio: AllAfrica publica tantos que llenaría el panel.
 	world: [
-		{ name: 'Kyiv Independent', url: 'https://kyivindependent.com/news-archive/rss/' },
-		{ name: 'Ukrainska Pravda', url: 'https://www.pravda.com.ua/eng/rss/' },
-		{ name: 'South China Morning Post', url: 'https://www.scmp.com/rss/91/feed' },
-		{ name: 'The Japan Times', url: 'https://www.japantimes.co.jp/feed/' },
-		{ name: 'Nikkei Asia', url: 'https://asia.nikkei.com/rss/feed/nar' },
-		{ name: 'Africanews', url: 'https://www.africanews.com/feed/rss' },
-		{ name: 'AllAfrica', url: 'https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf' }
+		{ name: 'Kyiv Independent', url: 'https://kyivindependent.com/news-archive/rss/', max: 4 },
+		{ name: 'Ukrainska Pravda', url: 'https://www.pravda.com.ua/eng/rss/', max: 4 },
+		{ name: 'South China Morning Post', url: 'https://www.scmp.com/rss/91/feed', max: 4 },
+		{ name: 'The Japan Times', url: 'https://www.japantimes.co.jp/feed/', max: 4 },
+		{ name: 'Nikkei Asia', url: 'https://asia.nikkei.com/rss/feed/nar', max: 4 },
+		{ name: 'Africanews', url: 'https://www.africanews.com/feed/rss', max: 4 },
+		{ name: 'AllAfrica', url: 'https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf', max: 4 }
 	]
 };
 
@@ -112,13 +132,16 @@ export const ENGLISH = new Set([
 	'Simon Willison',
 	'Casa Blanca',
 	'Reserva Federal',
+	'Crisis Group',
+	'Foreign Affairs',
 	'Kyiv Independent',
 	'Ukrainska Pravda',
 	'South China Morning Post',
 	'The Japan Times',
 	'Nikkei Asia',
 	'Africanews',
-	'AllAfrica'
+	'AllAfrica',
+	...DIPLOMACY_FEEDS
 ]);
 
 /** Marca los titulares de un medio en inglés. */
@@ -229,7 +252,9 @@ async function section(feeds: Feed[]): Promise<NewsData> {
 						headers: { Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml' }
 					}),
 					feed.name
-				).slice(0, PER_FEED),
+				)
+					.filter((item) => !feed.skip?.test(item.url))
+					.slice(0, feed.max ?? PER_FEED),
 				feed.name
 			)
 		)
@@ -268,6 +293,7 @@ const LABELS: Record<string, string> = {
 	ai: 'Inteligencia artificial',
 	gov: 'Gobiernos e instituciones',
 	intl: 'Organismos internacionales',
+	analysis: 'Análisis de conflictos',
 	world: 'Ucrania, China, Japón y África'
 };
 
@@ -275,5 +301,7 @@ export const newsSources: Source<NewsData>[] = Object.entries(FEEDS).map(([key, 
 	name: `news-${key}`,
 	label: `Titulares de ${LABELS[key]} · ${feeds.map((f) => f.name).join(', ')}`,
 	maxAgeMinutes: 12,
+	// Si se añade un canal, la copia guardada no lo tiene: se descarga de nuevo sin esperar.
+	isStale: (previous) => feeds.some((f) => !previous.feeds?.some((s) => s.name === f.name)),
 	fetch: () => section(feeds)
 }));

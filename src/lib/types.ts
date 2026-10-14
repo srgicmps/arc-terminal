@@ -46,12 +46,28 @@ export interface ImfRow {
 	cpi: [number | null, number | null];
 }
 
+/** Un país del G20 en el año en curso (estimación del WEO), para la tabla ECST. Todo en %. */
+export interface ImfCountry {
+	/** Código del FMI (ISO de 3 letras: USA, DEU…). */
+	code: string;
+	name: string;
+	/** Crecimiento del PIB real, inflación media y paro. */
+	gdp: number | null;
+	cpi: number | null;
+	unemployment: number | null;
+	/** Deuda pública bruta y saldo público (negativo = déficit), en % del PIB. */
+	debt: number | null;
+	balance: number | null;
+}
+
 export interface ImfData {
 	/** Edición del WEO en español («octubre de 2026»); null si la API no la dice. */
 	edition: string | null;
 	/** Los dos años de la tabla: [año actual, siguiente]. */
 	years: [number, number];
 	rows: ImfRow[];
+	/** Los países del G20 (y España, invitada permanente) en el año en curso. */
+	g20?: ImfCountry[];
 }
 
 // ---------- BOE ----------
@@ -317,6 +333,12 @@ export interface YieldCurveData {
 	tenors: string[];
 	/** Una fila por día, del más antiguo al más reciente. */
 	days: { date: string; values: (number | null)[] }[];
+}
+
+/** VIX y su curva (scripts/sources/vix.ts), con el VVIX y el SKEW de Cboe: último cierre y el anterior. */
+export interface VixData extends YieldCurveData {
+	vvix?: { date: string; value: number; previous: number | null } | null;
+	skew?: { date: string; value: number; previous: number | null } | null;
 }
 
 // ---------- Subastas de deuda de EE. UU. (Fiscal Data) ----------
@@ -1016,7 +1038,8 @@ export interface ReleaseEvent {
 	/** Si el organismo no da la hora. */
 	allDay: boolean;
 	title: string;
-	source: 'Eurostat' | 'BLS' | 'INE';
+	/** Organismo: BEA (PIB y PCE), DOL (paro semanal) y Fed (H.4.1) llegan, como el BLS, con las fechas de FRED. */
+	source: 'Eurostat' | 'BLS' | 'INE' | 'BEA' | 'DOL' | 'Fed';
 	/** Tema (src/lib/nextrelease.ts) si es uno de los datos que enseña la terminal, o null. */
 	topic: string | null;
 	url?: string;
@@ -1118,4 +1141,25 @@ export interface DemandData {
 	gap: number | null;
 	/** Las dos últimas horas, para ver si la caída es brusca o progresiva. */
 	recent: DemandPoint[];
+}
+
+// ---------- Refugiados y desplazados (ACNUR, scripts/sources/unhcr.ts) ----------
+
+export interface UnhcrCountry {
+	/** ISO 3166-1 alfa-3: «SYR». */
+	iso3: string;
+	/** Nombre en inglés, como lo da ACNUR. */
+	name: string;
+	/** Refugiados y solicitantes de asilo originarios del país. */
+	from: number;
+	/** Refugiados y solicitantes de asilo acogidos en el país. */
+	hosted: number;
+	/** Desplazados internos. */
+	idps: number;
+}
+
+export interface UnhcrData {
+	/** Año del dato (fin de año). */
+	year: number;
+	countries: UnhcrCountry[];
 }

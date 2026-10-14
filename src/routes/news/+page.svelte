@@ -4,6 +4,7 @@
 	import EntityCard from '#lib/components/EntityCard.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import { findEntity } from '#lib/entities.ts';
+	import { newsPrefs, setMuted, setOrigin, type NewsOrigin } from '#lib/newsprefs.svelte.ts';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { NEWS_SECTIONS as SECTIONS } from '#lib/news.ts';
@@ -11,20 +12,32 @@
 	import Search from '#lib/components/ui/Search.svelte';
 	import { fold, hasWords, MIN_QUERY, queryWords } from '#lib/search.ts';
 	import type { ArchiveEntry, NewsItem } from '#lib/types.ts';
+	import { urlState, writeParams } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
+	// Lo buscado (?q=) y la sección (?s=, la que abre «Titulares › NEWS» de cada vista) van en la URL: se
+	// pueden compartir y sobreviven a recargar. «NEWS inflación» en la barra abre /news?q=inflación.
+	// El buscador es un $state local: copia la URL al abrir la vista o si cambia desde fuera (la barra), y la
+	// escribe con 300 ms de retraso, para no hacer una navegación por tecla ni perder letras o el foco.
 	let query = $state('');
-	let section = $state<string>('all');
-
-	// «NEWS inflación» en la barra abre /news?q=inflación y rellena el buscador (solo en el navegador).
+	let written = '';
 	$effect(() => {
-		query = page.url.searchParams.get('q') ?? '';
-		// «Titulares › NEWS» de cada vista abre /news?s=eco con esa sección elegida.
-		const s = page.url.searchParams.get('s');
-		section = SECTIONS.some((x) => x.key === s) ? s! : 'all';
+		const fromUrl = page.url.searchParams.get('q') ?? '';
+		if (fromUrl !== written) query = written = fromUrl;
 	});
+	$effect(() => {
+		const text = query;
+		if (text === written) return;
+		const t = setTimeout(() => {
+			written = text;
+			writeParams({ q: text || null });
+		}, 300);
+		return () => clearTimeout(t);
+	});
+	const sectionSel = urlState<string>('s', 'all', (v) => SECTIONS.some((x) => x.key === v));
+	const section = $derived(sectionSel.value);
 
 	const words = $derived(queryWords(query));
 	// Si lo buscado tiene ficha (valor, líder, banco central o país), sale arriba y los titulares debajo.
@@ -78,6 +91,17 @@
 			.map(({ e }) => ({ title: e.t, url: e.u, source: e.s, time: e.d, summary: '' }));
 	});
 
+	// Tus medios (M23): encendidos los que se ven; al apagar uno, se silencia en todas las vistas.
+	const sources = $derived([...new Set(data.items.map((i) => i.source))].sort((a, b) => a.localeCompare(b, 'es')));
+	const sourceOptions = $derived(sources.map((s) => ({ value: s, label: s })));
+	const origins = [
+		{ value: 'all', label: 'Todos' },
+		{ value: 'es', label: 'En español' },
+		{ value: 'en', label: 'En inglés' }
+	] as const satisfies readonly { value: NewsOrigin; label: string }[];
+	const shownSources = () => sources.filter((s) => !newsPrefs.muted.includes(s));
+	const setShown = (on: string[]) => setMuted(sources.filter((s) => !on.includes(s)));
+
 	const label = Object.fromEntries(SECTIONS.map((s) => [s.key, s.label.toUpperCase()]));
 	const sectionOf = $derived(new Map(data.items.map((i) => [i.url, i.section])));
 </script>
@@ -86,7 +110,7 @@
 
 <div class="controls">
 	<Search label="Buscar en los titulares" placeholder="Buscar: Lagarde, aranceles, Menorca, Nvidia…" bind:value={query} />
-	<Seg label="Sección" options={[{ value: 'all', label: 'Todas' }, ...SECTIONS.map((s) => ({ value: s.key, label: s.label }))]} bind:value={section} />
+	<Seg label="Sección" options={[{ value: 'all', label: 'Todas' }, ...SECTIONS.map((s) => ({ value: s.key, label: s.label }))]} bind:value={() => sectionSel.value, (v) => (sectionSel.value = v ?? 'all')} />
 </div>
 
 <div class="grid">
@@ -112,6 +136,13 @@
 				{/snippet}
 			</Panel>
 		{/if}
+		<Panel title="Tus medios" meta={newsPrefs.muted.length ? `${newsPrefs.muted.length} silenciados` : 'Todos'}>
+			<div class="prefs">
+				<Seg label="Idioma original" options={origins} bind:value={() => newsPrefs.origin, setOrigin} />
+				{#if sources.length}<Seg label="Medios" options={sourceOptions} bind:values={shownSources, setShown} />{/if}
+			</div>
+			{#snippet note()}Se aplica a los titulares de todas las vistas y se guarda en este navegador. Apaga un medio para silenciarlo.{/snippet}
+		</Panel>
 	</div>
 </div>
 
@@ -121,6 +152,12 @@
 		flex-wrap: wrap;
 		gap: var(--sp-8) var(--sp-12);
 		margin-bottom: var(--sp-12);
+	}
+
+	.prefs {
+		display: grid;
+		gap: var(--sp-8);
+		padding: var(--sp-8) var(--pad-x);
 	}
 
 	.more {
