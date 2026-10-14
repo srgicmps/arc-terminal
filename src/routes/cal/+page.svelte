@@ -94,7 +94,7 @@
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Calendario" meta="{CAL_IMPORTANCE.find((i) => i.value === filters.importance)?.label} · hora local">
+		<Panel title="Calendario" meta="{CAL_IMPORTANCE.find((i) => i.value === filters.importance)?.label} · hora de tu dispositivo">
 			<div class="filters">
 				<Seg label="Importancia" options={CAL_IMPORTANCE} bind:value={filters.importance} />
 				<Seg label="Países" options={CAL_COUNTRIES} bind:values={filters.countries} />
