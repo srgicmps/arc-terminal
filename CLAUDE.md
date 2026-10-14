@@ -95,3 +95,5 @@ Cuando termine una fase, actualiza esta lista.
   para paro (EPA), IPC y turismo de Baleares.
 - AEMET (avisos y predicción oficial) y FRED necesitan clave gratuita: GitHub Secrets.
 - Finnhub para cotizaciones y resultados de empresas (clave en GitHub Secrets).
+- Festivos locales de Menorca (dos por municipio) en CAL: pendiente de comprobar en el BOIB. La prensa
+  (menorca.info) los publica, pero hay discrepancias entre fuentes y no se han podido contrastar.
