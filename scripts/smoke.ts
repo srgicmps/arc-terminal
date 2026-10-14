@@ -3,18 +3,15 @@
 // cada ruta de COMMANDS y la ficha de NVDA a 390 y 1280 px con Chromium, y falla si:
 // - hay errores en la consola o excepciones sin capturar;
 // - a 390 px la página es más ancha que la pantalla (scroll horizontal);
-// - la vista no tiene paneles o alguno dice «… todavía» (le faltan sus datos).
+// - la vista no tiene paneles o alguno dice «… todavía» (le faltan sus datos). Una fuente que ha respondido
+//   sin nada que contar (hoy no hay terremotos ni avisos) tiene que decirlo con otro aviso, sin «todavía».
 // Además avisa (sin fallar) si una vista pesa más de WEIGHT_LIMIT: lo que descarga de la propia web
 // (HTML, JS, CSS y datos) comprimido con gzip, como lo sirve GitHub Pages; sin TradingView ni otras webs.
 // Las peticiones a otras webs (TradingView, fuentes…) se contestan vacías: así la prueba no depende de la red.
-import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
-import { chromium, type Browser } from 'playwright-core';
 import { COMMANDS } from '../src/lib/commands.ts';
+import { launch, preview } from './browser.ts';
 
-const PORT = 4317;
-const ROOT = `http://localhost:${PORT}/arc-terminal`;
 const PATHS = [...COMMANDS.map((c) => c.route), '/s?sym=NVDA'];
 const WIDTHS = [390, 1280];
 /** Vistas de texto, sin paneles. */
@@ -22,30 +19,11 @@ const NO_PANELS = new Set(['/help', '/doc']);
 /** Peso máximo razonable de una vista en el móvil (4G), en bytes gzip. */
 const WEIGHT_LIMIT = 300 * 1024;
 
-/** Chromium de la imagen de desarrollo; en el runner de GitHub, el Chrome que trae instalado. */
-async function launch(): Promise<Browser> {
-	const local = '/opt/pw-browsers/chromium';
-	if (process.env.CHROMIUM_PATH) return chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
-	if (existsSync(local)) return chromium.launch({ executablePath: local });
-	return chromium.launch({ channel: 'chrome' });
-}
-
-async function waitForServer() {
-	for (let i = 0; i < 50; i++) {
-		try {
-			if ((await fetch(`${ROOT}/`)).ok) return;
-		} catch {}
-		await new Promise((r) => setTimeout(r, 200));
-	}
-	throw new Error(`vite preview no responde en el puerto ${PORT}`);
-}
-
-const server = spawn('pnpm', ['exec', 'vite', 'preview', '--port', String(PORT), '--strictPort'], { stdio: 'ignore' });
+const { server, root: ROOT } = await preview(4317);
 const failures: string[] = [];
 const warnings: string[] = [];
 
 try {
-	await waitForServer();
 	const browser = await launch();
 	for (const width of WIDTHS) {
 		const context = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width < 600, hasTouch: width < 600 });

@@ -114,4 +114,11 @@ describe('ine', () => {
 		});
 		expect(byId['ipv-ib'].points).toEqual([{ t: '2026-Q2', v: 7.2 }]);
 	});
+
+	it('da por caducada la copia publicada si le falta alguna serie de la lista', () => {
+		const ids = ['ipc-es', 'ipc-ib', 'epa-es', 'epa-ib', 'turistas-es', 'turistas-ib', 'ipv-es', 'ipv-ib'];
+		const copy = (list: string[]) => ({ series: list.map((id) => ({ id, label: id, unit: '%', points: [], source: 'INE' })) });
+		expect(ine.isStale?.(copy(ids))).toBe(false);
+		expect(ine.isStale?.(copy(ids.slice(0, 4)))).toBe(true);
+	});
 });

@@ -6,6 +6,9 @@
 <script lang="ts">
 	import { nf, period, signed } from '#lib/format.ts';
 	import { lastAndYearAgo, monthlyPayment } from '#lib/mortgage.ts';
+	import Table from './ui/Table.svelte';
+	import Tile from './ui/Tile.svelte';
+	import Tiles from './ui/Tiles.svelte';
 	import type { Series } from '#lib/types.ts';
 
 	let { euribor }: { euribor: Series | undefined } = $props();
@@ -40,7 +43,7 @@
 </script>
 
 {#if rates}
-	<table class="t">
+	<Table>
 		<tbody>
 			<tr>
 				<td class="name"><label for="mc-capital">Capital pendiente</label></td>
@@ -55,27 +58,22 @@
 				<td><input id="mc-spread" type="number" inputmode="decimal" min="0" step="0.05" bind:value={form.spread} /> %</td>
 			</tr>
 		</tbody>
-	</table>
-	<div class="tiles">
-		<div class="tile">
-			<span class="lbl">Cuota hoy</span>
-			<b>{nf(now)} €</b>
-			<span class="sub">Euríbor {period(rates.now.t)}: {nf(rates.now.v, 3)} %</span>
-		</div>
-		<div class="tile">
-			<span class="lbl">Hace un año</span>
-			<b>{nf(before)} €</b>
-			<span class="sub">{rates.before ? `Euríbor ${period(rates.before.t)}: ${nf(rates.before.v, 3)} %` : 'Sin el dato de hace un año'}</span>
-		</div>
-		<div class="tile">
-			<span class="lbl">Diferencia</span>
-			<!-- Pagar más es una subida (rojo); pagar menos, una bajada (verde). -->
-			<b class={diff === null ? 'mut' : diff > 0 ? 'down' : diff < 0 ? 'up' : 'flat'}>
-				{diff === null ? '—' : `${signed(diff, 0)} €/mes`}
-			</b>
-			<span class="sub">Con el mismo capital y plazo</span>
-		</div>
-	</div>
+	</Table>
+	<Tiles>
+		<Tile label="Cuota hoy" value="{nf(now)} €" sub="Euríbor {period(rates.now.t)}: {nf(rates.now.v, 3)} %" />
+		<Tile
+			label="Hace un año"
+			value="{nf(before)} €"
+			sub={rates.before ? `Euríbor ${period(rates.before.t)}: ${nf(rates.before.v, 3)} %` : 'Sin el dato de hace un año'}
+		/>
+		<!-- Pagar más es una subida (rojo); pagar menos, una bajada (verde). -->
+		<Tile
+			label="Diferencia"
+			value={diff === null ? '—' : `${signed(diff, 0)} €/mes`}
+			tone={diff === null ? 'mut' : diff > 0 ? 'down' : diff < 0 ? 'up' : 'flat'}
+			sub="Con el mismo capital y plazo"
+		/>
+	</Tiles>
 {:else}
 	<p class="empty">Sin datos del euríbor todavía.</p>
 {/if}
@@ -85,7 +83,7 @@
 		width: 9ch;
 		text-align: right;
 		background: var(--raise);
-		border: 1px solid var(--line);
+		border: var(--border);
 	}
 
 	input:focus {
