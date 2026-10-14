@@ -1,7 +1,7 @@
 <!--
 	Problema del día de Lichess en pequeño, para montarlo como módulo en TOP: el tablero (sin mover), a
 	quién le toca, la dificultad y los temas, y el enlace a CHESS para resolverlo.
-	Uso: <PuzzleCard puzzle={data.lichess?.data} /> (en +page.ts: dataset('lichess')).
+	Uso: <PuzzleCard puzzle={data.lichess?.data} /> (en +page.server.ts: dataset('lichess')).
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
