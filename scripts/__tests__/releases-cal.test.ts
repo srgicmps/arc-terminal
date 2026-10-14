@@ -46,36 +46,22 @@ describe('releases-cal', () => {
 		]);
 	});
 
-	it('junta INE, Eurostat y el BLS (fechas de FRED); si uno falla, usa su copia anterior', async () => {
+	it('junta el INE y el BLS (fechas de FRED); si uno falla, usa su copia anterior', async () => {
 		vi.stubEnv('FRED_API_KEY', 'clave');
 		const fetch = mockFetch((url) => {
-			if (url.includes('ine.es')) return INE;
 			if (url.includes('release_id=10')) return { release_dates: [{ date: '2026-11-13' }, { date: '2027-03-01' }] };
 			if (url.includes('release_id=50')) return { release_dates: [{ date: '2026-11-06' }] };
-			return undefined; // Eurostat no responde
+			return undefined; // el INE no responde
 		});
 		const previous = {
 			events: [
-				{
-					date: '2026-10-30T10:00:00.000Z',
-					allDay: false,
-					title: 'Inflation',
-					source: 'Eurostat' as const,
-					topic: 'ea-inflation'
-				},
-				{
-					date: '2026-10-01T09:00:00.000Z',
-					allDay: false,
-					title: 'viejo',
-					source: 'Eurostat' as const,
-					topic: 'ea-inflation'
-				}
+				{ date: '2026-10-30T08:00:00.000Z', allDay: false, title: 'IPC', source: 'INE' as const, topic: 'es-ipc' },
+				{ date: '2026-10-01T07:00:00.000Z', allDay: false, title: 'viejo', source: 'INE' as const, topic: 'es-ipc' }
 			]
 		};
 		const { events } = await releasesCal.fetch(previous);
 		expect(events.map((e) => [e.source, e.date, e.topic])).toEqual([
-			['INE', '2026-10-29T23:00:00.000Z', 'es-ipc'],
-			['Eurostat', '2026-10-30T10:00:00.000Z', 'ea-inflation'],
+			['INE', '2026-10-30T08:00:00.000Z', 'es-ipc'],
 			['BLS', '2026-11-06T13:30:00.000Z', 'us-jobs'],
 			['BLS', '2026-11-13T13:30:00.000Z', 'us-cpi']
 		]);
@@ -84,11 +70,10 @@ describe('releases-cal', () => {
 		vi.unstubAllEnvs();
 	});
 
-	it('sin la clave de FRED, sin el BLS', async () => {
-		mockFetch((url) => (url.includes('ine.es') ? INE : url.includes('eurostat') ? EUROSTAT : undefined));
+	it('sin la clave de FRED, solo el INE', async () => {
+		mockFetch((url) => (url.includes('ine.es') ? INE : undefined));
 		const { events } = await releasesCal.fetch(undefined);
-		expect(events.some((e) => e.source === 'BLS')).toBe(false);
-		expect(events).toHaveLength(2);
+		expect(events.map((e) => e.source)).toEqual(['INE']);
 	});
 
 	it('falla si no responde ninguno', async () => {

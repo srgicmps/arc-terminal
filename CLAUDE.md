@@ -138,3 +138,4 @@ Cuando termine una fase, actualiza esta lista.
 - Descartadas: GDELT (429 desde Actions), RSS de la CNMV (no responde) y RSS del Parlamento Europeo (todo
   europarl.europa.eu responde 202 vacío desde Actions: muro anti-robots).
 - ReliefWeb: falta el appname aprobado (RELIEFWEB_APPNAME); aparcado por Sergi.
+- «Próximo dato» de Eurostat (M10): el .ics `cache/RELEASE_CALENDAR/calendar_EN.ics` da 404 y no se ha encontrado el nuevo. El de INE y EE. UU. (fechas de FRED; el .ics del BLS prohíbe robots) sí funcionan.

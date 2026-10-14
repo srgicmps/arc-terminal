@@ -86,7 +86,7 @@
 				<p class="empty">{data.releases ? 'Sin publicaciones de los datos que sigue la terminal en las próximas semanas.' : 'Sin datos todavía.'}</p>
 			{/if}
 			{#snippet note()}
-				Inflación, paro y PIB de Eurostat, IPC y empleo del BLS, e IPC, EPA, vivienda y turistas del INE.
+				IPC y empleo de EE. UU. (BLS, fechas vía FRED) e IPC, EPA, vivienda y turistas del INE.
 				{#if data.releases}<Updated at={data.releases.fetchedAt} source="releases-cal" />{/if}
 			{/snippet}
 		</Panel>

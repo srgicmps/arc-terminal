@@ -1,6 +1,6 @@
 // Calendarios oficiales de publicación: cuándo sale el próximo dato.
 // - INE, calendario de disponibilidad de estadísticas (.ics público, hora de Madrid).
-// - Eurostat, calendario de publicaciones (.ics; hora de Luxemburgo).
+// - Eurostat, aparcado: el .ics de su página antigua da 404 y no se ha encontrado el nuevo (ver CLAUDE.md).
 // - BLS: su .ics prohíbe los robots (responde 403 a la Action), así que las fechas del IPC y del empleo de
 //   EE. UU. salen de la API de FRED (release/dates), con la clave FRED_API_KEY que ya existe. Sin ella, se
 //   salta solo esa parte. El BLS publica siempre a las 8:30 de Nueva York.
@@ -12,11 +12,6 @@ import { parseIcs, zonedToUtc } from '../ics.ts';
 import { getJson, getText, type Source } from '../lib.ts';
 
 const CALENDARS: { source: ReleaseEvent['source']; url: string; tz: string }[] = [
-	{
-		source: 'Eurostat',
-		url: 'https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_EN.ics',
-		tz: 'Europe/Luxembourg'
-	},
 	{ source: 'INE', url: 'https://www.ine.es/dynt3/Calendario/calendario.ics', tz: 'Europe/Madrid' }
 ];
 
@@ -89,7 +84,7 @@ export async function blsFromFred(key: string, from: Date): Promise<ReleaseEvent
 
 export const releasesCal: Source<ReleaseCalData> = {
 	name: 'releases-cal',
-	label: 'Próximos datos · calendarios de Eurostat, INE y BLS (vía FRED)',
+	label: 'Próximos datos · calendario del INE y del BLS (vía FRED)',
 	maxAgeMinutes: 6 * 60,
 	async fetch(previous) {
 		// Desde el principio del día de hoy, para que el dato de esta mañana siga saliendo hoy.
