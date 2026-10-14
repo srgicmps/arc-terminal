@@ -11,11 +11,11 @@ describe('speeches', () => {
 		expect(bankOf('')).toBe('BIS');
 	});
 
-	it('lee el RSS 1.0 del BIS, del más reciente al más antiguo y sin resumen', async () => {
+	it('lee el RSS 1.0 del BIS (con dc:title y cb: repetidos), del más reciente al más antiguo y sin resumen', async () => {
 		const item = (title: string, date: string, descr: string) =>
-			`<item rdf:about="https://www.bis.org/review/${date}.htm"><title>${title}</title><link>https://www.bis.org/review/${date}.htm</link><description>${descr}</description><dc:date>${date}T10:00:00Z</dc:date></item>`;
+			`<item rdf:about="https://www.bis.org/review/${date}.htm"><title>${title}</title><link>https://www.bis.org/review/${date}.htm</link><dc:title>${title}</dc:title><description>${descr}</description><cb:speech><cb:title>Otro título</cb:title></cb:speech><dc:date>${date}T10:00:00Z</dc:date></item>`;
 		mockFetch(
-			() => `<?xml version="1.0" encoding="utf-8"?><rdf:RDF xmlns="http://purl.org/rss/1.0/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel rdf:about="https://www.bis.org/doclist/cbspeeches.rss"><title>BIS</title></channel>
+			() => `<?xml version="1.0" encoding="utf-8"?><rdf:RDF xmlns="http://purl.org/rss/1.0/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cb="http://www.cbwiki.net/wiki/index.php/Specification_1.1"><channel rdf:about="https://www.bis.org/doclist/cbspeeches.rss"><title>BIS</title></channel>
 ${item('Christine Lagarde: Monetary policy', '2026-10-10', 'Speech by Ms Christine Lagarde, President of the European Central Bank, at the IMF, 10 October 2026.')}
 ${item('Andrew Bailey: Inflation', '2026-10-12', 'Speech by Mr Andrew Bailey, Governor of the Bank of England, at X, 12 October 2026.')}
 </rdf:RDF>`

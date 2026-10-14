@@ -1,9 +1,9 @@
 // Discursos de los banqueros centrales del mundo, que recoge el BIS (Banco de Pagos Internacionales).
 // RSS 1.0: https://www.bis.org/doclist/cbspeeches.rss (comprobado con probe el 14-10-2026). Reutilización
 // citando la fuente. Solo se guardan el título, el enlace, la fecha y el banco central.
+import { XMLParser } from 'fast-xml-parser';
 import type { NewsData, NewsItem } from '../../src/lib/types.ts';
-import { getText, type Source } from '../lib.ts';
-import { parseFeed } from './news.ts';
+import { getText, list, plain, type Source } from '../lib.ts';
 
 const FEED = 'https://www.bis.org/doclist/cbspeeches.rss';
 const MAX = 40;
@@ -35,9 +35,29 @@ const SHORT: Record<string, string> = {
 	'Bank of Canada': 'Banco de Canadá'
 };
 
-/** El discurso con su banco central como etiqueta y sin resumen (ECO no lo enseña). */
-export function toSpeech(item: NewsItem): NewsItem {
-	return { ...item, source: bankOf(item.summary), summary: '' };
+// Lector propio, que conserva los prefijos: el BIS repite campos con espacio de nombres (dc:, cb:) y, sin
+// prefijo, se juntarían con <title> y <description> y el titular se quedaría vacío (le pasaba con parseFeed).
+const xml = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@', parseTagValue: false, textNodeName: '#text' });
+
+type Raw = Record<string, unknown>;
+const str = (v: unknown): string => (typeof v === 'object' && v ? str((v as Raw)['#text']) : v == null ? '' : String(v));
+
+/** Los discursos del RSS 1.0 del BIS, con su banco central como etiqueta y sin resumen (ECO no lo enseña). */
+export function parseSpeeches(body: string): NewsItem[] {
+	const doc = xml.parse(body);
+	return list<Raw>(doc?.['rdf:RDF']?.item)
+		.map((item) => {
+			const summary = plain(str(item.description), 400);
+			const date = str(item['dc:date']);
+			return {
+				title: plain(str(item.title), 300),
+				url: str(item.link).trim(),
+				source: bankOf(summary),
+				time: date && !Number.isNaN(Date.parse(date)) ? new Date(date).toISOString() : null,
+				summary: ''
+			};
+		})
+		.filter((i) => i.title && i.url.startsWith('http'));
 }
 
 export const speeches: Source<NewsData> = {
@@ -46,8 +66,7 @@ export const speeches: Source<NewsData> = {
 	maxAgeMinutes: 175,
 	async fetch() {
 		const body = await getText(FEED, { headers: { Accept: 'application/rss+xml, application/xml' } });
-		const items = parseFeed(body, 'BIS')
-			.map(toSpeech)
+		const items = parseSpeeches(body)
 			.sort((a, b) => (b.time ?? '').localeCompare(a.time ?? ''))
 			.slice(0, MAX);
 		// Con el principio del primer <item> en el error, para ver en el registro qué ha cambiado en el feed.
