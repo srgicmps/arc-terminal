@@ -119,6 +119,9 @@
 	 *   720 px  móvil: una columna, barra inferior, cabecera compacta
 	 *   860 px  rejillas de 2 y 3 columnas → 1
 	 *   1100 px rejilla de 3 columnas → 2
+	 *   1280 px «encajar en pantalla» (botón ⤢)
+	 *   1680 px al encajar, subcolumnas en las rejillas de 2 columnas (+layout.svelte)
+	 *   2500 px al encajar, subcolumnas en la de 3
 	 * Los paneles se adaptan además a su propio ancho con @container (300–480 px).
 	 */
 }

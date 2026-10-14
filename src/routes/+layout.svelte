@@ -591,31 +591,19 @@
 		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel)) {
 			display: grid;
 			grid-template-columns: repeat(2, minmax(0, 1fr));
-			grid-auto-rows: auto;
 			gap: var(--hair);
 			background: var(--line);
 		}
-	}
 
-	@media (min-width: 2500px) {
-		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel)) {
-			display: grid;
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-			grid-auto-rows: auto;
-			gap: var(--hair);
-			background: var(--line);
-		}
-	}
-
-	@media (min-width: 1680px) {
 		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max)) {
 			height: auto;
 			max-height: none;
 			border-top: 0;
 		}
 
-		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con su
-		   fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. */
+		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con
+		   su fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. Los gráficos,
+		   mapas y widgets van enteros, como en una columna. */
 		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max):not(:has(.chart, .map, .tv, .curve, .bars))) {
 			contain: size;
 			contain-intrinsic-block-size: var(--fit-panel-min);
@@ -626,15 +614,24 @@
 		}
 	}
 
+	/* Las mismas reglas para la rejilla de 3 columnas, que tiene las columnas más estrechas. */
 	@media (min-width: 2500px) {
+		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel)) {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: var(--hair);
+			background: var(--line);
+		}
+
 		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max)) {
 			height: auto;
 			max-height: none;
 			border-top: 0;
 		}
 
-		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con su
-		   fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. */
+		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con
+		   su fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. Los gráficos,
+		   mapas y widgets van enteros, como en una columna. */
 		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max):not(:has(.chart, .map, .tv, .curve, .bars))) {
 			contain: size;
 			contain-intrinsic-block-size: var(--fit-panel-min);
