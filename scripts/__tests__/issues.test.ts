@@ -1,57 +1,75 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { SourceStatus, StatePoint } from '../../src/lib/data.ts';
-import { body, decide, isDown, redact, sync, title } from '../issues.ts';
+import type { SourceHistory, SourceStatus } from '../../src/lib/data.ts';
+import { appendSpan } from '../history.ts';
+import { body, decide, downSpan, redact, sync, title } from '../issues.ts';
 import { mockFetch } from './mock.ts';
 
 afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-const point = (i: number, state: StatePoint['state']): StatePoint => ({
-	t: `2026-10-14T1${i}:07Z`,
-	state
-});
+type State = SourceStatus['state'];
+const START = Date.parse('2026-10-14T10:07:00Z');
+const STEP = 15 * 60_000;
 
-function status(name: string, states: StatePoint['state'][], error?: string): SourceStatus {
-	const history = states.map((s, i) => point(i, s));
-	return { name, label: `Etiqueta ${name}`, state: states.at(-1) ?? 'ok', fetchedAt: null, error, history };
+/** Una fuente que ha pasado por `states`, una pasada cada 15 min: su status y su historial por tramos. */
+function source(name: string, states: State[], error?: string): { status: SourceStatus; history: SourceHistory } {
+	let spans = appendSpan(undefined, states[0], START);
+	states.slice(1).forEach((s, i) => (spans = appendSpan(spans, s, START + (i + 1) * STEP)));
+	return {
+		status: { name, label: `Etiqueta ${name}`, state: states.at(-1)!, fetchedAt: null, error },
+		history: { name, lastRun: '', history: spans }
+	};
 }
 
-describe('isDown', () => {
-	it('hacen falta 3 errores seguidos al final', () => {
-		expect(isDown(status('a', ['error', 'error', 'error']))).toBe(true);
-		expect(isDown(status('a', ['ok', 'error', 'error', 'error']))).toBe(true);
-		expect(isDown(status('a', ['error', 'error']))).toBe(false);
-		expect(isDown(status('a', ['error', 'error', 'stale']))).toBe(false);
-		expect(isDown(status('a', ['error', 'ok', 'error', 'error']))).toBe(false);
+const check = (states: State[], issue?: number) => {
+	const { status, history } = source('a', states);
+	return decide(status, history, issue);
+};
+
+describe('downSpan', () => {
+	it('el tramo actual tiene que ser «error» con 3 pasadas o más', () => {
+		expect(downSpan(source('a', ['error', 'error', 'error']).history)?.runs).toBe(3);
+		expect(downSpan(source('a', ['ok', 'error', 'error', 'error', 'error']).history)?.runs).toBe(4);
+		expect(downSpan(source('a', ['error', 'error']).history)).toBeNull();
+		expect(downSpan(source('a', ['error', 'error', 'stale']).history)).toBeNull();
+		expect(downSpan(source('a', ['error', 'ok', 'error', 'error']).history)).toBeNull();
 	});
 
 	it('sin historial no está caída', () => {
-		expect(isDown({ name: 'a', label: '', state: 'error', fetchedAt: null })).toBe(false);
+		expect(downSpan(undefined)).toBeNull();
+		expect(downSpan({ name: 'a', lastRun: '', history: [] })).toBeNull();
 	});
 });
 
 describe('decide', () => {
 	it('abre si está caída y no hay issue', () => {
-		expect(decide(status('a', ['error', 'error', 'error']), undefined)).toEqual({ kind: 'open', name: 'a' });
+		expect(check(['error', 'error', 'error'])).toEqual({ kind: 'open', name: 'a' });
 	});
 
 	it('actualiza si está caída y ya hay issue', () => {
-		expect(decide(status('a', ['error', 'error', 'error']), 7)).toEqual({ kind: 'update', name: 'a', issue: 7 });
+		expect(check(['error', 'error', 'error'], 7)).toEqual({ kind: 'update', name: 'a', issue: 7 });
 	});
 
 	it('cierra solo cuando vuelve con ok o cached', () => {
-		expect(decide(status('a', ['error', 'ok']), 7)).toEqual({ kind: 'close', name: 'a', issue: 7 });
-		expect(decide(status('a', ['error', 'cached']), 7)).toEqual({ kind: 'close', name: 'a', issue: 7 });
-		expect(decide(status('a', ['error', 'stale']), 7).kind).toBe('none');
-		expect(decide(status('a', ['error', 'off']), 7).kind).toBe('none');
-		expect(decide(status('a', ['error', 'error', 'error', 'ok', 'error']), 7).kind).toBe('none');
+		expect(check(['error', 'error', 'error', 'ok'], 7)).toEqual({ kind: 'close', name: 'a', issue: 7 });
+		expect(check(['error', 'cached'], 7)).toEqual({ kind: 'close', name: 'a', issue: 7 });
+		expect(check(['error', 'stale'], 7).kind).toBe('none');
+		expect(check(['error', 'off'], 7).kind).toBe('none');
+		expect(check(['error', 'error', 'error', 'ok', 'error'], 7).kind).toBe('none');
 	});
 
 	it('no hace nada con fuentes sanas o con pocos errores', () => {
-		expect(decide(status('a', ['ok', 'ok', 'ok']), undefined).kind).toBe('none');
-		expect(decide(status('a', ['ok', 'error', 'error']), undefined).kind).toBe('none');
-		expect(decide(status('a', ['stale', 'stale', 'stale']), undefined).kind).toBe('none');
+		expect(check(['ok', 'ok', 'ok']).kind).toBe('none');
+		expect(check(['ok', 'error', 'error']).kind).toBe('none');
+		expect(check(['stale', 'stale', 'stale']).kind).toBe('none');
+	});
+
+	it('si el status y el historial no cuadran, manda el status de ahora', () => {
+		const { history } = source('a', ['error', 'error', 'error']);
+		const status: SourceStatus = { name: 'a', label: '', state: 'ok', fetchedAt: null };
+		expect(decide(status, history, 7).kind).toBe('close');
+		expect(decide(status, history, undefined).kind).toBe('none');
 	});
 });
 
@@ -70,12 +88,11 @@ describe('redact', () => {
 
 describe('body', () => {
 	it('lleva el último error saneado, desde cuándo y el enlace a STATUS', () => {
-		const text = body(status('fred', ['ok', 'error', 'error', 'error'], 'HTTP 403 en https://f.org/s?api_key=SECRETO'), [
-			'SECRETO'
-		]);
+		const { status, history } = source('fred', ['ok', 'error', 'error', 'error'], 'HTTP 403 en https://f.org/s?api_key=SECRETO');
+		const text = body(status, history, ['SECRETO']);
 		expect(text).toContain('**fred**');
 		expect(text).toContain('3 pasadas seguidas');
-		expect(text).toContain('Falla desde: 2026-10-14 11:07 UTC');
+		expect(text).toContain('Falla desde: 2026-10-14 10:22 UTC');
 		expect(text).toContain('`HTTP 403 en https://f.org/s`');
 		expect(text).toContain('https://srgicmps.github.io/arc-terminal/status');
 		expect(text).not.toContain('SECRETO');
@@ -99,7 +116,7 @@ describe('sync', () => {
 
 	it('busca los issues abiertos con la etiqueta y usa el token', async () => {
 		const { calls, fn } = github([]);
-		await sync([status('a', ['ok'])], { repo: REPO, token: 'tok' });
+		await sync([source('a', ['ok']).status], [], { repo: REPO, token: 'tok' });
 		expect(calls).toEqual([{ method: 'GET', path: `/repos/${REPO}/issues?state=open&labels=fuente-caida&per_page=100` }]);
 		const headers = fn.mock.calls[0][1]?.headers as Record<string, string>;
 		expect(headers.Authorization).toBe('Bearer tok');
@@ -107,7 +124,8 @@ describe('sync', () => {
 
 	it('abre un issue con título, etiqueta y cuerpo saneado', async () => {
 		const { calls } = github([]);
-		const done = await sync([status('boe', ['error', 'error', 'error'], 'fallo con clave K3Y!')], {
+		const boe = source('boe', ['error', 'error', 'error'], 'fallo con clave K3Y!');
+		const done = await sync([boe.status], [boe.history], {
 			repo: REPO,
 			token: 'tok',
 			secrets: ['K3Y!']
@@ -122,14 +140,16 @@ describe('sync', () => {
 
 	it('actualiza el issue abierto en vez de duplicarlo', async () => {
 		const { calls } = github([{ number: 12, title: title('boe') }]);
-		await sync([status('boe', ['error', 'error', 'error'])], { repo: REPO, token: 'tok' });
+		const boe = source('boe', ['error', 'error', 'error']);
+		await sync([boe.status], [boe.history], { repo: REPO, token: 'tok' });
 		expect(calls.slice(1).map((c) => `${c.method} ${c.path}`)).toEqual([`PATCH /repos/${REPO}/issues/12`]);
 		expect(calls[1].body).toEqual({ body: expect.stringContaining('**boe**') });
 	});
 
 	it('comenta y cierra cuando la fuente vuelve', async () => {
 		const { calls } = github([{ number: 12, title: title('boe') }]);
-		await sync([status('boe', ['error', 'error', 'error', 'ok'])], { repo: REPO, token: 'tok' });
+		const boe = source('boe', ['error', 'error', 'error', 'ok']);
+		await sync([boe.status], [boe.history], { repo: REPO, token: 'tok' });
 		expect(calls.slice(1).map((c) => `${c.method} ${c.path}`)).toEqual([
 			`POST /repos/${REPO}/issues/12/comments`,
 			`PATCH /repos/${REPO}/issues/12`
@@ -142,13 +162,23 @@ describe('sync', () => {
 			{ number: 1, title: title('boe'), pull_request: {} },
 			{ number: 2, title: 'Fuente caída: boe (otra)' }
 		]);
-		await sync([status('boe', ['error', 'error', 'error'])], { repo: REPO, token: 'tok' });
+		const boe = source('boe', ['error', 'error', 'error']);
+		await sync([boe.status], [boe.history], { repo: REPO, token: 'tok' });
 		expect(calls[1].method).toBe('POST');
 		expect(calls[1].path).toBe(`/repos/${REPO}/issues`);
 	});
 
+	it('empareja cada fuente con su historial por nombre; sin historial no abre nada', async () => {
+		const { calls } = github([]);
+		const boe = source('boe', ['error', 'error', 'error']);
+		const fuel = source('fuel', ['error', 'error', 'error']);
+		const done = await sync([boe.status, fuel.status], [fuel.history], { repo: REPO, token: 'tok' });
+		expect(done).toEqual([{ kind: 'open', name: 'fuel' }]);
+		expect(calls[1].body.title).toBe('Fuente caída: fuel');
+	});
+
 	it('falla si GitHub responde con error', async () => {
 		mockFetch(() => undefined);
-		await expect(sync([], { repo: REPO, token: 'tok' })).rejects.toThrow('HTTP 404');
+		await expect(sync([], [], { repo: REPO, token: 'tok' })).rejects.toThrow('HTTP 404');
 	});
 });

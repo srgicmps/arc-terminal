@@ -1,15 +1,16 @@
 /// <reference types="node" />
 // Avisos de fuentes caídas como issues de GitHub. Lo ejecuta la Action después de `pnpm data`
 // (solo en el cron y en los push a main, nunca en los PR):
-// - si una fuente lleva 3 pasadas seguidas en «error», abre un issue «Fuente caída: <nombre>», o
-//   actualiza el que ya está abierto (se edita el texto, sin comentar, para no llenar el correo);
+// - si el tramo actual de una fuente (status-history.json) es «error» y lleva 3 pasadas o más, abre
+//   un issue «Fuente caída: <nombre>», o actualiza el que ya está abierto (se edita el texto, sin
+//   comentar, para no llenar el correo);
 // - cuando la fuente vuelve (ok o cached), comenta y lo cierra.
 // Usa la API REST de GitHub con el GITHUB_TOKEN de la Action. Sin Actions de terceros.
 //
-// Uso: `node scripts/issues.ts` (lee static/data/status.json).
+// Uso: `node scripts/issues.ts` (lee static/data/status.json y status-history.json).
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import type { SourceStatus } from '../src/lib/data.ts';
+import type { SourceHistory, SourceStatus, StateSpan } from '../src/lib/data.ts';
 
 /** Pasadas seguidas en «error» para abrir el issue (cada pasada son unos 15 minutos). */
 export const DOWN_AFTER = 3;
@@ -26,20 +27,27 @@ export type Action =
 	| { kind: 'close'; name: string; issue: number }
 	| { kind: 'none'; name: string };
 
-/** ¿Las últimas `n` pasadas de la fuente son todas «error»? */
-export function isDown(status: SourceStatus, n = DOWN_AFTER): boolean {
-	const last = (status.history ?? []).slice(-n);
-	return last.length === n && last.every((p) => p.state === 'error');
+/** Tramo actual (el último) del historial de una fuente, si está en «error» y lleva al menos `n` pasadas. */
+export function downSpan(history: SourceHistory | undefined, n = DOWN_AFTER): StateSpan | null {
+	const span = history?.history?.at(-1);
+	return span && span.state === 'error' && span.runs >= n ? span : null;
 }
 
 /**
- * Decide qué hacer con una fuente, sabiendo si ya tiene un issue abierto (su número) o no.
- * Caída → abrir o actualizar. De vuelta (ok o cached) con issue abierto → cerrar. Lo demás (copia
- * anterior, sin clave, menos de 3 errores seguidos) → nada: el issue sigue como esté.
+ * Decide qué hacer con una fuente, sabiendo su historial por tramos y si ya tiene un issue abierto
+ * (su número) o no. Caída → abrir o actualizar. De vuelta (ok o cached) con issue abierto → cerrar.
+ * Lo demás (copia anterior, sin clave, menos de 3 errores seguidos) → nada: el issue sigue como esté.
  */
-export function decide(status: SourceStatus, openIssue: number | undefined, n = DOWN_AFTER): Action {
+export function decide(
+	status: SourceStatus,
+	history: SourceHistory | undefined,
+	openIssue: number | undefined,
+	n = DOWN_AFTER
+): Action {
 	const name = status.name;
-	if (isDown(status, n)) return openIssue ? { kind: 'update', name, issue: openIssue } : { kind: 'open', name };
+	if (status.state === 'error' && downSpan(history, n)) {
+		return openIssue ? { kind: 'update', name, issue: openIssue } : { kind: 'open', name };
+	}
 	if (openIssue && (status.state === 'ok' || status.state === 'cached')) return { kind: 'close', name, issue: openIssue };
 	return { kind: 'none', name };
 }
@@ -58,14 +66,16 @@ export function redact(message: string, secrets: (string | undefined)[]): string
 const SECRET_ENV = ['FRED_API_KEY', 'FINNHUB_API_KEY', 'HF_TOKEN', 'SEC_USER_AGENT', 'GITHUB_TOKEN'];
 
 /** Texto del issue: último error, desde cuándo falla y enlace a STATUS. */
-export function body(status: SourceStatus, secrets: (string | undefined)[] = []): string {
-	const history = status.history ?? [];
-	let first = history.length;
-	while (first > 0 && history[first - 1].state === 'error') first--;
-	const since = history[first]?.t ?? '—';
+export function body(
+	status: SourceStatus,
+	history: SourceHistory | undefined,
+	secrets: (string | undefined)[] = []
+): string {
+	const span = history?.history?.at(-1);
+	const since = span?.t ?? '—';
 	const error = redact(status.error ?? 'sin detalle', secrets);
 	return [
-		`La fuente **${status.name}** (${status.label}) lleva ${history.length - first} pasadas seguidas sin datos.`,
+		`La fuente **${status.name}** (${status.label}) lleva ${span?.runs ?? '?'} pasadas seguidas sin datos.`,
 		'',
 		`- Falla desde: ${since.replace('T', ' ').replace('Z', ' UTC')}`,
 		`- Último error: \`${error.replaceAll('`', "'")}\``,
@@ -110,23 +120,26 @@ function github(token: string) {
  */
 export async function sync(
 	statuses: SourceStatus[],
+	histories: SourceHistory[],
 	{ repo, token, secrets = [] }: { repo: string; token: string; secrets?: (string | undefined)[] }
 ): Promise<Action[]> {
 	const api = github(token);
 	const open = await api<Issue[]>(`/repos/${repo}/issues?state=open&labels=${LABEL}&per_page=100`);
 	const byTitle = new Map(open.filter((i) => !i.pull_request).map((i) => [i.title, i.number]));
+	const historyOf = new Map(histories.map((h) => [h.name, h]));
 	const done: Action[] = [];
 	for (const status of statuses) {
-		const action = decide(status, byTitle.get(title(status.name)));
+		const history = historyOf.get(status.name);
+		const action = decide(status, history, byTitle.get(title(status.name)));
 		if (action.kind === 'none') continue;
 		if (action.kind === 'open') {
 			await api(`/repos/${repo}/issues`, 'POST', {
 				title: title(status.name),
-				body: body(status, secrets),
+				body: body(status, history, secrets),
 				labels: [LABEL]
 			});
 		} else if (action.kind === 'update') {
-			await api(`/repos/${repo}/issues/${action.issue}`, 'PATCH', { body: body(status, secrets) });
+			await api(`/repos/${repo}/issues/${action.issue}`, 'PATCH', { body: body(status, history, secrets) });
 		} else {
 			await api(`/repos/${repo}/issues/${action.issue}/comments`, 'POST', {
 				body: `La fuente ha vuelto (${status.state === 'ok' ? 'descarga correcta' : 'copia reciente'}). Se cierra.`
@@ -145,9 +158,12 @@ async function main() {
 		console.log('issues: falta GITHUB_REPOSITORY o GITHUB_TOKEN, no se hace nada');
 		return;
 	}
-	const file = JSON.parse(await readFile('static/data/status.json', 'utf8')) as { data: SourceStatus[] };
+	const read = async <T>(name: string) =>
+		(JSON.parse(await readFile(`static/data/${name}.json`, 'utf8')) as { data: T }).data ?? [];
+	const statuses = await read<SourceStatus[]>('status');
+	const histories = await read<SourceHistory[]>('status-history');
 	const secrets = SECRET_ENV.map((name) => process.env[name]);
-	const done = await sync(file.data ?? [], { repo, token, secrets });
+	const done = await sync(statuses, histories, { repo, token, secrets });
 	for (const a of done) console.log(`issues · ${a.name}: ${a.kind}`);
 	if (!done.length) console.log('issues: nada que cambiar');
 }
