@@ -1,5 +1,6 @@
 <script lang="ts">
 	import '../app.css';
+	import { goto } from '$app/navigation';
 	import { asset, resolve } from '$app/paths';
 	import { page, updated } from '$app/state';
 	import { startClock } from '#lib/clock.svelte.ts';
@@ -11,6 +12,8 @@
 	import { fit, initFit, toggleFit } from '#lib/fit.svelte.ts';
 	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
 	import { initWatchlist } from '#lib/watchlist.svelte.ts';
+	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
+	import { parseTv, routeOf } from '#lib/tv.ts';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
@@ -20,6 +23,40 @@
 	$effect(initWatchlist);
 	$effect(initTheme);
 	$effect(initFit);
+
+	// Modo TV: cualquier URL con ?tv=TOP,WS…&s=30 lo arranca y salta a la primera vista.
+	$effect(() => {
+		const views = page.url.searchParams.get('tv');
+		if (views === null) return;
+		const { codes, seconds } = parseTv(views, page.url.searchParams.get('s'));
+		startTv(codes, seconds);
+		goto(resolve(routeOf(codes[0])), { replaceState: true });
+	});
+
+	// El reloj del modo TV: cada cuarto de segundo avanza la barra de progreso y, al llegar, cambia de vista.
+	$effect(() => {
+		if (!tv.on) return;
+		const id = setInterval(() => {
+			const next = tickTv(0.25);
+			if (next) goto(resolve(routeOf(next)));
+		}, 250);
+		return () => clearInterval(id);
+	});
+
+	/** En modo TV, Esc sale (antes de que la barra de comandos lo lleve a la portada) y Espacio pausa. */
+	function onTvKey(e: KeyboardEvent) {
+		if (!tv.on) return;
+		if (e.key === 'Escape') stopTv();
+		else if (e.key === ' ') togglePause();
+		else return;
+		e.preventDefault();
+		e.stopImmediatePropagation();
+	}
+
+	/** En modo TV, tocar la pantalla pausa o sigue (menos en los botones del aviso de pausa). */
+	function onTvTap(e: PointerEvent) {
+		if (tv.on && !(e.target as Element | null)?.closest('.tv-chip')) togglePause();
+	}
 
 	const THEME_LABEL = { auto: 'Tema automático (sigue al sistema)', light: 'Tema de día', dark: 'Tema de noche' };
 	const THEME_ICON = { auto: '◐', light: '☀', dark: '☾' };
@@ -49,7 +86,7 @@
 	};
 </script>
 
-<svelte:window bind:online />
+<svelte:window bind:online onkeydowncapture={onTvKey} onpointerdown={onTvTap} />
 
 <svelte:head>
 	<link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
@@ -124,6 +161,18 @@
 		{/each}
 		<button type="button" aria-label="Abrir la barra de comandos" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>/</button>
 	</nav>
+
+	{#if tv.on}
+		<!-- Progreso hasta la vista siguiente: una línea de 1 px abajo del todo. -->
+		<div class="tv-progress" class:paused={tv.paused} style:width="{Math.min(100, (tv.elapsed / tv.seconds) * 100)}%" aria-hidden="true"></div>
+		{#if tv.paused}
+			<div class="tv-chip" role="status">
+				<span>TV en pausa · {tv.codes[tv.index]}</span>
+				<button type="button" onclick={togglePause}>Seguir</button>
+				<button type="button" onclick={stopTv}>Salir</button>
+			</div>
+		{/if}
+	{/if}
 
 	<footer class="status">
 		<span>Datos públicos actualizados cada 15 min con GitHub Actions · cotizaciones de TradingView</span>
@@ -291,6 +340,66 @@
 
 	.status a {
 		color: var(--muted);
+	}
+
+	/* Modo TV (html[data-tv]): sin teclas, sin barra inferior ni pie; solo la vista. */
+	:global(html[data-tv]) .keys,
+	:global(html[data-tv]) .thumb,
+	:global(html[data-tv]) .status {
+		display: none;
+	}
+
+	:global(html[data-tv]) .app {
+		padding-bottom: 0;
+	}
+
+	.tv-progress {
+		position: fixed;
+		left: 0;
+		bottom: 0;
+		z-index: 40;
+		height: var(--hair);
+		background: var(--amber);
+		transition: width 0.25s linear;
+	}
+
+	.tv-progress.paused {
+		background: var(--muted);
+	}
+
+	.tv-chip {
+		position: fixed;
+		right: var(--gutter);
+		bottom: var(--sp-16);
+		z-index: 40;
+		display: flex;
+		align-items: center;
+		gap: var(--sp-10);
+		padding: var(--sp-6) var(--sp-10);
+		background: var(--panel);
+		border: var(--hair) solid var(--amber-edge);
+		color: var(--muted);
+		font-size: var(--fs-s);
+	}
+
+	.tv-chip button {
+		background: none;
+		border: var(--border);
+		padding: var(--sp-4) var(--sp-10);
+		color: var(--fg);
+		font-size: var(--fs-s);
+		cursor: pointer;
+	}
+
+	.tv-chip button:hover {
+		color: var(--amber);
+		border-color: var(--amber-edge);
+	}
+
+	@media (pointer: coarse) {
+		.tv-chip button {
+			min-height: var(--touch);
+		}
 	}
 
 	/* Barra inferior para el pulgar: solo en pantallas estrechas. */
