@@ -81,6 +81,35 @@ export interface BoeData {
 	sections: BoeSection[];
 }
 
+/** Una disposición en la semana del BOE: sin enlaces, que salen del id (ver src/lib/boe.ts). */
+export interface BoeWeekItem {
+	id: string;
+	title: string;
+	dept: string;
+	epigraph: string;
+}
+
+/** Un sumario de la semana (static/data/boe-week.json, lo carga BOE al elegir «Semana»). */
+export interface BoeWeekDay {
+	/** «2026-10-14» */
+	date: string;
+	number: string;
+	sections: { code: string; name: string; total: number; items: BoeWeekItem[] }[];
+}
+
+/** Los sumarios de los últimos 7 días, del más reciente al más antiguo. */
+export interface BoeWeek {
+	days: BoeWeekDay[];
+}
+
+/**
+ * Índice para contar palabras vigiladas sin el BOE entero (static/data/boe-index.json, lo usa TOP):
+ * `text` es título, ministerio y epígrafe sin tildes y en minúsculas (fold de src/lib/watchwords.ts).
+ */
+export interface BoeIndex {
+	days: { date: string; items: { id: string; text: string }[] }[];
+}
+
 // ---------- Federal Register (EE. UU.) ----------
 
 export interface FedRegDoc {
