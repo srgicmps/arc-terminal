@@ -24,6 +24,7 @@ import {
 	downRule,
 	earningsRule,
 	emptyLog,
+	euriborText,
 	eveningRule,
 	fedregRule,
 	gasRule,
@@ -42,6 +43,7 @@ import {
 	RULES,
 	straitRule,
 	tomorrowRule,
+	typicalPayment,
 	type FuelZone,
 	type Inputs,
 	type NotifyLog,
@@ -90,6 +92,7 @@ describe('RULES', () => {
 			'1:rate',
 			'1:imp',
 			'1:strait',
+			'1:conflict',
 			'2:macro',
 			'2:market',
 			'2:fedreg',
@@ -97,6 +100,9 @@ describe('RULES', () => {
 			'2:diesel-trend',
 			'2:diesel-extreme',
 			'2:diesel-gap',
+			'2:election',
+			'2:ai',
+			'2:stock',
 			'3:poly',
 			'3:earnings',
 			'3:crisis',
@@ -104,8 +110,10 @@ describe('RULES', () => {
 			'3:luz',
 			'3:tomorrow',
 			'3:dst',
+			'3:launch',
 			'4:morning',
 			'4:evening',
+			'4:week',
 			// scripts/alerts/world.ts
 			'1:gdacs',
 			'1:blackout',
@@ -800,5 +808,58 @@ describe('P4: resúmenes', () => {
 		expect(run(eveningRule, {}, emptyLog(), Date.parse('2026-10-24T20:15:00Z')).ids).toEqual(['evening:2026-10-24']);
 		expect(run(eveningRule, {}, emptyLog(), Date.parse('2026-10-25T20:15:00Z')).ids).toEqual([]); // 21:15 CET
 		expect(run(eveningRule, {}, emptyLog(), Date.parse('2026-10-25T21:15:00Z')).ids).toEqual(['evening:2026-10-25']);
+	});
+});
+
+describe('P2: euríbor e IPC', () => {
+	// Forma real de ecb.json: serie mensual «euribor-12m» con periodos «2026-09».
+	const ecb = series('euribor-12m', [
+		['2025-09', 3.14],
+		['2026-07', 2.3],
+		['2026-08', 2.26],
+		['2026-09', 2.21]
+	]);
+
+	it('cuota de la hipoteca tipo: 150.000 € a 25 años con euríbor + 0,8 (sistema francés)', () => {
+		// 3,01 % anual: 150.000 · i / (1 − (1 + i)^−300), con i = 0,0301 / 12.
+		expect(Math.round(typicalPayment(2.21)!)).toBe(712);
+		expect(Math.round(typicalPayment(3.14)!)).toBe(787);
+	});
+
+	it('euríbor nuevo: valor, frente al mes anterior y a hace un año, y la cuota de la hipoteca tipo', () => {
+		const { alerts } = run(macroRule, { ecb }, withLast({ 'macro:euribor-12m': '2026-08' }));
+		expect(alerts.map((a) => a.id)).toEqual(['macro:euribor-12m:2026-09']);
+		expect(alerts[0].title).toBe('Euríbor a 12 meses: 2,21 %');
+		expect(alerts[0].body).toBe(
+			'Euríbor de septiembre: 2,21 % (−0,05 frente a agosto · −0,93 frente a hace un año). ' +
+				'Hipoteca tipo de 150.000 € a 25 años: 712 €/mes (−75 € frente a hace un año).'
+		);
+		// La primera vez solo se apunta; el mismo mes no se repite.
+		expect(run(macroRule, { ecb }).ids).toEqual([]);
+		expect(run(macroRule, { ecb }, withLast({ 'macro:euribor-12m': '2026-09' })).ids).toEqual([]);
+	});
+
+	it('euríbor sin el dato de hace un año: sin esa comparación', () => {
+		const short = series('euribor-12m', [
+			['2026-08', 2.26],
+			['2026-09', 2.21]
+		]);
+		expect(euriborText(short.series[0])).toBe(
+			'Euríbor de septiembre: 2,21 % (−0,05 frente a agosto). Hipoteca tipo de 150.000 € a 25 años: 712 €/mes.'
+		);
+	});
+
+	it('IPC de España: el adelantado y el definitivo del mismo mes no se repiten (el id es el del periodo)', () => {
+		// Adelantado de septiembre (fin de mes) y definitivo (mediados del siguiente), con otro valor.
+		const flash = { ine: series('ipc-es', [['2026-08', 2.7], ['2026-09', 2.9]]) };
+		const final = { ine: series('ipc-es', [['2026-08', 2.7], ['2026-09', 3.0]]) };
+		const first = run(macroRule, flash, withLast({ 'macro:ipc-es': '2026-08' }));
+		expect(first.ids).toEqual(['macro:ipc-es:2026-09']);
+		const log = withLast({ 'macro:ipc-es': '2026-08' });
+		first.alerts[0].commit!(log);
+		log.entries.push({ k: first.ids[0], t: '2026-09-30T09:00Z', s: 'sent', p: 2 });
+		// El definitivo: mismo periodo, otro valor. Ni la regla lo da ni, aunque lo diera, el id sería nuevo.
+		expect(run(macroRule, final, log).ids).toEqual([]);
+		expect(run(macroRule, final, withLast({ 'macro:ipc-es': '2026-08' })).ids).toEqual(first.ids);
 	});
 });

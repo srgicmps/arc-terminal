@@ -1,7 +1,6 @@
 // Lista de todas las fuentes que descarga `pnpm data`.
 import type { Source } from '../lib.ts';
 import { ais } from './ais.ts';
-import { alertQuotes } from './alert-quotes.ts';
 import { air } from './air.ts';
 import { alerts } from './alerts.ts';
 import { bls } from './bls.ts';
@@ -13,28 +12,23 @@ import { fedreg } from './fedreg.ts';
 import { finnhub } from './finnhub.ts';
 import { fred } from './fred.ts';
 import { fuel, fuelSpain } from './fuel.ts';
-import { gdacs } from './gdacs.ts';
 import { hazards, quakesEs } from './hazards.ts';
 import { hfpapers } from './hfpapers.ts';
 import { holidays } from './holidays.ts';
 import { imf } from './imf.ts';
 import { imp } from './imp.ts';
 import { ine } from './ine.ts';
-import { ioda } from './ioda.ts';
 import { leaders } from './leaders.ts';
 import { newsSources } from './news.ts';
 import { portwatch } from './portwatch.ts';
 import { predictions } from './predictions.ts';
-import { reeDemand } from './ree-demand.ts';
 import { powerMix } from './ree-mix.ts';
 import { reliefweb } from './reliefweb.ts';
 import { releases } from './releases.ts';
 import { sanctions } from './sanctions.ts';
 import { search } from './search.ts';
-import { statuspage } from './statuspage.ts';
 import { sec } from './sec.ts';
 import { uscurve, usdebt } from './treasury.ts';
-import { who } from './who.ts';
 import { wiki } from './wiki.ts';
 import { crypto, hn, power, quakes, weather } from './world.ts';
 
@@ -46,7 +40,6 @@ export const sources: Source<any>[] = [
 	boe,
 	power,
 	powerMix,
-	reeDemand,
 	holidays,
 	ine,
 	// Europa
@@ -62,25 +55,20 @@ export const sources: Source<any>[] = [
 	uscurve,
 	fred,
 	finnhub,
-	alertQuotes,
 	sec,
 	// Mundo
 	imf,
 	quakes,
 	quakesEs,
 	hazards,
-	gdacs,
-	ioda,
 	portwatch,
 	reliefweb,
-	who,
 	predictions,
 	weather,
 	air,
 	alerts,
 	crypto,
 	hn,
-	statuspage,
 	hfpapers,
 	releases,
 	wiki,
