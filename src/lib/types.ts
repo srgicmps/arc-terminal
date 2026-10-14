@@ -452,6 +452,7 @@ export interface ImpData {
 	/** Top 10 de cada día (lo máximo que alcanzó cada tema ese día), el último año. */
 	days: { date: string; items: ImpEntry[] }[];
 	seen: ImpSeen[];
+}
 
 // ---------- Crisis y desastres activos (ReliefWeb, OCHA) ----------
 
