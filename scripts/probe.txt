@@ -1,1 +1,2 @@
 # URL que la Action de los PR consulta para explorar APIs nuevas (ver scripts/probe.ts).
+https://data.sec.gov/submissions/CIK0001045810.json
