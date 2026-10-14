@@ -137,26 +137,26 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 10px 18px;
-		padding-block: 4px 10px;
+		gap: var(--sp-10) var(--sp-18);
+		padding-block: var(--sp-4) var(--sp-10);
 	}
 
 	.brand {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: var(--sp-8);
 		color: inherit;
 		text-decoration: none;
 		font-size: var(--fs-s);
-		font-weight: 600;
-		letter-spacing: 0.18em;
+		font-weight: var(--fw-bold);
+		letter-spacing: var(--track-brand);
 		text-transform: uppercase;
 	}
 
 	.mark {
 		display: block;
-		width: 22px;
-		height: 22px;
+		width: var(--logo);
+		height: var(--logo);
 		fill: none;
 		stroke: var(--amber);
 		stroke-width: 2;
@@ -166,10 +166,10 @@
 	.theme {
 		display: grid;
 		place-items: center;
-		width: 28px;
-		height: 28px;
+		width: var(--btn-sm);
+		height: var(--btn-sm);
 		background: none;
-		border: 1px solid var(--line);
+		border: var(--border);
 		color: var(--muted);
 		font-size: var(--fs-m);
 		cursor: pointer;
@@ -184,53 +184,53 @@
 	@media (pointer: coarse) {
 		.theme {
 			position: relative;
-			min-height: 28px;
+			min-height: var(--btn-sm);
 		}
 
 		.theme::after {
 			content: '';
 			position: absolute;
-			inset: -8px;
+			inset: calc(-1 * var(--sp-8));
 		}
 	}
 
 	.brand-sub {
 		color: var(--muted);
-		font-weight: 400;
+		font-weight: var(--fw-regular);
 	}
 
 	.offline {
 		font-size: var(--fs-xs);
-		letter-spacing: 0.08em;
+		letter-spacing: var(--track-caps);
 		text-transform: uppercase;
 		color: var(--amber);
-		border: 1px solid var(--amber-edge);
-		padding: 2px 7px;
+		border: var(--hair) solid var(--amber-edge);
+		padding: var(--sp-2) var(--sp-7);
 	}
 
 	/* Teclas de función */
 	.keys {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 6px;
-		padding-block: 2px 10px;
+		gap: var(--sp-6);
+		padding-block: var(--sp-2) var(--sp-10);
 	}
 
 	.key {
 		font-size: var(--fs-s);
-		font-weight: 500;
-		letter-spacing: 0.06em;
+		font-weight: var(--fw-medium);
+		letter-spacing: var(--track-code);
 		color: var(--amber);
 		text-decoration: none;
-		border: 1px solid var(--line);
-		padding: 4px 10px;
+		border: var(--border);
+		padding: var(--sp-4) var(--sp-10);
 	}
 
 	.key span {
-		margin-left: 7px;
+		margin-left: var(--sp-7);
 		color: var(--muted);
 		font-family: var(--sans);
-		font-weight: 400;
+		font-weight: var(--fw-regular);
 		letter-spacing: 0;
 	}
 
@@ -251,40 +251,40 @@
 	/* Cinta de cotizaciones */
 	.tape {
 		overflow: hidden;
-		border: 1px solid var(--line);
+		border: var(--border);
 		background: var(--panel);
-		margin-bottom: 12px;
+		margin-bottom: var(--sp-12);
 	}
 
 	main {
-		padding-bottom: 16px;
+		padding-bottom: var(--sp-16);
 	}
 
 	.fresh {
 		position: fixed;
-		right: 16px;
-		bottom: 16px;
+		right: var(--sp-16);
+		bottom: var(--sp-16);
 		z-index: 30;
 		background: var(--raise);
-		border: 1px solid var(--amber-edge);
+		border: var(--hair) solid var(--amber-edge);
 		color: var(--muted);
-		padding: 7px 12px;
+		padding: var(--sp-7) var(--pad-x);
 		font-size: var(--fs-s);
 		cursor: pointer;
 	}
 
 	.fresh b {
 		color: var(--amber);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 
 	.status {
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: space-between;
-		gap: 6px 20px;
-		padding-block: 10px 18px;
-		border-top: 1px solid var(--line);
+		gap: var(--sp-6) var(--sp-20);
+		padding-block: var(--sp-10) var(--sp-18);
+		border-top: var(--border);
 		color: var(--faint);
 		font-size: var(--fs-xs);
 	}
@@ -308,7 +308,7 @@
 			display: grid;
 			grid-template-columns: repeat(5, minmax(0, 1fr));
 			background: var(--panel);
-			border-top: 1px solid var(--line);
+			border-top: var(--border);
 			padding-bottom: env(safe-area-inset-bottom, 0px);
 		}
 
@@ -316,22 +316,22 @@
 		.thumb button {
 			display: grid;
 			place-items: center;
-			height: 48px;
+			height: var(--tabbar-h);
 			background: none;
 			border: 0;
 			color: var(--muted);
 			text-decoration: none;
 			font-family: var(--mono);
 			font-size: var(--fs-s);
-			letter-spacing: 0.06em;
+			letter-spacing: var(--track-code);
 			cursor: pointer;
 		}
 
 		.thumb [aria-current='page'],
 		.thumb [aria-pressed='true'] {
 			color: var(--amber);
-			text-decoration: underline 1px;
-			text-underline-offset: 5px;
+			text-decoration: underline var(--hair);
+			text-underline-offset: var(--sp-5);
 		}
 
 		.thumb button {
@@ -341,11 +341,11 @@
 
 		/* Que el contenido no quede tapado por la barra. */
 		.app {
-			padding-bottom: calc(49px + env(safe-area-inset-bottom, 0px));
+			padding-bottom: calc(var(--tabbar-h) + var(--hair) + env(safe-area-inset-bottom, 0px));
 		}
 
 		.fresh {
-			bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+			bottom: calc(var(--tabbar-h) + var(--sp-12) + env(safe-area-inset-bottom, 0px));
 		}
 
 		.key span {

@@ -109,18 +109,18 @@
 <style>
 	.add {
 		display: flex;
-		gap: 8px;
-		padding: 10px 12px;
-		border-bottom: 1px solid var(--line);
+		gap: var(--sp-8);
+		padding: var(--sp-10) var(--pad-x);
+		border-bottom: var(--border);
 	}
 
 	.add input {
 		flex: 1;
 		min-width: 0;
-		height: 32px;
-		padding: 0 10px;
+		height: var(--control-h);
+		padding: 0 var(--sp-10);
 		background: var(--raise);
-		border: 1px solid var(--line);
+		border: var(--border);
 		text-transform: uppercase;
 	}
 
@@ -131,9 +131,9 @@
 
 	.add button {
 		background: none;
-		border: 1px solid var(--amber-edge);
+		border: var(--hair) solid var(--amber-edge);
 		color: var(--amber);
-		padding: 0 12px;
+		padding: 0 var(--pad-x);
 		font-size: var(--fs-s);
 		cursor: pointer;
 	}
@@ -141,19 +141,19 @@
 	.c {
 		color: var(--amber);
 		font-family: var(--mono);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 
 	.ops {
 		display: inline-flex;
-		gap: 4px;
+		gap: var(--sp-4);
 	}
 
 	.ops button {
-		width: 32px;
-		height: 32px;
+		width: var(--control-h);
+		height: var(--control-h);
 		background: none;
-		border: 1px solid var(--line);
+		border: var(--border);
 		color: var(--muted);
 		cursor: pointer;
 	}
@@ -170,17 +170,17 @@
 	.chips {
 		list-style: none;
 		margin: 0;
-		padding: 10px 12px;
+		padding: var(--sp-10) var(--pad-x);
 		display: flex;
 		flex-wrap: wrap;
-		gap: 6px;
+		gap: var(--sp-6);
 	}
 
 	.chips button {
 		background: none;
-		border: 1px solid var(--line);
+		border: var(--border);
 		color: var(--muted);
-		padding: 5px 9px;
+		padding: var(--sp-5) var(--sp-9);
 		font-size: var(--fs-s);
 		cursor: pointer;
 	}

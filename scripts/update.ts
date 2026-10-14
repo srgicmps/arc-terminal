@@ -66,7 +66,10 @@ async function run(source: Source): Promise<SourceStatus> {
 	const age = previous ? (Date.now() - Date.parse(previous.fetchedAt)) / 60_000 : Infinity;
 	const force = process.env.FORCE_REFRESH === '1';
 
-	if (previous && age < source.maxAgeMinutes && !force) {
+	// La fuente puede dar por mala una copia reciente (p. ej., le faltan series nuevas).
+	const outdated = previous ? source.isStale?.(previous.data) === true : false;
+
+	if (previous && age < source.maxAgeMinutes && !force && !outdated) {
 		await save(previous);
 		await copyExtra(source, previous);
 		console.log(`= ${source.name}: copia de hace ${Math.round(age)} min`);
