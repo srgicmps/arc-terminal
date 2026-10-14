@@ -5,8 +5,8 @@
 // Las reglas (qué se avisa) están en scripts/alerts/rules.ts y los umbrales y cupos, en
 // scripts/alerts/config.ts. Este archivo es la mecánica:
 // - Cada aviso tiene un id único y estable; un id ya apuntado en el historial no se repite nunca.
-// - Niveles P1–P4 con cupo diario (día de Madrid): P1 sin límite, P2 hasta 25, P3 hasta 15, P4 los dos
-//   resúmenes. Tope total de 50 al día, solo contra bucles. Si no caben todos, salen primero los de
+// - Niveles P1–P4 con cupo diario (día de Madrid): P1 sin límite, P2 hasta 25, P3 hasta 15, P4 hasta 3
+//   (los dos resúmenes y SEMANA). Tope total de 50 al día, solo contra bucles. Si no caben todos, salen primero los de
 //   nivel más alto y, a igual nivel, los más recientes. Lo que no cabe no se apunta: se vuelve a mirar
 //   en la pasada siguiente (y al día siguiente, si sigue siendo relevante).
 // - Se envía a cualquier hora (Sergi usa el «No molestar» del móvil).
@@ -66,7 +66,7 @@ export function candidates(
 	const updates: ((log: NotifyLog) => void)[] = [];
 	const ctx = { now, today: madrid(now).date, log, update: (fn: (log: NotifyLog) => void) => void updates.push(fn) };
 	const alerts = rules.flatMap((rule) =>
-		rule.run(d, ctx).map((a): Alert => ({ ...a, type: rule.type, level: rule.level }))
+		rule.run(d, ctx).map((a): Alert => ({ ...a, type: rule.type, level: a.level ?? rule.level }))
 	);
 	return { alerts, updates };
 }

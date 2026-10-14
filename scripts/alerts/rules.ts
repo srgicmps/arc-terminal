@@ -9,6 +9,7 @@ import type { SourceHistory, SourceStatus } from '../../src/lib/data.ts';
 import type { FuelData, FuelSpainData, FuelStation } from '../../src/lib/fuel.ts';
 import { bmeHolidays, nyseHolidays } from '../../src/lib/markets.ts';
 import { BANKS, decisionTime, MEETINGS } from '../../src/lib/meetings.ts';
+import { lastAndYearAgo, monthlyPayment } from '../../src/lib/mortgage.ts';
 import { hourly } from '../../src/lib/power.ts';
 import type {
 	Chokepoint,
@@ -39,6 +40,7 @@ import {
 	LUZ,
 	MACRO,
 	MARKETS,
+	MORTGAGE,
 	POLYMARKET,
 	QUAKE,
 	RATES,
@@ -176,8 +178,11 @@ export interface Alert {
 	commit?: (log: NotifyLog) => void;
 }
 
-/** Lo que devuelve una regla: el aviso sin tipo ni nivel (los pone RULES). */
-export type Draft = Omit<Alert, 'type' | 'level'>;
+/**
+ * Lo que devuelve una regla: el aviso sin tipo (lo pone RULES). El nivel también lo pone RULES, salvo que
+ * la regla lo decida aviso a aviso (conflictos: P1 o P2).
+ */
+export type Draft = Omit<Alert, 'type' | 'level'> & { level?: Level };
 
 export interface RuleContext {
 	now: number;
@@ -437,6 +442,19 @@ export function macroRule(d: Inputs, { now, log, update }: RuleContext): Draft[]
 			return [];
 		}
 		if (last.t <= before) return [];
+		if (m.id === 'euribor-12m') {
+			return [
+				{
+					id: `macro:${m.id}:${last.t}`,
+					title: `${m.name}: ${num(last.v, 2)} %`,
+					body: euriborText(seriesOf(d[m.file], m.id)) ?? `${periodName(last.t)} (${m.source}).`,
+					tags: 'house',
+					click: `${SITE}/eco`,
+					time: now,
+					commit: (l) => void (l.last[key] = last.t)
+				}
+			];
+		}
 		const jobs = m.unit !== '%';
 		const value = jobs ? `${signed(last.v, 0)} ${m.unit}` : `${num(last.v)} %`;
 		const previous = prev ? (jobs ? `${signed(prev.v, 0)} ${m.unit}` : `${num(prev.v)} %`) : null;
@@ -453,6 +471,35 @@ export function macroRule(d: Inputs, { now, log, update }: RuleContext): Draft[]
 			}
 		];
 	});
+}
+
+/** Cuota mensual de la hipoteca tipo (config MORTGAGE) con un euríbor dado, en euros. */
+export const typicalPayment = (euribor: number) =>
+	monthlyPayment(MORTGAGE.capital, MORTGAGE.years, euribor + MORTGAGE.spread);
+
+/**
+ * Texto del aviso del euríbor: el último dato frente al mes anterior y al de hace un año, y la cuota de la
+ * hipoteca tipo con los dos (sistema francés, src/lib/mortgage.ts). null si la serie no tiene datos.
+ * «Euríbor de septiembre: 2,21 % (−0,05 frente a agosto · −0,93 frente a hace un año). Hipoteca tipo de
+ * 150.000 € a 25 años: 712 €/mes (−75 € frente a hace un año).»
+ */
+export function euriborText(s: Series | undefined): string | null {
+	const [last, prev] = lastPoints(s);
+	if (!last) return null;
+	const month = (t: string) => MONTHS[Number(t.slice(5, 7)) - 1] ?? t;
+	const year = lastAndYearAgo(s)?.before ?? null;
+	const vs = [
+		prev ? `${signed(last.v - prev.v, 2)} frente a ${month(prev.t)}` : '',
+		year ? `${signed(last.v - year.v, 2)} frente a hace un año` : ''
+	].filter(Boolean);
+	const pay = typicalPayment(last.v);
+	const payBefore = year ? typicalPayment(year.v) : null;
+	const loan = `Hipoteca tipo de ${num(MORTGAGE.capital, 0)} € a ${MORTGAGE.years} años`;
+	const mortgage =
+		pay === null
+			? ''
+			: ` ${loan}: ${num(pay, 0)} €/mes${payBefore === null ? '' : ` (${signed(Math.round(pay) - Math.round(payBefore), 0)} € frente a hace un año)`}.`;
+	return `Euríbor de ${month(last.t)}: ${num(last.v, 2)} %${vs.length ? ` (${vs.join(' · ')})` : ''}.${mortgage}`;
 }
 
 /**
