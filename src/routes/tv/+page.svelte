@@ -82,10 +82,11 @@
 				<button type="button" class="go" onclick={start} disabled={!codes.length}>Empezar</button>
 			</div>
 			<ul class="mini">
-				<li><span class="l">Pausar o seguir</span><b>Tocar la pantalla · Espacio</b></li>
-				<li><span class="l">Salir</span><b>Esc · «Salir» en la pausa</b></li>
-				<li><span class="l">Enlace directo</span><b class="url">{link}</b></li>
+				<li><span class="l">Pausar</span><b>Toque · Espacio</b></li>
+				<li><span class="l">Salir</span><b>Esc · «Salir»</b></li>
 			</ul>
+			<!-- El enlace va en su propia fila: es largo y en el móvil no cabe al lado de una etiqueta. -->
+			<p class="link">Enlace directo<span class="url">{link}</span></p>
 			{#snippet note()}
 				Desde la barra también vale «TV TOP,WS,GEO». La pantalla completa solo se pone si el navegador lo permite;
 				«encajar» solo cambia algo en pantallas de 1280 px o más.
@@ -100,7 +101,7 @@
 		margin: 0;
 		padding: var(--sp-4) 0;
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 16em), 1fr));
 	}
 
 	label {
@@ -156,12 +157,20 @@
 	.mini b {
 		color: var(--fg);
 		font-weight: var(--fw-regular);
-		white-space: normal;
-		text-align: right;
 	}
 
-	.mini .url {
+	.link {
+		margin: 0;
+		padding: var(--sp-6) var(--pad-x) var(--sp-10);
+		border-top: var(--border);
+		font-family: var(--sans);
+	}
+
+	.link .url {
+		display: block;
+		margin-top: var(--sp-2);
 		color: var(--muted);
+		font-family: var(--mono);
 		word-break: break-all;
 		font-size: var(--fs-s);
 	}

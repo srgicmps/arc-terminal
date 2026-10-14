@@ -46,8 +46,11 @@
 	/** En modo TV, Esc sale (antes de que la barra de comandos lo lleve a la portada) y Espacio pausa. */
 	function onTvKey(e: KeyboardEvent) {
 		if (!tv.on) return;
+		const target = e.target as HTMLElement | null;
+		const typing = !!target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable);
 		if (e.key === 'Escape') stopTv();
-		else if (e.key === ' ') togglePause();
+		// El espacio pausa, salvo si se está escribiendo (por ejemplo, en la barra de comandos).
+		else if (e.key === ' ' && !typing) togglePause();
 		else return;
 		e.preventDefault();
 		e.stopImmediatePropagation();
