@@ -102,4 +102,9 @@ describe('imf', () => {
 		expect(data.rows.map((r) => r.code)).toEqual(['USA']);
 		expect(data.g20).toEqual([{ code: 'USA', name: 'EE. UU.', gdp: 1.8, cpi: 2.9, unemployment: null, debt: null, balance: null }]);
 	});
+
+	it('da por vieja la copia publicada que no trae la tabla del G20', () => {
+		expect(imf.isStale?.({ edition: null, years: [2026, 2027], rows: [] })).toBe(true);
+		expect(imf.isStale?.({ edition: null, years: [2026, 2027], rows: [], g20: [] })).toBe(false);
+	});
 });

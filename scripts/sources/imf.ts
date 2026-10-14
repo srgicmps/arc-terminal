@@ -106,6 +106,8 @@ export const imf: Source<ImfData> = {
 	label: 'Previsiones de crecimiento e inflación · FMI (WEO)',
 	// El WEO sale dos veces al año (abril y octubre) con una actualización en enero y julio: una vez al día sobra.
 	maxAgeMinutes: 1440,
+	// Las copias de antes de la tabla ECST no traen g20: se descargan de nuevo sin esperar el día.
+	isStale: (previous) => !previous.g20,
 	async fetch() {
 		const year = Number(madridDay().slice(0, 4));
 		const years: [number, number] = [year, year + 1];
