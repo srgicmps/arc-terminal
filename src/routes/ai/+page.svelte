@@ -12,8 +12,7 @@
 	let { data }: PageProps = $props();
 
 	// De la portada de Hacker News, lo que habla de IA.
-	const AI =
-		/\b(ai|a\.i\.|llms?|gpt|openai|anthropic|claude|gemini|llama|mistral|deepseek|transformer|neural|machine learning|agents?|diffusion|copilot|inference|model)\b/i;
+	const AI = /\b(ai|a\.i\.|llms?|gpt|openai|anthropic|claude|gemini|llama|mistral|deepseek|transformer|neural|machine learning|agents?|diffusion|copilot|inference|model)\b/i;
 	const hnAi = $derived((data.hn?.data ?? []).filter((i) => AI.test(i.title)));
 	const papers = $derived(data.papers?.data ?? []);
 	const models = $derived(data.models?.data ?? []);
@@ -37,12 +36,7 @@
 		robotics: 'Robótica'
 	};
 	const task = (t: string) => (t ? (TASKS[t] ?? t) : '—');
-	const sources = $derived(
-		(data.news?.data.feeds ?? [])
-			.filter((f) => f.items)
-			.map((f) => f.name)
-			.join(', ')
-	);
+	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
 </script>
 
 <ViewHeader code="AI" title="Inteligencia artificial" sub={sources} />
