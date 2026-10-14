@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { asset, resolve } from '$app/paths';
-	import { page } from '$app/state';
+	import { page, updated } from '$app/state';
 	import { startClock } from '#lib/clock.svelte.ts';
 	import { COMMANDS } from '#lib/commands.ts';
 	import Clocks from '#lib/components/Clocks.svelte';
@@ -15,6 +15,9 @@
 	$effect(startClock);
 
 	const keys = COMMANDS.filter((c) => c.pinned);
+
+	// navigator.onLine, enlazado como en Vue con un ref que se actualiza solo.
+	let online = $state(true);
 
 	// Cinta de cotizaciones en directo de TradingView.
 	const tape = {
@@ -34,6 +37,8 @@
 	};
 </script>
 
+<svelte:window bind:online />
+
 <svelte:head>
 	<link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
 </svelte:head>
@@ -48,6 +53,7 @@
 			<span>Arc <span class="brand-sub">Terminal</span></span>
 		</a>
 		<CommandBar />
+		{#if !online}<span class="offline" title="Se muestra la última copia guardada">Sin conexión</span>{/if}
 		<Clocks />
 	</header>
 
@@ -70,12 +76,19 @@
 		<TvWidget widget="ticker-tape" config={tape} height={44} credit={false} />
 	</div>
 
+	<!-- Aviso discreto cuando la Action ha publicado una versión nueva (datos o mejoras). -->
+	{#if updated.current}
+		<button class="fresh" type="button" onclick={() => location.reload()}>
+			Hay datos nuevos · <b>Recargar</b>
+		</button>
+	{/if}
+
 	<main>
 		{@render children()}
 	</main>
 
 	<footer class="status">
-		<span>Datos públicos actualizados cada 30 min con GitHub Actions · cotizaciones de TradingView</span>
+		<span>Datos públicos actualizados cada 15 min con GitHub Actions · cotizaciones de TradingView</span>
 		<a href={resolve('/status')}>Estado de las fuentes</a>
 		<span><kbd>/</kbd> comando · <kbd>Esc</kbd> portada</span>
 	</footer>
@@ -120,6 +133,15 @@
 	.brand-sub {
 		color: var(--muted);
 		font-weight: 400;
+	}
+
+	.offline {
+		font-size: var(--fs-xs);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--amber);
+		border: 1px solid var(--amber-edge);
+		padding: 2px 7px;
 	}
 
 	/* Teclas de función */
@@ -172,6 +194,24 @@
 
 	main {
 		padding-bottom: 16px;
+	}
+
+	.fresh {
+		position: fixed;
+		right: 16px;
+		bottom: 16px;
+		z-index: 30;
+		background: var(--raise);
+		border: 1px solid var(--amber-edge);
+		color: var(--muted);
+		padding: 7px 12px;
+		font-size: var(--fs-s);
+		cursor: pointer;
+	}
+
+	.fresh b {
+		color: var(--amber);
+		font-weight: 500;
 	}
 
 	.status {

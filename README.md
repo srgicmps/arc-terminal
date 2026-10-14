@@ -9,7 +9,7 @@ La maqueta de diseño está en [`docs/maqueta.html`](docs/maqueta.html) (datos d
 ## Cómo funciona
 
 - **Web estática** en GitHub Pages, hecha con SvelteKit y TypeScript.
-- **GitHub Actions hace de servidor**: cada 30 minutos `pnpm data` descarga todas las fuentes, las guarda como
+- **GitHub Actions hace de servidor**: cada 15 minutos `pnpm data` descarga todas las fuentes, las guarda como
   JSON en `static/data/` y vuelve a publicar la web. Si una fuente falla, se reutiliza su última copia
   publicada. Las fuentes que cambian poco se reutilizan durante horas para no castigar sus APIs.
 - **Cotizaciones y gráficos en directo** con los widgets de TradingView, sin clave.
@@ -59,5 +59,5 @@ pnpm build     # genera la web estática en build/
 pnpm preview   # sirve build/ en http://localhost:4173/arc-terminal/
 ```
 
-Cada push a `main`, y cada 30 minutos, GitHub Actions descarga los datos, construye la web y la publica en
+Cada push a `main`, y cada 15 minutos, GitHub Actions descarga los datos, construye la web y la publica en
 GitHub Pages (`.github/workflows/deploy.yml`). En los PR solo la construye, como prueba.
