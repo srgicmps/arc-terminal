@@ -1,16 +1,21 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { asset, resolve } from '$app/paths';
+	import { latestWatched } from '#lib/boe.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
-	import { nf, when } from '#lib/format.ts';
+	import { dm, nf, when } from '#lib/format.ts';
 	import { cheapestNow, hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
 	import { seriesMap, spread } from '#lib/series.ts';
 	import { compass, sky } from '#lib/weather.ts';
 	import ModularGrid from '#lib/components/ModularGrid.svelte';
+	import Agenda from '#lib/components/top/Agenda.svelte';
+	import Markets from '#lib/components/top/Markets.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
+	import type { BoeWeek } from '#lib/types.ts';
+	import { initWatchwords, watchwords } from '#lib/watchwords.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
 	import type { PageProps } from './$types';
 
@@ -21,6 +26,7 @@
 		{ id: 'rates', title: 'Tipos y bonos' },
 		{ id: 'macro', title: 'Macro' },
 		{ id: 'fx', title: 'Divisas y cripto' },
+		{ id: 'important', title: 'Lo importante' },
 		{ id: 'news', title: 'Titulares' },
 		{ id: 'weather', title: 'Tiempo' },
 		{ id: 'power', title: 'Luz' },
@@ -28,7 +34,10 @@
 		{ id: 'boe', title: 'BOE de hoy' },
 		{ id: 'quakes', title: 'Terremotos' },
 		{ id: 'predictions', title: 'Mercados de predicción' },
-		{ id: 'hn', title: 'Hacker News' }
+		{ id: 'hn', title: 'Hacker News' },
+		// Solo en la portada modular (en la general ya están la cinta de cotizaciones y CAL).
+		{ id: 'agenda', title: 'Hoy en la agenda' },
+		{ id: 'markets', title: 'Mercados' }
 	]);
 	// Como onMounted en Vue: lo guardado en el navegador se lee al arrancar en él.
 	$effect(() => top.load());
@@ -62,8 +71,24 @@
 			.slice(0, 3)
 	);
 
+	// Los 3 temas de más peso de hoy (vista IMP); los elige +page.server.ts.
+	const important = $derived(data.important);
+
 	const boeGeneral = $derived(data.boe?.data.sections.find((s) => s.code === '1'));
 	const boeTotal = $derived((data.boe?.data.sections ?? []).reduce((n, s) => n + s.total, 0));
+
+	// Palabras vigiladas (las de la vista BOE, guardadas en este navegador): cuántas disposiciones del último
+	// sumario las nombran. boe-week.json se pide en el navegador y solo si hay alguna palabra.
+	let boeWeek = $state.raw<BoeWeek | null>(null);
+	$effect(() => initWatchwords());
+	$effect(() => {
+		if (!watchwords.ready || !watchwords.words.length || boeWeek) return;
+		fetch(asset('data/boe-week.json' as Parameters<typeof asset>[0]))
+			.then((res) => (res.ok ? (res.json() as Promise<BoeWeek>) : null))
+			.then((w) => (boeWeek = w))
+			.catch(() => {});
+	});
+	const boeWatch = $derived(latestWatched(boeWeek, watchwords.words));
 
 	// Línea de arriba: titulares nuevos desde la última visita y la franja de luz más barata.
 	const fresh = $derived(clock.now && visit.ready ? newSinceText(newCount(data.headlines, visit.last), visit.last, clock.now) : '');
@@ -137,6 +162,31 @@
 	</Panel>
 {/snippet}
 
+{#snippet importante()}
+	<Panel id="important" title="Lo importante" meta="Hoy" jump={{ code: 'IMP', href: resolve('/imp') }}>
+		{#if important.length}
+			<ul class="mini">
+				{#each important as e (e.k)}
+					<li>
+						<a class="l" href={e.url} target="_blank" rel="noopener">{e.title}</a>
+						<b class="mut">{e.sources.length} {e.sources.length === 1 ? 'medio' : 'medios'}</b>
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<p class="empty">Sin datos todavía</p>
+		{/if}
+	</Panel>
+{/snippet}
+
+{#snippet agenda()}
+	<Agenda earnings={data.earnings} holidays={data.holidays} />
+{/snippet}
+
+{#snippet markets()}
+	<Markets />
+{/snippet}
+
 {#snippet titulares()}
 	<Panel id="news" title="Titulares" meta="Todas las secciones">
 		<NewsList items={data.headlines} tag={(i) => tags.get(i.url)} />
@@ -188,6 +238,14 @@
 {#snippet boe()}
 	<Panel id="boe" title="BOE de hoy" meta="{boeTotal} publicaciones" jump={{ code: 'BOE', href: resolve('/boe') }}>
 		<ul class="mini">
+			{#if boeWatch}
+				<li>
+					<a class="l" href={resolve('/boe')}
+						>Con tus palabras vigiladas{#if boeWatch.date !== now?.day}<small>BOE del {dm(boeWatch.date)}</small>{/if}</a
+					>
+					<b class:strong={boeWatch.count > 0}>{boeWatch.count}</b>
+				</li>
+			{/if}
 			{#each (boeGeneral?.items ?? []).slice(0, 4) as item (item.id)}
 				<li><a class="l" href={item.html} target="_blank" rel="noopener">{item.title}</a></li>
 			{:else}
@@ -249,7 +307,7 @@
 {#if mode.modular}
 	<ModularGrid
 		layout={top}
-		panels={{ rates: tipos, macro, fx: divisas, news: titulares, weather: menorca, power: luz, fuel: gasolina, boe, quakes: terremotos, predictions: predicciones, hn }}
+		panels={{ rates: tipos, macro, fx: divisas, important: importante, news: titulares, weather: menorca, power: luz, fuel: gasolina, boe, quakes: terremotos, predictions: predicciones, hn, agenda, markets }}
 	/>
 {:else}
 	<div class="grid grid-3">
@@ -260,6 +318,7 @@
 		</div>
 
 		<div class="col">
+			{@render importante()}
 			{@render titulares()}
 		</div>
 

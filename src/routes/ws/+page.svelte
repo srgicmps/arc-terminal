@@ -3,18 +3,21 @@
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
 	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
 	import FxConvert from '#lib/components/FxConvert.svelte';
+	import FxTable from '#lib/components/FxTable.svelte';
 	import HotLists from '#lib/components/HotLists.svelte';
 	import MarketSessions from '#lib/components/MarketSessions.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
-	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
+	import StablecoinTable from '#lib/components/StablecoinTable.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import RiskGauge from '#lib/components/RiskGauge.svelte';
 	import YieldCurve from '#lib/components/YieldCurve.svelte';
 	import { seriesMap } from '#lib/series.ts';
+	import { quotesHeight } from '#lib/tickers.ts';
+	import { urlState } from '#lib/urlstate.svelte.ts';
 	import { rgba, token } from '#lib/color.ts';
 	import { theme } from '#lib/theme.svelte.ts';
 	import type { PageProps } from './$types';
@@ -98,10 +101,9 @@
 		showSymbolLogo: false,
 		symbolsGroups: [{ name, symbols }]
 	});
-	/** Alto para que quepan todas las filas sin barra de desplazamiento (como en MIS). */
-	const quotesHeight = (n: number) => 90 + n * 46;
 
-	// Mapas de calor de TradingView: acciones de un índice (widget «stock-heatmap») o cripto («crypto-coins-heatmap»).
+	// Mapas de calor de TradingView: acciones de un índice («stock-heatmap»), cripto («crypto-coins-heatmap»)
+	// o divisas («forex-heat-map»: cada casilla es la variación del día de un par).
 	const common = {
 		blockColor: 'change',
 		hasTopBar: false,
@@ -116,31 +118,34 @@
 		{ key: 'ndx', label: 'Nasdaq 100', widget: 'stock-heatmap', config: stocks('NASDAQ100') },
 		{ key: 'dax', label: 'DAX', widget: 'stock-heatmap', config: stocks('DAX') },
 		{ key: 'ibex', label: 'IBEX 35', widget: 'stock-heatmap', config: stocks('IBEX35') },
-		{ key: 'crypto', label: 'Cripto', widget: 'crypto-coins-heatmap', config: { ...common, dataSource: 'Crypto', blockSize: 'market_cap_calc' } }
+		{ key: 'crypto', label: 'Cripto', widget: 'crypto-coins-heatmap', config: { ...common, dataSource: 'Crypto', blockSize: 'market_cap_calc' } },
+		{ key: 'fx', label: 'Divisas', widget: 'forex-heat-map', config: { currencies: ['USD', 'EUR', 'JPY', 'GBP', 'CHF', 'CNY', 'AUD', 'CAD', 'MXN'] } }
 	] as const;
 
-	// El mapa elegido se recuerda en este navegador (si no deja guardar, se queda en memoria).
+	// El mapa elegido va en la URL (/ws?mapa=dax), para compartirlo o guardarlo en favoritos. Sin parámetro, el
+	// último elegido en este navegador (si no deja guardar, se queda en memoria).
 	const MAP_KEY = 'arc-ws-heatmap';
 	type MapKey = (typeof MAPS)[number]['key'];
+	const isMap = (v: string) => MAPS.some((m) => m.key === v);
+	const mapSel = urlState<MapKey>('mapa', 'spx', isMap);
 	let loadedMap = $state(false);
-	let mapKey = $state<MapKey>('spx');
+	// Una vez, al abrir: si la URL no dice qué mapa, el guardado.
 	$effect(() => {
 		try {
 			const saved = localStorage.getItem(MAP_KEY);
-			const found = MAPS.find((m) => m.key === saved);
-			if (found) mapKey = found.key;
+			if (saved && isMap(saved) && !new URLSearchParams(location.search).has('mapa')) mapSel.value = saved as MapKey;
 		} catch {}
 		loadedMap = true;
 	});
 	// Guarda cada cambio, después de haber leído lo guardado (para no pisarlo al arrancar).
 	$effect(() => {
-		const key = mapKey;
+		const key = mapSel.value;
 		if (!loadedMap) return;
 		try {
 			localStorage.setItem(MAP_KEY, key);
 		} catch {}
 	});
-	const map = $derived(MAPS.find((m) => m.key === mapKey) ?? MAPS[0]);
+	const map = $derived(MAPS.find((m) => m.key === mapSel.value) ?? MAPS[0]);
 </script>
 
 <ViewHeader code="WS" title="Wall Street e inversión" sub="TradingView, Tesoro de EE. UU., BCE, CoinGecko y titulares de mercados" />
@@ -158,7 +163,7 @@
 	<div class="col">
 		<Panel title="Mapa de calor" meta="{map.label} · variación del día">
 			<div class="maps">
-				<Seg label="Mapa de calor" options={MAPS.map((m) => ({ value: m.key, label: m.label }))} bind:value={mapKey} />
+				<Seg label="Mapa de calor" options={MAPS.map((m) => ({ value: m.key, label: m.label }))} bind:value={mapSel.value} />
 			</div>
 			<TvWidget widget={map.widget} config={map.config} height={520} />
 		</Panel>
@@ -200,8 +205,9 @@
 				<Updated at={data.jgb?.fetchedAt} source="jgb" />
 			{/snippet}
 		</Panel>
-		<Panel title="Divisas" meta="Cambio de referencia del BCE">
-			<SeriesTable head="Par" spark={60} rows={fx.map((id) => ({ series: get(id), name: get(id)?.label, decimals: 4 }))} />
+		<Panel title="Divisas" meta="Frente al euro · cambio de referencia del BCE">
+			<FxTable rows={fx.map((id) => ({ series: get(id), week: data.fxChange[id]?.week ?? null, year: data.fxChange[id]?.year ?? null }))} />
+			{#snippet note()}Si el par sube, el euro se aprecia frente a esa moneda · <Updated at={data.ecb?.fetchedAt} source="ecb" />{/snippet}
 		</Panel>
 		<Panel title="Conversor" meta="Tipos de referencia del BCE">
 			<FxConvert series={fx.map(get)} />
@@ -211,7 +217,14 @@
 			<CryptoTable coins={data.crypto?.data.coins ?? []} />
 			{#snippet note()}Fuente: CoinGecko · <Updated at={data.crypto?.fetchedAt} source="crypto" />{/snippet}
 		</Panel>
-		<Panel title="Subastas del Tesoro" meta="Bonos y notas de EE. UU.">
+		<Panel title="Stablecoins" meta="Monedas ligadas al dólar · en circulación">
+			<StablecoinTable data={data.stables?.data} />
+			{#snippet note()}
+				«Dinero»: respaldadas con dólares y deuda pública; «cripto»: con otras criptomonedas. En ámbar, el precio que se
+				separa medio céntimo o más del dólar. Fuente: DefiLlama · <Updated at={data.stables?.fetchedAt} source="stablecoins" />
+			{/snippet}
+		</Panel>
+		<Panel title="Subastas del Tesoro" meta="EE. UU. · próximas y resultados de bonos y notas">
 			{#if data.auctions}<AuctionList data={data.auctions.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
 			{#snippet note()}
 				B/C (bid-to-cover): demanda frente a lo adjudicado; en ámbar, por debajo de la media de sus 6 subastas anteriores ·

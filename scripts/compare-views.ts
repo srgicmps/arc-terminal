@@ -8,10 +8,9 @@
 // No falla nunca: es para revisar a ojo, no para frenar el PR.
 import { execSync } from 'node:child_process';
 import { appendFileSync, cpSync, existsSync, mkdirSync } from 'node:fs';
-import { COMMANDS } from '../src/lib/commands.ts';
-import { launch, preview } from './browser.ts';
+import { launch, preview, viewPaths } from './browser.ts';
 
-const PATHS = [...COMMANDS.map((c) => c.route), '/s?sym=NVDA'];
+const PATHS = [...viewPaths(), '/s?sym=NVDA'];
 const mainDir = process.argv[2] ?? '../main';
 if (!process.argv[2] && !existsSync(mainDir)) {
 	const sh = (cmd: string, cwd = '.') => execSync(cmd, { cwd, stdio: 'inherit' });

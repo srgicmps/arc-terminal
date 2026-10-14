@@ -29,6 +29,7 @@ import type {
 	YieldCurveData
 } from '../../src/lib/types.ts';
 import { minute } from '../history.ts';
+import { WORLD_FILES, WORLD_RULES, type WorldInputs } from './world.ts';
 import { decide, downSpan, madridTime } from '../issues.ts';
 import {
 	AI_NEWS,
@@ -46,6 +47,7 @@ import {
 	LAUNCHES,
 	LUZ,
 	MACRO,
+	MACRO_RISK,
 	MARKETS,
 	MORTGAGE,
 	POLYMARKET,
@@ -136,7 +138,7 @@ export interface FuelZone {
 }
 
 /** Los datos de esta pasada (static/data/<archivo>.json); cualquiera puede faltar. */
-export interface Inputs {
+export interface Inputs extends WorldInputs {
 	imp?: ImpLike;
 	ine?: SeriesData;
 	bls?: SeriesData;
@@ -199,7 +201,8 @@ export const FILES: Record<Exclude<keyof Inputs, 'zone'>, string> = {
 	newsTech: 'news-tech',
 	launches: 'launches',
 	lichess: 'lichess',
-	alertQuotes: 'alert-quotes'
+	alertQuotes: 'alert-quotes',
+	...WORLD_FILES
 };
 
 export interface LogEntry {
@@ -991,6 +994,71 @@ export function stockRule(d: Inputs, { now, today, log }: RuleContext): Draft[] 
 	}));
 }
 
+// ---------- Riesgo macro (fred.json) ----------
+
+/** Puntos con fecha diaria («2026-10-14») y valor numérico, en orden. */
+function dailyPoints(s: Series | undefined): { t: string; v: number }[] {
+	return list(s?.points).filter(
+		(p) => p && typeof p.t === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.t) && typeof p.v === 'number' && Number.isFinite(p.v)
+	);
+}
+
+/**
+ * Diferencial high yield de EE. UU. ('hy-us', en %: 3,10 = 310 pb). Avisa si el último dato supera en
+ * MACRO_RISK.HY_JUMP_PB pb o más al de hace 7 días naturales (o al último anterior, por los festivos).
+ * Id: hy:<fecha del último dato>. En log.last['hy'] queda la fecha avisada: no se repite hasta que el cambio
+ * semanal baje del umbral (entonces se borra) o pasen HY_REPEAT_DAYS días.
+ */
+export function hyRule(d: Inputs, { now, log, update }: RuleContext): Draft[] {
+	const pts = dailyPoints(seriesOf(d.fred, 'hy-us'));
+	const last = pts.at(-1);
+	const ref = last && pts.filter((p) => p.t <= addDays(last.t, -7)).at(-1);
+	if (!last || !ref) return [];
+	// En pb, redondeado a centésimas para que 3,60 − 3,10 no quede en 49,999…
+	const jump = Math.round((last.v - ref.v) * 10_000) / 100;
+	const key = 'hy';
+	const before = log.last[key];
+	if (jump < MACRO_RISK.HY_JUMP_PB) {
+		if (before !== undefined) update((l) => void delete l.last[key]);
+		return [];
+	}
+	if (before !== undefined && last.t < addDays(before, MACRO_RISK.HY_REPEAT_DAYS)) return [];
+	return [
+		{
+			id: `hy:${last.t}`,
+			title: `Crédito: el diferencial high yield sube ${num(jump, 0)} pb en una semana (hasta ${num(last.v, 2)} %)`,
+			body: `De ${num(ref.v, 2)} % (${ref.t}) a ${num(last.v, 2)} % (${last.t}). Umbral: +${num(MACRO_RISK.HY_JUMP_PB, 0)} pb en 7 días. Fuente: ICE BofA vía FRED.`,
+			tags: 'chart_with_upwards_trend',
+			click: `${SITE}/eco`,
+			time: now,
+			commit: (l) => void (l.last[key] = last.t)
+		}
+	];
+}
+
+/**
+ * Liquidez neta de la Fed ('fed-net-liquidity', semanal, en millones de $). Avisa si el último dato cae
+ * MACRO_RISK.LIQUIDITY_DROP_M o más frente al de 4 datos antes (4 semanas). Id: liquidity:<fecha del último
+ * dato>, uno por dato semanal nuevo.
+ */
+export function liquidityRule(d: Inputs, { now }: RuleContext): Draft[] {
+	const pts = dailyPoints(seriesOf(d.fred, 'fed-net-liquidity'));
+	const [last, ref] = [pts.at(-1), pts.at(-5)];
+	if (!last || !ref || pts.length < 5) return [];
+	const drop = last.v - ref.v;
+	if (drop > -MACRO_RISK.LIQUIDITY_DROP_M) return [];
+	return [
+		{
+			id: `liquidity:${last.t}`,
+			title: `Liquidez de la Fed: ${signed(drop, 0)} M$ en 4 semanas (${num(last.v / 1e6, 2)} billones)`,
+			body: `De ${num(ref.v, 0)} M$ (${ref.t}) a ${num(last.v, 0)} M$ (${last.t}). Fuente: Fed vía FRED.`,
+			tags: 'chart_with_downwards_trend',
+			click: `${SITE}/eco`,
+			time: now
+		}
+	];
+}
+
 // ---------- Diésel ----------
 
 /** Un día de precio medio del diésel (€/L). */
@@ -1669,6 +1737,8 @@ export const RULES: Rule[] = [
 	{ type: 'election', level: 2, run: electionRule },
 	{ type: 'ai', level: 2, run: aiRule },
 	{ type: 'stock', level: 2, run: stockRule },
+	{ type: 'hy', level: 2, run: hyRule },
+	{ type: 'liquidity', level: 2, run: liquidityRule },
 	{ type: 'poly', level: 3, run: polyRule },
 	{ type: 'earnings', level: 3, run: earningsRule },
 	{ type: 'crisis', level: 3, run: crisisRule },
@@ -1679,5 +1749,6 @@ export const RULES: Rule[] = [
 	{ type: 'launch', level: 3, run: launchRule },
 	{ type: 'morning', level: 4, run: morningRule },
 	{ type: 'evening', level: 4, run: eveningRule },
-	{ type: 'week', level: 4, run: weekRule }
+	{ type: 'week', level: 4, run: weekRule },
+	...WORLD_RULES
 ];

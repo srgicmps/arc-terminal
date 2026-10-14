@@ -103,6 +103,8 @@ describe('RULES', () => {
 			'2:election',
 			'2:ai',
 			'2:stock',
+			'2:hy',
+			'2:liquidity',
 			'3:poly',
 			'3:earnings',
 			'3:crisis',
@@ -113,7 +115,13 @@ describe('RULES', () => {
 			'3:launch',
 			'4:morning',
 			'4:evening',
-			'4:week'
+			'4:week',
+			// scripts/alerts/world.ts
+			'1:gdacs',
+			'1:blackout',
+			'1:ioda',
+			'2:status',
+			'2:who'
 		]);
 	});
 

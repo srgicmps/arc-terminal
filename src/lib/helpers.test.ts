@@ -1,7 +1,8 @@
 // Ayudantes pequeños de src/lib: series, tiempo y comandos.
 import { describe, expect, it } from 'vitest';
-import { COMMANDS, TICKERS, tvSymbol } from './commands.ts';
-import { at, change, diffDays, last, seriesMap, spread } from './series.ts';
+import { COMMANDS } from './commands.ts';
+import { TICKERS, tvSymbol } from './tickers.ts';
+import { at, change, diffDays, last, pctDays, seriesMap, spread } from './series.ts';
 import type { Series } from './types.ts';
 import { compass, sky } from './weather.ts';
 
@@ -25,6 +26,17 @@ describe('series', () => {
 		expect(get('bond10-es')).toBe(es);
 		expect(get('bond10-de')).toBe(de);
 		expect(get('nada')).toBeUndefined();
+	});
+
+	it('pctDays: variación en % frente al día más cercano anterior', () => {
+		const fx = serie('eurusd', [['2025-10-14', 1.0], ['2026-10-05', 1.1], ['2026-10-10', 1.12], ['2026-10-14', 1.1]]);
+		// Hace 7 días es el 7 de octubre: no hay dato y se usa el del 5.
+		expect(pctDays(fx, 7)).toBeCloseTo(0, 6);
+		expect(pctDays(fx, 365)).toBeCloseTo(10, 6);
+		// Antes del primer dato: no se compara.
+		expect(pctDays(fx, 800)).toBeNull();
+		expect(pctDays(es, 7)).toBeNull();
+		expect(pctDays(undefined, 7)).toBeNull();
 	});
 
 	it('last y at', () => {

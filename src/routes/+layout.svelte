@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { isShortcut } from '#lib/shortcuts.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import '../app.css';
 	import { goto } from '$app/navigation';
@@ -54,9 +55,9 @@
 		if (!tv.on) return;
 		const target = e.target as HTMLElement | null;
 		const typing = !!target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable);
-		if (e.key === 'Escape') stopTv();
+		if (isShortcut(e, 'tv-exit')) stopTv();
 		// El espacio pausa, salvo si se está escribiendo (por ejemplo, en la barra de comandos).
-		else if (e.key === ' ' && !typing) togglePause();
+		else if (isShortcut(e, 'tv-pause') && !typing) togglePause();
 		else return;
 		e.preventDefault();
 		e.stopImmediatePropagation();

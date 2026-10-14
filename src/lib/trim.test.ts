@@ -1,7 +1,7 @@
 // Recortes de datos de los +page.server.ts.
 import { describe, expect, it } from 'vitest';
-import { headlines, pickSeries, trim } from './trim.ts';
-import type { NewsData, SeriesData } from './types.ts';
+import { euLexShown, headlines, pickSeries, trim } from './trim.ts';
+import type { EuLexDoc, NewsData, SeriesData } from './types.ts';
 
 const series = (id: string, n: number) => ({
 	id,
@@ -34,3 +34,12 @@ describe('trim', () => {
 		expect(headlines(set, 1, true)!.data.items).toEqual([item]);
 	});
 });
+
+describe('euLexShown', () => {
+	const doc = (id: string, tags: string[] = []): EuLexDoc => ({ id, title: id, type: 'Reglamento', tags, date: '2026-10-14', url: '' });
+	it('deja los primeros y los primeros de cada tema, en su orden', () => {
+		const docs = [doc('a'), doc('b', ['Sanciones']), doc('c'), doc('d', ['Sanciones']), doc('e', ['Sanciones']), doc('f', ['Energía'])];
+		expect(euLexShown(docs, 2).map((d) => d.id)).toEqual(['a', 'b', 'd', 'f']);
+	});
+});
+

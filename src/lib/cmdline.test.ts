@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	canonical,
+	exampleTarget,
 	findCommand,
 	HISTORY_KEY,
 	historyOptions,
@@ -16,7 +17,9 @@ import {
 	writeHistory,
 	type Option
 } from './cmdline.ts';
-import { COMMANDS, TICKERS } from './commands.ts';
+import { parseSymbols, PERF_PERIODS } from './cmp.ts';
+import { COMMANDS } from './commands.ts';
+import { TICKERS } from './tickers.ts';
 
 const ALL: Option[] = [
 	...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función', aliases: c.aliases })),
@@ -131,6 +134,16 @@ describe('comandos con texto detrás', () => {
 		]);
 	});
 
+	it('cada ejemplo de HELP enlaza a lo mismo que abre la barra (también WX, que empieza por «LUGAR»)', () => {
+		for (const c of COMMANDS.filter((c) => c.arg)) {
+			const { route, search } = exampleTarget(c);
+			expect(route + search, c.code).toBe(open(c.arg!.example));
+			expect(search, c.code).not.toBe('');
+		}
+		const wx = COMMANDS.find((c) => c.code === 'WX')!;
+		expect(exampleTarget(wx).search).toBe(`?${wx.arg!.param}=Tokio`);
+	});
+
 	it('el historial guarda el texto', () => {
 		const t = resolveInput('news Inflación', []);
 		expect(t && canonical(t)).toBe('NEWS Inflación');
@@ -185,4 +198,78 @@ describe('historial', () => {
 			{ code: 'BME:REP', desc: 'Valor', kind: 'Reciente', run: 'BME:REP' }
 		]);
 	});
+});
+
+describe('CMP', () => {
+	it('«CMP NVDA AMD AVGO» abre /cmp con los valores en ?s=', () => {
+		const target = resolveInput('CMP NVDA AMD AVGO', []);
+		expect(target).toMatchObject({ kind: 'command', arg: 'NVDA AMD AVGO' });
+		expect(target && targetPath(target)).toEqual({ route: '/cmp', search: '?s=NVDA%20AMD%20AVGO' });
+	});
+
+	it('lee los valores en mayúsculas, sin repetir y como mucho cinco', () => {
+		expect(parseSymbols('nvda, amd  AVGO;nvda')).toEqual(['NVDA', 'AMD', 'AVGO']);
+		expect(parseSymbols('A B C D E F')).toEqual(['A', 'B', 'C', 'D', 'E']);
+		expect(parseSymbols('BME:SAN <script>')).toEqual(['BME:SAN']);
+		expect(parseSymbols(null)).toEqual([]);
+	});
+});
+
+describe('CMP: plazos de la tabla', () => {
+	// Las claves que llegaron de verdad en perf.json (registro de la Action del #128, 14-10-2026).
+	const REAL = ['13Week', '26Week', '52Week', '5Day', 'monthToDate', 'yearToDate'];
+
+	it('cada columna de la tabla es una clave que Finnhub da de verdad', () => {
+		for (const [key] of PERF_PERIODS) expect(REAL).toContain(key);
+	});
+});
+
+describe('funciones por valor («NVDA GP»)', () => {
+	const open = (raw: string) => resolveInput(raw, suggest(raw, ALL));
+
+	it('«nvda gp» abre la ficha con la función, sin distinguir mayúsculas', () => {
+		const t = open('nvda gp');
+		expect(t).toEqual({ kind: 'symbol', sym: 'NVDA', fn: 'gp' });
+		expect(targetPath(t!)).toEqual({ route: '/s', search: '?sym=NVDA&fn=gp' });
+		expect(canonical(t!)).toBe('NVDA GP');
+	});
+
+	it('«NVDA» sola sigue abriendo la ficha sin función', () => {
+		expect(open('NVDA')).toEqual({ kind: 'symbol', sym: 'NVDA' });
+	});
+
+	it('los comandos ganan: «ES GP» abre ES', () => {
+		const t = open('ES GP');
+		expect(t?.kind === 'command' && t.command.code).toBe('ES');
+	});
+
+	it('vale con cualquier valor, también de otra bolsa', () => {
+		expect(open('BME:REP DES')).toEqual({ kind: 'symbol', sym: 'BME:REP', fn: 'des' });
+		expect(open('brk.b fa')).toEqual({ kind: 'symbol', sym: 'BRK.B', fn: 'fa' });
+	});
+
+	it('una función que no existe se queda como símbolo, como hasta ahora', () => {
+		expect(open('NVDA XYZ')).toEqual({ kind: 'symbol', sym: 'NVDA XYZ' });
+	});
+
+	it('al escribir «NVDA » sugiere las funciones, y «NVDA G» solo GP', () => {
+		expect(suggest('NVDA ', ALL).map((o) => o.code)).toEqual(['NVDA GP', 'NVDA DES', 'NVDA FA', 'NVDA TA', 'NVDA CN', 'NVDA SEC']);
+		const g = suggest('NVDA G', ALL);
+		expect(g.map((o) => o.code)).toEqual(['NVDA GP']);
+		expect(g[0].desc).toContain('NVIDIA');
+		// Intro con «NVDA G» abre la primera sugerencia.
+		expect(open('NVDA G')).toEqual({ kind: 'symbol', sym: 'NVDA', fn: 'gp' });
+	});
+
+	it('en el historial se ve el valor y la función', () => {
+		const [o] = historyOptions(['NVDA GP']);
+		expect(o).toMatchObject({ code: 'NVDA GP', run: 'NVDA GP' });
+		expect(o.desc).toBe('Gráfico · NVIDIA');
+	});
+});
+
+it('una palabra cualquiera con espacio no sugiere funciones («aranceles »)', () => {
+	const all: Option[] = TICKERS.map((t) => ({ code: t.code, desc: t.name, kind: 'Valor' }));
+	expect(suggest('aranceles ', all).some((o) => o.kind === 'Función')).toBe(false);
+	expect(suggest('BME:REP ', all).map((o) => o.code)[0]).toBe('BME:REP GP');
 });

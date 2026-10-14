@@ -1,17 +1,21 @@
 <!--
 	Ficha de un valor: /s?sym=NVDA. Cotización y gráficos llegan en directo de TradingView;
 	los documentos de la SEC, de static/data/sec.json.
+	Con &fn= (funciones por valor de la barra, src/lib/functions.ts: «NVDA GP»), se abre la ficha entera
+	con ese panel ya ampliado; Esc vuelve a la ficha.
 	El símbolo se lee de la URL al arrancar en el navegador (al construir la web no hay URL con ?sym=).
 -->
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import Panel from '#lib/components/Panel.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
+	import AnalystPanel from '#lib/components/AnalystPanel.svelte';
 	import FilingList from '#lib/components/FilingList.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { TICKERS, tvSymbol } from '#lib/commands.ts';
+	import { TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import { sectionLabel } from '#lib/news.ts';
 	import { stockShare, type ShareInfo } from '#lib/share.ts';
 	import { inWatchlist, toggleWatch } from '#lib/watchlist.svelte.ts';
@@ -20,9 +24,12 @@
 	let { data }: PageProps = $props();
 
 	let code = $state('');
+	/** La función de la barra («gp», «des»…), si la hay. */
+	let fn = $state('');
 
 	$effect(() => {
 		code = (page.url.searchParams.get('sym') ?? 'NVDA').toUpperCase();
+		fn = (page.url.searchParams.get('fn') ?? '').toLowerCase();
 	});
 
 	const symbol = $derived(tvSymbol(code));
@@ -31,6 +38,8 @@
 	const sec = $derived(data.sec?.data.companies[code]);
 	// Titulares de todas las secciones que nombran la empresa (scripts/news-index.ts).
 	const news = $derived(data.news?.data[code] ?? []);
+	// Analistas, sorpresas de resultados y directivos (Finnhub; solo EE. UU. y con la clave).
+	const analysis = $derived(data.analysts?.data[code]);
 
 	// «Compartir»: símbolo y nombre, con ?sym en el enlace (la ficha sin ?sym abre NVDA).
 	function share(): ShareInfo {
@@ -46,6 +55,7 @@
 			<button class="star" type="button" aria-pressed={inWatchlist(code)} onclick={() => toggleWatch(code)}>
 				{inWatchlist(code) ? '★ En mi lista' : '☆ Añadir a MIS'}
 			</button>
+			<a class="star" href="{resolve('/cmp')}?s={encodeURIComponent(code)}">Comparar con…</a>
 		{/if}
 	{/snippet}
 </ViewHeader>
@@ -54,7 +64,7 @@
 	{#key symbol}
 		<div class="grid grid-2">
 			<div class="col">
-				<Panel title="Gráfico" meta={symbol} {share}>
+				<Panel title="Gráfico" meta={symbol} {share} expand={fn === 'gp'}>
 					<TvWidget
 						widget="advanced-chart"
 						config={{ symbol, interval: 'D', timezone: 'Europe/Madrid', style: '1', allow_symbol_change: false, hide_side_toolbar: true }}
@@ -66,38 +76,57 @@
 				<Panel title="Cotización">
 					<TvWidget widget="symbol-info" config={{ symbol }} height={190} credit={false} />
 				</Panel>
-				<Panel title="Análisis técnico">
+				<Panel title="Análisis técnico" expand={fn === 'ta'}>
 					<TvWidget widget="technical-analysis" config={{ symbol, interval: '1D', showIntervalTabs: true, displayMode: 'single' }} height={420} credit={false} />
 				</Panel>
 			</div>
 		</div>
 		<div class="grid grid-2e">
 			<div class="col">
-				<Panel title="Datos fundamentales">
+				<Panel title="Datos fundamentales" expand={fn === 'fa'}>
 					<TvWidget widget="financials" config={{ symbol, displayMode: 'regular' }} height={560} credit={false} />
 				</Panel>
 			</div>
 			<div class="col">
-				<Panel title="Perfil de la empresa">
+				<Panel title="Perfil de la empresa" expand={fn === 'des'}>
 					<TvWidget widget="symbol-profile" config={{ symbol }} height={560} />
 				</Panel>
 			</div>
 		</div>
-		{#if news.length}
+		{#if analysis}
 			<div class="grid">
 				<div class="col">
-					<Panel title="En las noticias" meta="{news.length} {news.length === 1 ? 'titular' : 'titulares'}">
-						<NewsList items={news} tag={(item) => sectionLabel(item)} />
+					<Panel title="Analistas y resultados" meta="Finnhub">
+						<AnalystPanel a={analysis} />
+						{#snippet note()}Recomendaciones del último mes, BPA de los últimos trimestres y operaciones de directivos (formulario 4) ·
+							<Updated at={analysis.fetchedAt} source="analysts" />{/snippet}
+					</Panel>
+				</div>
+			</div>
+		{/if}
+		{#if news.length || fn === 'cn'}
+			<div class="grid">
+				<div class="col">
+					<Panel title="En las noticias" meta="{news.length} {news.length === 1 ? 'titular' : 'titulares'}" expand={fn === 'cn'}>
+						{#if news.length}
+							<NewsList items={news} tag={(item) => sectionLabel(item)} />
+						{:else}
+							<p class="empty">Sin titulares que la nombren hoy.</p>
+						{/if}
 						{#snippet note()}Titulares de todas las secciones que nombran a {name || code} · <Updated at={data.news?.fetchedAt} source="news-eco" />{/snippet}
 					</Panel>
 				</div>
 			</div>
 		{/if}
-		{#if sec?.filings.length}
+		{#if sec?.filings.length || fn === 'sec'}
 			<div class="grid">
 				<div class="col">
-					<Panel title="Documentos SEC" meta={sec.name}>
-						<FilingList items={sec.filings} strong={(form) => form.startsWith('8-K')} />
+					<Panel title="Documentos SEC" meta={sec?.name} expand={fn === 'sec'}>
+						{#if sec?.filings.length}
+							<FilingList items={sec.filings} strong={(form) => form.startsWith('8-K')} />
+						{:else}
+							<p class="empty">Sin documentos SEC: no presenta en EE. UU.</p>
+						{/if}
 						{#snippet note()}Fuente: SEC EDGAR · <Updated at={data.sec?.fetchedAt} />{/snippet}
 					</Panel>
 				</div>
@@ -111,9 +140,19 @@
 		background: none;
 		border: var(--border);
 		color: var(--muted);
-		padding: var(--sp-5) var(--sp-10);
+		min-height: var(--control-h);
+		padding: 0 var(--sp-10);
 		font-size: var(--fs-s);
 		cursor: pointer;
+		text-decoration: none;
+	}
+
+	.star + .star {
+		margin-left: var(--sp-6);
+	}
+
+	a.star:hover {
+		color: var(--amber);
 	}
 
 	.star[aria-pressed='true'] {

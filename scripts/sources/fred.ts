@@ -1,8 +1,10 @@
 // FRED, Banco de la Reserva Federal de San Luis: series macro de EE. UU. https://fred.stlouisfed.org/docs/api/fred/
 // Necesita una clave gratuita (FRED_API_KEY, en GitHub Secrets). Sin ella, la fuente se salta.
-// Límite: unas 120 consultas por minuto por clave; aquí son 11 cada 3 horas.
+// Límite: unas 120 consultas por minuto por clave; aquí son 23 cada 3 horas.
 // Condiciones: hay que avisar de que se usa la API de FRED sin su respaldo, y algunas series son de
-// terceros con copyright (por ejemplo, el VIX de Cboe): solo se guardan unos pocos puntos con enlace a FRED.
+// terceros con copyright (el VIX de Cboe, los diferenciales de ICE BofA): solo se guardan unos pocos puntos
+// con enlace a FRED y la fuente citada.
+import { at } from '../../src/lib/series.ts';
 import type { Point, Series, SeriesData } from '../../src/lib/types.ts';
 import { getJson, num, settle, type Source } from '../lib.ts';
 
@@ -27,6 +29,10 @@ interface Wanted {
 
 const WANTED: Wanted[] = [
 	{ code: 'DFF', id: 'fedfunds-us', label: 'Fondos federales (efectivo)', unit: '%', freq: 'd', last: 260 },
+	// Mercado monetario: el repo a un día con garantía de deuda pública, lo que la Fed paga por las reservas y la letra a 3 meses.
+	{ code: 'SOFR', id: 'sofr-us', label: 'SOFR', unit: '%', freq: 'd', last: 260 },
+	{ code: 'IORB', id: 'iorb-us', label: 'Remuneración de las reservas (IORB)', unit: '%', freq: 'd', last: 260 },
+	{ code: 'DTB3', id: 'tbill3m-us', label: 'Letra del Tesoro a 3 meses', unit: '%', freq: 'd', last: 260 },
 	{ code: 'T10Y2Y', id: 't10y2y-us', label: 'Diferencial 10 años − 2 años', unit: '%', freq: 'd', last: 260 },
 	{ code: 'PCEPILFE', id: 'core-pce-us', label: 'PCE subyacente, interanual', unit: '%', freq: 'm', units: 'pc1', last: 36 },
 	{ code: 'GDPC1', id: 'gdp-us', label: 'PIB real, tasa anualizada', unit: '%', freq: 'q', units: 'pca', last: 16 },
@@ -34,11 +40,25 @@ const WANTED: Wanted[] = [
 	{ code: 'M2SL', id: 'm2-us', label: 'M2, interanual', unit: '%', freq: 'm', units: 'pc1', last: 36 },
 	// Balance de la Fed: total del activo, semanal (miércoles), en millones de dólares.
 	{ code: 'WALCL', id: 'fed-balance', label: 'Balance de la Fed', unit: 'M$', freq: 'w', last: 160 },
+	// Para la liquidez neta (WALCL − TGA − RRP): cuenta del Tesoro en la Fed (semanal, miércoles, millones de $)
+	// y repos inversas a un día (diarias, en miles de millones de $: se pasan a millones).
+	{ code: 'WTREGEN', id: 'fed-tga', label: 'Cuenta del Tesoro en la Fed (TGA)', unit: 'M$', freq: 'w', last: 160 },
+	{ code: 'RRPONTSYD', id: 'fed-rrp', label: 'Repos inversas de la Fed (RRP)', unit: 'M$', freq: 'd', last: 800, scale: 1000 },
 	{ code: 'VIXCLS', id: 'vix', label: 'VIX', unit: 'pts', freq: 'd', last: 260 },
 	{ code: 'DCOILWTICO', id: 'wti', label: 'Petróleo WTI', unit: '$', freq: 'd', last: 260 },
 	{ code: 'DTWEXBGS', id: 'dollar-broad', label: 'Dólar, índice amplio', unit: 'pts', freq: 'd', last: 260 },
 	// Hipoteca fija a 30 años (encuesta semanal de Freddie Mac): dos años de jueves.
-	{ code: 'MORTGAGE30US', id: 'mortgage30-us', label: 'Hipoteca fija a 30 años', unit: '%', freq: 'w', last: 104 }
+	{ code: 'MORTGAGE30US', id: 'mortgage30-us', label: 'Hipoteca fija a 30 años', unit: '%', freq: 'w', last: 104 },
+	// Inflación esperada por el mercado (breakevens: bono nominal menos el ligado a la inflación) y tipo real (ECO).
+	{ code: 'T5YIE', id: 'breakeven5-us', label: 'Inflación esperada a 5 años', unit: '%', freq: 'd', last: 260 },
+	{ code: 'T10YIE', id: 'breakeven10-us', label: 'Inflación esperada a 10 años', unit: '%', freq: 'd', last: 260 },
+	{ code: 'T5YIFR', id: 'forward5y5y-us', label: 'Inflación esperada a 5 años dentro de 5', unit: '%', freq: 'd', last: 260 },
+	{ code: 'DFII10', id: 'real10-us', label: 'Tipo real a 10 años (TIPS)', unit: '%', freq: 'd', last: 260 },
+	// Diferenciales de crédito (OAS de ICE BofA, en %): lo que pagan de más los bonos de empresa sobre la deuda
+	// pública (ECO y aviso P2 del alto rendimiento). Aprobado por Sergi (D31), citando «ICE Data Indices vía FRED».
+	{ code: 'BAMLH0A0HYM2', id: 'hy-us', label: 'Alto rendimiento EE. UU.', unit: '%', freq: 'd', last: 260 },
+	{ code: 'BAMLC0A0CM', id: 'ig-us', label: 'Grado de inversión EE. UU.', unit: '%', freq: 'd', last: 260 },
+	{ code: 'BAMLHE00EHYIOAS', id: 'hy-eu', label: 'Alto rendimiento euro', unit: '%', freq: 'd', last: 260 }
 ];
 
 /** «2026-09-01» → «2026-09» (mensual) o «2026-Q3» (trimestral); diaria y semanal, tal cual. */
@@ -98,9 +118,34 @@ async function series(w: Wanted, key: string): Promise<Series | null> {
 	}
 }
 
+/**
+ * Liquidez neta de la Fed, cada miércoles del balance: activo total (WALCL) − cuenta del Tesoro (TGA) − repos
+ * inversas (RRP), en millones de $. Es lo que de verdad queda en el sistema: el dinero que el Tesoro guarda en
+ * la Fed o que los fondos aparcan en las repos inversas no circula. Para TGA y RRP se toma el dato de ese día
+ * o el anterior más cercano. Null si falta alguna de las tres.
+ */
+export function netLiquidity(walcl?: Series, tga?: Series, rrp?: Series): Series | null {
+	if (!walcl || !tga || !rrp) return null;
+	const points = walcl.points.flatMap((p) => {
+		const t = at(tga, p.t);
+		const r = at(rrp, p.t);
+		return t && r ? [{ t: p.t, v: Math.round(p.v - t.v - r.v) }] : [];
+	});
+	if (!points.length) return null;
+	return {
+		id: 'fed-net-liquidity',
+		label: 'Liquidez neta de la Fed',
+		unit: 'M$',
+		geo: 'US',
+		points,
+		source: 'FRED',
+		url: 'https://fred.stlouisfed.org/series/WALCL'
+	};
+}
+
 export const fred: Source<SeriesData> = {
 	name: 'fred',
-	label: 'Fed, balance de la Fed, curva, PCE, PIB, paro semanal, M2, VIX, petróleo y dólar · FRED (Fed de San Luis)',
+	label: 'Fed, balance de la Fed, curva, PCE, PIB, paro semanal, M2, VIX, petróleo, dólar y crédito · FRED (Fed de San Luis)',
 	maxAgeMinutes: 175,
 	requires: ENV,
 	// Si a la copia le falta alguna serie (p. ej., recién añadida, como el balance de la Fed o la hipoteca), se descarga de nuevo.
@@ -109,6 +154,13 @@ export const fred: Source<SeriesData> = {
 		const key = process.env[ENV] ?? '';
 		const found = await settle('fred', WANTED, (w) => w.code, (w) => series(w, key));
 		if (!found.length) throw new Error('ninguna serie de FRED');
-		return { series: found };
+		const byId = (id: string) => found.find((s) => s.id === id);
+		const net = netLiquidity(byId('fed-balance'), byId('fed-tga'), byId('fed-rrp'));
+		if (net) {
+			// Para comprobar en el registro el orden de magnitud (todo en millones de $).
+			const last = (s?: Series) => s?.points.at(-1)?.v;
+			console.log(`  fred · liquidez neta ${last(net)} = ${last(byId('fed-balance'))} − TGA ${last(byId('fed-tga'))} − RRP ${last(byId('fed-rrp'))}`);
+		}
+		return { series: net ? [...found, net] : found };
 	}
 };

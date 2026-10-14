@@ -6,7 +6,8 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { NEWS_SECTIONS as SECTIONS } from '#lib/news.ts';
 	import Seg from '#lib/components/ui/Seg.svelte';
-	import { MIN_QUERY } from '#lib/search.ts';
+	import Search from '#lib/components/ui/Search.svelte';
+	import { fold, hasWords, MIN_QUERY, queryWords } from '#lib/search.ts';
 	import type { ArchiveEntry, NewsItem } from '#lib/types.ts';
 	import type { PageProps } from './$types';
 
@@ -20,21 +21,13 @@
 		query = page.url.searchParams.get('q') ?? '';
 	});
 
-	const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-
-	const filtered = $derived.by(() => {
-		const words = norm(query).split(/\s+/).filter(Boolean);
-		return data.items.filter(
-			(i) =>
-				(section === 'all' || i.section === section) &&
-				words.every((w) => norm(`${i.title} ${i.summary} ${i.source}`).includes(w))
-		);
-	});
+	const words = $derived(queryWords(query));
+	const inSection = $derived(data.items.filter((i) => section === 'all' || i.section === section));
+	const filtered = $derived(inSection.filter((i) => hasWords(`${i.title} ${i.summary} ${i.source}`, words)));
 
 	// Archivo de 3 meses (scripts/sources/archive.ts): cada mes es un JSON aparte (de 1 a 2 MB, unos
 	// 700 KB con gzip) que solo se pide al buscar algo de 3 letras o más. Primero el mes en curso; los
 	// anteriores, de uno en uno con el botón. Se guarda ya normalizado.
-	const words = $derived(norm(query).split(/\s+/).filter(Boolean));
 	const searching = $derived(words.join('').length >= MIN_QUERY);
 	// $state.raw (como shallowRef en Vue): son miles de titulares y no hace falta que cada uno sea reactivo.
 	let archive = $state.raw<Record<string, { e: ArchiveEntry; key: string }[]>>({});
@@ -51,7 +44,7 @@
 				const res = await fetch(asset(`data/news-archive/${month}.json` as Parameters<typeof asset>[0]));
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
 				const list = (await res.json()) as ArchiveEntry[];
-				archive = { ...archive, [month]: list.map((e) => ({ e, key: norm(`${e.t} ${e.s}`) })) };
+				archive = { ...archive, [month]: list.map((e) => ({ e, key: fold(`${e.t} ${e.s}`) })) };
 			} catch {
 				failed = true;
 				break;
@@ -85,13 +78,13 @@
 <ViewHeader code="NEWS" title="Buscador de titulares" sub="{data.items.length} titulares de todas las secciones, los más recientes primero" />
 
 <div class="controls">
-	<input type="search" bind:value={query} placeholder="Buscar: Lagarde, aranceles, Menorca, Nvidia…" aria-label="Buscar en los titulares" />
+	<Search label="Buscar en los titulares" placeholder="Buscar: Lagarde, aranceles, Menorca, Nvidia…" bind:value={query} />
 	<Seg label="Sección" options={[{ value: 'all', label: 'Todas' }, ...SECTIONS.map((s) => ({ value: s.key, label: s.label }))]} bind:value={section} />
 </div>
 
 <div class="grid">
 	<div class="col">
-		<Panel title="Resultados" meta="{filtered.length} titulares">
+		<Panel title="Resultados" meta={words.length ? `${filtered.length} de ${inSection.length}` : `${filtered.length} titulares`}>
 			<NewsList items={filtered.slice(0, 150)} summaries tag={(i) => label[sectionOf.get(i.url) ?? '']} />
 		</Panel>
 		{#if searching && data.months.length}
@@ -99,7 +92,7 @@
 				title="En el archivo"
 				meta={loaded < wanted && !failed ? 'Cargando…' : `${archived.length} ${archived.length === 1 ? 'titular' : 'titulares'}`}
 			>
-				<NewsList items={archived.slice(0, 150)} />
+				{#if archived.length}<NewsList items={archived.slice(0, 150)} />{/if}
 				{#if !archived.length && loaded >= wanted}<p class="empty">Nada más hasta {monthName(data.months[loaded - 1].month)}.</p>{/if}
 				{#if loaded >= wanted && wanted < data.months.length && !failed}
 					<button class="more" type="button" onclick={() => wanted++}>Buscar también en {monthName(data.months[wanted].month)}</button>
@@ -122,16 +115,6 @@
 		margin-bottom: var(--sp-12);
 	}
 
-	input {
-		flex: 1 1 280px;
-		height: var(--control-h);
-		padding: 0 var(--sp-10);
-		background: var(--panel);
-		border: var(--border);
-		font-family: var(--sans);
-		font-size: var(--fs-l);
-	}
-
 	.more {
 		display: block;
 		width: 100%;
@@ -148,10 +131,5 @@
 
 	.more:hover {
 		background: var(--amber-soft);
-	}
-
-	input:focus {
-		outline: none;
-		border-color: var(--amber);
 	}
 </style>
