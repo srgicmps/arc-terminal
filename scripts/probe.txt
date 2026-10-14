@@ -26,5 +26,5 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG350?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # ECO: inflación del G20 (OCDE, SDMX). Ojo: la OCDE limita las descargas por IP; solo dos consultas.
-https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_G20_PRICES@DF_G20_PRICES,/all?lastNObservations=1&dimensionAtObservation=AllDimensions&format=csvfilewithlabels
-https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_G20_PRICES@DF_G20_PRICES,/all?lastNObservations=1&dimensionAtObservation=AllDimensions&format=csvfile ~ [^\n]{0,20}(G20|ESP|USA)[^\n]{0,160}
+https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_G20_PRICES@DF_G20_PRICES,1.0/all?startPeriod=2026-07&dimensionAtObservation=AllDimensions&format=csvfilewithlabels
+https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_G20_PRICES@DF_G20_PRICES,1.0/all?startPeriod=2026-07&dimensionAtObservation=AllDimensions&format=csvfile ~ .{0,10}(G20|ESP|USA|EA20).{0,140}
