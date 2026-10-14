@@ -10,6 +10,7 @@ import type { OutbreakNews } from '../sources/who.ts';
 // 14 oct 2026, 12:00 en Madrid (CEST).
 const NOW = Date.parse('2026-10-14T10:00:00Z');
 const MIN = 60_000;
+const HOUR = 60 * MIN;
 
 /** Ejecuta una regla y devuelve sus avisos y el historial con los cambios «siempre» y los commits aplicados. */
 function run(rule: Rule['run'], d: WorldInputs, log: NotifyLog = emptyLog(), now = NOW) {
@@ -46,8 +47,12 @@ describe('GDACS', () => {
 		expect(first.alerts[0].title).toBe('🔴 Terremoto · Japan');
 		// Otra pasada (otro episodio): no repite, aunque el historial de entradas ya no lo tenga.
 		expect(run(gdacsRule, { gdacs: [gdacs('EQ1', 'red')] }, first.after).ids).toEqual([]);
-		// Desaparece: se borra su marca.
-		expect(run(gdacsRule, { gdacs: [] }, first.after).after.last).toEqual({});
+		// Una pasada vacía por error: la marca se queda y, si el evento vuelve, no se repite.
+		const empty = run(gdacsRule, { gdacs: [] }, first.after, NOW + HOUR).after;
+		expect(empty.last['gdacs:EQ1']).toBeDefined();
+		expect(run(gdacsRule, { gdacs: [gdacs('EQ1', 'red')] }, empty, NOW + 2 * HOUR).ids).toEqual([]);
+		// Tras 48 h sin verlo, se olvida.
+		expect(run(gdacsRule, { gdacs: [] }, first.after, NOW + 49 * HOUR).after.last).toEqual({});
 		// Sin gdacs.json no se toca nada.
 		expect(run(gdacsRule, {}, first.after).after.last).toEqual(first.after.last);
 	});
@@ -119,8 +124,12 @@ describe('IODA', () => {
 		const first = run(iodaRule, { ioda: [outage('FR', 'critical')] });
 		const moved = outage('FR', 'critical', '2026-10-14T09:00:00.000Z');
 		expect(run(iodaRule, { ioda: [moved] }, first.after).ids).toEqual([]);
-		const back = run(iodaRule, { ioda: [] }, first.after).after;
-		expect(run(iodaRule, { ioda: [moved] }, back).ids).toEqual(['ioda:FR:2026-10-14T09:00:00.000Z']);
+		// Se recupera y vuelve a caer al cabo de un rato: dentro de las 48 h, no se repite.
+		const back = run(iodaRule, { ioda: [] }, first.after, NOW + HOUR).after;
+		expect(run(iodaRule, { ioda: [moved] }, back, NOW + 2 * HOUR).ids).toEqual([]);
+		// Pasadas las 48 h sin verlo, otra caída sí avisa.
+		const later = run(iodaRule, { ioda: [] }, first.after, NOW + 49 * HOUR).after;
+		expect(run(iodaRule, { ioda: [moved] }, later, NOW + 50 * HOUR).ids).toEqual(['ioda:FR:2026-10-14T09:00:00.000Z']);
 	});
 });
 
@@ -161,9 +170,9 @@ describe('páginas de estado', () => {
 		expect(first.ids).toEqual(['status:aws:f']);
 		const stale = run(statusRule, { statuspage: [service('aws', 'critical', [['f', 'critical']], true)] }, first.after);
 		expect(stale.ids).toEqual([]);
-		expect(stale.after.last['status:aws:f']).toBe('1');
+		expect(stale.after.last['status:aws:f']).toBeDefined();
 		expect(run(statusRule, { statuspage: [service('aws', 'critical', [['f', 'critical']])] }, stale.after).ids).toEqual([]);
-		expect(run(statusRule, { statuspage: [service('aws', 'none', [])] }, stale.after).after.last).toEqual({});
+		expect(run(statusRule, { statuspage: [service('aws', 'none', [])] }, stale.after, NOW + 49 * HOUR).after.last).toEqual({});
 	});
 });
 
@@ -184,6 +193,6 @@ describe('OMS', () => {
 		expect(next.alerts[0].title).toBe('🦠 OMS: Brote 2026-DON621');
 		expect(run(whoRule, { who: [don('2026-DON621'), don('2026-DON620')] }, next.after).ids).toEqual([]);
 		// La marca de inicio no se borra aunque cambie la lista.
-		expect(next.after.last['who:init']).toBe('1');
+		expect(next.after.last['who:init']).toBeDefined();
 	});
 });
