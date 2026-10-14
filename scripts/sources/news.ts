@@ -84,6 +84,12 @@ const FEEDS: Record<string, Feed[]> = {
 		},
 		{ name: DIPLOMACY_FEEDS[1], url: 'https://www.iaea.org/feeds/topnews' }
 	],
+	// Análisis de conflictos (M35, comprobados con probe el 14-10-2026). Descartados: Real Instituto Elcano (403 desde
+	// Actions), Chatham House, ECFR e IISS (403 de Cloudflare) y CFR (sin RSS en la ruta habitual).
+	analysis: [
+		{ name: 'Crisis Group', url: 'https://www.crisisgroup.org/rss.xml' },
+		{ name: 'Foreign Affairs', url: 'https://www.foreignaffairs.com/rss.xml' }
+	],
 	// Regulación tecnológica (M39, comprobados con probe el 14-10-2026): ley de IA y mercado digital de la UE, y
 	// multas de protección de datos (EDPB). Descartados: FTC (403 desde Actions), Departamento de Justicia (su RSS
 	// no filtra por antimonopolio) y competencia de la Comisión (400).
@@ -119,6 +125,8 @@ export const ENGLISH = new Set([
 	'Simon Willison',
 	'Casa Blanca',
 	'Reserva Federal',
+	'Crisis Group',
+	'Foreign Affairs',
 	'Comisión Europea (digital)',
 	'EDPB',
 	...DIPLOMACY_FEEDS
@@ -273,6 +281,7 @@ const LABELS: Record<string, string> = {
 	ai: 'Inteligencia artificial',
 	gov: 'Gobiernos e instituciones',
 	intl: 'Organismos internacionales',
+	analysis: 'Análisis de conflictos',
 	reg: 'Regulación tecnológica'
 };
 

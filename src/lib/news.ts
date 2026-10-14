@@ -11,6 +11,7 @@ export const NEWS_SECTIONS = [
 	{ key: 'ai', label: 'IA' },
 	{ key: 'gov', label: 'Gobiernos' },
 	{ key: 'intl', label: 'Organismos' },
+	{ key: 'analysis', label: 'Análisis' },
 	{ key: 'reg', label: 'Regulación' }
 ] as const;
 

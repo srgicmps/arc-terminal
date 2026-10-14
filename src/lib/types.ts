@@ -1038,7 +1038,8 @@ export interface ReleaseEvent {
 	/** Si el organismo no da la hora. */
 	allDay: boolean;
 	title: string;
-	source: 'Eurostat' | 'BLS' | 'INE';
+	/** Organismo: BEA (PIB y PCE), DOL (paro semanal) y Fed (H.4.1) llegan, como el BLS, con las fechas de FRED. */
+	source: 'Eurostat' | 'BLS' | 'INE' | 'BEA' | 'DOL' | 'Fed';
 	/** Tema (src/lib/nextrelease.ts) si es uno de los datos que enseña la terminal, o null. */
 	topic: string | null;
 	url?: string;
@@ -1140,4 +1141,25 @@ export interface DemandData {
 	gap: number | null;
 	/** Las dos últimas horas, para ver si la caída es brusca o progresiva. */
 	recent: DemandPoint[];
+}
+
+// ---------- Refugiados y desplazados (ACNUR, scripts/sources/unhcr.ts) ----------
+
+export interface UnhcrCountry {
+	/** ISO 3166-1 alfa-3: «SYR». */
+	iso3: string;
+	/** Nombre en inglés, como lo da ACNUR. */
+	name: string;
+	/** Refugiados y solicitantes de asilo originarios del país. */
+	from: number;
+	/** Refugiados y solicitantes de asilo acogidos en el país. */
+	hosted: number;
+	/** Desplazados internos. */
+	idps: number;
+}
+
+export interface UnhcrData {
+	/** Año del dato (fin de año). */
+	year: number;
+	countries: UnhcrCountry[];
 }

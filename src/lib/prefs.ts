@@ -27,6 +27,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-chart-period', storage: 'local', what: 'Último periodo elegido en los gráficos de línea', where: 'Botones 1M · 6M · 1A · 5A · Máx', kind: 'ajuste' },
 	{ key: 'arc-ws-heatmap', storage: 'local', what: 'Último mapa de calor elegido', where: 'WS', kind: 'ajuste' },
 	{ key: 'arc-tv', storage: 'local', what: 'Vistas y segundos del modo TV', where: 'TV', kind: 'ajuste' },
+	{ key: 'arc-cal', storage: 'local', what: 'Países e importancia del calendario económico', where: 'CAL', kind: 'ajuste' },
 	{ key: 'fuel-zone', storage: 'local', what: 'Última provincia elegida', where: 'FUEL', kind: 'ajuste' },
 	{ key: 'arc-place', storage: 'local', what: 'Tu sitio y hasta 5 favoritos', where: 'Chip «Tu sitio» de la cabecera, WX', kind: 'dato' },
 	{ key: 'arc-watchlist', storage: 'local', what: 'Tu lista de valores', where: 'MIS', kind: 'dato' },

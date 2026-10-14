@@ -250,8 +250,12 @@ const HELLO = (now: number): Alert => ({
 	time: now
 });
 
-/** ¿Es una clave de un ADR europeo («stock:EADSY», «stock:EADSY:2026-10-14T10:00Z»)? */
-const isEuAdr = (key: string) => EU_ADRS.some((s) => key === `stock:${s}` || key.startsWith(`stock:${s}:`));
+/** En el historial: cuándo se pidieron los ADR por última vez (ISO). */
+const ADR_KEY = 'adr:fetched';
+const ADR_EVERY_MS = 60 * 60_000;
+
+/** ¿Es una clave de un ADR europeo («stock:EADSY», «stock:EADSY:2026-10-14T10:00Z») o la hora de su consulta? */
+const isEuAdr = (key: string) => key === ADR_KEY || EU_ADRS.some((s) => key === `stock:${s}` || key.startsWith(`stock:${s}:`));
 
 /**
  * La copia del historial que se publica en la web, sin rastro de los ADR europeos (D25: datos de Finnhub
@@ -338,12 +342,6 @@ export async function runNotify({
 		for (const [key, file] of Object.entries(FILES)) {
 			(inputs as Record<string, unknown>)[key] = await readData(dir, file);
 		}
-		// ADR europeos (D25): solo en memoria para decidir los avisos; nunca se escriben en static/data.
-		if (finnhubKey?.trim()) {
-			const { quotes, failed } = await fetchQuotes(EU_ADRS, finnhubKey.trim(), euGap);
-			inputs.alertQuotes = [...(inputs.alertQuotes ?? []), ...quotes];
-			say(`ntfy: ${quotes.length} de ${EU_ADRS.length} ADR europeos${failed.length ? ` (sin dato: ${failed.join(', ')})` : ''}`);
-		}
 		if (zone?.trim()) {
 			const found = await loadZone(zone.trim(), inputs, dir);
 			if (found) {
@@ -354,6 +352,15 @@ export async function runNotify({
 			else say('ntfy: ALERT_FUEL_ZONE no corresponde a ninguna zona; el diésel se vigila solo en España');
 		}
 		const previous = newestLog(await cachedLog(cache), await publishedLog());
+		// ADR europeos (D25): solo en memoria para decidir los avisos; nunca se escriben en static/data. Solo
+		// traen el cierre diario, así que se piden como mucho una vez por hora (la hora va en el historial).
+		const lastAdr = Date.parse(previous?.last[ADR_KEY] ?? '');
+		const adrDue = !!finnhubKey?.trim() && !(now - lastAdr < ADR_EVERY_MS);
+		if (adrDue) {
+			const { quotes, failed } = await fetchQuotes(EU_ADRS, finnhubKey!.trim(), euGap);
+			inputs.alertQuotes = [...(inputs.alertQuotes ?? []), ...quotes];
+			say(`ntfy: ${quotes.length} de ${EU_ADRS.length} ADR europeos${failed.length ? ` (sin dato: ${failed.join(', ')})` : ''}`);
+		}
 		let log: NotifyLog;
 		if (!previous) {
 			log = baselineLog(inputs, now);
@@ -380,6 +387,7 @@ export async function runNotify({
 			if (skipped.length) say(`ntfy: ${skipped.length} avisos no caben en los cupos de hoy`);
 			if (!send.length && !skipped.length) say('ntfy: nada que avisar');
 		}
+		if (adrDue) log.last[ADR_KEY] = new Date(now).toISOString();
 		const file = (data: NotifyLog) => JSON.stringify({ name: 'notify-log', fetchedAt: new Date(now).toISOString(), data }) + '\n';
 		await mkdir(dir, { recursive: true });
 		await writeFile(`${dir}/notify-log.json`, file(publicLog(log)));
