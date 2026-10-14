@@ -1039,3 +1039,24 @@ export interface ChangesData {
 	/** Lo fusionado en los últimos 7 días, de lo más reciente a lo más antiguo. */
 	items: Change[];
 }
+
+// ---------- Demanda eléctrica en tiempo real (REE, scripts/sources/ree-demand.ts) ----------
+
+export interface DemandPoint {
+	/** Hora del dato en ISO (UTC). */
+	time: string;
+	real: number | null;
+	forecast: number | null;
+}
+
+export interface DemandData {
+	/** Último dato con demanda real y su prevista, en MW. */
+	time: string;
+	real: number;
+	forecast: number | null;
+	scheduled: number | null;
+	/** Cuánto está la real por debajo (+) o por encima (−) de la prevista, en %. */
+	gap: number | null;
+	/** Las dos últimas horas, para ver si la caída es brusca o progresiva. */
+	recent: DemandPoint[];
+}
