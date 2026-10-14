@@ -20,7 +20,7 @@ export const climate: Source<ClimateData> = {
 	maxAgeMinutes: 1440,
 	// Las copias de antes de El Niño no lo traen: se descargan de nuevo.
 	isStale: (previous) => !('enso' in previous),
-	async fetch() {
+	async fetch(previous) {
 		const [temp, co2, enso] = await Promise.allSettled([
 			getText(ERA5).then((csv) => summarizeTemp(parseEra5(csv))),
 			getText(CO2).then((csv) => summarizeCo2(parseCo2(csv))),
@@ -29,7 +29,8 @@ export const climate: Source<ClimateData> = {
 		const data: ClimateData = {
 			temp: temp.status === 'fulfilled' ? temp.value : null,
 			co2: co2.status === 'fulfilled' ? co2.value : null,
-			enso: enso.status === 'fulfilled' ? enso.value : null
+			// Si falla el ONI (es mensual), vale el de la copia anterior.
+			enso: enso.status === 'fulfilled' ? enso.value : (previous?.enso ?? null)
 		};
 		if (enso.status === 'rejected') console.log(`  climate · ONI: ${enso.reason}`);
 		if (temp.status === 'rejected') console.log(`  climate · ERA5: ${temp.reason}`);
