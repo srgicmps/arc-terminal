@@ -1,6 +1,7 @@
 // Búsqueda de la barra de comandos en el índice static/data/search.json (scripts/sources/search.ts).
 // Lógica pura, sin Svelte, para probarla con Vitest. El índice se carga aparte, en diferido.
 import { commandWithArg, findCommand, isTickerLike, norm, splitInput, symbolFunction, type Option } from './cmdline.ts';
+import { plain } from './news.ts';
 import type { SearchEntry } from './types.ts';
 
 /** Una entrada lista para buscar: con su título ya normalizado (sin tildes y en mayúsculas). */
@@ -14,7 +15,7 @@ export function prepare(entries: SearchEntry[]): Indexed[] {
 }
 
 /** Texto sin tildes y en minúsculas, para los buscadores de las vistas (NEWS, BOE). */
-export const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+export const fold = (s: string) => plain(s).toLowerCase();
 
 /** Las palabras sueltas de lo escrito, ya sin tildes: «Banco  España» → ['banco', 'espana']. */
 export const queryWords = (q: string) => fold(q).split(/\s+/).filter(Boolean);

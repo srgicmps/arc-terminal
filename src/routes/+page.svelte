@@ -1,18 +1,23 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { asset, resolve } from '$app/paths';
+	import { latestWatched } from '#lib/boe.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
-	import { nf, when } from '#lib/format.ts';
+	import { dm, nf, when } from '#lib/format.ts';
 	import { cheapestNow, hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
 	import { seriesMap, spread } from '#lib/series.ts';
 	import { compass, sky } from '#lib/weather.ts';
 	import ModularGrid from '#lib/components/ModularGrid.svelte';
+	import MarketSessions from '#lib/components/MarketSessions.svelte';
+	import RiskGauge from '#lib/components/RiskGauge.svelte';
 	import Agenda from '#lib/components/top/Agenda.svelte';
 	import Markets from '#lib/components/top/Markets.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
+	import type { BoeWeek } from '#lib/types.ts';
+	import { initWatchwords, watchwords } from '#lib/watchwords.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
 	import type { PageProps } from './$types';
 
@@ -34,7 +39,10 @@
 		{ id: 'hn', title: 'Hacker News' },
 		// Solo en la portada modular (en la general ya están la cinta de cotizaciones y CAL).
 		{ id: 'agenda', title: 'Hoy en la agenda' },
-		{ id: 'markets', title: 'Mercados' }
+		{ id: 'markets', title: 'Mercados' },
+		{ id: 'sessions', title: 'Sesiones de las bolsas' },
+		{ id: 'risk', title: 'Termómetro de riesgo' },
+		{ id: 'puzzle', title: 'Problema del día' }
 	]);
 	// Como onMounted en Vue: lo guardado en el navegador se lee al arrancar en él.
 	$effect(() => top.load());
@@ -73,6 +81,19 @@
 
 	const boeGeneral = $derived(data.boe?.data.sections.find((s) => s.code === '1'));
 	const boeTotal = $derived((data.boe?.data.sections ?? []).reduce((n, s) => n + s.total, 0));
+
+	// Palabras vigiladas (las de la vista BOE, guardadas en este navegador): cuántas disposiciones del último
+	// sumario las nombran. boe-week.json se pide en el navegador y solo si hay alguna palabra.
+	let boeWeek = $state.raw<BoeWeek | null>(null);
+	$effect(() => initWatchwords());
+	$effect(() => {
+		if (!watchwords.ready || !watchwords.words.length || boeWeek) return;
+		fetch(asset('data/boe-week.json' as Parameters<typeof asset>[0]))
+			.then((res) => (res.ok ? (res.json() as Promise<BoeWeek>) : null))
+			.then((w) => (boeWeek = w))
+			.catch(() => {});
+	});
+	const boeWatch = $derived(latestWatched(boeWeek, watchwords.words));
 
 	// Línea de arriba: titulares nuevos desde la última visita y la franja de luz más barata.
 	const fresh = $derived(clock.now && visit.ready ? newSinceText(newCount(data.headlines, visit.last), visit.last, clock.now) : '');
@@ -171,6 +192,25 @@
 	<Markets />
 {/snippet}
 
+{#snippet sessions()}
+	<Panel id="sessions" title="Sesiones de las bolsas" meta="24 h · hora de Madrid" jump={{ code: 'WS', href: resolve('/ws') }}>
+		<MarketSessions />
+	</Panel>
+{/snippet}
+
+{#snippet risk()}
+	<RiskGauge id="risk" risk={data.risk} />
+{/snippet}
+
+{#snippet puzzle()}
+	<!-- Se carga aparte (import dinámico): lleva chess.js, unos 17 KB que la portada no necesita si no está este panel. -->
+	{#await import('#lib/components/PuzzleCard.svelte')}
+		<Panel id="puzzle" title="Problema del día"><p class="empty">Cargando…</p></Panel>
+	{:then { default: PuzzleCard }}
+		<PuzzleCard id="puzzle" puzzle={data.puzzle} />
+	{/await}
+{/snippet}
+
 {#snippet titulares()}
 	<Panel id="news" title="Titulares" meta="Todas las secciones">
 		<NewsList items={data.headlines} tag={(i) => tags.get(i.url)} />
@@ -195,6 +235,7 @@
 		<ul class="mini">
 			{#if current}<li><span class="l">Ahora</span><b>{nf(current.kwh, 3)}</b></li>{/if}
 			{#if cheapest}<li><span class="l">Más barata hoy</span><b class="up">{hourLabel(cheapest)} · {nf(cheapest.kwh, 3)}</b></li>{/if}
+			{#if cheapWindow}<li><span class="l">Franja de 2 h{cheapWindow.tomorrow ? ', mañana' : ''}</span><b class="up">{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)} · {nf(cheapWindow.avg, 3)}</b></li>{/if}
 			{#if tomorrow !== null}
 				<li>
 					<span class="l">Mañana, media</span>
@@ -222,6 +263,14 @@
 {#snippet boe()}
 	<Panel id="boe" title="BOE de hoy" meta="{boeTotal} publicaciones" jump={{ code: 'BOE', href: resolve('/boe') }}>
 		<ul class="mini">
+			{#if boeWatch}
+				<li>
+					<a class="l" href={resolve('/boe')}
+						>Con tus palabras vigiladas{#if boeWatch.date !== now?.day}<small>BOE del {dm(boeWatch.date)}</small>{/if}</a
+					>
+					<b class:strong={boeWatch.count > 0}>{boeWatch.count}</b>
+				</li>
+			{/if}
 			{#each (boeGeneral?.items ?? []).slice(0, 4) as item (item.id)}
 				<li><a class="l" href={item.html} target="_blank" rel="noopener">{item.title}</a></li>
 			{:else}
@@ -283,7 +332,7 @@
 {#if mode.modular}
 	<ModularGrid
 		layout={top}
-		panels={{ rates: tipos, macro, fx: divisas, important: importante, news: titulares, weather: menorca, power: luz, fuel: gasolina, boe, quakes: terremotos, predictions: predicciones, hn, agenda, markets }}
+		panels={{ rates: tipos, macro, fx: divisas, important: importante, news: titulares, weather: menorca, power: luz, fuel: gasolina, boe, quakes: terremotos, predictions: predicciones, hn, agenda, markets, sessions, risk, puzzle }}
 	/>
 {:else}
 	<div class="grid grid-3">

@@ -3,33 +3,12 @@
 // incendios. API pública y sin clave (GeoJSON). Términos: datos de uso libre citando a GDACS; no
 // publican un límite por IP, así que se pide como mucho cada 30 min. Las fechas de la API van en UTC
 // sin zona («2026-10-10T08:12:00»).
+import type { GdacsEvent, GdacsType } from '../../src/lib/types.ts';
 import { getJson, list, num, plain, type Source } from '../lib.ts';
 
 type Raw = Record<string, any>;
 
-export type GdacsType = 'EQ' | 'TC' | 'FL' | 'VO' | 'DR' | 'WF';
-
-export interface GdacsEvent {
-	/** Tipo y número de evento de GDACS, p. ej. «EQ1501234». Estable entre episodios. */
-	id: string;
-	type: GdacsType;
-	/** Nombre del tipo en español. */
-	kind: string;
-	level: 'orange' | 'red';
-	name: string;
-	country: string;
-	/** Fecha de inicio, fin y última actualización, en ISO (UTC). */
-	from: string | null;
-	to: string | null;
-	updated: string | null;
-	/** Texto de gravedad de GDACS, p. ej. «Magnitude 7.1M, Depth:10km». */
-	severity: string;
-	/** Puntuación de alerta de GDACS (0–3 aprox.): sirve para ordenar dentro de un mismo nivel. */
-	score: number | null;
-	lat: number | null;
-	lon: number | null;
-	url: string;
-}
+export type { GdacsEvent, GdacsType };
 
 const KINDS: Record<GdacsType, string> = {
 	EQ: 'Terremoto',

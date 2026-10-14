@@ -21,7 +21,6 @@
 	const today = $derived(madridDate(clock.now || Date.now()));
 	const upcoming = $derived(myEarnings(data.finnhub?.data.earnings ?? [], watchlist.codes, today));
 
-
 	const nameOf = (code: string) => TICKERS.find((t) => t.code === code)?.name ?? code;
 	const quotes = $derived({
 		showSymbolLogo: false,
@@ -127,9 +126,6 @@
 </div>
 
 <style>
-
-
-
 
 	.c {
 		color: var(--amber);

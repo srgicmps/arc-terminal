@@ -12,7 +12,8 @@
 	import { puzzleStart, puzzleThemes, type Puzzle } from '#lib/chess/puzzle.ts';
 	import { loadSolved } from '#lib/chess/save.ts';
 
-	let { puzzle }: { puzzle: Puzzle | null | undefined } = $props();
+	/** `id`: el del panel en la vista modular (TOP). */
+	let { puzzle, id }: { puzzle: Puzzle | null | undefined; id?: string } = $props();
 
 	let solved = $state(false);
 	onMount(() => (solved = !!puzzle && loadSolved() === puzzle.id));
@@ -21,7 +22,7 @@
 	const href = `${resolve('/chess')}?modo=problema`;
 </script>
 
-<Panel title="Problema del día" meta={solved ? '✓ Resuelto' : undefined} jump={{ code: 'CHESS', href }}>
+<Panel {id} title="Problema del día" meta={solved ? '✓ Resuelto' : undefined} jump={{ code: 'CHESS', href }}>
 	{#if puzzle && start}
 		<a class="card" {href}>
 			<div class="mini-board">
