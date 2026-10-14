@@ -36,3 +36,6 @@ https://api.energy-charts.info/price?bzn=NO2
 https://api.energy-charts.info/price?bzn=SE3
 https://api.energy-charts.info/price?bzn=DK1
 https://api.energy-charts.info/price?bzn=CH
+# GEO/PAIS (M12): avisos de viaje del Departamento de Estado de EE. UU. (nivel 1–4 por país)
+https://cadataapi.state.gov/api/TravelAdvisories
+https://cadataapi.state.gov/api/TravelAdvisories ~ Spain|Ukraine
