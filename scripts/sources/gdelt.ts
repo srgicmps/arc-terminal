@@ -2,15 +2,15 @@
 // API DOC 2.0 (sin clave, uso libre citando a GDELT). Pide no hacer más de una consulta cada 5 s,
 // así que se hace una sola consulta por actualización.
 import type { NewsData, NewsItem } from '../../src/lib/types.ts';
-import { getText, list, plain, type Source } from '../lib.ts';
+import { list, plain, request, type Source } from '../lib.ts';
 
 type Raw = Record<string, any>;
 
 // Temas de GDELT (GKG) que encajan con geopolítica. Solo medios en español, últimas 24 h.
-// Si la primera consulta no trae nada, se prueba la segunda, más sencilla.
+// Primero la consulta sencilla; si no trae nada, una más amplia.
 const QUERIES = [
-	'(theme:ARMEDCONFLICT OR theme:MILITARY OR theme:SANCTIONS OR theme:CEASEFIRE) sourcelang:spanish',
-	'theme:ARMEDCONFLICT sourcelang:spanish'
+	'theme:ARMEDCONFLICT sourcelang:spanish',
+	'(theme:ARMEDCONFLICT OR theme:MILITARY OR theme:SANCTIONS OR theme:CEASEFIRE) sourcelang:spanish'
 ];
 
 const endpoint = (query: string) =>
@@ -21,7 +21,9 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Artículos de una consulta. Si GDELT no devuelve JSON (límite de uso, consulta mal hecha), avisa con su texto. */
 async function articles(query: string): Promise<{ list: Raw[]; raw: string }> {
-	const raw = await getText(endpoint(query));
+	// GDELT limita por IP y GitHub Actions comparte IP con otros repos: a veces responde 429
+	// («demasiadas peticiones»). Se reintenta hasta 5 veces, esperando cada vez un poco más.
+	const raw = await (await request(endpoint(query), {}, 5)).text();
 	try {
 		return { list: list<Raw>(JSON.parse(raw).articles), raw };
 	} catch {
