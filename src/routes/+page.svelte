@@ -50,7 +50,8 @@
 		{ id: 'markets', title: 'Mercados' },
 		{ id: 'sessions', title: 'Sesiones de las bolsas' },
 		{ id: 'risk', title: 'Termómetro de riesgo' },
-		{ id: 'puzzle', title: 'Problema del día' }
+		{ id: 'puzzle', title: 'Problema del día' },
+		{ id: 'week', title: 'Tu semana' }
 	]);
 	// Como onMounted en Vue: lo guardado en el navegador se lee al arrancar en él.
 	$effect(() => top.load());
@@ -116,6 +117,8 @@
 	const boeGeneral = $derived(data.boe?.data.sections.find((s) => s.code === '1'));
 	// Titulares de la portada que nombran alguna palabra vigilada (resaltadas en la lista).
 	const watchedNews = $derived(data.headlines.filter((h) => matches(h.title, watchwords.words).length).length);
+	// Lunes en Madrid (hasta que arranca el reloj en el navegador, no: la página se construye cualquier día).
+	const monday = $derived(!!clock.now && new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'Europe/Madrid' }).format(clock.now) === 'Mon');
 	const boeTotal = $derived((data.boe?.data.sections ?? []).reduce((n, s) => n + s.total, 0));
 
 	// Palabras vigiladas (las de la vista BOE, guardadas en este navegador): cuántas disposiciones del último
@@ -205,6 +208,23 @@
 					<b>{nf(c.usd, 0)} $ <em><Change value={c.change24h} digits={1} unit=" %" /></em></b>
 				</li>
 			{/each}
+		</ul>
+	</Panel>
+{/snippet}
+
+{#snippet semana()}
+	<Panel id="week" title="Tu semana en 2 minutos" meta="Últimos 7 días" jump={{ code: 'SEMANA', href: resolve('/semana') }}>
+		<ul class="mini">
+			{#each data.week.top as t (t.k)}
+				<li><a class="l" href={t.url} target="_blank" rel="noopener">{t.title}</a><b class="mut">{t.days} {t.days === 1 ? 'día' : 'días'}</b></li>
+			{/each}
+			{#each data.week.markets as m (m.label)}
+				<li>
+					<span class="l">{m.label} <small>{nf(m.last, m.decimals)}</small></span>
+					<b><Change value={m.change} digits={m.kind === 'pct' ? 1 : 0} unit={m.kind === 'pct' ? ' %' : ' pb'} /></b>
+				</li>
+			{/each}
+			{#if !data.week.top.length && !data.week.markets.length}<li><span class="l">Sin datos todavía</span></li>{/if}
 		</ul>
 	</Panel>
 {/snippet}
@@ -389,7 +409,7 @@
 {#if mode.modular}
 	<ModularGrid
 		layout={top}
-		panels={{ rates: tipos, macro, fx: divisas, important: importante, news: titulares, weather: menorca, power: luz, fuel: gasolina, boe, quakes: terremotos, predictions: predicciones, hn, agenda, markets, sessions, risk, puzzle }}
+		panels={{ rates: tipos, macro, fx: divisas, important: importante, news: titulares, weather: menorca, power: luz, fuel: gasolina, boe, quakes: terremotos, predictions: predicciones, hn, agenda, markets, sessions, risk, puzzle, week: semana }}
 	/>
 {:else}
 	<div class="grid grid-3">
@@ -400,6 +420,8 @@
 		</div>
 
 		<div class="col">
+			<!-- Los lunes, el resumen de la semana encima de «Lo importante» (en la modular, cuando se quiera). -->
+			{#if monday}{@render semana()}{/if}
 			{@render importante()}
 			{@render titulares()}
 		</div>
