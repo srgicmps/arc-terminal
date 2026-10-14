@@ -37,7 +37,7 @@
 		</Panel>
 		<Panel title="Deuda pública" meta="% del PIB">
 			<SeriesTable head="País" rows={byGeo('debt')} />
-			{#snippet note()}Fuente: Eurostat · <Updated at={data.eurostat?.fetchedAt} />{/snippet}
+			{#snippet note()}Fuente: Eurostat · <Updated at={data.eurostat?.fetchedAt} source="eurostat" />{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
@@ -73,7 +73,7 @@
 					{ series: premium, name: 'Prima España (pb)', decimals: 0, inverse: true }
 				]}
 			/>
-			{#snippet note()}Fuente: BCE · <Updated at={data.ecb?.fetchedAt} />{/snippet}
+			{#snippet note()}Fuente: BCE · <Updated at={data.ecb?.fetchedAt} source="ecb" />{/snippet}
 		</Panel>
 		<Panel title="EE. UU." meta="BLS y Tesoro">
 			<SeriesTable
@@ -93,7 +93,7 @@
 					</li>
 				</ul>
 			{/if}
-			{#snippet note()}Fuentes: BLS y Tesoro de EE. UU. · <Updated at={data.bls?.fetchedAt} />{/snippet}
+			{#snippet note()}Fuentes: BLS y Tesoro de EE. UU. · <Updated at={data.bls?.fetchedAt} source="bls" />{/snippet}
 		</Panel>
 		<Panel title="Fed y mercados" meta="EE. UU. · FRED">
 			{#if data.fred}
@@ -116,7 +116,7 @@
 			{/if}
 			{#snippet note()}
 				Fuente: FRED, Fed de San Luis (usa su API sin estar respaldado por ella)
-				{#if data.fred}· <Updated at={data.fred.fetchedAt} />{/if}
+				{#if data.fred}· <Updated at={data.fred.fetchedAt} source="fred" />{/if}
 			{/snippet}
 		</Panel>
 		{#if data.predictions?.data.economy.length}

@@ -106,20 +106,20 @@
 	<div class="col">
 		<Panel title="Titulares" meta="Mercados">
 			<NewsList items={data.news?.data.items ?? []} />
-			{#snippet note()}<Updated at={data.news?.fetchedAt} />{/snippet}
+			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-ws" />{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
 		<Panel title="Curva de tipos de EE. UU." meta="Hoy frente a hace un mes">
 			{#if data.curve}<YieldCurve curve={data.curve.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
-			{#snippet note()}Fuente: Tesoro de EE. UU. · <Updated at={data.curve?.fetchedAt} />{/snippet}
+			{#snippet note()}Fuente: Tesoro de EE. UU. · <Updated at={data.curve?.fetchedAt} source="uscurve" />{/snippet}
 		</Panel>
 		<Panel title="Divisas" meta="Cambio de referencia del BCE">
 			<SeriesTable head="Par" spark={60} rows={fx.map((id) => ({ series: get(id), name: get(id)?.label, decimals: 4 }))} />
 		</Panel>
 		<Panel title="Cripto" meta="Por capitalización">
 			<CryptoTable coins={data.crypto?.data.coins ?? []} />
-			{#snippet note()}Fuente: CoinGecko · <Updated at={data.crypto?.fetchedAt} />{/snippet}
+			{#snippet note()}Fuente: CoinGecko · <Updated at={data.crypto?.fetchedAt} source="crypto" />{/snippet}
 		</Panel>
 	</div>
 </div>

@@ -51,7 +51,7 @@
 		</div>
 	{/each}
 </div>
-<p class="foot">Fuente: Open-Meteo (CC BY 4.0) · <Updated at={data.weather?.fetchedAt} /></p>
+<p class="foot">Fuente: Open-Meteo (CC BY 4.0) · <Updated at={data.weather?.fetchedAt} source="weather" /></p>
 
 <style>
 	.now {

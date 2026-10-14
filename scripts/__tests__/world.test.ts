@@ -39,6 +39,25 @@ describe('quakes (USGS)', () => {
 			depth: 550.4
 		});
 	});
+
+	it('descarta los terremotos sin hora en vez de tumbar la fuente', async () => {
+		const feature = (id: string, time: unknown) => ({
+			id,
+			properties: { mag: 5, place: 'X', time, url: '' },
+			geometry: { coordinates: [0, 0, 10] }
+		});
+		mockFetch(() => ({
+			features: [
+				feature('ok', Date.parse('2026-10-14T08:00:00Z')),
+				feature('sin-hora', undefined),
+				feature('nula', null),
+				feature('texto', 'ayer'),
+				{ id: 'sin-props' }
+			]
+		}));
+		const data = await quakes.fetch(undefined);
+		expect(data.map((q) => q.id)).toEqual(['ok']);
+	});
 });
 
 describe('power (REE)', () => {
