@@ -43,3 +43,24 @@ export function madridNow(now: number): { day: string; hour: number } {
 	const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
 	return { day: `${get('year')}-${get('month')}-${get('day')}`, hour: Number(get('hour')) };
 }
+
+/**
+ * Las `length` horas seguidas más baratas de un día, empezando como pronto en `fromHour`
+ * (para «lo que queda de hoy»). Devuelve la hora de inicio, la de fin (sin incluir) y la media.
+ */
+export function cheapestWindow(
+	prices: HourPrice[],
+	day: string,
+	length = 2,
+	fromHour = 0
+): { start: number; end: number; avg: number } | null {
+	const byHour = new Map(prices.filter((p) => p.day === day).map((p) => [p.hour, p.kwh]));
+	let best: { start: number; end: number; avg: number } | null = null;
+	for (let start = fromHour; start + length <= 24; start++) {
+		const values = Array.from({ length }, (_, i) => byHour.get(start + i));
+		if (values.some((v) => v === undefined)) continue;
+		const avg = (values as number[]).reduce((a, b) => a + b, 0) / length;
+		if (!best || avg < best.avg) best = { start, end: start + length, avg };
+	}
+	return best;
+}
