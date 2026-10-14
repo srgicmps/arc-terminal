@@ -9,6 +9,7 @@ import { finnhub } from './finnhub.ts';
 import { fred } from './fred.ts';
 import { fuel, fuelSpain } from './fuel.ts';
 import { hazards, quakesEs } from './hazards.ts';
+import { hfpapers } from './hfpapers.ts';
 import { newsSources } from './news.ts';
 import { predictions } from './predictions.ts';
 import { powerMix } from './ree-mix.ts';
@@ -43,6 +44,7 @@ export const sources: Source<any>[] = [
 	weather,
 	crypto,
 	hn,
+	hfpapers,
 	wiki,
 	...newsSources
 ];

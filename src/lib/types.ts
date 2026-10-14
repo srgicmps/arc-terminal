@@ -107,6 +107,24 @@ export interface HnItem {
 	time: string;
 }
 
+// ---------- Papers del día (Hugging Face) ----------
+
+export interface Paper {
+	/** Identificador de arXiv, p. ej. «2510.01234». */
+	id: string;
+	title: string;
+	/** Primeros autores, ya abreviados («A. Pérez, B. Li et al.»). */
+	authors: string;
+	upvotes: number;
+	comments: number;
+	/** Página del paper en Hugging Face. */
+	url: string;
+	arxiv: string;
+	/** Cuándo salió en la lista diaria (ISO 8601). */
+	time: string;
+	summary: string;
+}
+
 // ---------- Terremotos (USGS) ----------
 
 export interface Quake {

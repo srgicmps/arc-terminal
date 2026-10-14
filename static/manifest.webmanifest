@@ -15,5 +15,28 @@
 		{ "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
 		{ "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
 		{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+	],
+	"shortcuts": [
+		{
+			"name": "Gasolineras más baratas de Menorca",
+			"short_name": "Gasolina",
+			"description": "FUEL: las gasolineras más baratas de Menorca",
+			"url": "./fuel",
+			"icons": [{ "src": "shortcut-fuel.png", "sizes": "96x96", "type": "image/png" }]
+		},
+		{
+			"name": "Precio de la luz",
+			"short_name": "Luz",
+			"description": "LUZ: precio de la luz hora a hora, hoy y mañana",
+			"url": "./luz",
+			"icons": [{ "src": "shortcut-luz.png", "sizes": "96x96", "type": "image/png" }]
+		},
+		{
+			"name": "Tiempo en Menorca",
+			"short_name": "Tiempo",
+			"description": "WX: el tiempo en Menorca y otras ciudades",
+			"url": "./wx",
+			"icons": [{ "src": "shortcut-wx.png", "sizes": "96x96", "type": "image/png" }]
+		}
 	]
 }
