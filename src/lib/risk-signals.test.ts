@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { riskSignals } from './risk-signals.ts';
+import { countryRisks, riskSignals } from './risk-signals.ts';
 import type { GdacsEvent, IodaOutage, OutbreakNews } from './types.ts';
 
 const NOW = Date.parse('2026-10-14T12:00:00Z');
@@ -43,5 +43,23 @@ describe('riskSignals', () => {
 	it('recorta a `limit`', () => {
 		const gdacs = Array.from({ length: 8 }, (_, i) => quake(`e${i}`, 'orange', i));
 		expect(riskSignals({ gdacs }, NOW, 3).disasters).toHaveLength(3);
+	});
+});
+
+describe('countryRisks', () => {
+	it('reparte por país: GDACS por nombre, IODA por código, OMS por el título (30 días)', () => {
+		const r = countryRisks(
+			{
+				gdacs: [{ ...quake('q', 'red', 2), country: 'Japan' }, { ...quake('x', 'orange', 1), country: 'Atlantis' }],
+				ioda: [outage('IR', 'critical', 60), outage('ZZ', 'warning', 10)],
+				who: [outbreak('Avian Influenza - Japan', '2026-10-10T00:00:00Z'), outbreak('Cholera - Iran', '2026-07-01T00:00:00Z')]
+			},
+			NOW
+		);
+		expect(Object.keys(r).sort()).toEqual(['IR', 'JP']);
+		expect(r.JP.disasters.map((d) => d.id)).toEqual(['q']);
+		expect(r.JP.outbreaks.map((o) => o.title)).toEqual(['Avian Influenza - Japan']);
+		expect(r.IR.outage).toMatchObject({ level: 'critical', drop: 60 });
+		expect(r.IR.outbreaks).toEqual([]);
 	});
 });

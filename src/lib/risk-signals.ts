@@ -1,6 +1,7 @@
 // GEO, «Señales de riesgo»: lo más grave de hoy con datos que ya se descargan (GDACS, IODA, OMS y avisos de
 // viaje de EE. UU.). Lógica pura, con tests: el +page.server.ts la llama y al navegador llega solo esto.
 import { levelCounts } from './advisories.ts';
+import { COUNTRIES, findCountries } from './countries.ts';
 import type { AdvisoriesData, GdacsEvent, IodaOutage, OutbreakNews } from './types.ts';
 
 const DAY = 86_400_000;
@@ -56,4 +57,34 @@ export function riskSignals(
 			.map((o) => ({ ...o, country: countryName(o.code, o.name) })),
 		outbreaks: outbreaks.slice(0, 3)
 	};
+}
+
+/** PAIS, fila «Riesgo»: lo que afecta a un país (solo lo que se pinta). */
+export interface CountryRisk {
+	disasters: Pick<GdacsEvent, 'id' | 'kind' | 'name' | 'level' | 'url'>[];
+	outage: Pick<IodaOutage, 'level' | 'drop' | 'since' | 'url'> | null;
+	outbreaks: Pick<OutbreakNews, 'id' | 'title' | 'date' | 'url'>[];
+}
+
+/**
+ * Riesgos por país (código ISO de los países que conoce la terminal): catástrofes de GDACS (por el nombre
+ * del país que da GDACS), caída de internet de IODA (por código) y brotes de la OMS de los últimos 30 días
+ * (por el título del parte: «Cholera - Sudan»). Los países sin nada no salen.
+ */
+export function countryRisks(
+	input: { gdacs?: GdacsEvent[] | null; ioda?: IodaOutage[] | null; who?: OutbreakNews[] | null },
+	now: number
+): Record<string, CountryRisk> {
+	const out: Record<string, CountryRisk> = {};
+	const of = (code: string) => (out[code] ??= { disasters: [], outage: null, outbreaks: [] });
+	for (const e of input.gdacs ?? [])
+		for (const c of findCountries(e.country)) of(c.code).disasters.push({ id: e.id, kind: e.kind, name: e.name, level: e.level, url: e.url });
+	const known = new Set(COUNTRIES.map((c) => c.code));
+	for (const o of input.ioda ?? [])
+		if (known.has(o.code)) of(o.code).outage = { level: o.level, drop: o.drop, since: o.since, url: o.url };
+	for (const o of input.who ?? []) {
+		if (!o.date || Date.parse(o.date) < now - OUTBREAK_DAYS * DAY) continue;
+		for (const c of findCountries(o.title)) of(c.code).outbreaks.push({ id: o.id, title: o.title, date: o.date, url: o.url });
+	}
+	return out;
 }
