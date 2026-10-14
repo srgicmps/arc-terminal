@@ -8,6 +8,7 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import QuoteBoard from '#lib/components/QuoteBoard.svelte';
 	import ReleaseList from '#lib/components/ReleaseList.svelte';
+	import TradeList from '#lib/components/TradeList.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { BIG_TECH } from '#lib/tickers/bigtech.ts';
@@ -56,6 +57,15 @@
 				ya se están aprovechando. Cada CVE enlaza a su ficha en el NVD · <Updated at={data.kev?.fetchedAt} source="cisa-kev" />
 			{/snippet}
 		</Panel>
+		{#if data.exports?.data.length}
+			<Panel title="Chips y exportaciones" meta="Control de exportaciones de EE. UU. · BIS">
+				<TradeList items={data.exports.data} />
+				{#snippet note()}
+					Normas de la BIS (Departamento de Comercio): Entity List, chips y computación avanzada; las de chips, primero.
+					Fuente: Federal Register · <Updated at={data.exports?.fetchedAt} source="sanctions" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Versiones" meta="Última estable · ámbar: últimos 7 días">
 			<ReleaseList items={data.releases?.data ?? []} />
 			{#snippet note()}Fuente: releases de GitHub · <Updated at={data.releases?.fetchedAt} source="releases" />{/snippet}
