@@ -45,11 +45,13 @@ export const speeches: Source<NewsData> = {
 	label: 'Discursos de banqueros centrales · BIS',
 	maxAgeMinutes: 175,
 	async fetch() {
-		const items = parseFeed(await getText(FEED, { headers: { Accept: 'application/rss+xml, application/xml' } }), 'BIS')
+		const body = await getText(FEED, { headers: { Accept: 'application/rss+xml, application/xml' } });
+		const items = parseFeed(body, 'BIS')
 			.map(toSpeech)
 			.sort((a, b) => (b.time ?? '').localeCompare(a.time ?? ''))
 			.slice(0, MAX);
-		if (!items.length) throw new Error('sin discursos');
+		// Con el principio del primer <item> en el error, para ver en el registro qué ha cambiado en el feed.
+		if (!items.length) throw new Error(`sin discursos: ${body.match(/<item[\s>][\s\S]{0,600}/)?.[0].replace(/\s+/g, ' ') ?? body.slice(0, 300)}`);
 		return { items, feeds: [{ name: 'BIS', ok: true, items: items.length }] };
 	}
 };
