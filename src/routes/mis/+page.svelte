@@ -20,6 +20,27 @@
 
 	let { data }: PageProps = $props();
 
+	// Borrar una lista con valores pide un segundo toque («¿Seguro?»): en el móvil es fácil tocar sin querer.
+	// Se olvida si cambias de lista o a los 4 segundos.
+	let confirming = $state(false);
+	$effect(() => {
+		void watchlist.active;
+		confirming = false;
+	});
+	$effect(() => {
+		if (!confirming) return;
+		const t = setTimeout(() => (confirming = false), 4000);
+		return () => clearTimeout(t);
+	});
+	function onDelete() {
+		if (watchlist.codes.length && !confirming) {
+			confirming = true;
+			return;
+		}
+		confirming = false;
+		deleteList();
+	}
+
 	// Qué enseña la cinta de arriba: los índices de siempre o tu lista (como un v-model con get y set).
 	const tapeSel = {
 		get value() {
@@ -120,7 +141,14 @@
 								<option value={String(i)}>{l.name} · {l.codes.length}</option>
 							{/each}
 						</Select>
-						<button type="button" class="del" onclick={deleteList}>Borrar «{watchlist.lists[watchlist.active].name}»</button>
+						<button type="button" class="del" class:sure={confirming} onclick={onDelete}>
+							{#if confirming}
+								¿Seguro? Borrar «{watchlist.lists[watchlist.active].name}» y sus {watchlist.codes.length}
+								{watchlist.codes.length === 1 ? 'valor' : 'valores'}
+							{:else}
+								Borrar «{watchlist.lists[watchlist.active].name}»
+							{/if}
+						</button>
 					{/if}
 					{#if watchlist.lists.length < MAX_LISTS}
 						<ChipInput label="Lista nueva" placeholder="Nombre: IA, Dividendos, España…" onadd={newList} />
@@ -190,6 +218,10 @@
 
 	.del:hover {
 		text-decoration: underline;
+	}
+
+	.del.sure {
+		color: var(--amber);
 	}
 
 	.c {
