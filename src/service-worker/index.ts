@@ -37,6 +37,10 @@ const STATIC = assets
 	.map((f) => url(f.path))
 	.filter((href) => /\.(webmanifest|png|svg|ico)$/.test(href) && !DATA.test(new URL(href).pathname));
 const PRECACHE = [...IMMUTABLE, ...STATIC];
+/** Archivos del motor de ajedrez de esta publicación (static/engine/): lo demás de su caché sobra. */
+const ENGINE_FILES = assets
+	.map((f) => url(f.path))
+	.filter((href) => new URL(href).pathname.startsWith(`${scope.pathname}engine/`));
 /** La portada TOP y sus datos (si la build los genera): siempre disponibles sin conexión. */
 const TOP_DATA = url('__data.json');
 const TOP = [scope.href, ...(prerendered.some((f) => url(f.path) === TOP_DATA) ? [TOP_DATA] : [])];
@@ -75,6 +79,9 @@ self.addEventListener('activate', (event) => {
 			for (const key of await caches.keys()) {
 				if (key !== CACHE && key !== PAGES && key !== FONTS && key !== ENGINE) await caches.delete(key);
 			}
+			// Del motor, solo los archivos de esta publicación: si cambia de versión, el viejo (7 MB) se borra.
+			const engine = await caches.open(ENGINE);
+			for (const request of await engine.keys()) if (!ENGINE_FILES.includes(request.url)) await engine.delete(request);
 			await self.clients.claim();
 		})()
 	);
