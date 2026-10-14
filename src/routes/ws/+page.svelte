@@ -175,9 +175,19 @@
 	</div>
 	<div class="col">
 		<RiskGauge risk={data.risk} />
-		<Panel title="Curva de tipos de EE. UU." meta="Hoy frente a hace un mes">
-			{#if data.curve}<YieldCurve curve={data.curve.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
-			{#snippet note()}Fuente: Tesoro de EE. UU. · <Updated at={data.curve?.fetchedAt} source="uscurve" />{/snippet}
+		<Panel title="Curvas de tipos" meta="EE. UU., zona euro y Japón · hoy y hace un año">
+			<YieldCurve
+				curves={[
+					{ label: 'EE. UU.', curve: data.curve?.data },
+					{ label: 'Zona euro (AAA)', curve: data.eacurve?.data },
+					{ label: 'Japón', curve: data.jgb?.data }
+				]}
+			/>
+			{#snippet note()}
+				Tesoro de EE. UU. · <Updated at={data.curve?.fetchedAt} source="uscurve" /> — BCE ·
+				<Updated at={data.eacurve?.fetchedAt} source="eacurve" /> — Ministerio de Finanzas de Japón ·
+				<Updated at={data.jgb?.fetchedAt} source="jgb" />
+			{/snippet}
 		</Panel>
 		<Panel title="Divisas" meta="Cambio de referencia del BCE">
 			<SeriesTable head="Par" spark={60} rows={fx.map((id) => ({ series: get(id), name: get(id)?.label, decimals: 4 }))} />

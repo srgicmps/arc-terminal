@@ -31,3 +31,8 @@ https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{
 https://huggingface.co/api/models?sort=trendingScore&limit=3
 # FUEL: Weekly Oil Bulletin de la Comisión Europea (enlace al histórico .xlsx)
 https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en ~ [^"' <>]{0,200}Prices_History[^"' <>]{0,40}
+# WS: curva de la zona euro (BCE, YC), bonos de Japón (MOF, Shift-JIS)
+https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_3M+SR_1Y+SR_2Y+SR_5Y+SR_10Y+SR_30Y?lastNObservations=2&format=csvdata&detail=dataonly
+https://www.mof.go.jp/jgbs/reference/interest_rate/jgbcm.csv
+https://www.mof.go.jp/jgbs/reference/interest_rate/data/jgbcm_all.csv ~ R7\.10\.\d+[^R]{0,90}
+https://www.mof.go.jp/jgbs/reference/interest_rate/data/jgbcm_all.csv ~ R6\.10\.1\d[^R]{0,90}

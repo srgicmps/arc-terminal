@@ -75,8 +75,9 @@ export const uscurve: Source<YieldCurveData> = {
 	label: 'Curva de tipos diaria · Tesoro de EE. UU.',
 	maxAgeMinutes: 115,
 	async fetch() {
-		// Mes actual y anterior, para tener siempre al menos un mes de historia.
-		const months = await Promise.all([curveMonth(month(-1)), curveMonth(month(0))]);
+		// Mes actual y anterior, para tener siempre al menos un mes de historia, y los mismos meses de hace un
+		// año, para comparar la curva de hoy con la de entonces (WS).
+		const months = await Promise.all([-13, -12, -1, 0].map((m) => curveMonth(month(m))));
 		const byDate = new Map(months.flat().map((d) => [d.date, d]));
 		const days = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 		if (!days.length) throw new Error('curva vacía');
