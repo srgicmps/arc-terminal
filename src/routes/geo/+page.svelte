@@ -40,7 +40,7 @@
 
 <div class="grid">
 	<div class="col">
-		<Panel title="Mapa" meta="Toca un punto para ver su ficha">
+		<Panel title="Mapa" meta="Toca un punto para ver su ficha" pin="pin:geo:mapa">
 			{#if available.length > 1}
 				<div class="layers"><Seg label="Capas del mapa" options={available} bind:values={on} /></div>
 			{/if}

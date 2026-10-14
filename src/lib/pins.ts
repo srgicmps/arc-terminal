@@ -19,7 +19,7 @@ export interface PinDef {
 	/** Vista de origen, para el enlace «CÓDIGO ›». */
 	code: string;
 	path: '/eco' | '/geo';
-	/** Archivos de static/data que necesita (sin .json). */
+	/** Archivos de data/ que necesita (sin .json). Para los grandes, uno recortado en data/pin/. */
 	datasets: string[];
 	/** El contenido, cargado aparte: solo se descarga si el panel está fijado. */
 	load: () => Promise<{ default: Component<PinProps> }>;
@@ -34,6 +34,16 @@ export const PINS: readonly PinDef[] = [
 		path: '/eco',
 		datasets: ['bis'],
 		load: () => import('./components/pins/EcoBancos.svelte')
+	},
+	{
+		id: 'pin:geo:mapa',
+		title: 'Mapa',
+		meta: 'Toca un punto para ver su ficha',
+		code: 'GEO',
+		path: '/geo',
+		// Recortado: solo los puntos de las capas (src/routes/data/pin/geo-mapa.json).
+		datasets: ['pin/geo-mapa'],
+		load: () => import('./components/pins/GeoMapa.svelte')
 	}
 ];
 
