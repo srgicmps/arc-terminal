@@ -22,16 +22,17 @@
 
 	const earnings = $derived(data.finnhub?.data.earnings ?? []);
 
-	// Próximos datos de los calendarios oficiales: solo los que enseña la terminal (con tema), desde hoy.
-	const releases = $derived(
-		(data.releases?.data.events ?? []).filter((e) => e.topic && e.date >= new Date(clock.now || Date.now()).toISOString().slice(0, 10)).slice(0, 14)
-	);
 	const HOUR: Record<string, string> = { bmo: 'Pre', amc: 'Post', dmh: 'Sesión' };
 
 	// Festivos de los próximos 12 meses: España y Baleares (Nager.Date) y días sin bolsa (por reglas).
 	// Fecha de hoy en Madrid. Hasta que arranca el reloj en el navegador se usa la fecha en la que se
 	// construyó la página.
 	const today = $derived(madridDate(clock.now || Date.now()));
+
+	// Próximos datos de los calendarios oficiales (con tema), desde hoy en hora de Madrid.
+	const releases = $derived(
+		(data.releases?.data.events ?? []).filter((e) => e.topic && madridDate(Date.parse(e.date)) >= today).slice(0, 14)
+	);
 	const days = $derived.by(() => {
 		const year = Number(today.slice(0, 4));
 		const limit = `${year + 1}${today.slice(4)}`;
@@ -54,7 +55,11 @@
 	const inDays = (date: string) => Math.round((Date.parse(date) - Date.parse(today)) / 86_400_000);
 </script>
 
-<ViewHeader code="CAL" title="Agenda económica" sub="Datos macro de la semana (TradingView) y resultados empresariales (Finnhub)" />
+<ViewHeader
+	code="CAL"
+	title="Agenda económica"
+	sub="Datos macro de la semana (TradingView) y resultados empresariales (Finnhub)"
+/>
 
 <div class="grid grid-2">
 	<div class="col">
@@ -76,14 +81,20 @@
 							<tr>
 								<td class="mut">{weekday(madridDate(Date.parse(e.date)))} {dm(e.date).split(' ')[1]}</td>
 								<td class="mut">{e.allDay ? '—' : hm(e.date)}</td>
-								<td class="l name wrap">{#if e.url}<a href={e.url} target="_blank" rel="noopener">{e.title}</a>{:else}{e.title}{/if}</td>
+								<td class="l name wrap"
+									>{#if e.url}<a href={e.url} target="_blank" rel="noopener">{e.title}</a>{:else}{e.title}{/if}</td
+								>
 								<td class="l mut">{e.source}</td>
 							</tr>
 						{/each}
 					</tbody>
 				</Table>
 			{:else}
-				<p class="empty">{data.releases ? 'Sin publicaciones de los datos que sigue la terminal en las próximas semanas.' : 'Sin datos todavía.'}</p>
+				<p class="empty">
+					{data.releases
+						? 'Sin publicaciones de los datos que sigue la terminal en las próximas semanas.'
+						: 'Sin datos todavía.'}
+				</p>
 			{/if}
 			{#snippet note()}
 				IPC y empleo de EE. UU. (BLS, fechas vía FRED) e IPC, EPA, vivienda y turistas del INE.
@@ -116,10 +127,10 @@
 				</Table>
 			{/if}
 			{#snippet note()}
-				ES: festivo en toda España · IB: en Baleares · NYSE y BME: sin bolsa en Nueva York o en Madrid.
-				Festivos: Nager.Date{#if data.holidays}&nbsp;· <Updated at={data.holidays.fetchedAt} />{/if}.
-				Días sin bolsa calculados con las reglas de la NYSE y del calendario TARGET2 (BME).
-				Los festivos locales de cada municipio no están incluidos.
+				ES: festivo en toda España · IB: en Baleares · NYSE y BME: sin bolsa en Nueva York o en Madrid. Festivos:
+				Nager.Date{#if data.holidays}&nbsp;· <Updated at={data.holidays.fetchedAt} />{/if}. Días sin bolsa calculados
+				con las reglas de la NYSE y del calendario TARGET2 (BME). Los festivos locales de cada municipio no están
+				incluidos.
 			{/snippet}
 		</Panel>
 		<Panel title="Resultados" meta="Grandes empresas de EE. UU. · próximas 2 semanas">
@@ -141,11 +152,16 @@
 						{#each earnings as e, i (e.symbol + e.date)}
 							<tr>
 								<td class="mut">{i === 0 || earnings[i - 1].date !== e.date ? weekday(e.date) : ''}</td>
-								<td class="l"><a class="sym" href="{resolve('/s')}?sym={encodeURIComponent(e.symbol)}">{e.symbol}</a></td>
+								<td class="l"
+									><a class="sym" href="{resolve('/s')}?sym={encodeURIComponent(e.symbol)}">{e.symbol}</a></td
+								>
 								<td class="mut h">{HOUR[e.hour] ?? ''}</td>
 								<td>{nf(e.epsEstimate)}</td>
 								<td>
-									<Change value={e.epsActual !== null && e.epsEstimate !== null ? e.epsActual - e.epsEstimate : null} text={nf(e.epsActual)} />
+									<Change
+										value={e.epsActual !== null && e.epsEstimate !== null ? e.epsActual - e.epsEstimate : null}
+										text={nf(e.epsActual)}
+									/>
 								</td>
 								<td class="mut rev">{e.revenueEstimate ? compact(e.revenueEstimate) : '—'}</td>
 							</tr>

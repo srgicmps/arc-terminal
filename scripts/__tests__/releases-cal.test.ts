@@ -1,6 +1,6 @@
 // Calendarios de publicación (Eurostat, BLS, INE) y su relación con las series de la terminal.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { nextFor, shortDay, topicOf } from '../../src/lib/nextrelease.ts';
+import { nextFor, nextMap, shortDay, topicOf } from '../../src/lib/nextrelease.ts';
 import { releasesCal, upcoming } from '../sources/releases-cal.ts';
 import { mockFetch } from './mock.ts';
 
@@ -88,5 +88,13 @@ describe('releases-cal', () => {
 		expect(nextFor('unemployment-us', events)).toBeNull();
 		expect(nextFor('wti', events)).toBeNull();
 		expect(shortDay('2026-11-13T13:30:00.000Z')).toBe('13 nov');
+	});
+
+	it('mapa de próximos datos por serie, para SeriesTable', () => {
+		const events = upcoming('BLS', BLS, 'America/New_York', new Date('2026-10-14T00:00:00Z'));
+		expect(nextMap(['cpi-us', 'core-cpi-us', 'wti'], events)).toEqual({
+			'cpi-us': { date: '2026-11-13T13:30:00.000Z', title: 'Consumer Price Index for October 2026' },
+			'core-cpi-us': { date: '2026-11-13T13:30:00.000Z', title: 'Consumer Price Index for October 2026' }
+		});
 	});
 });

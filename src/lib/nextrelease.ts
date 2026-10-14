@@ -43,3 +43,16 @@ export function shortDay(iso: string): string {
 		.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'Europe/Madrid' })
 		.replace('.', '');
 }
+
+/** Próxima publicación de cada serie, por su id: lo que recibe SeriesTable en la prop `next`. */
+export type NextMap = Record<string, { date: string; title: string }>;
+
+/** Calcula el próximo dato de cada serie (se llama en los +page.server.ts, al construir la web). */
+export function nextMap(seriesIds: readonly string[], events: readonly ReleaseEvent[], now = new Date()): NextMap {
+	const out: NextMap = {};
+	for (const id of seriesIds) {
+		const e = nextFor(id, events, now);
+		if (e) out[id] = { date: e.date, title: e.title };
+	}
+	return out;
+}

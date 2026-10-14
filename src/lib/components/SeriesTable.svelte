@@ -1,7 +1,7 @@
 <!--
 	Tabla de series: último dato, variación frente al anterior, periodo, próximo dato y minigráfico.
-	El próximo dato sale de los calendarios oficiales (releases-cal.json): la tabla lo carga sola y la columna
-	solo aparece si alguna serie tiene fecha.
+	El próximo dato llega en la prop `next` (lo calcula el +page.server.ts con nextMap() de nextrelease.ts);
+	la columna solo aparece si alguna serie tiene fecha.
 -->
 <script lang="ts">
 	import { GEO, nf, period } from '#lib/format.ts';
@@ -9,9 +9,7 @@
 	import Table from './ui/Table.svelte';
 	import type { Series } from '#lib/types.ts';
 	import Spark from './Spark.svelte';
-	import { loadCalendar } from '#lib/calendar.ts';
-	import { nextFor, shortDay } from '#lib/nextrelease.ts';
-	import type { ReleaseEvent } from '#lib/types.ts';
+	import { shortDay, type NextMap } from '#lib/nextrelease.ts';
 
 	interface Row {
 		series: Series | undefined;
@@ -27,18 +25,15 @@
 		head?: string;
 		/** Cuántos puntos dibuja el minigráfico. */
 		spark?: number;
+		/** Próxima publicación de cada serie (por id), de los calendarios oficiales. */
+		next?: NextMap;
 	}
 
-	let { rows, head = 'Indicador', spark = 24 }: Props = $props();
+	let { rows, head = 'Indicador', spark = 24, next }: Props = $props();
 
 	const visible = $derived(rows.filter((r): r is Row & { series: Series } => Boolean(r.series?.points.length)));
 
-	let calendar = $state<ReleaseEvent[]>([]);
-	$effect(() => {
-		loadCalendar().then((events) => (calendar = events));
-	});
-	const next = $derived(new Map(visible.map((r) => [r.series.id, nextFor(r.series.id, calendar)])));
-	const anyNext = $derived([...next.values()].some(Boolean));
+	const anyNext = $derived(visible.some((r) => next?.[r.series.id]));
 </script>
 
 {#if visible.length}
@@ -60,7 +55,7 @@
 				{@const prev = pts[pts.length - 2]}
 				{@const d = row.decimals ?? 1}
 				{@const diff = prev ? last.v - prev.v : null}
-				{@const nx = next.get(row.series.id)}
+				{@const nx = next?.[row.series.id]}
 				<tr>
 					<td>
 						<a class="name" href={row.series.url} target="_blank" rel="noopener">
