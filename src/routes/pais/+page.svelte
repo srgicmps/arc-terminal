@@ -16,6 +16,8 @@
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
 	import { favCountries, initFavCountries, toggleFavCountry } from '#lib/favcountries.svelte.ts';
+	import { goTo } from '#lib/paisgoto.ts';
+	import { routeHref } from '#lib/routes.ts';
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
@@ -54,6 +56,8 @@
 	// Tus países (favcountries.svelte.ts): arriba del desplegable y de la lista; se marcan con ★.
 	$effect(initFavCountries);
 	const favs = $derived(favCountries.codes.map((code) => COUNTRIES.find((c) => c.code === code)).filter((c) => c !== undefined));
+	// Fila «Ir a» (paisgoto.ts): titulares del país, sus vistas y tus otros países.
+	const links = $derived(country ? goTo(country, favs) : []);
 	const followed = $derived(!!country && favCountries.codes.includes(country.code));
 
 	function choose(code: string) {
@@ -96,6 +100,13 @@
 		</Select>
 	{/snippet}
 </ViewHeader>
+
+{#if links.length}
+	<nav class="goto" aria-label="Ir a">
+		<span class="mut">Ir a</span>
+		{#each links as g (g.code)}<a href="{routeHref(g.route)}{g.query ? `?${g.query}` : ''}" title={g.what}>{g.code} ›</a>{/each}
+	</nav>
+{/if}
 
 {#if !country}
 	<div class="grid">
@@ -325,5 +336,35 @@
 
 	.own td {
 		color: var(--amber);
+	}
+
+	/* Fila «Ir a»: los mismos saltos que el «ECO ›» de los paneles, en una línea bajo la cabecera. */
+	.goto {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--sp-4) var(--sp-12);
+		margin-bottom: var(--sp-12);
+		font-family: var(--mono);
+		font-size: var(--fs-xs);
+		letter-spacing: var(--track-code);
+	}
+
+	.goto a {
+		color: var(--muted);
+		text-decoration: none;
+	}
+
+	.goto a:hover {
+		color: var(--amber);
+	}
+
+	/* En pantallas táctiles, cada salto con 44 px de alto pulsable. */
+	@media (pointer: coarse) {
+		.goto a {
+			display: inline-flex;
+			align-items: center;
+			min-height: var(--touch);
+		}
 	}
 </style>
