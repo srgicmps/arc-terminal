@@ -5,3 +5,5 @@ https://apidatos.ree.es/es/datos/generacion/no-renovables-detalle-emisiones-CO2?
 https://stats.bis.org/api/v1/data/WS_CBPOL/D.US+XM+JP/all?lastNObservations=2&detail=dataonly&format=csv
 https://huggingface.co/api/daily_papers?limit=2
 https://data.sec.gov/submissions/CIK0001045810.json
+https://api.reliefweb.int/v2/disasters?appname=arc-terminal&filter[field]=status&filter[value]=ongoing&sort[]=date.event:desc&limit=60&fields[include][]=name&fields[include][]=date.event&fields[include][]=date.created&fields[include][]=primary_country.name&fields[include][]=primary_type.name&fields[include][]=glide&fields[include][]=url_alias&fields[include][]=url
+https://api.reliefweb.int/v2/disasters?appname=arc-terminal&filter[field]=status&filter[value]=ongoing&limit=2&profile=full

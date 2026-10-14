@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DisasterList from '#lib/components/DisasterList.svelte';
 	import HazardList from '#lib/components/HazardList.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
@@ -40,6 +41,13 @@
 			<PredictionList items={data.predictions?.data.geopolitics.slice(0, 8) ?? []} />
 			{#snippet note()}
 				Precios de Polymarket: reflejan apuestas, no pronósticos oficiales · <Updated at={data.predictions?.fetchedAt} source="predictions" />
+			{/snippet}
+		</Panel>
+		<Panel title="Crisis y desastres activos" meta="{data.reliefweb?.data.length ?? 0} abiertos · los 20 más recientes">
+			<DisasterList items={data.reliefweb?.data.slice(0, 20) ?? []} />
+			{#snippet note()}
+				Fuente: <a href="https://reliefweb.int/disasters" target="_blank" rel="noopener">ReliefWeb</a> (OCHA, ONU), que recoge
+				informes de gobiernos, agencias de la ONU y ONG: cada ficha enlaza a sus fuentes originales · <Updated at={data.reliefweb?.fetchedAt} source="reliefweb" />
 			{/snippet}
 		</Panel>
 		<Panel title="Gobiernos e instituciones" meta="Comunicados oficiales">
