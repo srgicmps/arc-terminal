@@ -5,6 +5,7 @@
 <script lang="ts">
 	import { axisTicks, periodChoices, periodDate, periodStart } from '#lib/chart.ts';
 	import Seg from './ui/Seg.svelte';
+	import { persisted } from '#lib/persisted.svelte.ts';
 	import { nf, period } from '#lib/format.ts';
 
 	interface Line {
@@ -27,25 +28,10 @@
 
 	// Periodo elegido, en meses hacia atrás desde el último dato ('0' = máx.). Es común a todos los gráficos
 	// y se recuerda en el navegador; si un gráfico no tiene ese periodo (serie corta), enseña el máximo.
-	const KEY = 'arc-chart-period';
-	let months = $state('0');
-	let loaded = false;
-	$effect(() => {
-		try {
-			months = localStorage.getItem(KEY) ?? '0';
-		} catch {}
-		loaded = true;
-	});
-	$effect(() => {
-		const m = months;
-		if (!loaded) return;
-		try {
-			localStorage.setItem(KEY, m);
-		} catch {}
-	});
+	const chartPeriod = persisted('arc-chart-period', '0', (v) => /^\d+$/.test(v));
 	const allTs = $derived([...new Set(all.flatMap((l) => l.points.map((p) => p.t)))].sort());
 	const choices = $derived(periods ? periodChoices(allTs) : []);
-	const active = $derived(choices.some((c) => c.value === months) ? months : '0');
+	const active = $derived(choices.some((c) => c.value === chartPeriod.value) ? chartPeriod.value : '0');
 	const lines = $derived.by(() => {
 		const start = +active ? periodStart(allTs.at(-1) ?? '', +active) : null;
 		if (!start) return all;
@@ -143,7 +129,7 @@
 				<span><i style:background="var({line.color ?? '--amber'})"></i>{line.label} <b>{p ? fmt(p.v) : '—'}</b></span>
 			{/each}
 			<span class="when">{hover !== null ? period(ts[hover]) : period(ts.at(-1) ?? '')}</span>
-			{#if choices.length}<span class="periods"><Seg label="Periodo" options={choices} bind:value={() => active, (v) => (months = v ?? '0')} /></span>{/if}
+			{#if choices.length}<span class="periods"><Seg label="Periodo" options={choices} bind:value={() => active, (v) => (chartPeriod.value = v ?? '0')} /></span>{/if}
 		</div>
 	{:else}
 		<p class="empty">Aún no hay historial: se irá llenando día a día.</p>

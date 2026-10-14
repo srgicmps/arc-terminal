@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { asset } from '$app/paths';
-	import { page } from '$app/state';
 	import EntityCard from '#lib/components/EntityCard.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import { findEntity } from '#lib/entities.ts';
@@ -12,20 +11,17 @@
 	import Search from '#lib/components/ui/Search.svelte';
 	import { fold, hasWords, MIN_QUERY, queryWords } from '#lib/search.ts';
 	import type { ArchiveEntry, NewsItem } from '#lib/types.ts';
+	import { urlState } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
-	let query = $state('');
-	let section = $state<string>('all');
-
-	// «NEWS inflación» en la barra abre /news?q=inflación y rellena el buscador (solo en el navegador).
-	$effect(() => {
-		query = page.url.searchParams.get('q') ?? '';
-		// «Titulares › NEWS» de cada vista abre /news?s=eco con esa sección elegida.
-		const s = page.url.searchParams.get('s');
-		section = SECTIONS.some((x) => x.key === s) ? s! : 'all';
-	});
+	// Lo buscado (?q=) y la sección (?s=, la que abre «Titulares › NEWS» de cada vista) van en la URL: se
+	// pueden compartir y sobreviven a recargar. «NEWS inflación» en la barra abre /news?q=inflación.
+	const q = urlState('q', '', () => true);
+	const sectionSel = urlState<string>('s', 'all', (v) => SECTIONS.some((x) => x.key === v));
+	const query = $derived(q.value);
+	const section = $derived(sectionSel.value);
 
 	const words = $derived(queryWords(query));
 	// Si lo buscado tiene ficha (valor, líder, banco central o país), sale arriba y los titulares debajo.
@@ -97,8 +93,8 @@
 <ViewHeader code="NEWS" title="Buscador de titulares" sub="{data.items.length} titulares de todas las secciones, los más recientes primero" />
 
 <div class="controls">
-	<Search label="Buscar en los titulares" placeholder="Buscar: Lagarde, aranceles, Menorca, Nvidia…" bind:value={query} />
-	<Seg label="Sección" options={[{ value: 'all', label: 'Todas' }, ...SECTIONS.map((s) => ({ value: s.key, label: s.label }))]} bind:value={section} />
+	<Search label="Buscar en los titulares" placeholder="Buscar: Lagarde, aranceles, Menorca, Nvidia…" bind:value={() => q.value, (v) => (q.value = v ?? '')} />
+	<Seg label="Sección" options={[{ value: 'all', label: 'Todas' }, ...SECTIONS.map((s) => ({ value: s.key, label: s.label }))]} bind:value={() => sectionSel.value, (v) => (sectionSel.value = v ?? 'all')} />
 </div>
 
 <div class="grid">
