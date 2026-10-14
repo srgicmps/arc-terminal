@@ -1,12 +1,13 @@
 import { dataset } from '#lib/data.ts';
 import { crisisPoints, eventPoints, quakePoints, sanctionPoints, stormPoints, straitPoints, type LayerId, type MapPoint } from '#lib/geo/layers.ts';
 import type { ClimateData } from '#lib/climate.ts';
+import { advisoryCountry, levelCounts, recentChanges } from '#lib/advisories.ts';
 import { headlines, trim } from '#lib/trim.ts';
-import type { Chokepoint, Disaster, ElectionsData, HazardsData, NewsData, PredictionsData, Quake, TradeDoc } from '#lib/types.ts';
+import type { AdvisoriesData, Chokepoint, Disaster, ElectionsData, HazardsData, NewsData, PredictionsData, Quake, TradeDoc } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, gov, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections] = await Promise.all([
+	const [news, gov, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, advisories] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-gov'),
 		dataset<NewsData>('news-intl'),
@@ -18,7 +19,8 @@ export const load: PageServerLoad = async () => {
 		dataset<Disaster[]>('reliefweb'),
 		dataset<TradeDoc[]>('sanctions'),
 		dataset<ClimateData>('climate'),
-		dataset<ElectionsData>('elections')
+		dataset<ElectionsData>('elections'),
+		dataset<AdvisoriesData>('advisories')
 	]);
 	// Los comunicados oficiales y los de organismos internacionales: solo los 15 que se pintan, sin resumen.
 	// De Polymarket, los 8 mercados de geopolítica que se pintan (economía y tipos son de ECO).
@@ -46,6 +48,19 @@ export const load: PageServerLoad = async () => {
 		reliefweb,
 		sanctions: trim(sanctions, (d) => d.slice(0, 8)),
 		climate,
-		elections
+		elections,
+		advisories: advisories && advisorySummary(advisories.data, Date.parse(advisories.fetchedAt), advisories.fetchedAt)
 	};
 };
+
+/** Avisos de viaje: el recuento por nivel y los cambios de los últimos 30 días, ya con el país en español. */
+function advisorySummary(data: AdvisoriesData, now: number, fetchedAt: string) {
+	return {
+		fetchedAt,
+		counts: levelCounts(data.items),
+		rows: recentChanges(data.items, now).map((a) => {
+			const c = advisoryCountry(a);
+			return { name: c?.name ?? a.name, code: c?.code, level: a.level, prevLevel: a.prevLevel, date: a.changedAt ?? a.updated, url: a.url };
+		})
+	};
+}

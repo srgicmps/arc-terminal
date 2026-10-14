@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import AdvisoryList from '#lib/components/AdvisoryList.svelte';
 	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
 	import ClimatePanel from '#lib/components/ClimatePanel.svelte';
 	import ChokepointTable from '#lib/components/ChokepointTable.svelte';
@@ -93,6 +94,16 @@
 			<TradeList items={data.sanctions?.data.slice(0, 8) ?? []} />
 			{#snippet note()}Fuente: Federal Register · <Updated at={data.sanctions?.fetchedAt} source="sanctions" />{/snippet}
 		</Panel>
+		{#if data.advisories}
+			<Panel title="Avisos de viaje de EE. UU." meta="Departamento de Estado · nivel 1 a 4">
+				<AdvisoryList counts={data.advisories.counts} rows={data.advisories.rows} />
+				{#snippet note()}
+					Fuente: <a href="https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html" target="_blank" rel="noopener"
+						>Departamento de Estado de EE. UU.</a
+					>, para viajeros estadounidenses · <Updated at={data.advisories?.fetchedAt} source="advisories" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">
 			<NewsList items={data.intl?.data.items.slice(0, 15) ?? []} />
 			{#snippet note()}<Updated at={data.intl?.fetchedAt} source="news-intl" />{/snippet}
