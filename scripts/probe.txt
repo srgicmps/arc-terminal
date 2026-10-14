@@ -76,3 +76,6 @@ https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next 
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
 # GEO/PAIS: gasto militar del SIPRI (Milex), enlace al Excel
 https://www.sipri.org/databases/milex ~ [^"' <>]{0,200}\.xlsx[^"' <>]{0,40}
+# PRUEBA TEMPORAL D25: términos y precios de Finnhub (uso personal, mostrar en web pública, OTC/ADR)
+https://finnhub.io/terms-of-service ~ .{0,200}(personal|non-commercial|redistribut|display|public).{0,300}
+https://finnhub.io/pricing ~ .{0,200}(Personal|Free|OTC|ADR|redistribut).{0,300}
