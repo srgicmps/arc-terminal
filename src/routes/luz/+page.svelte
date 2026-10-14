@@ -116,7 +116,7 @@
 <style>
 	.now {
 		color: var(--amber);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 
 </style>

@@ -36,7 +36,7 @@
 		color: var(--muted);
 		text-decoration: none;
 		font-size: var(--fs-xs);
-		letter-spacing: 0.06em;
+		letter-spacing: var(--track-code);
 	}
 
 	.jump:hover {
@@ -48,9 +48,9 @@
 		.jump {
 			display: inline-flex;
 			align-items: center;
-			min-height: 44px;
-			padding-inline: 12px;
-			margin: -14px -12px;
+			min-height: var(--touch);
+			padding-inline: var(--pad-x);
+			margin: calc(-1 * var(--sp-14)) calc(-1 * var(--sp-12));
 		}
 	}
 </style>

@@ -278,20 +278,20 @@
 	.now {
 		display: flex;
 		align-items: center;
-		gap: 16px;
-		padding: 12px;
-		border-bottom: 1px solid var(--line);
+		gap: var(--sp-16);
+		padding: var(--sp-12);
+		border-bottom: var(--border);
 	}
 
 	.icon {
 		color: var(--amber);
-		font-size: 26px;
+		font-size: var(--fs-big);
 		line-height: 1;
 	}
 
 	.now b {
 		font-size: var(--fs-xxl);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 
 	.now ul {
@@ -323,7 +323,7 @@
 	}
 
 	.sep {
-		border-top: 1px solid var(--line);
+		border-top: var(--border);
 	}
 
 	/* Niveles: discreto, ámbar o rojo. El punto acompaña al texto, que es el que manda. */
@@ -352,7 +352,7 @@
 
 	/* Avisos (lista .mini): una línea fina del color del aviso a la izquierda y el nivel en ese color. */
 	.al {
-		border-left: 1px solid var(--c);
+		border-left: var(--hair) solid var(--c);
 	}
 
 	.al b {
@@ -373,7 +373,7 @@
 	}
 
 	.foot {
-		margin: 8px 0 0;
+		margin: var(--sp-8) 0 0;
 		color: var(--faint);
 		font-size: var(--fs-xs);
 	}

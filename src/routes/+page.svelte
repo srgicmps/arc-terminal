@@ -197,9 +197,9 @@
 	}
 
 	em {
-		margin-left: 6px;
+		margin-left: var(--sp-6);
 		font-style: normal;
-		font-weight: 400;
+		font-weight: var(--fw-regular);
 		font-size: var(--fs-s);
 	}
 </style>

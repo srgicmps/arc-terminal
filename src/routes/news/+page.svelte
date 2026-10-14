@@ -55,16 +55,16 @@
 	.controls {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px 12px;
-		margin-bottom: 12px;
+		gap: var(--sp-8) var(--sp-12);
+		margin-bottom: var(--sp-12);
 	}
 
 	input {
 		flex: 1 1 280px;
-		height: 32px;
-		padding: 0 10px;
+		height: var(--control-h);
+		padding: 0 var(--sp-10);
 		background: var(--panel);
-		border: 1px solid var(--line);
+		border: var(--border);
 		font-family: var(--sans);
 		font-size: var(--fs-l);
 	}
@@ -77,13 +77,13 @@
 	.seg {
 		display: inline-flex;
 		flex-wrap: wrap;
-		border: 1px solid var(--line);
+		border: var(--border);
 	}
 
 	.seg button {
 		background: none;
 		border: 0;
-		padding: 5px 10px;
+		padding: var(--sp-5) var(--sp-10);
 		cursor: pointer;
 		color: var(--muted);
 		font-size: var(--fs-s);
@@ -92,6 +92,6 @@
 	.seg button[aria-pressed='true'] {
 		background: var(--amber);
 		color: var(--on-amber);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 </style>

@@ -1,54 +1,5 @@
-/* Estilos globales de Arc Terminal. Tokens copiados de docs/maqueta.html (:root). */
-:root {
-	color-scheme: dark;
-	--bg: #080a0d;
-	--panel: #0d1116;
-	--raise: #151b23;
-	--line: #1d242d;
-	--fg: #dce1e7;
-	--muted: #808a97;
-	/* Gris más tenue para texto: 4,6:1 sobre --panel (WCAG AA). Antes #56606c (2,96:1). */
-	--faint: #747e8a;
-	--amber: #f2a83b;
-	--amber-soft: rgba(242, 168, 59, 0.13);
-	--amber-edge: rgba(242, 168, 59, 0.42);
-	--on-amber: #120c02;
-	--up: #4cc48a;
-	--down: #f0646f;
-	/* Gris de relleno para barras y gráficos (se ajusta con el tema). */
-	--neutral: #3a434e;
-	--mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-	--sans: 'IBM Plex Sans Condensed', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
-	--fs-xs: 11px;
-	--fs-s: 12px;
-	--fs-m: 13px;
-	--fs-l: 14.5px;
-	--fs-xl: 20px;
-	--fs-xxl: 28px;
-}
-
-/*
- * Tema de día: <html data-theme="light">. Lo pone src/lib/theme.svelte.ts con el interruptor o, en
- * modo «auto», cuando el sistema está en claro. Solo redefine tokens de color.
- * Contraste comprobado (WCAG AA, 4,5:1) de --muted, --faint, ámbar, verde y rojo sobre --bg, --panel y --raise.
- */
-:root[data-theme='light'] {
-	color-scheme: light;
-	--bg: #f5f4f0;
-	--panel: #ffffff;
-	--raise: #eeece6;
-	--line: #dcd8cf;
-	--fg: #16191d;
-	--muted: #5b636e;
-	--faint: #636a74;
-	--amber: #9a5a00;
-	--amber-soft: rgba(154, 90, 0, 0.1);
-	--amber-edge: rgba(154, 90, 0, 0.4);
-	--on-amber: #ffffff;
-	--up: #147345;
-	--down: #c3303c;
-	--neutral: #b9b4a8;
-}
+/* Estilos globales de Arc Terminal: reset, tipografía base y piezas compartidas. Los tokens están en styles/tokens.css. */
+@import './styles/tokens.css';
 
 *,
 *::before,
@@ -66,11 +17,11 @@ body {
 body {
 	font-family: var(--mono);
 	font-size: var(--fs-m);
-	line-height: 1.45;
+	line-height: var(--lh);
 	font-variant-numeric: tabular-nums;
-	padding-left: max(16px, env(safe-area-inset-left, 0px));
-	padding-right: max(16px, env(safe-area-inset-right, 0px));
-	padding-block: 10px 0;
+	padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+	padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+	padding-block: var(--sp-10) 0;
 }
 
 button,
@@ -83,8 +34,8 @@ select {
 /* Foco con teclado: contorno ámbar fino. Solo con :focus-visible, para que el ratón y el dedo no lo muestren.
    Si un componente quita el outline, tiene que poner otra señal (borde ámbar, fondo…). */
 :focus-visible {
-	outline: 1px solid var(--amber);
-	outline-offset: 2px;
+	outline: var(--hair) solid var(--amber);
+	outline-offset: var(--sp-2);
 }
 
 .sr {
@@ -102,37 +53,37 @@ select {
 	flex-wrap: wrap;
 	align-items: flex-end;
 	justify-content: space-between;
-	gap: 8px 24px;
-	padding-block: 2px 12px;
+	gap: var(--sp-8) var(--sp-24);
+	padding-block: var(--sp-2) var(--sp-12);
 }
 .vh h1 {
 	margin: 0;
 	display: flex;
 	align-items: baseline;
-	gap: 12px;
+	gap: var(--sp-12);
 	font-family: var(--sans);
-	font-weight: 500;
+	font-weight: var(--fw-medium);
 	font-size: var(--fs-xl);
 	text-wrap: balance;
 }
 .vh h1 .code {
 	font-family: var(--mono);
 	font-size: var(--fs-l);
-	font-weight: 600;
-	letter-spacing: 0.06em;
+	font-weight: var(--fw-bold);
+	letter-spacing: var(--track-code);
 	color: var(--amber);
 }
 .vh p {
-	margin: 4px 0 0;
+	margin: var(--sp-4) 0 0;
 	color: var(--muted);
 	font-size: var(--fs-xs);
 }
 .grid {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
-	gap: 1px;
+	gap: var(--hair);
 	background: var(--line);
-	border: 1px solid var(--line);
+	border: var(--border);
 }
 .panel {
 	background: var(--panel);
@@ -144,22 +95,22 @@ select {
 	flex-wrap: wrap;
 	align-items: center;
 	justify-content: space-between;
-	gap: 6px 12px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--line);
+	gap: var(--sp-6) var(--sp-12);
+	padding: var(--row-y) var(--pad-x);
+	border-bottom: var(--border);
 }
 .ph h2 {
 	margin: 0;
 	font-size: var(--fs-xs);
-	font-weight: 600;
-	letter-spacing: 0.14em;
+	font-weight: var(--fw-bold);
+	letter-spacing: var(--track-label);
 	text-transform: uppercase;
 	color: var(--amber);
 }
 .ph-r {
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: var(--sp-12);
 	font-size: var(--fs-xs);
 	color: var(--faint);
 }
@@ -169,8 +120,8 @@ select {
 }
 .pnote {
 	margin: 0;
-	padding: 8px 12px 10px;
-	border-top: 1px solid var(--line);
+	padding: var(--sp-8) var(--pad-x) var(--sp-10);
+	border-top: var(--border);
 	color: var(--faint);
 	font-family: var(--sans);
 	font-size: var(--fs-s);
@@ -180,7 +131,7 @@ select {
 }
 .empty {
 	margin: 0;
-	padding: 14px 12px;
+	padding: var(--sp-14) var(--pad-x);
 	color: var(--muted);
 	font-family: var(--sans);
 }
@@ -203,19 +154,19 @@ select {
 }
 .t th,
 .t td {
-	padding: 5px 10px;
+	padding: var(--sp-5) var(--sp-10);
 	text-align: right;
 	white-space: nowrap;
-	border-bottom: 1px solid var(--line);
+	border-bottom: var(--border);
 }
 .t tbody tr:last-child td {
 	border-bottom: 0;
 }
 .t th {
-	padding-block: 6px;
-	font-weight: 400;
+	padding-block: var(--sp-6);
+	font-weight: var(--fw-regular);
 	font-size: var(--fs-xs);
-	letter-spacing: 0.08em;
+	letter-spacing: var(--track-caps);
 	text-transform: uppercase;
 	color: var(--faint);
 }
@@ -229,7 +180,7 @@ select {
 	font-size: var(--fs-m);
 }
 .t .sub {
-	margin-left: 6px;
+	margin-left: var(--sp-6);
 	color: var(--muted);
 	font-family: var(--sans);
 	font-size: var(--fs-s);
@@ -245,9 +196,9 @@ kbd {
 	font-size: var(--fs-xs);
 	color: var(--fg);
 	background: var(--raise);
-	border: 1px solid var(--line);
-	border-bottom-width: 2px;
-	padding: 0 5px;
+	border: var(--border);
+	border-bottom-width: var(--key-edge);
+	padding: 0 var(--sp-5);
 }
 
 /* Rejillas de varias columnas: en el móvil, todas en una. */
@@ -258,19 +209,19 @@ kbd {
 	flex-direction: column;
 }
 .col > .panel + .panel {
-	border-top: 1px solid var(--line);
+	border-top: var(--border);
 }
 /* Columnas que se reparten todo el ancho: caben tantas como permita la pantalla (mínimo 340 px). */
 .grid-2,
 .grid-2e,
 .grid-3 {
-	grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(var(--col-min), 100%), 1fr));
 }
 @media (max-width: 1100px) {
 	/* En pantallas medianas y en el móvil, la columna central (titulares) va primero, a todo el ancho,
 	   y las otras dos debajo. Con 420 px de mínimo nunca caben tres y no queda un hueco a la derecha. */
 	.grid-3 {
-		grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(min(var(--col-min-wide), 100%), 1fr));
 	}
 	.grid-3 > .col:nth-child(2) {
 		grid-column: 1 / -1;
@@ -278,24 +229,24 @@ kbd {
 	}
 }
 .grid + .grid {
-	margin-top: 12px;
+	margin-top: var(--sp-12);
 }
 
 /* Lista sencilla de enlaces con dato a la derecha (portada, mini paneles). */
 .mini {
 	list-style: none;
 	margin: 0;
-	padding: 4px 0;
+	padding: var(--sp-4) 0;
 }
 .mini li {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) auto;
-	gap: 10px;
+	gap: var(--sp-10);
 	align-items: baseline;
-	padding: 6px 12px;
+	padding: var(--sp-6) var(--pad-x);
 }
 .mini li + li {
-	border-top: 1px solid var(--line);
+	border-top: var(--border);
 }
 .mini .l {
 	font-family: var(--sans);
@@ -315,7 +266,7 @@ kbd {
 	color: var(--amber);
 }
 .mini b {
-	font-weight: 500;
+	font-weight: var(--fw-medium);
 	white-space: nowrap;
 }
 
@@ -323,27 +274,27 @@ kbd {
 .tiles {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 1px;
+	gap: var(--hair);
 	background: var(--line);
-	border-bottom: 1px solid var(--line);
+	border-bottom: var(--border);
 }
 .tile {
 	background: var(--panel);
-	padding: 12px;
+	padding: var(--sp-12);
 	display: flex;
 	flex-direction: column;
-	gap: 3px;
+	gap: var(--sp-3);
 	min-width: 0;
 }
 .tile .lbl {
 	color: var(--muted);
 	font-size: var(--fs-xs);
-	letter-spacing: 0.06em;
+	letter-spacing: var(--track-code);
 	text-transform: uppercase;
 }
 .tile b {
 	font-size: var(--fs-xl);
-	font-weight: 500;
+	font-weight: var(--fw-medium);
 }
 .tile .sub {
 	color: var(--muted);
@@ -359,8 +310,8 @@ kbd {
 /* Lista de tickers de HELP: cada enlace ocupa 24 px de alto (mínimo de WCAG 2.2) y las filas solo se separan 4 px más. */
 .tickers a {
 	display: block;
-	padding-block: 4px;
-	margin-block: -2px;
+	padding-block: var(--sp-4);
+	margin-block: calc(-1 * var(--sp-2));
 }
 
 /* Pantallas táctiles: zonas pulsables de al menos 44 px sin engordar el diseño más de lo necesario. */
@@ -368,13 +319,13 @@ kbd {
 	button,
 	select,
 	.cmd {
-		min-height: 44px;
+		min-height: var(--touch);
 	}
 
 	/* Listas de enlaces: toda la fila es pulsable (el ::after invisible del enlace la cubre). */
 	.mini li:has(> a) {
 		position: relative;
-		min-height: 44px;
+		min-height: var(--touch);
 		align-items: center;
 	}
 	.mini li > a::after {
@@ -386,7 +337,7 @@ kbd {
 	.tickers a {
 		display: flex;
 		align-items: center;
-		min-height: 44px;
+		min-height: var(--touch);
 		margin-block: 0;
 	}
 
@@ -394,7 +345,7 @@ kbd {
 	   y el ::after invisible del enlace la cubre entera. */
 	.t td:has(> :is(a, button):first-child):not(:has(:is(a, button) ~ :is(a, button))) {
 		position: relative;
-		height: 44px;
+		height: var(--touch);
 	}
 	.t td:not(:has(:is(a, button) ~ :is(a, button))) > :is(a, button):first-child::after {
 		content: '';

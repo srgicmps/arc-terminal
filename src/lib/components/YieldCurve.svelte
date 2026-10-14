@@ -83,7 +83,7 @@
 		display: block;
 		width: 100%;
 		height: auto;
-		padding: 8px 4px 0;
+		padding: var(--sp-8) var(--sp-4) 0;
 	}
 
 	.grid {
@@ -93,7 +93,7 @@
 	.lbl {
 		fill: var(--muted);
 		font-family: var(--mono);
-		font-size: 11px;
+		font-size: var(--fs-xs);
 	}
 
 	polyline {

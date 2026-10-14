@@ -51,20 +51,20 @@
 
 	.strong {
 		color: var(--amber);
-		font-weight: 600;
+		font-weight: var(--fw-bold);
 	}
 
 	.flag {
-		margin-left: 6px;
+		margin-left: var(--sp-6);
 		color: var(--amber);
 		font-size: var(--fs-xs);
 		text-transform: uppercase;
-		letter-spacing: 0.06em;
+		letter-spacing: var(--track-code);
 	}
 
 	.flag.orange,
 	.flag.red {
 		color: var(--fg);
-		font-weight: 600;
+		font-weight: var(--fw-bold);
 	}
 </style>

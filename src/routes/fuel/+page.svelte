@@ -337,21 +337,21 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 10px 18px;
-		padding: 10px 12px;
-		border-bottom: 1px solid var(--line);
+		gap: var(--sp-10) var(--sp-18);
+		padding: var(--sp-10) var(--pad-x);
+		border-bottom: var(--border);
 	}
 
 	.seg {
 		display: inline-flex;
 		flex-wrap: wrap;
-		border: 1px solid var(--line);
+		border: var(--border);
 	}
 
 	.seg button {
 		background: none;
 		border: 0;
-		padding: 5px 12px;
+		padding: var(--sp-5) var(--pad-x);
 		cursor: pointer;
 		color: var(--muted);
 		font-size: var(--fs-s);
@@ -360,31 +360,31 @@
 	.seg button[aria-pressed='true'] {
 		background: var(--amber);
 		color: var(--on-amber);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 
 	.sel {
 		display: inline-flex;
 		align-items: center;
-		gap: 8px;
+		gap: var(--sp-8);
 		color: var(--muted);
 		font-size: var(--fs-s);
 	}
 
 	.sel select {
 		background: var(--raise);
-		border: 1px solid var(--line);
+		border: var(--border);
 		color: var(--fg);
-		padding: 4px 8px;
+		padding: var(--sp-4) var(--sp-8);
 		font-size: var(--fs-s);
 		max-width: 180px;
 	}
 
 	.near {
 		background: none;
-		border: 1px solid var(--amber-edge);
+		border: var(--hair) solid var(--amber-edge);
 		color: var(--amber);
-		padding: 4px 10px;
+		padding: var(--sp-4) var(--sp-10);
 		font-size: var(--fs-s);
 		cursor: pointer;
 	}
@@ -397,16 +397,16 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: baseline;
-		gap: 6px 16px;
-		padding: 8px 12px;
-		border-bottom: 1px solid var(--line);
+		gap: var(--sp-6) var(--sp-16);
+		padding: var(--row-y) var(--pad-x);
+		border-bottom: var(--border);
 		font-size: var(--fs-s);
 	}
 
 	.nearest .lbl {
 		color: var(--muted);
 		font-size: var(--fs-xs);
-		letter-spacing: 0.06em;
+		letter-spacing: var(--track-code);
 		text-transform: uppercase;
 	}
 
@@ -418,7 +418,7 @@
 
 	.nearest b {
 		font-family: var(--mono);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 		color: var(--amber);
 	}
 
@@ -438,7 +438,7 @@
 	.bar {
 		display: block;
 		position: relative;
-		height: 6px;
+		height: var(--bar-h);
 		min-width: 80px;
 		background: var(--raise);
 	}
@@ -458,8 +458,8 @@
 		width: 100%;
 		background: none;
 		border: 0;
-		border-top: 1px solid var(--line);
-		padding: 8px;
+		border-top: var(--border);
+		padding: var(--sp-8);
 		color: var(--amber);
 		font-size: var(--fs-s);
 		cursor: pointer;

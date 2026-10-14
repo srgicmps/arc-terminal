@@ -144,8 +144,8 @@
 	.search {
 		display: flex;
 		align-items: center;
-		gap: 12px;
-		margin-bottom: 12px;
+		gap: var(--sp-12);
+		margin-bottom: var(--sp-12);
 	}
 
 	.search label {
@@ -154,10 +154,10 @@
 
 	input {
 		width: 100%;
-		height: 32px;
-		padding: 0 10px;
+		height: var(--control-h);
+		padding: 0 var(--sp-10);
 		background: var(--panel);
-		border: 1px solid var(--line);
+		border: var(--border);
 		font-family: var(--sans);
 		font-size: var(--fs-l);
 	}
@@ -178,7 +178,7 @@
 	}
 
 	.col + .col {
-		border-top: 1px solid var(--line);
+		border-top: var(--border);
 	}
 
 	.boe {
@@ -188,8 +188,8 @@
 	}
 
 	.boe li {
-		padding: 8px 12px;
-		border-bottom: 1px solid var(--line);
+		padding: var(--row-y) var(--pad-x);
+		border-bottom: var(--border);
 	}
 
 	.boe li:last-child {
@@ -201,7 +201,7 @@
 		text-decoration: none;
 		font-family: var(--sans);
 		font-size: var(--fs-l);
-		line-height: 1.35;
+		line-height: var(--lh-snug);
 		text-wrap: pretty;
 	}
 
@@ -210,10 +210,10 @@
 	}
 
 	.m {
-		margin: 4px 0 0;
+		margin: var(--sp-4) 0 0;
 		display: flex;
 		flex-wrap: wrap;
-		gap: 2px 10px;
+		gap: var(--sp-2) var(--sp-10);
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-s);
@@ -266,7 +266,7 @@
 	}
 
 	.foot {
-		margin: 8px 0 0;
+		margin: var(--sp-8) 0 0;
 		color: var(--faint);
 		font-size: var(--fs-xs);
 	}

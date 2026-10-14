@@ -223,7 +223,7 @@
 
 	pre code {
 		color: var(--muted);
-		line-height: 1.5;
+		line-height: var(--lh-loose);
 	}
 
 	.wrap {

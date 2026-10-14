@@ -58,10 +58,10 @@
 	.news li {
 		display: grid;
 		grid-template-columns: 62px minmax(0, 1fr);
-		gap: 10px;
+		gap: var(--sp-10);
 		align-items: start;
-		padding: 8px 12px;
-		border-bottom: 1px solid var(--line);
+		padding: var(--row-y) var(--pad-x);
+		border-bottom: var(--border);
 	}
 
 	/* En pantallas táctiles, toda la fila abre el titular: el ::after invisible del enlace la cubre. */
@@ -88,10 +88,10 @@
 	}
 
 	time {
-		padding-top: 2px;
+		padding-top: var(--sp-2);
 		color: var(--faint);
 		font-size: var(--fs-xs);
-		line-height: 1.35;
+		line-height: var(--lh-snug);
 	}
 
 	.h {
@@ -100,7 +100,7 @@
 		text-decoration: none;
 		font-family: var(--sans);
 		font-size: var(--fs-l);
-		line-height: 1.3;
+		line-height: var(--lh-tight);
 		text-wrap: pretty;
 	}
 
@@ -113,10 +113,10 @@
 	}
 
 	.m {
-		margin: 3px 0 0;
+		margin: var(--sp-3) 0 0;
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px 8px;
+		gap: var(--sp-4) var(--sp-8);
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-s);
@@ -159,14 +159,14 @@
 		color: var(--amber);
 		font-family: var(--mono);
 		font-size: var(--fs-xs);
-		letter-spacing: 0.04em;
+		letter-spacing: var(--track-tight);
 	}
 
 	.s {
-		margin: 4px 0 0;
+		margin: var(--sp-4) 0 0;
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-m);
-		line-height: 1.4;
+		line-height: var(--lh-text);
 	}
 </style>

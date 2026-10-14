@@ -85,7 +85,7 @@
 		width: 9ch;
 		text-align: right;
 		background: var(--raise);
-		border: 1px solid var(--line);
+		border: var(--border);
 	}
 
 	input:focus {

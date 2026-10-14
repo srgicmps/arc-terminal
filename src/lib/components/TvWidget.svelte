@@ -103,11 +103,11 @@
 		align-items: center;
 		justify-content: center;
 		background: var(--panel);
-		box-shadow: inset 0 0 0 1px var(--line);
+		box-shadow: inset 0 0 0 var(--hair) var(--line);
 		color: var(--faint);
 		font-family: var(--mono);
 		font-size: var(--fs-xs);
-		letter-spacing: 0.04em;
+		letter-spacing: var(--track-tight);
 		pointer-events: none;
 	}
 </style>

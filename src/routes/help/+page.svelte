@@ -66,7 +66,7 @@
 <style>
 	.code {
 		color: var(--amber);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 		text-decoration: none;
 	}
 
@@ -84,10 +84,10 @@
 	.tickers {
 		list-style: none;
 		margin: 0;
-		padding: 8px 12px;
+		padding: var(--row-y) var(--pad-x);
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-		gap: 4px 12px;
+		gap: var(--sp-4) var(--sp-12);
 	}
 
 	.tickers a {
@@ -100,7 +100,7 @@
 	.tickers b {
 		color: var(--amber);
 		font-family: var(--mono);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 
 	.tickers a:hover {

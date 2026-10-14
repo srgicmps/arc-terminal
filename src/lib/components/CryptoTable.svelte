@@ -34,6 +34,6 @@
 		display: inline-block;
 		min-width: 5ch;
 		color: var(--amber);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 </style>
