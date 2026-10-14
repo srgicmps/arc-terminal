@@ -3,10 +3,12 @@
 	import NewsList from '#lib/components/NewsList.svelte';
 	import PaperList from '#lib/components/PaperList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import QuoteBoard from '#lib/components/QuoteBoard.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
 	import { compact } from '#lib/format.ts';
+	import { BIG_TECH } from '#lib/tickers/bigtech.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -49,6 +51,9 @@
 		</Panel>
 	</div>
 	<div class="col">
+		<Panel title="Tecnológicas en bolsa" meta="TradingView · toca un código para su ficha">
+			<QuoteBoard name="Tecnológicas" codes={BIG_TECH} />
+		</Panel>
 		<Panel title="IA en Hacker News" meta="{hnAi.length} en portada">
 			<HnTable items={hnAi} />
 		</Panel>
