@@ -119,4 +119,11 @@
 		letter-spacing: var(--track-tight);
 		pointer-events: none;
 	}
+
+	/* En papel no hay TradingView (son iframes en directo). */
+	@media print {
+		.tv {
+			display: none;
+		}
+	}
 </style>
