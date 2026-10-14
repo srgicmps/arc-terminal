@@ -30,3 +30,7 @@ https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{
 # ECO (M6): inflación subyacente de la zona euro (BCE) y PIB interanual de España (Eurostat, CLV_PCH_SM)
 https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N.XEF000.4.ANR?lastNObservations=3&format=csvdata&detail=dataonly
 https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/namq_10_gdp?format=JSON&lang=EN&unit=CLV_PCH_SM&s_adj=SCA&na_item=B1GQ&geo=ES&lastTimePeriod=2 ~ "value":\{[^}]*\}|"time":\{[^}]*\}
+# ECO (M6): XEF000 acaba en 2025-12 (cambio de base de 2026). ¿Qué partidas del IPCA de la zona euro tienen datos de 2026?
+https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N..4.ANR?lastNObservations=1&format=csvdata&detail=dataonly ~ ICP\.M\.U2\.N\.[A-Z0-9_]+\.4\.ANR,M,U2,N,[A-Z0-9_]+,4,ANR,2026-\d\d,[-\d.]+
+# Y la general (000000), que es la que tenía el panel hasta ahora
+https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N.000000.4.ANR?lastNObservations=2&format=csvdata&detail=dataonly
