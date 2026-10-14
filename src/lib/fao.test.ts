@@ -31,6 +31,12 @@ describe('FAO', () => {
 		expect(series[0].source).toBe('FAO');
 	});
 
+	it('el CSV de la FAO, partido por comas', () => {
+		const csv = 'FAO Food Price Index,,,\n2014-2016=100,,,\nDate,Food Price Index,Meat,Dairy,Cereals,Oils,Sugar,,\n,,,,\n2026-09,136.0,127.9,119.1,122.8,198.6,114.0,,';
+		const series = parseFaoSheet(csv.split('\n').map((l) => l.split(',')));
+		expect(series.map((s) => s.points[0].v)).toEqual([136, 122.8, 198.6, 127.9, 119.1, 114]);
+	});
+
 	it('sin cabecera, nada', () => {
 		expect(parseFaoSheet([['a', 'b'], [1, 2]])).toEqual([]);
 	});

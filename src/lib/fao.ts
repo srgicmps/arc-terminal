@@ -1,5 +1,5 @@
-// Índice FAO de precios de los alimentos: lectura de la hoja mensual del .xlsx de la FAO, ya convertida
-// en una matriz de celdas (scripts/sources/fao.ts la saca con exceljs). Pura, para poder probarla.
+// Índice FAO de precios de los alimentos: lectura de los datos mensuales de la FAO como una matriz de
+// celdas (scripts/sources/fao.ts parte el CSV). Pura, para poder probarla.
 import type { Series } from './types.ts';
 
 export interface FaoData {
