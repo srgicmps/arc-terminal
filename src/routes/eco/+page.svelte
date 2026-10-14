@@ -9,9 +9,11 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
+	import Tile from '#lib/components/ui/Tile.svelte';
+	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { compact, dm, period } from '#lib/format.ts';
+	import { compact, dm, nf, period, signed } from '#lib/format.ts';
 	import { change, diffDays, last, seriesMap, spread } from '#lib/series.ts';
 	import type { PageProps } from './$types';
 
@@ -38,6 +40,11 @@
 		}))
 	);
 	const debtUs = $derived(last(get('debt-us')));
+
+	// Prima de España a diario (Banco de España): último día hábil y cambio en una semana.
+	const daily = $derived(seriesMap(data.bde));
+	const premiumDay = $derived(last(daily('premium-es-d')));
+	const premiumWeek = $derived(diffDays(daily('premium-es-d'), 7));
 </script>
 
 <ViewHeader code="ECO" title="Economía y macro" sub="Eurostat, Banco Central Europeo, BLS, Tesoro de EE. UU. y FRED" />
@@ -184,8 +191,24 @@
 			{#snippet note()}Fuente: BCE · <Updated at={data.ecb?.fetchedAt} source="ecb" />{/snippet}
 		</Panel>
 		<Panel title="Primas de riesgo" meta="Frente al bono alemán · pb">
+			{#if premiumDay}
+				{@const es = last(daily('bond10-es-d'))}
+				{@const de = last(daily('bond10-de-d'))}
+				<Tiles cols={3}>
+					<Tile
+						label="Prima de España"
+						value="{nf(premiumDay.v, 0)} pb"
+						tone={premiumWeek === null || Math.round(premiumWeek) === 0 ? undefined : premiumWeek > 0 ? 'down' : 'up'}
+						sub="{period(premiumDay.t)}{premiumWeek === null ? '' : ` · ${signed(premiumWeek, 0)} pb en 7 días`}"
+					/>
+					<Tile label="Bono español 10A" value="{nf(es?.v, 2)} %" sub={es ? period(es.t) : ''} />
+					<Tile label="Bono alemán 10A" value="{nf(de?.v, 2)} %" sub={de ? period(de.t) : ''} />
+				</Tiles>
+			{/if}
 			<SeriesTable head="País" rows={premiums} spark={12} />
-			{#snippet note()}Diferencia de rentabilidad a 10 años con Alemania, media mensual. Fuente: BCE{/snippet}
+			{#snippet note()}
+				{#if premiumDay}Arriba, el último día hábil: Banco de España · <Updated at={data.bde?.fetchedAt} source="bde" />.{' '}{/if}La tabla, diferencia de rentabilidad a 10 años con Alemania en media mensual. Fuente: BCE
+			{/snippet}
 		</Panel>
 		<Panel title="EE. UU." meta="BLS y Tesoro">
 			<SeriesTable next={data.next}
