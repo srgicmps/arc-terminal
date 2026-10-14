@@ -4,6 +4,7 @@
 	El símbolo se lee de la URL al arrancar en el navegador (al construir la web no hay URL con ?sym=).
 -->
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import Panel from '#lib/components/Panel.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
@@ -46,6 +47,7 @@
 			<button class="star" type="button" aria-pressed={inWatchlist(code)} onclick={() => toggleWatch(code)}>
 				{inWatchlist(code) ? '★ En mi lista' : '☆ Añadir a MIS'}
 			</button>
+			<a class="star" href="{resolve('/cmp')}?s={encodeURIComponent(code)}">Comparar con…</a>
 		{/if}
 	{/snippet}
 </ViewHeader>
@@ -114,6 +116,15 @@
 		padding: var(--sp-5) var(--sp-10);
 		font-size: var(--fs-s);
 		cursor: pointer;
+		text-decoration: none;
+	}
+
+	.star + .star {
+		margin-left: var(--sp-6);
+	}
+
+	a.star:hover {
+		color: var(--amber);
 	}
 
 	.star[aria-pressed='true'] {

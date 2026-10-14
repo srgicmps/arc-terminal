@@ -16,7 +16,7 @@ import {
 	writeHistory,
 	type Option
 } from './cmdline.ts';
-import { COMMANDS, TICKERS } from './commands.ts';
+import { COMMANDS, parseSymbols, TICKERS } from './commands.ts';
 
 const ALL: Option[] = [
 	...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función', aliases: c.aliases })),
@@ -184,5 +184,20 @@ describe('historial', () => {
 			{ code: 'NVDA', desc: 'NVIDIA', kind: 'Reciente', run: 'NVDA' },
 			{ code: 'BME:REP', desc: 'Valor', kind: 'Reciente', run: 'BME:REP' }
 		]);
+	});
+});
+
+describe('CMP', () => {
+	it('«CMP NVDA AMD AVGO» abre /cmp con los valores en ?s=', () => {
+		const target = resolveInput('CMP NVDA AMD AVGO', []);
+		expect(target).toMatchObject({ kind: 'command', arg: 'NVDA AMD AVGO' });
+		expect(target && targetPath(target)).toEqual({ route: '/cmp', search: '?s=NVDA%20AMD%20AVGO' });
+	});
+
+	it('lee los valores en mayúsculas, sin repetir y como mucho cinco', () => {
+		expect(parseSymbols('nvda, amd  AVGO;nvda')).toEqual(['NVDA', 'AMD', 'AVGO']);
+		expect(parseSymbols('A B C D E F')).toEqual(['A', 'B', 'C', 'D', 'E']);
+		expect(parseSymbols('BME:SAN <script>')).toEqual(['BME:SAN']);
+		expect(parseSymbols(null)).toEqual([]);
 	});
 });

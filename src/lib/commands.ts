@@ -22,6 +22,7 @@ export interface Command {
 		| '/cal'
 		| '/wiki'
 		| '/news'
+		| '/cmp'
 		| '/mis'
 		| '/help'
 		| '/doc'
@@ -59,6 +60,7 @@ export const COMMANDS: Command[] = [
 	{ code: 'PORT', route: '/port', key: 'Puertos', desc: 'Barcos en puertos y estrechos (Gibraltar, Róterdam, Singapur, Maó…) con AIS en directo', sources: 'aisstream.io', aliases: ['barcos', 'puertos', 'ais'] },
 	{ code: 'MIS', route: '/mis', key: 'Mis valores', desc: 'Tu lista de valores, con cotización en directo', sources: 'TradingView', pinned: true },
 	{ code: 'FUEL', route: '/fuel', key: 'Gasolina', desc: 'Gasolineras más baratas de Menorca', sources: 'Ministerio para la Transición Ecológica', pinned: true, aliases: ['gasolina', 'diésel', 'carburante'], arg: { param: 'zona', label: 'Provincia (nombre o número)', example: 'FUEL Madrid' } },
+	{ code: 'CMP', route: '/cmp', key: 'Comparar', desc: 'Compara varios valores en un gráfico en base 100', sources: 'TradingView', aliases: ['comparar', 'comparativa'], arg: { param: 's', label: 'Valores separados por espacios', example: 'CMP NVDA AMD AVGO' } },
 	{ code: 'NEWS', route: '/news', key: 'Buscar', desc: 'Buscador en todos los titulares de todas las secciones', sources: 'Todos los medios', arg: { param: 'q', label: 'Buscar en los titulares', example: 'NEWS inflación' } },
 	{ code: 'WIKI', route: '/wiki', key: 'Wikipedia', desc: 'Lo más leído en Wikipedia y efemérides del día', sources: 'Wikipedia en español' },
 	{ code: 'CAL', route: '/cal', key: 'Agenda', desc: 'Agenda económica de la semana', sources: 'TradingView' },
@@ -122,6 +124,15 @@ export const TICKERS: Ticker[] = [
 ];
 
 /** Símbolo de TradingView para lo que escriba Sergi: un valor conocido o el texto tal cual. */
+/** «NVDA, amd  AVGO» → ['NVDA', 'AMD', 'AVGO']: sin repetidos y como mucho `max` (los demás se ignoran). */
+export function parseSymbols(raw: string | null | undefined, max = 5): string[] {
+	const codes = (raw ?? '')
+		.toUpperCase()
+		.split(/[\s,;]+/)
+		.filter((c) => /^[A-Z0-9.:!-]{1,20}$/.test(c));
+	return [...new Set(codes)].slice(0, max);
+}
+
 export function tvSymbol(code: string): string {
 	const upper = code.trim().toUpperCase();
 	return TICKERS.find((t) => t.code === upper)?.tv ?? upper;
