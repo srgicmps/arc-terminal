@@ -90,5 +90,7 @@ if (!wanted.length) {
 }
 
 const failed = statuses.filter((s) => s.state === 'error' || s.state === 'stale');
-console.log(`\n${statuses.length - failed.length}/${statuses.length} fuentes al día.`);
+const off = statuses.filter((s) => s.state === 'off').length;
+const active = statuses.length - off;
+console.log(`\n${active - failed.length}/${active} fuentes al día${off ? ` (${off} sin clave)` : ''}.`);
 if (samples.length) console.log(`\nMuestras:\n${samples.join('\n\n')}`);
