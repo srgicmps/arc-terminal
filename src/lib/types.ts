@@ -471,3 +471,15 @@ export interface Disaster {
 	/** Código GLIDE del desastre, si lo tiene. */
 	glide: string;
 }
+
+// ---------- Índice de búsqueda de la barra (static/data/search.json) ----------
+
+/** Una entrada del índice: título, enlace y etiqueta. Nombres de una letra para que pese poco. */
+export interface SearchEntry {
+	/** Título (recortado). */
+	t: string;
+	/** Enlace: externo (https://…) o interno de la web («/s?sym=NVDA», sin la base). */
+	u: string;
+	/** Etiqueta que se ve en la barra: NEWS, BOE o Valor. */
+	s: 'NEWS' | 'BOE' | 'Valor';
+}
