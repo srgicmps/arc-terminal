@@ -8,6 +8,8 @@
 	interface Props {
 		title: string;
 		meta?: string;
+		/** El dato de la derecha va en ámbar: algo que merece atención (p. ej. «5 nuevas hoy»). */
+		accent?: boolean;
 		/** Enlace «CÓDIGO ›» a la vista completa. */
 		jump?: { code: string; href: string };
 		/** Botón «Compartir»: los datos, o una función que los da al pulsar. Sin `url`, la página actual. */
@@ -17,7 +19,7 @@
 		note?: Snippet;
 	}
 
-	let { title, meta, jump, share, children, note }: Props = $props();
+	let { title, meta, accent, jump, share, children, note }: Props = $props();
 </script>
 
 <section class="panel">
@@ -25,7 +27,7 @@
 		<h2>{title}</h2>
 		{#if meta || jump || share}
 			<div class="ph-r">
-				{#if meta}<span>{meta}</span>{/if}
+				{#if meta}<span class:accent>{meta}</span>{/if}
 				{#if share}<Share source={share} />{/if}
 				{#if jump}<a class="jump" href={jump.href}>{jump.code} ›</a>{/if}
 			</div>
@@ -70,6 +72,10 @@
 		gap: var(--sp-12);
 		font-size: var(--fs-xs);
 		color: var(--faint);
+	}
+
+	.accent {
+		color: var(--amber);
 	}
 
 	.jump {
