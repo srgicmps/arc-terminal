@@ -4,7 +4,7 @@ import { ais } from './ais.ts';
 import { air } from './air.ts';
 import { alerts } from './alerts.ts';
 import { bls } from './bls.ts';
-import { bis, housing } from './bis.ts';
+import { bis } from './bis.ts';
 import { boe } from './boe.ts';
 import { ecb } from './ecb.ts';
 import { eurostat } from './eurostat.ts';
@@ -75,7 +75,5 @@ export const sources: Source<any>[] = [
 	...newsSources,
 	// Derivadas: se calculan después, con los datos de las anteriores.
 	imp,
-	search,
-	// Transición (se quita cuando entre el arreglo de registry.test): precio de la vivienda del BIS.
-	housing
+	search
 ];
