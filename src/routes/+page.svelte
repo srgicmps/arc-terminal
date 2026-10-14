@@ -9,6 +9,7 @@
 	import { seriesMap, spread } from '#lib/series.ts';
 	import { compass, sky } from '#lib/weather.ts';
 	import ModularGrid from '#lib/components/ModularGrid.svelte';
+	import PinnedPanels from '#lib/components/PinnedPanels.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
@@ -245,6 +246,8 @@
 			? 'mañana'
 			: 'hoy'}: <b>{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)}</b> · {nf(cheapWindow.avg, 3)} €/kWh{/if}
 </p>
+
+<PinnedPanels />
 
 {#if mode.modular}
 	<ModularGrid

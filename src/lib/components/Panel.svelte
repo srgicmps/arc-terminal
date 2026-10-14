@@ -4,10 +4,12 @@
 	con el fondo atenuado. Se maximiza el mismo <section>, sin volver a montar el contenido (TradingView,
 	estados…). Esc, ✕ o tocar fuera lo cierran, y el foco vuelve al título.
 	Dentro de una <ModularGrid>, si tiene id, la cabecera lleva además el asa ⋮⋮ y el ✕.
+	Con `pin` lleva el 📌 para fijarlo en TOP (registro en pins.ts); en TOP, el 📌 abre el ancho y «Quitar».
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { getModular, type Span } from '#lib/layout.svelte.ts';
+	import { inPinArea, isPinned, pinSpan, setPinnedSpan, togglePinned } from '#lib/pins.svelte.ts';
 	import type { ShareSource } from '#lib/share.ts';
 	import Note from './ui/Note.svelte';
 	import Share from './ui/Share.svelte';
@@ -26,9 +28,11 @@
 		note?: Snippet;
 		/** Id estable del panel en la vista modular («luz», «boe»…). */
 		id?: string;
+		/** Id del registro de pins.ts («pin:eco:bancos»): muestra el 📌 para fijarlo en TOP. */
+		pin?: string;
 	}
 
-	let { title, meta, accent, jump, share, children, note, id }: Props = $props();
+	let { title, meta, accent, jump, share, children, note, id, pin }: Props = $props();
 
 	// La vista modular, si este panel está en una (si no, undefined: el panel se ve como siempre).
 	const modular = getModular();
@@ -36,6 +40,10 @@
 	/** Menú del asa: subir, bajar y ancho. */
 	let menu = $state(false);
 	const SPANS: Span[] = [1, 2, 3];
+	// En TOP (dentro de <PinnedPanels>) el 📌 abre su menú; en la vista de origen fija o suelta.
+	const pinArea = inPinArea();
+	let pinMenu = $state(false);
+	const pinned = $derived(pin ? isPinned(pin) : false);
 
 	let max = $state(false);
 	let titleButton: HTMLButtonElement;
@@ -122,11 +130,23 @@
 				{title}<span class="ico" aria-hidden="true">⤢</span>
 			</button>
 		</h2>
-		{#if meta || jump || share || tools || max}
+		{#if meta || jump || share || tools || pin || max}
 			<div class="ph-r">
 				{#if meta}<span class:accent>{meta}</span>{/if}
 				{#if share}<Share source={share} />{/if}
 				{#if jump}<a class="jump" href={jump.href}>{jump.code} ›</a>{/if}
+				{#if pin && !max}
+					<button
+						class="tool pin"
+						class:on={pinned}
+						type="button"
+						aria-pressed={pinArea ? undefined : pinned}
+						aria-expanded={pinArea ? pinMenu : undefined}
+						aria-label={pinArea ? `Ancho o quitar ${title} de TOP` : `Fijar ${title} en TOP`}
+						title={pinArea ? 'Ancho o quitar de TOP' : pinned ? 'Fijado en TOP · toca para soltarlo' : 'Fijar en TOP'}
+						onclick={() => (pinArea ? (pinMenu = !pinMenu) : togglePinned(pin))}>📌</button
+					>
+				{/if}
 				{#if max}
 					<button bind:this={closeButton} class="close" type="button" aria-label="Cerrar el panel ampliado" onclick={close}>✕</button>
 				{:else if tools && id}
@@ -160,6 +180,17 @@
 					<button type="button" aria-pressed={tools.span(id) === n} onclick={() => tools.setSpan(id, n)}>{n}</button>
 				{/each}
 			</span>
+		</div>
+	{/if}
+	{#if pin && pinArea && pinMenu && !max}
+		<div class="menu">
+			<span class="width">
+				Ancho
+				{#each SPANS as n (n)}
+					<button type="button" aria-pressed={pinSpan(pin) === n} onclick={() => setPinnedSpan(pin, n)}>{n}</button>
+				{/each}
+			</span>
+			<button type="button" onclick={() => togglePinned(pin)}>Quitar de TOP</button>
 		</div>
 	{/if}
 	{@render children()}
@@ -220,6 +251,18 @@
 
 	.tool:hover {
 		color: var(--amber);
+	}
+
+	/* El 📌 en gris y medio apagado; en color cuando el panel está fijado. */
+	.pin {
+		filter: grayscale(1);
+		opacity: 0.5;
+	}
+
+	.pin:hover,
+	.pin.on {
+		filter: none;
+		opacity: 1;
 	}
 
 	.grip {

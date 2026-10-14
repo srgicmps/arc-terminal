@@ -13,6 +13,7 @@
 	import { ui } from '#lib/ui.svelte.ts';
 	import { fit, initFit, toggleFit } from '#lib/fit.svelte.ts';
 	import { initMode, mode, toggleMode } from '#lib/layout.svelte.ts';
+	import { loadPins } from '#lib/pins.svelte.ts';
 	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
 	import { initPlace } from '#lib/place.svelte.ts';
 	import { initWatchlist } from '#lib/watchlist.svelte.ts';
@@ -29,6 +30,7 @@
 	$effect(initTheme);
 	$effect(initFit);
 	$effect(initMode);
+	$effect(loadPins);
 
 	// Modo TV: cualquier URL con ?tv=TOP,WS…&s=30 lo arranca y salta a la primera vista.
 	$effect(() => {

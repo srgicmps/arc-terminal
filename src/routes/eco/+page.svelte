@@ -151,7 +151,7 @@
 			<NewsList items={data.speeches?.data.items ?? []} />
 			{#snippet note()}Recopilados por el BIS · <Updated at={data.speeches?.fetchedAt} source="speeches" />{/snippet}
 		</Panel>
-		<Panel title="Bancos centrales" meta="Tipo oficial · último cambio">
+		<Panel title="Bancos centrales" meta="Tipo oficial · último cambio" pin="pin:eco:bancos">
 			<SeriesTable next={data.next}
 				head="Banco"
 				rows={(data.bis?.data.series ?? []).map((series) => ({ series, name: series.label, decimals: 2 }))}
