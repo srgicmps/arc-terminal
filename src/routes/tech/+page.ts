@@ -1,8 +1,12 @@
 import { dataset } from '#lib/data.ts';
-import type { HnItem, NewsData } from '#lib/types.ts';
+import type { HnItem, NewsData, Release } from '#lib/types.ts';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async () => {
-	const [news, hn] = await Promise.all([dataset<NewsData>('news-tech'), dataset<HnItem[]>('hn')]);
-	return { news, hn };
+	const [news, hn, releases] = await Promise.all([
+		dataset<NewsData>('news-tech'),
+		dataset<HnItem[]>('hn'),
+		dataset<Release[]>('releases')
+	]);
+	return { news, hn, releases };
 };
