@@ -15,6 +15,8 @@
 	interface Props {
 		title: string;
 		meta?: string;
+		/** El dato de la derecha va en ámbar: algo que merece atención (p. ej. «5 nuevas hoy»). */
+		accent?: boolean;
 		/** Enlace «CÓDIGO ›» a la vista completa. */
 		jump?: { code: string; href: string };
 		/** Botón «Compartir»: los datos, o una función que los da al pulsar. Sin `url`, la página actual. */
@@ -26,7 +28,7 @@
 		id?: string;
 	}
 
-	let { title, meta, jump, share, children, note, id }: Props = $props();
+	let { title, meta, accent, jump, share, children, note, id }: Props = $props();
 
 	// La vista modular, si este panel está en una (si no, undefined: el panel se ve como siempre).
 	const modular = getModular();
@@ -122,7 +124,7 @@
 		</h2>
 		{#if meta || jump || share || tools || max}
 			<div class="ph-r">
-				{#if meta}<span>{meta}</span>{/if}
+				{#if meta}<span class:accent>{meta}</span>{/if}
 				{#if share}<Share source={share} />{/if}
 				{#if jump}<a class="jump" href={jump.href}>{jump.code} ›</a>{/if}
 				{#if max}
@@ -199,6 +201,10 @@
 		gap: var(--sp-12);
 		font-size: var(--fs-xs);
 		color: var(--faint);
+	}
+
+	.accent {
+		color: var(--amber-dim);
 	}
 
 	/* Controles de la vista modular: discretos, del color del texto terciario. */

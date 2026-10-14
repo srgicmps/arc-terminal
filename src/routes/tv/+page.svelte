@@ -139,22 +139,6 @@
 		border-bottom: var(--border);
 	}
 
-	.go {
-		background: var(--amber);
-		color: var(--on-amber);
-		border: 0;
-		min-height: var(--control-h);
-		padding: 0 var(--sp-16);
-		font-weight: var(--fw-medium);
-		cursor: pointer;
-	}
-
-	.go:disabled {
-		background: var(--raise);
-		color: var(--faint);
-		cursor: default;
-	}
-
 	.mini b {
 		color: var(--fg);
 		font-weight: var(--fw-regular);

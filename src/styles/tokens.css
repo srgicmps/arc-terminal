@@ -76,7 +76,7 @@
 	--sp-20: 20px;
 	--sp-24: 24px;
 	/* Con nombre propio: el ritmo principal. */
-	/* Densidad «Compacta» (la de por defecto, al estilo Bloomberg). La «Cómoda» solo redefine estos tokens. */
+	/* Densidad «Compacta» (la de por defecto, al estilo Bloomberg). Si se añade una «Cómoda», solo tendrá que redefinir estos tokens. */
 	--pad-x: var(--sp-10); /* sangría horizontal de paneles, filas y tablas */
 	--row-y: var(--sp-6); /* margen vertical de una fila de lista */
 	--gutter: var(--sp-8); /* margen lateral de la página (escritorio) */
@@ -86,8 +86,11 @@
 	--hair: 1px; /* grosor de todas las líneas */
 	--border: var(--hair) solid var(--line);
 	--key-edge: 2px; /* borde inferior de <kbd> */
-	--btn-sm: 28px; /* botón cuadrado pequeño (tema) */
-	--control-h: 32px; /* buscadores y selectores de vista */
+	--control-h-desk: 28px;
+	/* Alto de TODOS los controles sueltos: botones, segmentados, desplegables y campos. 28 px con ratón y
+	   --touch (44 px) en pantallas táctiles: lo cambia la @media (pointer: coarse) de abajo. */
+	--control-h: var(--control-h-desk);
+	--btn-sm: var(--control-h-desk); /* botón cuadrado pequeño (tema, encajar, ✕): en táctil crece con ::after */
 	--cmd-h: 34px; /* barra de comandos */
 	--touch: 44px; /* zona pulsable mínima en pantallas táctiles */
 	--tabbar-h: 48px; /* barra inferior del móvil */
@@ -102,7 +105,7 @@
 	--col-min-wide: 420px; /* el mismo, en .grid-3 por debajo de 1100 px */
 	--z-popover: 50; /* burbujas del glosario (ⓘ): sobre la cabecera fija, bajo el panel maximizado */
 	--fit-panel-min: 280px; /* «encajar en pantalla»: alto mínimo de un panel (cabecera y unas 9 filas) */
-	--col-split: 400px; /* ancho mínimo de una subcolumna: una columna de más del doble se parte en dos o más */
+	--col-split: 400px; /* ancho mínimo de una subcolumna: una columna de más del doble se parte en dos */
 
 	/* ── Capas (z-index) y fondo atenuado ────────────────────────────────────────────────── */
 	--z-sticky: 1; /* cabeceras fijas dentro de un panel con scroll */
@@ -117,6 +120,13 @@
 	 *   1100 px rejilla de 3 columnas → 2
 	 * Los paneles se adaptan además a su propio ancho con @container (300–480 px).
 	 */
+}
+
+/* Pantallas táctiles: todos los controles a la zona pulsable mínima. */
+@media (pointer: coarse) {
+	:root {
+		--control-h: var(--touch);
+	}
 }
 
 /*

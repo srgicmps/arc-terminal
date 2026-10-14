@@ -21,7 +21,6 @@ const WANTED: Wanted[] = [
 	{ key: 'FM.B.U2.EUR.4F.KR.MRR_FR.LEV', id: 'ecb-mro', label: 'Operaciones principales de financiación', unit: '%', geo: 'EA', last: 500 },
 	{ key: 'EST.B.EU000A2X2A25.WT', id: 'estr', label: '€STR', unit: '%', geo: 'EA', last: 90 },
 	{ key: 'FM.M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA', id: 'euribor-12m', label: 'Euríbor a 12 meses', unit: '%', geo: 'EA', last: 36 },
-	{ key: 'ICP.M.U2.N.000000.4.ANR', id: 'hicp-ea', label: 'Inflación (IPCA)', unit: '%', geo: 'EA', last: 36 },
 	{ key: 'MIR.M.ES.B.A2C.AM.R.A.2250.EUR.N', id: 'mortgage-es', label: 'Hipotecas nuevas', unit: '%', geo: 'ES', last: 36 },
 	{ key: 'MIR.M.U2.B.A2C.AM.R.A.2250.EUR.N', id: 'mortgage-ea', label: 'Hipotecas nuevas', unit: '%', geo: 'EA', last: 36 },
 	{ key: 'IRS.M.ES.L.L40.CI.0000.EUR.N.Z', id: 'bond10-es', label: 'Bono a 10 años', unit: '%', geo: 'ES', last: 36 },
@@ -32,12 +31,12 @@ const WANTED: Wanted[] = [
 	{ key: 'IRS.M.GR.L.L40.CI.0000.EUR.N.Z', id: 'bond10-gr', label: 'Bono a 10 años', unit: '%', geo: 'GR', last: 36 },
 	// Balance del Eurosistema: total del activo, semanal, en millones de euros (estado financiero de cada martes).
 	{ key: 'ILM.W.U2.C.T000000.Z5.Z01', id: 'ecb-balance', label: 'Balance del Eurosistema', unit: 'M€', geo: 'EA', last: 160 },
-	{ key: 'EXR.D.USD.EUR.SP00.A', id: 'eurusd', label: 'EUR/USD', unit: '$', last: 260 },
-	{ key: 'EXR.D.GBP.EUR.SP00.A', id: 'eurgbp', label: 'EUR/GBP', unit: '£', last: 260 },
-	{ key: 'EXR.D.JPY.EUR.SP00.A', id: 'eurjpy', label: 'EUR/JPY', unit: '¥', last: 260 },
-	{ key: 'EXR.D.CHF.EUR.SP00.A', id: 'eurchf', label: 'EUR/CHF', unit: 'CHF', last: 260 },
-	{ key: 'EXR.D.CNY.EUR.SP00.A', id: 'eurcny', label: 'EUR/CNY', unit: '¥', last: 260 },
-	{ key: 'EXR.D.MXN.EUR.SP00.A', id: 'eurmxn', label: 'EUR/MXN', unit: 'MXN', last: 260 }
+	{ key: 'EXR.D.USD.EUR.SP00.A', id: 'eurusd', label: 'EUR/USD', unit: '$', last: 275 },
+	{ key: 'EXR.D.GBP.EUR.SP00.A', id: 'eurgbp', label: 'EUR/GBP', unit: '£', last: 275 },
+	{ key: 'EXR.D.JPY.EUR.SP00.A', id: 'eurjpy', label: 'EUR/JPY', unit: '¥', last: 275 },
+	{ key: 'EXR.D.CHF.EUR.SP00.A', id: 'eurchf', label: 'EUR/CHF', unit: 'CHF', last: 275 },
+	{ key: 'EXR.D.CNY.EUR.SP00.A', id: 'eurcny', label: 'EUR/CNY', unit: '¥', last: 275 },
+	{ key: 'EXR.D.MXN.EUR.SP00.A', id: 'eurmxn', label: 'EUR/MXN', unit: 'MXN', last: 275 }
 ];
 
 async function series(w: Wanted): Promise<Series | null> {

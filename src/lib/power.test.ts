@@ -133,3 +133,16 @@ describe('franja más barata', () => {
 		expect(cheapestNow(day('2026-10-14', curve), at('2026-10-14T19:00:00Z'))).toBeNull();
 	});
 });
+
+describe('cheapestWindow: etiqueta de la franja el día del cambio de hora', () => {
+	// 25 de octubre: 00, 01, 02, 02 ², 03, 04. La franja barata son la 02:00 y la 02:00 ².
+	const hours = [0, 1, 2, 2, 3, 4].map((hour, i) => ({ day: '2026-10-25', hour, kwh: [0.2, 0.2, 0.05, 0.04, 0.2, 0.2][i], repeat: i === 3 }));
+	it('acaba a las 03:00 si la franja incluye la segunda 02:00', () => {
+		const w = cheapestWindow(hours, '2026-10-25', 2)!;
+		expect(`${hourLabel(w.first)}–${hourLabel(w.after)}`).toBe('02:00–03:00');
+	});
+	it('acaba en la segunda 02:00 si la franja termina justo antes', () => {
+		const w = cheapestWindow(hours.map((h, i) => ({ ...h, kwh: i === 1 || i === 2 ? 0.01 : 0.3 })), '2026-10-25', 2)!;
+		expect(`${hourLabel(w.first)}–${hourLabel(w.after)}`).toBe('01:00–02:00 ²');
+	});
+});

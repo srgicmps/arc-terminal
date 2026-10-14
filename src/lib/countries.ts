@@ -157,6 +157,15 @@ export function findCountry(query: string | null | undefined): Country | undefin
 	);
 }
 
+/**
+ * El país con ese nombre exacto (en español o en inglés, sin tildes ni mayúsculas), sin buscar por el
+ * principio del nombre: para fuentes que dan el nombre del país («Niger» no es Nigeria).
+ */
+export function countryByName(name: string | null | undefined): Country | undefined {
+	const q = fold(name ?? '');
+	return q ? COUNTRIES.find((c) => [c.name, ...(c.aliases ?? [])].some((n) => fold(n) === q)) : undefined;
+}
+
 // Una sola expresión con todos los nombres de todos los países, del más largo al más corto: en cada sitio del
 // texto gana el nombre más largo que encaja («South Sudan» antes que «Sudan»). Se compila la primera vez.
 let all: { re: RegExp; byName: Map<string, Country> } | undefined;

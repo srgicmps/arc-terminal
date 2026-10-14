@@ -10,6 +10,7 @@ import type { OutbreakNews } from '../sources/who.ts';
 // 14 oct 2026, 12:00 en Madrid (CEST).
 const NOW = Date.parse('2026-10-14T10:00:00Z');
 const MIN = 60_000;
+const HOUR = 60 * MIN;
 
 /** Ejecuta una regla y devuelve sus avisos y el historial con los cambios «siempre» y los commits aplicados. */
 function run(rule: Rule['run'], d: WorldInputs, log: NotifyLog = emptyLog(), now = NOW) {
@@ -46,8 +47,12 @@ describe('GDACS', () => {
 		expect(first.alerts[0].title).toBe('🔴 Terremoto · Japan');
 		// Otra pasada (otro episodio): no repite, aunque el historial de entradas ya no lo tenga.
 		expect(run(gdacsRule, { gdacs: [gdacs('EQ1', 'red')] }, first.after).ids).toEqual([]);
-		// Desaparece: se borra su marca.
-		expect(run(gdacsRule, { gdacs: [] }, first.after).after.last).toEqual({});
+		// Una pasada vacía por error: la marca se queda y, si el evento vuelve, no se repite.
+		const empty = run(gdacsRule, { gdacs: [] }, first.after, NOW + HOUR).after;
+		expect(empty.last['gdacs:EQ1']).toBeDefined();
+		expect(run(gdacsRule, { gdacs: [gdacs('EQ1', 'red')] }, empty, NOW + 2 * HOUR).ids).toEqual([]);
+		// Tras 48 h sin verlo, se olvida.
+		expect(run(gdacsRule, { gdacs: [] }, first.after, NOW + 49 * HOUR).after.last).toEqual({});
 		// Sin gdacs.json no se toca nada.
 		expect(run(gdacsRule, {}, first.after).after.last).toEqual(first.after.last);
 	});
@@ -83,9 +88,18 @@ describe('apagón', () => {
 		const r = run(blackoutRule, { reeDemand: demand([27000, 26900, 26800, 12000, 11000]) });
 		expect(r.ids).toEqual(['blackout:2026-10-14:12']);
 		expect(r.alerts[0].body).toContain('63 % por debajo de la prevista');
+		expect(r.alerts[0].body).toContain('ha caído un 59 %');
 		// Espera de 6 h: una hora después, nada.
 		const later = demand([11000, 11500, 10000, 8000], 30000, NOW + 60 * MIN);
 		expect(run(blackoutRule, { reeDemand: later }, r.after, NOW + 60 * MIN).ids).toEqual([]);
+	});
+
+	it('con una caída enorme avisa aunque la prevista se haya rehecho (como hizo REE el 28/04/2025)', () => {
+		const redone = { ...demand([27075, 26968, 1785, 1778]), forecast: 1745, gap: -1.9 };
+		expect(run(blackoutRule, { reeDemand: redone }).ids).toEqual(['blackout:2026-10-14:12']);
+		// Una caída del 20 % sin diferencia con la prevista no basta.
+		const mid = { ...demand([30000, 30000, 24000]), forecast: 24000, gap: 0 };
+		expect(run(blackoutRule, { reeDemand: mid }).ids).toEqual([]);
 	});
 
 	it('no avisa por una bajada lenta, por poca diferencia ni con datos viejos', () => {
@@ -119,8 +133,12 @@ describe('IODA', () => {
 		const first = run(iodaRule, { ioda: [outage('FR', 'critical')] });
 		const moved = outage('FR', 'critical', '2026-10-14T09:00:00.000Z');
 		expect(run(iodaRule, { ioda: [moved] }, first.after).ids).toEqual([]);
-		const back = run(iodaRule, { ioda: [] }, first.after).after;
-		expect(run(iodaRule, { ioda: [moved] }, back).ids).toEqual(['ioda:FR:2026-10-14T09:00:00.000Z']);
+		// Se recupera y vuelve a caer al cabo de un rato: dentro de las 48 h, no se repite.
+		const back = run(iodaRule, { ioda: [] }, first.after, NOW + HOUR).after;
+		expect(run(iodaRule, { ioda: [moved] }, back, NOW + 2 * HOUR).ids).toEqual([]);
+		// Pasadas las 48 h sin verlo, otra caída sí avisa.
+		const later = run(iodaRule, { ioda: [] }, first.after, NOW + 49 * HOUR).after;
+		expect(run(iodaRule, { ioda: [moved] }, later, NOW + 50 * HOUR).ids).toEqual(['ioda:FR:2026-10-14T09:00:00.000Z']);
 	});
 });
 
@@ -161,9 +179,9 @@ describe('páginas de estado', () => {
 		expect(first.ids).toEqual(['status:aws:f']);
 		const stale = run(statusRule, { statuspage: [service('aws', 'critical', [['f', 'critical']], true)] }, first.after);
 		expect(stale.ids).toEqual([]);
-		expect(stale.after.last['status:aws:f']).toBe('1');
+		expect(stale.after.last['status:aws:f']).toBeDefined();
 		expect(run(statusRule, { statuspage: [service('aws', 'critical', [['f', 'critical']])] }, stale.after).ids).toEqual([]);
-		expect(run(statusRule, { statuspage: [service('aws', 'none', [])] }, stale.after).after.last).toEqual({});
+		expect(run(statusRule, { statuspage: [service('aws', 'none', [])] }, stale.after, NOW + 49 * HOUR).after.last).toEqual({});
 	});
 });
 
@@ -184,6 +202,6 @@ describe('OMS', () => {
 		expect(next.alerts[0].title).toBe('🦠 OMS: Brote 2026-DON621');
 		expect(run(whoRule, { who: [don('2026-DON621'), don('2026-DON620')] }, next.after).ids).toEqual([]);
 		// La marca de inicio no se borra aunque cambie la lista.
-		expect(next.after.last['who:init']).toBe('1');
+		expect(next.after.last['who:init']).toBeDefined();
 	});
 });

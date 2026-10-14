@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { decodeJson, parseAws, parseGcp, parseStatuspage, SERVICES, statuspage, type ServiceStatus } from '../sources/statuspage.ts';
+import { decodeJson, parseAws, parseM365, parseGcp, parseStatuspage, SERVICES, statuspage, type ServiceStatus } from '../sources/statuspage.ts';
 import { mockFetch } from './mock.ts';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -64,10 +64,24 @@ describe('statuspage', () => {
 		expect(parseAws(decodeJson(new ArrayBuffer(0))).indicator).toBe('none');
 	});
 
+	it('Microsoft 365: los servicios que no están «Operational», con su título', () => {
+		const out = parseM365([
+			{ ServiceDisplayName: 'Outlook.com', ServiceWorkloadName: 'Outlook', Id: 'EX1', Title: 'Users can not send mail', Status: 'ServiceInterruption', AuthoredDateTime: '2026-10-14T18:00:00Z', LastUpdatedTime: '2026-10-14T19:00:00Z' },
+			{ ServiceDisplayName: 'Teams', ServiceWorkloadName: 'Teams', Id: null, Title: '', Status: 'ServiceDegradation', AuthoredDateTime: '0001-01-01T00:00:00+00:00', LastUpdatedTime: '2026-10-14T19:30:00Z' },
+			{ ServiceDisplayName: 'Microsoft Copilot', ServiceWorkloadName: 'CopilotConsumer', Id: null, Title: '', Status: 'Operational' }
+		]);
+		expect(out.indicator).toBe('major');
+		expect(out.incidents).toEqual([
+			{ id: 'EX1', name: 'Outlook.com: Users can not send mail', impact: 'major', status: 'ServiceInterruption', started: '2026-10-14T18:00:00.000Z', updated: '2026-10-14T19:00:00.000Z', url: 'https://status.cloud.microsoft' },
+			{ id: 'Teams', name: 'Teams', impact: 'minor', status: 'ServiceDegradation', started: null, updated: '2026-10-14T19:30:00.000Z', url: 'https://status.cloud.microsoft' }
+		]);
+		expect(parseM365([{ Status: 'Operational' }]).indicator).toBe('none');
+	});
+
 	it('si un servicio falla, deja su estado anterior marcado como viejo', async () => {
 		mockFetch((url) => {
 			if (url.includes('githubstatus')) return undefined;
-			if (url.includes('google')) return [];
+			if (url.includes('google') || url.includes('microsoft')) return [];
 			if (url.includes('aws')) return '';
 			return { status: { indicator: 'none', description: 'All Systems Operational' }, incidents: [] };
 		});

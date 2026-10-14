@@ -52,8 +52,8 @@ export function parseL(body: string): EuLexDoc[] {
 	});
 }
 
-/** Junta lo nuevo con lo guardado: sin repetir, lo más reciente primero y solo los últimos días. */
-export function accumulate(fresh: EuLexDoc[], previous: EuLexDoc[] = [], today = new Date().toISOString().slice(0, 10)): EuLexDoc[] {
+/** Junta lo nuevo con lo guardado: sin repetir, lo más reciente primero y solo los últimos días (de Madrid). */
+export function accumulate(fresh: EuLexDoc[], previous: EuLexDoc[] = [], today = madridDay(new Date().toISOString())): EuLexDoc[] {
 	const from = new Date(Date.parse(today) - KEEP_DAYS * 86_400_000).toISOString().slice(0, 10);
 	const seen = new Set<string>();
 	return [...fresh, ...previous]

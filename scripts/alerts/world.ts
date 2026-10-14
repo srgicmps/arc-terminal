@@ -33,15 +33,20 @@ export const WORLD = {
 	/** GDACS: niveles que avisan. */
 	gdacs: { levels: ['red'] as string[] },
 	/**
-	 * Apagón: la demanda real va al menos `gap` % por debajo de la prevista y ha caído al menos `drop` (en
-	 * tanto por uno) en `minutes` minutos o menos. Un dato de más de `maxAgeMinutes` no cuenta (copia
-	 * vieja). Tras un aviso, `waitHours` sin otro.
+	 * Apagón: la demanda real ha caído al menos `drop` (en tanto por uno) en `minutes` minutos o menos y,
+	 * además, va al menos `gap` % por debajo de la prevista. Con una caída de `hardDrop` o más basta con
+	 * eso: el 28/04/2025 la real pasó de 26.968 a 1.785 MW en 5 min (−93 %), y REE rehízo luego la prevista
+	 * para que coincidiera con la real, así que no conviene depender solo de ella. En un día normal la real
+	 * no baja más de un 3 % en 30 min. Un dato de más de `maxAgeMinutes` no cuenta (copia vieja). Tras un
+	 * aviso, `waitHours` sin otro.
 	 */
-	blackout: { gap: 20, drop: 0.15, minutes: 30, maxAgeMinutes: 60, waitHours: 6 },
+	blackout: { gap: 20, drop: 0.15, hardDrop: 0.3, minutes: 30, maxAgeMinutes: 60, waitHours: 6 },
 	/** IODA: países grandes con nivel crítico; el de casa, también con aviso. */
 	ioda: { countries: BIG, home: 'ES' },
 	/** Páginas de estado: indicadores que avisan. */
-	status: { indicators: ['major', 'critical'] as string[] }
+	status: { indicators: ['major', 'critical'] as string[] },
+	/** Horas sin ver un hecho (un evento de GDACS, un país caído…) hasta olvidar que ya se avisó. */
+	forgetHours: 48
 };
 
 // ---------- Datos ----------
@@ -83,18 +88,32 @@ function madrid(ms: number): { date: string; hm: string } {
 	return { date: `${p.year}-${p.month}-${p.day}`, hm: `${p.hour}:${p.minute}` };
 }
 
+/** Hora de la última vez que se vio un hecho (las marcas antiguas, «1», cuentan como muy viejas). */
+const seenAt = (v: string | undefined) => (v && /^\d{4}-\d\d-\d\dT/.test(v) ? Date.parse(v) : -Infinity);
+
 /**
- * Una sola vez por clave mientras siga en los datos: quita las que ya están en `log.last` y, para las que
- * ya no salen, borra su marca (si vuelve a aparecer, es otro hecho). Devuelve las que faltan por avisar.
+ * Una sola vez por clave mientras siga en los datos: quita las que ya están en `log.last` y les apunta la
+ * hora en que se han visto. Las que ya no salen se olvidan tras `WORLD.forgetHours` sin verlas (si vuelven
+ * a aparecer después, es otro hecho). El margen evita repetir un aviso si una fuente da una pasada vacía
+ * por error (GDACS admite listas vacías). Devuelve las que faltan por avisar.
  */
-function once<T>(prefix: string, items: { key: string; item: T }[], { log, update }: RuleContext): { key: string; item: T }[] {
+function once<T>(prefix: string, items: { key: string; item: T }[], { now, log, update }: RuleContext): { key: string; item: T }[] {
 	const present = new Set(items.map((i) => `${prefix}${i.key}`));
-	const gone = Object.keys(log.last).filter((k) => k.startsWith(prefix) && !present.has(k));
-	if (gone.length) update((l) => gone.forEach((k) => delete l.last[k]));
+	const seen = [...present].filter((k) => log.last[k] !== undefined);
+	const gone = Object.keys(log.last).filter(
+		(k) => k.startsWith(prefix) && !present.has(k) && now - seenAt(log.last[k]) > WORLD.forgetHours * HOUR
+	);
+	if (seen.length || gone.length) {
+		const t = new Date(now).toISOString();
+		update((l) => {
+			seen.forEach((k) => (l.last[k] = t));
+			gone.forEach((k) => delete l.last[k]);
+		});
+	}
 	return items.filter((i) => log.last[`${prefix}${i.key}`] === undefined);
 }
 
-const mark = (key: string) => (l: NotifyLog) => void (l.last[key] = '1');
+const mark = (key: string, now: number) => (l: NotifyLog) => void (l.last[key] = new Date(now).toISOString());
 
 // ---------- P1 ----------
 
@@ -109,7 +128,7 @@ export function gdacsRule(d: WorldInputs, ctx: RuleContext): Draft[] {
 		tags: 'rotating_light',
 		click: e.url || `${SITE}/geo`,
 		time: Date.parse(e.updated ?? e.from ?? '') || ctx.now,
-		commit: mark(`gdacs:${e.id}`)
+		commit: mark(`gdacs:${e.id}`, ctx.now)
 	}));
 }
 
@@ -129,17 +148,17 @@ export function steepestDrop(points: DemandData['recent'], minutes: number): num
 }
 
 /**
- * Posible apagón en España: demanda real muy por debajo de la prevista tras una caída brusca. Espera de 6 h
- * entre avisos. Id: blackout:<día>:<hora> (de Madrid).
+ * Posible apagón en España: caída brusca de la demanda real (y muy por debajo de la prevista, salvo que la
+ * caída sea enorme). Espera de 6 h entre avisos. Id: blackout:<día>:<hora> (de Madrid).
  */
 export function blackoutRule(d: WorldInputs, { now, log }: RuleContext): Draft[] {
 	const r = d.reeDemand;
 	const t = Date.parse(r?.time ?? '');
 	const w = WORLD.blackout;
 	if (!r || !Number.isFinite(t) || now - t > w.maxAgeMinutes * MIN) return [];
-	if (typeof r.gap !== 'number' || r.gap < w.gap) return [];
 	const drop = steepestDrop(r.recent, w.minutes);
-	if (drop < w.drop) return [];
+	const gap = typeof r.gap === 'number' ? r.gap : null;
+	if (drop < w.drop || (drop < w.hardDrop && (gap === null || gap < w.gap))) return [];
 	const last = Date.parse(log.last['blackout'] ?? '');
 	if (Number.isFinite(last) && t - last < w.waitHours * HOUR) return [];
 	const { date, hm } = madrid(t);
@@ -148,8 +167,10 @@ export function blackoutRule(d: WorldInputs, { now, log }: RuleContext): Draft[]
 			id: `blackout:${date}:${hm.slice(0, 2)}`,
 			title: '⚡ Posible apagón en España',
 			body:
-				`Demanda eléctrica ${pct(r.gap)} por debajo de la prevista (${Math.round(r.real).toLocaleString('es-ES')} MW frente a ` +
-				`${Math.round(r.forecast ?? 0).toLocaleString('es-ES')} MW) a las ${hm}, tras caer un ${pct(drop * 100)} en ${w.minutes} min (REE).`,
+				`La demanda eléctrica ha caído un ${pct(drop * 100)} en ${w.minutes} min o menos: ` +
+				`${Math.round(r.real).toLocaleString('es-ES')} MW a las ${hm}` +
+				(gap !== null && r.forecast ? `, ${pct(gap)} por debajo de la prevista (${Math.round(r.forecast).toLocaleString('es-ES')} MW)` : '') +
+				' (REE).',
 			tags: 'zap',
 			click: `${SITE}/luz`,
 			time: t,
@@ -185,7 +206,7 @@ export function iodaRule(d: WorldInputs, ctx: RuleContext): Draft[] {
 			tags: 'globe_with_meridians',
 			click: o.url || `${SITE}/geo`,
 			time: Date.parse(o.since) || ctx.now,
-			commit: mark(`ioda:${o.code}`)
+			commit: mark(`ioda:${o.code}`, ctx.now)
 		};
 	});
 }
@@ -223,7 +244,7 @@ export function statusRule(d: WorldInputs, ctx: RuleContext): Draft[] {
 				tags: 'warning',
 				click: i.url || s.page,
 				time: Date.parse(i.updated ?? i.started ?? '') || ctx.now,
-				commit: mark(`status:${key}`)
+				commit: mark(`status:${key}`, ctx.now)
 			}
 		];
 	});
@@ -237,9 +258,10 @@ export function whoRule(d: WorldInputs, ctx: RuleContext): Draft[] {
 	if (!Array.isArray(d.who) || !d.who.length) return [];
 	const items = d.who.filter((n) => n?.id).map((n) => ({ key: n.id, item: n }));
 	if (ctx.log.last['who:init'] === undefined) {
+		const t = new Date(ctx.now).toISOString();
 		ctx.update((l) => {
-			l.last['who:init'] = '1';
-			items.forEach((i) => (l.last[`who:${i.key}`] = '1'));
+			l.last['who:init'] = t;
+			items.forEach((i) => (l.last[`who:${i.key}`] = t));
 		});
 		return [];
 	}
@@ -254,7 +276,7 @@ export function whoRule(d: WorldInputs, ctx: RuleContext): Draft[] {
 						tags: 'microbe',
 						click: n.url,
 						time: Date.parse(n.date ?? '') || ctx.now,
-						commit: mark(`who:${n.id}`)
+						commit: mark(`who:${n.id}`, ctx.now)
 					}
 				]
 			: []
