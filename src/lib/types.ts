@@ -1179,6 +1179,8 @@ export interface NeoPass {
 	speed: number | null;
 	/** Tamaño en metros: el medido si lo hay; si no, la horquilla que sale de su brillo (albedo 0,25 a 0,05). */
 	size: { min: number; max: number; measured: boolean } | null;
+}
+
 // ---------- Red de bitcoin (mempool.space, scripts/sources/bitcoin.ts) ----------
 
 export interface BitcoinNet {
@@ -1195,6 +1197,8 @@ export interface BitcoinNet {
 	height: number;
 	/** Próximo halving: su altura, bloques que faltan y fecha estimada (10 min por bloque). */
 	halving: { height: number; blocks: number; date: string };
+}
+
 // ---------- Inseguridad alimentaria aguda (FEWS NET, scripts/sources/fewsnet.ts) ----------
 
 export interface FoodInsecurity {
