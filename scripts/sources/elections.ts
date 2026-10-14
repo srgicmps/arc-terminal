@@ -26,14 +26,23 @@ const PRIORITY: Record<ElectionKind, number> = { presidential: 0, general: 1, re
  * (las de «noviembre de 2026» quedan fuera) y solo de ámbito nacional: si la elección dice a qué
  * territorio se aplica (P1001), tiene que ser el propio país (así no entran las municipales ni las de
  * un estado o región).
+ *
+ * Para que responda en pocos segundos: la jerarquía baja como mucho un nivel (la clase o una subclase
+ * directa, como «elección presidencial de Brasil») en vez de P279* entero, y el optimizador va apagado
+ * (hint:optimizer "None"), así que los patrones se resuelven en el orden escrito: primero las clases,
+ * luego sus elecciones, el filtro de fecha y, solo con las pocas que quedan, el resto.
  */
 export function electionsQuery(start: string, end: string): string {
 	const values = CLASSES.map(([qid, kind]) => `(wd:${qid} "${kind}")`).join(' ');
 	return `SELECT ?e ?date ?kind ?country ?iso ?countryEs ?countryEn ?nameEs ?nameEn WHERE {
+  hint:Query hint:optimizer "None" .
   VALUES (?class ?kind) { ${values} }
-  ?e wdt:P31/wdt:P279* ?class .
-  ?e p:P585/psv:P585 [ wikibase:timeValue ?date; wikibase:timePrecision ?precision ] .
-  FILTER(?precision >= 11 && ?date >= "${start}T00:00:00Z"^^xsd:dateTime && ?date < "${end}T00:00:00Z"^^xsd:dateTime)
+  ?type wdt:P279? ?class .
+  ?e wdt:P31 ?type .
+  ?e wdt:P585 ?date .
+  FILTER(?date >= "${start}T00:00:00Z"^^xsd:dateTime && ?date < "${end}T00:00:00Z"^^xsd:dateTime)
+  ?e p:P585/psv:P585/wikibase:timePrecision ?precision .
+  FILTER(?precision >= 11)
   ?e wdt:P17 ?country .
   OPTIONAL { ?e wdt:P1001 ?scope }
   FILTER(!BOUND(?scope) || ?scope = ?country)
@@ -95,6 +104,8 @@ export const elections: Source<ElectionsData> = {
 	label: 'Próximas elecciones · Wikidata',
 	// Una consulta al día: las fechas de las elecciones cambian poco y WDQS pide no abusar.
 	maxAgeMinutes: 1440,
+	// WDQS corta a los 60 s: si no ha respondido para entonces, no va a hacerlo.
+	deadlineMs: 60_000,
 	async fetch() {
 		const start = madridDay();
 		const end = addDays(start, DAYS);

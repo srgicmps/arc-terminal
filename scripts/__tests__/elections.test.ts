@@ -97,7 +97,9 @@ describe('elections', () => {
 		await expect(elections.fetch(undefined)).rejects.toThrow('Wikidata no devuelve elecciones');
 		const url = decodeURIComponent(String(fetch.mock.calls[0][0]));
 		expect(url).toMatch(/^https:\/\/query\.wikidata\.org\/sparql\?format=json&query=SELECT/);
-		expect(url).toContain('wdt:P31/wdt:P279*');
+		expect(url).toContain('?type wdt:P279? ?class');
+		expect(url).toContain('hint:optimizer "None"');
+		expect(url).not.toContain('wdt:P279*');
 		expect(url).toMatch(/"(\d{4}-\d{2}-\d{2})T00:00:00Z".*"(\d{4}-\d{2}-\d{2})T00:00:00Z"/s);
 	});
 
