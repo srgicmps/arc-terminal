@@ -36,8 +36,20 @@ describe('fewsnet', () => {
 		expect(out[0].vsYear).toBe('Higher');
 	});
 
-	it('pide fase 3+ por país desde hace un año', () => {
+	it('sigue las páginas («next») y junta los resultados', async () => {
+		const { fewsnet } = await import('../sources/fewsnet.ts');
+		const { mockFetch } = await import('./mock.ts');
+		const fetch = mockFetch((url) =>
+			url.includes('offset=500')
+				? { next: null, results: [row('SO', '2026-06-01', 'Current Situation', 3_000_000, 3_499_999)] }
+				: { next: 'https://fdw.fews.net/api/ipcpopulationsize/?offset=500', results: [row('AF', '2026-08-01', 'Current Situation', 8e6, 9e6)] }
+		);
+		expect((await fewsnet.fetch(undefined)).map((r) => r.code)).toEqual(['AF', 'SO']);
+		expect(fetch).toHaveBeenCalledTimes(2);
+	});
+
+	it('pide fase 3+ por país desde hace un año, de 500 en 500', () => {
 		const p = new URL(fewsUrl(NOW)).searchParams;
-		expect([p.get('phase'), p.get('unit_type'), p.get('start_date')]).toEqual(['3+', 'admin0', '2025-10-14']);
+		expect([p.get('phase'), p.get('unit_type'), p.get('start_date'), p.get('page_size')]).toEqual(['3+', 'admin0', '2025-10-14', '500']);
 	});
 });

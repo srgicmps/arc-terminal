@@ -15,7 +15,8 @@ export const fewsUrl = (now = Date.now()) =>
 		phase: '3+',
 		unit_type: 'admin0',
 		start_date: new Date(now - 365 * 86_400_000).toISOString().slice(0, 10),
-		page_size: '2000'
+		// Con más de 500 por página, FEWS NET responde 403.
+		page_size: '500'
 	});
 
 /** Preferencia de escenario: la situación actual antes que una proyección y que los picos del año. */
@@ -57,7 +58,15 @@ export const fewsnet: Source<FoodInsecurity[]> = {
 	label: 'Inseguridad alimentaria aguda por país · FEWS NET',
 	maxAgeMinutes: 24 * 60,
 	async fetch() {
-		const rows = parseFews(await getJson<Raw>(fewsUrl()));
+		// Las páginas, una detrás de otra (unas 700 filas: dos páginas), como mucho 4.
+		const results: Raw[] = [];
+		let url: string | null = fewsUrl();
+		for (let page = 0; url && page < 4; page++) {
+			const body: Raw = await getJson<Raw>(url);
+			results.push(...list<Raw>(body?.results));
+			url = typeof body?.next === 'string' && body.next.startsWith('https://fdw.fews.net/') ? body.next : null;
+		}
+		const rows = parseFews({ results });
 		if (!rows.length) throw new Error('FEWS NET no da datos del último año');
 		return rows;
 	}
