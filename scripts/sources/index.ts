@@ -6,7 +6,7 @@ import { alerts } from './alerts.ts';
 import { bls } from './bls.ts';
 import { bis } from './bis.ts';
 import { boe } from './boe.ts';
-import { eacurve, ecb } from './ecb.ts';
+import { ecb } from './ecb.ts';
 import { eurostat } from './eurostat.ts';
 import { fedreg } from './fedreg.ts';
 import { finnhub } from './finnhub.ts';
@@ -17,7 +17,6 @@ import { hfpapers } from './hfpapers.ts';
 import { holidays } from './holidays.ts';
 import { imf } from './imf.ts';
 import { imp } from './imp.ts';
-import { jgb } from './jgb.ts';
 import { ine } from './ine.ts';
 import { leaders } from './leaders.ts';
 import { newsSources } from './news.ts';
@@ -78,4 +77,3 @@ export const sources: Source<any>[] = [
 	imp,
 	search
 ];
-sources.push(eacurve, jgb); // Curvas de tipos de WS (Prog 8). Se quita cuando el registro deje de exigir esta lista.
