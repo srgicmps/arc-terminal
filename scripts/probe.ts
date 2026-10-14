@@ -3,7 +3,7 @@
 // respuesta. Solo se ejecuta en los PR, para explorar APIs nuevas antes de convertirlas en fuentes.
 // Formato de cada línea: «URL» o «URL ~ patrón» (si la respuesta es una lista JSON, solo enseña los
 // elementos que contienen el patrón; si es un feed Atom, solo las <entry> que lo contienen; si es una
-// página web, solo los trozos de texto que encajan).
+// página web, solo los trozos de texto que encajan o, si no hay ninguno, los del HTML sin quitar etiquetas).
 import { readFile } from 'node:fs/promises';
 
 const lines = (await readFile('scripts/probe.txt', 'utf8'))
@@ -33,7 +33,10 @@ for (const line of lines) {
 				} else {
 					// Una página web: quita las etiquetas y enseña solo los trozos que encajan.
 					const text = body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-					body = [...text.matchAll(new RegExp(pattern, 'gi'))].map((m) => m[0]).join('\n');
+					// Si en el texto no sale nada, se busca en el HTML tal cual (enlaces, atributos…).
+					const find = (s: string) => [...s.matchAll(new RegExp(pattern, 'gi'))].map((m) => m[0]);
+					const hits = find(text);
+					body = (hits.length ? hits : find(body)).join('\n');
 				}
 			}
 		}
