@@ -2,12 +2,12 @@ import { dataset, type SourceStatus } from '#lib/data.ts';
 import type { FaoData } from '#lib/fao.ts';
 import { missingNote } from '#lib/missing.ts';
 import { headlines, pickSeries } from '#lib/trim.ts';
-import type { G20Data, ImfData, NewsData, PredictionsData, SeriesData, ReleaseCalData } from '#lib/types.ts';
+import type { EuPowerData, G20Data, ImfData, NewsData, PredictionsData, SeriesData, ReleaseCalData } from '#lib/types.ts';
 import { nextMap } from '#lib/nextrelease.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal, fao, bde] = await Promise.all([
+	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal, fao, bde, eupower] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -26,7 +26,8 @@ export const load: PageServerLoad = async () => {
 		dataset<ReleaseCalData>('releases-cal'),
 		dataset<FaoData>('fao'),
 		// Prima de riesgo diaria del Banco de España: solo se pinta el último dato y el de hace una semana.
-		dataset<SeriesData>('bde')
+		dataset<SeriesData>('bde'),
+		dataset<EuPowerData>('energycharts')
 	]);
 	// Del BCE, todo menos los tipos de cambio (están en WS); de los titulares, los 25 que se pintan.
 	const fx = (ecb?.data.series ?? [])
@@ -53,6 +54,7 @@ export const load: PageServerLoad = async () => {
 		predictions,
 		speeches: headlines(speeches, 12),
 		fao,
+		eupower,
 		// Próximo dato de cada serie, calculado aquí: al navegador solo le llega la fecha y el título.
 		next: nextMap(
 			[eurostat, bls, fred, usdebt, bis].flatMap((d) => d?.data.series.map((s) => s.id) ?? []),

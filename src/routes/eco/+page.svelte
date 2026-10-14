@@ -1,4 +1,5 @@
 <script lang="ts">
+	import EuPowerTable from '#lib/components/EuPowerTable.svelte';
 	import { resolve } from '$app/paths';
 	import BalanceSheets from '#lib/components/BalanceSheets.svelte';
 	import HousingTable from '#lib/components/HousingTable.svelte';
@@ -268,6 +269,12 @@
 					]}
 				/>
 				{#snippet note()}Fuente: GIE AGSI+ · <Updated at={data.gie?.fetchedAt} source="gie" />{/snippet}
+			</Panel>
+		{/if}
+		{#if data.eupower?.data.zones.length}
+			<Panel title="Luz en Europa" meta="Mayorista · €/MWh · media del día" jump={{ code: 'LUZ', href: resolve('/luz') }}>
+				<EuPowerTable zones={data.eupower.data.zones} />
+				{#snippet note()}Fuentes: Energy-Charts / SMARD (Bundesnetzagentur), CC BY 4.0; España, Red Eléctrica · <Updated at={data.eupower?.fetchedAt} source="energycharts" />{/snippet}
 			</Panel>
 		{/if}
 		{#if data.predictions?.data.economy.length}
