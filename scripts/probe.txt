@@ -74,11 +74,9 @@ https://stats.bis.org/api/v1/data/WS_SPP/Q.US+ES+KR.N+R.771/all?lastNObservation
 # ECO: índice FAO de precios de los alimentos (CSV y fecha de publicación)
 https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next release)[^<]{0,80}
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
-# ECO: incertidumbre (EPU, policyuncertainty.com), riesgo geopolítico (GPR, Caldara–Iacoviello) y presión en las cadenas de suministro (GSCPI, Fed de Nueva York)
-https://www.policyuncertainty.com/media/Global_Policy_Uncertainty_Data.xlsx ~ ^202[56]
-https://www.policyuncertainty.com/media/All_Daily_Policy_Data.csv ~ 2026,(?:9|10),\d+,[\d.]+
-https://www.policyuncertainty.com/terms.html ~ .{0,200}(?:permission|cite|citation|use).{0,200}
-https://www.matteoiacoviello.com/gpr.htm ~ .{0,80}(?:\.xls|\.csv|\.dta|terms|cite).{0,120}
-https://www.matteoiacoviello.com/gpr_files/data_gpr_export.xls ~ zzz
-https://www.newyorkfed.org/medialibrary/research/interactives/gscpi/downloads/gscpi_data.xlsx ~ 202[56]
-https://www.newyorkfed.org/research/policy/gscpi ~ .{0,100}(?:\.xlsx|\.csv|next update|updated).{0,150}
+# ECO: incertidumbre (EPU), segunda ronda: cabecera y últimas filas; GSCPI sin patrón (la primera vino vacía)
+https://www.policyuncertainty.com/media/Global_Policy_Uncertainty_Data.xlsx ~ ^(?:Year|2026 \| [4-9]|2026 \| 1\d)|Source|Policy
+https://www.policyuncertainty.com/media/All_Daily_Policy_Data.csv ~ ^.{0,160}|.{0,160}$
+https://www.policyuncertainty.com/global_monthly.html ~ .{0,150}(?:Global_Policy_Uncertainty_Data|cite|Baker).{0,150}
+https://www.newyorkfed.org/medialibrary/research/interactives/gscpi/downloads/gscpi_data.xlsx
+https://www.newyorkfed.org/research/policy/gscpi
