@@ -11,15 +11,15 @@
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { compact, period } from '#lib/format.ts';
-	import { diffDays, last, seriesMap, spread } from '#lib/series.ts';
+	import { compact, dm, period } from '#lib/format.ts';
+	import { change, diffDays, last, seriesMap, spread } from '#lib/series.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	const get = $derived(seriesMap(data.eurostat, data.ecb, data.bls, data.usdebt, data.fred));
 	const geos = ['es', 'ea', 'de', 'fr', 'it', 'pt'];
-	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: id !== 'gdp' }));
+	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: !id.startsWith('gdp') }));
 
 	// Primas de riesgo: diferencia con el bono alemán a 10 años, en puntos básicos.
 	const PREMIUMS = [
@@ -66,6 +66,11 @@
 		<Panel title="PIB" meta="Variación trimestral">
 			<SeriesTable next={data.next} head="País" rows={byGeo('gdp')} />
 		</Panel>
+		{#if get('gdp-yoy-es')}
+			<Panel title="PIB interanual" meta="Frente al mismo trimestre del año anterior">
+				<SeriesTable head="País" rows={byGeo('gdp-yoy')} />
+			</Panel>
+		{/if}
 		<Panel title="Paro juvenil" meta="Menores de 25 años">
 			<SeriesTable next={data.next} head="País" rows={byGeo('youth-unemployment')} />
 		</Panel>
@@ -73,6 +78,23 @@
 			<SeriesTable next={data.next} head="País" rows={byGeo('debt')} />
 			{#snippet note()}Fuente: Eurostat · <Updated at={data.eurostat?.fetchedAt} source="eurostat" />{/snippet}
 		</Panel>
+		{#if data.fao?.data.series.length}
+			{@const fao = data.fao}
+			<Panel title="Precios de los alimentos" meta="Índice FAO · 2014–2016 = 100">
+				<SeriesTable
+					head="Índice"
+					rows={fao.data.series.map((series) => ({ series, name: series.label, inverse: true }))}
+					spark={36}
+					pct
+					extra={[{ head: 'Año', value: (s) => change(s, 12), unit: ' %', digits: 1 }]}
+				/>
+				{#snippet note()}
+					Fuente: <a href="https://www.fao.org/worldfoodsituation/foodpricesindex/en/" target="_blank" rel="noopener">FAO</a>, precios
+					internacionales en dólares · variación mensual y anual{fao.data.released ? ` · publicado el ${dm(fao.data.released)}` : ''} ·
+					<Updated at={fao.fetchedAt} source="fao" />
+				{/snippet}
+			</Panel>
+		{/if}
 	</div>
 	<div class="col">
 		<Panel title="Próximas reuniones" meta="Decisión de tipos · hora de España" jump={{ code: 'CAL', href: resolve('/cal') }}>
