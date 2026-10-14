@@ -14,7 +14,7 @@ describe('registro de comandos', () => {
 	it('mantiene el orden de las teclas (de 10 en 10), sin códigos ni posiciones repetidos', () => {
 		// El orden de antes de partir commands.ts en un archivo por comando.
 		expect(COMMANDS.map((c) => c.code)).toEqual(
-			'TOP IMP ECO GEO ES WS TECH AI BOE USGOV LIDER LUZ AGUA WX PORT MIS FUEL FONDOS NEWS PAIS WIKI CAL CHESS TV STATUS DOC HELP'.split(' ')
+			'TOP IMP ECO GEO ES WS TECH AI BOE USGOV LIDER LUZ AGUA WX PORT MIS FUEL FONDOS NEWS PAIS WIKI CAL CHESS TV STATUS DOC HELP MANUAL'.split(' ')
 		);
 		expect(new Set(COMMANDS.map((c) => c.code)).size).toBe(COMMANDS.length);
 		expect(new Set(COMMANDS.map((c) => c.order)).size).toBe(COMMANDS.length);
