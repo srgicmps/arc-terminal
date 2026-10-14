@@ -87,4 +87,31 @@ describe('ine', () => {
 		mockFetch(() => []);
 		await expect(ine.fetch(undefined)).rejects.toThrow('ninguna serie del INE');
 	});
+
+	it('pasa los turistas a millones y lee el IPV trimestral', async () => {
+		mockFetch(
+			api({
+				FREG286: serie('FREG286', 'Turista. Total Nacional. Dato base.', [[2026, 8, 11_500_000], [2026, 7, 11_000_000]]),
+				IPV1376: serie('IPV1376', 'Nacional. General. Variación anual.', [[2026, 19, 9.1], [2026, 20, 8.4]]),
+				IPV1670: serie('IPV1670', 'Balears, Illes. General. Variación anual.', [[2026, 20, 7.2]])
+			})
+		);
+		const { series } = await ine.fetch(undefined);
+		const byId = Object.fromEntries(series.map((s) => [s.id, s]));
+		expect(byId['turistas-es']).toMatchObject({
+			unit: 'mill.',
+			points: [
+				{ t: '2026-07', v: 11 },
+				{ t: '2026-08', v: 11.5 }
+			]
+		});
+		expect(byId['ipv-es']).toMatchObject({
+			unit: '%',
+			points: [
+				{ t: '2026-Q1', v: 9.1 },
+				{ t: '2026-Q2', v: 8.4 }
+			]
+		});
+		expect(byId['ipv-ib'].points).toEqual([{ t: '2026-Q2', v: 7.2 }]);
+	});
 });

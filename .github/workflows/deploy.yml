@@ -19,6 +19,8 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  # Para abrir y cerrar los issues «Fuente caída» (scripts/issues.ts).
+  issues: write
 
 # Un solo despliegue a la vez: si llega otro, espera a que acabe el que está en marcha.
 # Cada PR va por su lado y no hace esperar a main.
@@ -29,6 +31,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Red de seguridad: si algo se cuelga, la Action no se queda horas esperando.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 
@@ -53,12 +57,32 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           # La SEC pide un User-Agent con nombre y correo; va en un secreto porque el repo es público.
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          # ReliefWeb solo responde con un appname aprobado por ellos (no es una clave, pero es personal).
+          RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
           # aisstream.io (barcos en los puertos, AIS en directo).
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+
+      # Abre un issue si una fuente lleva 3 pasadas sin datos y lo cierra cuando vuelve. No en los PR.
+      # Si falla, no frena la publicación. Las claves van para taparlas si salen en un error.
+      - if: github.event_name != 'pull_request'
+        run: node scripts/issues.ts
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
 
       - run: pnpm check
       - run: pnpm test
       - run: pnpm build --logLevel warn
+
+      # Solo en los PR: abre todas las vistas a 390 y 1280 px con el Chrome del runner y falla si alguna
+      # da errores en la consola, tiene scroll horizontal en el móvil o se queda sin datos (scripts/smoke.ts).
+      - if: github.event_name == 'pull_request'
+        run: pnpm smoke
 
       # Solo en los PR: explora las URL de scripts/probe.txt (herramienta de desarrollo).
       - if: github.event_name == 'pull_request'
