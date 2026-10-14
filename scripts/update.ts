@@ -73,7 +73,7 @@ async function run(source: Source): Promise<SourceStatus> {
 		const dataset = { name: source.name, fetchedAt: new Date().toISOString(), data };
 		await save(dataset);
 		console.log(`✓ ${source.name}: ${summary(data)} (${Date.now() - started} ms)`);
-		if (process.env.SAMPLE) samples.push(`${source.name}: ${JSON.stringify(data).slice(0, 1500)}`);
+		if (process.env.SAMPLE) samples.push(`${source.name}: ${JSON.stringify(data).slice(0, 700)}`);
 		return { ...base, state: 'ok', fetchedAt: dataset.fetchedAt };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
