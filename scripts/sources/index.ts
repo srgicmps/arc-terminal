@@ -53,7 +53,6 @@ export const sources: Source<any>[] = [
 	bls,
 	usdebt,
 	uscurve,
-	auctions,
 	fred,
 	finnhub,
 	sec,
@@ -78,3 +77,4 @@ export const sources: Source<any>[] = [
 	imp,
 	search
 ];
+sources.push(auctions); // Subastas del Tesoro (Prog 8). Se quita cuando el registro deje de exigir esta lista.
