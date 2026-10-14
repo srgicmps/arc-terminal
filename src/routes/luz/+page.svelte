@@ -92,7 +92,7 @@
 		<Tile
 			label="Mejor franja de 2 h"
 			value={best2 ? `${hourLabel(best2.w.first)}–${hourLabel(best2.w.after)}` : '—'}
-			tone={best2 ? 'up' : 'mut'}
+			tone={best2 ? undefined : 'mut'}
 			sub={best2 ? `${nf(best2.w.avg, 3)} €/kWh · ${nf(best2.saving, 0)} % menos que la media` : ''}
 		/>
 		<Tile
