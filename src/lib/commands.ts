@@ -26,7 +26,9 @@ export interface Command {
 		| '/mis'
 		| '/help'
 		| '/doc'
-		| '/status';
+		| '/status'
+		| '/chess'
+		| '/tv';
 	/** Nombre corto para la tecla. */
 	key: string;
 	/** Qué abre, para las sugerencias y la ayuda. */
@@ -64,6 +66,8 @@ export const COMMANDS: Command[] = [
 	{ code: 'PAIS', route: '/pais', key: 'País', desc: 'Ficha de un país: PIB, IPC, paro, deuda, tipos, bono, moneda, previsiones del FMI y titulares', sources: 'Eurostat, BLS, FRED, BCE, BIS, Tesoro de EE. UU., FMI, todos los medios', aliases: ['país', 'country'], arg: { param: 'c', label: 'País (nombre o código)', example: 'PAIS Alemania' } },
 	{ code: 'WIKI', route: '/wiki', key: 'Wikipedia', desc: 'Lo más leído en Wikipedia y efemérides del día', sources: 'Wikipedia en español' },
 	{ code: 'CAL', route: '/cal', key: 'Agenda', desc: 'Agenda económica de la semana', sources: 'TradingView' },
+	{ code: 'CHESS', route: '/chess', key: 'Ajedrez', desc: 'Ajedrez contra Stockfish (5 niveles), análisis y problema del día', sources: 'Stockfish, chess.js, Lichess', aliases: ['ajedrez'] },
+	{ code: 'TV', route: '/tv', key: 'Modo TV', desc: 'Modo TV: las vistas van rotando solas, a pantalla completa', sources: 'Arc Terminal', aliases: ['tele', 'televisión'], arg: { param: 'tv', label: 'Vistas que rotan', example: 'TV TOP,WS,GEO' } },
 	{ code: 'STATUS', route: '/status', key: 'Fuentes', desc: 'Estado de todas las fuentes de datos', sources: 'Arc Terminal' },
 	{ code: 'DOC', route: '/doc', key: 'Cómo funciona', desc: 'Cómo está hecho Arc Terminal: arquitectura, datos, fuentes y Svelte frente a Vue', sources: 'El propio código' },
 	{ code: 'HELP', route: '/help', key: 'Ayuda', desc: 'Comandos y atajos de teclado', sources: '', aliases: ['ayuda'] }
@@ -120,7 +124,25 @@ export const TICKERS: Ticker[] = [
 	{ code: 'ETH', name: 'Ethereum', tv: 'BITSTAMP:ETHUSD', aliases: ['ether'] },
 	{ code: 'GOLD', name: 'Oro', tv: 'TVC:GOLD', aliases: ['oro', 'gold'] },
 	{ code: 'BRENT', name: 'Petróleo Brent', tv: 'TVC:UKOIL', aliases: ['Brent'] },
-	{ code: 'EURUSD', name: 'Euro / dólar', tv: 'FX:EURUSD' }
+	{ code: 'EURUSD', name: 'Euro / dólar', tv: 'FX:EURUSD' },
+	// Defensa y geopolítica (src/lib/defense.ts). BAE Systems va como BAES porque BA es Boeing.
+	// Todos los símbolos, comprobados con tv-shots en la Action.
+	{ code: 'PLTR', name: 'Palantir', tv: 'NASDAQ:PLTR', cik: '0001321655' },
+	{ code: 'LMT', name: 'Lockheed Martin', tv: 'NYSE:LMT', cik: '0000936468', aliases: ['Lockheed'] },
+	{ code: 'RTX', name: 'Raytheon (RTX)', tv: 'NYSE:RTX', cik: '0000101829' },
+	{ code: 'NOC', name: 'Northrop Grumman', tv: 'NYSE:NOC', cik: '0001133421', aliases: ['Northrop'] },
+	{ code: 'GD', name: 'General Dynamics', tv: 'NYSE:GD', cik: '0000040533' },
+	{ code: 'BA', name: 'Boeing', tv: 'NYSE:BA', cik: '0000012927' },
+	{ code: 'LHX', name: 'L3Harris', tv: 'NYSE:LHX', cik: '0000202058', aliases: ['L3Harris Technologies'] },
+	{ code: 'ITA', name: 'Aeroespacial y defensa EE. UU. (ETF)', tv: 'AMEX:ITA' },
+	{ code: 'AIR', name: 'Airbus', tv: 'EURONEXT:AIR' },
+	// La Bolsa de Londres sale vacía en los widgets (LSE:BA.): BAE Systems va con su cotización en Xetra, en euros.
+	{ code: 'BAES', name: 'BAE Systems', tv: 'XETR:BSP', aliases: ['BAE'] },
+	{ code: 'RHM', name: 'Rheinmetall', tv: 'XETR:RHM' },
+	{ code: 'LDO', name: 'Leonardo', tv: 'MIL:LDO', aliases: ['Leonardo SpA'] },
+	{ code: 'HO', name: 'Thales', tv: 'EURONEXT:HO' },
+	{ code: 'SAAB', name: 'Saab', tv: 'OMXSTO:SAAB_B' },
+	{ code: 'IDR', name: 'Indra', tv: 'BME:IDR' }
 ];
 
 /** Símbolo de TradingView para lo que escriba Sergi: un valor conocido o el texto tal cual. */
