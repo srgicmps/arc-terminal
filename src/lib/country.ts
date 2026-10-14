@@ -48,6 +48,8 @@ export interface CountryProfile {
 	fx: FxRow[];
 	/** Previsiones del FMI: el país y, para comparar, la zona euro (si es del euro) y el mundo. */
 	imf: { edition: string | null; years: [number, number]; rows: ImfRow[] } | null;
+	/** Deuda y saldo públicos del FMI (% del PIB, año en curso), con su puesto entre los del G20 y España. */
+	fiscal: { year: number; debt: number | null; balance: number | null; debtRank: number | null; of: number } | null;
 }
 
 type Get = (id: string) => Series | undefined;
@@ -168,6 +170,16 @@ export function imfRows(c: Country, imf: ImfData | null): CountryProfile['imf'] 
 	return { edition: imf.edition, years: imf.years, rows };
 }
 
+/** Deuda y saldo públicos (FMI, ImfData.g20); el puesto 1 es la deuda más alta. Sin fila del país, nada. */
+export function imfFiscal(c: Country, imf: ImfData | null): CountryProfile['fiscal'] {
+	const all = imf?.g20 ?? [];
+	const own = all.find((r) => r.code === c.iso3);
+	if (!imf || !own || (own.debt === null && own.balance === null)) return null;
+	const ranked = all.filter((r) => r.debt !== null).sort((a, b) => b.debt! - a.debt!);
+	const i = ranked.findIndex((r) => r.code === c.iso3);
+	return { year: imf.years[0], debt: own.debt, balance: own.balance, debtRank: i < 0 ? null : i + 1, of: ranked.length };
+}
+
 /** Todo lo que se sabe de un país con los datos descargados. */
 export function countryProfile(
 	c: Country,
@@ -181,6 +193,7 @@ export function countryProfile(
 		bond: bond10(c, get, sets.curve),
 		premium: premium(c, get),
 		fx: fxRows(c, get),
-		imf: imfRows(c, sets.imf)
+		imf: imfRows(c, sets.imf),
+		fiscal: imfFiscal(c, sets.imf)
 	};
 }

@@ -53,7 +53,7 @@ export const load: PageServerLoad = async () => {
 	const profiles: Record<string, CountryProfile> = {};
 	for (const c of COUNTRIES) {
 		const p = countryProfile(c, sets);
-		if (p.kpis.length || p.policy || p.bond || p.premium || p.fx.length || p.imf) profiles[c.code] = p;
+		if (p.kpis.length || p.policy || p.bond || p.premium || p.fx.length || p.imf || p.fiscal) profiles[c.code] = p;
 	}
 	// Aviso de viaje de EE. UU. de cada país que conoce la terminal (sin el texto largo).
 	const travel: Record<string, Omit<TravelAdvisory, 'name' | 'title'>> = {};
