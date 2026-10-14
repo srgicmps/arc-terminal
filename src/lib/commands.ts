@@ -16,6 +16,7 @@ export interface Command {
 		| '/usgov'
 		| '/lider'
 		| '/luz'
+		| '/agua'
 		| '/wx'
 		| '/port'
 		| '/fuel'
@@ -59,6 +60,7 @@ export const COMMANDS: Command[] = [
 	{ code: 'USGOV', route: '/usgov', key: 'Gob. EE. UU.', desc: 'Federal Register: decretos presidenciales y normas de EE. UU.', sources: 'Federal Register, Casa Blanca, Reserva Federal' },
 	{ code: 'LIDER', route: '/lider', key: 'Líderes', desc: 'Qué hacen ahora Sánchez, Trump y Lagarde: agenda de hoy y lo último', sources: 'La Moncloa, Roll Call Factba.se, Casa Blanca, Federal Register, BCE', aliases: ['líderes', 'sánchez', 'trump', 'lagarde'] },
 	{ code: 'LUZ', route: '/luz', key: 'Luz', desc: 'Precio de la luz hora a hora, hoy y mañana', sources: 'Red Eléctrica (REE)', pinned: true, aliases: ['electricidad', 'pvpc'] },
+	{ code: 'AGUA', route: '/agua', key: 'Agua', desc: 'Reservas de agua: embalses de España y sequía en Europa', sources: 'MITECO, Copernicus (European Drought Observatory)', aliases: ['embalses', 'sequía', 'sequia'] },
 	{ code: 'WX', route: '/wx', key: 'Tiempo', desc: 'Tiempo, aire y sol en tu sitio y otras ciudades', sources: 'Open-Meteo', aliases: ['tiempo', 'clima', 'lugar', 'sitio'], arg: { param: 'buscar', label: 'Cambiar tu sitio', example: 'LUGAR Tokio' } },
 	{ code: 'PORT', route: '/port', key: 'Puertos', desc: 'Barcos en puertos y estrechos (Gibraltar, Róterdam, Singapur, Maó…) con AIS en directo', sources: 'aisstream.io', aliases: ['barcos', 'puertos', 'ais'] },
 	{ code: 'MIS', route: '/mis', key: 'Mis valores', desc: 'Tu lista de valores, con cotización en directo', sources: 'TradingView', pinned: true },
