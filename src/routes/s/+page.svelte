@@ -87,9 +87,9 @@
 <style>
 	.star {
 		background: none;
-		border: 1px solid var(--line);
+		border: var(--border);
 		color: var(--muted);
-		padding: 5px 10px;
+		padding: var(--sp-5) var(--sp-10);
 		font-size: var(--fs-s);
 		cursor: pointer;
 	}
