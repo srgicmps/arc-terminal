@@ -2,7 +2,7 @@
 // (unos pocos titulares, las series de las tablas…), no los JSON enteros de cada sección.
 import { dataset } from '#lib/data.ts';
 import type { FuelData } from '#lib/fuel.ts';
-import { topImportant } from '#lib/imp.ts';
+import { minus, topImportant } from '#lib/imp.ts';
 import { madridDate } from '#lib/meetings.ts';
 import { pickSeries, trim } from '#lib/trim.ts';
 import type {
@@ -27,7 +27,7 @@ const TAIL = 40;
 
 export const load: PageServerLoad = async () => {
 	const today = madridDate(Date.now());
-	const tomorrow = madridDate(Date.now() + 86_400_000);
+	const tomorrow = minus(today, -1);
 	const [news, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn, predictions, imp, finnhub, holidays] = await Promise.all([
 		Promise.all(SECTIONS.map((s) => dataset<NewsData>(`news-${s}`))),
 		dataset<SeriesData>('ecb'),

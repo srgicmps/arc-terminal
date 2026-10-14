@@ -33,7 +33,7 @@
 		const year = Number(today.slice(0, 4));
 		const fest = holidays.find((h) => h.date === today);
 		const markets = [...nyseHolidays(year), ...bmeHolidays(year)].filter((h) => h.date === today).map((h) => h.market);
-		return [fest ? `Festivo: ${fest.name}` : '', markets.length ? `Sin bolsa en ${markets.join(' y ')}` : '']
+		return [fest ? `${fest.scope === 'IB' ? 'Festivo en Baleares' : 'Festivo'}: ${fest.name}` : '', markets.length ? `Sin bolsa en ${markets.join(' y ')}` : '']
 			.filter(Boolean)
 			.join(' · ');
 	});
@@ -42,7 +42,7 @@
 <Panel
 	id="agenda"
 	title="Hoy en la agenda"
-	meta="Bancos centrales y resultados"
+	meta="BCE, Fed y resultados"
 	jump={{ code: 'CAL', href: resolve('/cal') }}
 >
 	{#if closed}<p class="closed">{closed}</p>{/if}

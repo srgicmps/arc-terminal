@@ -147,8 +147,8 @@
 {/snippet}
 
 {#snippet importante()}
-	{#if important.length}
-		<Panel id="important" title="Lo importante" meta="Hoy" jump={{ code: 'IMP', href: resolve('/imp') }}>
+	<Panel id="important" title="Lo importante" meta="Hoy" jump={{ code: 'IMP', href: resolve('/imp') }}>
+		{#if important.length}
 			<ul class="mini">
 				{#each important as e (e.k)}
 					<li>
@@ -157,8 +157,10 @@
 					</li>
 				{/each}
 			</ul>
-		</Panel>
-	{/if}
+		{:else}
+			<p class="empty">Sin datos todavía</p>
+		{/if}
+	</Panel>
 {/snippet}
 
 {#snippet agenda()}

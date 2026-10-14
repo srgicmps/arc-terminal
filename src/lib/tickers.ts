@@ -79,3 +79,9 @@ export function tvSymbol(code: string): string {
 	const upper = code.trim().toUpperCase();
 	return TICKERS.find((t) => t.code === upper)?.tv ?? upper;
 }
+
+/**
+ * Alto del widget market-quotes de TradingView para que quepan `n` filas sin barra de desplazamiento
+ * (cabecera de 90 px y 46 px por fila; con un mínimo opcional para listas cortas).
+ */
+export const quotesHeight = (n: number, min = 0): number => Math.max(min, 90 + n * 46);
