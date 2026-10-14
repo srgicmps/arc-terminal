@@ -72,10 +72,10 @@ export const sources: Source<any>[] = [
 	hn,
 	hfpapers,
 	releases,
-	launches,
 	wiki,
 	...newsSources,
 	// Derivadas: se calculan después, con los datos de las anteriores.
 	imp,
-	search
+	search,
+	launches
 ];

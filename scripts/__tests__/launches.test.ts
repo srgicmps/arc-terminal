@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { LaunchesData } from '../../src/lib/launches.ts';
-import { launches, parseLaunches } from '../sources/launches.ts';
+import { launches, parseLaunches, toLaunch } from '../sources/launches.ts';
 import { mockFetch } from './mock.ts';
 
-// Muestra con la forma de /2.3.0/launches/upcoming/?mode=normal (recortada a los campos que se usan,
+// Muestra con la forma de /2.3.0/launches/upcoming/?mode=detailed (recortada a los campos que se usan,
 // más algunos que se ignoran, como en la respuesta real).
 const sample = {
 	count: 312,
-	next: 'https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=8&mode=normal&offset=8',
+	next: 'https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=8&mode=detailed&offset=8',
 	previous: null,
 	results: [
 		{
@@ -22,7 +22,9 @@ const sample = {
 			window_end: '2026-11-03T00:00:00Z',
 			launch_service_provider: { id: 147, name: 'Rocket Lab', abbrev: 'RL', type: { id: 3, name: 'Commercial' } },
 			rocket: { id: 8701, configuration: { id: 26, name: 'Electron', full_name: 'Electron', variant: '' } },
-			mission: { id: 7001, name: 'Kinéis Constellation Mission 6', type: 'Communications', orbit: { id: 17, name: 'Low Earth Orbit', abbrev: 'LEO' } },
+			mission: { id: 7001, name: 'Kinéis Constellation Mission 6', type: 'Communications', orbit: { id: 17, name: 'Low Earth Orbit', abbrev: 'LEO' }, info_urls: [], vid_urls: [] },
+			info_urls: [],
+			vid_urls: [],
 			pad: { id: 168, name: 'Rocket Lab Launch Complex 1A', location: { id: 10, name: 'Rocket Lab Launch Complex, Mahia Peninsula, New Zealand' } },
 			webcast_live: false,
 			image: { id: 1, name: 'Electron', image_url: 'https://example.org/electron.jpg' }
@@ -38,7 +40,7 @@ const sample = {
 			window_end: '2026-10-16T06:30:00Z',
 			launch_service_provider: { id: 121, name: 'SpaceX', abbrev: 'SpX' },
 			rocket: { id: 8700, configuration: { id: 164, name: 'Falcon 9', full_name: 'Falcon 9 Block 5' } },
-			mission: { id: 7000, name: 'Starlink Group 10-5' },
+			mission: { id: 7000, name: 'Starlink Group 10-5', info_urls: [{ priority: 0, url: 'https://example.org/mision' }], vid_urls: [] },
 			pad: { id: 80, name: 'Space Launch Complex 40', location: { id: 12, name: 'Cape Canaveral SFS, FL, USA' } },
 			vid_urls: [
 				{ priority: 10, title: 'Re-stream', url: 'https://example.org/restream' },
@@ -94,6 +96,18 @@ describe('launches', () => {
 		expect(list[1]).toMatchObject({ rocket: 'Long March 2D', status: 'TBC', precise: true, url: 'https://example.org/yaogan', webcast: false });
 		// Fecha de «este mes»: no se enseña la hora.
 		expect(list[2]).toMatchObject({ precise: false, url: null, status: 'TBD' });
+	});
+
+	it('sin enlaces del lanzamiento, usa los de la misión', () => {
+		const l = toLaunch({
+			id: 'x',
+			name: 'Falcon 9 | Crew-13',
+			net: '2026-11-01T10:00:00Z',
+			vid_urls: [],
+			info_urls: [],
+			mission: { name: 'Crew-13', vid_urls: [], info_urls: [{ priority: 0, url: 'https://example.org/crew-13' }] }
+		});
+		expect(l).toMatchObject({ url: 'https://example.org/crew-13', webcast: false });
 	});
 
 	it('hace una sola petición y guarda cuándo se consultó', async () => {

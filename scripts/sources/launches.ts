@@ -8,7 +8,10 @@
 import type { Launch, LaunchesData } from '../../src/lib/launches.ts';
 import { request, type Source } from '../lib.ts';
 
-const URL = 'https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=8&mode=normal';
+const URL = 'https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=8&mode=detailed';
+// Modo «detailed»: el «normal» de la 2.3.0 no trae vid_urls ni info_urls del lanzamiento (solo los de
+// la misión, casi siempre vacíos; comprobado con el sondeo de la Action del PR #105). Sigue siendo una
+// sola petición.
 const KEEP = 8;
 
 interface Named {
@@ -21,7 +24,7 @@ interface RawLink {
 	priority?: number | null;
 }
 
-/** Lo que se usa de cada lanzamiento de /launches/upcoming/ (modo normal). */
+/** Lo que se usa de cada lanzamiento de /launches/upcoming/ (modo detailed). */
 export interface RawLaunch {
 	id: string;
 	name?: string | null;
@@ -32,7 +35,7 @@ export interface RawLaunch {
 	status?: Named | null;
 	launch_service_provider?: Named | null;
 	rocket?: { configuration?: { name?: string | null; full_name?: string | null } | null } | null;
-	mission?: { name?: string | null } | null;
+	mission?: { name?: string | null; vid_urls?: RawLink[] | null; info_urls?: RawLink[] | null } | null;
 	pad?: { name?: string | null; location?: { name?: string | null } | null } | null;
 	// La 2.3.0 los llama en snake_case; la 2.2.0, vidURLs e infoURLs. Se aceptan los dos.
 	vid_urls?: RawLink[] | null;
@@ -65,7 +68,8 @@ export function toLaunch(raw: RawLaunch): Launch | null {
 	// «Falcon 9 Block 5 | Starlink Group 10-5»: si falta algún campo, se saca del nombre.
 	const [fromName, missionFromName] = text(raw.name).split(' | ');
 	const precision = raw.net_precision?.abbrev;
-	const video = best(raw.vid_urls ?? raw.vidURLs);
+	// Primero los del lanzamiento; si no hay, los de la misión.
+	const video = best(raw.vid_urls ?? raw.vidURLs) ?? best(raw.mission?.vid_urls);
 	return {
 		id: raw.id,
 		mission: text(raw.mission?.name) || text(missionFromName) || text(raw.name),
@@ -79,7 +83,7 @@ export function toLaunch(raw: RawLaunch): Launch | null {
 		windowEnd: iso(raw.window_end),
 		status: text(raw.status?.abbrev) || 'TBD',
 		statusName: text(raw.status?.name),
-		url: video ?? best(raw.info_urls ?? raw.infoURLs),
+		url: video ?? best(raw.info_urls ?? raw.infoURLs) ?? best(raw.mission?.info_urls),
 		webcast: !!video
 	};
 }
