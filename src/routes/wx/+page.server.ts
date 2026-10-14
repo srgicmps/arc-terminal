@@ -2,17 +2,18 @@ import { dataset } from '#lib/data.ts';
 import type { ClimateData } from '#lib/climate.ts';
 import { trim } from '#lib/trim.ts';
 import type { SwpcData, WeatherData } from '#lib/types.ts';
-import type { AirData, AlertsData } from '#lib/weather.ts';
+import type { AirData, AlertsData, AlertsEuData } from '#lib/weather.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [weather, air, alerts, climate, swpc] = await Promise.all([
+	const [weather, air, alerts, climate, swpc, alertsEu] = await Promise.all([
 		dataset<WeatherData>('weather'),
 		dataset<AirData>('air'),
 		dataset<AlertsData>('alerts'),
 		dataset<ClimateData>('climate'),
-		dataset<SwpcData>('swpc')
+		dataset<SwpcData>('swpc'),
+		dataset<AlertsEuData>('alerts-eu')
 	]);
 	// Tormentas solares: el aviso no pinta el Kp de 24 h.
-	return { weather, air, alerts, climate, swpc: trim(swpc, (d) => ({ ...d, kp24: [] })) };
+	return { weather, air, alerts, climate, swpc: trim(swpc, (d) => ({ ...d, kp24: [] })), alertsEu };
 };

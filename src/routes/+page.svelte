@@ -10,6 +10,7 @@
 	import { seriesMap, spread } from '#lib/series.ts';
 	import { compass, sky } from '#lib/weather.ts';
 	import ModularGrid from '#lib/components/ModularGrid.svelte';
+	import Morning from '#lib/components/Morning.svelte';
 	import MarketSessions from '#lib/components/MarketSessions.svelte';
 	import RiskGauge from '#lib/components/RiskGauge.svelte';
 	import Agenda from '#lib/components/top/Agenda.svelte';
@@ -17,7 +18,8 @@
 	import Change from '#lib/components/ui/Change.svelte';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
 	import type { BoeWeek } from '#lib/types.ts';
-	import { initWatchwords, watchwords } from '#lib/watchwords.svelte.ts';
+	import { initWatchwords, matches, watchwords } from '#lib/watchwords.svelte.ts';
+	import { place } from '#lib/place.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
 	import type { PageProps } from './$types';
 
@@ -80,6 +82,8 @@
 	const important = $derived(data.important);
 
 	const boeGeneral = $derived(data.boe?.data.sections.find((s) => s.code === '1'));
+	// Titulares de la portada que nombran alguna palabra vigilada (resaltadas en la lista).
+	const watchedNews = $derived(data.headlines.filter((h) => matches(h.title, watchwords.words).length).length);
 	const boeTotal = $derived((data.boe?.data.sections ?? []).reduce((n, s) => n + s.total, 0));
 
 	// Palabras vigiladas (las de la vista BOE, guardadas en este navegador): cuántas disposiciones del último
@@ -212,7 +216,12 @@
 {/snippet}
 
 {#snippet titulares()}
-	<Panel id="news" title="Titulares" meta="Todas las secciones">
+	<Panel
+		id="news"
+		title="Titulares"
+		meta={`${data.headlines.length} de ${data.headlinesTotal}${watchedNews ? ` · ${watchedNews} con tus palabras` : ''}`}
+		jump={{ code: 'NEWS', href: resolve('/news') }}
+	>
 		<NewsList items={data.headlines} tag={(i) => tags.get(i.url)} />
 	</Panel>
 {/snippet}
@@ -272,7 +281,7 @@
 				</li>
 			{/if}
 			{#each (boeGeneral?.items ?? []).slice(0, 4) as item (item.id)}
-				<li><a class="l" href={item.html} target="_blank" rel="noopener">{item.title}</a></li>
+				<li><a class="l" href={item.html || item.pdf} target="_blank" rel="noopener">{item.title}</a></li>
 			{:else}
 				<li><span class="l">Hoy no hay disposiciones generales.</span></li>
 			{/each}
@@ -322,11 +331,20 @@
 	</Panel>
 {/snippet}
 
-<!-- Hoy, en una línea: titulares nuevos y la luz más barata. Siempre ocupa su sitio para que nada salte al cargar. -->
+<!-- «Mi mañana»: el tiempo de «Tu sitio», la luz, la agenda y los avisos de hoy (se pliega a partir de las 11). -->
+<Morning
+	weather={data.weather?.data}
+	power={data.power?.data}
+	earnings={data.earnings}
+	holidays={{ items: data.holidays }}
+	alerts={data.alerts?.data}
+	city={place.current.name}
+/>
+
+<!-- Hoy, en una línea: titulares nuevos y la luz de mañana (la de hoy ya está en «Mi mañana»). Siempre ocupa su
+	sitio para que nada salte al cargar. -->
 <p class="today">
-	{fresh}{#if fresh && cheapWindow}{' · '}{/if}{#if cheapWindow}Luz más barata {cheapWindow.tomorrow
-			? 'mañana'
-			: 'hoy'}: <b>{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)}</b> · {nf(cheapWindow.avg, 3)} €/kWh{/if}
+	{fresh}{#if fresh && cheapWindow?.tomorrow}{' · '}{/if}{#if cheapWindow?.tomorrow}Luz más barata mañana: <b>{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)}</b> · {nf(cheapWindow.avg, 3)} €/kWh{/if}
 </p>
 
 {#if mode.modular}

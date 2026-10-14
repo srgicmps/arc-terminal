@@ -386,4 +386,29 @@ describe('runNotify', () => {
 		expect(lines).toContain('ntfy: ALERT_FUEL_ZONE no corresponde a ninguna zona; el diésel se vigila solo en España');
 		expect(lines.join('\n')).not.toContain('Atlántida');
 	});
+
+	it('ADR europeos (D25): con la clave de Finnhub avisan, pero no salen en la copia publicada, solo en la caché', async () => {
+		const KEY = 'clave-finnhub-xyz';
+		const cache = join(dir, 'cache', 'notify-log.json');
+		mockFetch((url, init) => {
+			if (url.endsWith('/data/notify-log.json')) return published(emptyLog());
+			if (url.startsWith('https://finnhub.io/')) {
+				expect((init?.headers as Record<string, string>)['X-Finnhub-Token']).toBe(KEY);
+				const symbol = new URL(url).searchParams.get('symbol');
+				// Airbus se mueve un 4 % (el día anterior: el plan gratuito da el cierre con un día de retraso).
+				return symbol === 'EADSY'
+					? { c: 52, d: 2, dp: 4, pc: 50, t: Date.parse('2026-10-13T00:00:00Z') / 1000 }
+					: { c: 0, d: null, dp: null, pc: 0, t: 0 };
+			}
+			if (url.startsWith('https://ntfy.sh/')) return new Response('', { status: 200 });
+		});
+		const lines = await runNotify({ topic: TOPIC, dir, cache, finnhubKey: KEY, euGap: 0, now: NOW });
+		expect(lines).toContain('ntfy: 1 de 7 ADR europeos (sin dato: BAESY, RNMBY, FINMY, THLLY, SAABY, ISMAY)');
+		expect(lines).toContain('ntfy · P2 stock:EADSY:2026-10-14T10:00Z: enviado (200)');
+		const pub = await written();
+		const priv = await readFile(cache, 'utf8');
+		expect(pub).not.toContain('EADSY');
+		expect(priv).toContain('stock:EADSY');
+		for (const text of [...logged, ...lines, pub, priv]) expect(text).not.toContain(KEY);
+	});
 });

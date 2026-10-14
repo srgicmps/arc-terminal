@@ -8,7 +8,7 @@
 	import PriceBars from '#lib/components/PriceBars.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { dm, longDay, nf } from '#lib/format.ts';
+	import { dm, hm, longDay, nf } from '#lib/format.ts';
 	import { cheapestWindow, days, dayStats, hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
 	import { luzShare, relativeDay, type ShareInfo } from '#lib/share.ts';
 	import Tile from '#lib/components/ui/Tile.svelte';
@@ -38,6 +38,17 @@
 	);
 
 	const history = $derived(data.power?.data.history ?? []);
+	// Demanda eléctrica: las dos últimas horas, real frente a prevista (REE, cada 5 minutos).
+	const demandLines = $derived.by(() => {
+		const recent = data.demand?.data.recent ?? [];
+		const pick = (k: 'real' | 'forecast') =>
+			recent.flatMap((p) => (p[k] === null ? [] : [{ t: p.time, v: p[k] as number }]));
+		return [
+			{ label: 'Real', color: '--amber', points: pick('real') },
+			{ label: 'Prevista', color: '--muted', points: pick('forecast') }
+		].filter((l) => l.points.length);
+	});
+
 	const historyLines = $derived([
 		{ label: 'Media', points: history.map((d) => ({ t: d.date, v: d.avg })) },
 		{ label: 'Mínimo', color: '--up', points: history.map((d) => ({ t: d.date, v: d.min })) },
@@ -117,6 +128,31 @@
 					<MixBar {mix} />
 				{/each}
 				{#snippet note()}Fuente: Red Eléctrica · <Updated at={data.mix?.fetchedAt} source="power-mix" />{/snippet}
+			</Panel>
+		</div>
+	</div>
+{/if}
+
+{#if data.demand}
+	{@const d = data.demand.data}
+	<div class="grid">
+		<div class="col">
+			<Panel title="Demanda eléctrica" meta="España · real frente a prevista · {hm(d.time)}">
+				<Tiles>
+					<Tile label="Real" value="{nf(d.real, 0)} MW" />
+					<Tile label="Prevista" value={d.forecast === null ? '—' : `${nf(d.forecast, 0)} MW`} tone={d.forecast === null ? 'mut' : undefined} />
+					<Tile
+						label="Desvío"
+						value={d.gap === null ? '—' : `${nf(-d.gap, 1)} %`}
+						tone={d.gap === null ? 'mut' : undefined}
+						sub={d.gap === null ? undefined : d.gap > 0 ? 'por debajo de la prevista' : 'por encima de la prevista'}
+					/>
+				</Tiles>
+				{#if demandLines.length}<LineChart lines={demandLines} decimals={0} unit=" MW" height={160} />{/if}
+				{#snippet note()}
+					Últimas dos horas, cada 5 minutos. Una caída brusca de la real frente a la prevista puede ser un apagón.
+					Fuente: Red Eléctrica · <Updated at={data.demand?.fetchedAt} source="ree-demand" />
+				{/snippet}
 			</Panel>
 		</div>
 	</div>

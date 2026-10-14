@@ -1,6 +1,7 @@
 // Titulares por RSS. Solo se guardan el título, el enlace, la fecha y un resumen corto de cada noticia,
 // siempre con su medio: para leerla entera hay que ir a la web original.
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
+import { DIPLOMACY_FEEDS } from '../../src/lib/news.ts';
 import type { FeedStatus, NewsData, NewsItem } from '../../src/lib/types.ts';
 import { cluster } from '../cluster.ts';
 import { getText, list, plain, type Source } from '../lib.ts';
@@ -77,11 +78,11 @@ const FEEDS: Record<string, Feed[]> = {
 		// Diplomacia (M34, comprobados con probe el 14-10-2026). Descartados: Departamento de Estado (403 desde
 		// Actions) y Servicio Europeo de Acción Exterior (sin RSS). Del FCDO se quitan los avisos de viaje.
 		{
-			name: 'Exteriores británico',
+			name: DIPLOMACY_FEEDS[0],
 			url: 'https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom',
 			skip: /\/foreign-travel-advice\//
 		},
-		{ name: 'OIEA', url: 'https://www.iaea.org/feeds/topnews' }
+		{ name: DIPLOMACY_FEEDS[1], url: 'https://www.iaea.org/feeds/topnews' }
 	]
 };
 
@@ -111,8 +112,7 @@ export const ENGLISH = new Set([
 	'Simon Willison',
 	'Casa Blanca',
 	'Reserva Federal',
-	'Exteriores británico',
-	'OIEA'
+	...DIPLOMACY_FEEDS
 ]);
 
 /** Marca los titulares de un medio en inglés. */

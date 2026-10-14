@@ -2,28 +2,12 @@
 // la prevista. Si la real cae muy por debajo de la prevista de golpe, es señal de un apagón (como el del
 // 28 de abril de 2025). https://www.ree.es/es/apidatos · Sin clave · Reutilización libre citando a REE;
 // no publican límite por IP. Se pide cada 10 minutos.
+import type { DemandData, DemandPoint } from '../../src/lib/types.ts';
 import { getJson, list, madridDate, num, type Source } from '../lib.ts';
 
 type Raw = Record<string, any>;
 
-export interface DemandPoint {
-	/** Hora del dato en ISO (UTC). */
-	time: string;
-	real: number | null;
-	forecast: number | null;
-}
-
-export interface DemandData {
-	/** Último dato con demanda real y su prevista, en MW. */
-	time: string;
-	real: number;
-	forecast: number | null;
-	scheduled: number | null;
-	/** Cuánto está la real por debajo (+) o por encima (−) de la prevista, en %. */
-	gap: number | null;
-	/** Las dos últimas horas, para ver si la caída es brusca o progresiva. */
-	recent: DemandPoint[];
-}
+export type { DemandData, DemandPoint };
 
 const day = (d: string) => `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
 

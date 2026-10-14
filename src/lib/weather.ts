@@ -257,3 +257,16 @@ export interface AlertsData {
 	zone: string;
 	alerts: WxAlert[];
 }
+
+/** Avisos de un país europeo (MeteoAlarm), resumidos: recuento por color y zonas en naranja o rojo. */
+export interface EuAlertCountry {
+	/** Código ISO del país: «ES». */
+	code: string;
+	counts: Record<AlertColor, number>;
+	/** Zonas con aviso naranja o rojo, la más grave primero: un aviso por zona con sus fenómenos. */
+	zones: { area: string; level: Exclude<AlertColor, 'yellow'>; hazards: string[]; url: string }[];
+}
+
+export interface AlertsEuData {
+	countries: EuAlertCountry[];
+}

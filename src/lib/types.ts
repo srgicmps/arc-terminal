@@ -532,8 +532,11 @@ export interface Prediction {
 	/** Volumen negociado en 24 h, en dólares. */
 	volume24h: number;
 	endDate: string;
-	/** Opciones con su probabilidad implícita (0–1), de más a menos probable. */
-	outcomes: { label: string; p: number }[];
+	/**
+	 * Opciones con su probabilidad implícita (0–1), de más a menos probable, y `d`, cuánto ha cambiado en
+	 * 24 h (en tanto por uno: 0,05 = 5 puntos), si Polymarket lo da.
+	 */
+	outcomes: { label: string; p: number; d?: number }[];
 }
 
 export interface PredictionsData {
@@ -1094,4 +1097,25 @@ export interface OutbreakNews {
 	/** Primeras frases del resumen, en texto plano. */
 	summary: string;
 	url: string;
+}
+
+// ---------- Demanda eléctrica en tiempo real (REE, scripts/sources/ree-demand.ts) ----------
+
+export interface DemandPoint {
+	/** Hora del dato en ISO (UTC). */
+	time: string;
+	real: number | null;
+	forecast: number | null;
+}
+
+export interface DemandData {
+	/** Último dato con demanda real y su prevista, en MW. */
+	time: string;
+	real: number;
+	forecast: number | null;
+	scheduled: number | null;
+	/** Cuánto está la real por debajo (+) o por encima (−) de la prevista, en %. */
+	gap: number | null;
+	/** Las dos últimas horas, para ver si la caída es brusca o progresiva. */
+	recent: DemandPoint[];
 }

@@ -3,7 +3,8 @@
 	resaltado. Al pasar el dedo o el ratón muestra el valor de cada punto.
 -->
 <script lang="ts">
-	import { axisTicks } from '#lib/chart.ts';
+	import { axisTicks, periodChoices, periodDate, periodStart } from '#lib/chart.ts';
+	import Seg from './ui/Seg.svelte';
 	import { nf, period } from '#lib/format.ts';
 
 	interface Line {
@@ -18,9 +19,38 @@
 		decimals?: number;
 		unit?: string;
 		height?: number;
+		/** Botones de periodo (1M, 6M, 1A, 5A, Máx) si la serie es lo bastante larga. */
+		periods?: boolean;
 	}
 
-	let { lines, decimals = 2, unit = '', height = 200 }: Props = $props();
+	let { lines: all, decimals = 2, unit = '', height = 200, periods = true }: Props = $props();
+
+	// Periodo elegido, en meses hacia atrás desde el último dato ('0' = máx.). Es común a todos los gráficos
+	// y se recuerda en el navegador; si un gráfico no tiene ese periodo (serie corta), enseña el máximo.
+	const KEY = 'arc-chart-period';
+	let months = $state('0');
+	let loaded = false;
+	$effect(() => {
+		try {
+			months = localStorage.getItem(KEY) ?? '0';
+		} catch {}
+		loaded = true;
+	});
+	$effect(() => {
+		const m = months;
+		if (!loaded) return;
+		try {
+			localStorage.setItem(KEY, m);
+		} catch {}
+	});
+	const allTs = $derived([...new Set(all.flatMap((l) => l.points.map((p) => p.t)))].sort());
+	const choices = $derived(periods ? periodChoices(allTs) : []);
+	const active = $derived(choices.some((c) => c.value === months) ? months : '0');
+	const lines = $derived.by(() => {
+		const start = +active ? periodStart(allTs.at(-1) ?? '', +active) : null;
+		if (!start) return all;
+		return all.map((l) => ({ ...l, points: l.points.filter((p) => (periodDate(p.t) ?? start) >= start) }));
+	});
 
 	let width = $state(600);
 	let hover = $state<number | null>(null);
@@ -113,6 +143,7 @@
 				<span><i style:background="var({line.color ?? '--amber'})"></i>{line.label} <b>{p ? fmt(p.v) : '—'}</b></span>
 			{/each}
 			<span class="when">{hover !== null ? period(ts[hover]) : period(ts.at(-1) ?? '')}</span>
+			{#if choices.length}<span class="periods"><Seg label="Periodo" options={choices} bind:value={() => active, (v) => (months = v ?? '0')} /></span>{/if}
 		</div>
 	{:else}
 		<p class="empty">Aún no hay historial: se irá llenando día a día.</p>
@@ -154,6 +185,7 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: var(--sp-4) var(--sp-16);
+		align-items: center;
 		padding: var(--sp-4) 0 var(--sp-6);
 		color: var(--muted);
 		font-size: var(--fs-s);

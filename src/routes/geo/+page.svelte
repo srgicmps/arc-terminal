@@ -20,11 +20,18 @@
 	import WorldMap from '#lib/components/WorldMap.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { LAYERS, type LayerId } from '#lib/geo/layers.ts';
+	import { DIPLOMACY_FEEDS } from '#lib/news.ts';
+	import { REGIONS, inRegion, type RegionId } from '#lib/regions.ts';
+	import { urlState } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	const items = $derived(data.news?.data.items ?? []);
+	// Región de los titulares, en la URL (/geo?region=asia) como los filtros de IMP o FUEL.
+	const regions = [{ value: 'all' as const, label: 'Todas' }, ...REGIONS.map((r) => ({ value: r.id, label: r.label }))];
+	const regionSel = urlState<RegionId | 'all'>('region', 'all', (v) => REGIONS.some((r) => r.id === v));
+	const shownItems = $derived(inRegion(items, regionSel.value));
 	const quakes = $derived(data.quakes?.data ?? []);
 	// Los más fuertes de la semana primero, y como mucho 20.
 	const strongest = $derived([...quakes].sort((a, b) => b.mag - a.mag).slice(0, 20));
@@ -35,8 +42,8 @@
 	const points = $derived(available.filter((l) => on.includes(l.value)).flatMap((l) => layerPoints[l.value]));
 
 	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
-	// Canales de diplomacia dentro de news-intl (scripts/sources/news.ts); el resto son organismos internacionales.
-	const DIPLO = new Set(['Exteriores británico', 'OIEA']);
+	// Canales de diplomacia dentro de news-intl; el resto son organismos internacionales.
+	const DIPLO = new Set(DIPLOMACY_FEEDS);
 	const diplo = $derived((data.intl?.data.items ?? []).filter((i) => DIPLO.has(i.source)).slice(0, 15));
 </script>
 
@@ -57,8 +64,13 @@
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Titulares" meta="{items.length} noticias">
-			<NewsList {items} summaries />
+		<Panel title="Titulares" meta="{shownItems.length} noticias" jump={{ code: 'NEWS', href: `${resolve('/news')}?s=geo` }}>
+			<div class="regions"><Seg label="Región" options={regions} bind:value={regionSel.value} /></div>
+			{#if shownItems.length || !items.length}
+				<NewsList items={shownItems} summaries />
+			{:else}
+				<p class="empty">Sin titulares de esta región ahora.</p>
+			{/if}
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-geo" />{/snippet}
 		</Panel>
 		<ClimatePanel climate={data.climate} />
@@ -151,13 +163,6 @@
 			<QuakeTable quakes={strongest} empty={data.quakes ? 'Sin terremotos fuertes estos días.' : undefined} />
 			{#snippet note()}Fuente: USGS · <Updated at={data.quakes?.fetchedAt} source="quakes" />{/snippet}
 		</Panel>
-		<Panel title="Terremotos en España" meta="Últimos 10 días · los 15 más fuertes">
-			<QuakeTable
-				quakes={[...(data.quakesEs?.data ?? [])].sort((a, b) => b.mag - a.mag).slice(0, 15)}
-				empty={data.quakesEs ? 'Sin terremotos en España en los últimos 10 días.' : undefined}
-			/>
-			{#snippet note()}Fuente: Instituto Geográfico Nacional · <Updated at={data.quakesEs?.fetchedAt} source="quakes-es" />{/snippet}
-		</Panel>
 		<Panel title="Huracanes, incendios y volcanes" meta="Activos ahora">
 			{#if data.hazards}<HazardList hazards={data.hazards.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
 			{#snippet note()}Fuentes: NOAA (Centro Nacional de Huracanes) y NASA EONET · <Updated at={data.hazards?.fetchedAt} source="hazards" />{/snippet}
@@ -168,5 +173,9 @@
 <style>
 	.layers {
 		padding: var(--sp-8) var(--pad-x) 0;
+	}
+	.regions {
+		padding: var(--sp-8) var(--pad-x);
+		border-bottom: var(--border);
 	}
 </style>

@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { asset } from '$app/paths';
 	import { page } from '$app/state';
+	import EntityCard from '#lib/components/EntityCard.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
+	import { findEntity } from '#lib/entities.ts';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { NEWS_SECTIONS as SECTIONS } from '#lib/news.ts';
@@ -19,9 +21,14 @@
 	// «NEWS inflación» en la barra abre /news?q=inflación y rellena el buscador (solo en el navegador).
 	$effect(() => {
 		query = page.url.searchParams.get('q') ?? '';
+		// «Titulares › NEWS» de cada vista abre /news?s=eco con esa sección elegida.
+		const s = page.url.searchParams.get('s');
+		section = SECTIONS.some((x) => x.key === s) ? s! : 'all';
 	});
 
 	const words = $derived(queryWords(query));
+	// Si lo buscado tiene ficha (valor, líder, banco central o país), sale arriba y los titulares debajo.
+	const entity = $derived(findEntity(query));
 	const inSection = $derived(data.items.filter((i) => section === 'all' || i.section === section));
 	const filtered = $derived(inSection.filter((i) => hasWords(`${i.title} ${i.summary} ${i.source}`, words)));
 
@@ -84,6 +91,7 @@
 
 <div class="grid">
 	<div class="col">
+		{#if entity}<EntityCard {entity} />{/if}
 		<Panel title="Resultados" meta={words.length ? `${filtered.length} de ${inSection.length}` : `${filtered.length} titulares`}>
 			<NewsList items={filtered.slice(0, 150)} summaries tag={(i) => label[sectionOf.get(i.url) ?? '']} />
 		</Panel>
