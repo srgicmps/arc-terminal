@@ -15,7 +15,7 @@
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Comandos" meta="{COMMANDS.length} funciones">
+		<Panel title="Comandos" meta="{COMMANDS.length} funciones" jump={{ code: 'MANUAL', href: resolve('/manual') }}>
 			<Table>
 				<thead><tr><th>Comando</th><th class="l">Qué abre</th><th class="l">Fuentes</th></tr></thead>
 				<tbody>

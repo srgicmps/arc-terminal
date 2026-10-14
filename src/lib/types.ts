@@ -1039,3 +1039,59 @@ export interface ChangesData {
 	/** Lo fusionado en los últimos 7 días, de lo más reciente a lo más antiguo. */
 	items: Change[];
 }
+
+// ---------- Señales de riesgo: GDACS, IODA y OMS (scripts/sources/gdacs.ts, ioda.ts y who.ts) ----------
+
+/** Alerta naranja o roja de catástrofe de GDACS (ONU y Comisión Europea). */
+export type GdacsType = 'EQ' | 'TC' | 'FL' | 'VO' | 'DR' | 'WF';
+
+export interface GdacsEvent {
+	/** Tipo y número de evento de GDACS, p. ej. «EQ1501234». Estable entre episodios. */
+	id: string;
+	type: GdacsType;
+	/** Nombre del tipo en español. */
+	kind: string;
+	level: 'orange' | 'red';
+	name: string;
+	country: string;
+	/** Fecha de inicio, fin y última actualización, en ISO (UTC). */
+	from: string | null;
+	to: string | null;
+	updated: string | null;
+	/** Texto de gravedad de GDACS, p. ej. «Magnitude 7.1M, Depth:10km». */
+	severity: string;
+	/** Puntuación de alerta de GDACS (0–3 aprox.): sirve para ordenar dentro de un mismo nivel. */
+	score: number | null;
+	lat: number | null;
+	lon: number | null;
+	url: string;
+}
+
+/** Caída de internet de un país según IODA. */
+export interface IodaOutage {
+	/** Código ISO del país (p. ej. «IR»). */
+	code: string;
+	name: string;
+	/** El peor nivel de las señales que siguen en alerta. */
+	level: 'critical' | 'warning';
+	/** Señales en alerta ahora: «bgp», «ping-slash24», «merit-nt»… */
+	signals: string[];
+	/** Primera alerta de la racha actual y la última, en ISO (UTC). */
+	since: string;
+	last: string;
+	/** Cuánto ha caído la peor señal frente a lo normal, en % (p. ej. 85 = queda el 15 %). */
+	drop: number | null;
+	url: string;
+}
+
+/** Parte de brote de la OMS (Disease Outbreak News). */
+export interface OutbreakNews {
+	/** Identificador del parte, p. ej. «2026-DON590». */
+	id: string;
+	title: string;
+	/** Fecha de publicación en ISO (UTC). */
+	date: string | null;
+	/** Primeras frases del resumen, en texto plano. */
+	summary: string;
+	url: string;
+}

@@ -13,6 +13,7 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import TradeList from '#lib/components/TradeList.svelte';
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
+	import RiskSignals from '#lib/components/RiskSignals.svelte';
 	import StormNotice from '#lib/components/StormNotice.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -70,6 +71,18 @@
 		{/if}
 	</div>
 	<div class="col">
+		{#if data.signals}
+			{@const at = data.signals.fetchedAt}
+			<Panel title="Señales de riesgo" meta="Catástrofes, internet, brotes y avisos de viaje">
+				<RiskSignals signals={data.signals} />
+				{#snippet note()}
+					Fuentes: GDACS (ONU y Comisión Europea), alertas naranjas y rojas{#if at.gdacs}&nbsp;· <Updated at={at.gdacs} source="gdacs" />{/if};
+					IODA (Georgia Tech), caídas de internet de las últimas 12 h{#if at.ioda}&nbsp;· <Updated at={at.ioda} source="ioda" />{/if};
+					OMS, Disease Outbreak News{#if at.who}&nbsp;· <Updated at={at.who} source="who-don" />{/if}; y avisos de viaje del
+					Departamento de Estado de EE. UU.
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Mercados de predicción" meta="Probabilidad que da el mercado">
 			<PredictionList items={data.predictions?.data.geopolitics.slice(0, 8) ?? []} />
 			{#snippet note()}
