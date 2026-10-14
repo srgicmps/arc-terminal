@@ -75,7 +75,11 @@ const PER_SECTION = 60;
 const xml = new XMLParser({
 	ignoreAttributes: false,
 	attributeNamePrefix: '@',
-	removeNSPrefix: true,
+	// Solo se quita el prefijo de los espacios de nombres que traen los campos que se leen (dc:date,
+	// content:encoded, rdf:RDF…). Los demás se dejan: sin prefijo, <media:title> o <itunes:summary> se
+	// juntarían con <title> y <summary> en una lista, y el titular se quedaría vacío (le pasaba a
+	// Expansión, El Mundo y elDiario.es).
+	transformTagName: (name) => name.replace(/^(dc|dcterms|content|rdf|atom):/, ''),
 	parseTagValue: false,
 	textNodeName: '#text'
 });
