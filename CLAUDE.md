@@ -104,7 +104,7 @@ La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`)
 | `TOP` | Portada | Resumen de todas |
 | `IMP` | Lo más importante de hoy, la semana, el mes y el año (puntuación propia, sin IA) | Todos los titulares, BOE, Federal Register, Wikipedia |
 | `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FRED*, RSS |
-| `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket |
+| `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5) |
 | `ES` | España en cifras, BOE, luz | INE, BOE, REE, RSS |
 | `WS` | Wall Street, mapa de calor, curva de tipos, divisas, cripto | TradingView, Tesoro de EE. UU., BCE, CoinGecko |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |
@@ -112,7 +112,7 @@ La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`)
 | `TECH` / `AI` | Tecnología e IA | Hacker News, Hugging Face, RSS |
 | `BOE` / `USGOV` | Boletines oficiales | BOE, Federal Register |
 | `LUZ` | Precio de la luz y mix de generación | REE |
-| `WX` | Tiempo, mar, aire, avisos, sol y luna | Open-Meteo, MeteoAlarm |
+| `WX` | Tiempo, mar, aire, avisos, sol y luna | Open-Meteo, MeteoAlarm, Copernicus (ERA5), NOAA (CO₂) |
 | `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica, Comisión Europea (Weekly Oil Bulletin) |
 | `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
 | `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista, análisis y problema del día | Stockfish, chess.js, Lichess |

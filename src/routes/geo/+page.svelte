@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
+	import ClimatePanel from '#lib/components/ClimatePanel.svelte';
 	import ChokepointTable from '#lib/components/ChokepointTable.svelte';
 	import DisasterList from '#lib/components/DisasterList.svelte';
 	import HazardList from '#lib/components/HazardList.svelte';
@@ -50,6 +51,7 @@
 			<NewsList {items} summaries />
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-geo" />{/snippet}
 		</Panel>
+		<ClimatePanel climate={data.climate} />
 	</div>
 	<div class="col">
 		<Panel title="Mercados de predicción" meta="Probabilidad que da el mercado">
