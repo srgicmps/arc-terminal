@@ -20,6 +20,7 @@ const madridDay = (iso: string) => new Date(iso).toLocaleDateString('sv-SE', { t
 /** Tipo de documento de GOV.UK, en español. */
 const TYPES: Record<string, string> = {
 	notice: 'Aviso',
+	document_collection: 'Colección',
 	guidance: 'Guía',
 	news_story: 'Noticia',
 	press_release: 'Comunicado',

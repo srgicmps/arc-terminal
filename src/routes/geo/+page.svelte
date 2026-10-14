@@ -117,9 +117,20 @@
 				{/snippet}
 			</Panel>
 		{/if}
-		<Panel title="Sanciones y aranceles de EE. UU." meta="OFAC, USTR e ITA" jump={{ code: 'USGOV', href: resolve('/usgov') }}>
-			<TradeList items={data.sanctions?.data.slice(0, 8) ?? []} />
-			{#snippet note()}Fuente: Federal Register · <Updated at={data.sanctions?.fetchedAt} source="sanctions" />{/snippet}
+		<Panel title="Sanciones y aranceles" meta="EE. UU., UE y Reino Unido" jump={{ code: 'USGOV', href: resolve('/usgov') }}>
+			<TradeList items={data.sanctions?.data ?? []} />
+			{#snippet note()}
+				Fuentes: Federal Register (OFAC, USTR e ITA){#if data.sanctions?.fetchedAt}&nbsp;· <Updated
+						at={data.sanctions.fetchedAt}
+						source="sanctions"
+					/>{/if}; EUR-Lex, actos de sanciones del Diario Oficial de la UE{#if data.sanctions?.euAt}&nbsp;· <Updated
+						at={data.sanctions.euAt}
+						source="eurlex"
+					/>{/if}; OFSI en GOV.UK, Open Government Licence v3.0{#if data.sanctions?.ukAt}&nbsp;· <Updated
+						at={data.sanctions.ukAt}
+						source="sanctions-uk"
+					/>{/if}.
+			{/snippet}
 		</Panel>
 		{#if data.advisories}
 			<Panel title="Avisos de viaje de EE. UU." meta="Departamento de Estado · nivel 1 a 4">
