@@ -71,4 +71,3 @@ Cuando termine una fase, actualiza esta lista.
 
 ## Aparcado
 - Evitar que GitHub desactive el cron tras 60 días sin commits (aviso o «keepalive» en la Action).
-- `FUEL`: ordenar las gasolineras por distancia a donde estés (geolocalización del navegador).

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import LineChart from '#lib/components/LineChart.svelte';
 	import Panel from '#lib/components/Panel.svelte';
-	import { FUELS, type FuelKey, type FuelStation } from '#lib/fuel.ts';
+	import { distanceKm, FUELS, type FuelKey, type FuelStation } from '#lib/fuel.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -9,6 +9,25 @@
 	// Estado de la vista (como ref() en Vue).
 	let fuel = $state<FuelKey>('g95');
 	let town = $state('ALL');
+	// Orden de la lista. «near» usa la ubicación del navegador, que nunca sale del dispositivo.
+	let sort = $state<'price' | 'near'>('price');
+	let here = $state<{ lat: number; lon: number } | null>(null);
+	let geoStatus = $state<'idle' | 'asking' | 'error'>('idle');
+
+	function sortByDistance() {
+		if (here) return void (sort = 'near');
+		if (!('geolocation' in navigator)) return void (geoStatus = 'error');
+		geoStatus = 'asking';
+		navigator.geolocation.getCurrentPosition(
+			(pos) => {
+				here = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+				geoStatus = 'idle';
+				sort = 'near';
+			},
+			() => (geoStatus = 'error'),
+			{ maximumAge: 300_000, timeout: 10_000 }
+		);
+	}
 
 	// Valores calculados (como computed() en Vue): se recalculan solos cuando cambia fuel o town.
 	const stations = $derived(data.fuel?.data.stations ?? []);
@@ -22,14 +41,19 @@
 			return price === null ? [] : [{ ...s, price }];
 		})
 	);
-	const list = $derived(
+	const byPrice = $derived(
 		priced.filter((s) => town === 'ALL' || s.town === town).sort((a, b) => a.price - b.price)
 	);
+	const list = $derived.by(() => {
+		if (!here) return byPrice.map((s) => ({ ...s, km: null }));
+		const withKm = byPrice.map((s) => ({ ...s, km: distanceKm(here!, s) }));
+		return sort === 'near' ? withKm.sort((a, b) => a.km - b.km) : withKm;
+	});
 	const islandPrices = $derived(priced.map((s) => s.price));
 	const avg = $derived(islandPrices.reduce((a, b) => a + b, 0) / (islandPrices.length || 1));
 	const min = $derived(Math.min(...islandPrices));
 	const max = $derived(Math.max(...islandPrices));
-	const best = $derived(list[0]);
+	const best = $derived(byPrice[0]);
 	// Lo que ahorras llenando 50 L en la más barata en vez de pagar la media de la isla.
 	const save = $derived(best ? (avg - best.price) * 50 : 0);
 	const fuelLabel = $derived(FUELS.find((f) => f.key === fuel)?.label);
@@ -99,6 +123,19 @@
 						{/each}
 					</select>
 				</label>
+				<div class="seg" role="group" aria-label="Ordenar">
+					<button type="button" aria-pressed={sort === 'price'} onclick={() => (sort = 'price')}>
+						Precio
+					</button>
+					<button type="button" aria-pressed={sort === 'near'} onclick={sortByDistance}>
+						Cerca de mí
+					</button>
+				</div>
+				{#if geoStatus === 'asking'}
+					<span class="geo">Buscando tu ubicación…</span>
+				{:else if geoStatus === 'error'}
+					<span class="geo">No se ha podido obtener tu ubicación.</span>
+				{/if}
 			</div>
 
 			{#if best}
@@ -127,6 +164,7 @@
 								<th>#</th>
 								<th class="l">Estación</th>
 								<th class="l">Municipio</th>
+								{#if here}<th>km</th>{/if}
 								<th>€/L</th>
 								<th class="sp"><span class="sr">Comparativa</span></th>
 								<th>Frente a la media</th>
@@ -136,13 +174,14 @@
 						<tbody>
 							{#each list as s, i (s.id)}
 								{@const diff = s.price - avg}
-								<tr class:best={i === 0}>
+								<tr class:best={s.id === best?.id}>
 									<td class="mut">{i + 1}</td>
 									<td class="l">
 										<a class="name" href={mapUrl(s)} target="_blank" rel="noopener">{s.name}</a>
 										<span class="sub">{s.address}</span>
 									</td>
 									<td class="l">{s.town}</td>
+									{#if s.km !== null}<td class="mut">{fmt(s.km, 1)}</td>{/if}
 									<td>{fmt(s.price, 3)}</td>
 									<td class="sp">
 										<span class="bar" aria-hidden="true">
@@ -165,7 +204,7 @@
 			<p class="pnote">
 				Fuente: <a href="https://geoportalgasolineras.es/" target="_blank" rel="noopener"
 					>Ministerio para la Transición Ecológica y el Reto Demográfico</a
-				>. Datos del {sourceDate}. Toca una estación para abrirla en el mapa.
+				>. Datos del {sourceDate}. Toca una estación para abrirla en el mapa. Con «Cerca de mí», tu ubicación solo se usa en este dispositivo.
 			</p>
 		{/if}
 	</section>
@@ -222,6 +261,11 @@
 		border: 1px solid var(--line);
 		color: var(--fg);
 		padding: 4px 8px;
+		font-size: var(--fs-s);
+	}
+
+	.geo {
+		color: var(--muted);
 		font-size: var(--fs-s);
 	}
 
