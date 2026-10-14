@@ -1,8 +1,8 @@
 // Caídas de internet por país según IODA (https://ioda.inetintel.cc.gatech.edu), del Georgia Tech:
-// vigila la conectividad con tres señales (rutas BGP, sondeo activo «ping-slash24» y tráfico al
-// telescopio «merit-nt») y lanza alertas cuando una cae muy por debajo de lo normal. API pública y sin
-// clave. Términos: uso libre citando a IODA; no publican límite por IP, así que se pide cada 30 min.
-// Las horas de la API son segundos Unix.
+// vigila la conectividad con varias señales (rutas BGP, sondeo activo «ping-slash24», tráfico al
+// telescopio «merit-nt» y tráfico a Google, «gtr») y lanza alertas cuando una cae por debajo de lo
+// normal. API pública y sin clave. Términos: uso libre citando a IODA; no publican límite por IP, así
+// que se pide cada 30 min. Las horas de la API son segundos Unix.
 import { getJson, list, num, plain, type Source } from '../lib.ts';
 
 type Raw = Record<string, any>;
@@ -25,6 +25,11 @@ export interface IodaOutage {
 
 /** Horas hacia atrás que se miran. */
 const HOURS = 12;
+/**
+ * Caída mínima (en %) para contar. IODA marca «critical» una bajada de rutas BGP del 1 % (umbral
+ * «< 0.99»): en países pequeños es ruido (Palau, 57 de 59 rutas). Si no se sabe la caída, cuenta.
+ */
+const MIN_DROP = 10;
 
 export const iodaUrl = (now = Date.now()) => {
 	const until = Math.floor(now / 1000);
@@ -71,6 +76,7 @@ export function parseIoda(body: Raw): IodaOutage[] {
 		const flat = open.flat();
 		const latest = open.map((run) => run[run.length - 1]);
 		const drops = latest.map((a) => a.drop).filter((d): d is number => d !== null);
+		if (drops.length === latest.length && Math.max(...drops) < MIN_DROP) continue;
 		outages.push({
 			code,
 			name: c.name,

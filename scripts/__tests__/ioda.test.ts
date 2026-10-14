@@ -35,6 +35,8 @@ describe('ioda', () => {
 				alert('ES', 'merit-nt', 0, 'critical'),
 				alert('ES', 'merit-nt', 100, 'normal'),
 				alert('ES', 'merit-nt', 200, 'warning', 70),
+				// Una bajada del 3 % en BGP: ruido, no sale.
+				alert('PW', 'bgp', 0, 'critical', 57, 59),
 				{ entity: {}, datasource: 'bgp', time: T, level: 'critical' }
 			]
 		});
