@@ -36,7 +36,7 @@ La maqueta de diseño está en [`docs/maqueta.html`](docs/maqueta.html) (datos d
 | `NEWS` | Buscador en todos los titulares |
 | `WIKI` | Lo más leído en Wikipedia y efemérides |
 | `CAL` | Agenda económica de la semana y resultados de empresas |
-| `CHESS` | Ajedrez contra Stockfish en 5 niveles, con pista y barra de evaluación; la partida se guarda en el navegador |
+| `CHESS` | Ajedrez contra Stockfish en 5 niveles, con pista, evaluación, análisis de la partida y problema del día de Lichess |
 | `STATUS` | Estado de todas las fuentes |
 | `HELP` | Comandos y atajos |
 
@@ -58,6 +58,7 @@ procedencia de cada una se ven en `STATUS`.
   [nmrugg/stockfish.js](https://github.com/nmrugg/stockfish.js) y
   [official-stockfish/Stockfish](https://github.com/official-stockfish/Stockfish).
 - **chess.js** para las reglas, con licencia BSD-2-Clause: [jhlywa/chess.js](https://github.com/jhlywa/chess.js).
+- El **problema del día** es de [Lichess](https://lichess.org/training/daily); sus problemas son de dominio público (CC0).
 
 ## Desarrollo
 

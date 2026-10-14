@@ -77,3 +77,20 @@ export function saveGame(game: SavedGame) {
 		localStorage.setItem(KEY, JSON.stringify(game));
 	} catch {}
 }
+
+/** Problema del día ya resuelto en este navegador: se guarda su id. */
+const SOLVED = 'arc-puzzle';
+
+export function loadSolved(): string | null {
+	try {
+		return localStorage.getItem(SOLVED);
+	} catch {
+		return null;
+	}
+}
+
+export function saveSolved(id: string) {
+	try {
+		localStorage.setItem(SOLVED, id);
+	} catch {}
+}
