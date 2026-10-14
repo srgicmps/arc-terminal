@@ -5,7 +5,7 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import { nf, when } from '#lib/format.ts';
-	import { hourly, madridNow } from '#lib/power.ts';
+	import { hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
 	import { seriesMap, spread } from '#lib/series.ts';
 	import { compass, sky } from '#lib/weather.ts';
 	import Change from '#lib/components/ui/Change.svelte';
@@ -22,7 +22,7 @@
 	const pvpc = $derived(hourly(data.power?.data.pvpc ?? []));
 	const now = $derived(clock.now ? madridNow(clock.now) : null);
 	const today = $derived(pvpc.filter((p) => p.day === (now?.day ?? pvpc[0]?.day)));
-	const current = $derived(now ? today.find((p) => p.hour === now.hour) : undefined);
+	const current = $derived(now ? today.find((p) => isHour(p, now)) : undefined);
 	const cheapest = $derived([...today].sort((a, b) => a.kwh - b.kwh)[0]);
 	// El PVPC de mañana se publica hacia las 20:30: si ya está, su media.
 	const tomorrow = $derived.by(() => {
@@ -127,7 +127,7 @@
 		<Panel title="Luz" meta="PVPC · €/kWh" jump={{ code: 'LUZ', href: resolve('/luz') }}>
 			<ul class="mini">
 				{#if current}<li><span class="l">Ahora</span><b>{nf(current.kwh, 3)}</b></li>{/if}
-				{#if cheapest}<li><span class="l">Más barata hoy</span><b class="up">{String(cheapest.hour).padStart(2, '0')}:00 · {nf(cheapest.kwh, 3)}</b></li>{/if}
+				{#if cheapest}<li><span class="l">Más barata hoy</span><b class="up">{hourLabel(cheapest)} · {nf(cheapest.kwh, 3)}</b></li>{/if}
 				{#if tomorrow !== null}
 					<li>
 						<span class="l">Mañana, media</span>
