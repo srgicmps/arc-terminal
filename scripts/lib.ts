@@ -17,6 +17,11 @@ export interface Source<T = unknown> {
 	/** Recibe los datos publicados la vez anterior (si los hay), para ir acumulando historial. */
 	fetch: (previous: T | undefined) => Promise<T>;
 	/**
+	 * Si devuelve true, la copia publicada no sirve aunque sea reciente y se descarga de nuevo. Sirve
+	 * para cuando la fuente cambia de forma (por ejemplo, series nuevas que la copia aún no tiene).
+	 */
+	isStale?: (previous: T) => boolean;
+	/**
 	 * Archivos extra que acompañan a los datos (rutas dentro de static/data). La fuente los escribe con
 	 * writeExtra() al descargar; si se reutiliza la copia publicada, update.ts los copia de la web.
 	 */

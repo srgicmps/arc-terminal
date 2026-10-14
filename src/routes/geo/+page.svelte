@@ -65,11 +65,14 @@
 			<NewsList items={data.gov?.data.items.slice(0, 15) ?? []} />
 		</Panel>
 		<Panel title="Terremotos en el mundo" meta="M4,5+ · últimos 7 días">
-			<QuakeTable quakes={strongest} />
+			<QuakeTable quakes={strongest} empty={data.quakes ? 'Sin terremotos fuertes estos días.' : undefined} />
 			{#snippet note()}Fuente: USGS · <Updated at={data.quakes?.fetchedAt} source="quakes" />{/snippet}
 		</Panel>
 		<Panel title="Terremotos en España" meta="Últimos 10 días · los 15 más fuertes">
-			<QuakeTable quakes={[...(data.quakesEs?.data ?? [])].sort((a, b) => b.mag - a.mag).slice(0, 15)} />
+			<QuakeTable
+				quakes={[...(data.quakesEs?.data ?? [])].sort((a, b) => b.mag - a.mag).slice(0, 15)}
+				empty={data.quakesEs ? 'Sin terremotos en España en los últimos 10 días.' : undefined}
+			/>
 			{#snippet note()}Fuente: Instituto Geográfico Nacional · <Updated at={data.quakesEs?.fetchedAt} source="quakes-es" />{/snippet}
 		</Panel>
 		<Panel title="Huracanes, incendios y volcanes" meta="Activos ahora">

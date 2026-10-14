@@ -118,7 +118,7 @@
 
 <style>
 	.chart {
-		padding: 8px 12px 4px;
+		padding: var(--sp-8) var(--pad-x) var(--sp-4);
 	}
 
 	svg {
@@ -133,7 +133,7 @@
 	.lbl {
 		fill: var(--muted);
 		font-family: var(--mono);
-		font-size: 11px;
+		font-size: var(--fs-xs);
 	}
 
 	path {
@@ -150,8 +150,8 @@
 	.legend {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px 16px;
-		padding: 4px 0 6px;
+		gap: var(--sp-4) var(--sp-16);
+		padding: var(--sp-4) 0 var(--sp-6);
 		color: var(--muted);
 		font-size: var(--fs-s);
 	}
@@ -160,13 +160,13 @@
 		display: inline-block;
 		width: 10px;
 		height: 2px;
-		margin-right: 6px;
+		margin-right: var(--sp-6);
 		vertical-align: middle;
 	}
 
 	.legend b {
 		color: var(--fg);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 
 	.when {
