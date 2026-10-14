@@ -21,6 +21,7 @@
 	import WorldMap from '#lib/components/WorldMap.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { LAYERS, type LayerId } from '#lib/geo/layers.ts';
+	import { DIPLOMACY_FEEDS } from '#lib/news.ts';
 	import { REGIONS, inRegion, type RegionId } from '#lib/regions.ts';
 	import { urlState } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
@@ -42,6 +43,9 @@
 	const points = $derived(available.filter((l) => on.includes(l.value)).flatMap((l) => layerPoints[l.value]));
 
 	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
+	// Canales de diplomacia dentro de news-intl; el resto son organismos internacionales.
+	const DIPLO = new Set(DIPLOMACY_FEEDS);
+	const diplo = $derived((data.intl?.data.items ?? []).filter((i) => DIPLO.has(i.source)).slice(0, 15));
 </script>
 
 <ViewHeader code="GEO" title="Geopolítica" sub={sources} />
@@ -140,9 +144,20 @@
 				{/snippet}
 			</Panel>
 		{/if}
-		<Panel title="Sanciones y aranceles de EE. UU." meta="OFAC, USTR e ITA" jump={{ code: 'USGOV', href: resolve('/usgov') }}>
-			<TradeList items={data.sanctions?.data.slice(0, 8) ?? []} />
-			{#snippet note()}Fuente: Federal Register · <Updated at={data.sanctions?.fetchedAt} source="sanctions" />{/snippet}
+		<Panel title="Sanciones y aranceles" meta="EE. UU., UE y Reino Unido" jump={{ code: 'USGOV', href: resolve('/usgov') }}>
+			<TradeList items={data.sanctions?.data ?? []} />
+			{#snippet note()}
+				Fuentes: Federal Register (OFAC, USTR, ITA y BIS){#if data.sanctions?.fetchedAt}&nbsp;· <Updated
+						at={data.sanctions.fetchedAt}
+						source="sanctions"
+					/>{/if}; EUR-Lex, actos de sanciones del Diario Oficial de la UE{#if data.sanctions?.euAt}&nbsp;· <Updated
+						at={data.sanctions.euAt}
+						source="eurlex"
+					/>{/if}; OFSI en GOV.UK, Open Government Licence v3.0{#if data.sanctions?.ukAt}&nbsp;· <Updated
+						at={data.sanctions.ukAt}
+						source="sanctions-uk"
+					/>{/if}.
+			{/snippet}
 		</Panel>
 		{#if data.advisories}
 			<Panel title="Avisos de viaje de EE. UU." meta="Departamento de Estado · nivel 1 a 4">
@@ -155,12 +170,18 @@
 			</Panel>
 		{/if}
 		<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">
-			<NewsList items={data.intl?.data.items.slice(0, 15) ?? []} />
+			<NewsList items={(data.intl?.data.items ?? []).filter((i) => !DIPLO.has(i.source)).slice(0, 15)} />
 			{#snippet note()}<Updated at={data.intl?.fetchedAt} source="news-intl" />{/snippet}
 		</Panel>
-		<Panel title="Gobiernos e instituciones" meta="Comunicados oficiales">
-			<NewsList items={data.gov?.data.items.slice(0, 15) ?? []} />
-		</Panel>
+		{#if diplo.length}
+			<Panel title="Diplomacia" meta="Exteriores británico y OIEA · comunicados">
+				<NewsList items={diplo} />
+				{#snippet note()}
+					Declaraciones en la ONU, la OSCE y otros foros, y el organismo atómico de la ONU ·
+					<Updated at={data.intl?.fetchedAt} source="news-intl" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Terremotos en el mundo" meta="M4,5+ · últimos 7 días">
 			<QuakeTable quakes={strongest} empty={data.quakes ? 'Sin terremotos fuertes estos días.' : undefined} />
 			{#snippet note()}Fuente: USGS · <Updated at={data.quakes?.fetchedAt} source="quakes" />{/snippet}
