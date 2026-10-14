@@ -247,11 +247,15 @@ export interface Coin {
 	usd: number;
 	eur: number;
 	change24h: number | null;
+	/** Variación en 7 días (%). Opcional: las copias antiguas no la traen. */
+	change7d?: number | null;
 	marketCap: number | null;
 }
 
 export interface CryptoData {
 	coins: Coin[];
+	/** Cierre diario de bitcoin en dólares (hora de Madrid), hasta 400 días. Para el termómetro de riesgo. */
+	btcHistory?: { date: string; usd: number }[];
 }
 
 // ---------- Curva de tipos del Tesoro de EE. UU. ----------
