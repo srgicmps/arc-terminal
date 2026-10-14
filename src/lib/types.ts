@@ -426,6 +426,54 @@ export interface Release {
 	url: string;
 }
 
+// ---------- Lo más importante (IMP, scripts/sources/imp.ts) ----------
+
+/** Un tema importante, tal como se guarda en el histórico diario: lo mínimo para listarlo. */
+export interface ImpEntry {
+	/** Clave estable del tema entre pasadas y días (para desduplicar). */
+	k: string;
+	title: string;
+	url: string;
+	/** Medios distintos que lo dan. */
+	sources: string[];
+	/** Puntuación (ver scripts/sources/imp.ts). */
+	score: number;
+}
+
+/** Un tema del top actual, con el detalle de la puntuación. */
+export interface ImpCurrent extends ImpEntry {
+	/** Secciones de titulares donde aparece (claves de NEWS_SECTIONS). */
+	sections: string[];
+	/** Desde cuándo lo vemos (ISO 8601). */
+	first: string;
+	/** Hora del titular más reciente (ISO 8601). */
+	time: string | null;
+	/** Fuente oficial que lo confirma (La Moncloa, BOE, Federal Register…), si la hay. */
+	official?: string;
+	/** Sale en «In the news» de la Wikipedia en inglés. */
+	wiki?: true;
+}
+
+/** Lo que recuerda imp.ts de cada tema entre pasadas, para saber cuánto tiempo lleva vivo. */
+export interface ImpSeen {
+	k: string;
+	/** Primera y última vez que se vio (ISO 8601). */
+	first: string;
+	last: string;
+	title: string;
+	/** Enlaces normalizados del grupo (para reconocerlo aunque cambie el titular principal). */
+	urls: string[];
+}
+
+export interface ImpData {
+	/** Día en Madrid de este cálculo: «2026-10-14». */
+	date: string;
+	current: ImpCurrent[];
+	/** Top 10 de cada día (lo máximo que alcanzó cada tema ese día), el último año. */
+	days: { date: string; items: ImpEntry[] }[];
+	seen: ImpSeen[];
+}
+
 // ---------- Crisis y desastres activos (ReliefWeb, OCHA) ----------
 
 export interface Disaster {
@@ -461,4 +509,37 @@ export interface Chokepoint {
 	change: number | null;
 	/** Media móvil de 7 días de los últimos 90 días, para el minigráfico. */
 	spark: number[];
+}
+
+// ---------- Barcos en los puertos (AIS, aisstream.io) ----------
+
+export interface Ship {
+	/** Identificador AIS del barco (MMSI). */
+	mmsi: number;
+	name: string;
+	/** Tipo en español («Pasaje», «Carga»…), si el barco ha enviado sus datos fijos. */
+	type: string;
+	/** Velocidad en nudos. */
+	speed: number | null;
+	/** «Amarrado», «Fondeado», «Navegando»… según el estado AIS y la velocidad. */
+	status: string;
+	destination: string;
+	lat: number;
+	lon: number;
+	/** Última posición recibida (ISO 8601). */
+	time: string;
+}
+
+export interface PortShips {
+	id: string;
+	name: string;
+	/** Barcos detectados; `ships` trae solo los más recientes. */
+	total: number;
+	ships: Ship[];
+}
+
+export interface ShipsData {
+	ports: PortShips[];
+	/** Segundos que estuvo escuchando la última pasada. */
+	listened: number;
 }

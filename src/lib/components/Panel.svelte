@@ -5,13 +5,17 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { getModular, type Span } from '#lib/layout.svelte.ts';
+	import type { ShareSource } from '#lib/share.ts';
 	import Note from './ui/Note.svelte';
+	import Share from './ui/Share.svelte';
 
 	interface Props {
 		title: string;
 		meta?: string;
 		/** Enlace «CÓDIGO ›» a la vista completa. */
 		jump?: { code: string; href: string };
+		/** Botón «Compartir»: los datos, o una función que los da al pulsar. Sin `url`, la página actual. */
+		share?: ShareSource;
 		children: Snippet;
 		/** Pie del panel (fuente, notas). */
 		note?: Snippet;
@@ -19,7 +23,7 @@
 		id?: string;
 	}
 
-	let { title, meta, jump, children, note, id }: Props = $props();
+	let { title, meta, jump, share, children, note, id }: Props = $props();
 
 	// La vista modular, si este panel está en una (si no, undefined: el panel se ve como siempre).
 	const modular = getModular();
@@ -32,9 +36,10 @@
 <section class="panel">
 	<header class="ph">
 		<h2>{title}</h2>
-		{#if meta || jump || tools}
+		{#if meta || jump || share || tools}
 			<div class="ph-r">
 				{#if meta}<span>{meta}</span>{/if}
+				{#if share}<Share source={share} />{/if}
 				{#if jump}<a class="jump" href={jump.href}>{jump.code} ›</a>{/if}
 				{#if tools && id}
 					<button

@@ -7,10 +7,21 @@
 // Para no castigar las APIs ni depender de que todas respondan:
 // - si la copia publicada de una fuente es reciente (maxAgeMinutes), se reutiliza sin descargar;
 // - si una descarga falla, se reutiliza la copia publicada, aunque sea antigua, y se avisa.
+import { readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import type { Dataset, SourceHistory, SourceStatus } from '../src/lib/data.ts';
 import { withHistory } from './history.ts';
-import { checkShrink, deadlineFor, withDeadline, writeExtra, type Source } from './lib.ts';
+import {
+	checkShrink,
+	deadlineFor,
+	makeContext,
+	NO_CONTEXT,
+	phases,
+	withDeadline,
+	writeExtra,
+	type Source,
+	type SourceContext
+} from './lib.ts';
 import { buildNewsIndex } from './news-index.ts';
 import { sources } from './sources/index.ts';
 
@@ -30,7 +41,12 @@ async function published(name: string): Promise<Dataset<unknown> | null> {
 	}
 }
 
+// Datos que deja cada fuente en esta pasada (nuevos, reutilizados o la copia anterior si falló), para
+// las fuentes derivadas (`after`) de la segunda fase.
+const saved = new Map<string, unknown>();
+
 async function save(dataset: Dataset<unknown>) {
+	saved.set(dataset.name, dataset.data);
 	await writeFile(`${OUT_DIR}/${dataset.name}.json`, JSON.stringify(dataset) + '\n');
 }
 
@@ -56,7 +72,7 @@ function summary(data: unknown): string {
 	return '';
 }
 
-async function run(source: Source): Promise<SourceStatus> {
+async function run(source: Source, ctx: SourceContext = NO_CONTEXT): Promise<SourceStatus> {
 	const base = { name: source.name, label: source.label, maxAgeMinutes: source.maxAgeMinutes, requires: source.requires };
 	if (source.requires && !process.env[source.requires]) {
 		console.log(`- ${source.name}: sin clave ${source.requires}, se salta`);
@@ -80,7 +96,7 @@ async function run(source: Source): Promise<SourceStatus> {
 		const started = Date.now();
 		const deadline = deadlineFor(source);
 		const data = await withDeadline(
-			source.fetch(previous?.data),
+			source.fetch(previous?.data, ctx),
 			deadline,
 			`tiempo agotado (${deadline / 1000} s)`
 		);
@@ -109,7 +125,17 @@ const wanted = process.argv.slice(2);
 const selected = wanted.length ? sources.filter((s) => wanted.includes(s.name)) : sources;
 
 await mkdir(OUT_DIR, { recursive: true });
-const statuses = await Promise.all(selected.map(run));
+// Primera fase: todas las fuentes normales a la vez. Segunda: las derivadas, con sus datos.
+const [first, second] = phases(selected);
+const statuses = await Promise.all(first.map((s) => run(s)));
+const ctx = makeContext(saved, (name) => {
+	try {
+		return (JSON.parse(readFileSync(`${OUT_DIR}/${name}.json`, 'utf8')) as Dataset<unknown>).data;
+	} catch {
+		return undefined;
+	}
+});
+statuses.push(...(await Promise.all(second.map((s) => run(s, ctx)))));
 
 if (!wanted.length) {
 	const now = Date.now();

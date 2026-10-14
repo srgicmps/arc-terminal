@@ -25,3 +25,5 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG286?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG350?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
+# IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
+https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
