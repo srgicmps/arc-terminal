@@ -45,8 +45,9 @@
 						{ s: 'FOREXCOM:DJI', d: 'Dow Jones' },
 						{ s: 'BME:IBC', d: 'IBEX 35' },
 						{ s: 'XETR:DAX', d: 'DAX' },
-						{ s: 'TVC:SX5E', d: 'Euro Stoxx 50' },
-						{ s: 'TVC:NI225', d: 'Nikkei 225' }
+						// TVC:SX5E y TVC:NI225 salen vacíos en los widgets: van los CFD de OANDA (comprobado con tv-shots).
+						{ s: 'OANDA:EU50EUR', d: 'Euro Stoxx 50' },
+						{ s: 'OANDA:JP225USD', d: 'Nikkei 225' }
 					]
 				},
 				{
