@@ -6,7 +6,7 @@
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { TICKERS, tvSymbol } from '#lib/commands.ts';
+	import { quotesHeight, TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import { madridDate } from '#lib/meetings.ts';
 	import { earningsLine, myEarnings } from '#lib/myearnings.ts';
@@ -67,7 +67,7 @@
 		<Panel title="Cotizaciones" meta="{watchlist.codes.length} valores">
 			{#if watchlist.ready && watchlist.codes.length}
 				{#key watchlist.codes.join(',')}
-					<TvWidget widget="market-quotes" config={quotes} height={Math.max(220, 90 + watchlist.codes.length * 46)} />
+					<TvWidget widget="market-quotes" config={quotes} height={quotesHeight(watchlist.codes.length, 220)} />
 				{/key}
 			{:else if watchlist.ready}
 				<p class="empty">
@@ -205,7 +205,8 @@
 		background: none;
 		border: var(--border);
 		color: var(--muted);
-		padding: var(--sp-5) var(--sp-9);
+		min-height: var(--control-h);
+		padding: 0 var(--sp-9);
 		font-size: var(--fs-s);
 		cursor: pointer;
 	}

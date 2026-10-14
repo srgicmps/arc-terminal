@@ -11,11 +11,11 @@ export const load: PageServerLoad = async () => {
 		dataset<SourceStatus[]>('status'),
 		dataset<ReleaseCalData>('releases-cal')
 	]);
-	// De Finnhub, la agenda solo usa los resultados (las noticias y cotizaciones no se pintan aquí).
+	// De Finnhub, la agenda solo usa los resultados y las salidas a bolsa (las noticias y cotizaciones no se pintan aquí).
 	// Si no hay datos, solo el motivo (sin clave, error de descarga…), no todo status.json.
 	const finnhubMissing = finnhub ? null : missingNote(status?.data, 'finnhub');
 	return {
-		finnhub: trim(finnhub, (d) => ({ earnings: d.earnings, news: [], quotes: [] })),
+		finnhub: trim(finnhub, (d) => ({ earnings: d.earnings, ipos: d.ipos ?? [], news: [], quotes: [] })),
 		finnhubMissing,
 		holidays,
 		releases

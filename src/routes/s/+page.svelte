@@ -4,14 +4,16 @@
 	El símbolo se lee de la URL al arrancar en el navegador (al construir la web no hay URL con ?sym=).
 -->
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import Panel from '#lib/components/Panel.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
+	import AnalystPanel from '#lib/components/AnalystPanel.svelte';
 	import FilingList from '#lib/components/FilingList.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { TICKERS, tvSymbol } from '#lib/commands.ts';
+	import { TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import { sectionLabel } from '#lib/news.ts';
 	import { stockShare, type ShareInfo } from '#lib/share.ts';
 	import { inWatchlist, toggleWatch } from '#lib/watchlist.svelte.ts';
@@ -31,6 +33,8 @@
 	const sec = $derived(data.sec?.data.companies[code]);
 	// Titulares de todas las secciones que nombran la empresa (scripts/news-index.ts).
 	const news = $derived(data.news?.data[code] ?? []);
+	// Analistas, sorpresas de resultados y directivos (Finnhub; solo EE. UU. y con la clave).
+	const analysis = $derived(data.analysts?.data[code]);
 
 	// «Compartir»: símbolo y nombre, con ?sym en el enlace (la ficha sin ?sym abre NVDA).
 	function share(): ShareInfo {
@@ -46,6 +50,7 @@
 			<button class="star" type="button" aria-pressed={inWatchlist(code)} onclick={() => toggleWatch(code)}>
 				{inWatchlist(code) ? '★ En mi lista' : '☆ Añadir a MIS'}
 			</button>
+			<a class="star" href="{resolve('/cmp')}?s={encodeURIComponent(code)}">Comparar con…</a>
 		{/if}
 	{/snippet}
 </ViewHeader>
@@ -83,6 +88,17 @@
 				</Panel>
 			</div>
 		</div>
+		{#if analysis}
+			<div class="grid">
+				<div class="col">
+					<Panel title="Analistas y resultados" meta="Finnhub">
+						<AnalystPanel a={analysis} />
+						{#snippet note()}Recomendaciones del último mes, BPA de los últimos trimestres y operaciones de directivos (formulario 4) ·
+							<Updated at={analysis.fetchedAt} source="analysts" />{/snippet}
+					</Panel>
+				</div>
+			</div>
+		{/if}
 		{#if news.length}
 			<div class="grid">
 				<div class="col">
@@ -111,9 +127,19 @@
 		background: none;
 		border: var(--border);
 		color: var(--muted);
-		padding: var(--sp-5) var(--sp-10);
+		min-height: var(--control-h);
+		padding: 0 var(--sp-10);
 		font-size: var(--fs-s);
 		cursor: pointer;
+		text-decoration: none;
+	}
+
+	.star + .star {
+		margin-left: var(--sp-6);
+	}
+
+	a.star:hover {
+		color: var(--amber);
 	}
 
 	.star[aria-pressed='true'] {

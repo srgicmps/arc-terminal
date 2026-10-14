@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import type { Locator, Page } from 'playwright-core';
 import { launch, preview } from './browser.ts';
 
-const PAGES = ['/', '/ws', '/geo', '/s?sym=NVDA', '/cal', '/mis'];
+const PAGES = ['/', '/ws', '/geo', '/s?sym=NVDA', '/cmp?s=NVDA+AMD+AVGO', '/cal', '/mis'];
 const THEMES = ['dark', 'light'] as const;
 
 /** Los 3 colores más repetidos de una captura (agrupados de 8 en 8 por canal), con su parte del total. */
@@ -78,7 +78,7 @@ try {
 			for (let m = 0; m < (await maps.count()); m++) {
 				await maps.nth(m).click();
 				await page.waitForTimeout(5000);
-				const el = page.locator('.tv[data-widget$="heatmap"]').first();
+				const el = page.locator('.tv[data-widget*="heat"]').first();
 				const png = await el.screenshot();
 				const label = (await maps.nth(m).textContent())?.trim() ?? String(m);
 				writeFileSync(`shots/${theme}-map-${label.replace(/\W+/g, '_')}.png`, png);

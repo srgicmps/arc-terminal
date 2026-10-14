@@ -81,6 +81,27 @@ export interface BoeData {
 	sections: BoeSection[];
 }
 
+/** Una disposición en la semana del BOE: sin enlaces, que salen del id (ver src/lib/boe.ts). */
+export interface BoeWeekItem {
+	id: string;
+	title: string;
+	dept: string;
+	epigraph: string;
+}
+
+/** Un sumario de la semana (static/data/boe-week.json, lo carga BOE al elegir «Semana»). */
+export interface BoeWeekDay {
+	/** «2026-10-14» */
+	date: string;
+	number: string;
+	sections: { code: string; name: string; total: number; items: BoeWeekItem[] }[];
+}
+
+/** Los sumarios de los últimos 7 días, del más reciente al más antiguo. */
+export interface BoeWeek {
+	days: BoeWeekDay[];
+}
+
 // ---------- Federal Register (EE. UU.) ----------
 
 export interface FedRegDoc {
@@ -410,11 +431,97 @@ export interface Quote {
 	time: string | null;
 }
 
+/** Salida a bolsa del calendario de Finnhub. */
+export interface Ipo {
+	/** «2026-10-14» */
+	date: string;
+	/** Puede venir vacío si aún no tiene. */
+	symbol: string;
+	name: string;
+	exchange: string;
+	/** Precio o horquilla en $, tal cual lo da Finnhub: «18.00» o «18.00-20.00». Vacío si no se sabe. */
+	price: string;
+	shares: number | null;
+	/** Importe de la colocación, en $. */
+	value: number | null;
+	/** expected: prevista · priced: con precio fijado · filed: registrada. */
+	status: string;
+}
+
+/**
+ * Rentabilidad por plazos de cada valor (static/data/perf.json), en %. Claves de Finnhub sin el
+ * «PriceReturnDaily»: «5Day», «13Week», «26Week», «52Week», «yearToDate», «monthToDate»…
+ */
+export interface PerfData {
+	symbols: Record<string, Record<string, number>>;
+}
+
 export interface FinnhubData {
 	earnings: Earnings[];
 	news: NewsItem[];
 	quotes: Quote[];
+	/** Las copias guardadas antes de añadir las salidas a bolsa no lo tienen. */
+	ipos?: Ipo[];
 }
+
+// ---------- Ficha de valor: analistas, resultados y directivos (Finnhub) ----------
+
+/** Recomendaciones de los analistas en un mes (cuántos dicen cada cosa). */
+export interface AnalystRecs {
+	/** Mes de la encuesta: «2026-10-01». */
+	period: string;
+	strongBuy: number;
+	buy: number;
+	hold: number;
+	sell: number;
+	strongSell: number;
+}
+
+/** Beneficio por acción de un trimestre: lo esperado y lo que salió. */
+export interface EarningsSurprise {
+	/** Fin del trimestre: «2026-06-30». */
+	period: string;
+	actual: number | null;
+	estimate: number | null;
+	/** Sorpresa en %, positiva si superó lo esperado. */
+	surprisePct: number | null;
+}
+
+/** Compra o venta de acciones de un directivo (formulario 4 de la SEC). */
+export interface InsiderTrade {
+	name: string;
+	/** Acciones compradas (+) o vendidas (−). */
+	change: number;
+	price: number | null;
+	/** Fecha de la operación (ISO, día). */
+	date: string;
+	/** 'P' compra, 'S' venta. */
+	code: 'P' | 'S';
+}
+
+/** Precio objetivo medio de los analistas (solo si el plan de Finnhub lo da). */
+export interface PriceTarget {
+	mean: number | null;
+	high: number | null;
+	low: number | null;
+	/** Cuándo lo actualizó Finnhub (ISO). */
+	updated: string | null;
+}
+
+export interface StockAnalysis {
+	/** Cuándo se descargó este valor (ISO): se refresca a las 24 h. */
+	fetchedAt: string;
+	/** Los últimos meses, del más reciente al más antiguo. */
+	recs: AnalystRecs[];
+	/** Los últimos trimestres, del más reciente al más antiguo. */
+	surprises: EarningsSurprise[];
+	/** Compras y ventas de directivos en los últimos 90 días, de la más reciente a la más antigua. */
+	insiders: InsiderTrade[];
+	target?: PriceTarget;
+}
+
+/** Por código del valor («NVDA»). */
+export type AnalystsData = Record<string, StockAnalysis>;
 
 // ---------- Mercados de predicción (Polymarket) ----------
 
@@ -623,6 +730,8 @@ export interface ImpEntry {
 	sources: string[];
 	/** Puntuación (ver scripts/sources/imp.ts). */
 	score: number;
+	/** Secciones de titulares donde aparece (claves de NEWS_SECTIONS). En el histórico, desde M9. */
+	sections?: string[];
 	/** El enlace de cada medio. Solo en el top de ahora y en el día de hoy (no en días anteriores). */
 	links?: ImpLink[];
 }
@@ -794,6 +903,46 @@ export interface LeaderAgenda {
 	/** De dónde sale la agenda. */
 	source: { name: string; url: string };
 	error?: string;
+}
+
+/** Una vulnerabilidad del catálogo KEV de la CISA (fallos que ya se están explotando). */
+export interface KevItem {
+	/** «CVE-2026-12345». */
+	cveID: string;
+	vendorProject: string;
+	product: string;
+	vulnerabilityName: string;
+	/** Día en que la CISA la añadió al catálogo (AAAA-MM-DD). */
+	dateAdded: string;
+	/** La CISA sabe que se usa en campañas de ransomware (knownRansomwareCampaignUse === 'Known'). */
+	ransomware: boolean;
+}
+
+export interface KevData {
+	/** Las 10 añadidas más recientemente. */
+	items: KevItem[];
+	/** Cuántas hay en todo el catálogo. */
+	total: number;
+	/** Día UTC de la descarga (AAAA-MM-DD), que es el día de la CISA: al que se refiere `today`. */
+	day: string;
+	/** Cuántas se añadieron ese día. */
+	today: number;
+}
+
+/** Tormentas solares (NOAA Space Weather Prediction Center). Escalas de 0 a 5; 0 es «sin tormenta». */
+export interface SwpcData {
+	/** Índice Kp planetario más reciente (0–9) y cuándo se midió (ISO 8601, UTC). */
+	kp: number | null;
+	kpAt: string | null;
+	/** Kp de las últimas 24 h (cada 3 h), del más antiguo al más reciente. */
+	kp24: { t: string; v: number }[];
+	/** Escalas actuales: G (tormenta geomagnética), S (radiación solar), R (apagones de radio). */
+	g: number | null;
+	s: number | null;
+	r: number | null;
+	/** La escala G más alta prevista para los próximos días, y para qué día (AAAA-MM-DD). */
+	gForecast: number | null;
+	gForecastDate: string | null;
 }
 
 // ---------- Diario Oficial de la UE, serie L (scripts/sources/eurlex.ts) ----------

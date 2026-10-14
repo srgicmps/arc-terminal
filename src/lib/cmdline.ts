@@ -1,7 +1,8 @@
 // Lógica de la barra de comandos, sin Svelte: qué sugerir y qué abrir con lo que escribe Sergi.
 // Va aparte del componente para poder probarla con Vitest.
 
-import { COMMANDS, TICKERS, type Command } from './commands.ts';
+import { COMMANDS, type Command } from './commands.ts';
+import { TICKERS } from './tickers.ts';
 
 /** Una sugerencia de la barra. */
 export interface Option {
@@ -109,6 +110,16 @@ export function targetPath(target: Target): { route: Command['route'] | '/s'; se
 	if (target.kind === 'symbol') return { route: '/s', search: `?sym=${encodeURIComponent(target.sym)}` };
 	const { command, arg } = target;
 	const search = arg && command.arg ? `?${command.arg.param}=${encodeURIComponent(arg)}` : '';
+	return { route: command.route, search };
+}
+
+/**
+ * El enlace del ejemplo de un comando en HELP, igual que si se escribiera en la barra. El texto se
+ * separa por palabras, no por la longitud del código: el ejemplo de WX empieza por su alias «LUGAR».
+ */
+export function exampleTarget(command: Command): { route: Command['route']; search: string } {
+	const arg = command.arg ? splitInput(command.arg.example).arg : '';
+	const { search } = targetPath({ kind: 'command', command, arg });
 	return { route: command.route, search };
 }
 

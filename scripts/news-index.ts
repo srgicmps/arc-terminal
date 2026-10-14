@@ -2,7 +2,7 @@
 // Se calcula al final de `pnpm data`, con los news-*.json ya escritos, y se guarda en
 // static/data/news-index.json: así la ficha y MIS cargan unos pocos KB en vez de todos los titulares.
 import { readFile } from 'node:fs/promises';
-import { TICKERS } from '../src/lib/commands.ts';
+import { TICKERS } from '../src/lib/tickers.ts';
 import { findCountries } from '../src/lib/countries.ts';
 import type { Dataset } from '../src/lib/data.ts';
 import { mentions, NEWS_SECTIONS, type Mention } from '../src/lib/news.ts';

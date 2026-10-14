@@ -9,7 +9,7 @@
 // + 3 si lo confirma una fuente oficial (Moncloa, BCE, Fed, Casa Blanca, BOE, Federal Register…)
 // + 3 si sale en «In the news» de la Wikipedia en inglés
 import { OFFICIAL } from './news.ts';
-import type { BoeData, FedRegData, ImpCurrent, ImpLink, ImpData, ImpEntry, ImpSeen, NewsData, NewsItem } from '../../src/lib/types.ts';
+import type { BoeData, FedRegData, ImpCurrent, ImpLink, ImpData, ImpEntry, ImpSeen, NewsData, NewsItem, WikiData } from '../../src/lib/types.ts';
 import { NEWS_SECTIONS } from '../../src/lib/news.ts';
 import { jaccard, normalize } from '../cluster.ts';
 import { appendDaily, getJson, list, madridDay, NO_CONTEXT, plain, type Source } from '../lib.ts';
@@ -248,16 +248,18 @@ export function mergeDay(day: ImpEntry[], now: ImpEntry[], n = TOP): ImpEntry[] 
 	return [...best.values()].sort((a, b) => b.score - a.score).slice(0, n);
 }
 
-/** Medios y enlaces de dos apariciones del mismo tema, sin repetir medio. */
-function joined(a: ImpEntry | undefined, b: ImpEntry): Pick<ImpEntry, 'sources' | 'links'> {
+/** Medios, secciones y enlaces de dos apariciones del mismo tema, sin repetir. */
+function joined(a: ImpEntry | undefined, b: ImpEntry): Pick<ImpEntry, 'sources' | 'sections' | 'links'> {
 	const sources = [...new Set([...(a?.sources ?? []), ...b.sources])];
-	if (!a?.links && !b.links) return { sources };
+	const sections = [...new Set([...(a?.sections ?? []), ...(b.sections ?? [])])];
+	const out: Pick<ImpEntry, 'sources' | 'sections' | 'links'> = sections.length ? { sources, sections } : { sources };
+	if (!a?.links && !b.links) return out;
 	const links = [...(a?.links ?? []), ...(b.links ?? [])].filter((l, i, all) => all.findIndex((m) => m.source === l.source) === i);
-	return { sources, links };
+	return { ...out, links };
 }
 
 /** Lo que se guarda de cada tema en el histórico. Los enlaces, solo el día de hoy (ver `fetch`). */
-const entry = ({ k, title, lang, titleEs, url, sources, score, links }: ImpEntry): ImpEntry => ({
+const entry = ({ k, title, lang, titleEs, url, sources, score, sections, links }: ImpEntry): ImpEntry => ({
 	k,
 	title,
 	...(lang && { lang }),
@@ -265,6 +267,7 @@ const entry = ({ k, title, lang, titleEs, url, sources, score, links }: ImpEntry
 	url,
 	sources,
 	score,
+	...(sections?.length && { sections }),
 	...(links && { links })
 });
 
@@ -283,8 +286,13 @@ export function officialDocs(
 	return [...press, ...boeDocs, ...fed];
 }
 
-/** «In the news» de la Wikipedia en inglés. Si no responde, IMP sigue sin ese extra. */
-async function inTheNews(day: string): Promise<string[]> {
+/**
+ * «In the news» de la Wikipedia en inglés: el que acaba de guardar wiki.ts en esta pasada y, si no lo
+ * trae, el feed directamente. Si no responde, IMP sigue sin ese extra.
+ */
+async function inTheNews(day: string, wiki: WikiData | undefined): Promise<string[]> {
+	const saved = (wiki?.en?.news ?? []).map((n) => n.text).filter(Boolean);
+	if (saved.length) return saved;
 	try {
 		const body = await getJson<{ news?: { story?: string }[] }>(
 			`https://api.wikimedia.org/feed/v1/wikipedia/en/featured/${day.replaceAll('-', '/')}`
@@ -313,7 +321,7 @@ export const imp: Source<ImpData> = {
 		if (!groups.length) throw new Error('sin titulares recientes con los que puntuar');
 		const { tracked, seen } = track(groups, previous?.seen ?? [], now);
 		const official = officialDocs(sections, ctx.get<BoeData>('boe'), ctx.get<FedRegData>('fedreg'));
-		const scored = scoreGroups(tracked, { now, official, itn: await inTheNews(date) });
+		const scored = scoreGroups(tracked, { now, official, itn: await inTheNews(date, ctx.get<WikiData>('wiki')) });
 		const current = scored.slice(0, TOP);
 		const today = previous?.days.find((d) => d.date === date)?.items ?? [];
 		// Los enlaces de cada medio solo se guardan hoy: en un año de histórico pesarían demasiado.

@@ -81,6 +81,8 @@
 <style>
 	input {
 		width: 9ch;
+		height: var(--control-h);
+		padding: 0 var(--sp-6);
 		text-align: right;
 		background: var(--raise);
 		border: var(--border);

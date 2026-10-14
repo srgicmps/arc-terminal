@@ -182,6 +182,23 @@ kbd {
 	white-space: nowrap;
 }
 
+/* Botón de acción principal (ámbar): «Empezar» en TV, «Comparar» en CMP. Mide lo mismo en todas las vistas. */
+.go {
+	background: var(--amber);
+	color: var(--on-amber);
+	border: 0;
+	min-height: var(--control-h);
+	padding: 0 var(--sp-16);
+	font-weight: var(--fw-medium);
+	cursor: pointer;
+}
+
+.go:disabled {
+	background: var(--raise);
+	color: var(--faint);
+	cursor: default;
+}
+
 /* Pantallas táctiles: zonas pulsables de al menos 44 px sin engordar el diseño más de lo necesario. */
 @media (pointer: coarse) {
 	button,

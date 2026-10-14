@@ -88,6 +88,9 @@ Un cambio de estética se hace en un solo sitio.
   verde/roja con signo), `Note` (nota al pie), `ButtonRow` (fila de botones iguales) y `Share` (botón «Compartir»; se usa con la prop `share` de `Panel`,
   y su lógica está en `src/lib/share.ts`). Además, `Panel` y `ViewHeader` para paneles y cabeceras de vista.
   Antes de escribir CSS para algo que ya existe, se usa el componente.
+- **Controles**: todo botón, segmentado, desplegable o campo suelto mide `--control-h` de alto (28 px con ratón,
+  44 px en pantallas táctiles: el token cambia solo). `Seg` con una sola opción activa es un grupo de radios
+  (`role=radiogroup`, `aria-checked`, flechas); con varias, botones con `aria-pressed`.
 - **Modo «encajar en pantalla»** (≥1280 px): la última rejilla de la vista llena el alto; cada panel parte de
   `--fit-panel-min` (o de su contenido, si es menor), el alto que sobra se reparte sin pasar del contenido, y los
   gráficos, mapas y widgets van enteros. Si no cabe, hace scroll la vista, nunca se aplasta un panel. Las reglas
@@ -101,13 +104,15 @@ Un cambio de estética se hace en un solo sitio.
   escrito y hay que rehacerlos si cambia el acento.
 
 ## Comandos y fuentes
-La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`). Resumen:
+Un archivo por comando en `src/lib/commands/` (`eco.ts`, `geo.ts`…); `src/lib/commands.ts` los junta solos y `order`
+decide su sitio. Un comando nuevo es un archivo nuevo. Los valores, en `src/lib/tickers.ts`, y todo junto, en la
+vista `HELP`. Resumen:
 | Comando | Qué abre | Fuentes |
 |---|---|---|
 | `TOP` | Portada | Resumen de todas |
 | `IMP` | Lo más importante de hoy, la semana, el mes y el año (puntuación propia, sin IA) | Todos los titulares, BOE, Federal Register, Wikipedia |
-| `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FRED*, RSS |
-| `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5), Wikidata |
+| `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FAO, FRED*, RSS |
+| `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5), Wikidata, SIPRI |
 | `ES` | España en cifras, BOE, luz | INE, BOE, REE, RSS |
 | `WS` | Wall Street, mapa de calor, curva de tipos, divisas, cripto | TradingView, Tesoro de EE. UU., BCE, CoinGecko |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |
