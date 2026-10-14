@@ -1,5 +1,6 @@
 <script lang="ts">
 	import HnTable from '#lib/components/HnTable.svelte';
+	import LaunchesPanel from '#lib/components/LaunchesPanel.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import QuoteBoard from '#lib/components/QuoteBoard.svelte';
@@ -27,6 +28,7 @@
 		<Panel title="Tecnológicas en bolsa" meta="TradingView · toca un código para su ficha">
 			<QuoteBoard name="Tecnológicas" codes={BIG_TECH} />
 		</Panel>
+		<LaunchesPanel />
 		<Panel title="Hacker News" meta="Portada, por puntos">
 			<HnTable items={data.hn?.data ?? []} />
 			{#snippet note()}Fuente: Hacker News (API de Algolia) · <Updated at={data.hn?.fetchedAt} source="hn" />{/snippet}
