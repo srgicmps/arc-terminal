@@ -18,6 +18,7 @@ import { holidays } from './holidays.ts';
 import { imf } from './imf.ts';
 import { imp } from './imp.ts';
 import { ine } from './ine.ts';
+import { leaders } from './leaders.ts';
 import { newsSources } from './news.ts';
 import { portwatch } from './portwatch.ts';
 import { predictions } from './predictions.ts';
@@ -46,6 +47,7 @@ export const sources: Source<any>[] = [
 	eurostat,
 	// EE. UU.
 	fedreg,
+	leaders,
 	bls,
 	usdebt,
 	uscurve,
