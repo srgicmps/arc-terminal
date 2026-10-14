@@ -25,3 +25,14 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG286?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG350?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
+# LIDER: Von der Leyen (Comisión Europea): sala de prensa en inglés y agenda semanal
+https://ec.europa.eu/commission/presscorner/api/rss?language=en ~ <item>.{0,40}<title>[^<]{0,200}(von der Leyen|President)[^<]{0,200}
+https://commission.europa.eu/about/organisation/college-commissioners/ursula-von-der-leyen/agenda_en ~ .{0,200}(agenda|Agenda).{0,400}
+https://ec.europa.eu/commission/presscorner/api/rss?language=en&documentType=AGENDA
+# LIDER: Lagarde (BCE): canal de discursos y calendario de actos públicos del Comité Ejecutivo
+https://www.ecb.europa.eu/rss/press.html ~ <item>.{0,40}<title>[^<]{0,200}Lagarde[^<]{0,200}
+https://www.ecb.europa.eu/press/calendars/weekly/html/index.en.html ~ .{0,200}Lagarde.{0,300}
+# LIDER: Xi Jinping: RSS de Xinhua y de China Daily en inglés
+https://english.news.cn/rss/chinarss.xml ~ <item>.{0,40}<title>[^<]{0,200}Xi[^<]{0,200}
+http://www.xinhuanet.com/english/rss/chinarss.xml ~ <item>.{0,40}<title>[^<]{0,200}Xi[^<]{0,200}
+https://www.chinadaily.com.cn/rss/china_rss.xml ~ <item>.{0,40}<title>[^<]{0,200}Xi[^<]{0,200}
