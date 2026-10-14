@@ -93,10 +93,8 @@ export const uscurve: Source<YieldCurveData> = {
 const AUCTIONS_API = 'https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query';
 const AUCTION_FIELDS = [
 	'auction_date',
-	'issue_date',
 	'security_type',
 	'security_term',
-	'cusip',
 	'reopening',
 	'offering_amt',
 	'high_yield',
