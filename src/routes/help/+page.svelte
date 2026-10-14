@@ -9,6 +9,14 @@
 	import Table from '#lib/components/ui/Table.svelte';
 	import { keyJoin, SHORTCUTS } from '#lib/shortcuts.ts';
 	import { FUNCTIONS } from '#lib/functions.ts';
+	import Seg from '#lib/components/ui/Seg.svelte';
+	import { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, resetTaste, setAccent, setThumb, setTop, taste, THUMB_MAX } from '#lib/taste.svelte.ts';
+
+	// «A tu gusto»: todas las vistas que se abren sin texto detrás pueden ir en la fila de arriba o abajo.
+	const sections = COMMANDS.map((c) => ({ value: c.code, label: c.code }));
+	const custom = $derived(
+		taste.accent !== 'amber' || taste.top.join() !== DEFAULT_TOP.join() || taste.thumb.join() !== DEFAULT_THUMB.join()
+	);
 </script>
 
 <ViewHeader code="HELP" title="Comandos y atajos" sub="Escribe un comando o un valor en la barra de arriba y pulsa Intro" />
@@ -42,6 +50,20 @@
 					</li>
 				{/each}
 			</ul>
+		</Panel>
+		<Panel title="A tu gusto" meta="Solo en este navegador">
+			<dl class="taste">
+				<dt>Acento</dt>
+				<dd><Seg label="Color de acento" options={ACCENTS} bind:value={() => taste.accent, setAccent} /></dd>
+				<dt>Fila de arriba</dt>
+				<dd><Seg label="Secciones de la fila de arriba" options={sections} bind:values={() => taste.top, setTop} /></dd>
+				<dt>Barra del móvil <small>({taste.thumb.length} de {THUMB_MAX})</small></dt>
+				<dd><Seg label="Secciones de la barra inferior del móvil" options={sections} bind:values={() => taste.thumb, setThumb} /></dd>
+			</dl>
+			{#snippet note()}
+				En la barra del móvil caben {THUMB_MAX}: al elegir otra, sale la primera de la lista.
+				{#if custom}<button class="reset" type="button" onclick={resetTaste}>Volver a lo de siempre</button>{/if}
+			{/snippet}
 		</Panel>
 		<Panel title="Con texto detrás" meta="Comando, espacio y lo que buscas">
 			<ul class="mini">
@@ -78,6 +100,52 @@
 </div>
 
 <style>
+	.taste {
+		display: grid;
+		grid-template-columns: max-content minmax(0, 1fr);
+		gap: var(--sp-8) var(--sp-12);
+		align-items: center;
+		margin: 0;
+		padding: var(--sp-10) var(--pad-x);
+	}
+
+	.taste dt {
+		color: var(--muted);
+		font-size: var(--fs-s);
+	}
+
+	.taste dt small {
+		color: var(--faint);
+		font-size: var(--fs-xs);
+	}
+
+	.taste dd {
+		margin: 0;
+		min-width: 0;
+	}
+
+	/* En un panel estrecho (el móvil), cada etiqueta encima de sus botones. */
+	@container (max-width: 520px) {
+		.taste {
+			grid-template-columns: minmax(0, 1fr);
+			gap: var(--sp-4);
+		}
+
+		.taste dd + dt {
+			margin-top: var(--sp-8);
+		}
+	}
+
+	.reset {
+		margin-left: var(--sp-6);
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--amber);
+		font: inherit;
+		cursor: pointer;
+	}
+
 	.code {
 		color: var(--amber);
 		font-weight: var(--fw-medium);

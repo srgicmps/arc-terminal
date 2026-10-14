@@ -102,6 +102,8 @@ Un cambio de estética se hace en un solo sitio.
   El resto va en el `<style>` de su componente.
 - **Cambiar la estética**, por ejemplo el acento: `--amber` en `tokens.css` (y su versión de día, abajo en el
   mismo archivo). Para una web más densa o más aireada: `--pad-x` y `--row-y`, o la escala `--sp-*`.
+  Sergi también puede elegir verde o azul en HELP, «A tu gusto» (`src/lib/taste.svelte.ts`): son bloques
+  `[data-accent]` al final de `tokens.css` que redefinen `--amber*`; nada lleva el acento escrito a mano.
   Lo único fuera de los tokens son los iconos (`static/favicon.svg` y los PNG de la PWA): llevan el ámbar
   escrito y hay que rehacerlos si cambia el acento.
 

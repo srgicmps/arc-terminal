@@ -28,6 +28,11 @@
 			} catch (e) {}
 			if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 			document.documentElement.dataset.theme = t;
+			// Color de acento elegido en «A tu gusto» (src/lib/taste.svelte.ts); sin nada, el ámbar.
+			try {
+				var a = localStorage.getItem('arc-accent');
+				if (a === 'green' || a === 'blue') document.documentElement.dataset.accent = a;
+			} catch (e) {}
 		</script>
 		%sveltekit.head%
 	</head>
