@@ -13,6 +13,7 @@
 	import { headlineList } from '#lib/titles.svelte.ts';
 	import { initVisit, isNew, visit } from '#lib/visit.svelte.ts';
 	import { highlight, initWatchwords, watchwords } from '#lib/watchwords.svelte.ts';
+	import { initNewsPrefs, newsPrefs, visibleNews } from '#lib/newsprefs.svelte.ts';
 	import AutoTag from './AutoTag.svelte';
 	import TitleLang from './TitleLang.svelte';
 
@@ -31,15 +32,18 @@
 	// Las palabras vigiladas del BOE (guardadas en este navegador) salen resaltadas también en los titulares.
 	$effect(initWatchwords);
 	// Traducción de los titulares en inglés (ES / EN, titles.svelte.ts).
-	const list = headlineList<number>(() => items);
+	// Tus medios (M23, se eligen en NEWS): sin los silenciados y del idioma original elegido.
+	$effect(initNewsPrefs);
+	const shown = $derived(visibleNews(items, newsPrefs.muted, newsPrefs.origin));
+	const list = headlineList<number>(() => shown);
 </script>
 
-{#if items.length}
+{#if shown.length}
 	{#if list.toggle}
 		<div class="lang"><TitleLang /></div>
 	{/if}
 	<ul class="news">
-		{#each items as item, i (i)}
+		{#each shown as item, i (i)}
 			{@const t = list.link(item, i)}
 			<li>
 				<time datetime={item.time ?? undefined}>
@@ -81,6 +85,8 @@
 			</li>
 		{/each}
 	</ul>
+{:else if items.length}
+	<p class="empty">Todos ocultos por tus filtros de medios e idioma (en NEWS).</p>
 {:else}
 	<p class="empty">Sin titulares todavía.</p>
 {/if}
