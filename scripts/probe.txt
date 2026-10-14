@@ -103,3 +103,7 @@ https://fdw.fews.net/api/ipcpopulationsize/?format=json&page_size=3
 # FEWS NET: población en fase 3+ por país, situación actual y reciente (filtros por probar)
 https://fdw.fews.net/api/ipcpopulationsize/?format=json&phase=3%2B&scenario_name=Current%20Situation&unit_type=admin0&start_date=2025-06-01&page_size=5
 https://fdw.fews.net/api/ipcphase/?format=json&unit_type=admin0&scenario_name=Current%20Situation&start_date=2025-06-01&page_size=5
+# FEWS NET: ¿qué page_size acepta?
+https://fdw.fews.net/api/ipcpopulationsize/?format=json&phase=3%2B&unit_type=admin0&start_date=2025-10-14&page_size=2000 ~ "count":\d+
+https://fdw.fews.net/api/ipcpopulationsize/?format=json&phase=3%2B&unit_type=admin0&start_date=2025-10-14&page_size=500 ~ "count":\d+
+https://fdw.fews.net/api/ipcpopulationsize/?format=json&phase=3%2B&unit_type=admin0&start_date=2025-10-14&page_size=100 ~ "count":\d+
