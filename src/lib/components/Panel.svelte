@@ -88,4 +88,12 @@
 			margin: calc(-1 * var(--sp-14)) calc(-1 * var(--pad-x));
 		}
 	}
+
+	/* En «encajar en pantalla» el panel hace scroll por dentro: la cabecera se queda arriba. */
+	:global(html[data-fit]) .ph {
+		position: sticky;
+		top: 0;
+		z-index: 1;
+		background: var(--panel);
+	}
 </style>
