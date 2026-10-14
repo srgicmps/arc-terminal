@@ -20,3 +20,9 @@ https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm ~ \d{4} FOMC Mee
 https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html ~ .{0,30}Monetary policy meeting.{0,40}
 # ECO: euríbor a 12 meses (media mensual) para la calculadora de hipoteca
 https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA?lastNObservations=14&format=csvdata&detail=dataonly
+# ECO: previsiones del FMI (DataMapper). Forma de los datos, códigos de zona euro y mundo, y edición del WEO
+https://www.imf.org/external/datamapper/api/v1/NGDP_RPCH/WEOWORLD/USA/EURO/DEU/ESP/GBR/JPN/CHN/IND/BRA?periods=2026,2027
+https://www.imf.org/external/datamapper/api/v1/PCPIPCH/WEOWORLD/USA/EURO/DEU/ESP/GBR/JPN/CHN/IND/BRA?periods=2026,2027
+https://www.imf.org/external/datamapper/api/v1/indicators ~ "(NGDP_RPCH|PCPIPCH)":\{[^}]*\}
+https://www.imf.org/external/datamapper/api/v1/groups ~ .{0,20}"EURO".{0,60}
+https://www.imf.org/external/datamapper/api/v1/regions ~ .{0,20}WORLD.{0,60}
