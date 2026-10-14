@@ -13,3 +13,8 @@ https://marine-api.open-meteo.com/v1/marine?latitude=40.09%2C39.87&longitude=4.1
 https://marine-api.open-meteo.com/v1/marine?latitude=40.06%2C39.89&longitude=4.13%2C4.07&current=wave_height%2Cswell_wave_height
 # WX: avisos de MeteoAlarm para España; solo las entradas de Baleares, para ver cómo se llama la zona de Menorca
 https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-spain ~ Menorca|Mallorca|Ibiza|Eivissa|Formentera|Balear
+# ECO: reuniones del BCE y de la Fed (calendarios oficiales y mercados de Polymarket)
+https://gamma-api.polymarket.com/events?active=true&closed=false&limit=6&order=volume24hr&ascending=false&tag_slug=fed-rates
+https://gamma-api.polymarket.com/events?active=true&closed=false&limit=20&order=volume24hr&ascending=false&tag_slug=economy ~ ecb|fed decision|fomc
+https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm ~ \d{4} FOMC Meetings.{0,400}
+https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html ~ .{0,30}Monetary policy meeting.{0,40}
