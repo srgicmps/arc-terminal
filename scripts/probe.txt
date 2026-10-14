@@ -41,3 +41,5 @@ https://www.opec.org/press-releases.rss
 # CMP: precios diarios sin clave, para la variación a 1 mes, 1 año y en lo que va de año
 https://stooq.com/q/d/l/?s=nvda.us&i=d
 https://stooq.com/q/l/?s=nvda.us+amd.us&f=sd2t2ohlc&h&e=csv
+# ECO: discursos de los banqueros centrales (BIS)
+https://www.bis.org/doclist/cbspeeches.rss
