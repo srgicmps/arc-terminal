@@ -43,3 +43,6 @@ https://stooq.com/q/d/l/?s=nvda.us&i=d
 https://stooq.com/q/l/?s=nvda.us+amd.us&f=sd2t2ohlc&h&e=csv
 # ECO: discursos de los banqueros centrales (BIS)
 https://www.bis.org/doclist/cbspeeches.rss
+# WS: subastas de deuda de EE. UU. (Fiscal Data)
+https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/upcoming_auctions?page[size]=3
+https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?sort=-auction_date&page[size]=2
