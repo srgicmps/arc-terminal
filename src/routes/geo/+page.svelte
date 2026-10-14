@@ -29,6 +29,10 @@
 		<Panel title="Gobiernos e instituciones" meta="Comunicados oficiales">
 			<NewsList items={data.gov?.data.items.slice(0, 15) ?? []} />
 		</Panel>
+		<Panel title="Conflictos en el mundo" meta="Medios en español · últimas 24 h">
+			<NewsList items={data.gdelt?.data.items.slice(0, 15) ?? []} />
+			{#snippet note()}Fuente: GDELT Project · <Updated at={data.gdelt?.fetchedAt} />{/snippet}
+		</Panel>
 		<Panel title="Terremotos en el mundo" meta="M4,5+ · últimos 7 días">
 			<QuakeTable quakes={strongest} />
 			{#snippet note()}Fuente: USGS · <Updated at={data.quakes?.fetchedAt} />{/snippet}
