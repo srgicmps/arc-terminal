@@ -11,6 +11,8 @@ interface Feed {
 	url: string;
 	/** Entradas que no se quieren, por su enlace (p. ej., los avisos de viaje del FCDO). */
 	skip?: RegExp;
+	/** Máximo de titulares de este canal (por defecto, PER_FEED): para que un medio que publica mucho no llene el panel. */
+	max?: number;
 }
 
 const FEEDS: Record<string, Feed[]> = {
@@ -96,6 +98,18 @@ const FEEDS: Record<string, Feed[]> = {
 	analysis: [
 		{ name: 'Crisis Group', url: 'https://www.crisisgroup.org/rss.xml' },
 		{ name: 'Foreign Affairs', url: 'https://www.foreignaffairs.com/rss.xml' }
+	],
+	// Medios de Ucrania, China, Japón y África (M36), comprobados en la Action el 14-10-2026. Descartados: Mail &
+	// Guardian (404), Caixin (403 desde Actions) y NHK World (solo reportajes en su RSS en inglés). Como mucho, 4
+	// titulares por medio: AllAfrica publica tantos que llenaría el panel.
+	world: [
+		{ name: 'Kyiv Independent', url: 'https://kyivindependent.com/news-archive/rss/', max: 4 },
+		{ name: 'Ukrainska Pravda', url: 'https://www.pravda.com.ua/eng/rss/', max: 4 },
+		{ name: 'South China Morning Post', url: 'https://www.scmp.com/rss/91/feed', max: 4 },
+		{ name: 'The Japan Times', url: 'https://www.japantimes.co.jp/feed/', max: 4 },
+		{ name: 'Nikkei Asia', url: 'https://asia.nikkei.com/rss/feed/nar', max: 4 },
+		{ name: 'Africanews', url: 'https://www.africanews.com/feed/rss', max: 4 },
+		{ name: 'AllAfrica', url: 'https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf', max: 4 }
 	]
 };
 
@@ -131,6 +145,13 @@ export const ENGLISH = new Set([
 	'Microsoft Research',
 	'Crisis Group',
 	'Foreign Affairs',
+	'Kyiv Independent',
+	'Ukrainska Pravda',
+	'South China Morning Post',
+	'The Japan Times',
+	'Nikkei Asia',
+	'Africanews',
+	'AllAfrica',
 	...DIPLOMACY_FEEDS
 ]);
 
@@ -244,7 +265,7 @@ async function section(feeds: Feed[]): Promise<NewsData> {
 					feed.name
 				)
 					.filter((item) => !feed.skip?.test(item.url))
-					.slice(0, PER_FEED),
+					.slice(0, feed.max ?? PER_FEED),
 				feed.name
 			)
 		)
@@ -283,7 +304,8 @@ const LABELS: Record<string, string> = {
 	ai: 'Inteligencia artificial',
 	gov: 'Gobiernos e instituciones',
 	intl: 'Organismos internacionales',
-	analysis: 'Análisis de conflictos'
+	analysis: 'Análisis de conflictos',
+	world: 'Ucrania, China, Japón y África'
 };
 
 export const newsSources: Source<NewsData>[] = Object.entries(FEEDS).map(([key, feeds]) => ({
