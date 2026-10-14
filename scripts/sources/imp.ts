@@ -25,6 +25,8 @@ const KEEP_DAYS = 366;
 /** Un tema: un grupo de titulares (de una o varias secciones) que cuentan lo mismo. */
 export interface Group {
 	title: string;
+	/** 'en' si el titular principal está en inglés (para traducirlo, scripts/translate.ts). */
+	lang?: 'en';
 	url: string;
 	time: string | null;
 	words: Set<string>;
@@ -104,7 +106,17 @@ export function mergeSections(sections: Record<string, NewsItem[]>, now: number)
 		);
 		if (!group) {
 			const own = links.filter((l, i) => links.findIndex((m) => m.source === l.source) === i);
-			groups.push({ title: item.title, url: item.url, time: item.time, words, sources: own.map((l) => l.source), sections: [section], urls: [...new Set(urls)], links: own });
+			groups.push({
+				title: item.title,
+				...(item.lang && { lang: item.lang }),
+				url: item.url,
+				time: item.time,
+				words,
+				sources: own.map((l) => l.source),
+				sections: [section],
+				urls: [...new Set(urls)],
+				links: own
+			});
 			continue;
 		}
 		for (const l of links) {
@@ -212,6 +224,7 @@ export function scoreGroups(groups: Tracked[], { now, official, itn }: ScoreInpu
 				time: g.time,
 				links: g.links
 			};
+			if (g.lang) item.lang = g.lang;
 			if (official) item.official = official;
 			if (wiki) item.wiki = true;
 			return item;
@@ -227,7 +240,9 @@ export function mergeDay(day: ImpEntry[], now: ImpEntry[], n = TOP): ImpEntry[] 
 	const best = new Map<string, ImpEntry>();
 	for (const e of [...day, ...now]) {
 		const prev = best.get(e.k);
-		if (!prev || e.score > prev.score) best.set(e.k, { ...e, ...joined(prev, e) });
+		// La traducción (scripts/translate.ts) llega después de IMP: se conserva la del día si el titular no cambia.
+		const kept = prev?.title === e.title && !e.titleEs ? { lang: prev.lang, titleEs: prev.titleEs } : {};
+		if (!prev || e.score > prev.score) best.set(e.k, { ...e, ...kept, ...joined(prev, e) });
 		else Object.assign(prev, joined(prev, e));
 	}
 	return [...best.values()].sort((a, b) => b.score - a.score).slice(0, n);
@@ -242,8 +257,16 @@ function joined(a: ImpEntry | undefined, b: ImpEntry): Pick<ImpEntry, 'sources' 
 }
 
 /** Lo que se guarda de cada tema en el histórico. Los enlaces, solo el día de hoy (ver `fetch`). */
-const entry = ({ k, title, url, sources, score, links }: ImpEntry): ImpEntry =>
-	links ? { k, title, url, sources, score, links } : { k, title, url, sources, score };
+const entry = ({ k, title, lang, titleEs, url, sources, score, links }: ImpEntry): ImpEntry => ({
+	k,
+	title,
+	...(lang && { lang }),
+	...(titleEs && { titleEs }),
+	url,
+	sources,
+	score,
+	...(links && { links })
+});
 
 /** Textos oficiales de esta pasada: medios oficiales de las secciones, BOE y Federal Register. */
 export function officialDocs(

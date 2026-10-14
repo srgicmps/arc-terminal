@@ -185,6 +185,26 @@ describe('scoreGroups', () => {
 });
 
 describe('mergeDay', () => {
+	it('conserva la traducción del día y junta los enlaces de cada medio', () => {
+		const day = [{ k: 'a', title: 'A', lang: 'en' as const, titleEs: 'A es', url: 'u', sources: ['X'], score: 9, links: [{ source: 'X', url: 'x' }] }];
+		const now = [{ k: 'a', title: 'A', lang: 'en' as const, url: 'u', sources: ['Y'], score: 10, links: [{ source: 'Y', url: 'y' }] }];
+		expect(mergeDay(day, now)).toEqual([
+			{
+				k: 'a',
+				title: 'A',
+				lang: 'en',
+				titleEs: 'A es',
+				url: 'u',
+				sources: ['X', 'Y'],
+				score: 10,
+				links: [
+					{ source: 'X', url: 'x' },
+					{ source: 'Y', url: 'y' }
+				]
+			}
+		]);
+	});
+
 	it('cada tema se queda con lo máximo del día y se juntan sus medios', () => {
 		const day = [{ k: 'a', title: 'A', url: 'u', sources: ['X'], score: 9 }];
 		const now = [
