@@ -49,6 +49,19 @@
 		<Panel title="Inflación" meta="IPCA, variación anual">
 			<SeriesTable head="País" rows={byGeo('inflation')} />
 		</Panel>
+		{#if data.g20}
+			{@const g20 = data.g20}
+			<Panel title="Inflación del G20" meta="IPC, variación anual">
+				<SeriesTable
+					head="País"
+					rows={g20.data.series.map((series) => ({ series, name: series.label, decimals: 1, inverse: true }))}
+					spark={12}
+				/>
+				{#snippet note()}
+					Fuente: {g20.data.via === 'oecd' ? 'OCDE' : 'OCDE, vía DBnomics'} · <Updated at={g20.fetchedAt} source="oecd" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="PIB" meta="Variación trimestral">
 			<SeriesTable head="País" rows={byGeo('gdp')} />
 		</Panel>

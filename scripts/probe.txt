@@ -67,3 +67,5 @@ https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od
 # Traducción de titulares: MyMemory sin correo (comprueba la forma de la respuesta) y sus límites de uso
 https://api.mymemory.translated.net/get?q=Oil%20prices%20rise%20as%20Middle%20East%20tensions%20grow&langpair=en%7Ces
 https://mymemory.translated.net/doc/usagelimits.php ~ .{0,250}(chars|characters|words)/?\s*(per\s*)?day.{0,250}
+# ECO: inflación del G20, copia de la OCDE en DBnomics (la API de la OCDE da 500 desde los runners de GitHub)
+https://api.db.nomics.world/v22/series/OECD/DSD_G20_PRICES@DF_G20_PRICES?dimensions=%7B%22FREQ%22%3A%5B%22M%22%5D%2C%22TRANSFORMATION%22%3A%5B%22GY%22%5D%7D&observations=1&metadata=false&limit=50 ~ "series_code":"[^"]+"|.{0,24}\],"period_start_day"

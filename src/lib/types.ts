@@ -29,6 +29,11 @@ export interface SeriesData {
 	series: Series[];
 }
 
+/** Inflación del G20 (scripts/sources/oecd.ts): series de la OCDE y de dónde salieron en esta descarga. */
+export interface G20Data extends SeriesData {
+	via: 'oecd' | 'dbnomics';
+}
+
 // ---------- Previsiones del FMI (World Economic Outlook) ----------
 
 export interface ImfRow {

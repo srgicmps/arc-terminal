@@ -1,11 +1,11 @@
 import { dataset, type SourceStatus } from '#lib/data.ts';
 import { missingNote } from '#lib/missing.ts';
 import { headlines, pickSeries } from '#lib/trim.ts';
-import type { ImfData, NewsData, PredictionsData, SeriesData } from '#lib/types.ts';
+import type { G20Data, ImfData, NewsData, PredictionsData, SeriesData } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, usdebt, fred, bis, imf, news, predictions, status] = await Promise.all([
+	const [eurostat, ecb, bls, usdebt, fred, bis, imf, g20, news, predictions, status] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -13,6 +13,7 @@ export const load: PageServerLoad = async () => {
 		dataset<SeriesData>('fred'),
 		dataset<SeriesData>('bis'),
 		dataset<ImfData>('imf'),
+		dataset<G20Data>('oecd'),
 		dataset<NewsData>('news-eco'),
 		dataset<PredictionsData>('predictions'),
 		dataset<SourceStatus[]>('status')
@@ -22,5 +23,5 @@ export const load: PageServerLoad = async () => {
 	const rest = (ecb?.data.series ?? []).map((s) => s.id).filter((id) => !fx.includes(id));
 	// Si no hay datos de FRED, solo el motivo (sin clave, error de descarga…), no todo status.json.
 	const fredMissing = fred ? null : missingNote(status?.data, 'fred');
-	return { eurostat, ecb: pickSeries(ecb, rest), bls, usdebt, fred, fredMissing, bis, imf, news: headlines(news, 25), predictions };
+	return { eurostat, ecb: pickSeries(ecb, rest), bls, usdebt, fred, fredMissing, bis, imf, g20, news: headlines(news, 25), predictions };
 };
