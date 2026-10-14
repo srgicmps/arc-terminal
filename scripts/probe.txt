@@ -71,3 +71,8 @@ https://mymemory.translated.net/doc/usagelimits.php ~ .{0,250}(chars|characters|
 https://api.db.nomics.world/v22/series/OECD/DSD_G20_PRICES@DF_G20_PRICES?dimensions=%7B%22FREQ%22%3A%5B%22M%22%5D%2C%22TRANSFORMATION%22%3A%5B%22GY%22%5D%7D&observations=1&metadata=false&limit=50 ~ "series_code":"[^"]+"|.{0,24}\],"period_start_day"
 # ECO: precio de la vivienda del BIS (WS_SPP), variación interanual nominal (N) y real (R): forma de la clave
 https://stats.bis.org/api/v1/data/WS_SPP/Q.US+ES+KR.N+R.771/all?lastNObservations=2&detail=dataonly&format=csv
+# ECO: ¿llega a 2026 la inflación de la zona euro en Eurostat? (la del BCE, ICP, se quedó en 2025-12)
+https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_manr?format=JSON&lang=EN&coicop=CP00&geo=EA&lastTimePeriod=3 ~ "time":\{[^}]*\}|"value":\{[^}]*\}|"label":"[^"]*"
+https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_minr?format=JSON&lang=EN&geo=EA&lastTimePeriod=2 ~ "time":\{[^}]*\}|"value":\{[^}]*\}|"label":"[^"]*"
+# Y si el BCE ha pasado el IPCA a otro conjunto de datos
+https://data-api.ecb.europa.eu/service/dataflow/ECB ~ id="[A-Z_]*(ICP|HICP)[A-Z_]*"[^>]{0,80}
