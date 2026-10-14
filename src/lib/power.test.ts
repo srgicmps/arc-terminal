@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { days, hourly, madridNow } from './power.ts';
+import { bestWindow, days, hourly, madridNow } from './power.ts';
 
 const t = (day: string, h: number, m = 0) => `${day}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00.000+02:00`;
 
@@ -39,5 +39,33 @@ describe('madridNow', () => {
 		expect(madridNow(Date.parse('2026-10-14T22:30:00Z'))).toEqual({ day: '2026-10-15', hour: 0 });
 		expect(madridNow(Date.parse('2026-12-31T23:10:00Z'))).toEqual({ day: '2027-01-01', hour: 0 });
 		expect(madridNow(Date.parse('2026-10-14T10:59:00Z'))).toEqual({ day: '2026-10-14', hour: 12 });
+	});
+});
+
+describe('bestWindow', () => {
+	const day = (kwh: number[], d = '2026-10-14') => kwh.map((k, hour) => ({ day: d, hour, kwh: k, repeat: false }));
+
+	it('las n horas seguidas más baratas y el ahorro frente a la media del día', () => {
+		const prices = day([0.2, 0.1, 0.05, 0.06, 0.3, 0.29]);
+		const w2 = bestWindow(prices, 2)!;
+		expect([w2.first.hour, w2.last.hour]).toEqual([2, 3]);
+		expect(w2.avg).toBeCloseTo(0.055, 6);
+		expect(w2.dayAvg).toBeCloseTo(0.1666667, 6);
+		expect(w2.saving).toBeCloseTo(67, 0);
+		const w3 = bestWindow(prices, 3)!;
+		expect([w3.first.hour, w3.last.hour]).toEqual([1, 3]);
+	});
+
+	it('empate: la primera; y nada si el día es más corto que la franja', () => {
+		expect(bestWindow(day([0.1, 0.1, 0.1]), 2)?.first.hour).toBe(0);
+		expect(bestWindow(day([0.1]), 2)).toBeNull();
+		expect(bestWindow([], 1)).toBeNull();
+	});
+
+	it('día de 25 horas: cuenta por posición, con las dos 02:00', () => {
+		const hours = [0, 1, 2, 2, 3, 4].map((hour, i) => ({ day: '2026-10-25', hour, kwh: [0.2, 0.2, 0.05, 0.04, 0.2, 0.2][i], repeat: i === 3 }));
+		const w = bestWindow(hours, 2)!;
+		expect(w.first).toBe(hours[2]);
+		expect(w.last).toBe(hours[3]); // la segunda 02:00
 	});
 });
