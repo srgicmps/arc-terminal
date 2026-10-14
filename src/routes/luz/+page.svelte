@@ -85,7 +85,7 @@
 					{:else}
 						Precio del término de energía del PVPC, con peajes y cargos, sin impuestos.
 					{/if}
-					Fuente: Red Eléctrica · <Updated at={data.power?.fetchedAt} />
+					Fuente: Red Eléctrica · <Updated at={data.power?.fetchedAt} source="power" />
 				{/snippet}
 			</Panel>
 		</div>
@@ -99,7 +99,7 @@
 				{#each data.mix.data.systems as mix (mix.id)}
 					<MixBar {mix} />
 				{/each}
-				{#snippet note()}Fuente: Red Eléctrica · <Updated at={data.mix?.fetchedAt} />{/snippet}
+				{#snippet note()}Fuente: Red Eléctrica · <Updated at={data.mix?.fetchedAt} source="power-mix" />{/snippet}
 			</Panel>
 		</div>
 	</div>

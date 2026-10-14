@@ -287,7 +287,7 @@
 			{:else}
 				<p class="empty">Sin datos todavía.</p>
 			{/if}
-			{#snippet note()}<Updated at={data.spain?.fetchedAt} />{/snippet}
+			{#snippet note()}<Updated at={data.spain?.fetchedAt} source="fuel-es" />{/snippet}
 		</Panel>
 	</div>
 </div>

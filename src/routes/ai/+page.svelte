@@ -22,7 +22,7 @@
 	<div class="col">
 		<Panel title="Titulares" meta="IA">
 			<NewsList items={data.news?.data.items ?? []} summaries />
-			{#snippet note()}<Updated at={data.news?.fetchedAt} />{/snippet}
+			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-ai" />{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
@@ -31,7 +31,7 @@
 		</Panel>
 		<Panel title="Papers del día · Hugging Face" meta={papers.length ? `${papers.length} papers` : undefined}>
 			<PaperList items={papers} />
-			{#snippet note()}<Updated at={data.papers?.fetchedAt} />{/snippet}
+			{#snippet note()}<Updated at={data.papers?.fetchedAt} source="hfpapers" />{/snippet}
 		</Panel>
 	</div>
 </div>
