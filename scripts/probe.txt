@@ -100,3 +100,6 @@ https://mempool.space/api/blocks/tip/height
 https://mempool.space/api/v1/difficulty-adjustment
 https://fdw.fews.net/api/ipcphase/?format=json&country_code=SO&page_size=3
 https://fdw.fews.net/api/ipcpopulationsize/?format=json&page_size=3
+# FEWS NET: población en fase 3+ por país, situación actual y reciente (filtros por probar)
+https://fdw.fews.net/api/ipcpopulationsize/?format=json&phase=3%2B&scenario_name=Current%20Situation&unit_type=admin0&start_date=2025-06-01&page_size=5
+https://fdw.fews.net/api/ipcphase/?format=json&unit_type=admin0&scenario_name=Current%20Situation&start_date=2025-06-01&page_size=5
