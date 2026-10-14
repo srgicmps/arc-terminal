@@ -20,7 +20,7 @@
 	import { LEVELS } from '#lib/advisories.ts';
 	import { COUNTRIES, findCountry } from '#lib/countries.ts';
 	import type { CountryProfile, Rate } from '#lib/country.ts';
-	import { dm, nf, period, signed } from '#lib/format.ts';
+	import { compact, dm, nf, period, signed } from '#lib/format.ts';
 	import { sectionLabel } from '#lib/news.ts';
 	import type { PageProps } from './$types';
 
@@ -38,6 +38,7 @@
 	const news = $derived(country ? (data.news[country.code] ?? []) : []);
 	const travel = $derived(country ? data.travel[country.code] : undefined);
 	const risk = $derived(country ? data.risks[country.code] : undefined);
+	const refugees = $derived(country ? data.refugees[country.code] : undefined);
 	const hasPower = $derived(!!country && data.eupower.some((z) => z.country === country.code));
 	const rates = $derived(profile ? [profile.policy, profile.bond, profile.premium].filter((r): r is Rate => r !== null) : []);
 	const military = $derived(country ? (data.military[country.code] ?? null) : null);
@@ -249,6 +250,19 @@
 									at={at.ioda}
 									source="ioda"
 								/>{/if}; brotes de los últimos 30 días de la OMS{#if at.who}&nbsp;· <Updated at={at.who} source="who-don" />{/if}.{/if}
+					{/snippet}
+				</Panel>
+			{/if}
+			{#if refugees}
+				<Panel title="Refugiados" meta="ACNUR · fin de {data.refugeesYear}">
+					<Tiles>
+						<Tile label="Han huido" value={compact(refugees.from)} sub="refugiados y solicitantes de asilo" />
+						<Tile label="Acogidos" value={compact(refugees.hosted)} sub="en {country.name}" />
+						<Tile label="Desplazados" value={compact(refugees.idps)} sub="dentro del país" />
+					</Tiles>
+					{#snippet note()}
+						Fuente: <a href="https://www.unhcr.org/refugee-statistics/" target="_blank" rel="noopener">ACNUR, Refugee Data Finder</a>{#if data.refugeesAt}&nbsp;·
+							<Updated at={data.refugeesAt} source="unhcr" />{/if}
 					{/snippet}
 				</Panel>
 			{/if}
