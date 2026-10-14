@@ -62,7 +62,6 @@ const FEEDS: Record<string, Feed[]> = {
 		{ name: 'La Moncloa', url: 'https://www.lamoncloa.gob.es/Paginas/rss.aspx?tipo=16' },
 		{ name: 'Banco de España', url: 'https://www.bde.es/wbe/es/inicio/rss/rss-noticias/' },
 		{ name: 'Comisión Europea', url: 'https://ec.europa.eu/commission/presscorner/api/rss?language=es' },
-		{ name: 'Parlamento Europeo', url: 'https://www.europarl.europa.eu/rss/doc/top-stories/es.xml' },
 		{ name: 'Casa Blanca', url: 'https://www.whitehouse.gov/news/feed/' },
 		{ name: 'Reserva Federal', url: 'https://www.federalreserve.gov/feeds/press_all.xml' }
 	]
