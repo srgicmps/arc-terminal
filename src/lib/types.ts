@@ -1094,6 +1094,7 @@ export interface OutbreakNews {
 	/** Primeras frases del resumen, en texto plano. */
 	summary: string;
 	url: string;
+}
 
 // ---------- Demanda eléctrica en tiempo real (REE, scripts/sources/ree-demand.ts) ----------
 
