@@ -74,7 +74,7 @@ try {
 			await page.waitForTimeout(6000);
 			console.log(`\nSHOTS ${theme} ${path} · --panel ${tokens.panel} · --line ${tokens.line}`);
 			// En WS, si hay selector de mapa de calor, una captura de cada mapa (comprueba que cargan).
-			const maps = page.getByRole('group', { name: 'Mapa de calor' }).getByRole('button');
+			const maps = page.getByRole('radiogroup', { name: 'Mapa de calor' }).getByRole('radio');
 			for (let m = 0; m < (await maps.count()); m++) {
 				await maps.nth(m).click();
 				await page.waitForTimeout(5000);
