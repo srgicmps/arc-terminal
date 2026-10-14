@@ -6,7 +6,7 @@ import { nextMap } from '#lib/nextrelease.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal] = await Promise.all([
+	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal, bde] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -22,7 +22,9 @@ export const load: PageServerLoad = async () => {
 		dataset<PredictionsData>('predictions'),
 		dataset<SourceStatus[]>('status'),
 		dataset<NewsData>('speeches'),
-		dataset<ReleaseCalData>('releases-cal')
+		dataset<ReleaseCalData>('releases-cal'),
+		// Prima de riesgo diaria del Banco de España: solo se pinta el último dato y el de hace una semana.
+		dataset<SeriesData>('bde')
 	]);
 	// Del BCE, todo menos los tipos de cambio (están en WS); de los titulares, los 25 que se pintan.
 	const fx = (ecb?.data.series ?? [])
@@ -43,6 +45,8 @@ export const load: PageServerLoad = async () => {
 		housing,
 		imf,
 		g20,
+		// De la prima diaria basta con las dos últimas semanas.
+		bde: bde && { ...bde, data: { series: bde.data.series.map((x) => ({ ...x, points: x.points.slice(-10) })) } },
 		news: headlines(news, 25),
 		predictions,
 		speeches: headlines(speeches, 12),
