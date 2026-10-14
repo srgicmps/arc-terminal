@@ -1,15 +1,23 @@
-<!-- Mercados de predicción: pregunta y probabilidad de cada opción, con una barra fina. -->
+<!--
+	Mercados de predicción: pregunta y probabilidad de cada opción, con una barra fina y el cambio en 24 h
+	(en puntos). Los que más se mueven van arriba (byMove, src/lib/predictions.ts).
+-->
 <script lang="ts">
-	import { compact, nf } from '#lib/format.ts';
+	import { compact, nf, signed } from '#lib/format.ts';
+	import { byMove } from '#lib/predictions.ts';
 	import Bar from './ui/Bar.svelte';
 	import type { Prediction } from '#lib/types.ts';
 
 	let { items }: { items: Prediction[] } = $props();
+
+	const sorted = $derived(byMove(items));
+	/** Cambio en 24 h en puntos, sin signo de color (subir no es bueno ni malo); vacío si es menos de medio punto. */
+	const move = (d: number | undefined) => (d === undefined || Math.abs(d) < 0.005 ? '' : `${signed(d * 100, 0)} pt`);
 </script>
 
 {#if items.length}
 	<ul class="pm">
-		{#each items as e (e.id)}
+		{#each sorted as e (e.id)}
 			<li>
 				<a class="q" href={e.url} target="_blank" rel="noopener">{e.title}</a>
 				{#each e.outcomes as o (o.label)}
@@ -17,6 +25,7 @@
 						<span class="lab">{o.label}</span>
 						<Bar pct={o.p * 100} tone="amber" thin />
 						<b>{nf(o.p * 100, 0)} %</b>
+						<span class="mv" class:big={Math.abs(o.d ?? 0) >= 0.05}>{move(o.d)}</span>
 					</div>
 				{/each}
 				{#if e.volume24h}<small>Volumen 24 h: {compact(e.volume24h)} $</small>{/if}
@@ -59,7 +68,7 @@
 
 	.o {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) 90px 44px;
+		grid-template-columns: minmax(0, 1fr) 90px 44px 44px;
 		gap: var(--sp-10);
 		align-items: center;
 		font-size: var(--fs-s);
@@ -78,6 +87,15 @@
 	b {
 		font-weight: var(--fw-medium);
 		text-align: right;
+	}
+
+	.mv {
+		color: var(--faint);
+		text-align: right;
+	}
+
+	.mv.big {
+		color: var(--amber);
 	}
 
 	small {

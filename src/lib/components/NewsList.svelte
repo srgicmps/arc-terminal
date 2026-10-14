@@ -12,6 +12,9 @@
 	import type { NewsItem } from '#lib/types.ts';
 	import { headlineList } from '#lib/titles.svelte.ts';
 	import { initVisit, isNew, visit } from '#lib/visit.svelte.ts';
+	import { highlight, initWatchwords, watchwords } from '#lib/watchwords.svelte.ts';
+	import type { EntityLink } from '#lib/entities.ts';
+	import { resolve } from '$app/paths';
 	import AutoTag from './AutoTag.svelte';
 	import TitleLang from './TitleLang.svelte';
 
@@ -27,6 +30,14 @@
 
 	// Como onMounted en Vue: solo en el navegador, después de hidratar.
 	$effect(initVisit);
+	// Las palabras vigiladas del BOE (guardadas en este navegador) salen resaltadas también en los titulares.
+	$effect(initWatchwords);
+	// Nombres con ficha (M30). entities.ts lleva las listas de países, valores y líderes (unos 15 KB): se
+	// carga aparte, después de pintar, y hasta entonces no hay enlaces.
+	let entitiesIn = $state<((text: string) => EntityLink[]) | null>(null);
+	$effect(() => {
+		import('#lib/entities.ts').then((m) => (entitiesIn = m.entitiesIn));
+	});
 	// Traducción de los titulares en inglés (ES / EN, titles.svelte.ts).
 	const list = headlineList<number>(() => items);
 </script>
@@ -52,11 +63,14 @@
 						rel="noopener"
 						lang={t.lang}
 						title={t.title}
-						{@attach list.press(item, i)}>{t.text}</a
+						{@attach list.press(item, i)}
+						>{#each highlight(t.text, watchwords.words) as part, j (j)}{#if part.hit}<mark>{part.text}</mark>{:else}{part.text}{/if}{/each}</a
 					>
 					<div class="m">
 						{#if tag?.(item)}<span class="tag">{tag(item)}</span>{/if}
 						<span>{item.source}</span>
+						<!-- Nombres con ficha (valores, líderes, bancos centrales, países): llevan a su ficha en NEWS. -->
+						{#each entitiesIn?.(item.title) ?? [] as e (e.query)}<a class="ent" href="{resolve('/news')}?q={encodeURIComponent(e.query)}">{e.label}</a>{/each}
 						{#if t.translated}<AutoTag {item} />{/if}
 						{#if item.also?.length}
 							{@const n = item.also.length}
@@ -195,6 +209,16 @@
 	}
 
 	.also a:hover {
+		color: var(--amber);
+	}
+
+	.ent {
+		color: var(--muted);
+		text-decoration: none;
+		border-bottom: var(--hair) dotted var(--line);
+	}
+
+	.ent:hover {
 		color: var(--amber);
 	}
 

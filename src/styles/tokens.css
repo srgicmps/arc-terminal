@@ -79,6 +79,7 @@
 	/* Densidad «Compacta» (la de por defecto, al estilo Bloomberg). Si se añade una «Cómoda», solo tendrá que redefinir estos tokens. */
 	--pad-x: var(--sp-10); /* sangría horizontal de paneles, filas y tablas */
 	--row-y: var(--sp-6); /* margen vertical de una fila de lista */
+	--head-y: var(--sp-4); /* margen vertical de la cabecera de un panel: ~24 px de alto en total */
 	--gutter: var(--sp-8); /* margen lateral de la página (escritorio) */
 	--gutter-touch: var(--sp-12); /* el mismo en el móvil, por debajo de 720 px */
 

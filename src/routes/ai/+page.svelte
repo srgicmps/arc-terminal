@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import HnTable from '#lib/components/HnTable.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import PaperList from '#lib/components/PaperList.svelte';
@@ -45,7 +46,7 @@
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Titulares" meta="IA">
+		<Panel title="Titulares" meta="IA" jump={{ code: 'NEWS', href: `${resolve('/news')}?s=ai` }}>
 			<NewsList items={data.news?.data.items ?? []} summaries />
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-ai" />{/snippet}
 		</Panel>

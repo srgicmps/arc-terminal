@@ -184,6 +184,14 @@ export const STOCKS = {
 	threshold: 3,
 	group: 3,
 	names: {
+		// ADR de los europeos (D25, solo avisos).
+		EADSY: 'Airbus (ADR)',
+		BAESY: 'BAE Systems (ADR)',
+		RNMBY: 'Rheinmetall (ADR)',
+		FINMY: 'Leonardo (ADR)',
+		THLLY: 'Thales (ADR)',
+		SAABY: 'Saab (ADR)',
+		ISMAY: 'Indra (ADR)',
 		LMT: 'Lockheed Martin',
 		RTX: 'RTX',
 		NOC: 'Northrop Grumman',

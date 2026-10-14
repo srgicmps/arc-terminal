@@ -1,6 +1,6 @@
 // FUEL: qué provincia abre «FUEL Madrid» o «FUEL 28», y lectura del Weekly Oil Bulletin.
 import { describe, expect, it } from 'vitest';
-import { findProvince, parseOilBulletin } from './fuel.ts';
+import { findProvince, parseOilBulletin, taxShare } from './fuel.ts';
 
 // Nombres como los publica el Ministerio.
 const PROVINCES = [
@@ -56,5 +56,11 @@ describe('Weekly Oil Bulletin', () => {
 
 	it('sin columnas de precios, null', () => {
 		expect(parseOilBulletin([[['a', 'b'], ['2026-10-12', 1]]])).toBeNull();
+	});
+
+	it('calcula la parte del precio que son impuestos', () => {
+		expect(taxShare({ tax: 1.6, net: 0.8 })).toBe(50);
+		expect(taxShare({ tax: 1.5, net: null })).toBeNull();
+		expect(taxShare({ tax: null, net: 0.8 })).toBeNull();
 	});
 });

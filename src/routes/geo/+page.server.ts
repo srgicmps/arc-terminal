@@ -25,12 +25,11 @@ import type {
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, gov, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex] = await Promise.all([
+	const [news, gov, intl, quakes, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-gov'),
 		dataset<NewsData>('news-intl'),
 		dataset<Quake[]>('quakes'),
-		dataset<Quake[]>('quakes-es'),
 		dataset<HazardsData>('hazards'),
 		dataset<PredictionsData>('predictions'),
 		dataset<Chokepoint[]>('portwatch'),
@@ -69,7 +68,6 @@ export const load: PageServerLoad = async () => {
 		gov: headlines(gov, 15),
 		intl: headlines(intl, 15),
 		quakes,
-		quakesEs,
 		hazards,
 		predictions: trim(predictions, (d) => ({ geopolitics: d.geopolitics.slice(0, 8), economy: [] })),
 		portwatch,

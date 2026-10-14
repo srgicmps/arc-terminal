@@ -40,6 +40,36 @@ const WANTED: Wanted[] = [
 	{ key: 'EXR.D.MXN.EUR.SP00.A', id: 'eurmxn', label: 'EUR/MXN', unit: 'MXN', last: 275 }
 ];
 
+/**
+ * Encuesta a expertos en previsión (SPF), trimestral: lo que esperan para la inflación (IPCA), el PIB real y el paro
+ * de la zona euro este año, el que viene y a largo plazo (5 años vista). Cada serie es un horizonte y cada punto,
+ * una ronda de la encuesta: así se ve cómo revisan la previsión. Los años salen de la fecha, sin tocar nada en enero.
+ */
+export function spfWanted(year: number): Wanted[] {
+	const topics: [string, string, string][] = [
+		['HICP', 'hicp', 'Inflación'],
+		['RGDP', 'gdp', 'PIB real'],
+		['UNEM', 'unem', 'Paro']
+	];
+	const horizons: [string, string, string][] = [
+		[String(year), 'y0', String(year)],
+		[String(year + 1), 'y1', String(year + 1)],
+		['LT', 'lt', 'a largo plazo']
+	];
+	return topics.flatMap(([topic, id, label]) =>
+		horizons.map(([h, hid, hl]) => ({
+			key: `SPF.Q.U2.${topic}.POINT.${h}.Q.AVG`,
+			id: `spf-${id}-${hid}`,
+			label: `${label} ${hl}`,
+			unit: '%',
+			geo: 'EA',
+			last: 8
+		}))
+	);
+}
+
+WANTED.push(...spfWanted(new Date().getUTCFullYear()));
+
 async function series(w: Wanted): Promise<Series | null> {
 	const [flow, ...dims] = w.key.split('.');
 	const url = `${API}/${flow}/${dims.join('.')}?lastNObservations=${w.last}&format=csvdata&detail=dataonly`;

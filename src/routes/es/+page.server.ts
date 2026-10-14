@@ -31,7 +31,8 @@ export const load: PageServerLoad = async () => {
 		ecb: pickSeries(ecb, ['bond10-es', 'bond10-de', 'mortgage-es']),
 		// De las gasolineras de España, solo la media del día (el historial por provincias pesa mucho y es de FUEL).
 		fuel: trim(fuel, (d) => ({ sourceDate: d.sourceDate, avg: d.avg, provinces: [] })),
-		quakes,
+		// Terremotos del IGN: solo los 15 más fuertes, que es lo que se pinta (el más fuerte va en «España en cifras»).
+		quakes: trim(quakes, (d) => [...d].sort((a, b) => b.mag - a.mag).slice(0, 15)),
 		ine,
 		// Próximo dato de cada serie, calculado aquí: al navegador solo le llega la fecha y el título.
 		next: nextMap(

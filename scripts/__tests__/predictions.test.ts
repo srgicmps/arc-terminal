@@ -80,6 +80,29 @@ describe('predictions', () => {
 		expect(url.searchParams.get('closed')).toBe('false');
 	});
 
+	it('cambio en 24 h (oneDayPriceChange): el del «Sí» y, con dos opciones, el contrario para el «No»', async () => {
+		mockFetch((url) =>
+			tagOf(url) === 'geopolitics'
+				? [
+						event('1', [market({ oneDayPriceChange: 0.05 })]),
+						event('2', [
+							market({ id: 'a', groupItemTitle: 'Antes de noviembre', outcomePrices: '["0.1","0.9"]', oneDayPriceChange: -0.02 }),
+							market({ id: 'b', groupItemTitle: 'Antes de diciembre', outcomePrices: '["0.35","0.65"]' })
+						])
+					]
+				: []
+		);
+		const data = await predictions.fetch(undefined);
+		expect(data.geopolitics[0].outcomes).toEqual([
+			{ label: 'No', p: 0.77, d: -0.05 },
+			{ label: 'Sí', p: 0.23, d: 0.05 }
+		]);
+		expect(data.geopolitics[1].outcomes).toEqual([
+			{ label: 'Antes de diciembre', p: 0.35 },
+			{ label: 'Antes de noviembre', p: 0.1, d: -0.02 }
+		]);
+	});
+
 	it('aguanta campos nulos y descarta los eventos sin mercados abiertos', async () => {
 		mockFetch((url) =>
 			tagOf(url) === 'geopolitics'
