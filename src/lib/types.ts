@@ -874,3 +874,19 @@ export interface ReleaseCalData {
 	/** Próximas publicaciones de los datos que enseña la terminal (con tema), por fecha. */
 	events: ReleaseEvent[];
 }
+
+// ---------- NOVEDADES: lo fusionado en Arc Terminal (PR de GitHub) ----------
+
+export interface Change {
+	/** Número del PR. */
+	number: number;
+	title: string;
+	/** Cuándo se fusionó (ISO 8601). */
+	mergedAt: string;
+	url: string;
+}
+
+export interface ChangesData {
+	/** Lo fusionado en los últimos 7 días, de lo más reciente a lo más antiguo. */
+	items: Change[];
+}

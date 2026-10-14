@@ -30,7 +30,8 @@ export interface Command {
 		| '/doc'
 		| '/status'
 		| '/chess'
-		| '/tv';
+		| '/tv'
+		| '/novedades';
 	/** Nombre corto para la tecla. */
 	key: string;
 	/** Qué abre, para las sugerencias y la ayuda. */
@@ -73,6 +74,7 @@ export const COMMANDS: Command[] = [
 	{ code: 'CHESS', route: '/chess', key: 'Ajedrez', desc: 'Ajedrez contra Stockfish (5 niveles), análisis y problema del día', sources: 'Stockfish, chess.js, Lichess', aliases: ['ajedrez'] },
 	{ code: 'TV', route: '/tv', key: 'Modo TV', desc: 'Modo TV: las vistas van rotando solas, a pantalla completa', sources: 'Arc Terminal', aliases: ['tele', 'televisión'], arg: { param: 'tv', label: 'Vistas que rotan', example: 'TV TOP,WS,GEO' } },
 	{ code: 'STATUS', route: '/status', key: 'Fuentes', desc: 'Estado de todas las fuentes de datos', sources: 'Arc Terminal' },
+	{ code: 'NOVEDADES', route: '/novedades', key: 'Novedades', desc: 'Lo que ha cambiado en Arc Terminal esta semana', sources: 'GitHub (PR fusionados)', aliases: ['cambios', 'changelog'] },
 	{ code: 'DOC', route: '/doc', key: 'Cómo funciona', desc: 'Cómo está hecho Arc Terminal: arquitectura, datos, fuentes y Svelte frente a Vue', sources: 'El propio código' },
 	{ code: 'HELP', route: '/help', key: 'Ayuda', desc: 'Comandos y atajos de teclado', sources: '', aliases: ['ayuda'] }
 ];
