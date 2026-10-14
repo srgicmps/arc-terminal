@@ -9,6 +9,8 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import WorldMap from '#lib/components/WorldMap.svelte';
+	import Toggles from '#lib/components/ui/Toggles.svelte';
+	import { LAYERS, crisisPoints, eventPoints, quakePoints, sanctionPoints, stormPoints, straitPoints, type LayerId, type MapPoint } from '#lib/geo/layers.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -17,6 +19,19 @@
 	const quakes = $derived(data.quakes?.data ?? []);
 	// Los más fuertes de la semana primero, y como mucho 20.
 	const strongest = $derived([...quakes].sort((a, b) => b.mag - a.mag).slice(0, 20));
+	// Capas del mapa: todas las que tienen datos, encendidas al principio.
+	const layerPoints = $derived<Record<LayerId, MapPoint[]>>({
+		quakes: quakePoints(quakes),
+		storms: stormPoints(data.hazards?.data.storms ?? []),
+		events: eventPoints(data.hazards?.data.events ?? []),
+		straits: straitPoints(data.portwatch?.data ?? []),
+		sanctions: sanctionPoints(data.sanctions?.data ?? []),
+		crises: crisisPoints(data.reliefweb?.data ?? [])
+	});
+	const available = $derived(LAYERS.filter((l) => layerPoints[l.value].length));
+	let on = $state<LayerId[]>(LAYERS.map((l) => l.value));
+	const points = $derived(available.filter((l) => on.includes(l.value)).flatMap((l) => layerPoints[l.value]));
+
 	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
 </script>
 
@@ -24,8 +39,11 @@
 
 <div class="grid">
 	<div class="col">
-		<Panel title="Mapa" meta="Últimos 7 días">
-			<WorldMap quakes={quakes} storms={data.hazards?.data.storms} events={data.hazards?.data.events} />
+		<Panel title="Mapa" meta="Toca un punto para ver su ficha">
+			{#if available.length > 1}
+				<div class="layers"><Toggles label="Capas del mapa" options={available} bind:value={on} /></div>
+			{/if}
+			<WorldMap {points} legend={available} />
 		</Panel>
 	</div>
 </div>
@@ -81,3 +99,9 @@
 		</Panel>
 	</div>
 </div>
+
+<style>
+	.layers {
+		padding: var(--sp-8) var(--pad-x) 0;
+	}
+</style>
