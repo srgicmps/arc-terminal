@@ -90,3 +90,12 @@ https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-switzerland ~ <title>[
 https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-greece ~ <title>[^<]{0,80}
 # M40: ¿trae cada mercado de Polymarket su cambio en 24 h (oneDayPriceChange)?
 https://gamma-api.polymarket.com/events?active=true&closed=false&limit=2&order=volume24hr&ascending=false&tag_slug=geopolitics ~ oneDayPriceChange
+# TECH: multas y regulación tecnológica (M39): FTC, Departamento de Justicia (antimonopolio), estrategia digital de la UE, competencia de la UE
+https://www.ftc.gov/feeds/press-release.xml ~ <title>[^<]{0,100}
+https://www.ftc.gov/feeds/press-release-competition.xml ~ <title>[^<]{0,100}
+https://www.justice.gov/atr/press-releases/rss.xml ~ <title>[^<]{0,100}
+https://www.justice.gov/news/rss?type=press_release&component=atr ~ <title>[^<]{0,100}
+https://digital-strategy.ec.europa.eu/en/rss.xml ~ <title>[^<]{0,100}
+https://digital-strategy.ec.europa.eu/en/news/rss.xml ~ <title>[^<]{0,100}
+https://ec.europa.eu/commission/presscorner/api/rss?language=en&policyarea=COMP ~ <title>[^<]{0,100}
+https://www.edpb.europa.eu/feed/news_en ~ <title>[^<]{0,100}
