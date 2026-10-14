@@ -2,3 +2,4 @@
 # Formato: «URL» o «URL ~ patrón».
 https://apidatos.ree.es/es/datos/generacion/estructura-generacion?start_date=2026-10-13T00:00&end_date=2026-10-14T23:59&time_trunc=day&geo_trunc=electric_system&geo_limit=baleares&geo_ids=8743
 https://apidatos.ree.es/es/datos/generacion/no-renovables-detalle-emisiones-CO2?start_date=2026-10-13T00:00&end_date=2026-10-14T23:59&time_trunc=day
+https://stats.bis.org/api/v1/data/WS_CBPOL/D.US+XM+JP/all?lastNObservations=2&detail=dataonly&format=csv

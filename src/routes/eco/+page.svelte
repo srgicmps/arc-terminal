@@ -55,6 +55,13 @@
 				]}
 			/>
 		</Panel>
+		<Panel title="Bancos centrales" meta="Tipo oficial · último cambio">
+			<SeriesTable
+				head="Banco"
+				rows={(data.bis?.data.series ?? []).map((series) => ({ series, name: series.label, decimals: 2 }))}
+			/>
+			{#snippet note()}Fuente: BIS, tipos oficiales de los bancos centrales · <Updated at={data.bis?.fetchedAt} />{/snippet}
+		</Panel>
 		<Panel title="Bonos a 10 años" meta="Rentabilidad media mensual">
 			<SeriesTable
 				head="País"
