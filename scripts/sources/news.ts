@@ -73,13 +73,12 @@ const FEEDS: Record<string, Feed[]> = {
 		{ name: 'Noticias ONU', url: 'https://news.un.org/feed/subscribe/en/news/topic/peace-and-security/feed/rss.xml' },
 		{ name: 'OMC', url: 'https://www.wto.org/library/rss/latest_news_e.xml' }
 	],
-	// Medios de Ucrania, China, Japón y África (M36), comprobados con probe el 14-10-2026. Descartado: Mail &
-	// Guardian (404).
+	// Medios de Ucrania, China, Japón y África (M36), comprobados en la Action el 14-10-2026. Descartados: Mail &
+	// Guardian (404), Caixin (403 desde Actions) y NHK World (solo reportajes en su RSS en inglés).
 	world: [
 		{ name: 'Kyiv Independent', url: 'https://kyivindependent.com/news-archive/rss/' },
 		{ name: 'Ukrainska Pravda', url: 'https://www.pravda.com.ua/eng/rss/' },
 		{ name: 'South China Morning Post', url: 'https://www.scmp.com/rss/91/feed' },
-		{ name: 'Caixin', url: 'https://www.caixinglobal.com/rss/' },
 		{ name: 'The Japan Times', url: 'https://www.japantimes.co.jp/feed/' },
 		{ name: 'Nikkei Asia', url: 'https://asia.nikkei.com/rss/feed/nar' },
 		{ name: 'Africanews', url: 'https://www.africanews.com/feed/rss' },
@@ -116,7 +115,6 @@ export const ENGLISH = new Set([
 	'Kyiv Independent',
 	'Ukrainska Pravda',
 	'South China Morning Post',
-	'Caixin',
 	'The Japan Times',
 	'Nikkei Asia',
 	'Africanews',
