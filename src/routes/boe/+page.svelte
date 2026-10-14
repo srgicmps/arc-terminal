@@ -238,8 +238,6 @@
 		margin-bottom: var(--sp-12);
 	}
 
-
-
 	.count {
 		color: var(--faint);
 		font-size: var(--fs-xs);
@@ -329,10 +327,6 @@
 		font-size: var(--fs-xs);
 		text-decoration: none;
 	}
-
-
-
-
 
 	mark {
 		color: var(--amber);

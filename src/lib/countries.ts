@@ -107,9 +107,7 @@ export const COUNTRIES: Country[] = [
 
 /** Quita tildes y pasa a minúsculas, para comparar lo que escribe Sergi: «Japón» = «japon». */
 const fold = (s: string) =>
-	s
-		.normalize('NFD')
-		.replace(/\p{M}/gu, '')
+	plain(s)
 		.toLowerCase()
 		.replace(/[.\s]+/g, ' ')
 		.trim();
