@@ -7,7 +7,7 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { dm, longDay, nf } from '#lib/format.ts';
-	import { days, hourly, madridNow, type HourPrice } from '#lib/power.ts';
+	import { days, dayStats, hourly, madridNow } from '#lib/power.ts';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import type { PageProps } from './$types';
@@ -23,15 +23,9 @@
 		days([...pvpc, ...spot]).map((day) => {
 			const fromPvpc = pvpc.filter((p) => p.day === day);
 			const prices = fromPvpc.length ? fromPvpc : spot.filter((p) => p.day === day);
-			return { day, prices, kind: fromPvpc.length ? 'PVPC' : 'Mayorista', stats: stats(prices) };
+			return { day, prices, kind: fromPvpc.length ? 'PVPC' : 'Mayorista', stats: dayStats(prices) };
 		})
 	);
-
-	function stats(prices: HourPrice[]) {
-		const sorted = [...prices].sort((a, b) => a.kwh - b.kwh);
-		const avg = prices.reduce((a, p) => a + p.kwh, 0) / (prices.length || 1);
-		return { min: sorted[0], max: sorted.at(-1), avg, cheap: sorted.slice(0, 3) };
-	}
 
 	const history = $derived(data.power?.data.history ?? []);
 	const historyLines = $derived([
