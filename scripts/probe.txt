@@ -1,2 +1,8 @@
 # URL que la Action de los PR consulta para explorar APIs nuevas (ver scripts/probe.ts).
 # Formato: «URL» o «URL ~ patrón».
+# Diagnóstico de Pages (claude/fix-pages): qué sirve de verdad la web publicada.
+https://srgicmps.github.io/arc-terminal/
+https://srgicmps.github.io/arc-terminal/_app/version.json
+https://srgicmps.github.io/arc-terminal/eco
+https://srgicmps.github.io/arc-terminal/service-worker.js
+https://api.github.com/repos/srgicmps/arc-terminal/pages
