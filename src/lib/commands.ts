@@ -123,7 +123,6 @@ export const TICKERS: Ticker[] = [
 	{ code: 'EURUSD', name: 'Euro / dólar', tv: 'FX:EURUSD' }
 ];
 
-/** Símbolo de TradingView para lo que escriba Sergi: un valor conocido o el texto tal cual. */
 /** «NVDA, amd  AVGO» → ['NVDA', 'AMD', 'AVGO']: sin repetidos y como mucho `max` (los demás se ignoran). */
 export function parseSymbols(raw: string | null | undefined, max = 5): string[] {
 	const codes = (raw ?? '')
@@ -133,6 +132,7 @@ export function parseSymbols(raw: string | null | undefined, max = 5): string[] 
 	return [...new Set(codes)].slice(0, max);
 }
 
+/** Símbolo de TradingView para lo que escriba Sergi: un valor conocido o el texto tal cual. */
 export function tvSymbol(code: string): string {
 	const upper = code.trim().toUpperCase();
 	return TICKERS.find((t) => t.code === upper)?.tv ?? upper;

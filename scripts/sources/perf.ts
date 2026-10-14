@@ -1,8 +1,9 @@
 // Rentabilidad de los grandes valores de EE. UU. en varios plazos (5 días, 13 y 52 semanas, en lo que va de
 // año…), para la tabla de CMP. Finnhub, /stock/metric (plan gratuito, «basic financials»); misma clave que
 // finnhub.ts (FINNHUB_API_KEY). Sin clave, la fuente se salta y la tabla de CMP no sale.
-// Límite: 60 consultas por minuto. Aquí van de una en una, cada 1,5 s (40 por minuto), para dejar sitio a
-// las ~16 de finnhub.ts, que corre a la vez. Una vez cada 12 horas: son datos de cierre diario.
+// Límite: 60 consultas por minuto (el proyecto se queda en 40). Corre en la segunda fase (`after`), cuando
+// finnhub.ts ya ha terminado, y de una en una cada 2,5 s (24 por minuto). Una vez cada 12 horas: son
+// datos de cierre diario.
 import type { PerfData } from '../../src/lib/types.ts';
 import { TICKERS } from '../../src/lib/commands.ts';
 import { getJson, num, type Source } from '../lib.ts';
@@ -10,7 +11,7 @@ import { WATCH } from './finnhub.ts';
 
 const API = 'https://finnhub.io/api/v1';
 const ENV = 'FINNHUB_API_KEY';
-const GAP_MS = 1500;
+const GAP_MS = 2500;
 
 /** Los valores de EE. UU. de la barra (los que tienen CIK) y la lista grande de finnhub.ts. */
 export const PERF_SYMBOLS = [...new Set([...TICKERS.filter((t) => t.cik).map((t) => t.code), ...WATCH])].filter(
@@ -34,8 +35,10 @@ export const perf: Source<PerfData> = {
 	label: 'Rentabilidad de valores de EE. UU. por plazos · Finnhub',
 	maxAgeMinutes: 715,
 	requires: ENV,
-	// 60 valores a 1,5 s cada uno: algo más de minuto y medio.
-	deadlineMs: 150_000,
+	// Detrás de finnhub.ts, para no sumar sus llamadas en el mismo minuto.
+	after: true,
+	// 60 valores a 2,5 s cada uno: dos minutos y medio.
+	deadlineMs: 200_000,
 	async fetch(previous) {
 		const key = process.env[ENV] ?? '';
 		const symbols: PerfData['symbols'] = {};
