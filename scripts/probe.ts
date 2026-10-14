@@ -16,6 +16,9 @@ for (const url of urls) {
 		});
 		const body = (await res.text()).replace(/\s+/g, ' ');
 		console.log(`\nPROBE ${res.status} ${url}\n${body.slice(0, 1200)}`);
+		// En una página HTML, los enlaces que parecen feeds (para descubrir las URL de los RSS).
+		const feeds = new Set([...body.matchAll(/href="([^"]*(?:rss|feed|\.xml)[^"]*)"/gi)].map((m) => m[1]));
+		if (feeds.size) console.log(`FEEDS ${[...feeds].slice(0, 40).join('\n      ')}`);
 	} catch (error) {
 		console.log(`\nPROBE ERROR ${url}\n${error}`);
 	}

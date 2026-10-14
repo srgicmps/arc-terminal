@@ -1,2 +1,5 @@
 # URL que la Action de los PR consulta para explorar APIs nuevas (ver scripts/probe.ts).
 https://data.sec.gov/submissions/CIK0001045810.json
+# CNMV: página de canales RSS (español e inglés). Sus enlaces a feeds salen en las líneas FEEDS.
+https://www.cnmv.es/portal/gpage?id=RSS
+https://www.cnmv.es/portal/gpage?id=RSS&lang=en
