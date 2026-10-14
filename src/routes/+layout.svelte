@@ -361,14 +361,22 @@
 			flex-basis: 100%;
 		}
 
-		/* El botón del tema, en la línea del logo; los relojes, debajo. */
-		.theme {
-			order: 1;
-			margin-left: auto;
+		/* Como antes del tema: logo, relojes y barra de comandos, cada uno en su línea. El chip de tu sitio y el
+		   botón del tema van en la línea del logo, a la derecha; sus márgenes negativos evitan que esa línea crezca. */
+		.brand {
+			order: -2;
 		}
 
-		.top :global(.clocks) {
-			order: 3;
+		.theme {
+			order: -1;
+			margin-block: calc((var(--logo) - var(--btn-sm)) / 2);
+		}
+
+		/* El chip de «Tu sitio» va delante del tema, empujado a la derecha, con los mismos márgenes negativos. */
+		.top :global(.place) {
+			order: -1;
+			margin-left: auto;
+			margin-block: calc((var(--logo) - var(--btn-sm)) / 2);
 		}
 	}
 

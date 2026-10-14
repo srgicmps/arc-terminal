@@ -14,8 +14,11 @@ export interface Source<T = unknown> {
 	 * se salta sin llamar a nadie y aparece en STATUS como «Sin clave», sin contar como fallo.
 	 */
 	requires?: string;
-	/** Recibe los datos publicados la vez anterior (si los hay), para ir acumulando historial. */
-	fetch: (previous: T | undefined) => Promise<T>;
+	/**
+	 * Recibe los datos publicados la vez anterior (si los hay), para ir acumulando historial. Las fuentes
+	 * `after` reciben además `ctx`, con los datos que las demás fuentes acaban de dejar en esta pasada.
+	 */
+	fetch: (previous: T | undefined, ctx?: SourceContext) => Promise<T>;
 	/**
 	 * Si devuelve true, la copia publicada no sirve aunque sea reciente y se descarga de nuevo. Sirve
 	 * para cuando la fuente cambia de forma (por ejemplo, series nuevas que la copia aún no tiene).
@@ -34,6 +37,11 @@ export interface Source<T = unknown> {
 	/** Mínimo de elementos (ver countItems) para dar los datos por buenos. */
 	minItems?: number;
 	/**
+	 * Fuente derivada: no descarga (o casi) y se calcula con los datos de otras fuentes. update.ts la
+	 * ejecuta en una segunda fase, cuando las demás ya han terminado, y le pasa sus datos en `ctx`.
+	 */
+	after?: true;
+	/**
 	 * Plazo total de la descarga, en milisegundos (por defecto, DEFAULT_DEADLINE_MS). Solo para fuentes
 	 * lentas de verdad, como un ZIP grande; conviene acompañarlo de un maxAgeMinutes alto.
 	 */
@@ -46,6 +54,29 @@ export const DEFAULT_DEADLINE_MS = 90_000;
 /** Plazo de una fuente: el suyo, si lo define, o el de por defecto. */
 export function deadlineFor(source: Pick<Source, 'deadlineMs'>): number {
 	return source.deadlineMs ?? DEFAULT_DEADLINE_MS;
+}
+
+/** Lo que reciben las fuentes `after`: los datos de otra fuente en esta misma pasada. */
+export interface SourceContext {
+	get<D = unknown>(name: string): D | undefined;
+}
+
+/** Sin datos de otras fuentes (primera fase y tests). */
+export const NO_CONTEXT: SourceContext = { get: () => undefined };
+
+/** Separa las fuentes normales (primera fase) de las derivadas (`after`, segunda fase). */
+export function phases<S extends Pick<Source, 'after'>>(sources: S[]): [S[], S[]] {
+	return [sources.filter((s) => !s.after), sources.filter((s) => s.after)];
+}
+
+/**
+ * Contexto de la segunda fase: primero lo que se ha guardado en esta pasada (`saved`) y, si esa fuente
+ * no se ha ejecutado (p. ej. `pnpm data imp`), lo que haya en disco (`fallback`).
+ */
+export function makeContext(saved: Map<string, unknown>, fallback: (name: string) => unknown = () => undefined): SourceContext {
+	return {
+		get: <D>(name: string) => (saved.has(name) ? saved.get(name) : fallback(name)) as D | undefined
+	};
 }
 
 /**

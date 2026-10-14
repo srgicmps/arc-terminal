@@ -1,5 +1,5 @@
 <!--
-	«Tu sitio»: chip discreto en la cabecera («📍 Madrid · cambiar») que abre un buscador de ciudades (Open-Meteo, sin
+	«Tu sitio»: chip discreto en la cabecera («Madrid · cambiar», con un pin de trazo) que abre un buscador de ciudades (Open-Meteo, sin
 	clave), «Usar mi ubicación» y tus favoritos (hasta 5). El sitio elegido lo usan WX, la portada y el reloj.
 	Medidas y espaciados con los tokens de src/styles/tokens.css.
 -->
@@ -99,7 +99,10 @@
 		title="Tu sitio: el tiempo, el aire y el reloj de aquí · toca para cambiar"
 		onclick={toggle}
 	>
-		<span aria-hidden="true">📍</span>
+		<svg class="pin" viewBox="0 0 16 16" aria-hidden="true">
+			<path d="M8 14.5s-4.5-4.6-4.5-8a4.5 4.5 0 0 1 9 0c0 3.4-4.5 8-4.5 8z" />
+			<circle cx="8" cy="6.5" r="1.6" />
+		</svg>
 		<span class="name">{place.current.name}</span>
 		<span class="caret">· cambiar</span>
 	</button>
@@ -182,12 +185,29 @@
 		border-color: var(--amber-edge);
 	}
 
+	/* Icono de trazo fino con el color del texto (como el de Compartir), no un emoji de color. */
+	.pin {
+		width: 1em;
+		height: 1em;
+		flex: none;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: var(--hair);
+	}
+
 	.name {
 		max-width: 14ch;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		color: var(--fg);
+	}
+
+	/* En el móvil el nombre largo se recorta para que el chip quepa en la línea del logo. */
+	@media (max-width: 720px) {
+		.name {
+			max-width: 10ch;
+		}
 	}
 
 	.caret {

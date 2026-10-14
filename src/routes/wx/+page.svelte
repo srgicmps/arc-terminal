@@ -191,7 +191,10 @@
 	<div class="col">
 		<Panel title="Aire · {air?.place ?? here.name}" meta="Índice europeo">
 			{#if !air}
-				<p class="empty">Sin datos de calidad del aire todavía.</p>
+				<!-- El aire de tu sitio llega desde el navegador: mientras tanto, «pidiendo»; si falla, se dice. -->
+				<p class="empty">
+					{local || localError ? `Sin datos del aire para ${here.name}.` : `Pidiendo el aire de ${here.name}…`}
+				</p>
 			{:else}
 				<Tiles>
 					{#if aqiNow}
