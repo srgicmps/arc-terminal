@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { eacurve, ecb } from '../sources/ecb.ts';
+import { eacurve, ecb, spfWanted } from '../sources/ecb.ts';
 import { mockFetch } from './mock.ts';
 
 // CSV con la forma de la API del BCE (format=csvdata&detail=dataonly), desordenado y con un hueco.
@@ -69,5 +69,15 @@ describe('ecb.isStale', () => {
 	it('da por caducada la copia publicada si le falta alguna serie (p. ej., al añadir países)', () => {
 		const copy = (ids: string[]) => ({ series: ids.map((id) => ({ id, label: id, unit: '%', points: [], source: 'BCE' })) });
 		expect(ecb.isStale?.(copy(['ecb-dfr']))).toBe(true);
+	});
+});
+
+describe('spfWanted', () => {
+	it('pide este año, el siguiente y el largo plazo de inflación, PIB y paro', () => {
+		const w = spfWanted(2026);
+		expect(w).toHaveLength(9);
+		expect(w[0]).toMatchObject({ key: 'SPF.Q.U2.HICP.POINT.2026.Q.AVG', id: 'spf-hicp-y0', label: 'Inflación 2026' });
+		expect(w[2]).toMatchObject({ key: 'SPF.Q.U2.HICP.POINT.LT.Q.AVG', id: 'spf-hicp-lt', label: 'Inflación a largo plazo' });
+		expect(w[4].key).toBe('SPF.Q.U2.RGDP.POINT.2027.Q.AVG');
 	});
 });

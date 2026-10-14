@@ -155,6 +155,21 @@
 				]}
 			/>
 		</Panel>
+		<Panel title="Lo que esperan los expertos" meta="Zona euro · encuesta SPF del BCE · %">
+			<SeriesTable
+				head="Previsión"
+				rows={(['hicp', 'gdp', 'unem'] as const).flatMap((t) =>
+					(['y0', 'y1', 'lt'] as const).map((h) => {
+						const series = get(`spf-${t}-${h}`);
+						return { series, name: series?.label, decimals: 1, inverse: t !== 'gdp' };
+					})
+				)}
+			/>
+			{#snippet note()}
+				Media de unos 50 expertos, cada trimestre; la variación es la revisión frente a la encuesta anterior. Largo plazo: dentro
+				de 5 años. Fuente: BCE · <Updated at={data.ecb?.fetchedAt} source="ecb" />
+			{/snippet}
+		</Panel>
 		{#if data.housing}
 			<Panel title="Vivienda en el mundo" meta="Precio, variación interanual">
 				<HousingTable series={data.housing.data.series} />
