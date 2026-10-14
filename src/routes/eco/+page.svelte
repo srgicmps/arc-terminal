@@ -257,6 +257,25 @@
 				{#if data.fred}· <Updated at={data.fred.fetchedAt} source="fred" />{/if}
 			{/snippet}
 		</Panel>
+		{#if data.fred}
+			<Panel title="Inflación esperada y tipos reales" meta="EE. UU. · mercado de bonos">
+				<SeriesTable
+					next={data.next}
+					head="Indicador"
+					spark={60}
+					rows={[
+						{ series: get('breakeven5-us'), name: 'Inflación esperada a 5 años', decimals: 2, inverse: true },
+						{ series: get('breakeven10-us'), name: 'Inflación esperada a 10 años', decimals: 2, inverse: true },
+						{ series: get('forward5y5y-us'), name: 'A 5 años, dentro de 5', decimals: 2, inverse: true },
+						{ series: get('real10-us'), name: 'Tipo real a 10 años (TIPS)', decimals: 2 }
+					]}
+				/>
+				{#snippet note()}
+					Inflación esperada: diferencia entre el bono del Tesoro y el ligado a la inflación (TIPS) del mismo plazo.
+					Fuente: FRED · <Updated at={data.fred?.fetchedAt} source="fred" />
+				{/snippet}
+			</Panel>
+		{/if}
 		{#if data.gie?.data.series.length}
 			<Panel title="Gas almacenado" meta="% de llenado · en puntos">
 				<SeriesTable

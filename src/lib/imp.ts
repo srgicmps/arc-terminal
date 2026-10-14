@@ -39,13 +39,14 @@ export function aggregate(days: ImpData['days'], end: string, span: number, n = 
 		for (const e of day.items) {
 			const t = totals.get(e.k);
 			if (!t) {
-				totals.set(e.k, { ...e, sources: [...e.sources], days: 1, last: day.date, best: e.score });
+				totals.set(e.k, { ...e, sources: [...e.sources], sections: [...(e.sections ?? [])], days: 1, last: day.date, best: e.score });
 				continue;
 			}
 			t.score += e.score;
 			t.days++;
 			if (day.date > t.last) t.last = day.date;
 			for (const s of e.sources) if (!t.sources.includes(s)) t.sources.push(s);
+			for (const s of e.sections ?? []) if (!t.sections!.includes(s)) t.sections!.push(s);
 			if (e.score > t.best) Object.assign(t, { title: e.title, lang: e.lang, titleEs: e.titleEs, url: e.url, best: e.score });
 		}
 	}
@@ -62,3 +63,29 @@ export const IMP_PERIODS = [
 	{ key: 'month', label: 'Mes', span: 30 },
 	{ key: 'year', label: 'Año', span: 365 }
 ] as const;
+
+/** Filtro por sección de la vista IMP: TECH e IA van juntas; Gobiernos y Organismos, solo en «Todo». */
+export const IMP_GROUPS = [
+	{ key: 'all', label: 'Todo', sections: [] },
+	{ key: 'eco', label: 'ECO', sections: ['eco'] },
+	{ key: 'geo', label: 'GEO', sections: ['geo'] },
+	{ key: 'es', label: 'ES', sections: ['es'] },
+	{ key: 'ws', label: 'WS', sections: ['ws'] },
+	{ key: 'tech', label: 'TECH·IA', sections: ['tech', 'ai'] }
+] as const;
+
+export type ImpGroup = (typeof IMP_GROUPS)[number]['key'];
+
+/**
+ * Los `n` primeros temas del grupo de secciones `group` («all»: todos). `sectionsOf` da las secciones de
+ * cada tema (las guardadas o, en los temas de antes de M9, las del top de ahora). Sin repetir tema.
+ */
+export function inGroup<T extends ImpEntry>(items: T[], group: ImpGroup, sectionsOf: (item: T) => string[], n: number): T[] {
+	const wanted: readonly string[] = IMP_GROUPS.find((g) => g.key === group)?.sections ?? [];
+	const seen = new Set<string>();
+	return items
+		.filter((i) => !seen.has(i.k) && !!seen.add(i.k))
+		.filter((i) => !wanted.length || sectionsOf(i).some((s) => wanted.includes(s)))
+		.slice(0, n);
+}
+

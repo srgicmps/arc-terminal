@@ -205,7 +205,8 @@
 		background: none;
 		border: var(--border);
 		color: var(--muted);
-		padding: var(--sp-5) var(--sp-9);
+		min-height: var(--control-h);
+		padding: 0 var(--sp-9);
 		font-size: var(--fs-s);
 		cursor: pointer;
 	}

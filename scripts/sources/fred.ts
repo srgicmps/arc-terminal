@@ -1,8 +1,8 @@
 // FRED, Banco de la Reserva Federal de San Luis: series macro de EE. UU. https://fred.stlouisfed.org/docs/api/fred/
 // Necesita una clave gratuita (FRED_API_KEY, en GitHub Secrets). Sin ella, la fuente se salta.
-// Límite: unas 120 consultas por minuto por clave; aquí son 13 cada 3 horas.
+// Límite: unas 120 consultas por minuto por clave; aquí son 17 cada 3 horas.
 // Condiciones: hay que avisar de que se usa la API de FRED sin su respaldo, y algunas series son de
-// terceros con copyright (por ejemplo, el VIX de Cboe): solo se guardan unos pocos puntos con enlace a FRED.
+// terceros con copyright (el VIX de Cboe): solo se guardan unos pocos puntos con enlace a FRED.
 import { at } from '../../src/lib/series.ts';
 import type { Point, Series, SeriesData } from '../../src/lib/types.ts';
 import { getJson, num, settle, type Source } from '../lib.ts';
@@ -43,7 +43,13 @@ const WANTED: Wanted[] = [
 	{ code: 'DCOILWTICO', id: 'wti', label: 'Petróleo WTI', unit: '$', freq: 'd', last: 260 },
 	{ code: 'DTWEXBGS', id: 'dollar-broad', label: 'Dólar, índice amplio', unit: 'pts', freq: 'd', last: 260 },
 	// Hipoteca fija a 30 años (encuesta semanal de Freddie Mac): dos años de jueves.
-	{ code: 'MORTGAGE30US', id: 'mortgage30-us', label: 'Hipoteca fija a 30 años', unit: '%', freq: 'w', last: 104 }
+	{ code: 'MORTGAGE30US', id: 'mortgage30-us', label: 'Hipoteca fija a 30 años', unit: '%', freq: 'w', last: 104 },
+	// Inflación esperada por el mercado (breakevens: bono nominal menos el ligado a la inflación) y tipo real (ECO).
+	{ code: 'T5YIE', id: 'breakeven5-us', label: 'Inflación esperada a 5 años', unit: '%', freq: 'd', last: 260 },
+	{ code: 'T10YIE', id: 'breakeven10-us', label: 'Inflación esperada a 10 años', unit: '%', freq: 'd', last: 260 },
+	{ code: 'T5YIFR', id: 'forward5y5y-us', label: 'Inflación esperada a 5 años dentro de 5', unit: '%', freq: 'd', last: 260 },
+	{ code: 'DFII10', id: 'real10-us', label: 'Tipo real a 10 años (TIPS)', unit: '%', freq: 'd', last: 260 }
+	// Los diferenciales de crédito de ICE BofA (BAMLH0A0HYM2…) no se guardan: ICE prohíbe reproducirlos sin permiso.
 ];
 
 /** «2026-09-01» → «2026-09» (mensual) o «2026-Q3» (trimestral); diaria y semanal, tal cual. */
