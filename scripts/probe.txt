@@ -74,11 +74,3 @@ https://stats.bis.org/api/v1/data/WS_SPP/Q.US+ES+KR.N+R.771/all?lastNObservation
 # ECO: índice FAO de precios de los alimentos (CSV y fecha de publicación)
 https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next release)[^<]{0,80}
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
-# CAL: bancos centrales, tercera ronda: BoE 2027 completo, horas oficiales (BoE, BoC, RBA) y el LPR del PBoC
-https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates ~ 2027 confirmed dates.{0,900}
-https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates ~ .{0,80}(?:noon|12:00|12pm|12 pm|7:00|7am).{0,80}
-https://www.bankofcanada.ca/core-functions/monetary-policy/key-interest-rate/ ~ .{0,80}(?:9:45|a\.m\.).{0,80}
-https://www.rba.gov.au/schedules-events/board-meeting-schedules.html ~ .{0,120}(?:2\.30|2:30|pm).{0,120}
-https://www.rba.gov.au/monetary-policy/ ~ .{0,120}(?:2\.30|2:30).{0,120}
-https://www.chinamoney.com.cn/english/bmklpr/ ~ .{0,150}(?:9:\d\d|a\.m\.|20th).{0,150}
-http://www.pbc.gov.cn/en/3688229/3688311/3688329/index.html ~ .{0,150}(?:Loan Prime Rate|LPR).{0,150}
