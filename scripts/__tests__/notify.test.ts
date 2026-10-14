@@ -5,7 +5,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Quake } from '../../src/lib/types.ts';
 import type { Level } from '../alerts/config.ts';
 import { emptyLog, type Draft, type LogEntry, type NotifyLog, type Rule } from '../alerts/rules.ts';
-import { baselineLog, encodeHeader, headers, parseLog, pickAlerts, runNotify, trim, usedToday } from '../notify.ts';
+import {
+	baselineLog,
+	encodeHeader,
+	headers,
+	newestLog,
+	parseLog,
+	pickAlerts,
+	runNotify,
+	trim,
+	usedToday
+} from '../notify.ts';
 import { mockFetch } from './mock.ts';
 
 // 14 oct 2026, 12:00 en Madrid (CEST).
@@ -133,6 +143,19 @@ describe('historial', () => {
 		expect(pickAlerts(d, log, NOW).send).toEqual([]);
 	});
 
+	it('entre la caché y el publicado gana el que tiene el último intento; a igualdad, la caché', () => {
+		const at = (t: string, k = t): NotifyLog => ({ ...emptyLog(), entries: [{ k, t, s: 'sent' }] });
+		const cached = at('2026-10-14T10:00Z', 'cache');
+		const published = at('2026-10-14T09:45Z', 'web');
+		expect(newestLog(cached, published)).toBe(cached);
+		expect(newestLog(published, at('2026-10-14T10:15Z', 'web'))?.entries[0].k).toBe('web');
+		expect(newestLog(at('2026-10-14T10:00Z', 'cache'), at('2026-10-14T10:00Z', 'web'))?.entries[0].k).toBe('cache');
+		expect(newestLog(null, published)).toBe(published);
+		expect(newestLog(cached, null)).toBe(cached);
+		expect(newestLog(null, null)).toBeNull();
+		expect(newestLog(emptyLog(), published)).toBe(published);
+	});
+
 	it('parseLog tolera historiales viejos o rotos', () => {
 		expect(parseLog(null)).toBeNull();
 		expect(parseLog({ data: { entries: 'x' } })).toBeNull();
@@ -248,6 +271,24 @@ describe('runNotify', () => {
 		const lines = await runNotify({ topic: TOPIC, dir, now: NOW });
 		expect(lines.filter((l) => l.includes('sin respuesta') && l.includes('se descarta'))).toHaveLength(2);
 		for (const text of [...logged, await written()]) expect(text).not.toContain(TOPIC);
+	});
+
+	it('si la web no se publicó tras enviar, lee la caché y no repite; y la reescribe', async () => {
+		const cache = join(dir, 'cache', 'notify-log.json');
+		const route = (url: string) => {
+			// La web sigue con el historial de antes de enviar (el deploy falló).
+			if (url.endsWith('/data/notify-log.json')) return published(emptyLog());
+			if (url.startsWith('https://ntfy.sh/')) return new Response('', { status: 200 });
+		};
+		const fetch = mockFetch(route);
+		await runNotify({ topic: TOPIC, dir, cache, now: NOW });
+		const ntfy = () => fetch.mock.calls.filter(([u]) => String(u).includes('ntfy.sh')).length;
+		expect(ntfy()).toBe(2);
+		const saved = JSON.parse(await readFile(cache, 'utf8'));
+		expect(saved.data.entries.map((e: { k: string }) => e.k)).toEqual(['quake:b', 'quake:a']);
+		await runNotify({ topic: TOPIC, dir, cache, now: NOW + 15 * 60_000 });
+		expect(ntfy()).toBe(2);
+		expect(await readFile(cache, 'utf8')).not.toContain(TOPIC);
 	});
 
 	it('sin historial publicado solo envía el aviso de prueba y apunta lo de ahora como visto', async () => {

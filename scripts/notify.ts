@@ -12,16 +12,21 @@
 // - Se envía a cualquier hora (Sergi usa el «No molestar» del móvil).
 // - Si ntfy da 429 o falla, ese aviso se pierde (se apunta como «failed» y no se reintenta).
 //
-// El historial (static/data/notify-log.json) se publica con la web y se lee de la copia publicada, como
-// update.ts. Solo lleva ids, horas, niveles y los valores que se comparan entre pasadas: NUNCA el tema.
-// Si no se puede leer (primera vez, o se perdió), todo lo de ahora se apunta como ya visto («baseline»)
-// y no se envía nada: así nunca sale una ráfaga de avisos repetidos.
+// El historial (static/data/notify-log.json) se publica con la web y, además, se guarda en la caché de
+// Actions justo después de este paso (NOTIFY_CACHE, ver deploy.yml). Así, si algo falla después de enviar
+// (check, test, build o deploy) y la web no se publica, la pasada siguiente no repite los avisos: se usa el
+// más reciente de los dos (el que tenga el último intento). Solo lleva ids, horas, niveles y los valores
+// que se comparan entre pasadas: NUNCA el tema ni la zona del diésel.
+// Si no se puede leer ninguno (primera vez, o se perdieron), todo lo de ahora se apunta como ya visto
+// («baseline») y no se envía nada: así nunca sale una ráfaga de avisos repetidos.
 //
 // SECRETO: NTFY_TOPIC es la única protección del canal (quien lo sepa puede leer y escribir). No se
 // escribe en ningún registro, ni la URL completa, ni la respuesta de ntfy (que lo incluye), ni en el JSON.
 //
-// Uso: `NTFY_TOPIC=… node scripts/notify.ts`. Sin NTFY_TOPIC, sale sin hacer nada.
+// Uso: `NTFY_TOPIC=… [NOTIFY_CACHE=.notify-cache/notify-log.json] node scripts/notify.ts`. Sin NTFY_TOPIC,
+// sale sin hacer nada.
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DAILY_TOTAL, KEEP_DAYS, NTFY_PRIORITY, QUOTAS, type Level } from './alerts/config.ts';
 import {
@@ -221,6 +226,29 @@ async function publishedLog(): Promise<NotifyLog | null> {
 	}
 }
 
+/** El historial guardado en la caché de Actions (un archivo local), o null si no está o está roto. */
+async function cachedLog(path: string | undefined): Promise<NotifyLog | null> {
+	if (!path) return null;
+	try {
+		return parseLog(JSON.parse(await readFile(path, 'utf8')));
+	} catch {
+		return null;
+	}
+}
+
+/** Hora (ms) del último intento apuntado en un historial; -Infinity si no tiene ninguno. */
+export const lastAttempt = (log: NotifyLog): number =>
+	log.entries.reduce((max, e) => Math.max(max, Date.parse(e.t)), -Infinity);
+
+/**
+ * El historial más reciente entre el de la caché y el publicado: el que tenga el último intento (`t`).
+ * A igualdad gana la caché, que se guarda justo después de enviar y nunca va por detrás de la web.
+ */
+export function newestLog(cached: NotifyLog | null, published: NotifyLog | null): NotifyLog | null {
+	if (!cached || !published) return cached ?? published;
+	return lastAttempt(published) > lastAttempt(cached) ? published : cached;
+}
+
 /**
  * Todo el proceso: lee los datos de `dir`, decide, envía y escribe `dir`/notify-log.json. Devuelve las
  * líneas que ha registrado (también van a console.log). No lanza: un fallo se registra saneado.
@@ -228,10 +256,13 @@ async function publishedLog(): Promise<NotifyLog | null> {
 export async function runNotify({
 	topic,
 	dir = 'static/data',
+	cache,
 	now = Date.now()
 }: {
 	topic: string | undefined;
 	dir?: string;
+	/** Archivo del historial en la caché de Actions (se lee y se reescribe). */
+	cache?: string;
 	now?: number;
 }): Promise<string[]> {
 	const lines: string[] = [];
@@ -250,11 +281,11 @@ export async function runNotify({
 		for (const [key, file] of Object.entries(FILES)) {
 			(inputs as Record<string, unknown>)[key] = await readData(dir, file);
 		}
-		const previous = await publishedLog();
+		const previous = newestLog(await cachedLog(cache), await publishedLog());
 		let log: NotifyLog;
 		if (!previous) {
 			log = baselineLog(inputs, now);
-			say(`ntfy: sin historial publicado; ${log.entries.length} avisos posibles se dan por vistos`);
+			say(`ntfy: sin historial (ni en caché ni publicado); ${log.entries.length} avisos posibles se dan por vistos`);
 			// Un único aviso de prueba, para confirmar que el tema y la app están bien configurados.
 			const { status } = await post(secret, HELLO(now));
 			const ok = status !== null && status >= 200 && status < 300;
@@ -277,9 +308,14 @@ export async function runNotify({
 			if (skipped.length) say(`ntfy: ${skipped.length} avisos no caben en los cupos de hoy`);
 			if (!send.length && !skipped.length) say('ntfy: nada que avisar');
 		}
+		const dataset = JSON.stringify({ name: 'notify-log', fetchedAt: new Date(now).toISOString(), data: log }) + '\n';
 		await mkdir(dir, { recursive: true });
-		const dataset = { name: 'notify-log', fetchedAt: new Date(now).toISOString(), data: log };
-		await writeFile(`${dir}/notify-log.json`, JSON.stringify(dataset) + '\n');
+		await writeFile(`${dir}/notify-log.json`, dataset);
+		// La misma copia, para la caché de Actions (no depende de que la web llegue a publicarse).
+		if (cache) {
+			await mkdir(dirname(cache), { recursive: true });
+			await writeFile(cache, dataset);
+		}
 	} catch (error) {
 		say(`::warning title=ntfy::${error instanceof Error ? error.message : String(error)}`);
 	}
@@ -287,4 +323,4 @@ export async function runNotify({
 }
 
 // Solo al ejecutarlo directamente (no al importarlo desde los tests).
-if (process.argv[1] === fileURLToPath(import.meta.url)) await runNotify({ topic: process.env.NTFY_TOPIC });
+if (process.argv[1] === fileURLToPath(import.meta.url)) await runNotify({ topic: process.env.NTFY_TOPIC, cache: process.env.NOTIFY_CACHE || undefined });
