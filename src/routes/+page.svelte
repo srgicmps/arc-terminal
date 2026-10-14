@@ -5,7 +5,7 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import { nf, when } from '#lib/format.ts';
-	import { cheapestNow, hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
+	import { cheapestNow, cheapestWindow, hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
 	import { seriesMap, spread } from '#lib/series.ts';
 	import { compass, sky } from '#lib/weather.ts';
 	import ModularGrid from '#lib/components/ModularGrid.svelte';
@@ -51,6 +51,8 @@
 	const today = $derived(pvpc.filter((p) => p.day === (now?.day ?? pvpc[0]?.day)));
 	const current = $derived(now ? today.find((p) => isHour(p, now)) : undefined);
 	const cheapest = $derived([...today].sort((a, b) => a.kwh - b.kwh)[0]);
+	// Las 2 horas seguidas más baratas del día, como en LUZ.
+	const window2 = $derived(today[0] ? cheapestWindow(pvpc, today[0].day, 2) : null);
 	// El PVPC de mañana se publica hacia las 20:30: si ya está, su media.
 	const tomorrow = $derived.by(() => {
 		const day = today[0]?.day;
@@ -195,6 +197,7 @@
 		<ul class="mini">
 			{#if current}<li><span class="l">Ahora</span><b>{nf(current.kwh, 3)}</b></li>{/if}
 			{#if cheapest}<li><span class="l">Más barata hoy</span><b class="up">{hourLabel(cheapest)} · {nf(cheapest.kwh, 3)}</b></li>{/if}
+			{#if window2}<li><span class="l">Mejor franja de 2 h</span><b class="up">{hourLabel(window2.first)}–{hourLabel(window2.after)} · {nf(window2.avg, 3)}</b></li>{/if}
 			{#if tomorrow !== null}
 				<li>
 					<span class="l">Mañana, media</span>
