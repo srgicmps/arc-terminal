@@ -9,6 +9,8 @@
 	import { seriesMap, spread } from '#lib/series.ts';
 	import { compass, sky } from '#lib/weather.ts';
 	import ModularGrid from '#lib/components/ModularGrid.svelte';
+	import Agenda from '#lib/components/top/Agenda.svelte';
+	import Markets from '#lib/components/top/Markets.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
@@ -29,7 +31,10 @@
 		{ id: 'boe', title: 'BOE de hoy' },
 		{ id: 'quakes', title: 'Terremotos' },
 		{ id: 'predictions', title: 'Mercados de predicción' },
-		{ id: 'hn', title: 'Hacker News' }
+		{ id: 'hn', title: 'Hacker News' },
+		// Solo en la portada modular (en la general ya están la cinta de cotizaciones y CAL).
+		{ id: 'agenda', title: 'Hoy en la agenda' },
+		{ id: 'markets', title: 'Mercados' }
 	]);
 	// Como onMounted en Vue: lo guardado en el navegador se lee al arrancar en él.
 	$effect(() => top.load());
@@ -156,6 +161,14 @@
 	{/if}
 {/snippet}
 
+{#snippet agenda()}
+	<Agenda earnings={data.earnings} holidays={data.holidays} />
+{/snippet}
+
+{#snippet markets()}
+	<Markets />
+{/snippet}
+
 {#snippet titulares()}
 	<Panel id="news" title="Titulares" meta="Todas las secciones">
 		<NewsList items={data.headlines} tag={(i) => tags.get(i.url)} />
@@ -268,7 +281,7 @@
 {#if mode.modular}
 	<ModularGrid
 		layout={top}
-		panels={{ rates: tipos, macro, fx: divisas, important: importante, news: titulares, weather: menorca, power: luz, fuel: gasolina, boe, quakes: terremotos, predictions: predicciones, hn }}
+		panels={{ rates: tipos, macro, fx: divisas, important: importante, news: titulares, weather: menorca, power: luz, fuel: gasolina, boe, quakes: terremotos, predictions: predicciones, hn, agenda, markets }}
 	/>
 {:else}
 	<div class="grid grid-3">
