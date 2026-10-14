@@ -270,6 +270,7 @@
 						{ series: get('t10y2y-us'), name: 'Diferencial 10 a − 2 a', decimals: 2 },
 						{ series: get('core-pce-us'), name: 'PCE subyacente, interanual', inverse: true },
 						{ series: get('gdp-us'), name: 'PIB real, anualizado' },
+						{ series: get('gdpnow-us'), name: 'GDPNow: PIB del trimestre en curso' },
 						{ series: get('claims-us'), name: 'Peticiones de paro (miles)', decimals: 0, inverse: true },
 						{ series: get('m2-us'), name: 'M2, interanual' },
 						{ series: get('vix'), name: 'VIX', decimals: 1, inverse: true },
