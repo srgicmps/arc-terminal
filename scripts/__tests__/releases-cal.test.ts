@@ -31,6 +31,8 @@ describe('releases-cal', () => {
 		expect(topicOf('BLS', 'The Employment Situation for October')).toBe('us-jobs');
 		expect(topicOf('INE', 'Encuesta de Población Activa (EPA). Tercer trimestre')).toBe('es-epa');
 		expect(topicOf('INE', 'Estadística de Hipotecas')).toBeNull();
+		expect(topicOf('INE', 'Contabilidad Nacional Trimestral de España (CNTR). Avance')).toBe('es-gdp');
+		expect(topicOf('Fed', 'H.4.1 Factors Affecting Reserve Balances')).toBe('us-h41');
 	});
 
 	it('se queda con los próximos 45 días', () => {
@@ -67,6 +69,23 @@ describe('releases-cal', () => {
 		]);
 		// La clave va en la consulta a FRED, que no se publica.
 		expect(String(fetch.mock.calls.find((c) => String(c[0]).includes('stlouisfed'))?.[0])).toContain('api_key=clave');
+		vi.unstubAllEnvs();
+	});
+
+	it('PIB y PCE (BEA), paro semanal (DOL) y H.4.1 (Fed), cada uno con su hora; si uno falla, siguen los demás', async () => {
+		vi.stubEnv('FRED_API_KEY', 'clave');
+		mockFetch((url) => {
+			if (url.includes('release_id=53')) return { release_dates: [{ date: '2026-10-29' }] };
+			if (url.includes('release_id=180')) return { release_dates: [{ date: '2026-10-15' }] };
+			if (url.includes('release_id=20')) return { release_dates: [{ date: '2026-10-15' }] };
+			return undefined;
+		});
+		const { events } = await releasesCal.fetch(undefined);
+		expect(events.map((e) => [e.source, e.date, e.topic])).toEqual([
+			['DOL', '2026-10-15T12:30:00.000Z', 'us-claims'],
+			['Fed', '2026-10-15T20:30:00.000Z', 'us-h41'],
+			['BEA', '2026-10-29T12:30:00.000Z', 'us-gdp']
+		]);
 		vi.unstubAllEnvs();
 	});
 
