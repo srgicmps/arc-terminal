@@ -27,3 +27,7 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
+# Alertas: IODA (caídas de internet por país: alertas, eventos y resumen de las últimas 12 h)
+https://api.ioda.inetintel.cc.gatech.edu/v2/outages/alerts?from=1791900000&until=1791943200&entityType=country&limit=50
+https://api.ioda.inetintel.cc.gatech.edu/v2/outages/events?from=1791900000&until=1791943200&entityType=country&format=codf&limit=20
+https://api.ioda.inetintel.cc.gatech.edu/v2/outages/summary?from=1791900000&until=1791943200&entityType=country&limit=20
