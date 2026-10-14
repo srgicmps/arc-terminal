@@ -668,3 +668,23 @@ export interface EuLexDoc {
 	/** Ficha en EUR-Lex, en español. */
 	url: string;
 }
+
+// ---------- Archivo de titulares (scripts/sources/archive.ts) ----------
+
+/** Un titular archivado. Claves cortas: un mes son miles. */
+export interface ArchiveEntry {
+	/** Titular. */
+	t: string;
+	/** Medio. */
+	s: string;
+	/** Hora UTC al minuto: «2026-10-14T14:05Z». */
+	d: string;
+	/** Enlace. */
+	u: string;
+}
+
+/** Índice del archivo (news-archive.json). Cada mes está en news-archive/AAAA-MM.json. */
+export interface NewsArchive {
+	/** Del más reciente al más antiguo. */
+	months: { month: string; count: number; bytes: number }[];
+}
