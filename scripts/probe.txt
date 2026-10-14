@@ -90,3 +90,13 @@ https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-switzerland ~ <title>[
 https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-greece ~ <title>[^<]{0,80}
 # M40: ¿trae cada mercado de Polymarket su cambio en 24 h (oneDayPriceChange)?
 https://gamma-api.polymarket.com/events?active=true&closed=false&limit=2&order=volume24hr&ascending=false&tag_slug=geopolitics ~ oneDayPriceChange
+# Lote 23.2: estrés financiero de la zona euro (CISS del BCE)
+https://data-api.ecb.europa.eu/service/data/CISS/D.U2.Z0Z.4F.EC.SS_CIN.IDX?lastNObservations=3&format=csvdata&detail=dataonly
+# Lote 23.4: cesta de la OPEP diaria (puede bloquear robots)
+https://www.opec.org/basket/basketDayArchives.xml ~ .{0,300}
+https://www.opec.org/robots.txt
+# Lote 23.5: ofertas de empleo de Indeed Hiring Lab (CSV en GitHub) y sus condiciones
+https://api.github.com/repos/hiring-lab/job_postings_tracker/contents ~ "name": "[^"]+"
+https://raw.githubusercontent.com/hiring-lab/job_postings_tracker/master/README.md ~ .{0,200}(licen|terms|attribut|cite|permission).{0,300}
+# Lote 23.6: Pink Sheet del Banco Mundial (enlace al XLSX mensual)
+https://www.worldbank.org/en/research/commodity-markets ~ [^"]*CMO-Historical-Data-Monthly[^"]*
