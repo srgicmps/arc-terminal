@@ -1,4 +1,4 @@
-// CISA KEV: vulnerabilidades explotadas. Muestra con la forma documentada del feed JSON.
+// CISA KEV: vulnerabilidades explotadas. Muestra con la forma del feed JSON (comprobada en la Action del PR).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cisaKev, parseKev } from '../sources/cisa-kev.ts';
 import { mockFetch } from './mock.ts';

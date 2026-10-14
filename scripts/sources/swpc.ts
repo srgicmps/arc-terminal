@@ -1,9 +1,10 @@
 // Tormentas solares: NOAA Space Weather Prediction Center (SWPC). JSON público y sin clave, de dominio
 // público (Gobierno de EE. UU.). Productos: https://services.swpc.noaa.gov/products/
-// - noaa-planetary-k-index.json: índice Kp cada 3 h de los últimos 7 días. Históricamente es una tabla
-//   en arrays cuya primera fila es la cabecera ([["time_tag","Kp",…],["2026-10-14 09:00:00.000","2.33",…]]),
-//   pero la NOAA está pasando sus productos a listas de objetos: se leen las dos formas.
-// - noaa-scales.json: escalas G, S y R. Claves "-1" (ayer), "0" (ahora) y "1", "2", "3" (previsión).
+// - noaa-planetary-k-index.json: índice Kp cada 3 h de los últimos 7 días. Hoy (comprobado en oct. 2026)
+//   es una lista de objetos: [{"time_tag":"2026-10-07T00:00:00","Kp":1.00,"a_running":4,"station_count":8},…].
+//   Antes era una tabla en arrays con la cabecera en la primera fila y todo en texto: se leen las dos formas.
+// - noaa-scales.json: escalas G, S y R, en texto ("0"…"5"). Claves "-1" (ayer), "0" (ahora) y "1", "2",
+//   "3" (previsión: resto de hoy, mañana y pasado; ahí R y S llegan con Scale null y solo probabilidades).
 import type { SwpcData } from '../../src/lib/types.ts';
 import { getJson, num, type Source } from '../lib.ts';
 
@@ -81,6 +82,8 @@ export function parseScales(body: unknown): Pick<SwpcData, 'g' | 's' | 'r' | 'gF
 		const date = field((days[key] ?? {}) as Record<string, unknown>, 'DateStamp');
 		gForecastDate = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date) ? date.slice(0, 10) : null;
 	}
+	// Sin tormenta prevista (G0), la fecha no dice nada.
+	if (!gForecast) gForecastDate = null;
 	return { g: scale(now, 'G'), s: scale(now, 'S'), r: scale(now, 'R'), gForecast, gForecastDate };
 }
 
