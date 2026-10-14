@@ -39,7 +39,8 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   respuesta en el registro. Sirve para explorar APIs nuevas cuando el entorno de desarrollo no tiene red.
 - **Probar una fuente sin la pasada completa**: Actions → «Publicar en Pages» → Run workflow, con «fuentes»
   (p. ej. `fao climate`). Descarga solo esas fuentes, sin copia guardada, y lanza el sondeo, sin publicar.
-- En los PR, la Action va en jobs a la vez: `checks` (check, test, build: el verde o el rojo rápido), `smoke`
+- En los PR, la Action va en jobs a la vez: `checks` (check, test, build y el tope de peso por vista de
+  `scripts/weight.ts`: el verde o el rojo rápido), `smoke`
   (datos reales y prueba de humo) y `probe` solo si el PR toca `scripts/`. `compare` (vistas del PR frente a
   main) y `tv-shots` se lanzan a mano: Run workflow sobre la rama, con «herramienta».
 
