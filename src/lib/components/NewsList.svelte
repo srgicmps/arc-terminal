@@ -1,11 +1,13 @@
 <!--
 	Lista de titulares: hora, titular enlazado al medio original, medio y resumen opcional.
 	Si otros medios dan la misma noticia (scripts/cluster.ts), «+3 medios» los despliega.
+	Un punto ámbar marca los titulares posteriores a tu última visita (visit.svelte.ts).
 -->
 <script lang="ts">
 	import { clock } from '#lib/clock.svelte.ts';
 	import { when } from '#lib/format.ts';
 	import type { NewsItem } from '#lib/types.ts';
+	import { initVisit, isNew, visit } from '#lib/visit.svelte.ts';
 
 	interface Props {
 		items: NewsItem[];
@@ -16,13 +18,20 @@
 	}
 
 	let { items, summaries = false, tag }: Props = $props();
+
+	// Como onMounted en Vue: solo en el navegador, después de hidratar.
+	$effect(initVisit);
 </script>
 
 {#if items.length}
 	<ul class="news">
 		{#each items as item, i (i)}
 			<li>
-				<time datetime={item.time ?? undefined}>{when(item.time, clock.now)}</time>
+				<time datetime={item.time ?? undefined}>
+					{#if isNew(item, visit.last)}<span class="new" title="Nuevo desde tu última visita"
+							><span class="sr">Nuevo desde tu última visita</span></span
+						>{/if}{when(item.time, clock.now)}
+				</time>
 				<div>
 					<a class="h" href={item.url} target="_blank" rel="noopener">{item.title}</a>
 					<div class="m">
@@ -88,10 +97,32 @@
 	}
 
 	time {
+		position: relative;
 		padding-top: 2px;
 		color: var(--faint);
 		font-size: var(--fs-xs);
 		line-height: 1.35;
+	}
+
+	/* Punto de «nuevo»: en el hueco entre el borde y la hora, sin mover nada de la fila. */
+	.new {
+		position: absolute;
+		/* Centrado en la primera línea de la hora: 2px de padding + media línea (1.35em / 2) − 2px. */
+		top: 0.675em;
+		left: -8px;
+		width: 4px;
+		height: 4px;
+		border-radius: 50%;
+		background: var(--amber);
+	}
+
+	.sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
 	}
 
 	.h {

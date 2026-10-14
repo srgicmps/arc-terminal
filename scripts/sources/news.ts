@@ -1,6 +1,6 @@
 // Titulares por RSS. Solo se guardan el título, el enlace, la fecha y un resumen corto de cada noticia,
 // siempre con su medio: para leerla entera hay que ir a la web original.
-import { XMLParser } from 'fast-xml-parser';
+import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import type { FeedStatus, NewsData, NewsItem } from '../../src/lib/types.ts';
 import { cluster } from '../cluster.ts';
 import { getText, list, plain, type Source } from '../lib.ts';
@@ -123,10 +123,42 @@ export function parseFeed(body: string, source: string): NewsItem[] {
 		.filter((item) => item.title && item.url.startsWith('http'));
 }
 
+/**
+ * Como parseFeed, pero si el canal no da ningún titular lanza un error que explica por qué:
+ * el XML está roto o simplemente no trae noticias (p. ej., devuelve una página HTML).
+ */
+function readFeed(body: string, source: string): NewsItem[] {
+	let items: NewsItem[];
+	try {
+		items = parseFeed(body, source);
+	} catch {
+		throw new Error('XML no válido');
+	}
+	if (items.length) return items;
+	throw new Error(XMLValidator.validate(body) === true ? 'sin titulares' : 'XML no válido');
+}
+
+/**
+ * Resumen corto y público del fallo de un canal: «HTTP 404», «tiempo agotado», «XML no válido»…
+ * Nunca lleva la URL (podría llevar parámetros) ni el mensaje técnico entero.
+ */
+export function feedError(reason: unknown): string {
+	const e = reason as { name?: string; message?: string } | undefined;
+	const message = String(e?.message ?? reason ?? '');
+	const http = message.match(/HTTP (\d{3})/);
+	if (http) return `HTTP ${http[1]}`;
+	if (e?.name === 'TimeoutError' || e?.name === 'AbortError' || /time ?out|timed out/i.test(message)) {
+		return 'tiempo agotado';
+	}
+	if (message === 'XML no válido' || message === 'sin titulares') return message;
+	if (/fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|EAI_AGAIN|certificate/i.test(message)) return 'sin conexión';
+	return 'error';
+}
+
 async function section(feeds: Feed[]): Promise<NewsData> {
 	const results = await Promise.allSettled(
 		feeds.map(async (feed) =>
-			parseFeed(
+			readFeed(
 				await getText(feed.url, {
 					headers: { Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml' }
 				}),
@@ -140,12 +172,12 @@ async function section(feeds: Feed[]): Promise<NewsData> {
 	results.forEach((r, i) => {
 		const name = feeds[i].name;
 		if (r.status === 'rejected') {
-			const error = String(r.reason?.message ?? r.reason);
-			console.log(`  rss · ${name} (${feeds[i].url}): ${error}`);
-			status.push({ name, count: 0, error });
+			// En el log de Actions va el error completo; en el JSON público, solo el resumen corto.
+			console.log(`  rss · ${name} (${feeds[i].url}): ${r.reason?.message ?? r.reason}`);
+			status.push({ name, ok: false, items: 0, error: feedError(r.reason) });
 			return;
 		}
-		status.push({ name, count: r.value.length });
+		status.push({ name, ok: true, items: r.value.length });
 		for (const item of r.value) {
 			const key = item.title.toLowerCase();
 			if (seen.has(key)) continue;
