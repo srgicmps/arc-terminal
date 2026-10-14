@@ -17,12 +17,13 @@
 
 	let { data }: PageProps = $props();
 
-	// Cesta de la cadena de la IA: una pestaña por eslabón, con el alto de la pestaña más larga.
+	// Cesta de la cadena de la IA: el widget pone los eslabones uno debajo de otro, cada uno con su título, así
+	// que el alto cuenta todos los valores y un título por eslabón (como una fila más).
 	const chain = {
 		showSymbolLogo: false,
 		symbolsGroups: AI_CHAIN.map((link) => ({ name: link.name, symbols: link.symbols.map((s) => ({ name: s.tv, displayName: s.name })) }))
 	};
-	const chainHeight = quotesHeight(Math.max(...AI_CHAIN.map((l) => l.symbols.length)));
+	const chainHeight = quotesHeight(AI_CHAIN.reduce((n, l) => n + l.symbols.length + 1, 0));
 
 	// De la portada de Hacker News, lo que habla de IA.
 	const AI = /\b(ai|a\.i\.|llms?|gpt|openai|anthropic|claude|gemini|llama|mistral|deepseek|transformer|neural|machine learning|agents?|diffusion|copilot|inference|model)\b/i;
