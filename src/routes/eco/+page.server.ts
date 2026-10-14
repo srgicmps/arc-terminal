@@ -11,7 +11,7 @@ export const load: PageServerLoad = async () => {
 		dataset<SeriesData>('usdebt'),
 		dataset<SeriesData>('fred'),
 		dataset<SeriesData>('bis'),
-		// Gas almacenado: GasTable compara con hace un año, así que necesita todo el historial.
+		// Gas almacenado: la tabla compara con hace un año, así que necesita todo el historial.
 		dataset<SeriesData>('gie'),
 		dataset<ImfData>('imf'),
 		dataset<NewsData>('news-eco'),

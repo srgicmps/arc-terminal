@@ -91,6 +91,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
@@ -178,6 +179,7 @@ jobs:
         env:
           SAMPLE: '1'
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
@@ -238,6 +240,7 @@ jobs:
       - run: pnpm data
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
@@ -270,6 +273,7 @@ jobs:
       - run: pnpm data
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
@@ -309,6 +313,7 @@ jobs:
           FORCE_REFRESH: '1'
           SAMPLE: '1'
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}

@@ -6,12 +6,11 @@
 	import MeetingList from '#lib/components/MeetingList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
-	import GasTable from '#lib/components/GasTable.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { compact, period } from '#lib/format.ts';
-	import { last, seriesMap, spread } from '#lib/series.ts';
+	import { diffDays, last, seriesMap, spread } from '#lib/series.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -150,7 +149,15 @@
 		</Panel>
 		{#if data.gie?.data.series.length}
 			<Panel title="Gas almacenado" meta="% de llenado · en puntos">
-				<GasTable series={data.gie.data.series} />
+				<SeriesTable
+					head="Zona"
+					spark={90}
+					rows={data.gie.data.series.map((series) => ({ series, name: series.label, decimals: 1 }))}
+					extra={[
+						{ head: '7 días', value: (s) => diffDays(s, 7) },
+						{ head: '1 año', value: (s) => diffDays(s, 365) }
+					]}
+				/>
 				{#snippet note()}Fuente: GIE AGSI+ · <Updated at={data.gie?.fetchedAt} source="gie" />{/snippet}
 			</Panel>
 		{/if}

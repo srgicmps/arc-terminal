@@ -39,3 +39,14 @@ export function change(s: Series | undefined, n = 1): number | null {
 	const b = s.points[s.points.length - 1].v;
 	return a ? ((b - a) / a) * 100 : null;
 }
+
+/**
+ * Diferencia (en las unidades de la serie) entre el último punto y el de hace `days` días, o el anterior más
+ * cercano. Para series diarias («2026-10-14»): el gas almacenado frente a hace una semana o un año.
+ */
+export function diffDays(s: Series | undefined, days: number): number | null {
+	const now = last(s);
+	if (!now || !/^\d{4}-\d{2}-\d{2}$/.test(now.t)) return null;
+	const then = at(s, new Date(Date.parse(`${now.t}T12:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10));
+	return then ? now.v - then.v : null;
+}
