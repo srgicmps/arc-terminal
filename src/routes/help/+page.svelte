@@ -36,6 +36,9 @@
 				<li><span class="l"><kbd>↑</kbd> <kbd>↓</kbd></span><b>Moverte por las sugerencias</b></li>
 				<li><span class="l"><kbd>Intro</kbd></span><b>Abrir</b></li>
 				<li><span class="l"><kbd>Esc</kbd></span><b>Volver a la portada</b></li>
+				<li><span class="l">Pulsa el título de un panel, o <kbd>M</kbd> con el foco en él</span><b>Ampliar el panel</b></li>
+				<li><span class="l"><kbd>Esc</kbd> o <kbd>✕</kbd> con un panel ampliado</span><b>Cerrarlo</b></li>
+				<li><span class="l"><kbd>⇧</kbd> <kbd>F</kbd></span><b>Pantalla completa</b></li>
 			</ul>
 		</Panel>
 		<Panel title="Con texto detrás" meta="Comando, espacio y lo que buscas">
