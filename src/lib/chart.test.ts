@@ -43,7 +43,7 @@ describe('periodos', () => {
 	});
 	it('solo ofrece periodos que recortan y dejan 3 puntos o más', () => {
 		const days = Array.from({ length: 400 }, (_, i) => new Date(Date.UTC(2025, 8, 1 + i)).toISOString().slice(0, 10));
-		expect(periodChoices(days).map((c) => c.label)).toEqual(['1M', '3M', '1A', 'Todo']);
+		expect(periodChoices(days).map((c) => c.label)).toEqual(['1M', '6M', '1A', 'Máx']);
 		expect(periodChoices(['2026-08', '2026-09', '2026-10'])).toEqual([]);
 	});
 });

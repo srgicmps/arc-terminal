@@ -17,7 +17,7 @@ export function axisTicks(count: number, width: number, minGap: number): number[
 /** Periodos que se pueden elegir en un gráfico: los meses hacia atrás desde el último dato (0 = todo). */
 export const PERIODS = [
 	{ months: 1, label: '1M' },
-	{ months: 3, label: '3M' },
+	{ months: 6, label: '6M' },
 	{ months: 12, label: '1A' },
 	{ months: 60, label: '5A' }
 ] as const;
@@ -40,7 +40,7 @@ export function periodStart(last: string, months: number): Date | null {
 
 /**
  * Periodos que tiene sentido ofrecer para estos puntos del eje X (ordenados): los que dejan fuera algún
- * punto y aún dejan 3 o más. Si no hay ninguno, no se ofrece nada (ni siquiera «Todo»).
+ * punto y aún dejan 3 o más. Si no hay ninguno, no se ofrece nada (ni siquiera «Máx»).
  */
 export function periodChoices(ts: string[]): { value: string; label: string }[] {
 	const last = ts.at(-1);
@@ -51,5 +51,5 @@ export function periodChoices(ts: string[]): { value: string; label: string }[] 
 		const kept = ts.filter((t) => (periodDate(t) ?? start) >= start).length;
 		return kept >= 3 && kept < ts.length;
 	}).map((p) => ({ value: String(p.months), label: p.label }));
-	return out.length ? [...out, { value: '0', label: 'Todo' }] : [];
+	return out.length ? [...out, { value: '0', label: 'Máx' }] : [];
 }
