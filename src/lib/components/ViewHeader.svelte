@@ -26,6 +26,40 @@
 </div>
 
 <style>
+	.vh {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: var(--sp-8) var(--sp-24);
+		padding-block: var(--sp-2) var(--sp-12);
+	}
+
+	h1 {
+		margin: 0;
+		display: flex;
+		align-items: baseline;
+		gap: var(--sp-12);
+		font-family: var(--sans);
+		font-weight: var(--fw-medium);
+		font-size: var(--fs-xl);
+		text-wrap: balance;
+	}
+
+	.code {
+		font-family: var(--mono);
+		font-size: var(--fs-l);
+		font-weight: var(--fw-bold);
+		letter-spacing: var(--track-code);
+		color: var(--amber);
+	}
+
+	p {
+		margin: var(--sp-4) 0 0;
+		color: var(--muted);
+		font-size: var(--fs-xs);
+	}
+
 	.vh-r {
 		color: var(--muted);
 		font-size: var(--fs-xs);

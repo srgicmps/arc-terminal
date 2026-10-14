@@ -65,9 +65,9 @@
 	li {
 		display: grid;
 		grid-template-columns: 96px minmax(0, 1fr);
-		gap: 2px 10px;
-		padding: 7px 12px;
-		border-bottom: 1px solid var(--line);
+		gap: var(--sp-2) var(--sp-10);
+		padding: var(--sp-7) var(--pad-x);
+		border-bottom: var(--border);
 	}
 
 	li:last-child {
@@ -78,9 +78,9 @@
 		grid-row: span 2;
 		color: var(--muted);
 		font-size: var(--fs-xs);
-		letter-spacing: 0.04em;
+		letter-spacing: var(--track-tight);
 		text-transform: uppercase;
-		padding-top: 2px;
+		padding-top: var(--sp-2);
 	}
 
 	.kind.storm {
@@ -99,7 +99,7 @@
 	}
 
 	b {
-		font-weight: 600;
+		font-weight: var(--fw-bold);
 	}
 
 	small {

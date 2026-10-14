@@ -34,9 +34,9 @@
 	.bars {
 		display: grid;
 		grid-template-columns: repeat(24, minmax(0, 1fr));
-		gap: 2px;
+		gap: var(--sp-2);
 		height: 150px;
-		padding: 12px 12px 4px;
+		padding: var(--sp-12) var(--pad-x) var(--sp-4);
 	}
 
 	.bar {
@@ -63,15 +63,15 @@
 
 	.bar.now i {
 		opacity: 1;
-		outline: 1px solid var(--amber);
-		outline-offset: 1px;
+		outline: var(--hair) solid var(--amber);
+		outline-offset: var(--sp-1);
 	}
 
 	.bar span {
 		height: 16px;
-		padding-top: 3px;
+		padding-top: var(--sp-3);
 		color: var(--faint);
-		font-size: 10px;
+		font-size: var(--fs-xxs);
 		text-align: center;
 	}
 </style>
