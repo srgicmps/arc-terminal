@@ -27,6 +27,13 @@ export const PORTS: Port[] = [
 	{ id: 'ciutadella', name: 'Ciutadella', box: [[39.98, 3.79], [40.02, 3.86]] }
 ];
 
+/**
+ * Solo en las Actions de los PR (SAMPLE=1): un recuadro muy transitado (el Estrecho de Gibraltar) para
+ * comprobar en el registro que la suscripción funciona aunque en los puertos no haya nadie. Sus barcos
+ * no se guardan: collect() solo se queda con los de PORTS.
+ */
+const CHECK_BOX: Port['box'] = [[35.85, -5.75], [36.1, -5.3]];
+
 /** Tipo de barco según el código AIS (ITU-R M.1371). */
 export function shipType(code: number | null | undefined): string {
 	const c = Number(code);
@@ -125,7 +132,7 @@ export function listen(key: string, ms = LISTEN_MS): Promise<Raw[]> {
 			ws.send(
 				JSON.stringify({
 					APIKey: key,
-					BoundingBoxes: PORTS.map((p) => p.box),
+					BoundingBoxes: [...PORTS.map((p) => p.box), ...(process.env.SAMPLE ? [CHECK_BOX] : [])],
 					FilterMessageTypes: ['PositionReport', 'StandardClassBPositionReport', 'ShipStaticData']
 				})
 			);
@@ -155,6 +162,8 @@ export const ais: Source<ShipsData> = {
 	maxAgeMinutes: 30,
 	requires: ENV,
 	async fetch(previous) {
-		return collect(await listen(process.env[ENV] ?? ''), previous);
+		const messages = await listen(process.env[ENV] ?? '');
+		console.log(`  ais · ${messages.length} mensajes AIS en ${LISTEN_MS / 1000} s`);
+		return collect(messages, previous);
 	}
 };
