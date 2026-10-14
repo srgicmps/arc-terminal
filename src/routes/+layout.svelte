@@ -16,6 +16,9 @@
 
 	const keys = COMMANDS.filter((c) => c.pinned);
 
+	// navigator.onLine, enlazado como en Vue con un ref que se actualiza solo.
+	let online = $state(true);
+
 	// Cinta de cotizaciones en directo de TradingView.
 	const tape = {
 		symbols: [
@@ -34,6 +37,8 @@
 	};
 </script>
 
+<svelte:window bind:online />
+
 <svelte:head>
 	<link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
 </svelte:head>
@@ -48,6 +53,7 @@
 			<span>Arc <span class="brand-sub">Terminal</span></span>
 		</a>
 		<CommandBar />
+		{#if !online}<span class="offline" title="Se muestra la última copia guardada">Sin conexión</span>{/if}
 		<Clocks />
 	</header>
 
@@ -120,6 +126,15 @@
 	.brand-sub {
 		color: var(--muted);
 		font-weight: 400;
+	}
+
+	.offline {
+		font-size: var(--fs-xs);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--amber);
+		border: 1px solid var(--amber-edge);
+		padding: 2px 7px;
 	}
 
 	/* Teclas de función */
