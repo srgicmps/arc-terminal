@@ -141,15 +141,17 @@
 			/>
 			{#snippet note()}Fuente: BIS, tipos oficiales de los bancos centrales · <Updated at={data.bis?.fetchedAt} />{/snippet}
 		</Panel>
-		<Panel title="Balances de los bancos centrales" meta="Total del activo · semanal">
+		<Panel title="Balances de los bancos centrales" meta="Total del activo y liquidez neta · semanal">
 			<BalanceSheets
 				rows={[
 					{ name: 'BCE (Eurosistema)', series: get('ecb-balance'), currency: '€' },
-					{ name: 'Reserva Federal', series: get('fed-balance'), currency: '$' }
+					{ name: 'Reserva Federal', series: get('fed-balance'), currency: '$' },
+					{ name: 'Fed: liquidez neta', series: get('fed-net-liquidity'), currency: '$' }
 				]}
 			/>
 			{#snippet note()}
 				Sube cuando el banco central compra deuda (QE, expansión cuantitativa) y baja cuando la deja vencer o la vende (QT).
+				Liquidez neta: balance de la Fed menos la cuenta del Tesoro (TGA) y las repos inversas (RRP), dinero que está en la Fed pero no circula.
 				Fuentes: BCE · <Updated at={data.ecb?.fetchedAt} source="ecb" /> y FRED · <Updated at={data.fred?.fetchedAt} source="fred" />
 			{/snippet}
 		</Panel>
