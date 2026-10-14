@@ -79,8 +79,8 @@ https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPC ~ [Ii]ndicador|[Ee]
 # ES (M11): datos.gob.es en bruto (afiliación y paro registrado)
 https://datos.gob.es/apidata/catalog/dataset/title/afiliados?_pageSize=5 ~ ^.{0,800}
 https://datos.gob.es/apidata/catalog/dataset/title/paro?_pageSize=5 ~ ^.{0,800}
+# ES (M11): afiliación media de la Seguridad Social (enlaces a sus hojas)
+https://www.seg-social.es/wps/portal/wss/internet/EstadisticasPresupuestosEstudios/Estadisticas/EST8 ~ [^"' <>]{0,160}\.(xlsx?|csv)
 # ES (M11): datos abiertos del SEPE (enlaces a los CSV; el CSV directo se colgó)
 https://www.sepe.es/HomeSepe/que-es-el-sepe/estadisticas/datos-avance/paro.html ~ [^"' <>]{0,160}\.(csv|xlsx?)
 https://sede.sepe.gob.es/es/portaltrabaja/resources/sede/datos_abiertos/datos/ ~ ^.{0,800}
-# ES (M11): afiliación media de la Seguridad Social (enlaces a sus hojas)
-https://www.seg-social.es/wps/portal/wss/internet/EstadisticasPresupuestosEstudios/Estadisticas/EST8 ~ [^"' <>]{0,160}\.(xlsx?|csv)
