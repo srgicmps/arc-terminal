@@ -2,6 +2,7 @@
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
 	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
 	import FxConvert from '#lib/components/FxConvert.svelte';
+	import HotLists from '#lib/components/HotLists.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
@@ -164,6 +165,9 @@
 
 <div class="grid grid-2">
 	<div class="col">
+		<Panel title="Los que más se mueven" meta="Suben, bajan y más negociados · hoy">
+			<HotLists />
+		</Panel>
 		<Panel title="Titulares" meta="Mercados">
 			<NewsList items={data.news?.data.items ?? []} />
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-ws" />{/snippet}
