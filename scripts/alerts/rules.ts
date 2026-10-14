@@ -47,6 +47,7 @@ import {
 	LAUNCHES,
 	LUZ,
 	MACRO,
+	MACRO_RISK,
 	MARKETS,
 	MORTGAGE,
 	POLYMARKET,
@@ -993,6 +994,38 @@ export function stockRule(d: Inputs, { now, today, log }: RuleContext): Draft[] 
 	}));
 }
 
+// ---------- Riesgo macro (fred.json) ----------
+
+/** Puntos con fecha diaria («2026-10-14») y valor numérico, en orden. */
+function dailyPoints(s: Series | undefined): { t: string; v: number }[] {
+	return list(s?.points).filter(
+		(p) => p && typeof p.t === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.t) && typeof p.v === 'number' && Number.isFinite(p.v)
+	);
+}
+
+/**
+ * Liquidez neta de la Fed ('fed-net-liquidity', semanal, en millones de $). Avisa si el último dato cae
+ * MACRO_RISK.LIQUIDITY_DROP_M o más frente al de 4 datos antes (4 semanas). Id: liquidity:<fecha del último
+ * dato>, uno por dato semanal nuevo.
+ */
+export function liquidityRule(d: Inputs, { now }: RuleContext): Draft[] {
+	const pts = dailyPoints(seriesOf(d.fred, 'fed-net-liquidity'));
+	const [last, ref] = [pts.at(-1), pts.at(-5)];
+	if (!last || !ref || pts.length < 5) return [];
+	const drop = last.v - ref.v;
+	if (drop > -MACRO_RISK.LIQUIDITY_DROP_M) return [];
+	return [
+		{
+			id: `liquidity:${last.t}`,
+			title: `Liquidez de la Fed: ${signed(drop, 0)} M$ en 4 semanas (${num(last.v / 1e6, 2)} billones)`,
+			body: `De ${num(ref.v, 0)} M$ (${ref.t}) a ${num(last.v, 0)} M$ (${last.t}). Fuente: Fed vía FRED.`,
+			tags: 'chart_with_downwards_trend',
+			click: `${SITE}/eco`,
+			time: now
+		}
+	];
+}
+
 // ---------- Diésel ----------
 
 /** Un día de precio medio del diésel (€/L). */
@@ -1671,6 +1704,7 @@ export const RULES: Rule[] = [
 	{ type: 'election', level: 2, run: electionRule },
 	{ type: 'ai', level: 2, run: aiRule },
 	{ type: 'stock', level: 2, run: stockRule },
+	{ type: 'liquidity', level: 2, run: liquidityRule },
 	{ type: 'poly', level: 3, run: polyRule },
 	{ type: 'earnings', level: 3, run: earningsRule },
 	{ type: 'crisis', level: 3, run: crisisRule },
