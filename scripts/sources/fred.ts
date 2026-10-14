@@ -1,6 +1,6 @@
 // FRED, Banco de la Reserva Federal de San Luis: series macro de EE. UU. https://fred.stlouisfed.org/docs/api/fred/
 // Necesita una clave gratuita (FRED_API_KEY, en GitHub Secrets). Sin ella, la fuente se salta.
-// Límite: unas 120 consultas por minuto por clave; aquí son 20 cada 3 horas.
+// Límite: unas 120 consultas por minuto por clave; aquí son 23 cada 3 horas.
 // Condiciones: hay que avisar de que se usa la API de FRED sin su respaldo, y algunas series son de
 // terceros con copyright (el VIX de Cboe, los diferenciales de ICE BofA): solo se guardan unos pocos puntos
 // con enlace a FRED y la fuente citada.
