@@ -29,6 +29,7 @@ import type {
 	YieldCurveData
 } from '../../src/lib/types.ts';
 import { minute } from '../history.ts';
+import { WORLD_FILES, WORLD_RULES, type WorldInputs } from './world.ts';
 import { decide, downSpan, madridTime } from '../issues.ts';
 import {
 	AI_NEWS,
@@ -136,7 +137,7 @@ export interface FuelZone {
 }
 
 /** Los datos de esta pasada (static/data/<archivo>.json); cualquiera puede faltar. */
-export interface Inputs {
+export interface Inputs extends WorldInputs {
 	imp?: ImpLike;
 	ine?: SeriesData;
 	bls?: SeriesData;
@@ -199,7 +200,8 @@ export const FILES: Record<Exclude<keyof Inputs, 'zone'>, string> = {
 	newsTech: 'news-tech',
 	launches: 'launches',
 	lichess: 'lichess',
-	alertQuotes: 'alert-quotes'
+	alertQuotes: 'alert-quotes',
+	...WORLD_FILES
 };
 
 export interface LogEntry {
@@ -1679,5 +1681,6 @@ export const RULES: Rule[] = [
 	{ type: 'launch', level: 3, run: launchRule },
 	{ type: 'morning', level: 4, run: morningRule },
 	{ type: 'evening', level: 4, run: eveningRule },
-	{ type: 'week', level: 4, run: weekRule }
+	{ type: 'week', level: 4, run: weekRule },
+	...WORLD_RULES
 ];
