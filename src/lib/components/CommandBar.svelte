@@ -6,14 +6,19 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { COMMANDS, TICKERS } from '#lib/commands.ts';
+	import {
+		canonical,
+		historyOptions,
+		pushHistory,
+		readHistory,
+		resolveInput,
+		suggest,
+		targetPath,
+		writeHistory,
+		type Option
+	} from '#lib/cmdline.ts';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
-
-	interface Option {
-		code: string;
-		desc: string;
-		kind: string;
-	}
 
 	// Tus valores primero; después, las funciones y los valores populares.
 	const ALL: Option[] = $derived([
@@ -22,7 +27,7 @@
 			desc: TICKERS.find((t) => t.code === code)?.name ?? 'Tu lista',
 			kind: 'Mi lista'
 		})),
-		...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función' })),
+		...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función', aliases: c.aliases })),
 		...TICKERS.filter((t) => !watchlist.codes.includes(t.code)).map((t) => ({
 			code: t.code,
 			desc: t.name,
@@ -33,19 +38,14 @@
 	let value = $state('');
 	let selected = $state(-1);
 	let open = $state(false);
+	// Si Sergi se ha movido con ↑ ↓, Intro abre la sugerencia marcada; si no, se decide con lo escrito.
+	let moved = $state(false);
 	let input: HTMLInputElement;
+	// Últimos comandos ejecutados: se leen de localStorage al enfocar la barra (nunca al prerenderizar).
+	let recent = $state<string[]>([]);
 
-	/** Sin tildes y en mayúsculas, para comparar. */
-	const norm = (s: string) =>
-		s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase();
-
-	const options = $derived.by(() => {
-		const q = norm(value);
-		if (!q) return [];
-		const starts = ALL.filter((o) => o.code.startsWith(q));
-		const contains = ALL.filter((o) => !o.code.startsWith(q) && norm(o.desc).includes(q));
-		return [...starts, ...contains].slice(0, 8);
-	});
+	// Con la barra vacía, el historial; al escribir, las sugerencias.
+	const options = $derived(value.trim() ? suggest(value, ALL) : historyOptions(recent));
 
 	// Al abrir la hoja desde la barra inferior del móvil, el cursor va directo a la barra.
 	$effect(() => {
@@ -53,16 +53,19 @@
 	});
 
 	function run(raw: string) {
-		const code = norm(raw);
+		// Se calcula antes de vaciar la barra: las sugerencias dependen de lo escrito.
+		const target = resolveInput(raw, suggest(raw, ALL));
 		ui.sheet = false;
 		value = '';
 		open = false;
 		selected = -1;
+		moved = false;
 		input.blur();
-		if (!code) return;
-		const command = COMMANDS.find((c) => c.code === code);
-		if (command) goto(resolve(command.route));
-		else goto(`${resolve('/s')}?sym=${encodeURIComponent(code)}`);
+		if (!target) return;
+		recent = pushHistory(readHistory(), canonical(target));
+		writeHistory(recent);
+		const { route, search } = targetPath(target);
+		goto(resolve(route) + search);
 	}
 
 	function onkeydown(e: KeyboardEvent) {
@@ -70,10 +73,12 @@
 		if (e.key === 'ArrowDown' && n) {
 			e.preventDefault();
 			open = true;
+			moved = true;
 			selected = (selected + 1) % n;
 		} else if (e.key === 'ArrowUp' && n) {
 			e.preventDefault();
 			open = true;
+			moved = true;
 			selected = (selected - 1 + n) % n;
 		} else if (e.key === 'Escape') {
 			e.preventDefault();
@@ -89,9 +94,12 @@
 		}
 	}
 
+	/** Lo que se ejecuta al elegir una sugerencia: su código o, en el historial, la entrada guardada. */
+	const pick = (o: Option) => o.run ?? o.code;
+
 	function onsubmit(e: SubmitEvent) {
 		e.preventDefault();
-		run(open && selected >= 0 && options[selected] ? options[selected].code : value);
+		run(open && moved && selected >= 0 && options[selected] ? pick(options[selected]) : value);
 	}
 
 	/** Atajos de teclado en toda la página (como un listener en window en Vue, pero declarativo). */
@@ -119,9 +127,16 @@
 		bind:value
 		oninput={() => {
 			open = true;
+			moved = false;
 			selected = options.length ? 0 : -1;
 		}}
 		{onkeydown}
+		onfocus={() => {
+			recent = readHistory();
+			open = true;
+			moved = false;
+			selected = -1;
+		}}
 		onblur={() =>
 			setTimeout(() => {
 				open = false;
@@ -141,14 +156,14 @@
 	<button class="go" type="submit">GO</button>
 	{#if open && options.length}
 		<ul class="suggest" id="suggest" role="listbox" aria-label="Sugerencias">
-			{#each options as o, i (o.code + o.kind)}
+			{#each options as o, i (pick(o) + o.kind)}
 				<li
 					role="option"
 					id="opt{i}"
 					aria-selected={i === selected}
 					onmousedown={(e) => {
 						e.preventDefault();
-						run(o.code);
+						run(pick(o));
 					}}
 				>
 					<span class="code">{o.code}</span>
