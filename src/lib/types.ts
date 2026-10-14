@@ -29,6 +29,26 @@ export interface SeriesData {
 	series: Series[];
 }
 
+// ---------- Previsiones del FMI (World Economic Outlook) ----------
+
+export interface ImfRow {
+	/** Código del FMI: USA, EURO, WEOWORLD… */
+	code: string;
+	name: string;
+	/** Crecimiento del PIB real (%) en [año, año + 1]; null si el FMI no lo da. */
+	gdp: [number | null, number | null];
+	/** Inflación media (%) en [año, año + 1]. */
+	cpi: [number | null, number | null];
+}
+
+export interface ImfData {
+	/** Edición del WEO en español («octubre de 2026»); null si la API no la dice. */
+	edition: string | null;
+	/** Los dos años de la tabla: [año actual, siguiente]. */
+	years: [number, number];
+	rows: ImfRow[];
+}
+
 // ---------- BOE ----------
 
 export interface BoeItem {

@@ -14,6 +14,7 @@ import { fuel, fuelSpain } from './fuel.ts';
 import { hazards, quakesEs } from './hazards.ts';
 import { hfpapers } from './hfpapers.ts';
 import { holidays } from './holidays.ts';
+import { imf } from './imf.ts';
 import { imp } from './imp.ts';
 import { ine } from './ine.ts';
 import { newsSources } from './news.ts';
@@ -48,6 +49,7 @@ export const sources: Source<any>[] = [
 	finnhub,
 	sec,
 	// Mundo
+	imf,
 	quakes,
 	quakesEs,
 	hazards,
