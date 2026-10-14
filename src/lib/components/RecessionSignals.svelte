@@ -40,7 +40,7 @@
 						<td>{s.text}</td>
 						<td class="mut">{period(s.t)}</td>
 						<td class="sp"><Spark values={s.values} /></td>
-						<td class:down={s.active} class:mut={!s.active} title={s.rule}>{s.active ? 'activada' : 'no'}</td>
+						<td class:on={s.active} class:mut={!s.active} title={s.rule}>{s.active ? 'activada' : 'no'}</td>
 					</tr>
 				{/each}
 			</tbody>
@@ -77,5 +77,9 @@
 		.sp {
 			display: none;
 		}
+	}
+	/* Una señal activada es un aviso, no una bajada: ámbar, como el resto de alertas. */
+	.on {
+		color: var(--amber);
 	}
 </style>
