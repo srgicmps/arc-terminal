@@ -29,6 +29,7 @@ export const PREFS: Pref[] = [
 	{ key: 'fuel-zone', storage: 'local', what: 'Última provincia elegida', where: 'FUEL', kind: 'ajuste' },
 	{ key: 'arc-place', storage: 'local', what: 'Tu sitio y hasta 5 favoritos', where: 'Chip «Tu sitio» de la cabecera, WX', kind: 'dato' },
 	{ key: 'arc-watchlist', storage: 'local', what: 'Tu lista de valores', where: 'MIS', kind: 'dato' },
+	{ key: 'arc-tape', storage: 'local', what: 'Cinta de arriba con tus valores o con los índices', where: 'MIS, «Cinta de arriba»', kind: 'ajuste' },
 	{ key: 'arc-watchwords', storage: 'local', what: 'Palabras vigiladas', where: 'BOE', kind: 'dato' },
 	{ key: 'arc-cmd-history', storage: 'local', what: 'Tus 5 últimos comandos', where: 'Barra de comandos vacía', kind: 'dato' },
 	{ key: 'arc-mortgage', storage: 'local', what: 'Lo que escribes en la calculadora de hipoteca', where: 'ECO, «Tu hipoteca»', kind: 'dato' },

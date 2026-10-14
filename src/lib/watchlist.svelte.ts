@@ -2,8 +2,10 @@
 // con persistencia en localStorage: si el navegador no deja guardar (modo privado…), sigue en memoria.
 
 const KEY = 'arc-watchlist';
+/** «1» si la cinta de arriba enseña tu lista en vez de los índices de siempre. */
+const TAPE_KEY = 'arc-tape';
 
-export const watchlist = $state({ codes: [] as string[], ready: false });
+export const watchlist = $state({ codes: [] as string[], ready: false, tape: false });
 
 /** Se llama una vez al arrancar en el navegador (desde el layout). */
 export function initWatchlist() {
@@ -11,8 +13,17 @@ export function initWatchlist() {
 	try {
 		const saved = JSON.parse(localStorage.getItem(KEY) ?? '[]');
 		if (Array.isArray(saved)) watchlist.codes = saved.filter((c) => typeof c === 'string');
+		watchlist.tape = localStorage.getItem(TAPE_KEY) === '1';
 	} catch {}
 	watchlist.ready = true;
+}
+
+/** Cinta de arriba: tu lista (true) o los índices de siempre (false). */
+export function setTape(on: boolean) {
+	watchlist.tape = on;
+	try {
+		localStorage.setItem(TAPE_KEY, on ? '1' : '0');
+	} catch {}
 }
 
 function save() {
