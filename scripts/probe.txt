@@ -29,9 +29,5 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
 # GEO/WX: clima del planeta. Copernicus Climate Pulse (ERA5, temperatura media mundial diaria)
 https://sites.ecmwf.int/data/climatepulse/data/series/era5_daily_series_2t_global.csv
-https://sites.ecmwf.int/data/climatepulse/data/series/era5_daily_series_2t_global.csv ~ 202[56]-(09|10)-\d\d[^ ]{0,80}
-https://pulse.climate.copernicus.eu/ ~ [^"' ]{0,120}\.csv
 # NOAA GML: CO₂ diario de Mauna Loa
-https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_daily_mlo.csv
 https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_daily_mlo.csv ~ 202[56],\s?(9|10|09),[^ ]{0,60}
-https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_daily_mlo.txt ~ 202[56]\s+(9|10|09)\s+\d+\s+[\d.]+\s+[\d.]+

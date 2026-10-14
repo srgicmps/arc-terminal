@@ -4,6 +4,7 @@ import { ais } from './ais.ts';
 import { air } from './air.ts';
 import { alerts } from './alerts.ts';
 import { bls } from './bls.ts';
+import { climate } from './climate.ts';
 import { bis } from './bis.ts';
 import { boe } from './boe.ts';
 import { ecb } from './ecb.ts';
@@ -58,6 +59,7 @@ export const sources: Source<any>[] = [
 	sec,
 	// Mundo
 	imf,
+	climate,
 	quakes,
 	quakesEs,
 	hazards,
