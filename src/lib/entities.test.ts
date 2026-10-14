@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findEntity } from './entities.ts';
+import { entitiesIn, findEntity } from './entities.ts';
 
 describe('fichas de NEWS', () => {
 	it('encuentra valores por código, nombre o alias', () => {
@@ -27,5 +27,18 @@ describe('fichas de NEWS', () => {
 		expect(findEntity('inflación en Japón')).toBeNull();
 		expect(findEntity('')).toBeNull();
 		expect(findEntity('aranceles')).toBeNull();
+	});
+
+	it('encuentra los nombres con ficha de un titular, y cada uno abre su ficha', () => {
+		const links = entitiesIn('Lagarde avisa de que el BCE vigilará el yen y a Nvidia en Japón');
+		expect(links.map((l) => l.label)).toEqual(['NVIDIA', 'Lagarde', 'BCE']);
+		expect(entitiesIn('Lagarde avisa de que el BCE vigilará a Nvidia en Japón', 5).map((l) => l.query)).toEqual([
+			'NVDA',
+			'Christine Lagarde',
+			'BCE',
+			'Japón'
+		]);
+		for (const l of entitiesIn('Japón y la Fed', 5)) expect(findEntity(l.query)).not.toBeNull();
+		expect(entitiesIn('La meta de déficit')).toEqual([]);
 	});
 });
