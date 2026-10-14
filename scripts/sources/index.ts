@@ -32,6 +32,7 @@ import { search } from './search.ts';
 import { statuspage } from './statuspage.ts';
 import { sec } from './sec.ts';
 import { uscurve, usdebt } from './treasury.ts';
+import { who } from './who.ts';
 import { wiki } from './wiki.ts';
 import { crypto, hn, power, quakes, weather } from './world.ts';
 
@@ -68,6 +69,7 @@ export const sources: Source<any>[] = [
 	ioda,
 	portwatch,
 	reliefweb,
+	who,
 	predictions,
 	weather,
 	air,
