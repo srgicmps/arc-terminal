@@ -244,6 +244,39 @@ export interface HazardsData {
 	events: NaturalEvent[];
 }
 
+// ---------- Finnhub: resultados, noticias y cotizaciones ----------
+
+export interface Earnings {
+	/** «2026-10-14» */
+	date: string;
+	symbol: string;
+	/** bmo: antes de la apertura · amc: tras el cierre · dmh: durante la sesión · vacío: sin hora. */
+	hour: string;
+	quarter: number | null;
+	year: number | null;
+	epsEstimate: number | null;
+	epsActual: number | null;
+	revenueEstimate: number | null;
+	revenueActual: number | null;
+}
+
+export interface Quote {
+	symbol: string;
+	price: number;
+	change: number | null;
+	/** Variación del día, en %. */
+	changePct: number | null;
+	prevClose: number | null;
+	/** ISO 8601 de la última cotización. */
+	time: string | null;
+}
+
+export interface FinnhubData {
+	earnings: Earnings[];
+	news: NewsItem[];
+	quotes: Quote[];
+}
+
 // ---------- Mercados de predicción (Polymarket) ----------
 
 export interface Prediction {
