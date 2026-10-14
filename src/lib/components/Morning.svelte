@@ -63,7 +63,7 @@
 		const year = Number(today.slice(0, 4));
 		const fest = (holidays?.items ?? []).find((h) => h.date === today);
 		const markets = [...nyseHolidays(year), ...bmeHolidays(year)].filter((h) => h.date === today).map((h) => h.market);
-		return [fest ? `Festivo: ${fest.name}` : '', markets.length ? `Sin bolsa en ${markets.join(' y ')}` : '']
+		return [fest ? `${fest.scope === 'IB' ? 'Festivo en Baleares' : 'Festivo'}: ${fest.name}` : '', markets.length ? `Sin bolsa en ${markets.join(' y ')}` : '']
 			.filter(Boolean)
 			.join(' · ');
 	});

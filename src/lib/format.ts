@@ -94,6 +94,8 @@ export function period(t: string): string {
 	if (m) return `sem ${Number(m[2])} ${m[1].slice(2)}`;
 	m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
 	if (m) return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]}`;
+	// Instante ISO («2026-10-14T19:05:00.000Z»): la hora de Madrid.
+	if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(t)) return hm(t);
 	return t;
 }
 
