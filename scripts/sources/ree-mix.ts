@@ -43,7 +43,10 @@ const valueOn = (item: Raw, date: string) =>
 	Number(list<Raw>(item.attributes?.values).find((v) => String(v.datetime).startsWith(date))?.value);
 
 async function fetchSystem(system: (typeof SYSTEMS)[number]): Promise<PowerMix | null> {
-	const items = (await daily('estructura-generacion', system)).filter((i) => !i.attributes?.composite);
+	// Fuera la «Generación total», que REE manda como una tecnología más (no siempre marcada como compuesta).
+	const items = (await daily('estructura-generacion', system)).filter(
+		(i) => !i.attributes?.composite && !/total/i.test(String(i.attributes?.title ?? i.type))
+	);
 	// El último día que tenga datos: hoy si REE ya lo ha publicado; si no, ayer.
 	const dates = items.flatMap((i) => list<Raw>(i.attributes?.values).map((v) => String(v.datetime).slice(0, 10)));
 	const date = dates.sort().at(-1);
