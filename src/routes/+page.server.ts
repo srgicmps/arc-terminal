@@ -2,7 +2,7 @@
 // (unos pocos titulares, las series de las tablas…), no los JSON enteros de cada sección.
 import { REF_COUNTRIES } from '#lib/refcountry.svelte.ts';
 import { dataset } from '#lib/data.ts';
-import type { FuelData } from '#lib/fuel.ts';
+import type { FuelData, FuelSpainData } from '#lib/fuel.ts';
 import type { Puzzle } from '#lib/chess/puzzle.ts';
 import { minus, topImportant } from '#lib/imp.ts';
 import type { AlertsData } from '#lib/weather.ts';
@@ -35,7 +35,7 @@ const TAIL = 40;
 export const load: PageServerLoad = async () => {
 	const today = madridDate(Date.now());
 	const tomorrow = minus(today, -1);
-	const [news, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn, predictions, imp, finnhub, holidays, fred, lichess, alerts, releases] = await Promise.all([
+	const [news, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn, predictions, imp, finnhub, holidays, fred, lichess, alerts, releases, fuelEs] = await Promise.all([
 		Promise.all(SECTIONS.map((s) => dataset<NewsData>(`news-${s}`))),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('eurostat'),
@@ -54,7 +54,8 @@ export const load: PageServerLoad = async () => {
 		dataset<SeriesData>('fred'),
 		dataset<Puzzle>('lichess'),
 		dataset<AlertsData>('alerts'),
-		dataset<ReleaseCalData>('releases-cal')
+		dataset<ReleaseCalData>('releases-cal'),
+		dataset<FuelSpainData>('fuel-es')
 	]);
 
 	// Titulares de portada: los 3 más recientes de cada sección, mezclados por hora (sin el resumen, que no se pinta).
@@ -90,6 +91,8 @@ export const load: PageServerLoad = async () => {
 				.sort((a, b) => (a.prices.g95 ?? 0) - (b.prices.g95 ?? 0))
 				.slice(0, 3)
 		})),
+		// Gasolina 95 de cada provincia (media y mínimo), para la de «Tu sitio»; sin gasolineras ni historial.
+		fuelProvinces: (fuelEs?.data.provinces ?? []).map((p) => ({ id: p.id, name: p.name, avg: p.avg.g95, min: p.min.g95 })),
 		// Del BOE, el total de cada sección y las 4 primeras disposiciones generales.
 		boe: trim(boe, (d) => ({
 			...d,
