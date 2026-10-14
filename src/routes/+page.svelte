@@ -160,7 +160,7 @@
 				{#each quakes as q (q.id)}
 					<li>
 						<a class="l" href={q.url} target="_blank" rel="noopener">{q.place}<small>{when(q.time, clock.now)}</small></a>
-						<b class:down={q.mag >= 6}>M{nf(q.mag, 1)}</b>
+						<b class:strong={q.mag >= 6}>M{nf(q.mag, 1)}</b>
 					</li>
 				{:else}
 					<li><span class="l">Ninguno de M4,5 o más.</span></li>
@@ -192,6 +192,10 @@
 </div>
 
 <style>
+	.strong {
+		color: var(--amber);
+	}
+
 	em {
 		margin-left: 6px;
 		font-style: normal;
