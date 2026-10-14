@@ -53,6 +53,8 @@ export const hfpapers: Source<Paper[]> = {
 	// La lista cambia pocas veces al día y, sin token, Hugging Face limita las peticiones por IP:
 	// con refrescarla cada 6 h basta.
 	maxAgeMinutes: 360,
+	// A primera hora (y algunos fines de semana) la lista del día aún está vacía o tiene pocos papers.
+	allowEmpty: true,
 	async fetch() {
 		// Token opcional (GitHub Secret HF_TOKEN): da más margen de peticiones, pero no es obligatorio.
 		const token = process.env.HF_TOKEN;
