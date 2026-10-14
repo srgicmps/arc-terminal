@@ -9,7 +9,7 @@
 // + 3 si lo confirma una fuente oficial (Moncloa, BCE, Fed, Casa Blanca, BOE, Federal Register…)
 // + 3 si sale en «In the news» de la Wikipedia en inglés
 import { OFFICIAL } from './news.ts';
-import type { BoeData, FedRegData, ImpCurrent, ImpData, ImpEntry, ImpSeen, NewsData, NewsItem } from '../../src/lib/types.ts';
+import type { BoeData, FedRegData, ImpCurrent, ImpLink, ImpData, ImpEntry, ImpSeen, NewsData, NewsItem } from '../../src/lib/types.ts';
 import { NEWS_SECTIONS } from '../../src/lib/news.ts';
 import { jaccard, normalize } from '../cluster.ts';
 import { appendDaily, getJson, list, madridDay, NO_CONTEXT, plain, type Source } from '../lib.ts';
@@ -25,6 +25,8 @@ const KEEP_DAYS = 366;
 /** Un tema: un grupo de titulares (de una o varias secciones) que cuentan lo mismo. */
 export interface Group {
 	title: string;
+	/** 'en' si el titular principal está en inglés (para traducirlo, scripts/translate.ts). */
+	lang?: 'en';
 	url: string;
 	time: string | null;
 	words: Set<string>;
@@ -32,6 +34,8 @@ export interface Group {
 	sections: string[];
 	/** Enlaces normalizados de todos sus titulares. */
 	urls: string[];
+	/** El enlace de cada medio (el primero que se vio), en el mismo orden que `sources`. */
+	links: ImpLink[];
 }
 
 /** Un grupo ya reconocido entre pasadas: su clave estable y desde cuándo existe. */
@@ -93,6 +97,7 @@ export function mergeSections(sections: Record<string, NewsItem[]>, now: number)
 		const words = normalize(item.title);
 		const urls = [item.url, ...(item.also ?? []).map((a) => a.url)].map(normUrl);
 		const sources = [item.source, ...(item.also ?? []).map((a) => a.source)];
+		const links = [{ source: item.source, url: item.url }, ...(item.also ?? [])];
 		const time = Date.parse(item.time!);
 		const group = groups.find(
 			(g) =>
@@ -100,10 +105,25 @@ export function mergeSections(sections: Record<string, NewsItem[]>, now: number)
 				(Math.abs(Date.parse(g.time!) - time) <= 12 * HOUR && sameStory(g.words, words))
 		);
 		if (!group) {
-			groups.push({ title: item.title, url: item.url, time: item.time, words, sources: [...new Set(sources)], sections: [section], urls: [...new Set(urls)] });
+			const own = links.filter((l, i) => links.findIndex((m) => m.source === l.source) === i);
+			groups.push({
+				title: item.title,
+				...(item.lang && { lang: item.lang }),
+				url: item.url,
+				time: item.time,
+				words,
+				sources: own.map((l) => l.source),
+				sections: [section],
+				urls: [...new Set(urls)],
+				links: own
+			});
 			continue;
 		}
-		for (const s of sources) if (!group.sources.includes(s)) group.sources.push(s);
+		for (const l of links) {
+			if (group.sources.includes(l.source)) continue;
+			group.sources.push(l.source);
+			group.links.push({ source: l.source, url: l.url });
+		}
 		for (const u of urls) if (!group.urls.includes(u)) group.urls.push(u);
 		if (!group.sections.includes(section)) group.sections.push(section);
 	}
@@ -201,8 +221,10 @@ export function scoreGroups(groups: Tracked[], { now, official, itn }: ScoreInpu
 				score: Math.round(score * 10) / 10,
 				sections: g.sections,
 				first: g.first,
-				time: g.time
+				time: g.time,
+				links: g.links
 			};
+			if (g.lang) item.lang = g.lang;
 			if (official) item.official = official;
 			if (wiki) item.wiki = true;
 			return item;
@@ -218,13 +240,33 @@ export function mergeDay(day: ImpEntry[], now: ImpEntry[], n = TOP): ImpEntry[] 
 	const best = new Map<string, ImpEntry>();
 	for (const e of [...day, ...now]) {
 		const prev = best.get(e.k);
-		if (!prev || e.score > prev.score) best.set(e.k, { ...e, sources: [...new Set([...(prev?.sources ?? []), ...e.sources])] });
-		else prev.sources = [...new Set([...prev.sources, ...e.sources])];
+		// La traducción (scripts/translate.ts) llega después de IMP: se conserva la del día si el titular no cambia.
+		const kept = prev?.title === e.title && !e.titleEs ? { lang: prev.lang, titleEs: prev.titleEs } : {};
+		if (!prev || e.score > prev.score) best.set(e.k, { ...e, ...kept, ...joined(prev, e) });
+		else Object.assign(prev, joined(prev, e));
 	}
 	return [...best.values()].sort((a, b) => b.score - a.score).slice(0, n);
 }
 
-const entry = ({ k, title, url, sources, score }: ImpEntry): ImpEntry => ({ k, title, url, sources, score });
+/** Medios y enlaces de dos apariciones del mismo tema, sin repetir medio. */
+function joined(a: ImpEntry | undefined, b: ImpEntry): Pick<ImpEntry, 'sources' | 'links'> {
+	const sources = [...new Set([...(a?.sources ?? []), ...b.sources])];
+	if (!a?.links && !b.links) return { sources };
+	const links = [...(a?.links ?? []), ...(b.links ?? [])].filter((l, i, all) => all.findIndex((m) => m.source === l.source) === i);
+	return { sources, links };
+}
+
+/** Lo que se guarda de cada tema en el histórico. Los enlaces, solo el día de hoy (ver `fetch`). */
+const entry = ({ k, title, lang, titleEs, url, sources, score, links }: ImpEntry): ImpEntry => ({
+	k,
+	title,
+	...(lang && { lang }),
+	...(titleEs && { titleEs }),
+	url,
+	sources,
+	score,
+	...(links && { links })
+});
 
 /** Textos oficiales de esta pasada: medios oficiales de las secciones, BOE y Federal Register. */
 export function officialDocs(
@@ -274,7 +316,10 @@ export const imp: Source<ImpData> = {
 		const scored = scoreGroups(tracked, { now, official, itn: await inTheNews(date) });
 		const current = scored.slice(0, TOP);
 		const today = previous?.days.find((d) => d.date === date)?.items ?? [];
-		const days = appendDaily(previous?.days, { date, items: mergeDay(today, current.map(entry)) }, KEEP_DAYS);
+		// Los enlaces de cada medio solo se guardan hoy: en un año de histórico pesarían demasiado.
+		const days = appendDaily(previous?.days, { date, items: mergeDay(today, current.map(entry)) }, KEEP_DAYS).map(
+			(d) => (d.date === date ? d : { ...d, items: d.items.map(({ links: _, ...e }) => e) })
+		);
 		return { date, current, days, seen };
 	}
 };

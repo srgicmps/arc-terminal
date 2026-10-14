@@ -1,0 +1,107 @@
+# Vía rápida: cada 5 minutos refresca solo las fuentes urgentes (terremotos, avisos, titulares, IMP…) y
+# vuelve a publicar la web. La vía normal (deploy.yml, cada 15 min y en cada push a main) sigue igual.
+# - Las demás fuentes no se descargan: `pnpm data` reutiliza su copia publicada mientras no pase su
+#   maxAgeMinutes, así que no se gastan los límites de Finnhub, SEC, etc.
+# - Sin check ni test: el código es el de main, que ya pasó las comprobaciones al mezclarse.
+# - Comparte el grupo de concurrencia con deploy.yml: nunca publican a la vez y, si llega otra pasada
+#   mientras hay una en marcha, espera (y una pendiente más nueva sustituye a la anterior, no se acumulan).
+name: Vía rápida
+
+on:
+  # Minutos 4, 9, 14… Nunca coinciden con los de deploy.yml (7, 22, 37, 52): si coincidieran, una pasada
+  # rápida pendiente podría sustituir a una normal y esa vez no correrían check, test ni issues.ts.
+  # GitHub puede retrasar el cron unos minutos cuando va cargado.
+  schedule:
+    - cron: '4-59/5 * * * *'
+  workflow_dispatch:
+  # En los PR que tocan este archivo: misma pasada, sin publicar, para comprobarla y medir cuánto tarda.
+  pull_request:
+    paths: ['.github/workflows/fast.yml']
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('fast-{0}', github.ref) || 'pages-refs/heads/main' }}
+  cancel-in-progress: false
+
+env:
+  # Fuentes urgentes (si alguna deja de existir, update.ts la ignora). Mercados, para que un -10 % de
+  # Bitcoin o de un valor seguido avise en ≤5 min:
+  # crypto son 2 peticiones a CoinGecko y alert-quotes, 16 a Finnhub por pasada (límites: ~30/min y 60/min).
+  URGENT: >-
+    quakes quakes-es alerts hazards gdacs statuspage ioda ree-demand
+    crypto alert-quotes
+    news-eco news-geo news-es news-ws news-tech news-ai news-gov imp search
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # 1) Todas las fuentes: las que no han caducado se copian de la web publicada (rápido, sin gastar
+      #    límites). 2) Las urgentes, forzadas aunque su copia sea reciente.
+      - name: Datos
+        run: |
+          pnpm data
+          read -ra names <<< "$URGENT"
+          FORCE_REFRESH=1 pnpm data "${names[@]}"
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+
+      # Avisos al móvil con ntfy, como en deploy.yml y con la misma caché del historial (las cachés son por
+      # rama, así que las dos vías comparten la de main y ninguna repite un aviso de la otra). Si falla, no
+      # frena la publicación.
+      - if: github.event_name != 'pull_request'
+        uses: actions/cache/restore@v4
+        continue-on-error: true
+        with:
+          path: .notify-cache
+          key: notify-log-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: notify-log-
+      - if: github.event_name != 'pull_request'
+        run: node scripts/notify.ts
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NOTIFY_CACHE: .notify-cache/notify-log.json
+          ALERT_FUEL_ZONE: ${{ secrets.ALERT_FUEL_ZONE }}
+      - if: github.event_name != 'pull_request' && hashFiles('.notify-cache/notify-log.json') != ''
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: .notify-cache
+          key: notify-log-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - run: pnpm build --logLevel warn
+
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

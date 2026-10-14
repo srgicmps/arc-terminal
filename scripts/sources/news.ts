@@ -64,11 +64,52 @@ const FEEDS: Record<string, Feed[]> = {
 		{ name: 'Comisión Europea', url: 'https://ec.europa.eu/commission/presscorner/api/rss?language=es' },
 		{ name: 'Casa Blanca', url: 'https://www.whitehouse.gov/news/feed/' },
 		{ name: 'Reserva Federal', url: 'https://www.federalreserve.gov/feeds/press_all.xml' }
+	],
+	// Organismos internacionales. Comprobados con probe (14-10-2026). Descartados: OTAN (sin RSS), FMI (429 desde
+	// Actions), Banco Mundial (sin RSS, y su API de noticias va dos meses atrasada) y OPEP (403 de Cloudflare).
+	intl: [
+		// Comunicados y crónicas de las reuniones: Consejo de Seguridad, Asamblea General…
+		{ name: 'ONU', url: 'https://press.un.org/en/rss.xml' },
+		{ name: 'Noticias ONU', url: 'https://news.un.org/feed/subscribe/en/news/topic/peace-and-security/feed/rss.xml' },
+		{ name: 'OMC', url: 'https://www.wto.org/library/rss/latest_news_e.xml' }
 	]
 };
 
+/** Medios que publican en inglés: sus titulares llevan `lang: 'en'` para traducirlos (scripts/translate.ts). */
+export const ENGLISH = new Set([
+	'Financial Times',
+	'BCE',
+	'The Economist',
+	'BBC',
+	'Al Jazeera',
+	'DW',
+	'France 24',
+	'The Guardian',
+	'CNBC',
+	'CNBC Markets',
+	'MarketWatch',
+	'WSJ',
+	'Investing.com',
+	'TechCrunch',
+	'The Verge',
+	'Ars Technica',
+	'Wired',
+	'MIT Technology Review',
+	'Hugging Face',
+	'OpenAI',
+	'Google',
+	'Simon Willison',
+	'Casa Blanca',
+	'Reserva Federal'
+]);
+
+/** Marca los titulares de un medio en inglés. */
+export function withLang(items: NewsItem[], source: string): NewsItem[] {
+	return ENGLISH.has(source) ? items.map((item) => ({ ...item, lang: 'en' as const })) : items;
+}
+
 /** Medios oficiales (gobiernos, bancos centrales): IMP los usa para confirmar noticias. */
-export const OFFICIAL = new Set([...FEEDS.gov.map((f) => f.name), 'BCE']);
+export const OFFICIAL = new Set([...FEEDS.gov.map((f) => f.name), ...FEEDS.intl.map((f) => f.name), 'BCE']);
 
 /** Cuántos titulares por medio y por sección como máximo. */
 const PER_FEED = 15;
@@ -164,12 +205,15 @@ export function feedError(reason: unknown): string {
 async function section(feeds: Feed[]): Promise<NewsData> {
 	const results = await Promise.allSettled(
 		feeds.map(async (feed) =>
-			readFeed(
-				await getText(feed.url, {
-					headers: { Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml' }
-				}),
+			withLang(
+				readFeed(
+					await getText(feed.url, {
+						headers: { Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml' }
+					}),
+					feed.name
+				).slice(0, PER_FEED),
 				feed.name
-			).slice(0, PER_FEED)
+			)
 		)
 	);
 	const status: FeedStatus[] = [];
@@ -204,7 +248,8 @@ const LABELS: Record<string, string> = {
 	ws: 'Wall Street',
 	tech: 'Tecnología',
 	ai: 'Inteligencia artificial',
-	gov: 'Gobiernos e instituciones'
+	gov: 'Gobiernos e instituciones',
+	intl: 'Organismos internacionales'
 };
 
 export const newsSources: Source<NewsData>[] = Object.entries(FEEDS).map(([key, feeds]) => ({

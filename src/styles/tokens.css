@@ -15,12 +15,22 @@
 	--muted: #808a97; /* texto secundario */
 	--faint: #747e8a; /* texto terciario: 4,6:1 sobre --panel (WCAG AA) */
 	--amber: #f2a83b; /* acento */
+	--amber-dim: #c99447; /* ámbar tenue, para texto destacado sin gritar: 7:1 sobre --panel */
 	--amber-soft: rgba(242, 168, 59, 0.13); /* fondo con acento */
 	--amber-edge: rgba(242, 168, 59, 0.42); /* borde con acento */
 	--on-amber: #120c02; /* texto sobre ámbar */
 	--up: #4cc48a; /* sube (solo para subidas) */
 	--down: #f0646f; /* baja (solo para bajadas) */
 	--neutral: #3a434e; /* relleno gris de barras y gráficos */
+	/* Ajedrez (CHESS): casillas sobrias y piezas que no cambian de bando con el tema. */
+	--sq-light: #232b35; /* casilla clara */
+	--sq-dark: #171d25; /* casilla oscura */
+	--piece-w: #e4e8ed; /* pieza blanca */
+	--piece-w-edge: #0b0e12; /* su contorno y detalles */
+	--piece-b: #07090c; /* pieza negra */
+	--piece-b-edge: #9aa4b0;
+	--series-2: #7fa7d6; /* segunda y tercera serie de un gráfico (la primera es --amber) */
+	--series-3: #b59ad6;
 
 	/* ── Tipografía ──────────────────────────────────────────────────────────────────────── */
 	--mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; /* datos y comandos */
@@ -66,9 +76,11 @@
 	--sp-20: 20px;
 	--sp-24: 24px;
 	/* Con nombre propio: el ritmo principal. */
-	--pad-x: var(--sp-12); /* sangría horizontal de paneles, filas y tablas */
-	--row-y: var(--sp-8); /* margen vertical de una fila de lista */
-	--gutter: var(--sp-16); /* margen lateral de la página */
+	/* Densidad «Compacta» (la de por defecto, al estilo Bloomberg). La «Cómoda» solo redefine estos tokens. */
+	--pad-x: var(--sp-10); /* sangría horizontal de paneles, filas y tablas */
+	--row-y: var(--sp-6); /* margen vertical de una fila de lista */
+	--gutter: var(--sp-8); /* margen lateral de la página (escritorio) */
+	--gutter-touch: var(--sp-12); /* el mismo en el móvil, por debajo de 720 px */
 
 	/* ── Líneas y medidas ────────────────────────────────────────────────────────────────── */
 	--hair: 1px; /* grosor de todas las líneas */
@@ -88,6 +100,15 @@
 	--select-max: 180px; /* ancho máximo de un desplegable */
 	--col-min: 340px; /* ancho mínimo de una columna de paneles */
 	--col-min-wide: 420px; /* el mismo, en .grid-3 por debajo de 1100 px */
+	--z-popover: 50; /* burbujas del glosario (ⓘ): sobre la cabecera fija, bajo el panel maximizado */
+	--fit-panel-min: 280px; /* «encajar en pantalla»: alto mínimo de un panel (cabecera y unas 9 filas) */
+	--col-split: 400px; /* ancho mínimo de una subcolumna: una columna de más del doble se parte en dos o más */
+
+	/* ── Capas (z-index) y fondo atenuado ────────────────────────────────────────────────── */
+	--z-sticky: 1; /* cabeceras fijas dentro de un panel con scroll */
+	--z-modal: 100; /* panel maximizado, por encima de todo */
+	--scrim: rgba(8, 10, 13, 0.72); /* fondo atenuado detrás del panel maximizado */
+	--dur-fast: 120ms; /* aparición breve (se quita con prefers-reduced-motion) */
 
 	/*
 	 * Puntos de corte (las @media no aceptan variables, así que se documentan aquí):
@@ -113,10 +134,20 @@
 	--muted: #5b636e;
 	--faint: #636a74;
 	--amber: #9a5a00;
+	--amber-dim: #8a5d2c;
 	--amber-soft: rgba(154, 90, 0, 0.1);
 	--amber-edge: rgba(154, 90, 0, 0.4);
 	--on-amber: #ffffff;
 	--up: #147345;
 	--down: #c3303c;
 	--neutral: #b9b4a8;
+	--sq-light: #f3f0e9;
+	--sq-dark: #d8d2c4;
+	--piece-w: #ffffff;
+	--piece-w-edge: #16191d;
+	--piece-b: #23272d;
+	--piece-b-edge: #23272d;
+	--series-2: #2f639e;
+	--series-3: #7449a0;
+	--scrim: rgba(22, 25, 29, 0.42);
 }

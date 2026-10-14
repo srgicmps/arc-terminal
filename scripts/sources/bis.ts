@@ -69,3 +69,76 @@ export const bis: Source<SeriesData> = {
 		return { series };
 	}
 };
+
+// ---------- Precio de la vivienda (dataset WS_SPP, «selected residential property prices») ----------
+// Clave: frecuencia . zona . N (nominal) o R (real, descontada la inflación) . 771 (variación interanual, %).
+// Uso libre citando la fuente: «BIS, Residential property prices».
+
+// Zonas en el orden de la tabla. XM es la zona euro.
+export const HOUSING_AREAS: Record<string, string> = {
+	US: 'EE. UU.',
+	XM: 'Zona euro',
+	ES: 'España',
+	DE: 'Alemania',
+	GB: 'Reino Unido',
+	FR: 'Francia',
+	IT: 'Italia',
+	NL: 'Países Bajos',
+	CN: 'China',
+	JP: 'Japón',
+	CA: 'Canadá',
+	AU: 'Australia',
+	KR: 'Corea del Sur'
+};
+
+export const HOUSING_URL = (start: string) =>
+	`https://stats.bis.org/api/v1/data/WS_SPP/Q.${Object.keys(HOUSING_AREAS).join('+')}.N+R.771/all` +
+	`?startPeriod=${start}&detail=dataonly&format=csv`;
+
+/** Filas del CSV → una serie por zona y tipo («house-n-es», «house-r-es»), trimestres de más antiguo a más reciente. */
+export function parseHousing(rows: Record<string, string>[]): Series[] {
+	const byKey = new Map<string, Point[]>();
+	for (const r of rows) {
+		const v = num(r.OBS_VALUE);
+		if (
+			!r.REF_AREA ||
+			!(r.VALUE === 'N' || r.VALUE === 'R') ||
+			!/^\d{4}-Q[1-4]$/.test(r.TIME_PERIOD ?? '') ||
+			v === null
+		)
+			continue;
+		const key = `${r.VALUE}-${r.REF_AREA}`;
+		byKey.set(key, [...(byKey.get(key) ?? []), { t: r.TIME_PERIOD, v }]);
+	}
+	return Object.entries(HOUSING_AREAS).flatMap(([area, name]) =>
+		(['N', 'R'] as const).flatMap((kind) => {
+			const points = (byKey.get(`${kind}-${area}`) ?? []).sort((a, b) => a.t.localeCompare(b.t));
+			if (!points.length) return [];
+			return [
+				{
+					id: `house-${kind.toLowerCase()}-${area.toLowerCase()}`,
+					label: `${name} · ${kind === 'N' ? 'nominal' : 'real'}`,
+					unit: '%',
+					geo: area === 'XM' ? 'EA' : area,
+					points,
+					source: 'BIS',
+					url: 'https://data.bis.org/topics/RPP'
+				}
+			];
+		})
+	);
+}
+
+export const housing: Source<SeriesData> = {
+	name: 'housing',
+	label: 'Precio de la vivienda en el mundo · BIS',
+	// Datos trimestrales: una vez al día sobra.
+	maxAgeMinutes: 1435,
+	async fetch() {
+		// Cinco años y medio de trimestres, para el minigráfico de 5 años aunque el último dato vaya con retraso.
+		const start = `${new Date().getUTCFullYear() - 6}-Q1`;
+		const series = parseHousing(parseCsv(await getText(HOUSING_URL(start), { headers: { Accept: 'text/csv' } })));
+		if (!series.length) throw new Error('el BIS no devuelve precios de la vivienda');
+		return { series };
+	}
+};

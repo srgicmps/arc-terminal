@@ -63,7 +63,7 @@ export function redact(message: string, secrets: (string | undefined)[]): string
 }
 
 /** Variables de entorno con claves: nunca deben acabar en un issue público. */
-const SECRET_ENV = ['FRED_API_KEY', 'FINNHUB_API_KEY', 'HF_TOKEN', 'SEC_USER_AGENT', 'GITHUB_TOKEN'];
+const SECRET_ENV = ['FRED_API_KEY', 'FINNHUB_API_KEY', 'HF_TOKEN', 'SEC_USER_AGENT', 'MYMEMORY_EMAIL', 'GITHUB_TOKEN'];
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
