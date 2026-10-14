@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bestWindow, cheapestNow, cheapestWindow, days, dayStats, hourLabel, hourly, isHour, madridNow } from './power.ts';
+import { bestWindow, cheapestNow, cheapestWindow, days, dayStats, hourLabel, hourly, isHour, madridNow, windowLabel } from './power.ts';
 
 const t = (day: string, h: number, m = 0) => `${day}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00.000+02:00`;
 
@@ -159,5 +159,15 @@ describe('bestWindow', () => {
 		const w = bestWindow(hours, 2)!;
 		expect(w.first).toBe(hours[2]);
 		expect(w.last).toBe(hours[3]); // la segunda 02:00
+	});
+});
+
+describe('windowLabel', () => {
+	const h = (hour: number, repeat = false) => ({ day: '2026-10-14', hour, kwh: 0.1, repeat });
+	it('de la primera hora al final de la última', () => {
+		expect(windowLabel({ first: h(3), last: h(4) })).toBe('03:00–05:00');
+		expect(windowLabel({ first: h(22), last: h(23) })).toBe('22:00–24:00');
+		// La segunda 02:00 del cambio de hora lleva su marca.
+		expect(windowLabel({ first: h(2, true), last: h(3) })).toBe('02:00 ²–04:00');
 	});
 });

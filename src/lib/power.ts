@@ -183,3 +183,8 @@ export function bestWindow(prices: HourPrice[], n: number): PriceWindow | null {
 		saving: dayAvg ? ((dayAvg - avg) / dayAvg) * 100 : 0
 	};
 }
+
+/** «03:00–05:00»: de la primera hora de la franja al final de la última («23:00» acaba a las «24:00»). */
+export function windowLabel(w: Pick<PriceWindow, 'first' | 'last'>): string {
+	return `${hourLabel(w.first)}–${String(w.last.hour + 1).padStart(2, '0')}:00`;
+}
