@@ -8,6 +8,7 @@ import { fedreg } from './fedreg.ts';
 import { fuel, fuelSpain } from './fuel.ts';
 import { hazards, quakesEs } from './hazards.ts';
 import { newsSources } from './news.ts';
+import { predictions } from './predictions.ts';
 import { uscurve, usdebt } from './treasury.ts';
 import { wiki } from './wiki.ts';
 import { crypto, hn, power, quakes, weather } from './world.ts';
@@ -30,6 +31,7 @@ export const sources: Source<any>[] = [
 	quakes,
 	quakesEs,
 	hazards,
+	predictions,
 	weather,
 	crypto,
 	hn,
