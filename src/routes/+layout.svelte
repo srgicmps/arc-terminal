@@ -33,7 +33,7 @@
 		if (views === null) return;
 		const { codes, seconds } = parseTv(views, page.url.searchParams.get('s'));
 		startTv(codes, seconds);
-		goto(resolve(routeOf(codes[0])), { replaceState: true });
+		goto(routeHref(routeOf(codes[0])), { replaceState: true });
 	});
 
 	// El reloj del modo TV: cada cuarto de segundo avanza la barra de progreso y, al llegar, cambia de vista.
@@ -41,7 +41,7 @@
 		if (!tv.on) return;
 		const id = setInterval(() => {
 			const next = tickTv(0.25);
-			if (next) goto(resolve(routeOf(next)));
+			if (next) goto(routeHref(routeOf(next)));
 		}, 250);
 		return () => clearInterval(id);
 	});
