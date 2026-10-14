@@ -100,7 +100,8 @@
 	<section class="morning" class:folded aria-label="Mi mañana">
 		{#if folded}
 			<button type="button" class="line" onclick={() => (open = true)} aria-expanded="false">
-				<span class="lbl">Mi mañana</span>
+				<!-- Etiqueta en gris con la clase común .mut de app.css: sin CSS propio que copie el de Tile. -->
+				<span class="mut">Mi mañana</span>
 				{items.map((i) => i.value).join(' · ')}
 			</button>
 		{:else}
@@ -138,13 +139,6 @@
 		flex: 1;
 	}
 
-	.lbl {
-		color: var(--muted);
-		font-size: var(--fs-xs);
-		letter-spacing: var(--track-label);
-		text-transform: uppercase;
-	}
-
 	.line,
 	.close {
 		font: inherit;
@@ -167,7 +161,7 @@
 		font-size: var(--fs-s);
 	}
 
-	.line:hover .lbl,
+	.line:hover,
 	.close:hover {
 		color: var(--amber);
 	}
