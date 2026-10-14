@@ -1,5 +1,6 @@
 // Forma de los datos de static/data/*.json. La comparten los scripts que los descargan (scripts/sources/)
 // y las vistas que los muestran.
+import type { SeaState } from './weather.ts';
 
 // ---------- Series temporales (macro, tipos, divisas) ----------
 
@@ -169,6 +170,8 @@ export interface WeatherPlace {
 
 export interface WeatherData {
 	places: WeatherPlace[];
+	/** Oleaje en las costas norte y sur de Menorca (puede faltar en copias antiguas). */
+	coasts?: SeaState[];
 }
 
 // ---------- Cripto (CoinGecko) ----------

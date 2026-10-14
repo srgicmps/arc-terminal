@@ -127,6 +127,41 @@ export function pollenLevel(key: PollenKey, v: number | null | undefined): Level
 	return { label: 'Alto', tone: 'bad' };
 }
 
+// ---------- Estado del mar (Open-Meteo Marine) ----------
+
+export interface SeaState {
+	/** «Costa norte», «Costa sur». */
+	name: string;
+	/** Punto de referencia: «Fornells», «Son Bou». */
+	spot: string;
+	now: {
+		/** Altura significativa de ola (m), dirección de donde viene (°) y periodo (s). */
+		wave: number | null;
+		waveDir: number | null;
+		wavePeriod: number | null;
+		/** Mar de fondo. */
+		swell: number | null;
+		swellDir: number | null;
+		swellPeriod: number | null;
+		/** Temperatura del agua (°C). */
+		water: number | null;
+	};
+	daily: { date: string; waveMax: number | null; swellMax: number | null; dir: number | null }[];
+}
+
+/** Estado del mar según la escala Douglas, a partir de la altura de ola en metros. */
+export function seaLevel(m: number | null | undefined): Level | null {
+	if (!known(m)) return null;
+	if (m < 0.05) return { label: 'Calma', tone: 'ok' };
+	if (m <= 0.1) return { label: 'Rizada', tone: 'ok' };
+	if (m <= 0.5) return { label: 'Marejadilla', tone: 'ok' };
+	if (m <= 1.25) return { label: 'Marejada', tone: 'mid' };
+	if (m <= 2.5) return { label: 'Fuerte marejada', tone: 'mid' };
+	if (m <= 4) return { label: 'Gruesa', tone: 'bad' };
+	if (m <= 6) return { label: 'Muy gruesa', tone: 'bad' };
+	return { label: 'Arbolada o más', tone: 'bad' };
+}
+
 // ---------- Avisos meteorológicos (MeteoAlarm, con los avisos de AEMET) ----------
 
 export type AlertColor = 'yellow' | 'orange' | 'red';

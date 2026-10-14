@@ -10,6 +10,7 @@ import type {
 	WeatherData,
 	WeatherPlace
 } from '../../src/lib/types.ts';
+import type { SeaState } from '../../src/lib/weather.ts';
 import { appendDaily, getJson, list, madridDate, num, plain, type Source } from '../lib.ts';
 
 type Raw = Record<string, any>;
@@ -102,7 +103,7 @@ const PLACES = [
 
 export const weather: Source<WeatherData> = {
 	name: 'weather',
-	label: 'Tiempo y temperatura del mar · Open-Meteo',
+	label: 'Tiempo, temperatura del agua y oleaje · Open-Meteo',
 	maxAgeMinutes: 55,
 	async fetch() {
 		const params = new URLSearchParams({
@@ -116,14 +117,11 @@ export const weather: Source<WeatherData> = {
 		});
 		const forecasts = list(await getJson<Raw | Raw[]>(`https://api.open-meteo.com/v1/forecast?${params}`));
 
-		// Temperatura del agua (modelo marino), solo para los sitios con costa.
+		// Modelo marino en una sola petición: temperatura del agua en los sitios con costa y, detrás, el oleaje
+		// en las dos costas de Menorca (puntos un poco mar adentro para que el modelo no los tome por tierra).
 		const coastal = PLACES.filter((p) => p.sea);
-		const seaParams = new URLSearchParams({
-			latitude: coastal.map((p) => p.lat).join(','),
-			longitude: coastal.map((p) => p.lon).join(','),
-			current: 'sea_surface_temperature'
-		});
-		const sea = await getJson<Raw | Raw[]>(`https://marine-api.open-meteo.com/v1/marine?${seaParams}`)
+		const points = [...coastal, ...COASTS];
+		const sea = await getJson<Raw | Raw[]>(`https://marine-api.open-meteo.com/v1/marine?${marineParams(points)}`)
 			.then(list)
 			.catch(() => [] as Raw[]);
 		const seaFor = (name: string) => {
@@ -156,9 +154,70 @@ export const weather: Source<WeatherData> = {
 			};
 		});
 		if (!places.some((p) => Number.isFinite(p.current.temp))) throw new Error('sin datos de tiempo');
-		return { places };
+		return { places, coasts: parseCoasts(sea.slice(coastal.length)) };
 	}
 };
+
+// Estado del mar en Menorca: costa norte (tramontana) frente a costa sur.
+const COASTS = [
+	{ name: 'Costa norte', spot: 'Fornells', lat: 40.09, lon: 4.13 },
+	{ name: 'Costa sur', spot: 'Son Bou', lat: 39.87, lon: 4.07 }
+];
+
+const MARINE_NOW = [
+	'sea_surface_temperature',
+	'wave_height',
+	'wave_direction',
+	'wave_period',
+	'swell_wave_height',
+	'swell_wave_direction',
+	'swell_wave_period'
+];
+const MARINE_DAILY = ['wave_height_max', 'swell_wave_height_max', 'wave_direction_dominant'];
+
+function marineParams(points: { lat: number; lon: number }[]) {
+	return new URLSearchParams({
+		latitude: points.map((p) => p.lat).join(','),
+		longitude: points.map((p) => p.lon).join(','),
+		current: MARINE_NOW.join(','),
+		daily: MARINE_DAILY.join(','),
+		timezone: 'Europe/Madrid',
+		forecast_days: '3'
+	});
+}
+
+/** URL de ejemplo (solo las dos costas) para scripts/probe.txt. */
+export const COASTS_URL = `https://marine-api.open-meteo.com/v1/marine?${marineParams(COASTS)}`;
+
+/** Respuestas del modelo marino para las dos costas, en el orden de COASTS. */
+export function parseCoasts(raw: Raw[]): SeaState[] {
+	return COASTS.flatMap((coast, i) => {
+		const c = raw[i]?.current ?? {};
+		const d = raw[i]?.daily ?? {};
+		const state: SeaState = {
+			name: coast.name,
+			spot: coast.spot,
+			now: {
+				wave: num(c.wave_height),
+				waveDir: num(c.wave_direction),
+				wavePeriod: num(c.wave_period),
+				swell: num(c.swell_wave_height),
+				swellDir: num(c.swell_wave_direction),
+				swellPeriod: num(c.swell_wave_period),
+				water: num(c.sea_surface_temperature)
+			},
+			daily: list<string>(d.time).map((date, j) => ({
+				date,
+				waveMax: num(d.wave_height_max?.[j]),
+				swellMax: num(d.swell_wave_height_max?.[j]),
+				dir: num(d.wave_direction_dominant?.[j])
+			}))
+		};
+		// Si el modelo no da oleaje en ese punto (lo toma por tierra), mejor no enseñarlo.
+		const empty = state.now.wave === null && !state.daily.some((x) => x.waveMax !== null);
+		return empty ? [] : [state];
+	});
+}
 
 // ---------- CoinGecko: criptomonedas principales. API pública, cita obligatoria. ----------
 
