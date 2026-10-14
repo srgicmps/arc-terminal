@@ -68,6 +68,12 @@ export interface FuelSpainDay {
 	provinces?: Record<string, FuelPrices>;
 }
 
+/** Un día del historial de una provincia (static/data/fuel/history/<id>.json). */
+export interface FuelProvinceDay {
+	date: string;
+	avg: FuelPrices;
+}
+
 export interface FuelSpainData {
 	sourceDate: string;
 	provinces: FuelProvince[];
