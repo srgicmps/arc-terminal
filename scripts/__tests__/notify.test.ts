@@ -411,4 +411,22 @@ describe('runNotify', () => {
 		expect(priv).toContain('stock:EADSY');
 		for (const text of [...logged, ...lines, pub, priv]) expect(text).not.toContain(KEY);
 	});
+
+	it('ADR europeos: como mucho una consulta por hora (la hora va en la caché, no en la copia publicada)', async () => {
+		const cache = join(dir, 'cache', 'notify-log.json');
+		const fetch = mockFetch((url) => {
+			if (url.endsWith('/data/notify-log.json')) return published(emptyLog());
+			if (url.startsWith('https://finnhub.io/')) return { c: 0, d: null, dp: null, pc: 0, t: 0 };
+			if (url.startsWith('https://ntfy.sh/')) return new Response('', { status: 200 });
+		});
+		const finnhub = () => fetch.mock.calls.filter(([u]) => String(u).startsWith('https://finnhub.io/')).length;
+		await runNotify({ topic: TOPIC, dir, cache, finnhubKey: 'k', euGap: 0, now: NOW });
+		expect(finnhub()).toBe(7);
+		await runNotify({ topic: TOPIC, dir, cache, finnhubKey: 'k', euGap: 0, now: NOW + 15 * 60_000 });
+		expect(finnhub()).toBe(7);
+		await runNotify({ topic: TOPIC, dir, cache, finnhubKey: 'k', euGap: 0, now: NOW + 61 * 60_000 });
+		expect(finnhub()).toBe(14);
+		expect(await written()).not.toContain('adr:fetched');
+		expect(await readFile(cache, 'utf8')).toContain('adr:fetched');
+	});
 });
