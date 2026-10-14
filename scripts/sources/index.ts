@@ -18,6 +18,7 @@ import { holidays } from './holidays.ts';
 import { imf } from './imf.ts';
 import { imp } from './imp.ts';
 import { ine } from './ine.ts';
+import { lichess } from './lichess.ts';
 import { leaders } from './leaders.ts';
 import { newsSources } from './news.ts';
 import { portwatch } from './portwatch.ts';
@@ -70,6 +71,7 @@ export const sources: Source<any>[] = [
 	hfpapers,
 	releases,
 	wiki,
+	lichess,
 	...newsSources,
 	// Derivadas: se calculan después, con los datos de las anteriores.
 	imp,
