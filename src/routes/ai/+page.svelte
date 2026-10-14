@@ -9,14 +9,14 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
 	import { compact } from '#lib/format.ts';
+	import { hnByTopic } from '#lib/hn.ts';
 	import { BIG_TECH } from '#lib/tickers/bigtech.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	// De la portada de Hacker News, lo que habla de IA.
-	const AI = /\b(ai|a\.i\.|llms?|gpt|openai|anthropic|claude|gemini|llama|mistral|deepseek|transformer|neural|machine learning|agents?|diffusion|copilot|inference|model)\b/i;
-	const hnAi = $derived((data.hn?.data ?? []).filter((i) => AI.test(i.title)));
+	const hnAi = $derived(hnByTopic(data.hn?.data ?? [], 'ai'));
 	const papers = $derived(data.papers?.data ?? []);
 	const models = $derived(data.models?.data ?? []);
 

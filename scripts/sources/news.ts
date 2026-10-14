@@ -50,7 +50,9 @@ const FEEDS: Record<string, Feed[]> = {
 		{ name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml' },
 		{ name: 'Ars Technica', url: 'https://feeds.arstechnica.com/arstechnica/index' },
 		{ name: 'Xataka', url: 'https://www.xataka.com/index.xml' },
-		{ name: 'Wired', url: 'https://www.wired.com/feed/rss' }
+		{ name: 'Wired', url: 'https://www.wired.com/feed/rss' },
+		// M38, comprobado con probe el 14-10-2026.
+		{ name: 'NVIDIA', url: 'https://blogs.nvidia.com/feed/' }
 	],
 	ai: [
 		{ name: 'MIT Technology Review', url: 'https://www.technologyreview.com/topic/artificial-intelligence/feed' },
@@ -59,7 +61,12 @@ const FEEDS: Record<string, Feed[]> = {
 		{ name: 'TechCrunch', url: 'https://techcrunch.com/category/artificial-intelligence/feed/' },
 		{ name: 'OpenAI', url: 'https://openai.com/news/rss.xml' },
 		{ name: 'Google', url: 'https://blog.google/technology/ai/rss/' },
-		{ name: 'Simon Willison', url: 'https://simonwillison.net/atom/everything/' }
+		{ name: 'Simon Willison', url: 'https://simonwillison.net/atom/everything/' },
+		// M38, comprobados con probe el 14-10-2026. Descartados: el blog de IA de Meta y las noticias de Anthropic (sin
+		// RSS, 404); de Meta se usa su blog de ingeniería.
+		{ name: 'Google DeepMind', url: 'https://deepmind.google/blog/rss.xml' },
+		{ name: 'Meta', url: 'https://engineering.fb.com/feed/' },
+		{ name: 'Microsoft Research', url: 'https://www.microsoft.com/en-us/research/feed/' }
 	],
 	gov: [
 		{ name: 'La Moncloa', url: 'https://www.lamoncloa.gob.es/Paginas/rss.aspx?tipo=16' },
@@ -112,6 +119,10 @@ export const ENGLISH = new Set([
 	'Simon Willison',
 	'Casa Blanca',
 	'Reserva Federal',
+	'NVIDIA',
+	'Google DeepMind',
+	'Meta',
+	'Microsoft Research',
 	...DIPLOMACY_FEEDS
 ]);
 
