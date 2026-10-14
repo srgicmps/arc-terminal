@@ -71,7 +71,7 @@ festivos y cambio de hora). Tope: 50 al día, a cualquier hora. La zona va en Se
 6. **Stablecoins**: capitalización de USDT, USDC… con DefiLlama (sin clave).
 7. **Exportar a CSV** cualquier tabla.
 
-## 2b. Mejora continua 3, lote 2 (comandos): preparado, SIN aprobar todavía
+## 2b. Mejora continua 3, lote 2 (comandos): APROBADO por Sergi, para la próxima sesión (va detrás de la lista 1)
 
 Todo pequeño y sin fuentes nuevas (commands.ts, cmdline.ts, CommandBar y tests). Orden de prioridad:
 - **C8** Mnemónicos de Bloomberg como alias: WEI → WS, FXC → WS (divisas), GC/YCRV → WS (curva), WIRP → ECO,
