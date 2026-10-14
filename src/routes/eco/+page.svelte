@@ -10,6 +10,7 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { compact, period } from '#lib/format.ts';
+	import { missingNote } from '#lib/missing.ts';
 	import { last, seriesMap, spread } from '#lib/series.ts';
 	import type { PageProps } from './$types';
 
@@ -140,7 +141,7 @@
 					]}
 				/>
 			{:else}
-				<p class="empty">Falta la clave FRED_API_KEY en GitHub Secrets.</p>
+				<p class="empty">{missingNote(data.status?.data, 'fred')}</p>
 			{/if}
 			{#snippet note()}
 				Fuente: FRED, Fed de San Luis (usa su API sin estar respaldado por ella)
