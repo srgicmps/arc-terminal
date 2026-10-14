@@ -7,6 +7,7 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { dm, longDay } from '#lib/format.ts';
 	import { dayData } from '#lib/boe.ts';
+	import { EU_SHOWN } from '#lib/trim.ts';
 	import type { BoeData, BoeItem, BoeWeek } from '#lib/types.ts';
 	import { urlState } from '#lib/urlstate.svelte.ts';
 	import { addWatchword, highlight, initWatchwords, removeWatchword, watched, watchwords } from '#lib/watchwords.svelte.ts';
@@ -95,7 +96,7 @@
 		{ value: '', label: 'Todo' },
 		...[...new Set(eu.flatMap((d) => d.tags))].sort().map((t) => ({ value: t, label: t }))
 	]);
-	const euShown = $derived((tag ? eu.filter((d) => d.tags.includes(tag)) : eu).slice(0, 40));
+	const euShown = $derived((tag ? eu.filter((d) => d.tags.includes(tag)) : eu).slice(0, EU_SHOWN));
 
 	/** «JEFATURA DEL ESTADO» → «Jefatura del Estado» */
 	const dept = (s: string) =>

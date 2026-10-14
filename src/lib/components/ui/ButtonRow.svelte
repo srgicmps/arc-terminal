@@ -27,7 +27,7 @@
 		background: var(--panel);
 		border: 0;
 		min-height: var(--control-h);
-		padding: var(--sp-6) var(--sp-4);
+		padding: 0 var(--sp-4);
 		font-size: var(--fs-s);
 		color: var(--fg);
 		cursor: pointer;

@@ -102,14 +102,6 @@ export interface BoeWeek {
 	days: BoeWeekDay[];
 }
 
-/**
- * Índice para contar palabras vigiladas sin el BOE entero (static/data/boe-index.json, lo usa TOP):
- * `text` es título, ministerio y epígrafe sin tildes y en minúsculas (fold de src/lib/watchwords.ts).
- */
-export interface BoeIndex {
-	days: { date: string; items: { id: string; text: string }[] }[];
-}
-
 // ---------- Federal Register (EE. UU.) ----------
 
 export interface FedRegDoc {
@@ -652,6 +644,8 @@ export interface ImpEntry {
 	sources: string[];
 	/** Puntuación (ver scripts/sources/imp.ts). */
 	score: number;
+	/** Secciones de titulares donde aparece (claves de NEWS_SECTIONS). En el histórico, desde M9. */
+	sections?: string[];
 	/** El enlace de cada medio. Solo en el top de ahora y en el día de hoy (no en días anteriores). */
 	links?: ImpLink[];
 }
@@ -823,6 +817,46 @@ export interface LeaderAgenda {
 	/** De dónde sale la agenda. */
 	source: { name: string; url: string };
 	error?: string;
+}
+
+/** Una vulnerabilidad del catálogo KEV de la CISA (fallos que ya se están explotando). */
+export interface KevItem {
+	/** «CVE-2026-12345». */
+	cveID: string;
+	vendorProject: string;
+	product: string;
+	vulnerabilityName: string;
+	/** Día en que la CISA la añadió al catálogo (AAAA-MM-DD). */
+	dateAdded: string;
+	/** La CISA sabe que se usa en campañas de ransomware (knownRansomwareCampaignUse === 'Known'). */
+	ransomware: boolean;
+}
+
+export interface KevData {
+	/** Las 10 añadidas más recientemente. */
+	items: KevItem[];
+	/** Cuántas hay en todo el catálogo. */
+	total: number;
+	/** Día UTC de la descarga (AAAA-MM-DD), que es el día de la CISA: al que se refiere `today`. */
+	day: string;
+	/** Cuántas se añadieron ese día. */
+	today: number;
+}
+
+/** Tormentas solares (NOAA Space Weather Prediction Center). Escalas de 0 a 5; 0 es «sin tormenta». */
+export interface SwpcData {
+	/** Índice Kp planetario más reciente (0–9) y cuándo se midió (ISO 8601, UTC). */
+	kp: number | null;
+	kpAt: string | null;
+	/** Kp de las últimas 24 h (cada 3 h), del más antiguo al más reciente. */
+	kp24: { t: string; v: number }[];
+	/** Escalas actuales: G (tormenta geomagnética), S (radiación solar), R (apagones de radio). */
+	g: number | null;
+	s: number | null;
+	r: number | null;
+	/** La escala G más alta prevista para los próximos días, y para qué día (AAAA-MM-DD). */
+	gForecast: number | null;
+	gForecastDate: string | null;
 }
 
 // ---------- Diario Oficial de la UE, serie L (scripts/sources/eurlex.ts) ----------

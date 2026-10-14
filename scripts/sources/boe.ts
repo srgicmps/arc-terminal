@@ -2,11 +2,9 @@
 // https://www.boe.es/datosabiertos/ · Reutilización libre citando la fuente.
 // Además de boe.json (el último sumario), dos archivos extra con los últimos 7 días:
 //   - boe-week.json: los sumarios, sin enlaces (salen del id), para la pestaña «Semana» de BOE.
-//   - boe-index.json: id y texto plegado de cada disposición, para contar palabras vigiladas en TOP.
 // Van aparte, y no dentro de boe.json, porque TOP y ES pasan boe.json al navegador casi entero.
 // Los días ya guardados se leen de la copia publicada; solo se piden al BOE los que falten.
-import type { BoeData, BoeIndex, BoeItem, BoeSection, BoeWeek, BoeWeekDay } from '../../src/lib/types.ts';
-import { fold } from '../../src/lib/watchwords.ts';
+import type { BoeData, BoeItem, BoeSection, BoeWeek, BoeWeekDay } from '../../src/lib/types.ts';
 import { getJson, list, madridDate, plain, PUBLISHED, request, writeExtra, type Source } from '../lib.ts';
 
 const API = 'https://www.boe.es/datosabiertos/api/boe/sumario';
@@ -119,16 +117,6 @@ function shift(day: string, n: number): string {
 	return new Date(Date.UTC(+day.slice(0, 4), +day.slice(4, 6) - 1, +day.slice(6, 8) + n)).toISOString().slice(0, 10).replaceAll('-', '');
 }
 
-/** El índice de palabras vigiladas: por día, cada disposición con su texto plegado. */
-export function weekIndex(week: BoeWeek): BoeIndex {
-	return {
-		days: week.days.map((d) => ({
-			date: d.date,
-			items: d.sections.flatMap((s) => s.items.map((i) => ({ id: i.id, text: fold(`${i.title} ${i.dept} ${i.epigraph}`) })))
-		}))
-	};
-}
-
 /** La semana publicada; si no se puede leer, vacía (y se piden al BOE los días que falten). */
 async function publishedWeek(): Promise<BoeWeekDay[]> {
 	try {
@@ -143,18 +131,16 @@ export const boe: Source<BoeData> = {
 	name: 'boe',
 	label: 'Sumario del BOE · Agencia Estatal Boletín Oficial del Estado',
 	maxAgeMinutes: 25,
-	files: () => ['boe-week.json', 'boe-index.json'],
+	files: () => ['boe-week.json'],
 	async fetch() {
 		// El BOE sale de lunes a sábado hacia las 7:30. Si hoy aún no hay, se busca el anterior.
 		for (let offset = 0; offset >= -7; offset--) {
 			const latest = await sumario(madridDate(offset));
 			if (!latest) continue;
 			const week = await buildWeek(latest, await publishedWeek(), sumario);
-			const index = weekIndex(week);
 			await writeExtra('boe-week.json', week);
-			await writeExtra('boe-index.json', index);
 			const kb = (x: unknown) => Math.round(Buffer.byteLength(JSON.stringify(x)) / 1024);
-			console.log(`  boe · semana: ${week.days.length} sumarios, ${kb(week)} KB; índice ${kb(index)} KB`);
+			console.log(`  boe · semana: ${week.days.length} sumarios, ${kb(week)} KB`);
 			return latest;
 		}
 		throw new Error('no hay sumario del BOE en los últimos 7 días');

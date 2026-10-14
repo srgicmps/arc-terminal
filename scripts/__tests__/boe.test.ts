@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { boe, buildWeek, compact, weekIndex } from '../sources/boe.ts';
+import { boe, buildWeek, compact } from '../sources/boe.ts';
 import { writeExtra } from '../lib.ts';
 import type { BoeData, BoeWeekDay } from '../../src/lib/types.ts';
 import { mockFetch } from './mock.ts';
@@ -101,17 +101,16 @@ describe('boe', () => {
 		expect(writeExtra).not.toHaveBeenCalled();
 	});
 
-	it('escribe la semana y el índice: reutiliza lo publicado y pide al BOE solo lo que falta', async () => {
+	it('escribe la semana: reutiliza lo publicado y pide al BOE solo lo que falta', async () => {
 		const saved: BoeWeekDay = { date: '2026-10-12', number: '245', sections: [] };
 		const fetch = mockFetch((url) =>
 			url.endsWith('/20261014') || url.endsWith('/20261010') ? sumario : url.endsWith('boe-week.json') ? { days: [saved] } : undefined
 		);
 		await boe.fetch(undefined);
-		const [[weekPath, week], [indexPath, index]] = vi.mocked(writeExtra).mock.calls as [string, any][];
-		expect([weekPath, indexPath]).toEqual(['boe-week.json', 'boe-index.json']);
+		const [[weekPath, week]] = vi.mocked(writeExtra).mock.calls as [string, any][];
+		expect(weekPath).toBe('boe-week.json');
 		expect(week.days.map((d: BoeWeekDay) => d.date)).toEqual(['2026-10-14', '2026-10-12', '2026-10-10']);
 		expect(fetch.mock.calls.some(([url]) => String(url).endsWith('/20261012'))).toBe(false);
-		expect(index.days[0].items[0]).toEqual({ id: 'BOE-A-2026-1', text: 'orden hac/1/2026, por la que se aprueba el modelo "100". ministerio de hacienda impuestos' });
 	});
 });
 
@@ -127,9 +126,5 @@ describe('semana del BOE', () => {
 		const week = await buildWeek(day('2026-10-14'), [], load, '20261014');
 		expect(week.days.map((d) => d.date)).toEqual(['2026-10-14', '2026-10-08']);
 		expect(load).toHaveBeenCalledTimes(6);
-	});
-
-	it('el índice pliega título, ministerio y epígrafe', () => {
-		expect(weekIndex({ days: [compact(day('2026-10-14'))] }).days[0].items).toEqual([{ id: 'A', text: 'titulo ministerio ' }]);
 	});
 });
