@@ -29,6 +29,7 @@ export const SHORTCUTS = [
 	{ id: 'panel-close', group: 'Paneles', keys: ['Esc', '✕'], how: 'con un panel ampliado', action: 'Cerrarlo' },
 	{ id: 'options', group: 'Paneles', keys: ['←', '→'], how: 'en un grupo de opciones', action: 'Cambiar de opción' },
 	{ id: 'clear', group: 'Paneles', keys: ['Esc'], how: 'en un buscador', action: 'Vaciarlo' },
+	{ id: 'swipe', group: 'Pantalla', keys: [], how: 'En el móvil, desliza a izquierda o derecha', action: 'Vista de al lado de la fila de arriba' },
 	{ id: 'fullscreen', group: 'Pantalla', keys: ['⇧', 'F'], combo: true, action: 'Pantalla completa', match: { key: 'F', shift: true } },
 	{ id: 'tv-pause', group: 'TV', keys: ['Espacio'], how: 'en modo TV', action: 'Pausar o seguir', match: { key: ' ' } },
 	{ id: 'tv-exit', group: 'TV', keys: ['Esc'], how: 'en modo TV', action: 'Salir', match: { key: 'Escape' } }
