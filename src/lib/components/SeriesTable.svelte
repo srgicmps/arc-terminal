@@ -1,6 +1,8 @@
 <!-- Tabla de series: último dato, variación frente al anterior, periodo y minigráfico. -->
 <script lang="ts">
-	import { GEO, nf, period, signed, trend } from '#lib/format.ts';
+	import { GEO, nf, period } from '#lib/format.ts';
+	import Change from './ui/Change.svelte';
+	import Table from './ui/Table.svelte';
 	import type { Series } from '#lib/types.ts';
 	import Spark from './Spark.svelte';
 
@@ -26,39 +28,37 @@
 </script>
 
 {#if visible.length}
-	<div class="scroll">
-		<table class="t">
-			<thead>
+	<Table>
+		<thead>
+			<tr>
+				<th>{head}</th>
+				<th>Último</th>
+				<th>Var.</th>
+				<th class="per">Periodo</th>
+				<th class="sp"><span class="sr">Evolución</span></th>
+			</tr>
+		</thead>
+		<tbody>
+			{#each visible as row (row.series.id)}
+				{@const pts = row.series.points}
+				{@const last = pts[pts.length - 1]}
+				{@const prev = pts[pts.length - 2]}
+				{@const d = row.decimals ?? 1}
+				{@const diff = prev ? last.v - prev.v : null}
 				<tr>
-					<th>{head}</th>
-					<th>Último</th>
-					<th>Var.</th>
-					<th class="per">Periodo</th>
-					<th class="sp"><span class="sr">Evolución</span></th>
+					<td>
+						<a class="name" href={row.series.url} target="_blank" rel="noopener">
+							{row.name ?? GEO[row.series.geo ?? ''] ?? row.series.label}
+						</a>
+					</td>
+					<td>{nf(last.v, d)}{row.series.unit === '%' ? ' %' : ''}</td>
+					<td><Change value={diff} digits={d} invert={row.inverse} /></td>
+					<td class="mut per">{period(last.t)}</td>
+					<td class="sp"><Spark values={pts.slice(-spark).map((p) => p.v)} /></td>
 				</tr>
-			</thead>
-			<tbody>
-				{#each visible as row (row.series.id)}
-					{@const pts = row.series.points}
-					{@const last = pts[pts.length - 1]}
-					{@const prev = pts[pts.length - 2]}
-					{@const d = row.decimals ?? 1}
-					{@const diff = prev ? last.v - prev.v : null}
-					<tr>
-						<td>
-							<a class="name" href={row.series.url} target="_blank" rel="noopener">
-								{row.name ?? GEO[row.series.geo ?? ''] ?? row.series.label}
-							</a>
-						</td>
-						<td>{nf(last.v, d)}{row.series.unit === '%' ? ' %' : ''}</td>
-						<td class={trend(row.inverse && diff ? -diff : diff)}>{diff === null ? '—' : signed(diff, d)}</td>
-						<td class="mut per">{period(last.t)}</td>
-						<td class="sp"><Spark values={pts.slice(-spark).map((p) => p.v)} /></td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
+			{/each}
+		</tbody>
+	</Table>
 {:else}
 	<p class="empty">Sin datos todavía.</p>
 {/if}
