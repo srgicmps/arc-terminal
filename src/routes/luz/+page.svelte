@@ -84,7 +84,7 @@
 					{:else}
 						Precio del término de energía del PVPC, con peajes y cargos, sin impuestos.
 					{/if}
-					Fuente: Red Eléctrica · <Updated at={data.power?.fetchedAt} />
+					Fuente: Red Eléctrica · <Updated at={data.power?.fetchedAt} source="power" />
 				{/snippet}
 			</Panel>
 		</div>

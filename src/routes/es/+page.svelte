@@ -22,7 +22,7 @@
 	<div class="col">
 		<Panel title="Titulares" meta="{items.length} noticias">
 			<NewsList {items} summaries />
-			{#snippet note()}<Updated at={data.news?.fetchedAt} />{/snippet}
+			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-es" />{/snippet}
 		</Panel>
 	</div>
 	<div class="col">

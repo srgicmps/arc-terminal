@@ -20,7 +20,7 @@
 	<div class="col">
 		<Panel title="Titulares" meta="IA">
 			<NewsList items={data.news?.data.items ?? []} summaries />
-			{#snippet note()}<Updated at={data.news?.fetchedAt} />{/snippet}
+			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-ai" />{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
