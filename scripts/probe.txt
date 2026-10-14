@@ -30,3 +30,6 @@ https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{
 # ECO: índice FAO de precios de los alimentos (enlaces a los datos en la página de la FAO)
 https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ [^"' <>]{0,200}\.(xlsx|csv)
 https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next release)[^<]{0,80}
+https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv
+https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
+https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_index_nominal_real.xlsx ~ ZZZ
