@@ -428,6 +428,12 @@ export interface Release {
 
 // ---------- Lo más importante (IMP, scripts/sources/imp.ts) ----------
 
+/** El titular de un medio dentro de un tema. */
+export interface ImpLink {
+	source: string;
+	url: string;
+}
+
 /** Un tema importante, tal como se guarda en el histórico diario: lo mínimo para listarlo. */
 export interface ImpEntry {
 	/** Clave estable del tema entre pasadas y días (para desduplicar). */
@@ -438,6 +444,8 @@ export interface ImpEntry {
 	sources: string[];
 	/** Puntuación (ver scripts/sources/imp.ts). */
 	score: number;
+	/** El enlace de cada medio. Solo en el top de ahora y en el día de hoy (no en días anteriores). */
+	links?: ImpLink[];
 }
 
 /** Un tema del top actual, con el detalle de la puntuación. */
