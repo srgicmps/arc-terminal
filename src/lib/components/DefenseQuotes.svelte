@@ -7,6 +7,7 @@
 	import Panel from './Panel.svelte';
 	import TvWidget from './TvWidget.svelte';
 	import { DEFENSE_PRIVATE, defenseGroups } from '#lib/defense.ts';
+	import { quotesHeight } from '#lib/tickers.ts';
 
 	const groups = defenseGroups();
 	const config = {
@@ -17,7 +18,7 @@
 		}))
 	};
 	// Alto para la pestaña más larga, sin barra de desplazamiento (como en MIS).
-	const height = 90 + Math.max(...groups.map((g) => g.tickers.length)) * 46;
+	const height = quotesHeight(Math.max(...groups.map((g) => g.tickers.length)));
 </script>
 
 <Panel title="Defensa" meta="EE. UU. y Europa · en directo">
