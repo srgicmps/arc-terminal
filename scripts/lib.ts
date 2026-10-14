@@ -9,6 +9,11 @@ export interface Source<T = unknown> {
 	label: string;
 	/** Si la última copia publicada tiene menos de estos minutos, se reutiliza sin llamar a la API. */
 	maxAgeMinutes: number;
+	/**
+	 * Variable de entorno con la clave de la API (viene de GitHub Secrets). Si no existe, la fuente
+	 * se salta sin llamar a nadie y aparece en STATUS como «Sin clave», sin contar como fallo.
+	 */
+	requires?: string;
 	/** Recibe los datos publicados la vez anterior (si los hay), para ir acumulando historial. */
 	fetch: (previous: T | undefined) => Promise<T>;
 }
