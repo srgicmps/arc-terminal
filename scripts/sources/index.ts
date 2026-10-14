@@ -77,4 +77,3 @@ export const sources: Source<any>[] = [
 	imp,
 	search
 ];
-import { eurlex } from './eurlex.ts'; sources.push(eurlex); // M18: quitar cuando el registro no exija index.ts
