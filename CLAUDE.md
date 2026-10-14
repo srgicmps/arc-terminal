@@ -42,6 +42,9 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   configurar `paths.base` en SvelteKit).
 - Pages no tiene servidor, así que **GitHub Actions hace de servidor**: cada 15–30 min un script de Node
   descarga los datos, los guarda como JSON y vuelve a publicar la web. Así tampoco hay problemas de CORS.
+- **Dos velocidades**: `deploy.yml` (cada 15 min y en cada push a main) refresca todo lo caducado según el
+  `maxAgeMinutes` de cada fuente; `fast.yml` (cada 5 min) fuerza solo las urgentes (lista `URGENT`: terremotos,
+  avisos, titulares, IMP…) y publica. Comparten grupo de concurrencia, así que nunca publican a la vez.
 - Las claves de las APIs van en **GitHub Secrets** y solo las usa el script de Actions. Nunca en el código
   que llega al navegador.
 - Cotizaciones y gráficos en directo: widgets de TradingView (sin clave).
