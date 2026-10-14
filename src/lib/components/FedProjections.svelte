@@ -66,15 +66,6 @@
 		white-space: normal;
 	}
 
-	a.name {
-		color: inherit;
-		text-decoration: none;
-	}
-
-	a.name:hover {
-		color: var(--amber);
-	}
-
 	/* El rango, debajo de la mediana y más pequeño. */
 	.range {
 		display: block;

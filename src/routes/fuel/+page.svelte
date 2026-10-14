@@ -489,15 +489,6 @@
 		color: var(--faint);
 	}
 
-	a.name {
-		color: inherit;
-		text-decoration: none;
-	}
-
-	a.name:hover {
-		color: var(--amber);
-	}
-
 	.more {
 		display: block;
 		width: 100%;
