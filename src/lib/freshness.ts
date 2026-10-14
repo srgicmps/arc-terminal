@@ -1,44 +1,17 @@
 // ¿Están los datos de una fuente al día? Lo usa <Updated> para avisar cuando una fuente lleva tiempo
 // sin actualizarse (por ejemplo, si su API falla y update.ts sigue usando la copia anterior).
+// El maxAgeMinutes de cada fuente llega en static/data/status.json, que escribe scripts/update.ts.
 
-/** Cada cuánto corre la Action que descarga los datos (.github/workflows). */
-export const CRON_MINUTES = 30;
-
-/**
- * Copia de `maxAgeMinutes` de cada fuente en scripts/sources (si cambias uno, cambia el otro).
- * Las de noticias se llaman `news-eco`, `news-geo`…: todas comparten la entrada `news`.
- */
-export const MAX_AGE: Record<string, number> = {
-	fuel: 25,
-	'fuel-es': 55,
-	boe: 55,
-	power: 55,
-	ecb: 175,
-	eurostat: 355,
-	fedreg: 55,
-	bls: 355,
-	usdebt: 355,
-	uscurve: 115,
-	quakes: 25,
-	'quakes-es': 25,
-	hazards: 55,
-	predictions: 55,
-	weather: 55,
-	crypto: 25,
-	hn: 25,
-	wiki: 175,
-	news: 25
-};
+/** Cada cuánto corre la Action que descarga los datos (cron de .github/workflows/deploy.yml). */
+export const CRON_MINUTES = 15;
 
 /**
- * Minutos a partir de los cuales los datos de una fuente se consideran viejos:
- * el doble de lo que tarda en refrescarse, que es lo mayor entre su maxAgeMinutes y el cron.
- * Sin fuente conocida devuelve null (no se avisa).
+ * Minutos a partir de los cuales los datos de una fuente se consideran viejos: el doble de lo que
+ * tarda en refrescarse, que es lo mayor entre su maxAgeMinutes y el cron. Sin dato, null (no se avisa).
  */
-export function staleAfter(source: string | undefined): number | null {
-	if (!source) return null;
-	const max = MAX_AGE[source] ?? (source.startsWith('news-') ? MAX_AGE.news : undefined);
-	return max === undefined ? null : 2 * Math.max(max, CRON_MINUTES);
+export function staleAfter(maxAgeMinutes: number | null | undefined): number | null {
+	if (!maxAgeMinutes || !Number.isFinite(maxAgeMinutes)) return null;
+	return 2 * Math.max(maxAgeMinutes, CRON_MINUTES);
 }
 
 /** Minutos desde `iso` hasta `now`, o null si no hay fecha válida o el reloj aún no ha arrancado. */

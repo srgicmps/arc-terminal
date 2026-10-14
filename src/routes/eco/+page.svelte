@@ -109,7 +109,7 @@
 			{/if}
 			{#snippet note()}
 				Fuente: FRED, Fed de San Luis (usa su API sin estar respaldado por ella)
-				{#if data.fred}· <Updated at={data.fred.fetchedAt} />{/if}
+				{#if data.fred}· <Updated at={data.fred.fetchedAt} source="fred" />{/if}
 			{/snippet}
 		</Panel>
 		{#if data.predictions?.data.economy.length}

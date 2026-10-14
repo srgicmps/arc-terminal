@@ -99,7 +99,7 @@
 				{#each data.mix.data.systems as mix (mix.id)}
 					<MixBar {mix} />
 				{/each}
-				{#snippet note()}Fuente: Red Eléctrica · <Updated at={data.mix?.fetchedAt} />{/snippet}
+				{#snippet note()}Fuente: Red Eléctrica · <Updated at={data.mix?.fetchedAt} source="power-mix" />{/snippet}
 			</Panel>
 		</div>
 	</div>
