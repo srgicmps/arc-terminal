@@ -62,11 +62,13 @@ const FEEDS: Record<string, Feed[]> = {
 		{ name: 'La Moncloa', url: 'https://www.lamoncloa.gob.es/Paginas/rss.aspx?tipo=16' },
 		{ name: 'Banco de España', url: 'https://www.bde.es/wbe/es/inicio/rss/rss-noticias/' },
 		{ name: 'Comisión Europea', url: 'https://ec.europa.eu/commission/presscorner/api/rss?language=es' },
-		{ name: 'Parlamento Europeo', url: 'https://www.europarl.europa.eu/rss/doc/top-stories/es.xml' },
 		{ name: 'Casa Blanca', url: 'https://www.whitehouse.gov/news/feed/' },
 		{ name: 'Reserva Federal', url: 'https://www.federalreserve.gov/feeds/press_all.xml' }
 	]
 };
+
+/** Medios oficiales (gobiernos, bancos centrales): IMP los usa para confirmar noticias. */
+export const OFFICIAL = new Set([...FEEDS.gov.map((f) => f.name), 'BCE']);
 
 /** Cuántos titulares por medio y por sección como máximo. */
 const PER_FEED = 15;
@@ -75,7 +77,11 @@ const PER_SECTION = 60;
 const xml = new XMLParser({
 	ignoreAttributes: false,
 	attributeNamePrefix: '@',
-	removeNSPrefix: true,
+	// Solo se quita el prefijo de los espacios de nombres que traen los campos que se leen (dc:date,
+	// content:encoded, rdf:RDF…). Los demás se dejan: sin prefijo, <media:title> o <itunes:summary> se
+	// juntarían con <title> y <summary> en una lista, y el titular se quedaría vacío (le pasaba a
+	// Expansión, El Mundo y elDiario.es).
+	transformTagName: (name) => name.replace(/^(dc|dcterms|content|rdf|atom):/, ''),
 	parseTagValue: false,
 	textNodeName: '#text'
 });

@@ -4,7 +4,7 @@
 import { dataset, type SourceStatus } from '#lib/data.ts';
 import deployYml from '../../../.github/workflows/deploy.yml?raw';
 import panelSrc from '#lib/components/Panel.svelte?raw';
-import fuelLoadSrc from '../fuel/+page.ts?raw';
+import fuelLoadSrc from '../fuel/+page.server.ts?raw';
 import fuelPageSrc from '../fuel/+page.svelte?raw';
 import updateSrc from '../../../scripts/update.ts?raw';
 import newsSrc from '../../../scripts/sources/news.ts?raw';
@@ -37,7 +37,7 @@ export const load: PageServerLoad = async () => {
 		secrets: [...new Set([...deployYml.matchAll(/secrets\.(\w+)/g)].map((m) => m[1]))],
 		steps: [...deployYml.matchAll(/^\s*(?:-\s*)?run:\s*(.+)$/gm)].map((m) => m[1].trim()),
 		snippets: {
-			load: excerpt('src/routes/fuel/+page.ts', fuelLoadSrc, 'export const load', 4),
+			load: excerpt('src/routes/fuel/+page.server.ts', fuelLoadSrc, 'export const load', 5),
 			state: excerpt('src/routes/fuel/+page.svelte', fuelPageSrc, '$state<FuelKey>', 2),
 			derived: excerpt('src/routes/fuel/+page.svelte', fuelPageSrc, 'const provinces = $derived', 2),
 			props: excerpt('src/lib/components/Panel.svelte', panelSrc, '= $props()', 1),
