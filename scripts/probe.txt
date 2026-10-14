@@ -1,7 +1,8 @@
 # URL que la Action de los PR consulta para explorar APIs nuevas (ver scripts/probe.ts).
 # Formato: «URL» o «URL ~ patrón».
-https://servicios.ine.es/wstempus/js/ES/SERIES_TABLA/76136?det=0 ~ balears.*general|general.*balears
-https://servicios.ine.es/wstempus/js/ES/SERIES_TABLA/76134?det=0 ~ general
-https://servicios.ine.es/wstempus/js/ES/SERIES_TABLA/14506?det=0 ~ balears.*ambos sexos.*total|total nacional.*ambos sexos.*total
-https://servicios.ine.es/wstempus/js/ES/SERIES_TABLA/10823?det=0 ~ balears
-https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/EOH ~ comunidad|aut.nom
+https://servicios.ine.es/wstempus/js/ES/SERIES_TABLA/14506?det=0 ~ ^(?=.*Balears)(?=.*Ambos sexos)
+https://servicios.ine.es/wstempus/js/ES/SERIES_TABLA/14506?det=0 ~ ^(?=.*Total Nacional)(?=.*Ambos sexos)
+https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPC290750?nult=2
+https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPC293827?nult=2
+https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG350?nult=2
+https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG342?nult=2
