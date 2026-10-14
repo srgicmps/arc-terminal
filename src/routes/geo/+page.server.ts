@@ -6,9 +6,10 @@ import type { Chokepoint, Disaster, HazardsData, NewsData, PredictionsData, Quak
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, gov, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate] = await Promise.all([
+	const [news, gov, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-gov'),
+		dataset<NewsData>('news-intl'),
 		dataset<Quake[]>('quakes'),
 		dataset<Quake[]>('quakes-es'),
 		dataset<HazardsData>('hazards'),
@@ -18,7 +19,7 @@ export const load: PageServerLoad = async () => {
 		dataset<TradeDoc[]>('sanctions'),
 		dataset<ClimateData>('climate')
 	]);
-	// Los comunicados oficiales: solo los 15 que se pintan, sin resumen.
+	// Los comunicados oficiales y los de organismos internacionales: solo los 15 que se pintan, sin resumen.
 	// De Polymarket, los 8 mercados de geopolítica que se pintan (economía y tipos son de ECO).
 	// Sanciones y aranceles: los 8 que se pintan.
 	// Capas del mapa: se calculan aquí con los datos completos (las sanciones, antes de recortarlas a 8)
@@ -35,6 +36,7 @@ export const load: PageServerLoad = async () => {
 		layers,
 		news,
 		gov: headlines(gov, 15),
+		intl: headlines(intl, 15),
 		quakes,
 		quakesEs,
 		hazards,

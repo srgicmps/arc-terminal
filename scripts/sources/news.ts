@@ -64,11 +64,19 @@ const FEEDS: Record<string, Feed[]> = {
 		{ name: 'Comisión Europea', url: 'https://ec.europa.eu/commission/presscorner/api/rss?language=es' },
 		{ name: 'Casa Blanca', url: 'https://www.whitehouse.gov/news/feed/' },
 		{ name: 'Reserva Federal', url: 'https://www.federalreserve.gov/feeds/press_all.xml' }
+	],
+	// Organismos internacionales. Comprobados con probe (14-10-2026). Descartados: OTAN (sin RSS), FMI (429 desde
+	// Actions), Banco Mundial (sin RSS, y su API de noticias va dos meses atrasada) y OPEP (403 de Cloudflare).
+	intl: [
+		// Comunicados y crónicas de las reuniones: Consejo de Seguridad, Asamblea General…
+		{ name: 'ONU', url: 'https://press.un.org/en/rss.xml' },
+		{ name: 'Noticias ONU', url: 'https://news.un.org/feed/subscribe/en/news/topic/peace-and-security/feed/rss.xml' },
+		{ name: 'OMC', url: 'https://www.wto.org/library/rss/latest_news_e.xml' }
 	]
 };
 
 /** Medios oficiales (gobiernos, bancos centrales): IMP los usa para confirmar noticias. */
-export const OFFICIAL = new Set([...FEEDS.gov.map((f) => f.name), 'BCE']);
+export const OFFICIAL = new Set([...FEEDS.gov.map((f) => f.name), ...FEEDS.intl.map((f) => f.name), 'BCE']);
 
 /** Cuántos titulares por medio y por sección como máximo. */
 const PER_FEED = 15;
@@ -204,7 +212,8 @@ const LABELS: Record<string, string> = {
 	ws: 'Wall Street',
 	tech: 'Tecnología',
 	ai: 'Inteligencia artificial',
-	gov: 'Gobiernos e instituciones'
+	gov: 'Gobiernos e instituciones',
+	intl: 'Organismos internacionales'
 };
 
 export const newsSources: Source<NewsData>[] = Object.entries(FEEDS).map(([key, feeds]) => ({

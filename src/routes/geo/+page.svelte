@@ -82,6 +82,10 @@
 			<TradeList items={data.sanctions?.data.slice(0, 8) ?? []} />
 			{#snippet note()}Fuente: Federal Register · <Updated at={data.sanctions?.fetchedAt} source="sanctions" />{/snippet}
 		</Panel>
+		<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">
+			<NewsList items={data.intl?.data.items.slice(0, 15) ?? []} />
+			{#snippet note()}<Updated at={data.intl?.fetchedAt} source="news-intl" />{/snippet}
+		</Panel>
 		<Panel title="Gobiernos e instituciones" meta="Comunicados oficiales">
 			<NewsList items={data.gov?.data.items.slice(0, 15) ?? []} />
 		</Panel>
