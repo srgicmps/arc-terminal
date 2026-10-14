@@ -1,5 +1,6 @@
 <script lang="ts">
 	import EuPowerTable from '#lib/components/EuPowerTable.svelte';
+	import FedProjections from '#lib/components/FedProjections.svelte';
 	import FinancialStress from '#lib/components/FinancialStress.svelte';
 	import { resolve } from '$app/paths';
 	import BalanceSheets from '#lib/components/BalanceSheets.svelte';
@@ -323,6 +324,7 @@
 				{#if data.fred}· <Updated at={data.fred.fetchedAt} source="fred" />{/if}
 			{/snippet}
 		</Panel>
+		{#if data.sep}<FedProjections data={data.sep} />{/if}
 		{#if data.recession}<RecessionSignals data={data.recession} />{/if}
 		<Panel title="Mercado monetario" meta="Tipos a corto plazo · zona euro y EE. UU.">
 			<SeriesTable
