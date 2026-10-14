@@ -395,12 +395,13 @@
 		background: var(--raise);
 	}
 
+	/* Colores de los avisos sacados de los tokens del tema: amarillo = ámbar aclarado. */
 	.al-yellow {
-		--c: #d9c25b;
+		--c: color-mix(in srgb, var(--amber) 55%, var(--fg));
 	}
 
 	.al-orange {
-		--c: #ef8a3c;
+		--c: var(--amber);
 	}
 
 	.al-red {
