@@ -100,14 +100,16 @@ export function plain(value: unknown, max = 400): string {
 
 /** Fecha de hoy en Madrid como «YYYYMMDD», con un desfase opcional en días. */
 export function madridDate(offsetDays = 0): string {
-	const d = new Date(Date.now() + offsetDays * 86_400_000);
-	const parts = new Intl.DateTimeFormat('en-CA', {
+	// Primero el día de hoy en Madrid y luego se suman días de calendario. Sumar 24 h al instante
+	// actual falla la noche del cambio de hora (ese día dura 23 o 25 horas).
+	const today = new Intl.DateTimeFormat('en-CA', {
 		timeZone: 'Europe/Madrid',
 		year: 'numeric',
 		month: '2-digit',
 		day: '2-digit'
-	}).format(d);
-	return parts.replaceAll('-', '');
+	}).format(new Date());
+	const [y, m, d] = today.split('-').map(Number);
+	return new Date(Date.UTC(y, m - 1, d + offsetDays)).toISOString().slice(0, 10).replaceAll('-', '');
 }
 
 /**

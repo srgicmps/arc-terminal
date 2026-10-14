@@ -22,7 +22,7 @@ export function hourly(points: PricePoint[]): HourPrice[] {
 			hour: Number(key.slice(11, 13)),
 			kwh: values.reduce((a, b) => a + b, 0) / values.length / 1000
 		}))
-		.sort((a, b) => (a.day + a.hour).localeCompare(b.day + b.hour));
+		.sort((a, b) => a.day.localeCompare(b.day) || a.hour - b.hour);
 }
 
 /** Días presentes, en orden. */
