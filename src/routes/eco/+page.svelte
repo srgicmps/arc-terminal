@@ -328,6 +328,25 @@
 		</Panel>
 		{#if data.sep}<FedProjections data={data.sep} />{/if}
 		{#if data.recession}<RecessionSignals data={data.recession} />{/if}
+		{#if get('bankcredit-us') || get('consumercredit-us') || get('ccdelinq-us')}
+			<Panel title="Crédito y morosidad en EE. UU." meta="FRED · bancos y consumo">
+				<SeriesTable
+					next={data.next}
+					head="Indicador"
+					rows={[
+						{ series: get('bankcredit-us'), name: 'Crédito bancario, interanual', decimals: 1 },
+						{ series: get('consumercredit-us'), name: 'Crédito al consumo, interanual', decimals: 1 },
+						{ series: get('ccdelinq-us'), name: 'Morosidad de tarjetas', decimals: 2, inverse: true }
+					]}
+				/>
+				{#snippet note()}
+					Crédito bancario: préstamos e inversiones de todos los bancos comerciales (semanal). Crédito al consumo: el
+					que tienen o han titulizado las familias (mensual). Morosidad: % de los saldos de tarjetas con retrasos
+					(trimestral, desestacionalizada); si sube, más familias no llegan. Fuente: FRED, Fed de San Luis (usa su API
+					sin estar respaldado por ella) · <Updated at={data.fred?.fetchedAt} source="fred" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Mercado monetario" meta="Tipos a corto plazo · zona euro y EE. UU.">
 			<SeriesTable
 				next={data.next}

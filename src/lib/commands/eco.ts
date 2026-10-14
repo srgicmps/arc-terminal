@@ -30,6 +30,7 @@ export default {
 			{ name: 'Fed y mercados', what: 'Series de FRED (con clave).' },
 			{ name: 'Proyecciones de la Fed', what: 'Mediana del FOMC (SEP) para el tipo, la inflación PCE y el paro, con el rango de los participantes (FRED, con clave).' },
 			{ name: 'Señales de recesión', what: 'Regla de Sahm, probabilidad de recesión y curva 10 años − 3 meses, con «activada» o «no» (FRED, con clave).' },
+			{ name: 'Crédito y morosidad en EE. UU.', what: 'Crédito bancario y al consumo (variación interanual) y morosidad de las tarjetas de crédito (FRED, con clave).' },
 			{ name: 'Inflación esperada y tipos reales', what: 'Lo que descuenta el mercado de bonos de EE. UU.' },
 			{ name: 'Estrés financiero', what: 'CISS del BCE (zona euro) y el índice de la Fed de San Luis (EE. UU.), con aviso si el estrés es alto.' },
 			{ name: 'Gas almacenado', what: 'Llenado de los almacenes de gas de Europa.' },
