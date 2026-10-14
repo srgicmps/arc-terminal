@@ -2,9 +2,9 @@
 // (`after`): no descarga nada, junta lo que las demás fuentes acaban de dejar en esta pasada:
 //   - titulares de todas las secciones news-* de los últimos 2 días (etiqueta NEWS), sin repetir enlace;
 //   - disposiciones del BOE del día (etiqueta BOE);
-//   - los valores conocidos de src/lib/commands.ts (etiqueta Valor), que enlazan a su ficha /s?sym=….
+//   - los valores conocidos de src/lib/tickers.ts (etiqueta Valor), que enlazan a su ficha /s?sym=….
 // La web lo carga solo la primera vez que se enfoca la barra, así que tiene que pesar poco.
-import { TICKERS } from '../../src/lib/commands.ts';
+import { TICKERS } from '../../src/lib/tickers.ts';
 import { NEWS_SECTIONS } from '../../src/lib/news.ts';
 import type { BoeData, NewsData, NewsItem, SearchEntry } from '../../src/lib/types.ts';
 import { NO_CONTEXT, type Source } from '../lib.ts';

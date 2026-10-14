@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { TICKERS, tvSymbol } from '#lib/commands.ts';
+	import { TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import TvWidget from './TvWidget.svelte';
 
 	interface Props {
