@@ -13,6 +13,7 @@ import { finnhub } from './finnhub.ts';
 import { fred } from './fred.ts';
 import { fuel, fuelSpain } from './fuel.ts';
 import { hazards, quakesEs } from './hazards.ts';
+import { hfmodels } from './hfmodels.ts';
 import { hfpapers } from './hfpapers.ts';
 import { holidays } from './holidays.ts';
 import { imf } from './imf.ts';
@@ -70,6 +71,7 @@ export const sources: Source<any>[] = [
 	crypto,
 	hn,
 	hfpapers,
+	hfmodels,
 	releases,
 	wiki,
 	...newsSources,
