@@ -10,7 +10,7 @@ import type {
 	WeatherData,
 	WeatherPlace
 } from '../../src/lib/types.ts';
-import type { SeaState } from '../../src/lib/weather.ts';
+import type { SeaState, SunDay } from '../../src/lib/weather.ts';
 import { appendDaily, getJson, list, madridDate, num, plain, type Source } from '../lib.ts';
 
 type Raw = Record<string, any>;
@@ -111,8 +111,11 @@ export const weather: Source<WeatherData> = {
 			longitude: PLACES.map((p) => p.lon).join(','),
 			current: 'temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m',
 			daily:
-				'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max',
+				'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,' +
+				'sunrise,sunset,daylight_duration',
 			timezone: 'auto',
+			// Un día de atrás para comparar la duración del día con la de ayer; en la tabla no se enseña.
+			past_days: '1',
 			forecast_days: '7'
 		});
 		const forecasts = list(await getJson<Raw | Raw[]>(`https://api.open-meteo.com/v1/forecast?${params}`));
@@ -149,14 +152,31 @@ export const weather: Source<WeatherData> = {
 					min: Number(d.temperature_2m_min?.[j]),
 					rain: Number(d.precipitation_probability_max?.[j] ?? 0),
 					wind: Number(d.wind_speed_10m_max?.[j])
-				})),
-				sea: seaFor(place.name)
+				})).slice(1),
+				sea: seaFor(place.name),
+				sun: parseSun(d, num(f.utc_offset_seconds) ?? 0)
 			};
 		});
 		if (!places.some((p) => Number.isFinite(p.current.temp))) throw new Error('sin datos de tiempo');
 		return { places, coasts: parseCoasts(sea.slice(coastal.length)) };
 	}
 };
+
+/** «2026-10-14T07:52» en hora local + desfase en segundos → ISO en UTC. */
+function localToIso(local: unknown, offset: number): string | null {
+	const t = Date.parse(`${String(local ?? '')}Z`);
+	return Number.isFinite(t) ? new Date(t - offset * 1000).toISOString() : null;
+}
+
+/** Sol de hoy (el segundo día: el primero es ayer, por past_days=1) y diferencia de luz con ayer. */
+export function parseSun(d: Raw, offset: number): SunDay | null {
+	const sunrise = localToIso(d.sunrise?.[1], offset);
+	const sunset = localToIso(d.sunset?.[1], offset);
+	const daylight = num(d.daylight_duration?.[1]);
+	if (!sunrise || !sunset || daylight === null) return null;
+	const yesterday = num(d.daylight_duration?.[0]);
+	return { sunrise, sunset, daylight, delta: yesterday === null ? null : daylight - yesterday };
+}
 
 // Estado del mar en Menorca: costa norte (tramontana) frente a costa sur.
 const COASTS = [

@@ -1,5 +1,7 @@
 <script lang="ts">
 	import Panel from '#lib/components/Panel.svelte';
+	import SunArc from '#lib/components/SunArc.svelte';
+	import { clock } from '#lib/clock.svelte.ts';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { dm, hm, nf, weekday } from '#lib/format.ts';
@@ -9,8 +11,11 @@
 		POLLEN_NAMES,
 		aqiLevel,
 		compass,
+		hoursMinutes,
+		moon,
 		pollenLevel,
 		seaLevel,
+		signedMinSec,
 		sky,
 		uvLevel
 	} from '#lib/weather.ts';
@@ -28,6 +33,9 @@
 		air ? POLLEN_KEYS.filter((k) => air.days.some((d) => (d.pollen[k] ?? 0) >= 1)) : []
 	);
 	const aqiNow = $derived(aqiLevel(air?.now.aqi));
+	const mao = $derived(places.find((p) => p.name === 'Maó') ?? null);
+	// La luna se calcula en el navegador; antes de arrancar (clock.now = 0) se usa la hora de los datos.
+	const luna = $derived(moon(clock.now || Date.parse(data.weather?.fetchedAt ?? '') || 0));
 
 	/** Las fechas de los avisos, en hora de Madrid: «14 oct 12:00». */
 	const at = (iso: string) => (iso ? `${dm(iso)} ${hm(iso)}` : '');
@@ -106,6 +114,23 @@
 				</div>
 			{/if}
 		</Panel>
+		{#if mao?.sun}
+			{@const sun = mao.sun}
+			<Panel title="Sol y luna · Maó" meta={`${luna.name} · ${nf(luna.illumination * 100, 0)} %`}>
+				<div class="sky">
+					<SunArc sunrise={sun.sunrise} sunset={sun.sunset} now={clock.now} />
+					<ul>
+						<li>Sale <span>{hm(sun.sunrise)}</span></li>
+						<li>Se pone <span>{hm(sun.sunset)}</span></li>
+						<li>
+							Día <span>{hoursMinutes(sun.daylight)}</span>
+							{#if sun.delta !== null}<span class="mut">({signedMinSec(sun.delta)} que ayer)</span>{/if}
+						</li>
+						<li>Luna <span>{luna.name}, {nf(luna.illumination * 100, 0)} % iluminada</span></li>
+					</ul>
+				</div>
+			</Panel>
+		{/if}
 	</div>
 
 	<div class="col">
@@ -277,6 +302,37 @@
 	@container (max-width: 420px) {
 		.wide {
 			display: none;
+		}
+	}
+
+	.sky {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		align-items: center;
+		gap: 12px 16px;
+		padding: 12px;
+	}
+
+	.sky ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		color: var(--muted);
+		font-size: var(--fs-s);
+		line-height: 1.7;
+	}
+
+	.sky li span {
+		color: var(--fg);
+	}
+
+	.sky li span.mut {
+		color: var(--muted);
+	}
+
+	@container (max-width: 420px) {
+		.sky {
+			grid-template-columns: minmax(0, 1fr);
 		}
 	}
 

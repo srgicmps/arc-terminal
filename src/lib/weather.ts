@@ -162,6 +162,74 @@ export function seaLevel(m: number | null | undefined): Level | null {
 	return { label: 'Arbolada o más', tone: 'bad' };
 }
 
+// ---------- Sol y luna ----------
+
+export interface SunDay {
+	/** Salida y puesta en ISO (UTC). */
+	sunrise: string;
+	sunset: string;
+	/** Duración del día en segundos. */
+	daylight: number;
+	/** Diferencia con ayer en segundos (positiva: el día se alarga). */
+	delta: number | null;
+}
+
+/** 39 900 s → «11 h 05 min». */
+export function hoursMinutes(seconds: number): string {
+	const mins = Math.round(seconds / 60);
+	return `${Math.floor(mins / 60)} h ${String(mins % 60).padStart(2, '0')} min`;
+}
+
+/** −130 s → «−2 min 10 s»; 92 → «+1 min 32 s». */
+export function signedMinSec(seconds: number): string {
+	const sign = seconds < 0 ? '−' : '+';
+	const total = Math.round(Math.abs(seconds));
+	const m = Math.floor(total / 60);
+	const s = total % 60;
+	return m ? `${sign}${m} min ${s} s` : `${sign}${s} s`;
+}
+
+const SYNODIC = 29.530588853;
+/** Luna nueva de referencia: 6 de enero de 2000, 18:14 UTC. */
+const NEW_MOON_REF = Date.UTC(2000, 0, 6, 18, 14);
+
+const PHASES = [
+	'Luna nueva',
+	'Creciente',
+	'Cuarto creciente',
+	'Gibosa creciente',
+	'Luna llena',
+	'Gibosa menguante',
+	'Cuarto menguante',
+	'Menguante'
+];
+
+export interface Moon {
+	/** Días desde la luna nueva (0–29,5). */
+	age: number;
+	/** Fracción iluminada (0–1). */
+	illumination: number;
+	name: string;
+	/** Si crece (de nueva a llena). */
+	waxing: boolean;
+}
+
+/**
+ * Fase de la luna con el mes sinódico medio. Es aproximada (la luna real se adelanta o se retrasa hasta
+ * unas 14 horas), de sobra para saber en qué fase estamos.
+ */
+export function moon(ms: number): Moon {
+	const days = (ms - NEW_MOON_REF) / 86_400_000;
+	const age = ((days % SYNODIC) + SYNODIC) % SYNODIC;
+	const frac = age / SYNODIC;
+	return {
+		age,
+		illumination: (1 - Math.cos(2 * Math.PI * frac)) / 2,
+		name: PHASES[Math.round(frac * 8) % 8],
+		waxing: frac < 0.5
+	};
+}
+
 // ---------- Avisos meteorológicos (MeteoAlarm, con los avisos de AEMET) ----------
 
 export type AlertColor = 'yellow' | 'orange' | 'red';

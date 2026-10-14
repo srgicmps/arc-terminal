@@ -1,6 +1,6 @@
 // Forma de los datos de static/data/*.json. La comparten los scripts que los descargan (scripts/sources/)
 // y las vistas que los muestran.
-import type { SeaState } from './weather.ts';
+import type { SeaState, SunDay } from './weather.ts';
 
 // ---------- Series temporales (macro, tipos, divisas) ----------
 
@@ -166,6 +166,8 @@ export interface WeatherPlace {
 	daily: WeatherDay[];
 	/** Temperatura del agua del mar, si la hay. */
 	sea: number | null;
+	/** Salida y puesta del sol de hoy (puede faltar en copias antiguas). */
+	sun?: SunDay | null;
 }
 
 export interface WeatherData {
