@@ -77,10 +77,11 @@ describe('searchOptions', () => {
 	it('con un código corto sin sugerencias, la ficha del valor va primero', () => {
 		const hits = searchOptions('UE', [], prepare([entry('Trump y la UEFA')]));
 		expect(hits).toEqual([]); // menos de 3 letras: no se busca
-		// «trump» ya no sirve de ejemplo: desde el #61 es un alias de LIDER y no se busca.
 		const pymes = searchOptions('pymes', [], index);
 		expect(pymes[0]).toEqual({ code: 'PYMES', desc: 'Ficha del valor', kind: 'Valor', run: 'PYMES' });
 		expect(pymes[1].code).toBe('NEWS');
+		// Un alias de comando («trump» abre LIDER) no busca: lo ejecuta la barra.
+		expect(searchOptions('trump', [], index)).toEqual([]);
 		// Más de 5 caracteres: ya no parece un valor y el primero es el titular.
 		expect(searchOptions('aranceles', [], index)[0].code).toBe('NEWS');
 	});
