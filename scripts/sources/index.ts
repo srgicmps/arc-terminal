@@ -20,6 +20,7 @@ import { imp } from './imp.ts';
 import { ine } from './ine.ts';
 import { leaders } from './leaders.ts';
 import { newsSources } from './news.ts';
+import { oecd } from './oecd.ts';
 import { portwatch } from './portwatch.ts';
 import { predictions } from './predictions.ts';
 import { powerMix } from './ree-mix.ts';
@@ -75,5 +76,7 @@ export const sources: Source<any>[] = [
 	...newsSources,
 	// Derivadas: se calculan después, con los datos de las anteriores.
 	imp,
-	search
+	search,
+	// Provisional, hasta el arreglo de registry.test: se quitará al traer main.
+	oecd
 ];
