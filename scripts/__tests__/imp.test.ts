@@ -27,6 +27,7 @@ const tracked = (over: Partial<Tracked> = {}): Tracked => ({
 	sources: ['El País'],
 	sections: ['es'],
 	urls: ['a.example/1'],
+	links: [{ source: 'El País', url: 'https://a.example/1' }],
 	...over
 });
 
@@ -75,6 +76,7 @@ describe('mergeSections', () => {
 		expect(groups).toHaveLength(2);
 		const vivienda = groups.find((g) => g.title.includes('vivienda'))!;
 		expect(vivienda.sources).toEqual(['El País', 'RTVE', 'Expansión']);
+		expect(vivienda.links.map((l) => l.source)).toEqual(vivienda.sources);
 		expect(vivienda.sections).toEqual(['es', 'eco']);
 	});
 
@@ -183,6 +185,26 @@ describe('scoreGroups', () => {
 });
 
 describe('mergeDay', () => {
+	it('conserva la traducción del día y junta los enlaces de cada medio', () => {
+		const day = [{ k: 'a', title: 'A', lang: 'en' as const, titleEs: 'A es', url: 'u', sources: ['X'], score: 9, links: [{ source: 'X', url: 'x' }] }];
+		const now = [{ k: 'a', title: 'A', lang: 'en' as const, url: 'u', sources: ['Y'], score: 10, links: [{ source: 'Y', url: 'y' }] }];
+		expect(mergeDay(day, now)).toEqual([
+			{
+				k: 'a',
+				title: 'A',
+				lang: 'en',
+				titleEs: 'A es',
+				url: 'u',
+				sources: ['X', 'Y'],
+				score: 10,
+				links: [
+					{ source: 'X', url: 'x' },
+					{ source: 'Y', url: 'y' }
+				]
+			}
+		]);
+	});
+
 	it('cada tema se queda con lo máximo del día y se juntan sus medios', () => {
 		const day = [{ k: 'a', title: 'A', url: 'u', sources: ['X'], score: 9 }];
 		const now = [
@@ -212,13 +234,19 @@ describe('fuente imp', () => {
 			'news-eco': [news('Huelga general convocada en toda España', 'Expansión', 'https://expansion.com/h', 2)]
 		};
 		const ctx = makeContext(new Map(Object.entries(sections).map(([k, items]) => [k, { items, feeds: [] }])));
-		const previous: ImpData = { date: '2026-10-13', current: [], days: [{ date: '2026-10-13', items: [] }], seen: [] };
+		const previous: ImpData = { date: '2026-10-13', current: [], days: [{ date: '2026-10-13', items: [{ k: 'x', title: 'X', url: 'u', sources: ['A'], score: 1, links: [{ source: 'A', url: 'u' }] }] }], seen: [] };
 		const data = await imp.fetch(previous, ctx);
 		expect(data.date).toBe('2026-10-14');
 		expect(data.current).toHaveLength(1);
 		expect(data.current[0]).toMatchObject({ sources: ['El País', 'RTVE', 'Expansión'], sections: ['es', 'eco'], score: 5.5 });
 		expect(data.days.map((d) => d.date)).toEqual(['2026-10-13', '2026-10-14']);
-		expect(Object.keys(data.days[1].items[0])).toEqual(['k', 'title', 'url', 'sources', 'score']);
+		expect(data.days[0].items[0]).not.toHaveProperty('links');
+		expect(data.current[0].links).toEqual([
+			{ source: 'El País', url: 'https://elpais.com/h' },
+			{ source: 'RTVE', url: 'https://rtve.es/h' },
+			{ source: 'Expansión', url: 'https://expansion.com/h' }
+		]);
+		expect(Object.keys(data.days[1].items[0])).toEqual(['k', 'title', 'url', 'sources', 'score', 'links']);
 		expect(data.seen).toHaveLength(1);
 	});
 
