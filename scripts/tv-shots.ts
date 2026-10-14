@@ -40,7 +40,7 @@ async function frameText(el: Locator): Promise<string> {
 	try {
 		const frame = await (await el.locator('iframe').first().elementHandle())?.contentFrame();
 		const text = (await frame?.locator('body').innerText({ timeout: 3000 })) ?? '';
-		return text.replace(/\s+/g, ' ').trim().slice(0, 400);
+		return text.replace(/\s+/g, ' ').trim().slice(0, 2500);
 	} catch {
 		return '(sin texto)';
 	}
