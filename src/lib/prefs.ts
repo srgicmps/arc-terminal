@@ -22,6 +22,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-mode', storage: 'local', what: 'Portada general o modular', where: 'Botón ▦ de la cabecera, en TOP', kind: 'ajuste' },
 	{ key: 'arc-layout-<vista>', prefix: 'arc-layout-', storage: 'local', what: 'Paneles ocultos, orden y ancho de la vista modular', where: 'TOP en modo modular', kind: 'ajuste' },
 	{ key: 'arc-titles', storage: 'local', what: 'Idioma de los titulares (ES traducido o EN original)', where: 'Selector ES / EN de IMP', kind: 'ajuste' },
+	{ key: 'arc-ref-country', storage: 'local', what: 'País de referencia para paro, inflación y deuda', where: 'TOP, panel «Macro»', kind: 'ajuste' },
 	{ key: 'arc-ws-heatmap', storage: 'local', what: 'Último mapa de calor elegido', where: 'WS', kind: 'ajuste' },
 	{ key: 'arc-tv', storage: 'local', what: 'Vistas y segundos del modo TV', where: 'TV', kind: 'ajuste' },
 	{ key: 'fuel-zone', storage: 'local', what: 'Última provincia elegida', where: 'FUEL', kind: 'ajuste' },

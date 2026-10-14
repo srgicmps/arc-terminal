@@ -16,6 +16,8 @@
 	import Agenda from '#lib/components/top/Agenda.svelte';
 	import Markets from '#lib/components/top/Markets.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
+	import Select from '#lib/components/ui/Select.svelte';
+	import { initRefCountry, REF_COUNTRIES, refCountry, refName, setRefCountry } from '#lib/refcountry.svelte.ts';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
 	import type { BoeWeek } from '#lib/types.ts';
 	import { initWatchwords, watchwords } from '#lib/watchwords.svelte.ts';
@@ -49,6 +51,7 @@
 	// Como onMounted en Vue: lo guardado en el navegador se lee al arrancar en él.
 	$effect(() => top.load());
 	$effect(initVisit);
+	$effect(initRefCountry);
 
 	const get = $derived(seriesMap(data.ecb, data.eurostat, data.bls));
 	const premium = $derived(spread(get('bond10-es'), get('bond10-de'), 'premium-es', 'Prima de riesgo'));
@@ -131,12 +134,18 @@
 
 {#snippet macro()}
 	<Panel id="macro" title="Macro" meta="Último dato" jump={{ code: 'ECO', href: resolve('/eco') }}>
+		<div class="ref">
+			<Select label="País" value={refCountry.code} onchange={setRefCountry}>
+				{#each REF_COUNTRIES as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+			</Select>
+		</div>
 		<SeriesTable
 			head="Indicador"
 			spark={13}
 			rows={[
-				{ series: get('unemployment-es'), name: 'Paro España', inverse: true },
-				{ series: get('inflation-es'), name: 'IPCA España', inverse: true },
+				{ series: get(`unemployment-${refCountry.code}`), name: `Paro ${refName()}`, inverse: true },
+				{ series: get(`inflation-${refCountry.code}`), name: `IPCA ${refName()}`, inverse: true },
+				{ series: get(`debt-${refCountry.code}`), name: `Deuda ${refName()} (% PIB)`, decimals: 1, inverse: true },
 				{ series: get('inflation-ea'), name: 'IPCA zona euro', inverse: true },
 				{ series: get('cpi-us'), name: 'IPC EE. UU.', inverse: true },
 				{ series: get('unemployment-us'), name: 'Paro EE. UU.', inverse: true }
@@ -371,6 +380,12 @@
 {/if}
 
 <style>
+	/* «País» del panel Macro: una fila discreta encima de la tabla. */
+	.ref {
+		padding: var(--sp-6) var(--pad-x);
+		border-bottom: var(--border);
+	}
+
 	.today {
 		min-height: calc(var(--fs-xs) * var(--lh));
 		margin: 0 0 var(--sp-8);
