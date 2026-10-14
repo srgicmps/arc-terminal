@@ -1,6 +1,5 @@
 import { dataset } from '#lib/data.ts';
-import type { Chokepoint, Disaster, HazardsData, NewsData, PredictionsData, Quake } from '#lib/types.ts';
-import type { TradeLike } from '#lib/geo/layers.ts';
+import type { Chokepoint, Disaster, HazardsData, NewsData, PredictionsData, Quake, TradeDoc } from '#lib/types.ts';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async () => {
@@ -13,8 +12,7 @@ export const load: PageLoad = async () => {
 		dataset<PredictionsData>('predictions'),
 		dataset<Chokepoint[]>('portwatch'),
 		dataset<Disaster[]>('reliefweb'),
-		// Sanciones y aranceles (scripts/sources/sanctions.ts), para la capa del mapa.
-		dataset<TradeLike[]>('sanctions')
+		dataset<TradeDoc[]>('sanctions')
 	]);
 	return { news, gov, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions };
 };
