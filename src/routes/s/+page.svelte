@@ -12,7 +12,7 @@
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { TICKERS, tvSymbol } from '#lib/commands.ts';
+	import { TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import { sectionLabel } from '#lib/news.ts';
 	import { stockShare, type ShareInfo } from '#lib/share.ts';
 	import { inWatchlist, toggleWatch } from '#lib/watchlist.svelte.ts';
