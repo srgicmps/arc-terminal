@@ -41,6 +41,7 @@
 			{ proName: 'FX:EURUSD', title: 'EUR/USD' },
 			{ proName: 'TVC:UKOIL', title: 'Brent' },
 			{ proName: 'TVC:GOLD', title: 'Oro' },
+			{ proName: 'FRED:DGS10', title: 'PRUEBA FRED:DGS10' },
 			{ proName: 'TVC:US10Y', title: 'Bono EE. UU. 10A' },
 			{ proName: 'BITSTAMP:BTCUSD', title: 'Bitcoin' }
 		],

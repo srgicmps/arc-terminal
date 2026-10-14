@@ -45,8 +45,17 @@
 						{ s: 'FOREXCOM:DJI', d: 'Dow Jones' },
 						{ s: 'BME:IBC', d: 'IBEX 35' },
 						{ s: 'XETR:DAX', d: 'DAX' },
-						{ s: 'TVC:SX5E', d: 'Euro Stoxx 50' },
-						{ s: 'TVC:NI225', d: 'Nikkei 225' }
+						{ s: 'OANDA:EU50EUR', d: 'PRUEBA OANDA:EU50EUR' },
+						{ s: 'CAPITALCOM:EU50', d: 'PRUEBA CAPITALCOM:EU50' },
+						{ s: 'PEPPERSTONE:EUSTX50', d: 'PRUEBA PEPPERSTONE:EUSTX50' },
+						{ s: 'FOREXCOM:EU50', d: 'PRUEBA FOREXCOM:EU50' },
+						{ s: 'EUREX:FESX1!', d: 'PRUEBA EUREX:FESX1!' },
+						{ s: 'OANDA:JP225USD', d: 'PRUEBA OANDA:JP225USD' },
+						{ s: 'CAPITALCOM:J225', d: 'PRUEBA CAPITALCOM:J225' },
+						{ s: 'PEPPERSTONE:JPN225', d: 'PRUEBA PEPPERSTONE:JPN225' },
+						{ s: 'FOREXCOM:JP225', d: 'PRUEBA FOREXCOM:JP225' },
+						{ s: 'TVC:NI225', d: 'PRUEBA TVC:NI225' },
+						{ s: 'TVC:SX5E', d: 'PRUEBA TVC:SX5E' }
 					]
 				},
 				{
