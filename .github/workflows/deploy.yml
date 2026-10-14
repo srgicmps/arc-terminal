@@ -53,6 +53,8 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           # La SEC pide un User-Agent con nombre y correo; va en un secreto porque el repo es público.
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          # ReliefWeb solo responde con un appname aprobado por ellos (no es una clave, pero es personal).
+          RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
 
       - run: pnpm check
       - run: pnpm test
