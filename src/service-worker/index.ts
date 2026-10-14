@@ -2,18 +2,25 @@
 // con la última copia descargada. SvelteKit lo construye y lo registra solo.
 //
 // Estrategias:
-// - Archivos de la build, de static/ y páginas prerenderizadas: se guardan al instalar (precaché).
-// - Navegación y data/*.json: primero la red (datos frescos); si no hay red, la copia guardada.
+// - Al instalar (precaché) solo lo imprescindible: los archivos de la build (_app/immutable), el manifest,
+//   los iconos y la portada TOP (la raíz y su __data.json). Así una publicación nueva no vuelve a bajar
+//   todas las vistas con sus datos: en el móvil eran ~0,5 MB cada 15 min.
+// - Las demás vistas se guardan al abrirlas: primero la red y, si responde bien, una copia en la caché de
+//   páginas. Esa caché tiene nombre fijo (sobrevive a las publicaciones) y un límite de entradas.
+// - Sin conexión: la vista abierta antes sale de esa caché; una que nunca se abrió cae en TOP.
 // - Fuentes de Google: primero la caché (no cambian nunca).
-// - Motor de ajedrez (static/engine/, unos 7 MB): fuera de la precaché, para no descargarlo a quien no
+// - Motor de ajedrez (static/engine/, unos 7 MB): no entra en la precaché, para no descargarlo a quien no
 //   juega. Se guarda la primera vez que se usa, en una caché propia que sobrevive a las publicaciones.
 // - Todo lo demás (widgets de TradingView incluidos) pasa directo a la red, sin guardar nada.
 import { self } from '$app/service-worker';
 import { immutable, assets, prerendered } from '$app/manifest';
 import { version } from '$app/env';
 
-// Una caché por publicación: al publicar, `version` cambia y la anterior se borra.
+// Archivos de la build: una caché por publicación; al publicar, `version` cambia y la anterior se borra.
 const CACHE = `arc-${version}`;
+// Vistas abiertas y sus datos: nombre fijo, nunca se borra al publicar.
+const PAGES = 'arc-pages';
+const PAGES_MAX = 40;
 const FONTS = 'arc-fonts';
 const ENGINE = 'arc-engine';
 
@@ -23,12 +30,16 @@ const scope = new URL(self.registration.scope);
 const url = (path: string) => new URL(path.replace(/^\//, ''), scope).href;
 
 const IMMUTABLE = immutable.map((f) => url(f.path));
-const isEngine = (path: string) => /(^|\/)engine\//.test(path);
-const PRECACHE = [
-	...IMMUTABLE,
-	...assets.filter((f) => !isEngine(f.path)).map((f) => url(f.path)),
-	...prerendered.map((f) => url(f.path))
-];
+/** JSON de datos: data/fuel.json, data/fuel/07.json, eco/__data.json… */
+const DATA = /(\/data\/.+|__data)\.json$/;
+/** De static/ solo el manifest, los iconos y el favicon (no los JSON de data/). */
+const STATIC = assets
+	.map((f) => url(f.path))
+	.filter((href) => /\.(webmanifest|png|svg|ico)$/.test(href) && !DATA.test(new URL(href).pathname));
+const PRECACHE = [...IMMUTABLE, ...STATIC];
+/** La portada TOP y sus datos (si la build los genera): siempre disponibles sin conexión. */
+const TOP_DATA = url('__data.json');
+const TOP = [scope.href, ...(prerendered.some((f) => url(f.path) === TOP_DATA) ? [TOP_DATA] : [])];
 
 self.addEventListener('install', (event) => {
 	event.waitUntil(
@@ -43,6 +54,15 @@ self.addEventListener('install', (event) => {
 				else missing.push(href);
 			}
 			await cache.addAll(missing);
+			// TOP siempre fresca: se salta la caché HTTP del navegador.
+			const pages = await caches.open(PAGES);
+			await Promise.all(
+				TOP.map(async (href) => {
+					const response = await fetch(href, { cache: 'no-cache' });
+					if (!response.ok) throw new Error(`${href}: ${response.status}`);
+					await pages.put(href, response);
+				})
+			);
 			await self.skipWaiting();
 		})()
 	);
@@ -51,8 +71,9 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
 	event.waitUntil(
 		(async () => {
+			// Se borran las cachés de publicaciones viejas, pero nunca la de páginas, la de fuentes ni la del motor.
 			for (const key of await caches.keys()) {
-				if (key !== CACHE && key !== FONTS && key !== ENGINE) await caches.delete(key);
+				if (key !== CACHE && key !== PAGES && key !== FONTS && key !== ENGINE) await caches.delete(key);
 			}
 			await self.clients.claim();
 		})()
@@ -79,12 +100,12 @@ self.addEventListener('fetch', (event) => {
 	}
 
 	// Los archivos del motor llevan la versión en el nombre: si cambia, es otro archivo.
-	if (isEngine(target.pathname)) {
+	if (target.pathname.startsWith(`${scope.pathname}engine/`)) {
 		event.respondWith(cacheFirst(request, ENGINE));
 		return;
 	}
 
-	if (/\/data\/[^/]+\.json$/.test(target.pathname)) {
+	if (DATA.test(target.pathname)) {
 		event.respondWith(networkFirst(request));
 		return;
 	}
@@ -95,21 +116,40 @@ self.addEventListener('fetch', (event) => {
 	}
 });
 
-/** Red primero; si responde bien, se guarda la copia. Sin red, la copia guardada. */
+/** Sin búsqueda (?x-sveltekit-invalidated=…, ?q=…): una sola copia por vista. */
+const key = (request: Request) => {
+	const target = new URL(request.url);
+	target.search = '';
+	return target.href;
+};
+
+/** Red primero; si responde bien, se guarda la copia en la caché de páginas. Sin red, la copia guardada. */
 async function networkFirst(request: Request): Promise<Response> {
-	const cache = await caches.open(CACHE);
+	const cache = await caches.open(PAGES);
 	try {
 		const response = await fetch(request);
-		if (response.ok) await cache.put(request, response.clone());
+		if (response.ok && !response.redirected) {
+			await cache.put(key(request), response.clone());
+			await prune(cache);
+		}
 		return response;
 	} catch (error) {
-		const cached = await cache.match(request, { ignoreSearch: true });
+		const cached = await cache.match(key(request));
 		if (cached) return cached;
 		throw error;
 	}
 }
 
-/** Páginas: red primero; sin red, la página guardada o, como último recurso, la portada. */
+/**
+ * Deja la caché de páginas en PAGES_MAX entradas, borrando las más antiguas. `put` vuelve a poner al
+ * final lo que ya estaba, así que el orden de `keys()` es el de la última visita. TOP no se borra nunca.
+ */
+async function prune(cache: Cache) {
+	const keys = (await cache.keys()).filter((r) => !TOP.includes(r.url));
+	for (const old of keys.slice(0, Math.max(0, keys.length - (PAGES_MAX - TOP.length)))) await cache.delete(old);
+}
+
+/** Páginas: red primero; sin red, la página guardada o, si nunca se abrió, la portada. */
 async function page(request: Request): Promise<Response> {
 	try {
 		return await networkFirst(request);
@@ -117,9 +157,8 @@ async function page(request: Request): Promise<Response> {
 		const path = new URL(request.url).pathname;
 		// GitHub Pages sirve /eco y /eco/ igual: probamos las dos formas.
 		const alt = path.endsWith('/') ? path.slice(0, -1) : `${path}/`;
-		const cached =
-			(await caches.match(new URL(alt, scope).href, { ignoreSearch: true })) ??
-			(await caches.match(scope.href));
+		const pages = await caches.open(PAGES);
+		const cached = (await pages.match(new URL(alt, scope).href)) ?? (await pages.match(scope.href));
 		if (cached) return cached;
 		throw error;
 	}

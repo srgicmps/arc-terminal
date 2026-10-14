@@ -5,7 +5,10 @@
 // - a 390 px la página es más ancha que la pantalla (scroll horizontal);
 // - la vista no tiene paneles o alguno dice «… todavía» (le faltan sus datos). Una fuente que ha respondido
 //   sin nada que contar (hoy no hay terremotos ni avisos) tiene que decirlo con otro aviso, sin «todavía».
+// Además avisa (sin fallar) si una vista pesa más de WEIGHT_LIMIT: lo que descarga de la propia web
+// (HTML, JS, CSS y datos) comprimido con gzip, como lo sirve GitHub Pages; sin TradingView ni otras webs.
 // Las peticiones a otras webs (TradingView, fuentes…) se contestan vacías: así la prueba no depende de la red.
+import { gzipSync } from 'node:zlib';
 import { COMMANDS } from '../src/lib/commands.ts';
 import { launch, preview } from './browser.ts';
 
@@ -13,9 +16,12 @@ const PATHS = [...COMMANDS.map((c) => c.route), '/s?sym=NVDA'];
 const WIDTHS = [390, 1280];
 /** Vistas de texto, sin paneles. */
 const NO_PANELS = new Set(['/help', '/doc']);
+/** Peso máximo razonable de una vista en el móvil (4G), en bytes gzip. */
+const WEIGHT_LIMIT = 300 * 1024;
 
 const { server, root: ROOT } = await preview(4317);
 const failures: string[] = [];
+const warnings: string[] = [];
 
 try {
 	const browser = await launch();
@@ -32,6 +38,13 @@ try {
 				if (m.type() === 'error') failures.push(`${where}: consola: ${m.text()} (${m.location().url})`);
 			});
 			page.on('pageerror', (e) => failures.push(`${where}: excepción: ${e.message}`));
+			// Peso de la vista: cada respuesta de la propia web, comprimida (también las que el navegador ya tenía
+			// en caché de una vista anterior, para medir la vista como si se abriera en frío).
+			const sizes: Promise<number>[] = [];
+			page.on('response', (res) => {
+				if (new URL(res.url()).hostname !== 'localhost') return;
+				sizes.push(res.body().then((b) => gzipSync(b).length, () => 0));
+			});
 			const res = await page.goto(ROOT + path, { waitUntil: 'networkidle' });
 			if (!res?.ok()) failures.push(`${where}: HTTP ${res?.status()}`);
 			// Deja que arranquen el reloj y los $effect.
@@ -46,6 +59,10 @@ try {
 			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px`);
 			if (!NO_PANELS.has(path) && !check.panels) failures.push(`${where}: sin paneles`);
 			for (const text of check.missing) failures.push(`${where}: panel sin datos («${text}»)`);
+			const weight = (await Promise.all(sizes)).reduce((a, b) => a + b, 0);
+			if (width < 600 && weight > WEIGHT_LIMIT) {
+				warnings.push(`${path} pesa ${Math.round(weight / 1024)} KB (gzip, sin terceros); el límite es ${WEIGHT_LIMIT / 1024} KB`);
+			}
 			await page.close();
 		}
 		await context.close();
@@ -56,6 +73,9 @@ try {
 } finally {
 	server.kill();
 }
+
+// ::warning:: hace que GitHub muestre el aviso en el resumen de la Action.
+for (const w of warnings) console.log(`::warning title=Peso de las vistas::${w}`);
 
 if (failures.length) {
 	console.log(`✗ Prueba de humo: ${failures.length} fallos\n${failures.map((f) => `  - ${f}`).join('\n')}`);
