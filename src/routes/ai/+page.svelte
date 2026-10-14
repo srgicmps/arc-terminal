@@ -10,9 +10,19 @@
 	import Table from '#lib/components/ui/Table.svelte';
 	import { compact } from '#lib/format.ts';
 	import { BIG_TECH } from '#lib/tickers/bigtech.ts';
+	import { AI_CHAIN } from '#lib/tickers/aichain.ts';
+	import { quotesHeight } from '#lib/tickers.ts';
+	import TvWidget from '#lib/components/TvWidget.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+
+	// Cesta de la cadena de la IA: una pestaña por eslabón, con el alto de la pestaña más larga.
+	const chain = {
+		showSymbolLogo: false,
+		symbolsGroups: AI_CHAIN.map((link) => ({ name: link.name, symbols: link.symbols.map((s) => ({ name: s.tv, displayName: s.name })) }))
+	};
+	const chainHeight = quotesHeight(Math.max(...AI_CHAIN.map((l) => l.symbols.length)));
 
 	// De la portada de Hacker News, lo que habla de IA.
 	const AI = /\b(ai|a\.i\.|llms?|gpt|openai|anthropic|claude|gemini|llama|mistral|deepseek|transformer|neural|machine learning|agents?|diffusion|copilot|inference|model)\b/i;
@@ -54,6 +64,9 @@
 	<div class="col">
 		<Panel title="Tecnológicas en bolsa" meta="TradingView · toca un código para su ficha">
 			<QuoteBoard name="Tecnológicas" codes={BIG_TECH} />
+		</Panel>
+		<Panel title="La cadena de la IA" meta="Chips, fabricación, memoria, servidores y energía · en directo">
+			<TvWidget widget="market-quotes" config={chain} height={chainHeight} />
 		</Panel>
 		<Panel title="IA en Hacker News" meta="{hnAi.length} en portada">
 			<HnTable items={hnAi} />
