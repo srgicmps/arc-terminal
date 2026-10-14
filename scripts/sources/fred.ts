@@ -2,7 +2,8 @@
 // Necesita una clave gratuita (FRED_API_KEY, en GitHub Secrets). Sin ella, la fuente se salta.
 // Límite: unas 120 consultas por minuto por clave; aquí son 20 cada 3 horas.
 // Condiciones: hay que avisar de que se usa la API de FRED sin su respaldo, y algunas series son de
-// terceros con copyright (el VIX de Cboe): solo se guardan unos pocos puntos con enlace a FRED.
+// terceros con copyright (el VIX de Cboe, los diferenciales de ICE BofA): solo se guardan unos pocos puntos
+// con enlace a FRED y la fuente citada.
 import { at } from '../../src/lib/series.ts';
 import type { Point, Series, SeriesData } from '../../src/lib/types.ts';
 import { getJson, num, settle, type Source } from '../lib.ts';
@@ -52,8 +53,12 @@ const WANTED: Wanted[] = [
 	{ code: 'T5YIE', id: 'breakeven5-us', label: 'Inflación esperada a 5 años', unit: '%', freq: 'd', last: 260 },
 	{ code: 'T10YIE', id: 'breakeven10-us', label: 'Inflación esperada a 10 años', unit: '%', freq: 'd', last: 260 },
 	{ code: 'T5YIFR', id: 'forward5y5y-us', label: 'Inflación esperada a 5 años dentro de 5', unit: '%', freq: 'd', last: 260 },
-	{ code: 'DFII10', id: 'real10-us', label: 'Tipo real a 10 años (TIPS)', unit: '%', freq: 'd', last: 260 }
-	// Los diferenciales de crédito de ICE BofA (BAMLH0A0HYM2…) no se guardan: ICE prohíbe reproducirlos sin permiso.
+	{ code: 'DFII10', id: 'real10-us', label: 'Tipo real a 10 años (TIPS)', unit: '%', freq: 'd', last: 260 },
+	// Diferenciales de crédito (OAS de ICE BofA, en %): lo que pagan de más los bonos de empresa sobre la deuda
+	// pública (ECO y aviso P2 del alto rendimiento). Aprobado por Sergi (D31), citando «ICE Data Indices vía FRED».
+	{ code: 'BAMLH0A0HYM2', id: 'hy-us', label: 'Alto rendimiento EE. UU.', unit: '%', freq: 'd', last: 260 },
+	{ code: 'BAMLC0A0CM', id: 'ig-us', label: 'Grado de inversión EE. UU.', unit: '%', freq: 'd', last: 260 },
+	{ code: 'BAMLHE00EHYIOAS', id: 'hy-eu', label: 'Alto rendimiento euro', unit: '%', freq: 'd', last: 260 }
 ];
 
 /** «2026-09-01» → «2026-09» (mensual) o «2026-Q3» (trimestral); diaria y semanal, tal cual. */
@@ -140,7 +145,7 @@ export function netLiquidity(walcl?: Series, tga?: Series, rrp?: Series): Series
 
 export const fred: Source<SeriesData> = {
 	name: 'fred',
-	label: 'Fed, balance de la Fed, curva, PCE, PIB, paro semanal, M2, VIX, petróleo y dólar · FRED (Fed de San Luis)',
+	label: 'Fed, balance de la Fed, curva, PCE, PIB, paro semanal, M2, VIX, petróleo, dólar y crédito · FRED (Fed de San Luis)',
 	maxAgeMinutes: 175,
 	requires: ENV,
 	// Si a la copia le falta alguna serie (p. ej., recién añadida, como el balance de la Fed o la hipoteca), se descarga de nuevo.

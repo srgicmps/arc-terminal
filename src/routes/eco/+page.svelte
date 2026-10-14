@@ -4,6 +4,7 @@
 	import BalanceSheets from '#lib/components/BalanceSheets.svelte';
 	import HousingTable from '#lib/components/HousingTable.svelte';
 	import ImfTable from '#lib/components/ImfTable.svelte';
+	import LineChart from '#lib/components/LineChart.svelte';
 	import MortgageCalc from '#lib/components/MortgageCalc.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import MeetingList from '#lib/components/MeetingList.svelte';
@@ -20,7 +21,20 @@
 
 	let { data }: PageProps = $props();
 
+	// Diferenciales de crédito de ICE BofA (FRED): id, nombre y color de la línea del gráfico.
+	const CREDIT = [
+		['hy-us', 'Alto rendimiento EE. UU.', '--amber'],
+		['hy-eu', 'Alto rendimiento euro', '--muted'],
+		['ig-us', 'Grado de inversión EE. UU.', '--faint']
+	] as const;
+
 	const get = $derived(seriesMap(data.eurostat, data.ecb, data.bls, data.usdebt, data.fred));
+	const creditLines = $derived(
+		CREDIT.flatMap(([id, label, color]) => {
+			const points = get(id)?.points;
+			return points?.length ? [{ label, color, points }] : [];
+		})
+	);
 	const geos = ['es', 'ea', 'de', 'fr', 'it', 'pt'];
 	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: !id.startsWith('gdp') }));
 
@@ -305,6 +319,25 @@
 				{#snippet note()}
 					Inflación esperada: diferencia entre el bono del Tesoro y el ligado a la inflación (TIPS) del mismo plazo.
 					Fuente: FRED · <Updated at={data.fred?.fetchedAt} source="fred" />
+				{/snippet}
+			</Panel>
+		{/if}
+		{#if get('hy-us')}
+			<Panel title="Diferenciales de crédito" meta="Bonos de empresa sobre la deuda pública · último año">
+				<SeriesTable
+					head="Bonos"
+					spark={60}
+					rows={CREDIT.map(([id, name]) => ({ series: get(id), name, decimals: 2, inverse: true }))}
+					extra={[
+						{ head: '7 días', value: (s) => diffDays(s, 7) },
+						{ head: '1 año', value: (s) => diffDays(s, 365) }
+					]}
+				/>
+				<LineChart lines={creditLines} unit=" %" height={160} />
+				{#snippet note()}
+					Diferencial ajustado por opciones (OAS), en puntos porcentuales: lo que pagan de más los bonos de empresa.
+					Si sube, el mercado pide más prima por el riesgo de impago. Fuente: ICE Data Indices, LLC, vía FRED ·
+					<Updated at={data.fred?.fetchedAt} source="fred" />
 				{/snippet}
 			</Panel>
 		{/if}
