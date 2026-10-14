@@ -1,6 +1,6 @@
 // Valores de defensa y geopolítica: un solo sitio para la lista que enseñan WS y GEO (DefenseQuotes) y que
-// la barra de comandos abre como ficha (están también en TICKERS, src/lib/commands.ts).
-import { TICKERS, type Ticker } from './commands.ts';
+// la barra de comandos abre como ficha (están también en TICKERS, src/lib/tickers.ts).
+import { TICKERS, type Ticker } from './tickers.ts';
 
 /** Códigos de TICKERS, por grupo. */
 export const DEFENSE_GROUPS = [

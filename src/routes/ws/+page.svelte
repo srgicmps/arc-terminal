@@ -3,11 +3,11 @@
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
 	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
 	import FxConvert from '#lib/components/FxConvert.svelte';
+	import FxTable from '#lib/components/FxTable.svelte';
 	import HotLists from '#lib/components/HotLists.svelte';
 	import MarketSessions from '#lib/components/MarketSessions.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
-	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -101,7 +101,8 @@
 	/** Alto para que quepan todas las filas sin barra de desplazamiento (como en MIS). */
 	const quotesHeight = (n: number) => 90 + n * 46;
 
-	// Mapas de calor de TradingView: acciones de un índice (widget «stock-heatmap») o cripto («crypto-coins-heatmap»).
+	// Mapas de calor de TradingView: acciones de un índice («stock-heatmap»), cripto («crypto-coins-heatmap»)
+	// o divisas («forex-heat-map»: cada casilla es la variación del día de un par).
 	const common = {
 		blockColor: 'change',
 		hasTopBar: false,
@@ -116,7 +117,8 @@
 		{ key: 'ndx', label: 'Nasdaq 100', widget: 'stock-heatmap', config: stocks('NASDAQ100') },
 		{ key: 'dax', label: 'DAX', widget: 'stock-heatmap', config: stocks('DAX') },
 		{ key: 'ibex', label: 'IBEX 35', widget: 'stock-heatmap', config: stocks('IBEX35') },
-		{ key: 'crypto', label: 'Cripto', widget: 'crypto-coins-heatmap', config: { ...common, dataSource: 'Crypto', blockSize: 'market_cap_calc' } }
+		{ key: 'crypto', label: 'Cripto', widget: 'crypto-coins-heatmap', config: { ...common, dataSource: 'Crypto', blockSize: 'market_cap_calc' } },
+		{ key: 'fx', label: 'Divisas', widget: 'forex-heat-map', config: { currencies: ['USD', 'EUR', 'JPY', 'GBP', 'CHF', 'CNY', 'AUD', 'CAD', 'MXN'] } }
 	] as const;
 
 	// El mapa elegido se recuerda en este navegador (si no deja guardar, se queda en memoria).
@@ -200,8 +202,9 @@
 				<Updated at={data.jgb?.fetchedAt} source="jgb" />
 			{/snippet}
 		</Panel>
-		<Panel title="Divisas" meta="Cambio de referencia del BCE">
-			<SeriesTable head="Par" spark={60} rows={fx.map((id) => ({ series: get(id), name: get(id)?.label, decimals: 4 }))} />
+		<Panel title="Divisas" meta="Frente al euro · cambio de referencia del BCE">
+			<FxTable rows={fx.map((id) => ({ series: get(id), week: data.fxChange[id]?.week ?? null, year: data.fxChange[id]?.year ?? null }))} />
+			{#snippet note()}Si el par sube, el euro se aprecia frente a esa moneda · <Updated at={data.ecb?.fetchedAt} source="ecb" />{/snippet}
 		</Panel>
 		<Panel title="Conversor" meta="Tipos de referencia del BCE">
 			<FxConvert series={fx.map(get)} />
@@ -211,7 +214,7 @@
 			<CryptoTable coins={data.crypto?.data.coins ?? []} />
 			{#snippet note()}Fuente: CoinGecko · <Updated at={data.crypto?.fetchedAt} source="crypto" />{/snippet}
 		</Panel>
-		<Panel title="Subastas del Tesoro" meta="Bonos y notas de EE. UU.">
+		<Panel title="Subastas del Tesoro" meta="EE. UU. · próximas y resultados de bonos y notas">
 			{#if data.auctions}<AuctionList data={data.auctions.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
 			{#snippet note()}
 				B/C (bid-to-cover): demanda frente a lo adjudicado; en ámbar, por debajo de la media de sus 6 subastas anteriores ·

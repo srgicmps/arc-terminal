@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { dedupe, isSource, loadSources, sourcesIn } from '../registry.ts';
-import { sources as listed } from '../sources/index.ts';
 
 const fake = (name: string) => ({ name, label: name, maxAgeMinutes: 10, fetch: async () => [] });
 
 describe('registro de fuentes', () => {
-	// Una fuente nueva solo necesita su archivo en scripts/sources/: no hace falta añadirla a index.ts.
-	it('incluye las de index.ts primero y en su orden, más las sueltas, sin repetir', async () => {
+	// Una fuente nueva solo necesita su archivo en scripts/sources/.
+	it('descubre todas las fuentes de scripts/sources/, sin repetir nombres', async () => {
 		const names = (await loadSources()).map((s) => s.name);
-		expect(names.slice(0, listed.length)).toEqual(listed.map((s) => s.name));
+		expect(names.length).toBeGreaterThan(60);
 		expect(new Set(names).size).toBe(names.length);
+		for (const name of ['fuel', 'boe', 'news-es', 'imp', 'search', 'translations']) expect(names).toContain(name);
 	});
 
 	it('reconoce fuentes sueltas y en listas, y no lo que solo se le parece', () => {

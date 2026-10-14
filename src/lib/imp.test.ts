@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aggregate, topImportant } from './imp.ts';
+import { aggregate, inGroup, topImportant } from './imp.ts';
 import type { ImpData, ImpEntry } from './types.ts';
 
 const e = (k: string, score: number, sources = ['A'], title = k.toUpperCase()): ImpEntry => ({ k, title, url: `https://x.example/${k}`, sources, score });
@@ -58,3 +58,30 @@ describe('aggregate', () => {
 		expect(aggregate(days, '2026-10-14', 7, 1)).toHaveLength(1);
 	});
 });
+
+describe('filtro por sección', () => {
+	const withSections = (k: string, score: number, sections?: string[]): ImpEntry => ({ ...e(k, score), ...(sections && { sections }) });
+
+	it('al sumar días junta las secciones de cada tema', () => {
+		const days = [
+			{ date: '2026-10-13', items: [withSections('a', 5, ['es'])] },
+			{ date: '2026-10-14', items: [withSections('a', 4, ['eco', 'es'])] }
+		];
+		expect(aggregate(days, '2026-10-14', 7)[0].sections).toEqual(['es', 'eco']);
+	});
+
+	it('se queda con los del grupo, sin repetir y como mucho n; TECH·IA junta las dos secciones', () => {
+		const items = [withSections('a', 9, ['es']), withSections('b', 8, ['ai']), withSections('c', 7, ['tech', 'eco']), withSections('a', 6, ['es'])];
+		const of = (i: ImpEntry) => i.sections ?? [];
+		expect(inGroup(items, 'all', of, 10).map((i) => i.k)).toEqual(['a', 'b', 'c']);
+		expect(inGroup(items, 'tech', of, 10).map((i) => i.k)).toEqual(['b', 'c']);
+		expect(inGroup(items, 'eco', of, 10).map((i) => i.k)).toEqual(['c']);
+		expect(inGroup(items, 'tech', of, 1).map((i) => i.k)).toEqual(['b']);
+	});
+
+	it('los temas sin secciones guardadas usan las que dé sectionsOf (las del top de ahora)', () => {
+		const live = new Map([['viejo', ['geo']]]);
+		expect(inGroup([e('viejo', 3)], 'geo', (i) => i.sections ?? live.get(i.k) ?? [], 10)).toHaveLength(1);
+	});
+});
+
