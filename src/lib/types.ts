@@ -29,6 +29,11 @@ export interface SeriesData {
 	series: Series[];
 }
 
+/** Inflación del G20 (scripts/sources/oecd.ts): series de la OCDE y de dónde salieron en esta descarga. */
+export interface G20Data extends SeriesData {
+	via: 'oecd' | 'dbnomics';
+}
+
 // ---------- Previsiones del FMI (World Economic Outlook) ----------
 
 export interface ImfRow {
@@ -213,6 +218,29 @@ export interface PowerData {
 	spot: PricePoint[];
 	/** Historial diario que va acumulando la propia web. */
 	history?: PowerDay[];
+}
+
+// ---------- Precio de la luz en Europa (Energy-Charts y REE) ----------
+
+/** Media diaria del mercado mayorista en una zona de precio («DE-LU»), en €/MWh. */
+export interface EuPowerZone {
+	/** Zona de precio del mercado europeo: «DE-LU», «FR», «IT-North»… */
+	zone: string;
+	/** País (ISO2) al que corresponde, para enlazar con PAIS. */
+	country: string;
+	/** Nombre en español: «Alemania y Luxemburgo», «Italia (norte)». */
+	name: string;
+	/** Media de hoy y de mañana (día de Madrid); null si aún no se conoce o el día está incompleto. */
+	today: number | null;
+	tomorrow: number | null;
+	/** Quién lo publica: «Energy-Charts / SMARD» o «REE» (España). */
+	source: string;
+}
+
+export interface EuPowerData {
+	/** Día de «hoy» (Madrid): «2026-10-14». */
+	date: string;
+	zones: EuPowerZone[];
 }
 
 // ---------- Tiempo (Open-Meteo) ----------
@@ -687,4 +715,25 @@ export interface ArchiveEntry {
 export interface NewsArchive {
 	/** Del más reciente al más antiguo. */
 	months: { month: string; count: number; bytes: number }[];
+}
+
+// ---------- Avisos de viaje (Departamento de Estado de EE. UU.) ----------
+
+/** El aviso de viaje de un país: nivel 1 (precauciones normales) a 4 (no viajar). */
+export interface TravelAdvisory {
+	/** Nombre del país en inglés, tal como lo da el título («Ukraine»). Se cruza con PAIS por nombre. */
+	name: string;
+	level: 1 | 2 | 3 | 4;
+	/** Título completo: «Ukraine - Level 4: Do Not Travel». */
+	title: string;
+	url: string;
+	/** Última actualización del aviso (ISO 8601). */
+	updated: string;
+	/** Si el nivel ha cambiado desde que la terminal lo sigue: el anterior y cuándo se vio el cambio. */
+	prevLevel?: 1 | 2 | 3 | 4;
+	changedAt?: string;
+}
+
+export interface AdvisoriesData {
+	items: TravelAdvisory[];
 }

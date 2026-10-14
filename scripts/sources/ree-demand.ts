@@ -27,7 +27,11 @@ export interface DemandData {
 
 const day = (d: string) => `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
 
-/** Desde ayer a las 00:00 hasta hoy a las 23:59 (hora de Madrid): así, a medianoche sigue habiendo datos. */
+/**
+ * Desde ayer a las 00:00 hasta hoy a las 23:59 (hora de Madrid): así, a medianoche sigue habiendo datos.
+ * Aunque pida `time_trunc=hour`, esta serie viene siempre cada 5 minutos. Se deja
+ * porque las demás series de apidatos lo piden.
+ */
 export const demandUrl = () =>
 	'https://apidatos.ree.es/es/datos/demanda/demanda-tiempo-real?' +
 	new URLSearchParams({ start_date: `${day(madridDate(-1))}T00:00`, end_date: `${day(madridDate(0))}T23:59`, time_trunc: 'hour' });
