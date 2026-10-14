@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { withLang } from '../sources/news.ts';
-import { mergeDay } from '../sources/imp.ts';
+import { mergeDay, mergeSections } from '../sources/imp.ts';
 import {
 	LIMITS,
 	loadCache,
@@ -155,7 +155,7 @@ it('IMP conserva la traducción del día si el titular no cambia', () => {
 	expect(mergeDay(before, now)[0]).toMatchObject({ titleEs: 'Petróleo', score: 5 });
 });
 
-describe('translateHeadlines (el paso de update.ts)', () => {
+describe('translateHeadlines (la fuente translations)', () => {
 	let dir: string;
 	const logs: string[] = [];
 	const log = (l: string) => logs.push(l);
@@ -174,7 +174,7 @@ describe('translateHeadlines (el paso de update.ts)', () => {
 			fetchedAt: '',
 			data: {
 				date: '2026-10-14',
-				current: [{ k: 'a', title: 'Ceasefire holds', url: '', sources: [], score: 3 }],
+				current: [{ k: 'a', title: 'Ceasefire holds', lang: 'en', url: '', sources: [], score: 3 }],
 				days: [],
 				seen: []
 			}
@@ -187,23 +187,30 @@ describe('translateHeadlines (el paso de update.ts)', () => {
 	const everything = async () =>
 		(await Promise.all((await readdir(dir)).map((f) => readFile(join(dir, f), 'utf8')))).join('\n');
 
-	it('sin el Secret no llama a nadie, no falla y todo sigue en inglés', async () => {
+	it('sin el Secret no llama a nadie, no toca los archivos y todo sigue en inglés', async () => {
 		const api = fakeApi();
-		await translateHeadlines({ dir, email: undefined, previous: undefined, fetchFn: api, now: NOW, log });
+		const before = await everything();
+		const cache = await translateHeadlines({ dir, email: undefined, previous: undefined, fetchFn: api, now: NOW, log });
 		expect(api).not.toHaveBeenCalled();
-		expect((await read('news-geo')).data.items[0].titleEs).toBeUndefined();
-		expect((await readdir(dir)).includes('translations.json')).toBe(false);
+		expect(cache.entries).toEqual({});
+		expect(await everything()).toBe(before);
 		expect(logs.join('\n')).toMatch(/sin MYMEMORY_EMAIL/);
 		expect(logs.join('\n')).not.toMatch(/warning/);
 	});
 
-	it('con el Secret pone titleEs en las secciones y en IMP, y publica la caché', async () => {
-		await translateHeadlines({ dir, email: EMAIL, previous: undefined, fetchFn: fakeApi(), now: NOW, log });
+	it('con el Secret pone titleEs en las secciones y en IMP, y devuelve la caché', async () => {
+		const cache = await translateHeadlines({
+			dir,
+			email: EMAIL,
+			previous: undefined,
+			fetchFn: fakeApi(),
+			now: NOW,
+			log
+		});
 		const geo = (await read('news-geo')).data.items;
 		expect(geo[0].titleEs).toBe('[es] Ceasefire holds');
 		expect(geo[1].titleEs).toBeUndefined();
 		expect((await read('imp')).data.current[0]).toMatchObject({ lang: 'en', titleEs: '[es] Ceasefire holds' });
-		const cache = (await read('translations')).data as TranslationCache;
 		expect(Object.keys(cache.entries)).toHaveLength(1);
 	});
 
@@ -211,11 +218,19 @@ describe('translateHeadlines (el paso de update.ts)', () => {
 		const leaky = vi.fn(async (input: string | URL | Request) => {
 			throw new Error(`fallo al pedir ${String(input)} para ${EMAIL}`);
 		}) as unknown as typeof fetch;
-		await translateHeadlines({ dir, email: EMAIL, previous: undefined, fetchFn: leaky, now: NOW, log });
-		await translateHeadlines({ dir, email: EMAIL, previous: undefined, fetchFn: fakeApi(), now: NOW, log });
-		const all = `${logs.join('\n')}\n${await everything()}`;
+		const a = await translateHeadlines({ dir, email: EMAIL, previous: undefined, fetchFn: leaky, now: NOW, log });
+		const b = await translateHeadlines({ dir, email: EMAIL, previous: a, fetchFn: fakeApi(), now: NOW, log });
+		const all = `${logs.join('\n')}\n${await everything()}\n${JSON.stringify([a, b])}`;
 		expect(all).not.toContain(EMAIL);
 		expect(all).not.toContain(encodeURIComponent(EMAIL));
 		expect(all).not.toContain('alguien.secundario');
 	});
+});
+
+it('IMP marca en inglés los temas cuyo titular principal lo está', () => {
+	const groups = mergeSections(
+		{ geo: [{ ...item('Ceasefire holds', 'en'), time: new Date(NOW - 3_600_000).toISOString() }] },
+		NOW
+	);
+	expect(groups[0].lang).toBe('en');
 });

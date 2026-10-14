@@ -24,7 +24,6 @@ import {
 } from './lib.ts';
 import { buildNewsIndex } from './news-index.ts';
 import { sources } from './sources/index.ts';
-import { translateHeadlines } from './translate.ts';
 
 const OUT_DIR = 'static/data';
 // En los PR, una muestra de cada fuente al final del registro, para revisar la forma real de los datos.
@@ -137,12 +136,6 @@ const ctx = makeContext(saved, (name) => {
 	}
 });
 statuses.push(...(await Promise.all(second.map((s) => run(s, ctx)))));
-
-// Titulares en inglés → español (MyMemory), después de IMP. Sin el Secret MYMEMORY_EMAIL no traduce nada.
-if (selected.some((s) => s.name.startsWith('news-') || s.name === 'imp')) {
-	const before = await published('translations');
-	await translateHeadlines({ dir: OUT_DIR, email: process.env.MYMEMORY_EMAIL || undefined, previous: before?.data });
-}
 
 if (!wanted.length) {
 	const now = Date.now();
