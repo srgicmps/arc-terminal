@@ -123,18 +123,20 @@ kbd {
 	margin-top: calc(-1 * var(--hair));
 }
 
-/* Subcolumnas: una columna con varios paneles que mide más del doble de --col-split reparte sus paneles
-   en dos o más subcolumnas (de arriba abajo y luego a la derecha), separadas por una línea de 1 px. Así,
-   en una pantalla ancha, ECO o GEO pasan de 2 a 4 columnas sin tocar la vista y las tablas no quedan con
-   huecos enormes entre cifras. Solo fuera de «encajar en pantalla», que reparte el alto a su manera. */
+/* Subcolumnas: en una rejilla de varias columnas, una columna con varios paneles que mide más del doble
+   de --col-split reparte sus paneles en dos subcolumnas (de arriba abajo y luego a la derecha), separadas
+   por una línea de 1 px. Así, en una pantalla ancha, ECO o GEO pasan de 2 a 4 columnas sin tocar la vista
+   y las tablas no quedan con huecos enormes entre cifras. No se aplica a la columna única a todo el ancho
+   (.grid sola, pensada para tablas anchas como STATUS) ni en «encajar en pantalla», que reparte el alto
+   a su manera. */
 @media (min-width: 1100px) {
-	:root:not([data-fit]) .col:has(> .panel + .panel) {
+	:root:not([data-fit]) :is(.grid-2, .grid-2e, .grid-3) > .col:has(> .panel + .panel) {
 		display: block;
-		columns: var(--col-split);
+		columns: var(--col-split) 2;
 		column-gap: 0;
 		column-rule: var(--border);
 	}
-	:root:not([data-fit]) .col:has(> .panel + .panel) > .panel {
+	:root:not([data-fit]) :is(.grid-2, .grid-2e, .grid-3) > .col:has(> .panel + .panel) > .panel {
 		break-inside: avoid;
 		border-top: 0;
 		border-bottom: var(--border);
