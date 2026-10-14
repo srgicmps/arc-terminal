@@ -76,10 +76,8 @@ https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next 
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
 # GEO/PAIS: gasto militar del SIPRI (Milex), enlace al Excel
 https://www.sipri.org/databases/milex ~ [^"' <>]{0,200}\.xlsx[^"' <>]{0,40}
-# ES (M11): IPC adelantado (¿en las tablas del IPCA?) y evolución del paro registrado del SEPE (.xls)
-https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPCA ~ [Aa]delant|[Ii]ndicador|[Ff]lash|[Ee]stimaci
-https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPC ~ "Nombre" ?: ?"[^"]{0,70}
-https://www.sepe.es/SiteSepe/contenidos/que_es_el_sepe/estadisticas/datos_avance/xls/empleo/evolparo.xls ~ [A-Za-zÁÉÍÓÚáéíóúñ ]{6,60}
-# ES (M11): datos.gob.es, títulos y enlaces de descarga (su JSON lleva espacios: "clave" : "valor")
-https://datos.gob.es/apidata/catalog/dataset/title/afiliados?_pageSize=10 ~ "accessURL" ?: ?"[^"]+"|"_value" ?: ?"[^"]{0,90}afilia[^"]{0,60}"
-https://datos.gob.es/apidata/catalog/dataset/title/paro?_pageSize=10 ~ "accessURL" ?: ?"[^"]+"|"_value" ?: ?"[^"]{0,90}[Pp]aro[^"]{0,60}"
+# ES (M11): afiliados medios en el PXWeb de la Seguridad Social (consultas guardadas): formato y primeras filas
+https://w6.seg-social.es/PXWeb/sq/70e873b9-c993-4c57-ada4-99f66e3a86e2 ~ ^.{0,900}
+https://w6.seg-social.es/PXWeb/sq/14514a01-21fb-4663-94fd-9bc0a8f5526e ~ ^.{0,900}
+# ES (M11): IPC del INE, las tablas del final de la lista (Id altos)
+https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPC ~ "Id":(7615[7-9]|761[6-9]\d|76[2-9]\d\d|7[7-9]\d{3}|[89]\d{4})
