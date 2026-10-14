@@ -42,7 +42,7 @@ La maqueta de diseño está en [`docs/maqueta.html`](docs/maqueta.html) (datos d
 ## Fuentes
 
 **España:** BOE, INE, Ministerio para la Transición Ecológica (carburantes), Red Eléctrica, Instituto Geográfico
-Nacional, La Moncloa, Banco de España. **Europa:** BCE, Eurostat, MeteoAlarm, Comisión y Parlamento Europeo.
+Nacional, La Moncloa, Banco de España. **Europa:** BCE, Eurostat, MeteoAlarm, Comisión Europea.
 **EE. UU.:** Federal Register, BLS, Tesoro, USGS, NOAA, NASA, Casa Blanca, Reserva Federal, FRED\*, SEC\*.
 **Mundo:** BIS, Open-Meteo, CoinGecko, Polymarket, Hacker News, Hugging Face, Finnhub\*, Wikipedia y unos 40
 canales RSS de medios. (\* con clave opcional.) El estado y la
