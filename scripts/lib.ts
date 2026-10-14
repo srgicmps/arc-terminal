@@ -78,26 +78,59 @@ export function list<T>(value: T | T[] | null | undefined): T[] {
 	return Array.isArray(value) ? value : [value];
 }
 
-/** «1,599» o «1.599» → 1.599; vacío o no numérico → null. */
+/**
+ * Lee un número escrito como texto; vacío, no numérico o con basura («12abc») → null.
+ * - «1,599» (carburantes) y «1.599» → 1.599. Con un solo separador, siempre es el decimal: «1.599»
+ *   podría ser «mil quinientos noventa y nueve», pero ninguna fuente lo escribe así y las que dan
+ *   decimales con punto (Tesoro, BCE, IGN…) dependen de leerlo como 1.599.
+ * - Con los dos separadores, el último es el decimal: «1.599,50» y «1,599.50» → 1599.5.
+ * - Varios puntos en grupos de tres son miles: «1.234.567» → 1234567.
+ */
 export function num(value: unknown): number | null {
 	if (typeof value === 'number') return Number.isFinite(value) ? value : null;
 	if (typeof value !== 'string') return null;
-	const n = Number.parseFloat(value.trim().replace(',', '.'));
+	let s = value.trim();
+	if (/^[+-]?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s) && /,|\..*\./.test(s)) {
+		s = s.replaceAll('.', '').replace(',', '.');
+	} else if (/^[+-]?\d{1,3}(,\d{3})+\.\d+$/.test(s)) {
+		s = s.replaceAll(',', '');
+	} else {
+		s = s.replace(/^([+-]?\d*),(\d+)$/, '$1.$2');
+	}
+	if (!/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(s)) return null;
+	const n = Number(s);
 	return Number.isFinite(n) ? n : null;
+}
+
+const ENTITIES: Record<string, string> = {
+	nbsp: ' ',
+	amp: '&',
+	quot: '"',
+	apos: '’',
+	lt: '<',
+	gt: '>'
+};
+
+/** Traduce una entidad («amp», «#39», «#x27»); si no la conoce, la deja como estaba. */
+function entity(match: string, body: string): string {
+	if (body[0] !== '#') return ENTITIES[body.toLowerCase()] ?? match;
+	const hex = body[1] === 'x' || body[1] === 'X';
+	const code = Number.parseInt(body.slice(hex ? 2 : 1), hex ? 16 : 10);
+	if (!(code > 0 && code <= 0x10ffff)) return match;
+	// El apóstrofo recto se cambia por el tipográfico, como el resto de la web.
+	return code === 39 ? '’' : String.fromCodePoint(code);
 }
 
 /** Quita etiquetas HTML y entidades sencillas, y recorta espacios. */
 export function plain(value: unknown, max = 400): string {
 	const text = String(value ?? '')
 		.replace(/<!\[CDATA\[|\]\]>/g, '')
+		// Una etiqueta pegada a la puntuación no deja hueco: «<b>2%</b>.» → «2%.», «(<b>x</b>)» → «(x)».
+		.replace(/<[^>]*>(?=[.,;:!?)\]»”’%])/g, '')
+		.replace(/(?<=[(\[«“¿¡])<[^>]*>/g, '')
 		.replace(/<[^>]*>/g, ' ')
-		.replace(/&nbsp;/g, ' ')
-		.replace(/&amp;/g, '&')
-		.replace(/&quot;/g, '"')
-		.replace(/&#0?39;|&apos;|&#8217;/g, '’')
-		.replace(/&lt;/g, '<')
-		.replace(/&gt;/g, '>')
-		.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+		// Todas las entidades de una pasada: «&amp;lt;» se queda en «&lt;», no en «<».
+		.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, entity)
 		.replace(/\s+/g, ' ')
 		.trim();
 	return text.length > max ? text.slice(0, max - 1).trimEnd() + '…' : text;
@@ -163,9 +196,16 @@ export function tidy(value: string | undefined, keepShort = false): string {
 	return text
 		.toLowerCase()
 		.split(' ')
-		.map((word, i) => {
+		.map((word, i, words) => {
 			if (i > 0 && SMALL_WORDS.has(word)) return word;
-			if (/^(n|s|e|w|o|ne|nw|se|sw|no|so|nne|nnw|sse|ssw|ene|ese|wnw|wsw)$/.test(word)) return word.toUpperCase();
+			// «n», «e» y «o» sueltas pueden ser conjunciones («bar o cafetería», «Francia e Italia»):
+			// solo son puntos cardinales al final o detrás de «km», «carretera» o una cifra.
+			if (/^(n|e|o)$/.test(word)) {
+				const cardinal = i === words.length - 1 || /^(km|carretera|ctra\.?|[\d.,]+)$/.test(words[i - 1] ?? '');
+				if (cardinal) return word.toUpperCase();
+				if (i > 0 && word !== 'n') return word;
+			}
+			if (/^(s|w|ne|nw|se|sw|no|so|nne|nnw|sse|ssw|ene|ese|wnw|wsw)$/.test(word)) return word.toUpperCase();
 			if (/\d/.test(word) || (keepShort && word.length <= 3)) return word.toUpperCase();
 			// «atlántico-marruecos» → «Atlántico-Marruecos»
 			return word.replace(/(^|-)(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toUpperCase());
