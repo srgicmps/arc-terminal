@@ -110,3 +110,11 @@ https://www.cboe.com/us/options/market_statistics/daily/ ~ .{0,120}(put.call|P/C
 https://cdn.finra.org/equity/regsho/daily/CNMSshvol20261013.txt ~ ^Date.{0,120}|\|NVDA\|.{0,80}
 # Lote 24.5: oro de los bancos centrales (FMI, API nueva de 2025)
 https://api.imf.org/external/sdmx/2.1/dataflow ~ .{0,60}(IRFCL|IFS|RESERVE).{0,120}
+# Lote 23.5, segunda ronda: archivos del repositorio de Indeed (rama master)
+https://api.github.com/repos/hiring-lab/job_postings_tracker/git/trees/master?recursive=1 ~ "path": "[^"]+\.csv"
+# Lote 24.2, segunda ronda: tablas TIC al día (mfh.txt se quedó en enero de 2023)
+https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt ~ .{0,600}
+https://home.treasury.gov/data/treasury-international-capital-tic-system/tic-data-files ~ [^"]*(mfh|slt_table5|table5)[^"]*
+# Lote 24.5, segunda ronda: el flujo IRFCL del FMI y una consulta de oro
+https://api.imf.org/external/sdmx/2.1/dataflow/all/IRFCL ~ .{0,300}
+https://api.imf.org/external/sdmx/2.1/dataflow ~ id="[A-Z_]*(IRFCL|IFS|RES)[A-Z_]*"[^>]{0,120}
