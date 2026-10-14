@@ -27,3 +27,15 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
+# M18 EUR-Lex: RSS predefinidos (busco el de la serie L del Diario Oficial; el patrón enseña el principio del texto)
+https://eur-lex.europa.eu/EN/display-feed.rss?rssId=161 ~ ^.{0,700}
+https://eur-lex.europa.eu/EN/display-feed.rss?rssId=162 ~ ^.{0,700}
+https://eur-lex.europa.eu/EN/display-feed.rss?rssId=163 ~ ^.{0,700}
+https://eur-lex.europa.eu/EN/display-feed.rss?rssId=164 ~ ^.{0,700}
+https://eur-lex.europa.eu/EN/display-feed.rss?rssId=220 ~ ^.{0,700}
+https://eur-lex.europa.eu/EN/display-feed.rss?rssId=221 ~ ^.{0,700}
+https://eur-lex.europa.eu/EN/display-feed.rss?rssId=222 ~ ^.{0,700}
+https://eur-lex.europa.eu/EN/display-feed.rss?rssId=223 ~ ^.{0,700}
+https://eur-lex.europa.eu/EN/display-feed.rss?rssId=224 ~ ^.{0,700}
+# M18 Cellar SPARQL: reglamentos, directivas y decisiones (CELEX 3AAAA R/L/D) desde el 1 de octubre, en inglés
+https://publications.europa.eu/webapi/rdf/sparql?query=PREFIX%20cdm%3A%20%3Chttp%3A%2F%2Fpublications.europa.eu%2Fontology%2Fcdm%23%3E%0APREFIX%20xsd%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2FXMLSchema%23%3E%0ASELECT%20%3Fcelex%20%3Fdate%20%3Ftitle%20%3Foj%20WHERE%20%7B%0A%20%3Fwork%20cdm%3Aresource_legal_id_celex%20%3Fcelex%20%3B%20cdm%3Awork_date_document%20%3Fdate%20.%0A%20OPTIONAL%20%7B%20%3Fwork%20cdm%3Aresource_legal_published_in_official-journal%20%3Foj%20%7D%0A%20%3Fexp%20cdm%3Aexpression_belongs_to_work%20%3Fwork%20%3B%20cdm%3Aexpression_title%20%3Ftitle%20%3B%0A%20%20cdm%3Aexpression_uses_language%20%3Chttp%3A%2F%2Fpublications.europa.eu%2Fresource%2Fauthority%2Flanguage%2FENG%3E%20.%0A%20FILTER(%3Fdate%20%3E%3D%20%222026-10-01%22%5E%5Exsd%3Adate%20%26%26%20REGEX(STR(%3Fcelex)%2C%20%22%5E3%5B0-9%5D%7B4%7D%5BRLD%5D%22))%0A%7D%20ORDER%20BY%20DESC(%3Fdate)%20LIMIT%2015&format=application%2Fsparql-results%2Bjson
