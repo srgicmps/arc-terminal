@@ -89,6 +89,19 @@ jobs:
         run: node scripts/probe.ts
         continue-on-error: true
 
+      # Solo en los PR: capturas de los widgets de TradingView en tema oscuro y claro (scripts/tv-shots.ts).
+      # Los colores salen en el registro y las imágenes, en el artefacto «tradingview».
+      - if: github.event_name == 'pull_request'
+        run: node scripts/tv-shots.ts
+        continue-on-error: true
+      - if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: tradingview
+          path: shots/
+          if-no-files-found: ignore
+
       # Empaqueta la carpeta build/ en el formato que espera Pages.
       - if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4

@@ -117,6 +117,7 @@ sin ella el panel no sale y no se rompe nada.
 8. **Pulido y fiabilidad**: tema claro, sistema de diseño, vista modular, tests y avisos de fuentes caídas. ← en curso
 
 Arc Terminal es **mundial**: lo de Menorca que ya existe se queda, pero no se añade nada nuevo centrado en Menorca.
+Excepción aprobada por Sergi: puertos AIS de Maó y Ciutadella (D1).
 
 Cuando termine una fase, actualiza esta lista.
 
