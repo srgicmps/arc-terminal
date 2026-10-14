@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { RELIEFWEB_URL, parseDisasters, reliefweb } from '../sources/reliefweb.ts';
+import { describe, expect, it, vi } from 'vitest';
+import { parseDisasters, reliefweb } from '../sources/reliefweb.ts';
 import { mockFetch } from './mock.ts';
 
 const body = {
@@ -53,12 +53,14 @@ describe('reliefweb', () => {
 		]);
 	});
 
-	it('pide solo los activos, con appname, y falla si no hay ninguno', async () => {
+	it('pide solo los activos, con el appname del secreto, y falla si no hay ninguno', async () => {
+		expect(reliefweb.requires).toBe('RELIEFWEB_APPNAME');
+		vi.stubEnv('RELIEFWEB_APPNAME', 'arc-terminal-xyz');
 		const fetch = mockFetch(() => ({ data: [] }));
 		await expect(reliefweb.fetch(undefined)).rejects.toThrow('ningún desastre');
 		const url = String(fetch.mock.calls[0][0]);
-		expect(url).toBe(RELIEFWEB_URL);
-		expect(url).toContain('appname=arc-terminal');
+		expect(url).toContain('appname=arc-terminal-xyz&');
 		expect(url).toContain('filter[value]=ongoing');
+		vi.unstubAllEnvs();
 	});
 });

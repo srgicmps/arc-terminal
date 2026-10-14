@@ -1,6 +1,8 @@
 // Crisis y desastres activos según ReliefWeb (https://reliefweb.int), el servicio de información de la
-// OCHA (ONU). API pública y sin clave; solo pide un «appname» que identifique a quien llama y limita
-// las peticiones por él (1000 al día). Términos: hay que citar a ReliefWeb y la fuente original.
+// OCHA (ONU). API pública y sin clave, pero desde 2025 exige un «appname» aprobado por ReliefWeb
+// (se pide en https://apidoc.reliefweb.int/parameters#appname); con uno inventado responde 403.
+// Va en el secreto RELIEFWEB_APPNAME: sin él, la fuente se salta. Límite: 1000 peticiones al día por
+// appname. Términos: hay que citar a ReliefWeb y la fuente original.
 import type { Disaster } from '../../src/lib/types.ts';
 import { getJson, list, plain, type Source } from '../lib.ts';
 
@@ -8,9 +10,11 @@ type Raw = Record<string, any>;
 
 const FIELDS = ['name', 'date.event', 'date.created', 'primary_country.name', 'primary_type.name', 'glide', 'url_alias', 'url'];
 
-export const RELIEFWEB_URL =
-	'https://api.reliefweb.int/v2/disasters?appname=arc-terminal&filter[field]=status&filter[value]=ongoing' +
-	'&sort[]=date.event:desc&limit=60' +
+const ENV = 'RELIEFWEB_APPNAME';
+
+export const reliefwebUrl = (appname: string) =>
+	`https://api.reliefweb.int/v2/disasters?appname=${encodeURIComponent(appname)}` +
+	'&filter[field]=status&filter[value]=ongoing&sort[]=date.event:desc&limit=60' +
 	FIELDS.map((f) => `&fields[include][]=${f}`).join('');
 
 /** Convierte la respuesta de /v2/disasters en nuestra lista, de más reciente a más antiguo. */
@@ -41,8 +45,9 @@ export const reliefweb: Source<Disaster[]> = {
 	label: 'Crisis y desastres activos · ReliefWeb (OCHA)',
 	// La lista cambia poco y el límite va por appname: con 3 h de caché sobra.
 	maxAgeMinutes: 180,
+	requires: ENV,
 	async fetch() {
-		const disasters = parseDisasters(await getJson<Raw>(RELIEFWEB_URL));
+		const disasters = parseDisasters(await getJson<Raw>(reliefwebUrl(process.env[ENV] ?? '')));
 		if (!disasters.length) throw new Error('ReliefWeb no devuelve ningún desastre activo');
 		return disasters;
 	}

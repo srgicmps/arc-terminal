@@ -43,13 +43,16 @@
 				Precios de Polymarket: reflejan apuestas, no pronósticos oficiales · <Updated at={data.predictions?.fetchedAt} source="predictions" />
 			{/snippet}
 		</Panel>
-		<Panel title="Crisis y desastres activos" meta="{data.reliefweb?.data.length ?? 0} abiertos · los 20 más recientes">
-			<DisasterList items={data.reliefweb?.data.slice(0, 20) ?? []} />
-			{#snippet note()}
-				Fuente: <a href="https://reliefweb.int/disasters" target="_blank" rel="noopener">ReliefWeb</a> (OCHA, ONU), que recoge
-				informes de gobiernos, agencias de la ONU y ONG: cada ficha enlaza a sus fuentes originales · <Updated at={data.reliefweb?.fetchedAt} source="reliefweb" />
-			{/snippet}
-		</Panel>
+		<!-- Hasta que ReliefWeb apruebe el appname (secreto RELIEFWEB_APPNAME) no hay datos: el panel no sale. -->
+		{#if data.reliefweb}
+			<Panel title="Crisis y desastres activos" meta="{data.reliefweb.data.length} abiertos · los 20 más recientes">
+				<DisasterList items={data.reliefweb.data.slice(0, 20)} />
+				{#snippet note()}
+					Fuente: <a href="https://reliefweb.int/disasters" target="_blank" rel="noopener">ReliefWeb</a> (OCHA, ONU), que recoge
+					informes de gobiernos, agencias de la ONU y ONG: cada ficha enlaza a sus fuentes originales · <Updated at={data.reliefweb?.fetchedAt} source="reliefweb" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Gobiernos e instituciones" meta="Comunicados oficiales">
 			<NewsList items={data.gov?.data.items.slice(0, 15) ?? []} />
 		</Panel>
