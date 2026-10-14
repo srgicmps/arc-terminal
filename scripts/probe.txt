@@ -27,9 +27,5 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
-# FUEL: Weekly Oil Bulletin de la Comisión Europea (enlaces a los .xlsx y fecha)
-https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en ~ [^"' <>]{0,200}\.xlsx[^"' <>]{0,40}
-https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en ~ .{0,80}(prices with taxes|prices without taxes|history).{0,80}
-https://energy.ec.europa.eu/document/download/264c2d0f-f161-4ea3-a777-78faae59bea0_en?filename=Weekly%20Oil%20Bulletin%20Weekly%20prices%20with%20Taxes%20-%202026-09-21.xlsx
-https://energy.ec.europa.eu/document/download/78311f92-68f8-4b82-b5cf-1293beeaae77_en?filename=Weekly%20Oil%20Bulletin%20Weekly%20prices%20without%20taxes%20-%202024-02-19.xlsx
-https://energy.ec.europa.eu/document/download/906e60ca-8b6a-44e7-8589-652854d2fd3f_en?filename=Weekly_Oil_Bulletin_Prices_History_maticni_4web.xlsx
+# FUEL: Weekly Oil Bulletin de la Comisión Europea (enlace al histórico .xlsx)
+https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en ~ [^"' <>]{0,200}Prices_History[^"' <>]{0,40}

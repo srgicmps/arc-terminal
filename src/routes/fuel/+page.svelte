@@ -14,7 +14,7 @@
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
-	import { nf } from '#lib/format.ts';
+	import { dm, nf } from '#lib/format.ts';
 	import { fuelShare, type ShareInfo } from '#lib/share.ts';
 	import { distanceKm, findProvince, FUELS, type FuelKey, type FuelProvinceDay, type FuelStation } from '#lib/fuel.ts';
 	import type { PageProps } from './$types';
@@ -318,6 +318,32 @@
 				guarda día a día.
 			{/snippet}
 		</Panel>
+		{#if data.europe?.data.rows.length}
+			{@const eu = data.europe.data}
+			<Panel title="España frente a Europa" meta="€/L · con y sin impuestos">
+				<Table>
+					<thead>
+						<tr><th class="l">País</th><th>Gasolina 95</th><th>Sin imp.</th><th>Diésel</th><th>Sin imp.</th></tr>
+					</thead>
+					<tbody>
+						{#each eu.rows as r (r.code)}
+							<tr class:current={r.code === 'ES'}>
+								<td class="l">{r.name}</td>
+								<td>{nf(r.g95.tax, 3)}</td>
+								<td class="mut">{nf(r.g95.net, 3)}</td>
+								<td>{nf(r.diesel.tax, 3)}</td>
+								<td class="mut">{nf(r.diesel.net, 3)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
+				{#snippet note()}
+					Precios medios del lunes {dm(eu.date)}. Fuente: Comisión Europea,
+					<a href="https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en" target="_blank" rel="noopener">Weekly Oil Bulletin</a>;
+					la media de la UE está ponderada por consumo · <Updated at={data.europe?.fetchedAt} source="oilbulletin" />
+				{/snippet}
+			</Panel>
+		{/if}
 	</div>
 	<div class="col">
 		<Panel title="Precio medio por provincia" meta="{fuelLabel} · de más barata a más cara">
