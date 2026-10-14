@@ -9,7 +9,7 @@
 // - si una descarga falla, se reutiliza la copia publicada, aunque sea antigua, y se avisa.
 import { mkdir, writeFile } from 'node:fs/promises';
 import type { Dataset, SourceStatus } from '../src/lib/data.ts';
-import { checkShrink, writeExtra, type Source } from './lib.ts';
+import { checkShrink, deadlineFor, withDeadline, writeExtra, type Source } from './lib.ts';
 import { sources } from './sources/index.ts';
 
 const OUT_DIR = 'static/data';
@@ -73,7 +73,12 @@ async function run(source: Source): Promise<SourceStatus> {
 
 	try {
 		const started = Date.now();
-		const data = await source.fetch(previous?.data);
+		const deadline = deadlineFor(source);
+		const data = await withDeadline(
+			source.fetch(previous?.data),
+			deadline,
+			`tiempo agotado (${deadline / 1000} s)`
+		);
 		// Vacío o encogido de golpe: se trata como un fallo (camino «stale», con la copia anterior).
 		const suspicious = checkShrink(data, previous?.data, source);
 		if (suspicious) throw new Error(suspicious);

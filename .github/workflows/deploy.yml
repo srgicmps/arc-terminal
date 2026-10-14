@@ -29,6 +29,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Red de seguridad: si algo se cuelga, la Action no se queda horas esperando.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 

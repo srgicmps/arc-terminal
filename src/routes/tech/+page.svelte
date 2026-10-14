@@ -2,6 +2,7 @@
 	import HnTable from '#lib/components/HnTable.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import ReleaseList from '#lib/components/ReleaseList.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import type { PageProps } from './$types';
@@ -24,6 +25,10 @@
 		<Panel title="Hacker News" meta="Portada, por puntos">
 			<HnTable items={data.hn?.data ?? []} />
 			{#snippet note()}Fuente: Hacker News (API de Algolia) · <Updated at={data.hn?.fetchedAt} source="hn" />{/snippet}
+		</Panel>
+		<Panel title="Versiones" meta="Última estable · ámbar: últimos 7 días">
+			<ReleaseList items={data.releases?.data ?? []} />
+			{#snippet note()}Fuente: releases de GitHub · <Updated at={data.releases?.fetchedAt} source="releases" />{/snippet}
 		</Panel>
 	</div>
 </div>
