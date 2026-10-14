@@ -12,6 +12,7 @@
 	import type { NewsItem } from '#lib/types.ts';
 	import { headlineList } from '#lib/titles.svelte.ts';
 	import { initVisit, isNew, visit } from '#lib/visit.svelte.ts';
+	import { highlight, initWatchwords, watchwords } from '#lib/watchwords.svelte.ts';
 	import AutoTag from './AutoTag.svelte';
 	import TitleLang from './TitleLang.svelte';
 
@@ -27,6 +28,8 @@
 
 	// Como onMounted en Vue: solo en el navegador, después de hidratar.
 	$effect(initVisit);
+	// Las palabras vigiladas del BOE (guardadas en este navegador) salen resaltadas también en los titulares.
+	$effect(initWatchwords);
 	// Traducción de los titulares en inglés (ES / EN, titles.svelte.ts).
 	const list = headlineList<number>(() => items);
 </script>
@@ -52,7 +55,8 @@
 						rel="noopener"
 						lang={t.lang}
 						title={t.title}
-						{@attach list.press(item, i)}>{t.text}</a
+						{@attach list.press(item, i)}
+						>{#each highlight(t.text, watchwords.words) as part, j (j)}{#if part.hit}<mark>{part.text}</mark>{:else}{part.text}{/if}{/each}</a
 					>
 					<div class="m">
 						{#if tag?.(item)}<span class="tag">{tag(item)}</span>{/if}
