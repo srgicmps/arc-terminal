@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { clock } from '#lib/clock.svelte.ts';
+	import MeetingList from '#lib/components/MeetingList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -53,6 +54,10 @@
 		</Panel>
 	</div>
 	<div class="col">
+		<Panel title="Bancos centrales" meta="Próximas reuniones · BCE y Fed">
+			<MeetingList mode="list" limit={6} />
+			{#snippet note()}Decisión de tipos, en hora de España. Fuentes: calendarios oficiales del BCE y de la Fed.{/snippet}
+		</Panel>
 		<Panel title="Festivos" meta="Próximos 12 meses">
 			{#if next}
 				<ul class="mini">
