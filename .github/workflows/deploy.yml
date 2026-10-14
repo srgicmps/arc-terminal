@@ -74,6 +74,7 @@ jobs:
         env:
           # Claves opcionales (Settings → Secrets and variables → Actions). Sin ellas, esas fuentes se saltan.
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           # La SEC pide un User-Agent con nombre y correo; va en un secreto porque el repo es público.
@@ -92,6 +93,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
@@ -180,6 +182,7 @@ jobs:
         env:
           SAMPLE: '1'
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
@@ -222,6 +225,9 @@ jobs:
       # Herramienta de exploración: si una URL falla, no pone el PR en rojo.
       - run: node scripts/probe.ts
         continue-on-error: true
+        env:
+          # Para las URL de sec.gov (la SEC pide un User-Agent con nombre y correo; probe.ts no lo imprime).
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
 
   # A mano (herramienta «tv-shots»): capturas de los widgets de TradingView en tema oscuro y claro
   # (scripts/tv-shots.ts). Los colores salen en el registro y las imágenes, en el artefacto «tradingview».
@@ -240,6 +246,7 @@ jobs:
       - run: pnpm data
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
@@ -272,6 +279,7 @@ jobs:
       - run: pnpm data
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
@@ -311,6 +319,7 @@ jobs:
           FORCE_REFRESH: '1'
           SAMPLE: '1'
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}

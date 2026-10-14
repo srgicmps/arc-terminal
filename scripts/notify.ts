@@ -8,7 +8,8 @@
 // - Niveles P1–P4 con cupo diario (día de Madrid): P1 sin límite, P2 hasta 25, P3 hasta 15, P4 hasta 3
 //   (los dos resúmenes y SEMANA). Tope total de 50 al día, solo contra bucles. Si no caben todos, salen primero los de
 //   nivel más alto y, a igual nivel, los más recientes. Lo que no cabe no se apunta: se vuelve a mirar
-//   en la pasada siguiente (y al día siguiente, si sigue siendo relevante).
+//   en la pasada siguiente (y al día siguiente, si sigue siendo relevante). El aviso que llena el tope
+//   lleva en el título «⚠ Límite diario alcanzado ·».
 // - Se envía a cualquier hora (Sergi usa el «No molestar» del móvil).
 // - Si ntfy da 429 o falla, ese aviso se pierde (se apunta como «failed» y no se reintenta).
 //
@@ -111,8 +112,16 @@ export function pickAlerts(
 			used.byLevel[a.level]++;
 		} else skipped.push(a);
 	}
+	// Si con este envío se llega justo al tope, el último que sale lo dice (sin añadir un aviso más).
+	if (send.length && used.total === DAILY_TOTAL) {
+		const last = send[send.length - 1];
+		send[send.length - 1] = { ...last, title: LIMIT_PREFIX + last.title };
+	}
 	return { send, skipped, updates };
 }
+
+/** Prefijo del último aviso del día cuando se llega al tope total (DAILY_TOTAL). */
+export const LIMIT_PREFIX = '⚠ Límite diario alcanzado · ';
 
 /** Lo que hay ahora, apuntado como ya visto. Para cuando no hay historial: no se envía nada. */
 export function baselineLog(d: Inputs, now: number, rules: Rule[] = RULES): NotifyLog {
@@ -153,7 +162,6 @@ export function parseLog(body: unknown): NotifyLog | null {
 	return {
 		entries,
 		last: last as Record<string, string>,
-		assets: (isObject(data.assets) ? data.assets : {}) as NotifyLog['assets'],
 		poly: (isObject(data.poly) ? data.poly : {}) as NotifyLog['poly']
 	};
 }

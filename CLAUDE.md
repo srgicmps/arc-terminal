@@ -47,6 +47,9 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   configurar `paths.base` en SvelteKit).
 - Pages no tiene servidor, así que **GitHub Actions hace de servidor**: cada 15–30 min un script de Node
   descarga los datos, los guarda como JSON y vuelve a publicar la web. Así tampoco hay problemas de CORS.
+- **Dos velocidades**: `deploy.yml` (cada 15 min y en cada push a main) refresca todo lo caducado según el
+  `maxAgeMinutes` de cada fuente; `fast.yml` (cada 5 min) fuerza solo las urgentes (lista `URGENT`: terremotos,
+  avisos, titulares, IMP…) y publica. Comparten grupo de concurrencia, así que nunca publican a la vez.
 - Las claves de las APIs van en **GitHub Secrets** y solo las usa el script de Actions. Nunca en el código
   que llega al navegador.
 - Cotizaciones y gráficos en directo: widgets de TradingView (sin clave).
@@ -104,7 +107,7 @@ La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`)
 | `TOP` | Portada | Resumen de todas |
 | `IMP` | Lo más importante de hoy, la semana, el mes y el año (puntuación propia, sin IA) | Todos los titulares, BOE, Federal Register, Wikipedia |
 | `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FRED*, RSS |
-| `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5) |
+| `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5), Wikidata |
 | `ES` | España en cifras, BOE, luz | INE, BOE, REE, RSS |
 | `WS` | Wall Street, mapa de calor, curva de tipos, divisas, cripto | TradingView, Tesoro de EE. UU., BCE, CoinGecko |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |
@@ -117,6 +120,7 @@ La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`)
 | `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
 | `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista, análisis y problema del día | Stockfish, chess.js, Lichess |
 | `TV` | Modo TV: las vistas rotan solas, encajadas y a pantalla completa | — |
+| `FONDOS` | Carteras 13F de grandes fondos: mayores posiciones, compras y ventas | SEC* |
 | `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
 
 \* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`):
@@ -152,3 +156,4 @@ Cuando termine una fase, actualiza esta lista.
 - ReliefWeb: falta el appname aprobado (RELIEFWEB_APPNAME); aparcado por Sergi.
 - Bonos a 10 años de Reino Unido, Japón y China: TradingView no da rentabilidades en sus widgets; hacen falta
   fuentes oficiales (BoE, MOF de Japón, ChinaBond). De momento no se hacen.
+- «Próximo dato» de Eurostat (M10): el .ics `cache/RELEASE_CALENDAR/calendar_EN.ics` da 404 y no se ha encontrado el nuevo. El de INE y EE. UU. (fechas de FRED; el .ics del BLS prohíbe robots) sí funcionan.

@@ -1,12 +1,16 @@
 <script lang="ts">
 	import Panel from '#lib/components/Panel.svelte';
+	import AutoTag from '#lib/components/AutoTag.svelte';
+	import TitleLang from '#lib/components/TitleLang.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { urlState } from '#lib/urlstate.svelte.ts';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { IMP_PERIODS, aggregate, minus, topImportant, type ImpTotal } from '#lib/imp.ts';
 	import { NEWS_SECTIONS } from '#lib/news.ts';
+	import { headlineList } from '#lib/titles.svelte.ts';
 	import type { ImpCurrent, ImpEntry } from '#lib/types.ts';
+	import { SvelteSet } from 'svelte/reactivity';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -18,9 +22,9 @@
 	const period = $derived(periodSel.value);
 	const span = $derived(IMP_PERIODS.find((p) => p.key === period)!.span);
 
-	// Hoy: los 5 temas del día. Semana, mes y año: el histórico diario sumado (ver src/lib/imp.ts).
+	// Hoy: los 10 temas del día. Semana, mes y año: el histórico diario sumado (ver src/lib/imp.ts).
 	const items = $derived<(ImpEntry | ImpTotal)[]>(
-		!imp ? [] : period === 'day' ? topImportant(imp, 5) : aggregate(imp.days, imp.date, span, 10)
+		!imp ? [] : period === 'day' ? topImportant(imp, 10) : aggregate(imp.days, imp.date, span, 10)
 	);
 	// Detalle de los temas que siguen en el top de ahora (secciones, confirmación oficial, Wikipedia).
 	const live = $derived(new Map<string, ImpCurrent>((imp?.current ?? []).map((c) => [c.k, c])));
@@ -28,15 +32,22 @@
 	// Días del periodo de los que hay histórico (al principio, menos que los del periodo).
 	const recorded = $derived(imp ? imp.days.filter((d) => d.date > minus(imp.date, span) && d.date <= imp.date).length : 0);
 
+	// Titulares en español (ES / EN, titles.svelte.ts): de la Action o, si no, del navegador.
+	const list = headlineList<string>(() => items);
+
 	const periods = IMP_PERIODS.map((p) => ({ value: p.key, label: p.label }));
 	const fmt = (n: number) => n.toLocaleString('es-ES', { maximumFractionDigits: 1 });
-	const outlets = (s: string[]) => (s.length > 3 ? `${s.slice(0, 3).join(', ')} +${s.length - 3}` : s.join(', '));
+	// Medios a la vista antes de desplegar; `open` guarda los temas desplegados.
+	const FEW = 3;
+	const open = new SvelteSet<string>();
+	const toggle = (k: string) => (open.has(k) ? open.delete(k) : open.add(k));
 </script>
 
 <ViewHeader code="IMP" title="Lo más importante" sub="Lo que cuentan más medios, en más secciones y durante más tiempo; sin IA" />
 
 <div class="controls">
 	<Seg label="Periodo" options={periods} bind:value={periodSel.value} />
+	{#if list.toggle}<TitleLang />{/if}
 </div>
 
 {#if !imp}
@@ -54,13 +65,33 @@
 					<ol class="imp">
 						{#each items as item, i (item.k)}
 							{@const now = period === 'day' ? live.get(item.k) : undefined}
+							{@const t = list.link(item, item.k)}
 							<li>
 								<span class="rk">{i + 1}</span>
 								<div>
-									<a class="h" href={item.url} target="_blank" rel="noopener">{item.title}</a>
+									<a
+										class="h"
+										href={item.url}
+										target="_blank"
+										rel="noopener"
+										lang={t.lang}
+										title={t.title}
+										{@attach list.press(item, item.k)}>{t.text}</a
+									>
 									<div class="m">
 										{#each now?.sections ?? [] as s (s)}<span class="tag">{label[s] ?? s}</span>{/each}
-										<span>{outlets(item.sources)}</span>
+										<span class="src">
+											{#each open.has(item.k) ? item.sources : item.sources.slice(0, FEW) as s (s)}
+												{@const href = (item.links ?? now?.links)?.find((l) => l.source === s)?.url}
+												{#if href}<a class="o" {href} target="_blank" rel="noopener">{s}</a>{:else}<span class="o">{s}</span>{/if}
+											{/each}
+											{#if item.sources.length > FEW}
+												<button class="more" type="button" aria-expanded={open.has(item.k)} onclick={() => toggle(item.k)}>
+													{open.has(item.k) ? 'menos' : `+${item.sources.length - FEW} ${item.sources.length - FEW === 1 ? 'medio' : 'medios'}`}
+												</button>
+											{/if}
+										</span>
+										{#if t.translated}<AutoTag {item} />{/if}
 										{#if now?.official}<span class="ok">✓ {now.official}</span>{/if}
 										{#if now?.wiki}<span class="ok">✓ Wikipedia</span>{/if}
 										{#if 'days' in item}<span>{item.days} {item.days === 1 ? 'día' : 'días'}</span>{/if}
@@ -85,6 +116,10 @@
 
 <style>
 	.controls {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: var(--sp-8);
 		margin-bottom: var(--sp-12);
 	}
 
@@ -139,6 +174,39 @@
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-s);
+	}
+
+	.src {
+		display: inline-flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0 var(--sp-4);
+	}
+
+	.o {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.o:has(+ .o)::after {
+		content: ',';
+	}
+
+	a.o:hover {
+		color: var(--amber);
+	}
+
+	.more {
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--amber);
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.more:hover {
+		text-decoration: underline;
 	}
 
 	.tag {

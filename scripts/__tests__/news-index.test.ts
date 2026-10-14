@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newsIndex } from '../news-index.ts';
+import { countryIndex, newsIndex } from '../news-index.ts';
 
 const item = (title: string, time: string, url = `https://x/${encodeURIComponent(title)}`) => ({ title, url, source: 'Medio', time, summary: 'Resumen largo' });
 
@@ -14,5 +14,17 @@ describe('newsIndex', () => {
 		expect(index.SAN).toEqual([{ ...shared, summary: '', section: 'eco' }]);
 		expect(index.ITX?.map((i) => i.title)).toEqual(['Zara sube precios']);
 		expect(Object.keys(index).sort()).toEqual(['AAPL', 'ITX', 'NVDA', 'SAN']);
+	});
+});
+
+describe('countryIndex', () => {
+	it('reparte los titulares por país, por nombre o gentilicio', () => {
+		const index = countryIndex([
+			{ key: 'geo', data: { feeds: [], items: [item('Elecciones en Alemania', '2026-10-14T08:00:00Z'), item('French bonds slide', '2026-10-14T09:00:00Z')] } },
+			{ key: 'eco', data: { feeds: [], items: [item('La industria alemana cae', '2026-10-13T08:00:00Z')] } }
+		]);
+		expect(index.DE?.map((i) => i.title)).toEqual(['Elecciones en Alemania', 'La industria alemana cae']);
+		expect(index.FR?.map((i) => i.title)).toEqual(['French bonds slide']);
+		expect(index.ES).toBeUndefined();
 	});
 });
