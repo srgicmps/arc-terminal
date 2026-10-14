@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { asset, resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
+	import { HOME_DONE, HOME_KEY, startCommand } from '#lib/home.ts';
+	import { routeHref } from '#lib/routes.ts';
 	import { latestWatched } from '#lib/boe.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import NewsList from '#lib/components/NewsList.svelte';
@@ -51,6 +54,15 @@
 	// Como onMounted en Vue: lo guardado en el navegador se lee al arrancar en él.
 	$effect(() => top.load());
 	$effect(initVisit);
+	// Vista de inicio (HELP): al abrir la web, una vez por pestaña, se va a la elegida en lugar de TOP.
+	$effect(() => {
+		let go: ReturnType<typeof startCommand> = null;
+		try {
+			go = startCommand(localStorage.getItem(HOME_KEY), sessionStorage.getItem(HOME_DONE) === '1', location.search);
+			sessionStorage.setItem(HOME_DONE, '1');
+		} catch {}
+		if (go) goto(routeHref(go.route), { replaceState: true });
+	});
 	$effect(initRefCountry);
 
 	const get = $derived(seriesMap(data.ecb, data.eurostat, data.bls));
