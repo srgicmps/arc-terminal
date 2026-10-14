@@ -21,6 +21,7 @@ export interface Command {
 		| '/news'
 		| '/mis'
 		| '/help'
+		| '/doc'
 		| '/status';
 	/** Nombre corto para la tecla. */
 	key: string;
@@ -49,6 +50,7 @@ export const COMMANDS: Command[] = [
 	{ code: 'WIKI', route: '/wiki', key: 'Wikipedia', desc: 'Lo más leído en Wikipedia y efemérides del día', sources: 'Wikipedia en español' },
 	{ code: 'CAL', route: '/cal', key: 'Agenda', desc: 'Agenda económica de la semana', sources: 'TradingView' },
 	{ code: 'STATUS', route: '/status', key: 'Fuentes', desc: 'Estado de todas las fuentes de datos', sources: 'Arc Terminal' },
+	{ code: 'DOC', route: '/doc', key: 'Cómo funciona', desc: 'Cómo está hecho Arc Terminal: arquitectura, datos, fuentes y Svelte frente a Vue', sources: 'El propio código' },
 	{ code: 'HELP', route: '/help', key: 'Ayuda', desc: 'Comandos y atajos de teclado', sources: '' }
 ];
 
