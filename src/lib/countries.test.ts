@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COUNTRIES, countryTicker, demonymForms, findCountries, findCountry } from './countries.ts';
-import { mentions } from './news.ts';
+import { COUNTRIES, demonymForms, findCountries, findCountry } from './countries.ts';
 
 describe('countries', () => {
 	it('no repite códigos y todos tienen sus datos', () => {
@@ -40,16 +39,11 @@ describe('countries', () => {
 	});
 
 	it('los titulares nombran el país por su nombre o su gentilicio', () => {
-		const item = (title: string) => ({ title, url: title, source: 'X', time: null, summary: '' });
-		const items = ['La economía alemana se estanca', 'Berlin cuts spending', 'Alemania y Francia', 'Un germanófilo'].map(item);
-		expect(mentions(items, countryTicker(findCountry('DE')!)).map((i) => i.title)).toEqual([
-			'La economía alemana se estanca',
-			'Berlin cuts spending',
-			'Alemania y Francia'
-		]);
-		// «China» con mayúscula: «la vajilla de china» no cuenta… pero el gentilicio sí, en minúscula.
-		const cn = countryTicker(findCountry('CN')!);
-		expect(mentions([item('Aranceles a China'), item('Exportaciones chinas'), item('Paris attack')], cn)).toHaveLength(2);
+		const de = (t: string) => findCountries(t).some((c) => c.code === 'DE');
+		expect(['La economía alemana se estanca', 'Berlin cuts spending', 'Alemania y Francia', 'Un germanófilo'].map(de)).toEqual([true, true, true, false]);
+		// «China» empieza por mayúscula, pero «china» en minúscula también cuenta: es el gentilicio (chino, china).
+		const cn = (t: string) => findCountries(t).some((c) => c.code === 'CN');
+		expect(['Aranceles a China', 'Exportaciones chinas', 'Paris attack', 'vajilla de china'].map(cn)).toEqual([true, true, false, true]);
 	});
 });
 

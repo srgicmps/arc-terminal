@@ -15,8 +15,6 @@ export interface Kpi {
 	t: string;
 	/** Valor del periodo anterior, para la variación. */
 	prev: number | null;
-	/** Qué mide exactamente, según la serie («PIB, trimestral»). */
-	detail: string;
 	source: string;
 }
 
@@ -81,7 +79,7 @@ export function kpis(c: Country, get: Get): Kpi[] {
 		const s = pick(get, ids(lc), ok);
 		const p = s && last(s);
 		if (!s || !p) return [];
-		return [{ key, label, value: p.v, unit: s.unit, t: p.t, prev: prevOf(s), detail: s.label, source: s.source }];
+		return [{ key, label, value: p.v, unit: s.unit, t: p.t, prev: prevOf(s), source: s.source }];
 	});
 }
 

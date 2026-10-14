@@ -33,8 +33,12 @@ const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
  * salvo la primera si el nombre empieza por mayúscula («Meta» sí, «meta» no).
  */
 export function namePattern(name: string): RegExp {
-	const chars = Array.from(plain(name.trim()));
-	const body = chars
+	return new RegExp(`(?<![\\p{L}\\p{N}])${nameBody(name)}(?![\\p{L}\\p{N}])`, 'u');
+}
+
+/** El cuerpo de namePattern, sin los bordes de palabra: para juntar varios nombres en una sola expresión. */
+export function nameBody(name: string): string {
+	return Array.from(plain(name.trim()))
 		.map((c, i) => {
 			if (/\s/.test(c)) return '\\s+';
 			const lo = c.toLowerCase();
@@ -45,7 +49,6 @@ export function namePattern(name: string): RegExp {
 		})
 		.join('')
 		.replace(/(\\s\+)+/g, '\\s+');
-	return new RegExp(`(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])`, 'u');
 }
 
 /** Nombres con los que se busca un valor: el suyo (sin «(ETF)») y sus alias. */

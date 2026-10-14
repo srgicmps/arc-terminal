@@ -1,4 +1,4 @@
-import { namePattern, plain } from './news.ts';
+import { nameBody, plain } from './news.ts';
 
 // Países que conoce la terminal, para la ficha PAIS (/pais?c=DE) y, más adelante, el mapa de GEO.
 // Aquí solo hay datos fijos: nombre, gentilicio, moneda… Los datos de cada país salen de las fuentes
@@ -140,12 +140,6 @@ export function countryNames(c: Country): string[] {
 	return [c.name, ...(c.aliases ?? []), ...demonymForms(c.demonym)];
 }
 
-/** Lo mismo con la forma que pide mentions() de src/lib/news.ts. */
-export function countryTicker(c: Country): { name: string; aliases: string[] } {
-	const [name, ...aliases] = countryNames(c);
-	return { name, aliases };
-}
-
 /**
  * El país que se pide en la barra o en la URL: código ISO de dos o tres letras («DE», «deu»), nombre en
  * español o en inglés («Alemania», «germany») o gentilicio («alemán»). Sin tildes ni mayúsculas.
@@ -163,8 +157,20 @@ export function findCountry(query: string | null | undefined): Country | undefin
 	);
 }
 
-// Expresiones de cada país (nombre, otros nombres y gentilicios), de la más larga a la más corta.
-let patterns: { c: Country; re: RegExp }[] | undefined;
+// Una sola expresión con todos los nombres de todos los países, del más largo al más corto: en cada sitio del
+// texto gana el nombre más largo que encaja («South Sudan» antes que «Sudan»). Se compila la primera vez.
+let all: { re: RegExp; byName: Map<string, Country> } | undefined;
+
+/** Clave para reconocer qué nombre ha encajado: sin tildes, en minúscula y con un espacio entre palabras. */
+const key = (s: string) => plain(s).toLowerCase().replace(/\s+/g, ' ').trim();
+
+function compile() {
+	const named = COUNTRIES.flatMap((c) => countryNames(c).map((n) => ({ c, n }))).sort((a, b) => b.n.length - a.n.length);
+	const byName = new Map<string, Country>();
+	for (const { c, n } of named) if (!byName.has(key(n))) byName.set(key(n), c);
+	const body = named.map(({ n }) => nameBody(n)).join('|');
+	return { re: new RegExp(`(?<![\\p{L}\\p{N}])(?:${body})(?![\\p{L}\\p{N}])`, 'gu'), byName };
+}
 
 /**
  * Todos los países que nombra un texto («Notice of OFAC Sanctions… Russia-related» → Rusia), por palabra
@@ -174,24 +180,11 @@ let patterns: { c: Country; re: RegExp }[] | undefined;
 export function findCountries(text: string | null | undefined): Country[] {
 	const t = plain(text ?? '');
 	if (!t) return [];
-	patterns ??= COUNTRIES.flatMap((c) => countryNames(c).map((n) => ({ c, n })))
-		.sort((a, b) => b.n.length - a.n.length)
-		.map(({ c, n }) => ({ c, re: new RegExp(namePattern(n).source, 'gu') }));
-	const taken: [number, number][] = [];
-	const found: { c: Country; at: number }[] = [];
-	for (const { c, re } of patterns) {
-		re.lastIndex = 0;
-		for (const m of t.matchAll(re)) {
-			const a = m.index;
-			const b = a + m[0].length;
-			if (taken.some(([x, y]) => a < y && b > x)) continue;
-			taken.push([a, b]);
-			found.push({ c, at: a });
-		}
+	all ??= compile();
+	const found = new Map<string, Country>();
+	for (const m of t.matchAll(all.re)) {
+		const c = all.byName.get(key(m[0]));
+		if (c && !found.has(c.code)) found.set(c.code, c);
 	}
-	const seen = new Set<string>();
-	return found
-		.sort((x, y) => x.at - y.at)
-		.filter(({ c }) => !seen.has(c.code) && seen.add(c.code))
-		.map(({ c }) => c);
+	return [...found.values()];
 }

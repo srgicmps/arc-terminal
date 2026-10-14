@@ -13,10 +13,11 @@
 	import Change from '#lib/components/ui/Change.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
-	import KpiStrip from '#lib/components/ui/KpiStrip.svelte';
+	import Tile from '#lib/components/ui/Tile.svelte';
+	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import { COUNTRIES, findCountry } from '#lib/countries.ts';
 	import type { CountryProfile, Rate } from '#lib/country.ts';
-	import { nf, period, signed, trend } from '#lib/format.ts';
+	import { nf, period, signed } from '#lib/format.ts';
 	import { sectionLabel } from '#lib/news.ts';
 	import type { PageProps } from './$types';
 
@@ -47,17 +48,6 @@
 	const better: Record<string, 1 | -1 | 0> = { gdp: 1, cpi: 0, unemployment: -1, debt: -1 };
 	const decimals = (unit: string) => (unit === 'pb' ? 0 : 2);
 
-	const kpiItems = $derived(
-		(profile?.kpis ?? []).map((k) => {
-			const d = k.prev === null ? null : k.value - k.prev;
-			return {
-				label: k.label,
-				value: `${nf(k.value, 1)} %`,
-				change: d === null ? undefined : { text: `${signed(d, 1)} pp`, tone: trend(d * better[k.key]) },
-				sub: `${period(k.t)} · ${k.detail} · ${k.source}`
-			};
-		})
-	);
 </script>
 
 <ViewHeader
@@ -96,7 +86,16 @@
 		</div>
 	</div>
 {:else if profile}
-	<KpiStrip items={kpiItems} />
+	{#if profile.kpis.length}
+		<Tiles cols={profile.kpis.length}>
+			{#each profile.kpis as k (k.key)}
+				{@const d = k.prev === null ? null : k.value - k.prev}
+				<Tile label={k.label} value="{nf(k.value, 1)} %">
+					{#if d !== null}<Change value={d * better[k.key]} text="{signed(d, 1)} pp" />{' · '}{/if}{period(k.t)} · {k.source}
+				</Tile>
+			{/each}
+		</Tiles>
+	{/if}
 
 	<div class="grid grid-2">
 		<div class="col">

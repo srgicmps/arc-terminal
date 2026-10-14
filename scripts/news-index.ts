@@ -3,7 +3,7 @@
 // static/data/news-index.json: así la ficha y MIS cargan unos pocos KB en vez de todos los titulares.
 import { readFile } from 'node:fs/promises';
 import { TICKERS } from '../src/lib/commands.ts';
-import { COUNTRIES, countryTicker } from '../src/lib/countries.ts';
+import { findCountries } from '../src/lib/countries.ts';
 import type { Dataset } from '../src/lib/data.ts';
 import { mentions, NEWS_SECTIONS, type Mention } from '../src/lib/news.ts';
 import type { NewsData } from '../src/lib/types.ts';
@@ -45,11 +45,13 @@ export function newsIndex(sections: Sections): NewsIndex {
 
 /** Para cada país (código ISO: «DE»), los titulares que lo nombran por su nombre o su gentilicio. */
 export function countryIndex(sections: Sections): NewsIndex {
-	const items = collect(sections);
 	const index: NewsIndex = {};
-	for (const c of COUNTRIES) {
-		const found = mentions(items, countryTicker(c)).slice(0, PER_COUNTRY);
-		if (found.length) index[c.code] = found;
+	// Un recorrido por titular con todos los países a la vez (findCountries), del más reciente al más antiguo.
+	for (const item of collect(sections)) {
+		for (const c of findCountries(item.title)) {
+			const list = (index[c.code] ??= []);
+			if (list.length < PER_COUNTRY) list.push(item);
+		}
 	}
 	return index;
 }
