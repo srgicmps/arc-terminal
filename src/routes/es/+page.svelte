@@ -53,13 +53,11 @@
 			<SeriesTable next={data.next}
 				head="Indicador"
 				rows={[
-					{ series: get('ipc-es'), name: 'IPC (INE)', inverse: true },
+					{ series: get('ipc-es'), name: 'Inflación (IPC)', inverse: true, alt: { series: get('inflation-es'), label: 'IPCA' } },
 					{ series: get('ipc-ib'), name: 'IPC Baleares', inverse: true },
-					{ series: get('epa-es'), name: 'Paro (EPA)', decimals: 2, inverse: true },
+					{ series: get('epa-es'), name: 'Paro (EPA)', decimals: 2, inverse: true, alt: { series: get('unemployment-es'), label: 'Mensual', decimals: 1 } },
 					{ series: get('epa-ib'), name: 'Paro Baleares (EPA)', decimals: 2, inverse: true },
-					{ series: get('unemployment-es'), name: 'Paro mensual (Eurostat)', inverse: true },
 					{ series: get('youth-unemployment-es'), name: 'Paro juvenil', inverse: true },
-					{ series: get('inflation-es'), name: 'Inflación (IPCA)', inverse: true },
 					{ series: get('gdp-es'), name: 'PIB, trimestral' },
 					{ series: get('debt-es'), name: 'Deuda pública (% PIB)', inverse: true },
 					{ series: get('bond10-es'), name: 'Bono a 10 años', decimals: 2 },
