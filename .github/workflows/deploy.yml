@@ -225,6 +225,9 @@ jobs:
       # Herramienta de exploración: si una URL falla, no pone el PR en rojo.
       - run: node scripts/probe.ts
         continue-on-error: true
+        env:
+          # Para las URL de sec.gov (la SEC pide un User-Agent con nombre y correo; probe.ts no lo imprime).
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
 
   # A mano (herramienta «tv-shots»): capturas de los widgets de TradingView en tema oscuro y claro
   # (scripts/tv-shots.ts). Los colores salen en el registro y las imágenes, en el artefacto «tradingview».

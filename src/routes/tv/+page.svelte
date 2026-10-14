@@ -4,6 +4,7 @@
 	con una URL: /?tv=TOP,WS,GEO,LUZ&s=30, o desde la barra con «TV TOP,WS,GEO».
 -->
 <script lang="ts">
+	import { routeHref } from '#lib/routes.ts';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -51,7 +52,7 @@
 			localStorage.setItem(KEY, JSON.stringify({ codes: codes.join(','), seconds: Number(seconds) }));
 		} catch {}
 		startTv([...codes], Number(seconds));
-		goto(resolve(routeOf(codes[0])));
+		goto(routeHref(routeOf(codes[0])));
 	}
 
 	const link = $derived(`${resolve('/')}${tvQuery(codes, Number(seconds))}`);

@@ -32,6 +32,17 @@ async function sheets(data: ArrayBuffer, pattern?: string): Promise<string> {
 	return out.join('\n');
 }
 
+/**
+ * La SEC responde 403 sin un User-Agent con nombre y correo: a sec.gov se le manda el del secreto
+ * SEC_USER_AGENT (la Action lo pasa a este paso), y a las demás webs, el genérico.
+ */
+function userAgent(url: string): string {
+	const secret = process.env.SEC_USER_AGENT;
+	const host = new URL(url).hostname;
+	if (secret && (host === 'sec.gov' || host.endsWith('.sec.gov'))) return secret;
+	return 'ArcTerminal/1.0 (+https://github.com/srgicmps/arc-terminal)';
+}
+
 const lines = (await readFile('scripts/probe.txt', 'utf8'))
 	.split('\n')
 	.map((l) => l.trim())
@@ -41,7 +52,7 @@ for (const line of lines) {
 	const [url, pattern] = line.split(/\s+~\s+/);
 	try {
 		const res = await fetch(url, {
-			headers: { 'User-Agent': 'ArcTerminal/1.0 (+https://github.com/srgicmps/arc-terminal)', Accept: '*/*' },
+			headers: { 'User-Agent': userAgent(url), Accept: '*/*' },
 			signal: AbortSignal.timeout(30_000)
 		});
 		if (/\.xlsx($|\?|&)/i.test(url) || (res.headers.get('content-type') ?? '').includes('spreadsheet')) {
