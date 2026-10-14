@@ -11,6 +11,7 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { TICKERS, tvSymbol } from '#lib/commands.ts';
+	import { inWatchlist, toggleWatch } from '#lib/watchlist.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -27,7 +28,15 @@
 	const sec = $derived(data.sec?.data.companies[code]);
 </script>
 
-<ViewHeader code={code || '…'} title={name || 'Ficha del valor'} sub="Cotización, gráfico y datos en directo · TradingView" />
+<ViewHeader code={code || '…'} title={name || 'Ficha del valor'} sub="Cotización, gráfico y datos en directo · TradingView">
+	{#snippet aside()}
+		{#if code}
+			<button class="star" type="button" aria-pressed={inWatchlist(code)} onclick={() => toggleWatch(code)}>
+				{inWatchlist(code) ? '★ En mi lista' : '☆ Añadir a MIS'}
+			</button>
+		{/if}
+	{/snippet}
+</ViewHeader>
 
 {#if code}
 	{#key symbol}
@@ -74,3 +83,19 @@
 		{/if}
 	{/key}
 {/if}
+
+<style>
+	.star {
+		background: none;
+		border: 1px solid var(--line);
+		color: var(--muted);
+		padding: 5px 10px;
+		font-size: var(--fs-s);
+		cursor: pointer;
+	}
+
+	.star[aria-pressed='true'] {
+		color: var(--amber);
+		border-color: var(--amber-edge);
+	}
+</style>

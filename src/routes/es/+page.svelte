@@ -1,9 +1,13 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import NewsList from '#lib/components/NewsList.svelte';
+	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import { nf } from '#lib/format.ts';
+	import { hourly } from '#lib/power.ts';
+	import { seriesMap, spread } from '#lib/series.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -13,6 +17,17 @@
 	const official = $derived((data.gov?.data.items ?? []).filter((i) => spainEu.has(i.source)));
 	// Del BOE, las disposiciones generales (leyes, reales decretos, órdenes).
 	const general = $derived(data.boe?.data.sections.find((s) => s.code === '1')?.items ?? []);
+	const get = $derived(seriesMap(data.eurostat, data.ecb));
+	const premium = $derived(spread(get('bond10-es'), get('bond10-de'), 'premium-es', 'Prima de riesgo'));
+	const fuelAvg = $derived(data.fuel?.data.avg);
+	const pvpc = $derived(hourly(data.power?.data.pvpc ?? []));
+	const luzHoy = $derived.by(() => {
+		const day = pvpc[0]?.day;
+		const today = pvpc.filter((p) => p.day === day);
+		return today.length ? today.reduce((a, p) => a + p.kwh, 0) / today.length : null;
+	});
+	const strongestQuake = $derived([...(data.quakes?.data ?? [])].sort((a, b) => b.mag - a.mag)[0]);
+
 	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.count).map((f) => f.name).join(', '));
 </script>
 
@@ -26,6 +41,35 @@
 		</Panel>
 	</div>
 	<div class="col">
+		<Panel title="España en cifras" meta="Último dato">
+			<SeriesTable
+				head="Indicador"
+				rows={[
+					{ series: get('unemployment-es'), name: 'Paro', inverse: true },
+					{ series: get('youth-unemployment-es'), name: 'Paro juvenil', inverse: true },
+					{ series: get('inflation-es'), name: 'Inflación (IPCA)', inverse: true },
+					{ series: get('gdp-es'), name: 'PIB, trimestral' },
+					{ series: get('debt-es'), name: 'Deuda pública (% PIB)', inverse: true },
+					{ series: get('bond10-es'), name: 'Bono a 10 años', decimals: 2 },
+					{ series: premium, name: 'Prima de riesgo (pb)', decimals: 0, inverse: true },
+					{ series: get('mortgage-es'), name: 'Hipotecas nuevas', decimals: 2, inverse: true }
+				]}
+			/>
+			<ul class="mini">
+				{#if fuelAvg}
+					<li><span class="l">Gasolina 95, media de España</span><b>{nf(fuelAvg.g95, 3)} €/L</b></li>
+					<li><span class="l">Diésel, media de España</span><b>{nf(fuelAvg.diesel, 3)} €/L</b></li>
+				{/if}
+				{#if luzHoy !== null}<li><span class="l">Luz hoy, media PVPC</span><b>{nf(luzHoy, 3)} €/kWh</b></li>{/if}
+				{#if strongestQuake}
+					<li>
+						<span class="l">Terremoto más fuerte (10 días)<small>{strongestQuake.place}</small></span>
+						<b>M{nf(strongestQuake.mag, 1)}</b>
+					</li>
+				{/if}
+			</ul>
+			{#snippet note()}Fuentes: Eurostat, BCE, Ministerio para la Transición Ecológica, REE e IGN{/snippet}
+		</Panel>
 		<Panel title="BOE de hoy" meta="Disposiciones generales" jump={{ code: 'BOE', href: resolve('/boe') }}>
 			{#if general.length}
 				<ul class="mini">

@@ -1,4 +1,7 @@
 # URL que la Action de los PR consulta para explorar APIs nuevas (ver scripts/probe.ts).
+# Formato: «URL» o «URL ~ patrón».
+https://apidatos.ree.es/es/datos/generacion/estructura-generacion?start_date=2026-10-13T00:00&end_date=2026-10-14T23:59&time_trunc=day&geo_trunc=electric_system&geo_limit=baleares&geo_ids=8743
+https://apidatos.ree.es/es/datos/generacion/no-renovables-detalle-emisiones-CO2?start_date=2026-10-13T00:00&end_date=2026-10-14T23:59&time_trunc=day
 https://data.sec.gov/submissions/CIK0001045810.json
 # CNMV: página de canales RSS (español e inglés). Sus enlaces a feeds salen en las líneas FEEDS.
 https://www.cnmv.es/portal/gpage?id=RSS
