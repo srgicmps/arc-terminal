@@ -86,8 +86,9 @@ export function curveDays(rows: Record<string, string>[], tenors: [string, strin
 		const i = tenors.findIndex(([key]) => key === r.DATA_TYPE_FM || r.KEY?.endsWith(`.${key}`));
 		const v = num(r.OBS_VALUE);
 		if (i < 0 || !r.TIME_PERIOD || v === null) continue;
+		// El BCE da 10 decimales; con 3 sobra (las tablas enseñan 2) y el JSON pesa la mitad.
 		const values = byDate.get(r.TIME_PERIOD) ?? tenors.map(() => null);
-		values[i] = v;
+		values[i] = Math.round(v * 1000) / 1000;
 		byDate.set(r.TIME_PERIOD, values);
 	}
 	return [...byDate]
