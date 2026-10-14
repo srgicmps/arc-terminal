@@ -37,6 +37,13 @@
 			"description": "WX: el tiempo en Menorca y otras ciudades",
 			"url": "./wx",
 			"icons": [{ "src": "shortcut-wx.png", "sizes": "96x96", "type": "image/png" }]
+		},
+		{
+			"name": "Mis valores",
+			"short_name": "Mis valores",
+			"description": "MIS: tu lista de valores, con cotización en directo",
+			"url": "./mis",
+			"icons": [{ "src": "shortcut-mis.png", "sizes": "96x96", "type": "image/png" }]
 		}
 	]
 }
