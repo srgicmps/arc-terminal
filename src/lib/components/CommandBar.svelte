@@ -4,6 +4,7 @@
 	Atajos globales: «/» o empezar a escribir enfoca la barra; Esc vuelve a la portada; Mayús+F, pantalla completa.
 -->
 <script lang="ts">
+	import { routeHref } from '#lib/routes.ts';
 	import { toggleFullscreen } from '#lib/fit.svelte.ts';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -98,7 +99,7 @@
 		recent = pushHistory(readHistory(), canonical(target));
 		writeHistory(recent);
 		const { route, search } = targetPath(target);
-		goto(resolve(route) + search);
+		goto(routeHref(route) + search);
 	}
 
 	function onkeydown(e: KeyboardEvent) {

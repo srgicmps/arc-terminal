@@ -151,11 +151,12 @@ if (!wanted.length) {
 	await save({ name: 'status-history', fetchedAt: new Date(now).toISOString(), data: history });
 }
 
-// «En las noticias» de cada valor, con los titulares que acaban de guardarse.
+// «En las noticias» de cada valor y de cada país, con los titulares que acaban de guardarse.
 if (selected.some((s) => s.name.startsWith('news-'))) {
-	const index = await buildNewsIndex(OUT_DIR);
+	const [index, countries] = await buildNewsIndex(OUT_DIR);
 	await save(index);
-	console.log(`✓ news-index: ${Object.keys(index.data).length} valores con titulares`);
+	await save(countries);
+	console.log(`✓ news-index: ${Object.keys(index.data).length} valores y ${Object.keys(countries.data).length} países con titulares`);
 }
 
 const failed = statuses.filter((s) => s.state === 'error' || s.state === 'stale');

@@ -22,6 +22,7 @@ export interface Command {
 		| '/cal'
 		| '/wiki'
 		| '/news'
+		| '/pais'
 		| '/mis'
 		| '/help'
 		| '/doc'
@@ -62,6 +63,7 @@ export const COMMANDS: Command[] = [
 	{ code: 'MIS', route: '/mis', key: 'Mis valores', desc: 'Tu lista de valores, con cotización en directo', sources: 'TradingView', pinned: true },
 	{ code: 'FUEL', route: '/fuel', key: 'Gasolina', desc: 'Gasolineras más baratas de Menorca', sources: 'Ministerio para la Transición Ecológica', pinned: true, aliases: ['gasolina', 'diésel', 'carburante'], arg: { param: 'zona', label: 'Provincia (nombre o número)', example: 'FUEL Madrid' } },
 	{ code: 'NEWS', route: '/news', key: 'Buscar', desc: 'Buscador en todos los titulares de todas las secciones', sources: 'Todos los medios', arg: { param: 'q', label: 'Buscar en los titulares', example: 'NEWS inflación' } },
+	{ code: 'PAIS', route: '/pais', key: 'País', desc: 'Ficha de un país: PIB, IPC, paro, deuda, tipos, bono, moneda, previsiones del FMI y titulares', sources: 'Eurostat, BLS, FRED, BCE, BIS, Tesoro de EE. UU., FMI, todos los medios', aliases: ['país', 'country'], arg: { param: 'c', label: 'País (nombre o código)', example: 'PAIS Alemania' } },
 	{ code: 'WIKI', route: '/wiki', key: 'Wikipedia', desc: 'Lo más leído en Wikipedia y efemérides del día', sources: 'Wikipedia en español' },
 	{ code: 'CAL', route: '/cal', key: 'Agenda', desc: 'Agenda económica de la semana', sources: 'TradingView' },
 	{ code: 'CHESS', route: '/chess', key: 'Ajedrez', desc: 'Ajedrez contra Stockfish (5 niveles), análisis y problema del día', sources: 'Stockfish, chess.js, Lichess', aliases: ['ajedrez'] },

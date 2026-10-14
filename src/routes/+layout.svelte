@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { routeHref } from '#lib/routes.ts';
 	import '../app.css';
 	import { goto } from '$app/navigation';
 	import { asset, resolve } from '$app/paths';
@@ -35,7 +36,7 @@
 		if (views === null) return;
 		const { codes, seconds } = parseTv(views, page.url.searchParams.get('s'));
 		startTv(codes, seconds);
-		goto(resolve(routeOf(codes[0])), { replaceState: true });
+		goto(routeHref(routeOf(codes[0])), { replaceState: true });
 	});
 
 	// El reloj del modo TV: cada cuarto de segundo avanza la barra de progreso y, al llegar, cambia de vista.
@@ -43,7 +44,7 @@
 		if (!tv.on) return;
 		const id = setInterval(() => {
 			const next = tickTv(0.25);
-			if (next) goto(resolve(routeOf(next)));
+			if (next) goto(routeHref(routeOf(next)));
 		}, 250);
 		return () => clearInterval(id);
 	});
@@ -152,7 +153,7 @@
 		{#each keys as key (key.code)}
 			<a
 				class="key"
-				href={resolve(key.route)}
+				href={routeHref(key.route)}
 				aria-current={page.route.id === key.route ? 'page' : undefined}
 			>
 				{key.code}<span>{key.key}</span>
@@ -180,7 +181,7 @@
 
 	<nav class="thumb" aria-label="Accesos rápidos">
 		{#each thumb as c (c.code)}
-			<a href={resolve(c.route)} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
+			<a href={routeHref(c.route)} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
 		{/each}
 		<button type="button" aria-label="Abrir la barra de comandos" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>/</button>
 	</nav>
