@@ -43,6 +43,14 @@ const WANTED: Wanted[] = [
 		params: { unit: 'CLV_PCH_PRE', s_adj: 'SCA', na_item: 'B1GQ', lastTimePeriod: '12' }
 	},
 	{
+		dataset: 'namq_10_gdp',
+		id: 'gdp-yoy',
+		label: 'PIB, interanual',
+		unit: '%',
+		// Frente al mismo trimestre del año anterior.
+		params: { unit: 'CLV_PCH_SM', s_adj: 'SCA', na_item: 'B1GQ', lastTimePeriod: '12' }
+	},
+	{
 		dataset: 'gov_10q_ggdebt',
 		id: 'debt',
 		label: 'Deuda pública',

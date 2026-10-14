@@ -17,7 +17,7 @@
 
 	const get = $derived(seriesMap(data.eurostat, data.ecb, data.bls, data.usdebt, data.fred));
 	const geos = ['es', 'ea', 'de', 'fr', 'it', 'pt'];
-	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: id !== 'gdp' }));
+	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: !id.startsWith('gdp') }));
 
 	const premium = $derived(spread(get('bond10-es'), get('bond10-de'), 'premium-es', 'Prima de riesgo'));
 	const debtUs = $derived(last(get('debt-us')));
@@ -35,6 +35,9 @@
 		</Panel>
 		<Panel title="PIB" meta="Variación trimestral">
 			<SeriesTable head="País" rows={byGeo('gdp')} />
+		</Panel>
+		<Panel title="PIB interanual" meta="Frente al mismo trimestre del año anterior">
+			<SeriesTable head="País" rows={byGeo('gdp-yoy')} />
 		</Panel>
 		<Panel title="Paro juvenil" meta="Menores de 25 años">
 			<SeriesTable head="País" rows={byGeo('youth-unemployment')} />
@@ -65,7 +68,7 @@
 					{ series: get('euribor-12m'), name: 'Euríbor 12 meses', decimals: 3 },
 					{ series: get('mortgage-es'), name: 'Hipotecas nuevas España', decimals: 2, inverse: true },
 					{ series: get('mortgage-ea'), name: 'Hipotecas nuevas zona euro', decimals: 2, inverse: true },
-					{ series: get('hicp-ea'), name: 'Inflación zona euro', decimals: 1, inverse: true }
+					{ series: get('core-hicp-ea'), name: 'Inflación subyacente zona euro', decimals: 1, inverse: true }
 				]}
 			/>
 		</Panel>

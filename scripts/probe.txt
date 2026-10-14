@@ -27,3 +27,6 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
+# ECO (M6): inflación subyacente de la zona euro (BCE) y PIB interanual de España (Eurostat, CLV_PCH_SM)
+https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N.XEF000.4.ANR?lastNObservations=3&format=csvdata&detail=dataonly
+https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/namq_10_gdp?format=JSON&lang=EN&unit=CLV_PCH_SM&s_adj=SCA&na_item=B1GQ&geo=ES&lastTimePeriod=2 ~ "value":\{[^}]*\}|"time":\{[^}]*\}
