@@ -18,7 +18,7 @@
 	const official = $derived((data.gov?.data.items ?? []).filter((i) => spainEu.has(i.source)));
 	// Del BOE, las disposiciones generales (leyes, reales decretos, órdenes).
 	const general = $derived(data.boe?.data.sections.find((s) => s.code === '1')?.items ?? []);
-	const get = $derived(seriesMap(data.eurostat, data.ecb, data.ine));
+	const get = $derived(seriesMap(data.eurostat, data.ecb, data.ine, data.afiliacion));
 	const premium = $derived(spread(get('bond10-es'), get('bond10-de'), 'premium-es', 'Prima de riesgo'));
 	const fuelAvg = $derived(data.fuel?.data.avg);
 	const pvpc = $derived(hourly(data.power?.data.pvpc ?? []));
@@ -57,6 +57,7 @@
 					{ series: get('ipc-ib'), name: 'IPC Baleares', inverse: true },
 					{ series: get('epa-es'), name: 'Paro (EPA)', decimals: 2, inverse: true, alt: { series: get('unemployment-es'), label: 'Mensual', decimals: 1 } },
 					{ series: get('epa-ib'), name: 'Paro Baleares (EPA)', decimals: 2, inverse: true },
+					{ series: get('afiliados-es'), name: 'Afiliados a la Seguridad Social (mill.)', decimals: 2 },
 					{ series: get('youth-unemployment-es'), name: 'Paro juvenil', inverse: true },
 					{ series: get('gdp-es'), name: 'PIB, trimestral' },
 					{ series: get('debt-es'), name: 'Deuda pública (% PIB)', inverse: true },
@@ -78,7 +79,7 @@
 					</li>
 				{/if}
 			</ul>
-			{#snippet note()}Fuentes: INE, Eurostat, BCE, Ministerio para la Transición Ecológica, REE e IGN{/snippet}
+			{#snippet note()}Fuentes: INE, Eurostat, Seguridad Social, BCE, Ministerio para la Transición Ecológica, REE e IGN{/snippet}
 		</Panel>
 		{#if get('turistas-es') || get('ipv-es')}
 			<Panel title="Turismo y vivienda" meta="INE · último dato">

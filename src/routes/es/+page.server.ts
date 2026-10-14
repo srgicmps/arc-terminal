@@ -6,7 +6,7 @@ import { nextMap } from '#lib/nextrelease.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, gov, boe, power, eurostat, ecb, fuel, quakes, ine, cal] = await Promise.all([
+	const [news, gov, boe, power, eurostat, ecb, fuel, quakes, ine, cal, afiliacion] = await Promise.all([
 		dataset<NewsData>('news-es'),
 		dataset<NewsData>('news-gov'),
 		dataset<BoeData>('boe'),
@@ -16,7 +16,8 @@ export const load: PageServerLoad = async () => {
 		dataset<FuelSpainData>('fuel-es'),
 		dataset<Quake[]>('quakes-es'),
 		dataset<SeriesData>('ine'),
-		dataset<ReleaseCalData>('releases-cal')
+		dataset<ReleaseCalData>('releases-cal'),
+		dataset<SeriesData>('afiliacion')
 	]);
 	return {
 		news,
@@ -34,6 +35,7 @@ export const load: PageServerLoad = async () => {
 		// Terremotos del IGN: solo los 15 más fuertes, que es lo que se pinta (el más fuerte va en «España en cifras»).
 		quakes: trim(quakes, (d) => [...d].sort((a, b) => b.mag - a.mag).slice(0, 15)),
 		ine,
+		afiliacion,
 		// Próximo dato de cada serie, calculado aquí: al navegador solo le llega la fecha y el título.
 		next: nextMap(
 			[eurostat, ine].flatMap((d) => d?.data.series.map((s) => s.id) ?? []),
