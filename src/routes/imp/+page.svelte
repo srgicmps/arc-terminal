@@ -1,11 +1,14 @@
 <script lang="ts">
 	import Panel from '#lib/components/Panel.svelte';
+	import AutoTag from '#lib/components/AutoTag.svelte';
+	import TitleLang from '#lib/components/TitleLang.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { urlState } from '#lib/urlstate.svelte.ts';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { IMP_PERIODS, aggregate, minus, topImportant, type ImpTotal } from '#lib/imp.ts';
 	import { NEWS_SECTIONS } from '#lib/news.ts';
+	import { headlineList } from '#lib/titles.svelte.ts';
 	import type { ImpCurrent, ImpEntry } from '#lib/types.ts';
 	import { SvelteSet } from 'svelte/reactivity';
 	import type { PageProps } from './$types';
@@ -29,6 +32,9 @@
 	// Días del periodo de los que hay histórico (al principio, menos que los del periodo).
 	const recorded = $derived(imp ? imp.days.filter((d) => d.date > minus(imp.date, span) && d.date <= imp.date).length : 0);
 
+	// Titulares en español (ES / EN, titles.svelte.ts): de la Action o, si no, del navegador.
+	const list = headlineList<string>(() => items);
+
 	const periods = IMP_PERIODS.map((p) => ({ value: p.key, label: p.label }));
 	const fmt = (n: number) => n.toLocaleString('es-ES', { maximumFractionDigits: 1 });
 	// Medios a la vista antes de desplegar; `open` guarda los temas desplegados.
@@ -41,6 +47,7 @@
 
 <div class="controls">
 	<Seg label="Periodo" options={periods} bind:value={periodSel.value} />
+	{#if list.toggle}<TitleLang />{/if}
 </div>
 
 {#if !imp}
@@ -58,10 +65,19 @@
 					<ol class="imp">
 						{#each items as item, i (item.k)}
 							{@const now = period === 'day' ? live.get(item.k) : undefined}
+							{@const t = list.link(item, item.k)}
 							<li>
 								<span class="rk">{i + 1}</span>
 								<div>
-									<a class="h" href={item.url} target="_blank" rel="noopener">{item.title}</a>
+									<a
+										class="h"
+										href={item.url}
+										target="_blank"
+										rel="noopener"
+										lang={t.lang}
+										title={t.title}
+										{@attach list.press(item, item.k)}>{t.text}</a
+									>
 									<div class="m">
 										{#each now?.sections ?? [] as s (s)}<span class="tag">{label[s] ?? s}</span>{/each}
 										<span class="src">
@@ -75,6 +91,7 @@
 												</button>
 											{/if}
 										</span>
+										{#if t.translated}<AutoTag {item} />{/if}
 										{#if now?.official}<span class="ok">✓ {now.official}</span>{/if}
 										{#if now?.wiki}<span class="ok">✓ Wikipedia</span>{/if}
 										{#if 'days' in item}<span>{item.days} {item.days === 1 ? 'día' : 'días'}</span>{/if}
@@ -99,6 +116,10 @@
 
 <style>
 	.controls {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: var(--sp-8);
 		margin-bottom: var(--sp-12);
 	}
 
