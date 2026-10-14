@@ -8,6 +8,7 @@
 	import CommandBar from '#lib/components/CommandBar.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import { ui } from '#lib/ui.svelte.ts';
+	import { fit, initFit, toggleFit } from '#lib/fit.svelte.ts';
 	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
 	import { initWatchlist } from '#lib/watchlist.svelte.ts';
 	import type { LayoutProps } from './$types';
@@ -18,6 +19,7 @@
 	$effect(startClock);
 	$effect(initWatchlist);
 	$effect(initTheme);
+	$effect(initFit);
 
 	const THEME_LABEL = { auto: 'Tema automático (sigue al sistema)', light: 'Tema de día', dark: 'Tema de noche' };
 	const THEME_ICON = { auto: '◐', light: '☀', dark: '☾' };
@@ -65,6 +67,16 @@
 		<CommandBar />
 		{#if !online}<span class="offline" title="Se muestra la última copia guardada">Sin conexión</span>{/if}
 		<Clocks />
+		<button
+			class="theme fit"
+			type="button"
+			onclick={toggleFit}
+			aria-pressed={fit.on}
+			title={fit.on ? 'Encajada en la pantalla · toca para volver al scroll normal' : 'Encajar en la pantalla: cada panel con su propio scroll'}
+			aria-label="Encajar en la pantalla"
+		>
+			<span aria-hidden="true">⤢</span>
+		</button>
 		<button
 			class="theme"
 			type="button"
@@ -116,16 +128,11 @@
 	<footer class="status">
 		<span>Datos públicos actualizados cada 15 min con GitHub Actions · cotizaciones de TradingView</span>
 		<a href={resolve('/status')}>Estado de las fuentes</a>
-		<span><kbd>/</kbd> comando · <kbd>Esc</kbd> portada</span>
+		<span><kbd>/</kbd> comando · <kbd>Esc</kbd> portada · <kbd>⇧F</kbd> pantalla completa</span>
 	</footer>
 </div>
 
 <style>
-	.app {
-		max-width: 1600px;
-		margin-inline: auto;
-	}
-
 	.top {
 		display: flex;
 		flex-wrap: wrap;
@@ -358,6 +365,66 @@
 
 		.top :global(.clocks) {
 			order: 3;
+		}
+	}
+
+	/* El interruptor de «encajar» solo tiene sentido en escritorio. */
+	.fit {
+		display: none;
+	}
+
+	.fit[aria-pressed='true'] {
+		color: var(--amber);
+	}
+
+	/* «Encajar en pantalla» (html[data-fit], solo ≥1280 px): la página no hace scroll; la vista llena el
+	   alto que queda y cada panel se desplaza por dentro. Si una vista tiene varias filas de paneles,
+	   la zona de la vista hace scroll como último recurso. */
+	@media (min-width: 1280px) {
+		.fit {
+			display: inline-flex;
+		}
+
+		:global(html[data-fit]),
+		:global(html[data-fit] body) {
+			height: 100dvh;
+			overflow: hidden;
+		}
+
+		:global(html[data-fit]) .app {
+			display: flex;
+			flex-direction: column;
+			height: 100dvh;
+		}
+
+		:global(html[data-fit]) main {
+			flex: 1;
+			min-height: 0;
+			display: flex;
+			flex-direction: column;
+			overflow: auto;
+			padding-bottom: 0;
+		}
+
+		:global(html[data-fit] main > .grid:last-child) {
+			flex: 1;
+			min-height: 0;
+		}
+
+		:global(html[data-fit] main > .grid:last-child > .col) {
+			display: flex;
+			flex-direction: column;
+			min-height: 0;
+			overflow: hidden;
+		}
+
+		/* Los paneles de una columna se reparten el alto a partes iguales, pero ninguno pasa de lo que
+		   necesita: lo que sobra de uno pequeño se lo quedan los demás. */
+		:global(html[data-fit] main > .grid:last-child > .col > .panel) {
+			flex: 1 1 0;
+			min-height: 0;
+			max-height: fit-content;
+			overflow: auto;
 		}
 	}
 </style>
