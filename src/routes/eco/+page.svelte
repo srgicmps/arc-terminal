@@ -1,4 +1,5 @@
 <script lang="ts">
+	import MortgageCalc from '#lib/components/MortgageCalc.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
@@ -54,6 +55,10 @@
 					{ series: get('hicp-ea'), name: 'Inflación zona euro', decimals: 1, inverse: true }
 				]}
 			/>
+		</Panel>
+		<Panel title="Tu hipoteca" meta="Variable · euríbor a 12 meses">
+			<MortgageCalc euribor={get('euribor-12m')} />
+			{#snippet note()}Cuota con el último euríbor mensual del BCE más tu diferencial. Se calcula y se guarda solo en este navegador.{/snippet}
 		</Panel>
 		<Panel title="Bancos centrales" meta="Tipo oficial · último cambio">
 			<SeriesTable
