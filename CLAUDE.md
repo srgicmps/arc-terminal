@@ -135,5 +135,6 @@ Cuando termine una fase, actualiza esta lista.
 ## Aparcado
 - Festivos locales de Menorca: Sergi ha decidido no añadirlos.
 - Formato y lint en CI (Prettier + ESLint): un PR propio, cuando haya pocas ramas abiertas.
-- Descartadas: GDELT (429 desde Actions) y RSS de la CNMV (no responde).
+- Descartadas: GDELT (429 desde Actions), RSS de la CNMV (no responde) y RSS del Parlamento Europeo (todo
+  europarl.europa.eu responde 202 vacío desde Actions: muro anti-robots).
 - ReliefWeb: falta el appname aprobado (RELIEFWEB_APPNAME); aparcado por Sergi.
