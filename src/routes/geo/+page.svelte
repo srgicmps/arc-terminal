@@ -9,7 +9,7 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import WorldMap from '#lib/components/WorldMap.svelte';
-	import Toggles from '#lib/components/ui/Toggles.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import { LAYERS, crisisPoints, eventPoints, quakePoints, sanctionPoints, stormPoints, straitPoints, type LayerId, type MapPoint } from '#lib/geo/layers.ts';
 	import type { PageProps } from './$types';
 
@@ -41,7 +41,7 @@
 	<div class="col">
 		<Panel title="Mapa" meta="Toca un punto para ver su ficha">
 			{#if available.length > 1}
-				<div class="layers"><Toggles label="Capas del mapa" options={available} bind:value={on} /></div>
+				<div class="layers"><Seg label="Capas del mapa" options={available} bind:values={on} /></div>
 			{/if}
 			<WorldMap {points} legend={available} />
 		</Panel>
