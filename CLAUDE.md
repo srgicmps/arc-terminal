@@ -111,6 +111,7 @@ La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`)
 | `WX` | Tiempo, mar, aire, avisos, sol y luna | Open-Meteo, MeteoAlarm |
 | `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica |
 | `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
+| `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista y evaluación | Stockfish, chess.js |
 | `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
 
 \* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`):
@@ -143,3 +144,5 @@ Cuando termine una fase, actualiza esta lista.
 - Descartadas: GDELT (429 desde Actions), RSS de la CNMV (no responde) y RSS del Parlamento Europeo (todo
   europarl.europa.eu responde 202 vacío desde Actions: muro anti-robots).
 - ReliefWeb: falta el appname aprobado (RELIEFWEB_APPNAME); aparcado por Sergi.
+- Bonos a 10 años de Reino Unido, Japón y China: TradingView no da rentabilidades en sus widgets; hacen falta
+  fuentes oficiales (BoE, MOF de Japón, ChinaBond). De momento no se hacen.

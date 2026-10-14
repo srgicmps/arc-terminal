@@ -140,7 +140,7 @@
 					]}
 				/>
 			{:else}
-				<p class="empty">Falta la clave FRED_API_KEY en GitHub Secrets.</p>
+				<p class="empty">{data.fredMissing}</p>
 			{/if}
 			{#snippet note()}
 				Fuente: FRED, Fed de San Luis (usa su API sin estar respaldado por ella)

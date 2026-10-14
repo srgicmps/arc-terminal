@@ -1,9 +1,11 @@
 <script lang="ts">
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
+	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
 	import FxConvert from '#lib/components/FxConvert.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -45,8 +47,9 @@
 						{ s: 'FOREXCOM:DJI', d: 'Dow Jones' },
 						{ s: 'BME:IBC', d: 'IBEX 35' },
 						{ s: 'XETR:DAX', d: 'DAX' },
-						{ s: 'TVC:SX5E', d: 'Euro Stoxx 50' },
-						{ s: 'TVC:NI225', d: 'Nikkei 225' }
+						// TVC:SX5E y TVC:NI225 salen vacíos en los widgets: van los CFD de OANDA (comprobado con tv-shots).
+						{ s: 'OANDA:EU50EUR', d: 'Euro Stoxx 50' },
+						{ s: 'OANDA:JP225USD', d: 'Nikkei 225' }
 					]
 				},
 				{
@@ -56,18 +59,8 @@
 						{ s: 'TVC:USOIL', d: 'WTI' },
 						{ s: 'TVC:GOLD', d: 'Oro' },
 						{ s: 'TVC:SILVER', d: 'Plata' },
-						{ s: 'COMEX:HG1!', d: 'Cobre' },
-						{ s: 'NYMEX:NG1!', d: 'Gas natural' }
-					]
-				},
-				{
-					title: 'Bonos',
-					symbols: [
-						{ s: 'TVC:US10Y', d: 'EE. UU. 10 años' },
-						{ s: 'TVC:US02Y', d: 'EE. UU. 2 años' },
-						{ s: 'TVC:DE10Y', d: 'Alemania 10 años' },
-						{ s: 'TVC:ES10Y', d: 'España 10 años' },
-						{ s: 'TVC:IT10Y', d: 'Italia 10 años' }
+						{ s: 'OANDA:XCUUSD', d: 'Cobre' },
+						{ s: 'OANDA:NATGASUSD', d: 'Gas natural' }
 					]
 				},
 				{
@@ -84,10 +77,28 @@
 		};
 	});
 
-	const heatmap = {
-		dataSource: 'SPX500',
-		grouping: 'sector',
-		blockSize: 'market_cap_basic',
+	// Materias primas (widget «market-quotes»). Solo símbolos que TradingView sirve en sus widgets: los
+	// futuros (ICE, NYMEX, COMEX, CBOT) salen vacíos, así que el gas, el cobre y los cereales van con los
+	// CFD de OANDA. Comprobado en la Action con scripts/tv-shots.ts. El gas TTF europeo no tiene ninguno.
+	const COMMODITIES = [
+		{ name: 'TVC:UKOIL', displayName: 'Brent' },
+		{ name: 'TVC:USOIL', displayName: 'WTI' },
+		{ name: 'OANDA:NATGASUSD', displayName: 'Gas natural (Henry Hub)' },
+		{ name: 'TVC:GOLD', displayName: 'Oro' },
+		{ name: 'TVC:SILVER', displayName: 'Plata' },
+		{ name: 'OANDA:XCUUSD', displayName: 'Cobre' },
+		{ name: 'OANDA:WHEATUSD', displayName: 'Trigo' },
+		{ name: 'OANDA:CORNUSD', displayName: 'Maíz' }
+	];
+	const quotes = (name: string, symbols: { name: string; displayName: string }[]) => ({
+		showSymbolLogo: false,
+		symbolsGroups: [{ name, symbols }]
+	});
+	/** Alto para que quepan todas las filas sin barra de desplazamiento (como en MIS). */
+	const quotesHeight = (n: number) => 90 + n * 46;
+
+	// Mapas de calor de TradingView: acciones de un índice (widget «stock-heatmap») o cripto («crypto-coins-heatmap»).
+	const common = {
 		blockColor: 'change',
 		hasTopBar: false,
 		isDataSetEnabled: false,
@@ -95,20 +106,58 @@
 		hasSymbolTooltip: true,
 		isMonoSize: false
 	};
+	const stocks = (dataSource: string) => ({ ...common, dataSource, grouping: 'sector', blockSize: 'market_cap_basic' });
+	const MAPS = [
+		{ key: 'spx', label: 'S&P 500', widget: 'stock-heatmap', config: stocks('SPX500') },
+		{ key: 'ndx', label: 'Nasdaq 100', widget: 'stock-heatmap', config: stocks('NASDAQ100') },
+		{ key: 'dax', label: 'DAX', widget: 'stock-heatmap', config: stocks('DAX') },
+		{ key: 'ibex', label: 'IBEX 35', widget: 'stock-heatmap', config: stocks('IBEX35') },
+		{ key: 'crypto', label: 'Cripto', widget: 'crypto-coins-heatmap', config: { ...common, dataSource: 'Crypto', blockSize: 'market_cap_calc' } }
+	] as const;
+
+	// El mapa elegido se recuerda en este navegador (si no deja guardar, se queda en memoria).
+	const MAP_KEY = 'arc-ws-heatmap';
+	type MapKey = (typeof MAPS)[number]['key'];
+	let loadedMap = $state(false);
+	let mapKey = $state<MapKey>('spx');
+	$effect(() => {
+		try {
+			const saved = localStorage.getItem(MAP_KEY);
+			const found = MAPS.find((m) => m.key === saved);
+			if (found) mapKey = found.key;
+		} catch {}
+		loadedMap = true;
+	});
+	// Guarda cada cambio, después de haber leído lo guardado (para no pisarlo al arrancar).
+	$effect(() => {
+		const key = mapKey;
+		if (!loadedMap) return;
+		try {
+			localStorage.setItem(MAP_KEY, key);
+		} catch {}
+	});
+	const map = $derived(MAPS.find((m) => m.key === mapKey) ?? MAPS[0]);
 </script>
 
 <ViewHeader code="WS" title="Wall Street e inversión" sub="TradingView, Tesoro de EE. UU., BCE, CoinGecko y titulares de mercados" />
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Mapa de calor" meta="S&P 500 · variación del día">
-			<TvWidget widget="stock-heatmap" config={heatmap} height={520} />
+		<Panel title="Mapa de calor" meta="{map.label} · variación del día">
+			<div class="maps">
+				<Seg label="Mapa de calor" options={MAPS.map((m) => ({ value: m.key, label: m.label }))} bind:value={mapKey} />
+			</div>
+			<TvWidget widget={map.widget} config={map.config} height={520} />
 		</Panel>
 	</div>
 	<div class="col">
 		<Panel title="Mercados" meta="En directo">
 			<TvWidget widget="market-overview" config={overview} height={520} />
 		</Panel>
+		<Panel title="Materias primas" meta="Precio en dólares · en directo">
+			<TvWidget widget="market-quotes" config={quotes('Materias primas', COMMODITIES)} height={quotesHeight(COMMODITIES.length)} />
+		</Panel>
+		<DefenseQuotes />
 	</div>
 </div>
 
@@ -137,3 +186,11 @@
 		</Panel>
 	</div>
 </div>
+
+<style>
+	/* Selector de mapa encima del widget, con el espaciado de la cabecera del panel. */
+	.maps {
+		padding: var(--row-y) var(--pad-x);
+		border-bottom: var(--border);
+	}
+</style>

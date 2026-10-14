@@ -36,6 +36,7 @@ La maqueta de diseño está en [`docs/maqueta.html`](docs/maqueta.html) (datos d
 | `NEWS` | Buscador en todos los titulares |
 | `WIKI` | Lo más leído en Wikipedia y efemérides |
 | `CAL` | Agenda económica de la semana y resultados de empresas |
+| `CHESS` | Ajedrez contra Stockfish en 5 niveles, con pista y barra de evaluación; la partida se guarda en el navegador |
 | `STATUS` | Estado de todas las fuentes |
 | `HELP` | Comandos y atajos |
 
@@ -47,6 +48,16 @@ Nacional, La Moncloa, Banco de España. **Europa:** BCE, Eurostat, MeteoAlarm, C
 **Mundo:** BIS, Open-Meteo, CoinGecko, Polymarket, Hacker News, Hugging Face, Finnhub\*, Wikipedia y unos 40
 canales RSS de medios. (\* con clave opcional.) El estado y la
 procedencia de cada una se ven en `STATUS`.
+
+## Ajedrez: Stockfish y chess.js
+
+`CHESS` usa dos programas de terceros, que van tal cual:
+- **Stockfish 17.1**, versión ligera de un solo hilo compilada a WebAssembly por Nathan Rugg y Chess.com (paquete
+  npm `stockfish`), en `static/engine/`. Tiene licencia **GPL-3.0** (`static/engine/license.txt`) y es un programa
+  aparte: la web solo lo arranca en un Web Worker y le habla por UCI. Código fuente:
+  [nmrugg/stockfish.js](https://github.com/nmrugg/stockfish.js) y
+  [official-stockfish/Stockfish](https://github.com/official-stockfish/Stockfish).
+- **chess.js** para las reglas, con licencia BSD-2-Clause: [jhlywa/chess.js](https://github.com/jhlywa/chess.js).
 
 ## Desarrollo
 

@@ -21,6 +21,13 @@
 	--up: #4cc48a; /* sube (solo para subidas) */
 	--down: #f0646f; /* baja (solo para bajadas) */
 	--neutral: #3a434e; /* relleno gris de barras y gráficos */
+	/* Ajedrez (CHESS): casillas sobrias y piezas que no cambian de bando con el tema. */
+	--sq-light: #232b35; /* casilla clara */
+	--sq-dark: #171d25; /* casilla oscura */
+	--piece-w: #e4e8ed; /* pieza blanca */
+	--piece-w-edge: #0b0e12; /* su contorno y detalles */
+	--piece-b: #07090c; /* pieza negra */
+	--piece-b-edge: #9aa4b0;
 
 	/* ── Tipografía ──────────────────────────────────────────────────────────────────────── */
 	--mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; /* datos y comandos */
@@ -88,6 +95,7 @@
 	--select-max: 180px; /* ancho máximo de un desplegable */
 	--col-min: 340px; /* ancho mínimo de una columna de paneles */
 	--col-min-wide: 420px; /* el mismo, en .grid-3 por debajo de 1100 px */
+	--z-popover: 50; /* burbujas del glosario (ⓘ): sobre la cabecera fija, bajo el panel maximizado */
 
 	/*
 	 * Puntos de corte (las @media no aceptan variables, así que se documentan aquí):
@@ -119,4 +127,10 @@
 	--up: #147345;
 	--down: #c3303c;
 	--neutral: #b9b4a8;
+	--sq-light: #f3f0e9;
+	--sq-dark: #d8d2c4;
+	--piece-w: #ffffff;
+	--piece-w-edge: #16191d;
+	--piece-b: #23272d;
+	--piece-b-edge: #23272d;
 }
