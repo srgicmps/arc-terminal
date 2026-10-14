@@ -5,7 +5,7 @@ import { mockFetch } from './mock.ts';
 afterEach(() => vi.unstubAllGlobals());
 
 /** Pasa a Shift-JIS el texto de ejemplo: solo hacen falta «基準日» y «年»; lo demás es ASCII. */
-function sjis(text: string): Uint8Array {
+function sjis(text: string): Uint8Array<ArrayBuffer> {
 	const map: Record<string, number[]> = { 基: [0x8a, 0xee], 準: [0x8f, 0x80], 日: [0x93, 0xfa], 年: [0x94, 0x4e] };
 	return new Uint8Array([...text].flatMap((c) => map[c] ?? [c.charCodeAt(0)]));
 }
