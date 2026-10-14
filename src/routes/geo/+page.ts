@@ -3,9 +3,10 @@ import type { Chokepoint, Disaster, HazardsData, NewsData, PredictionsData, Quak
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async () => {
-	const [news, gov, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions] = await Promise.all([
+	const [news, gov, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-gov'),
+		dataset<NewsData>('news-intl'),
 		dataset<Quake[]>('quakes'),
 		dataset<Quake[]>('quakes-es'),
 		dataset<HazardsData>('hazards'),
@@ -14,5 +15,5 @@ export const load: PageLoad = async () => {
 		dataset<Disaster[]>('reliefweb'),
 		dataset<TradeDoc[]>('sanctions')
 	]);
-	return { news, gov, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions };
+	return { news, gov, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions };
 };
