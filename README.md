@@ -26,5 +26,5 @@ Se maneja desde una barra de comandos: escribes `NVDA`, `ECO` o `FUEL` y se abre
 | `TECH` | Tecnología |
 | `AI` | Inteligencia artificial |
 | `CAL` | Agenda económica y resultados de empresas |
-| `FUEL` | Gasolineras más baratas de Menorca |
+| `FUEL` | Gasolineras más baratas de España (donde eligas) |
 | `HELP` | Comandos y atajos |
