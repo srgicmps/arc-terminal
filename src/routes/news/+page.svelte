@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { asset } from '$app/paths';
+	import { page } from '$app/state';
 	import EntityCard from '#lib/components/EntityCard.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import { findEntity } from '#lib/entities.ts';
@@ -11,16 +12,31 @@
 	import Search from '#lib/components/ui/Search.svelte';
 	import { fold, hasWords, MIN_QUERY, queryWords } from '#lib/search.ts';
 	import type { ArchiveEntry, NewsItem } from '#lib/types.ts';
-	import { urlState } from '#lib/urlstate.svelte.ts';
+	import { urlState, writeParams } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	// Lo buscado (?q=) y la sección (?s=, la que abre «Titulares › NEWS» de cada vista) van en la URL: se
 	// pueden compartir y sobreviven a recargar. «NEWS inflación» en la barra abre /news?q=inflación.
-	const q = urlState('q', '', () => true);
+	// El buscador es un $state local: copia la URL al abrir la vista o si cambia desde fuera (la barra), y la
+	// escribe con 300 ms de retraso, para no hacer una navegación por tecla ni perder letras o el foco.
+	let query = $state('');
+	let written = '';
+	$effect(() => {
+		const fromUrl = page.url.searchParams.get('q') ?? '';
+		if (fromUrl !== written) query = written = fromUrl;
+	});
+	$effect(() => {
+		const text = query;
+		if (text === written) return;
+		const t = setTimeout(() => {
+			written = text;
+			writeParams({ q: text || null });
+		}, 300);
+		return () => clearTimeout(t);
+	});
 	const sectionSel = urlState<string>('s', 'all', (v) => SECTIONS.some((x) => x.key === v));
-	const query = $derived(q.value);
 	const section = $derived(sectionSel.value);
 
 	const words = $derived(queryWords(query));
@@ -93,7 +109,7 @@
 <ViewHeader code="NEWS" title="Buscador de titulares" sub="{data.items.length} titulares de todas las secciones, los más recientes primero" />
 
 <div class="controls">
-	<Search label="Buscar en los titulares" placeholder="Buscar: Lagarde, aranceles, Menorca, Nvidia…" bind:value={() => q.value, (v) => (q.value = v ?? '')} />
+	<Search label="Buscar en los titulares" placeholder="Buscar: Lagarde, aranceles, Menorca, Nvidia…" bind:value={query} />
 	<Seg label="Sección" options={[{ value: 'all', label: 'Todas' }, ...SECTIONS.map((s) => ({ value: s.key, label: s.label }))]} bind:value={() => sectionSel.value, (v) => (sectionSel.value = v ?? 'all')} />
 </div>
 
