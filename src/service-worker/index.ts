@@ -96,6 +96,9 @@ self.addEventListener('fetch', (event) => {
 		return;
 	}
 
+	// El archivo de titulares (NEWS) va directo a la red: cada mes pesa ~2 MB y ocuparía la caché de páginas.
+	if (target.pathname.includes('/data/news-archive/')) return;
+
 	if (DATA.test(target.pathname)) {
 		event.respondWith(networkFirst(request));
 		return;
