@@ -389,3 +389,34 @@ export interface Release {
 	/** Página de la release en GitHub, con las notas. */
 	url: string;
 }
+
+// ---------- Barcos en los puertos (AIS, aisstream.io) ----------
+
+export interface Ship {
+	/** Identificador AIS del barco (MMSI). */
+	mmsi: number;
+	name: string;
+	/** Tipo en español («Pasaje», «Carga»…), si el barco ha enviado sus datos fijos. */
+	type: string;
+	/** Velocidad en nudos. */
+	speed: number | null;
+	/** «Amarrado», «Fondeado», «Navegando»… según el estado AIS y la velocidad. */
+	status: string;
+	destination: string;
+	lat: number;
+	lon: number;
+	/** Última posición recibida (ISO 8601). */
+	time: string;
+}
+
+export interface PortShips {
+	id: string;
+	name: string;
+	ships: Ship[];
+}
+
+export interface ShipsData {
+	ports: PortShips[];
+	/** Segundos que estuvo escuchando la última pasada. */
+	listened: number;
+}

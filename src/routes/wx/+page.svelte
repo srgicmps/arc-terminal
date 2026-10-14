@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Panel from '#lib/components/Panel.svelte';
+	import ShipTable from '#lib/components/ShipTable.svelte';
 	import SunArc from '#lib/components/SunArc.svelte';
 	import { clock } from '#lib/clock.svelte.ts';
 	import Updated from '#lib/components/Updated.svelte';
@@ -115,6 +116,15 @@
 				</div>
 			{/if}
 		</Panel>
+		{#if data.ships}
+			<Panel title="Barcos en puerto" meta="AIS en directo · {data.ships.data.listened} s de escucha">
+				<ShipTable ports={data.ships.data.ports} />
+				{#snippet note()}
+					Fuente: <a href="https://aisstream.io" target="_blank" rel="noopener">aisstream.io</a>, datos AIS tal cual, sin garantía. Solo salen los
+					barcos que emiten AIS · <Updated at={data.ships?.fetchedAt} source="ais" />
+				{/snippet}
+			</Panel>
+		{/if}
 		{#if mao?.sun}
 			{@const sun = mao.sun}
 			<Panel title="Sol y luna · Maó" meta={`${luna.name} · ${nf(luna.illumination * 100, 0)} %`}>

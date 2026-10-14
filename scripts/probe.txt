@@ -20,3 +20,6 @@ https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm ~ \d{4} FOMC Mee
 https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html ~ .{0,30}Monetary policy meeting.{0,40}
 # ECO: euríbor a 12 meses (media mensual) para la calculadora de hipoteca
 https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA?lastNObservations=14&format=csvdata&detail=dataonly
+# AIS: términos de uso de aisstream.io
+https://aisstream.io/ ~ .{0,160}(terms|licen|attribut|commercial|redistribut).{0,160}
+https://aisstream.io/documentation ~ .{0,160}(terms|licen|attribut|commercial|rate|limit).{0,160}
