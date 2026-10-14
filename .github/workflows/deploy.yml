@@ -96,6 +96,8 @@ jobs:
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           NOTIFY_CACHE: .notify-cache/notify-log.json
+          # Opcional: zona del diésel, «07» (provincia) o «menorca». Tampoco se registra ni se publica.
+          ALERT_FUEL_ZONE: ${{ secrets.ALERT_FUEL_ZONE }}
       - if: github.event_name != 'pull_request' && hashFiles('.notify-cache/notify-log.json') != ''
         uses: actions/cache/save@v4
         continue-on-error: true

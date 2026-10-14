@@ -23,11 +23,15 @@
 // SECRETO: NTFY_TOPIC es la única protección del canal (quien lo sepa puede leer y escribir). No se
 // escribe en ningún registro, ni la URL completa, ni la respuesta de ntfy (que lo incluye), ni en el JSON.
 //
+// ZONA DEL DIÉSEL: ALERT_FUEL_ZONE (opcional) es la provincia («07», «28») o «menorca». Tampoco se escribe
+// en ningún registro ni en el JSON: los ids y las claves del historial dicen «zona», nunca cuál.
+//
 // Uso: `NTFY_TOPIC=… [NOTIFY_CACHE=.notify-cache/notify-log.json] node scripts/notify.ts`. Sin NTFY_TOPIC,
 // sale sin hacer nada.
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findProvince, type FuelStation } from '../src/lib/fuel.ts';
 import { DAILY_TOTAL, KEEP_DAYS, NTFY_PRIORITY, QUOTAS, type Level } from './alerts/config.ts';
 import {
 	emptyLog,
@@ -36,6 +40,7 @@ import {
 	RULES,
 	SITE,
 	type Alert,
+	type FuelZone,
 	type Inputs,
 	type LogEntry,
 	type NotifyLog,
@@ -205,6 +210,25 @@ async function readData(dir: string, name: string): Promise<unknown> {
 	}
 }
 
+/**
+ * La zona del diésel a partir del secreto: «menorca» (fuel.json) o una provincia de fuel-es.json, por su
+ * número o su nombre. Las gasolineras salen de fuel.json o de fuel/<id>.json. null si no se reconoce.
+ */
+export async function loadZone(raw: string | undefined, d: Inputs, dir: string): Promise<FuelZone | null> {
+	const provinces = Array.isArray(d.fuelEs?.provinces) ? d.fuelEs.provinces : [];
+	const id = findProvince(raw ?? null, provinces);
+	if (!id) return null;
+	if (id === 'menorca') return { id, name: 'Menorca', stations: d.fuel?.stations };
+	let stations: FuelStation[] | undefined;
+	try {
+		const body: unknown = JSON.parse(await readFile(`${dir}/fuel/${id}.json`, 'utf8'));
+		if (Array.isArray(body)) stations = body as FuelStation[];
+	} catch {
+		// Sin el archivo de la provincia no hay «la más barata»; lo demás sigue.
+	}
+	return { id, name: provinces.find((p) => p.id === id)?.name ?? id, stations };
+}
+
 /** Aviso de prueba de la primera pasada (sin historial publicado). */
 const HELLO = (now: number): Alert => ({
 	id: 'hello',
@@ -255,11 +279,14 @@ export function newestLog(cached: NotifyLog | null, published: NotifyLog | null)
  */
 export async function runNotify({
 	topic,
+	zone,
 	dir = 'static/data',
 	cache,
 	now = Date.now()
 }: {
 	topic: string | undefined;
+	/** Zona del diésel (secreto ALERT_FUEL_ZONE). */
+	zone?: string;
 	dir?: string;
 	/** Archivo del historial en la caché de Actions (se lee y se reescribe). */
 	cache?: string;
@@ -280,6 +307,12 @@ export async function runNotify({
 		const inputs: Inputs = {};
 		for (const [key, file] of Object.entries(FILES)) {
 			(inputs as Record<string, unknown>)[key] = await readData(dir, file);
+		}
+		if (zone?.trim()) {
+			const found = await loadZone(zone.trim(), inputs, dir);
+			if (found) inputs.zone = found;
+			// Sin decir cuál: la zona no sale en el registro.
+			else say('ntfy: ALERT_FUEL_ZONE no corresponde a ninguna zona; el diésel se vigila solo en España');
 		}
 		const previous = newestLog(await cachedLog(cache), await publishedLog());
 		let log: NotifyLog;
@@ -323,4 +356,10 @@ export async function runNotify({
 }
 
 // Solo al ejecutarlo directamente (no al importarlo desde los tests).
-if (process.argv[1] === fileURLToPath(import.meta.url)) await runNotify({ topic: process.env.NTFY_TOPIC, cache: process.env.NOTIFY_CACHE || undefined });
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+	await runNotify({
+		topic: process.env.NTFY_TOPIC,
+		zone: process.env.ALERT_FUEL_ZONE,
+		cache: process.env.NOTIFY_CACHE || undefined
+	});
+}

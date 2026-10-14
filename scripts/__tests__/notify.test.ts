@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -304,5 +304,69 @@ describe('runNotify', () => {
 			true
 		]);
 		for (const text of [...logged, ...lines, json]) expect(text).not.toContain(TOPIC);
+	});
+
+	it('la zona del diésel y el tema no salen en ningún registro ni JSON (publicado o en caché)', async () => {
+		const prices = (diesel: number) => ({ g95: 1.6, diesel, g98: 1.75, glp: 0.9 });
+		const history = Array.from({ length: 14 }, (_, i) => {
+			const date = new Date(Date.UTC(2026, 9, 1 + i)).toISOString().slice(0, 10);
+			return { date, es: i < 7 ? 1.4 : 1.44, zone: i < 7 ? 1.5 : 1.6 };
+		});
+		const fuelEs = {
+			sourceDate: '14/10/2026 12:30:05',
+			avg: prices(1.44),
+			provinces: [{ id: '50', name: 'Zaragoza', count: 300, lat: 41.6, lon: -0.9, avg: prices(1.6), min: prices(1.5) }],
+			history: history.map((h) => ({ date: h.date, avg: prices(h.es), provinces: { '50': prices(h.zone) } }))
+		};
+		const fuel = {
+			sourceDate: '14/10/2026 12:30:05',
+			stations: [],
+			history: history.map((h) => ({ date: h.date, avg: prices(h.zone), min: prices(h.zone) }))
+		};
+		const station = {
+			id: '1',
+			name: 'Gasolinera',
+			address: '',
+			town: 'Pueblo',
+			schedule: '',
+			lat: 0,
+			lon: 0,
+			prices: prices(1.55)
+		};
+		await writeFile(join(dir, 'fuel-es.json'), JSON.stringify({ name: 'fuel-es', fetchedAt: '', data: fuelEs }));
+		await writeFile(join(dir, 'fuel.json'), JSON.stringify({ name: 'fuel', fetchedAt: '', data: fuel }));
+		await mkdir(join(dir, 'fuel'));
+		await writeFile(join(dir, 'fuel', '50.json'), JSON.stringify([station]));
+		for (const zone of ['50', 'Zaragoza', 'menorca']) {
+			const bodies: string[] = [];
+			mockFetch((url, init) => {
+				if (url.endsWith('/data/notify-log.json')) return published(emptyLog());
+				if (url.startsWith('https://ntfy.sh/')) {
+					bodies.push(String(init?.body));
+					return new Response('', { status: 200 });
+				}
+			});
+			logged = [];
+			const cache = join(dir, `cache-${zone}`, 'notify-log.json');
+			const lines = await runNotify({ topic: TOPIC, zone, dir, cache, now: NOW });
+			// Los avisos sí llegan (con la zona en el texto, que solo va al móvil).
+			expect(lines.filter((l) => l.includes('diesel:'))).toEqual([
+				'ntfy · P2 diesel:trend:es:2026-10-14: enviado (200)',
+				'ntfy · P2 diesel:trend:zona:2026-10-14: enviado (200)',
+				'ntfy · P2 diesel:gap:2026-10-14: enviado (200)'
+			]);
+			expect(bodies.some((b) => b.includes('España'))).toBe(true);
+			const json = await written();
+			const cached = await readFile(cache, 'utf8');
+			for (const text of [...logged, ...lines, json, cached]) {
+				expect(text).not.toContain(TOPIC);
+				expect(text).not.toMatch(/zaragoza|menorca|"50"|:50\b/i);
+			}
+		}
+		// Una zona que no existe se avisa sin decir cuál.
+		mockFetch((url) => (url.endsWith('/data/notify-log.json') ? published(emptyLog()) : new Response('')));
+		const lines = await runNotify({ topic: TOPIC, zone: 'Atlántida', dir, now: NOW });
+		expect(lines).toContain('ntfy: ALERT_FUEL_ZONE no corresponde a ninguna zona; el diésel se vigila solo en España');
+		expect(lines.join('\n')).not.toContain('Atlántida');
 	});
 });

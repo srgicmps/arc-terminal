@@ -6,6 +6,7 @@
 // un JSON nuevo, añadirlo a Inputs y a FILES. Si el JSON aún no existe, la regla no aplica (todo se lee
 // de forma tolerante: cualquier campo puede faltar).
 import type { SourceHistory, SourceStatus } from '../../src/lib/data.ts';
+import type { FuelData, FuelSpainData, FuelStation } from '../../src/lib/fuel.ts';
 import { BANKS, decisionTime, MEETINGS } from '../../src/lib/meetings.ts';
 import type {
 	Chokepoint,
@@ -25,6 +26,7 @@ import { decide, downSpan, madridTime } from '../issues.ts';
 import {
 	ASSETS,
 	CRISIS,
+	DIESEL,
 	DOWN,
 	EARNINGS_WATCH,
 	FEDREG,
@@ -59,6 +61,18 @@ export interface GieLike {
 	eu?: { days?: { date: string; full: number }[] };
 }
 
+/**
+ * La zona del diésel de Sergi (secreto ALERT_FUEL_ZONE), ya resuelta: un id de provincia («07») o
+ * «menorca». Va solo en el texto de los avisos (que llegan a su móvil): nunca en un id, en una clave del
+ * historial ni en el registro.
+ */
+export interface FuelZone {
+	id: string;
+	name: string;
+	/** Gasolineras de la zona (fuel/<id>.json o, en Menorca, fuel.json), para la más barata. */
+	stations?: FuelStation[];
+}
+
 /** Los datos de esta pasada (static/data/<archivo>.json); cualquiera puede faltar. */
 export interface Inputs {
 	imp?: ImpLike;
@@ -80,10 +94,14 @@ export interface Inputs {
 	predictions?: PredictionsData;
 	reliefweb?: (Disaster & { level?: string })[];
 	holidays?: HolidaysData;
+	fuelEs?: FuelSpainData;
+	fuel?: FuelData;
+	/** No es un archivo: la pone notify.ts a partir del secreto. */
+	zone?: FuelZone;
 }
 
 /** Archivo de static/data de cada entrada de Inputs. */
-export const FILES: Record<keyof Inputs, string> = {
+export const FILES: Record<Exclude<keyof Inputs, 'zone'>, string> = {
 	imp: 'imp',
 	ine: 'ine',
 	bls: 'bls',
@@ -102,7 +120,9 @@ export const FILES: Record<keyof Inputs, string> = {
 	gie: 'gie',
 	predictions: 'predictions',
 	reliefweb: 'reliefweb',
-	holidays: 'holidays'
+	holidays: 'holidays',
+	fuelEs: 'fuel-es',
+	fuel: 'fuel'
 };
 
 export interface LogEntry {
@@ -522,6 +542,191 @@ export function gasRule(d: Inputs, { now }: RuleContext): Draft[] {
 	];
 }
 
+// ---------- Diésel ----------
+
+/** Un día de precio medio del diésel (€/L). */
+export interface DayValue {
+	date: string;
+	v: number;
+}
+
+const okPrice = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0;
+
+/**
+ * Historial diario del diésel: «es» es la media de España (fuel-es.json); «zona», la de la zona de Sergi
+ * (su provincia en fuel-es.json o, si es Menorca, fuel.json). En orden de fecha.
+ */
+export function dieselSeries(d: Inputs, scope: 'es' | 'zona'): DayValue[] {
+	let points: { date: unknown; v: unknown }[] = [];
+	if (scope === 'es') {
+		points = list(d.fuelEs?.history).map((h) => ({ date: h?.date, v: h?.avg?.diesel }));
+	} else if (d.zone?.id === 'menorca') {
+		points = list(d.fuel?.history).map((h) => ({ date: h?.date, v: h?.avg?.diesel }));
+	} else if (d.zone) {
+		const id = d.zone.id;
+		points = list(d.fuelEs?.history).map((h) => ({ date: h?.date, v: h?.provinces?.[id]?.diesel }));
+	}
+	return points
+		.filter((p): p is DayValue => typeof p.date === 'string' && okPrice(p.v))
+		.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+const mean = (v: number[]) => v.reduce((a, b) => a + b, 0) / v.length;
+const between = <T extends { date: string }>(s: T[], from: string, to: string) =>
+	s.filter((p) => p.date >= from && p.date <= to);
+
+/** 1,412 €/L */
+export const euroL = (v: number) => `${num(v, 3)} €/L`;
+/** +3,4 cts (de una diferencia en €/L). */
+export const cts = (diffEuro: number) => `${signed(diffEuro * 100)} cts`;
+
+/** Medias de 7 días (la última semana con dato y la anterior), o null si alguna tiene pocos días. */
+export function weekMeans(s: DayValue[]): { now: number; before: number; date: string } | null {
+	const last = s.at(-1);
+	if (!last) return null;
+	const week = between(s, addDays(last.date, -6), last.date);
+	const prev = between(s, addDays(last.date, -13), addDays(last.date, -7));
+	if (week.length < DIESEL.minDays || prev.length < DIESEL.minDays) return null;
+	return { now: mean(week.map((p) => p.v)), before: mean(prev.map((p) => p.v)), date: last.date };
+}
+
+/** Diferencia con el dato de hace 7 días (o el más cercano de los 3 anteriores a ese), en €/L. */
+export function weekChange(s: DayValue[]): number | null {
+	const last = s.at(-1);
+	if (!last) return null;
+	const ref = between(s, addDays(last.date, -10), addDays(last.date, -7)).at(-1);
+	return ref ? last.v - ref.v : null;
+}
+
+/** Ya se avisó de esto (clave del historial) hace menos de DIESEL.everyDays días. */
+const recently = (log: NotifyLog, key: string, date: string) => {
+	const before = log.last[key];
+	return before !== undefined && date < addDays(before, DIESEL.everyDays);
+};
+
+/** España y, si la hay, la zona, cada una con su historial. */
+const scopes = (d: Inputs) =>
+	[
+		{ scope: 'es' as const, name: 'España' },
+		...(d.zone ? [{ scope: 'zona' as const, name: d.zone.name }] : [])
+	].map((x) => ({ ...x, s: dieselSeries(d, x.scope) }));
+
+const FUEL_SOURCE = 'Ministerio para la Transición Ecológica';
+
+/**
+ * a) Diésel: la media de 7 días cambia ±3 cts/L o más frente a la de los 7 días anteriores, en España y en
+ * la zona. Como mucho una vez por semana cada una. Id: diesel:trend:<es|zona>:<día>.
+ */
+export function dieselTrendRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+	return scopes(d).flatMap(({ scope, name, s }) => {
+		const w = weekMeans(s);
+		if (!w || Math.abs(w.now - w.before) * 100 < DIESEL.trendCts) return [];
+		const key = `diesel:trend:${scope}`;
+		if (recently(log, key, w.date)) return [];
+		return [
+			{
+				id: `${key}:${w.date}`,
+				title: `Diésel en ${name}: ${cts(w.now - w.before)} en una semana`,
+				body: `Media de 7 días: ${euroL(w.now)}, frente a ${euroL(w.before)} la semana anterior (${FUEL_SOURCE}).`,
+				tags: 'fuelpump',
+				click: `${SITE}/fuel`,
+				time: now,
+				commit: (l) => void (l.last[key] = w.date)
+			}
+		];
+	});
+}
+
+/** «julio» o, si es de otro año, «julio de 2025». */
+function monthOf(date: string, ref: string): string {
+	const name = MONTHS[Number(date.slice(5, 7)) - 1];
+	return date.slice(0, 4) === ref.slice(0, 4) ? name : `${name} de ${date.slice(0, 4)}`;
+}
+
+/**
+ * b) Diésel en su mínimo o máximo de 90 días (con al menos 90 días de historial), en España y en la zona.
+ * «Desde» es el mes de la última vez que estuvo así de bajo (o de alto). Como mucho una vez por semana cada
+ * uno. Id: diesel:<low|high>:<es|zona>:<día>.
+ */
+export function dieselExtremeRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+	return scopes(d).flatMap(({ scope, name, s }) => {
+		const cur = s.at(-1);
+		if (!cur) return [];
+		const from = addDays(cur.date, -(DIESEL.extremeDays - 1));
+		if (s[0].date > from) return [];
+		const window = s.filter((p) => p.date >= from && p.date < cur.date).map((p) => p.v);
+		if (!window.length) return [];
+		const kind = cur.v < Math.min(...window) ? 'low' : cur.v > Math.max(...window) ? 'high' : null;
+		if (!kind) return [];
+		const key = `diesel:${kind}:${scope}`;
+		if (recently(log, key, cur.date)) return [];
+		const low = kind === 'low';
+		const since = s.filter((p) => p.date < from && (low ? p.v <= cur.v : p.v >= cur.v)).at(-1);
+		const span = Math.round((Date.parse(cur.date) - Date.parse(s[0].date)) / DAY) + 1;
+		const when = since ? `desde ${monthOf(since.date, cur.date)}` : `de los últimos ${span} días`;
+		return [
+			{
+				id: `${key}:${cur.date}`,
+				title: `Diésel en ${name}, en su ${low ? 'mínimo' : 'máximo'} ${when}: ${euroL(cur.v)}`,
+				body: `Precio medio del ${Number(cur.date.slice(8, 10))} de ${MONTHS[Number(cur.date.slice(5, 7)) - 1]} (${FUEL_SOURCE}).`,
+				tags: 'fuelpump',
+				click: `${SITE}/fuel`,
+				time: now,
+				commit: (l) => void (l.last[key] = cur.date)
+			}
+		];
+	});
+}
+
+/**
+ * c) La zona se separa ±5 cts/L o más de la media de España (el último día que tienen las dos). Como mucho
+ * una vez por semana. Id: diesel:gap:<día>.
+ */
+export function dieselGapRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+	if (!d.zone) return [];
+	const es = new Map(dieselSeries(d, 'es').map((p) => [p.date, p.v]));
+	const cur = dieselSeries(d, 'zona')
+		.filter((p) => es.has(p.date))
+		.at(-1);
+	if (!cur) return [];
+	const spain = es.get(cur.date)!;
+	const gap = cur.v - spain;
+	if (Math.abs(gap) * 100 < DIESEL.gapCts) return [];
+	const key = 'diesel:gap';
+	if (recently(log, key, cur.date)) return [];
+	return [
+		{
+			id: `${key}:${cur.date}`,
+			title: `Diésel en ${d.zone.name}: ${cts(gap)} ${gap > 0 ? 'por encima' : 'por debajo'} de España`,
+			body: `${euroL(cur.v)} frente a ${euroL(spain)} de media en España (${FUEL_SOURCE}).`,
+			tags: 'fuelpump',
+			click: `${SITE}/fuel`,
+			time: now,
+			commit: (l) => void (l.last[key] = cur.date)
+		}
+	];
+}
+
+/** La gasolinera con el diésel más barato de la zona, si hay datos. */
+export function cheapestDiesel(zone: FuelZone | undefined): FuelStation | null {
+	const withPrice = list(zone?.stations).filter((st) => okPrice(st?.prices?.diesel));
+	return withPrice.sort((a, b) => a.prices.diesel! - b.prices.diesel!)[0] ?? null;
+}
+
+/** Líneas del diésel para los resúmenes: España, la zona (si la hay) y, si se pide, su gasolinera más barata. */
+export function dieselLines(d: Inputs, cheapest = true): string[] {
+	const lines = scopes(d).flatMap(({ scope, name, s }) => {
+		const cur = s.at(-1);
+		if (!cur) return [];
+		const change = weekChange(s);
+		const label = scope === 'es' ? 'Diésel' : `Diésel en ${name}`;
+		return [`${label}: ${euroL(cur.v)}${change === null ? '' : ` (${cts(change)} en 7 días)`}`];
+	});
+	const best = cheapest ? cheapestDiesel(d.zone) : null;
+	if (best) lines.push(`Más barato en ${d.zone!.name}: ${best.name} (${best.town}), ${euroL(best.prices.diesel!)}`);
+	return lines;
+}
+
 // ---------- P3 ----------
 
 /**
@@ -689,7 +894,11 @@ export function morningRule(d: Inputs, { now, today }: RuleContext): Draft[] {
 			'Hoy',
 			agenda(d, today).map((l) => `- ${l}`)
 		),
-		...section('Mercados', markets ? [markets] : [])
+		...section('Mercados', markets ? [markets] : []),
+		...section(
+			'Vida diaria',
+			dieselLines(d).map((l) => `- ${l}`)
+		)
 	];
 	return [
 		{
@@ -745,6 +954,9 @@ export const RULES: Rule[] = [
 	{ type: 'market', level: 2, run: marketRule },
 	{ type: 'fedreg', level: 2, run: fedregRule },
 	{ type: 'gas', level: 2, run: gasRule },
+	{ type: 'diesel-trend', level: 2, run: dieselTrendRule },
+	{ type: 'diesel-extreme', level: 2, run: dieselExtremeRule },
+	{ type: 'diesel-gap', level: 2, run: dieselGapRule },
 	{ type: 'poly', level: 3, run: polyRule },
 	{ type: 'earnings', level: 3, run: earningsRule },
 	{ type: 'crisis', level: 3, run: crisisRule },

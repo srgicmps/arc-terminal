@@ -124,6 +124,23 @@ export const FEDREG = /\b(tariffs?|duties|sanctions?|export controls?|embargo|re
 /** Gas de la UE (GIE): bajada diaria mínima del llenado, en puntos, y umbrales que se vigilan al cruzarlos. */
 export const GAS = { drop: 1, levels: [90, 80, 50] };
 
+/**
+ * Diésel (fuel-es.json para España y las provincias; fuel.json para Menorca). La zona de Sergi va en el
+ * secreto ALERT_FUEL_ZONE («07», «28»… o «menorca»); sin él, solo se vigila España.
+ */
+export const DIESEL = {
+	/** a) La media de 7 días cambia al menos tantos céntimos/L frente a la de los 7 días anteriores. */
+	trendCts: 3,
+	/** Días con dato que hacen falta en cada una de las dos semanas para comparar. */
+	minDays: 5,
+	/** b) Mínimo o máximo de tantos días (hace falta un historial al menos así de largo). */
+	extremeDays: 90,
+	/** c) La zona se separa de la media de España al menos tantos céntimos/L. */
+	gapCts: 5,
+	/** Cada aviso (tendencia, mínimo, máximo, separación) sale como mucho una vez cada tantos días. */
+	everyDays: 7
+};
+
 // ---------- P3 ----------
 
 /** Polymarket: volumen mínimo en 24 h ($) y cambio mínimo de probabilidad (0–1) en 24 h. */
