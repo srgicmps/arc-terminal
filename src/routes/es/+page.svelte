@@ -35,7 +35,7 @@
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Titulares" meta="{items.length} noticias">
+		<Panel title="Titulares" meta="{items.length} noticias" jump={{ code: 'NEWS', href: `${resolve('/news')}?s=es` }}>
 			<NewsList {items} summaries />
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-es" />{/snippet}
 		</Panel>
@@ -96,7 +96,7 @@
 				<ul class="mini">
 					{#each general.slice(0, 12) as item (item.id)}
 						<li>
-							<a class="l" href={item.html} target="_blank" rel="noopener">{item.title}</a>
+							<a class="l" href={item.html || item.pdf} target="_blank" rel="noopener">{item.title}</a>
 						</li>
 					{/each}
 				</ul>
