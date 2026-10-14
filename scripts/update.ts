@@ -59,6 +59,8 @@ async function run(source: Source): Promise<SourceStatus> {
 		const dataset = { name: source.name, fetchedAt: new Date().toISOString(), data };
 		await save(dataset);
 		console.log(`✓ ${source.name}: ${summary(data)} (${Date.now() - started} ms)`);
+		// En los PR, una muestra de los datos en el registro, para revisar su forma real.
+		if (process.env.SAMPLE) console.log(`  muestra: ${JSON.stringify(data).slice(0, 1500)}`);
 		return { ...base, state: 'ok', fetchedAt: dataset.fetchedAt };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);

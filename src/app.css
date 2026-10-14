@@ -211,3 +211,90 @@ select {
 		display: none;
 	}
 }
+
+kbd {
+	font-family: var(--mono);
+	font-size: var(--fs-xs);
+	color: var(--fg);
+	background: var(--raise);
+	border: 1px solid var(--line);
+	border-bottom-width: 2px;
+	padding: 0 5px;
+}
+
+/* Rejillas de varias columnas: en el móvil, todas en una. */
+.col {
+	background: var(--panel);
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+}
+.col > .panel + .panel {
+	border-top: 1px solid var(--line);
+}
+.grid-2 {
+	grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+}
+.grid-2e {
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.grid-3 {
+	grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.5fr) minmax(0, 1fr);
+}
+@media (max-width: 1100px) {
+	.grid-3 {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	}
+	.grid-3 > .col:nth-child(2) {
+		grid-column: 1 / -1;
+		order: -1;
+	}
+}
+@media (max-width: 860px) {
+	.grid-2,
+	.grid-2e,
+	.grid-3 {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+.grid + .grid {
+	margin-top: 12px;
+}
+
+/* Lista sencilla de enlaces con dato a la derecha (portada, mini paneles). */
+.mini {
+	list-style: none;
+	margin: 0;
+	padding: 4px 0;
+}
+.mini li {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 10px;
+	align-items: baseline;
+	padding: 6px 12px;
+}
+.mini li + li {
+	border-top: 1px solid var(--line);
+}
+.mini .l {
+	font-family: var(--sans);
+	font-size: var(--fs-m);
+	min-width: 0;
+}
+.mini .l small {
+	display: block;
+	color: var(--muted);
+	font-size: var(--fs-s);
+}
+.mini a {
+	color: inherit;
+	text-decoration: none;
+}
+.mini a:hover {
+	color: var(--amber);
+}
+.mini b {
+	font-weight: 500;
+	white-space: nowrap;
+}

@@ -13,6 +13,10 @@ export default defineConfig(({ command, isPreview }) => ({
 			},
 			// Genera HTML, CSS y JS estáticos en /build, sin servidor.
 			adapter: adapter({ fallback: '404.html' }),
+			prerender: {
+				// Los enlaces que vienen de fuentes externas no deben tumbar la publicación.
+				handleHttpError: 'warn'
+			},
 			paths: {
 				// GitHub Pages sirve la web en https://srgicmps.github.io/arc-terminal/,
 				// así que al construir todas las rutas empiezan por /arc-terminal.

@@ -45,6 +45,8 @@ jobs:
 
       # Descarga los datos en static/data/. Si una fuente falla, se reutiliza su última copia publicada.
       - run: pnpm data
+        env:
+          SAMPLE: ${{ github.event_name == 'pull_request' && '1' || '' }}
 
       - run: pnpm check
       - run: pnpm build

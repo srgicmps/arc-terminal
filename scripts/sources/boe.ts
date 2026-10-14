@@ -13,9 +13,11 @@ const CAP = 15;
 type Raw = Record<string, any>;
 
 function url(value: unknown): string {
-	if (typeof value === 'string') return value;
-	if (value && typeof value === 'object' && 'texto' in value) return String((value as Raw).texto);
-	return '';
+	let text = '';
+	if (typeof value === 'string') text = value;
+	else if (value && typeof value === 'object' && 'texto' in value) text = String((value as Raw).texto);
+	if (!text) return '';
+	return text.startsWith('http') ? text : new URL(text, 'https://www.boe.es/').href;
 }
 
 function toItem(raw: Raw, dept: string, epigraph: string): BoeItem {

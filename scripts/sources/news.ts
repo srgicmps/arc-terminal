@@ -13,7 +13,7 @@ const FEEDS: Record<string, Feed[]> = {
 	eco: [
 		{ name: 'El País', url: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/economia/portada' },
 		{ name: 'Expansión', url: 'https://e00-expansion.uecdn.es/rss/economia.xml' },
-		{ name: 'elEconomista', url: 'https://www.eleconomista.es/rss/rss-economia.php' },
+		{ name: 'El Confidencial', url: 'https://rss.elconfidencial.com/economia/' },
 		{ name: 'Financial Times', url: 'https://www.ft.com/global-economy?format=rss' },
 		{ name: 'BCE', url: 'https://www.ecb.europa.eu/rss/press.html' },
 		{ name: 'The Economist', url: 'https://www.economist.com/finance-and-economics/rss.xml' }
@@ -32,14 +32,14 @@ const FEEDS: Record<string, Feed[]> = {
 		{ name: 'elDiario.es', url: 'https://www.eldiario.es/rss/' },
 		{ name: 'El Mundo', url: 'https://e00-elmundo.uecdn.es/elmundo/rss/espana.xml' },
 		{ name: 'Europa Press', url: 'https://www.europapress.es/rss/rss.aspx' },
-		{ name: 'Menorca.info', url: 'https://www.menorca.info/rss.xml' }
+		{ name: 'IB3', url: 'https://ib3.org/feed' }
 	],
 	ws: [
 		{ name: 'CNBC', url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114' },
 		{ name: 'CNBC Markets', url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258' },
 		{ name: 'MarketWatch', url: 'https://feeds.content.dowjones.io/public/rss/mw_topstories' },
 		{ name: 'WSJ', url: 'https://feeds.content.dowjones.io/public/rss/RSSMarketsMain' },
-		{ name: 'Yahoo Finance', url: 'https://finance.yahoo.com/news/rssindex' }
+		{ name: 'Investing.com', url: 'https://www.investing.com/rss/news_25.rss' }
 	],
 	tech: [
 		{ name: 'TechCrunch', url: 'https://techcrunch.com/feed/' },
