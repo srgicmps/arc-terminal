@@ -28,6 +28,8 @@ const WANTED: Wanted[] = [
 	{ key: 'IRS.M.DE.L.L40.CI.0000.EUR.N.Z', id: 'bond10-de', label: 'Bono a 10 años', unit: '%', geo: 'DE', last: 36 },
 	{ key: 'IRS.M.IT.L.L40.CI.0000.EUR.N.Z', id: 'bond10-it', label: 'Bono a 10 años', unit: '%', geo: 'IT', last: 36 },
 	{ key: 'IRS.M.FR.L.L40.CI.0000.EUR.N.Z', id: 'bond10-fr', label: 'Bono a 10 años', unit: '%', geo: 'FR', last: 36 },
+	// Balance del Eurosistema: total del activo, semanal, en millones de euros (estado financiero de cada martes).
+	{ key: 'ILM.W.U2.C.T000000.Z5.Z01', id: 'ecb-balance', label: 'Balance del Eurosistema', unit: 'M€', geo: 'EA', last: 160 },
 	{ key: 'EXR.D.USD.EUR.SP00.A', id: 'eurusd', label: 'EUR/USD', unit: '$', last: 260 },
 	{ key: 'EXR.D.GBP.EUR.SP00.A', id: 'eurgbp', label: 'EUR/GBP', unit: '£', last: 260 },
 	{ key: 'EXR.D.JPY.EUR.SP00.A', id: 'eurjpy', label: 'EUR/JPY', unit: '¥', last: 260 },

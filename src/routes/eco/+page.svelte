@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import BalanceSheets from '#lib/components/BalanceSheets.svelte';
 	import ImfTable from '#lib/components/ImfTable.svelte';
 	import MortgageCalc from '#lib/components/MortgageCalc.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
@@ -89,6 +90,18 @@
 				rows={(data.bis?.data.series ?? []).map((series) => ({ series, name: series.label, decimals: 2 }))}
 			/>
 			{#snippet note()}Fuente: BIS, tipos oficiales de los bancos centrales · <Updated at={data.bis?.fetchedAt} />{/snippet}
+		</Panel>
+		<Panel title="Balances de los bancos centrales" meta="Total del activo · semanal">
+			<BalanceSheets
+				rows={[
+					{ name: 'BCE (Eurosistema)', series: get('ecb-balance'), currency: '€' },
+					{ name: 'Reserva Federal', series: get('fed-balance'), currency: '$' }
+				]}
+			/>
+			{#snippet note()}
+				Sube cuando el banco central compra deuda (QE, expansión cuantitativa) y baja cuando la deja vencer o la vende (QT).
+				Fuentes: BCE · <Updated at={data.ecb?.fetchedAt} source="ecb" /> y FRED · <Updated at={data.fred?.fetchedAt} source="fred" />
+			{/snippet}
 		</Panel>
 		<Panel title="Bonos a 10 años" meta="Rentabilidad media mensual">
 			<SeriesTable
