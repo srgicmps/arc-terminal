@@ -6,6 +6,7 @@
 	import { findEntity } from '#lib/entities.ts';
 	import { newsPrefs, setMuted, setOrigin, type NewsOrigin } from '#lib/newsprefs.svelte.ts';
 	import Panel from '#lib/components/Panel.svelte';
+	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { NEWS_SECTIONS as SECTIONS } from '#lib/news.ts';
 	import Seg from '#lib/components/ui/Seg.svelte';
@@ -118,6 +119,7 @@
 		{#if entity}<EntityCard {entity} />{/if}
 		<Panel title="Resultados" meta={words.length ? `${filtered.length} de ${inSection.length}` : `${filtered.length} titulares`}>
 			<NewsList items={filtered.slice(0, 150)} summaries tag={(i) => label[sectionOf.get(i.url) ?? '']} />
+			{#snippet note()}{#if data.updated}<Updated at={data.updated.at} source={data.updated.source} />{/if}{/snippet}
 		</Panel>
 		{#if searching && data.months.length}
 			<Panel

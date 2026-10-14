@@ -110,6 +110,13 @@ const FEEDS: Record<string, Feed[]> = {
 		{ name: 'Nikkei Asia', url: 'https://asia.nikkei.com/rss/feed/nar', max: 4 },
 		{ name: 'Africanews', url: 'https://www.africanews.com/feed/rss', max: 4 },
 		{ name: 'AllAfrica', url: 'https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf', max: 4 }
+	],
+	// Regulación tecnológica (M39, comprobados con probe el 14-10-2026): ley de IA y mercado digital de la UE, y
+	// multas de protección de datos (EDPB). Descartados: FTC (403 desde Actions), Departamento de Justicia (su RSS
+	// no filtra por antimonopolio) y competencia de la Comisión (400).
+	reg: [
+		{ name: 'Comisión Europea (digital)', url: 'https://digital-strategy.ec.europa.eu/en/rss.xml' },
+		{ name: 'EDPB', url: 'https://www.edpb.europa.eu/feed/news_en' }
 	]
 };
 
@@ -152,6 +159,8 @@ export const ENGLISH = new Set([
 	'Nikkei Asia',
 	'Africanews',
 	'AllAfrica',
+	'Comisión Europea (digital)',
+	'EDPB',
 	...DIPLOMACY_FEEDS
 ]);
 
@@ -305,7 +314,8 @@ const LABELS: Record<string, string> = {
 	gov: 'Gobiernos e instituciones',
 	intl: 'Organismos internacionales',
 	analysis: 'Análisis de conflictos',
-	world: 'Ucrania, China, Japón y África'
+	world: 'Ucrania, China, Japón y África',
+	reg: 'Regulación tecnológica'
 };
 
 export const newsSources: Source<NewsData>[] = Object.entries(FEEDS).map(([key, feeds]) => ({
