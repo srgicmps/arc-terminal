@@ -30,11 +30,13 @@ export const QUERIES: Query[] = [
 ];
 
 /** Normas de la BIS sobre chips y computación avanzada: llevan el tema «Chips» en vez de «Exportaciones». */
-export const CHIPS = /semiconductor|integrated circuit|advanced computing|supercomput|\bchips?\b|\bAI\b|artificial intelligence/i;
+export const CHIPS = /semiconductor|integrated circuit|advanced computing|supercomput|\bchips?\b|artificial intelligence/i;
+/** «AI» aparte y en mayúsculas: con /i encajaría «ai» suelto en cualquier texto. */
+const AI = /\bAI\b/;
 
 /** El tema de un documento: el de su consulta, salvo los de la BIS que hablan de chips. */
 export const topicOf = (q: Query, d: { title: string; abstract: string }) =>
-	q.agency === 'BIS' && (CHIPS.test(d.title) || CHIPS.test(d.abstract)) ? 'Chips' : q.topic;
+	q.agency === 'BIS' && [d.title, d.abstract].some((t) => CHIPS.test(t) || AI.test(t)) ? 'Chips' : q.topic;
 
 /** Junta las consultas sin repetir documentos y deja primero los más recientes. */
 export function merge(lists: TradeDoc[][], max = 40): TradeDoc[] {

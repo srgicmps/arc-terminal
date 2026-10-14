@@ -19,6 +19,9 @@
 	// «NEWS inflación» en la barra abre /news?q=inflación y rellena el buscador (solo en el navegador).
 	$effect(() => {
 		query = page.url.searchParams.get('q') ?? '';
+		// «Titulares › NEWS» de cada vista abre /news?s=eco con esa sección elegida.
+		const s = page.url.searchParams.get('s');
+		section = SECTIONS.some((x) => x.key === s) ? s! : 'all';
 	});
 
 	const words = $derived(queryWords(query));
