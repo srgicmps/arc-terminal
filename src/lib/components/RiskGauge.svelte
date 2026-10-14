@@ -9,7 +9,8 @@
 	import Table from './ui/Table.svelte';
 	import { riskLabel, type Risk } from '#lib/risk.ts';
 
-	let { risk }: { risk: Risk } = $props();
+	/** `id`: el del panel en la vista modular (TOP). */
+	let { risk, id }: { risk: Risk; id?: string } = $props();
 
 	let expanded = $state(false);
 
@@ -19,7 +20,7 @@
 	const half = (v: number) => (Math.min(3, Math.abs(v)) / 3) * 50;
 </script>
 
-<Panel title="Termómetro de riesgo" meta={risk.parts.length ? `${risk.parts.length} indicadores` : undefined}>
+<Panel {id} title="Termómetro de riesgo" meta={risk.parts.length ? `${risk.parts.length} indicadores` : undefined}>
 	{#if risk.parts.length}
 		<button type="button" class="gauge" aria-expanded={expanded} onclick={() => (expanded = !expanded)}>
 			<span class="head">

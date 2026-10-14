@@ -388,7 +388,8 @@
 		background: none;
 		border: var(--hair) solid var(--amber-edge);
 		color: var(--amber);
-		padding: var(--sp-4) var(--sp-10);
+		min-height: var(--control-h);
+		padding: 0 var(--sp-10);
 		font-size: var(--fs-s);
 		cursor: pointer;
 	}

@@ -1,6 +1,7 @@
 # Ideas pendientes de Arc Terminal
 
-Estado a 14/10/2026, 17:00 hora de Madrid. Lo prepara la sesión «Ideas» para retomarlo en la próxima sesión.
+Estado a 14/10/2026, 17:00 hora de Madrid; lotes 19–22 y Mejora continua añadidos a las 22:30. Lo prepara la sesión
+«Ideas» (ahora «Ideas 2») para retomarlo en la próxima sesión.
 Regla: lo aprobado no se reparte hasta que Sergi descongele el trabajo nuevo (se congeló hasta fusionar todos
 los PR abiertos). Antes de programar cualquier cosa, mirar si ya hay rama o PR (`claude/*`).
 
@@ -83,6 +84,94 @@ Todo pequeño y sin fuentes nuevas (commands.ts, cmdline.ts, CommandBar y tests)
 - **C12** Fechas en los argumentos: «LUZ mañana», «CAL viernes», «WX sábado» (en hora de Madrid). «BOE ayer»,
   cuando esté M17 (BOE de la semana).
 
+## 2c. Lotes 19 y 20: PREAPROBADOS por Sergi (14/10, 22:03 hora de Madrid), ya en Coordinación
+
+Solo usan claves que ya están en Secrets (FINNHUB_API_KEY y FRED_API_KEY). Fuentes nuevas sin comprobar en vivo:
+confirmarlas con probe o con Run workflow «fuentes». Orden sugerido: 20.5 → 19.3 → 19.4 → 19.5 → 20.1 → 19.2 →
+20.4 → 20.2 → 20.3 → 19.1 → 20.6.
+
+**Lote 19 · Mercados y macro**
+- **19.1 Ficha de valor ampliada** (Finnhub, en /s): recomendaciones de analistas por mes, sorpresas de resultados de
+  4 trimestres, compras y ventas de directivos (90 días) y precio objetivo si el plan gratis lo da. Caché de 24 h,
+  solo TICKERS y MIS de EE. UU., repartiendo llamadas entre pasadas (límite 60/min).
+- **19.2 CAL: salidas a bolsa** de los próximos 30 días (Finnhub /calendar/ipo).
+- **19.3 ECO: inflación esperada y tipos reales de EE. UU.** (FRED: T5YIE, T10YIE, DFII10, T5YIFR).
+- **19.4 WS: diferenciales de crédito** (FRED: BAMLH0A0HYM2, BAMLC0A0CM y BAMLHE00EHYIOAS si está). ICE limita el
+  histórico en FRED.
+- **19.5 ECO: liquidez neta de la Fed** (WALCL − WTREGEN − RRPONTSYD, semanal). Se junta con el balance de los bancos
+  centrales del lote 15.
+- **19.6 Avisos** (opcional, Prog 2): liquidez neta −100.000 M$ en 4 semanas, o HY +50 pb en una semana → P2.
+
+**Lote 20 · Mundo, tecnología y uso**
+- **20.1 TECH: estado de internet** (Cloudflare, AWS, Google Cloud, Microsoft 365, GitHub, OpenAI, Anthropic) con las
+  páginas de estado que ya usa la fuente de avisos.
+- **20.2 «Leer luego»**: ☆ en cada titular, comando `LEER`; entra en prefs.ts.
+- **20.3 MIS: notas por valor**, en el navegador y exportables con los ajustes.
+- **20.4 Gráficos: periodos comunes** 1M/6M/1A/5A/Máx en LineChart, recordando el último (para Diseño).
+- **20.5 WS: mapa de calor de divisas** (widget forex-heat-map de TradingView).
+- **20.6 PAIS y GEO: gasto militar** (SIPRI, Excel anual sin clave, leído con exceljs; hay que citar al SIPRI).
+
+## 2d. Lotes 21 y 22: PREAPROBADOS por Sergi, salvo la EIA (D30, ya aprobada: Sergi está creando EIA_API_KEY)
+
+Ninguna fuente está comprobada en vivo: confirmarlas con probe. Ninguna limita por IP que se sepa.
+
+**Lote 21 · Mercados y macro, al estilo Bloomberg**
+1. **ECST**: tabla del G20 (PIB, IPC, paro, tipos, bono a 10 años, deuda y déficit), ordenable, sin fuentes nuevas.
+2. **VIX y su curva**: VIX9D, VIX, VIX3M, VIX6M, VVIX y SKEW (CSV de cdn.cboe.com), con aviso de «curva invertida».
+3. **COT de la CFTC** (Socrata, publicreporting.cftc.gov): oro, petróleo, euro, yen, bonos, S&P 500 y bitcoin.
+4. **GDPNow** (FRED GDPNOW).
+5. **SPF del BCE**: inflación esperada por los expertos (en ecb.ts).
+6. **Monitor del mercado monetario**: €STR, euríbor, SOFR, EFFR, IORB y DTB3.
+7. **Compras y ventas de directivos** (Finnhub insider-transactions), solo si no va ya en la ficha ampliada (19.1);
+   si va, que lo haga la misma sesión.
+8. **Inventarios semanales de crudo y gasolina de la EIA** (API v2, Secret EIA_API_KEY): D30 aprobada; empezar
+   cuando el Secret exista.
+
+**Lote 22 · Mundo y uso**
+1. **ACNUR** (api.unhcr.org/population/v1/, sin clave, dato anual): panel en GEO y fila en PAIS.
+2. **Teclado de terminal**: j/k o flechas, Enter abre, «o» abre la fuente; en shortcuts.ts, Table y NewsList.
+3. **Informe imprimible** con @media print para TOP e IMP (tema claro, sin barra ni TradingView, URL de la fuente).
+4. **Deslizar entre vistas** en el móvil sobre la cabecera, respetando prefers-reduced-motion.
+5. **axe-core en la prueba de humo** (contraste y etiquetas).
+6. **Presupuesto de peso por vista** en el job `checks`.
+
+## 2e. Mejora continua 1–5, consolidado: 18 ideas PREAPROBADAS, sin clave (por prioridad)
+
+**Datos que ya se descargan y no se ven**
+1. GEO, «Señales de riesgo»: advisories, gdacs, ioda y who-don.
+2. PAIS, fila «Riesgo».
+3. LUZ Europa con energycharts (adaptándose a la rama `luz-europa-holgura`).
+4. LUZ, demanda real frente a prevista (ree-demand).
+
+**Personalización** (prefs.ts)
+5. Elegir la barra inferior.
+6. `persisted()` en los Seg, junto con los filtros de NEWS en la URL.
+7. Cinta con mis valores.
+8. Varias listas en MIS.
+9. Países favoritos.
+10. Vista de inicio.
+11. CAL: filtrar por países e importancia.
+
+**Comandos**
+12. Países en la barra (search.ts).
+13. Fila «Ir a» en PAIS.
+
+**Otros**
+14. AI: cesta de la cadena de la IA.
+15. «Próximo dato» más completo (BEA, paro semanal, H.4.1, avance del INE): misma sesión que M10 y el lote 18.
+16. WX: avisos por provincia y país (adaptándose a la rama `wx-aire-avisos`).
+
+**Lote 5 de Mejora continua** (preaprobado)
+17. TOP: el tiempo y la gasolina con «Tu sitio» en vez de Maó fijo. El tiempo, con Open-Meteo desde el navegador,
+    como WX; la gasolina, con la media provincial de fuel-es y las 3 más baratas. Archivos: src/routes/+page.svelte,
+    +page.server.ts y src/lib/place.svelte.ts.
+18. «Mi mañana»: los datos macro de hoy (dataset releases) en hora de Madrid. Archivos: Morning.svelte y
+    +page.server.ts.
+
+Fusionadas o quitadas: hicp-ea (ya en #165); alias de LIDER (Prog 5, F1); HELP generada (va con MANUAL);
+statuspage (dentro del #175); diplomacia (entra en FEEDS.intl en lugar de la tarea 5 de la lista 1); orden de ECO y
+vista modular (misma sesión). El fallo del ejemplo de WX en HELP ya lo tiene QA.
+
 ## 3. Decisiones de Sergi que hay que respetar
 
 - Arc Terminal es **mundial**: nada nuevo centrado en Menorca, salvo los puertos AIS de Maó y Ciutadella.
@@ -91,11 +180,13 @@ Todo pequeño y sin fuentes nuevas (commands.ts, cmdline.ts, CommandBar y tests)
 - **Traducción de titulares**: MyMemory (email de contacto en el Secret `MYMEMORY_EMAIL`) + traductor integrado de
   Chrome en el ordenador. DeepL no.
 - **Tu sitio**: Madrid por defecto, localStorage + `?lugar=`, 1 principal y 5 favoritos.
-- Claves ya en Secrets: FRED_API_KEY, FINNHUB_API_KEY, SEC_USER_AGENT (y HF_TOKEN opcional).
+- Claves ya en Secrets: FRED_API_KEY, FINNHUB_API_KEY, SEC_USER_AGENT (y HF_TOKEN opcional). EIA_API_KEY, en camino (D30).
+- NTFY_TOPIC y la zona de las alertas, solo en Secrets.
 - Descartadas: GDELT, el RSS de la CNMV, el RSS del Parlamento Europeo, el RSS de OFAC (retirado en 2025) y la
-  agenda de la Comisión. ReliefWeb, aparcado (falta el appname).
+  agenda de la Comisión y Xinhua. ReliefWeb, aparcado (falta el appname).
 
 ## 4. Cómo se trabaja
 
-Ideas propone → Decisiones se lo enseña a Sergi → lo aprobado va **solo a Coordinación**, que lo reparte. Las
+Cada idea dice si se ha comprobado en vivo y si limita por IP; lo que necesite clave, registro, dinero o datos
+personales va aparte, como decisión. Ideas propone → Decisiones (ahora «Arc · Decisiones 2») se lo enseña a Sergi → lo aprobado va **solo a Coordinación**, que lo reparte. Las
 sesiones de Mejora continua 1–4 mandan sus lotes a Ideas, que quita lo repetido y los pasa a Decisiones.

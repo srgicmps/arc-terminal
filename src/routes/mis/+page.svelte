@@ -3,10 +3,11 @@
 	import { resolve } from '$app/paths';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import ChipInput from '#lib/components/ui/ChipInput.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { TICKERS, tvSymbol } from '#lib/tickers.ts';
+	import { quotesHeight, TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import { madridDate } from '#lib/meetings.ts';
 	import { earningsLine, myEarnings } from '#lib/myearnings.ts';
@@ -19,8 +20,6 @@
 	// Resultados de los próximos 14 días de los valores de tu lista (fecha de hoy en Madrid).
 	const today = $derived(madridDate(clock.now || Date.now()));
 	const upcoming = $derived(myEarnings(data.finnhub?.data.earnings ?? [], watchlist.codes, today));
-
-	let adding = $state('');
 
 	const nameOf = (code: string) => TICKERS.find((t) => t.code === code)?.name ?? code;
 	const quotes = $derived({
@@ -53,10 +52,8 @@
 			.slice(0, 20)
 	);
 
-	function add(e: SubmitEvent) {
-		e.preventDefault();
-		if (adding.trim() && !watchlist.codes.includes(adding.trim().toUpperCase())) toggleWatch(adding);
-		adding = '';
+	function add(code: string) {
+		if (!watchlist.codes.includes(code)) toggleWatch(code);
 	}
 </script>
 
@@ -67,7 +64,7 @@
 		<Panel title="Cotizaciones" meta="{watchlist.codes.length} valores">
 			{#if watchlist.ready && watchlist.codes.length}
 				{#key watchlist.codes.join(',')}
-					<TvWidget widget="market-quotes" config={quotes} height={Math.max(220, 90 + watchlist.codes.length * 46)} />
+					<TvWidget widget="market-quotes" config={quotes} height={quotesHeight(watchlist.codes.length, 220)} />
 				{/key}
 			{:else if watchlist.ready}
 				<p class="empty">
@@ -102,10 +99,7 @@
 			</Panel>
 		{/if}
 		<Panel title="Editar la lista">
-			<form class="add" onsubmit={add}>
-				<input bind:value={adding} placeholder="Código: NVDA, SAN, BME:REP…" aria-label="Código del valor" autocapitalize="characters" spellcheck="false" />
-				<button type="submit">Añadir</button>
-			</form>
+			<ChipInput label="Código del valor" placeholder="Código: NVDA, SAN, BME:REP…" upper onadd={add} />
 			{#if watchlist.codes.length}
 				<ul class="mini">
 					{#each watchlist.codes as code, i (code)}
@@ -132,36 +126,6 @@
 </div>
 
 <style>
-	.add {
-		display: flex;
-		gap: var(--sp-8);
-		padding: var(--sp-10) var(--pad-x);
-		border-bottom: var(--border);
-	}
-
-	.add input {
-		flex: 1;
-		min-width: 0;
-		height: var(--control-h);
-		padding: 0 var(--sp-10);
-		background: var(--raise);
-		border: var(--border);
-		text-transform: uppercase;
-	}
-
-	.add input:focus {
-		outline: none;
-		border-color: var(--amber);
-	}
-
-	.add button {
-		background: none;
-		border: var(--hair) solid var(--amber-edge);
-		color: var(--amber);
-		padding: 0 var(--pad-x);
-		font-size: var(--fs-s);
-		cursor: pointer;
-	}
 
 	.c {
 		color: var(--amber);
@@ -205,7 +169,8 @@
 		background: none;
 		border: var(--border);
 		color: var(--muted);
-		padding: var(--sp-5) var(--sp-9);
+		min-height: var(--control-h);
+		padding: 0 var(--sp-9);
 		font-size: var(--fs-s);
 		cursor: pointer;
 	}

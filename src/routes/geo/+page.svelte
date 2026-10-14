@@ -1,16 +1,19 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import AdvisoryList from '#lib/components/AdvisoryList.svelte';
 	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
 	import ClimatePanel from '#lib/components/ClimatePanel.svelte';
 	import ChokepointTable from '#lib/components/ChokepointTable.svelte';
 	import DisasterList from '#lib/components/DisasterList.svelte';
 	import ElectionTable from '#lib/components/ElectionTable.svelte';
 	import HazardList from '#lib/components/HazardList.svelte';
+	import MilexTable from '#lib/components/MilexTable.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import TradeList from '#lib/components/TradeList.svelte';
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
+	import RiskSignals from '#lib/components/RiskSignals.svelte';
 	import StormNotice from '#lib/components/StormNotice.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -56,8 +59,30 @@
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-geo" />{/snippet}
 		</Panel>
 		<ClimatePanel climate={data.climate} />
+		{#if data.sipri?.data.rows.length}
+			{@const sipri = data.sipri}
+			<Panel title="Gasto militar" meta="Los 15 que más gastan · {sipri.data.year}">
+				<MilexTable rows={sipri.data.rows} />
+				{#snippet note()}
+					Fuente: <a href="https://www.sipri.org/databases/milex" target="_blank" rel="noopener">SIPRI Military Expenditure Database</a>.
+					Dólares corrientes; la variación real, en dólares constantes · <Updated at={sipri.fetchedAt} source="sipri" />
+				{/snippet}
+			</Panel>
+		{/if}
 	</div>
 	<div class="col">
+		{#if data.signals}
+			{@const at = data.signals.fetchedAt}
+			<Panel title="Señales de riesgo" meta="Catástrofes, internet, brotes y avisos de viaje">
+				<RiskSignals signals={data.signals} />
+				{#snippet note()}
+					Fuentes: GDACS (ONU y Comisión Europea), alertas naranjas y rojas{#if at.gdacs}&nbsp;· <Updated at={at.gdacs} source="gdacs" />{/if};
+					IODA (Georgia Tech), caídas de internet de las últimas 12 h{#if at.ioda}&nbsp;· <Updated at={at.ioda} source="ioda" />{/if};
+					OMS, Disease Outbreak News{#if at.who}&nbsp;· <Updated at={at.who} source="who-don" />{/if}; y avisos de viaje del
+					Departamento de Estado de EE. UU.
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Mercados de predicción" meta="Probabilidad que da el mercado">
 			<PredictionList items={data.predictions?.data.geopolitics.slice(0, 8) ?? []} />
 			{#snippet note()}
@@ -96,6 +121,16 @@
 			<TradeList items={data.sanctions?.data.slice(0, 8) ?? []} />
 			{#snippet note()}Fuente: Federal Register · <Updated at={data.sanctions?.fetchedAt} source="sanctions" />{/snippet}
 		</Panel>
+		{#if data.advisories}
+			<Panel title="Avisos de viaje de EE. UU." meta="Departamento de Estado · nivel 1 a 4">
+				<AdvisoryList counts={data.advisories.counts} rows={data.advisories.rows} />
+				{#snippet note()}
+					Fuente: <a href="https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html" target="_blank" rel="noopener"
+						>Departamento de Estado de EE. UU.</a
+					>, para viajeros estadounidenses · <Updated at={data.advisories?.fetchedAt} source="advisories" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">
 			<NewsList items={data.intl?.data.items.slice(0, 15) ?? []} />
 			{#snippet note()}<Updated at={data.intl?.fetchedAt} source="news-intl" />{/snippet}

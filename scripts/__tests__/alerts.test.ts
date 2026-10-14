@@ -103,6 +103,8 @@ describe('RULES', () => {
 			'2:election',
 			'2:ai',
 			'2:stock',
+			'2:hy',
+			'2:liquidity',
 			'3:poly',
 			'3:earnings',
 			'3:crisis',

@@ -81,9 +81,16 @@
 	}
 
 	input,
+	select,
+	button {
+		min-height: var(--control-h);
+	}
+
+	input,
 	select {
 		background: var(--raise);
 		border: var(--border);
+		padding: 0 var(--sp-8);
 	}
 
 	input {
@@ -97,6 +104,7 @@
 	}
 
 	button {
+		min-width: var(--control-h);
 		background: none;
 		border: var(--border);
 		color: var(--muted);

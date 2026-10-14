@@ -33,11 +33,14 @@ export const WORLD = {
 	/** GDACS: niveles que avisan. */
 	gdacs: { levels: ['red'] as string[] },
 	/**
-	 * Apagón: la demanda real va al menos `gap` % por debajo de la prevista y ha caído al menos `drop` (en
-	 * tanto por uno) en `minutes` minutos o menos. Un dato de más de `maxAgeMinutes` no cuenta (copia
-	 * vieja). Tras un aviso, `waitHours` sin otro.
+	 * Apagón: la demanda real ha caído al menos `drop` (en tanto por uno) en `minutes` minutos o menos y,
+	 * además, va al menos `gap` % por debajo de la prevista. Con una caída de `hardDrop` o más basta con
+	 * eso: el 28/04/2025 la real pasó de 26.968 a 1.785 MW en 5 min (−93 %), y REE rehízo luego la prevista
+	 * para que coincidiera con la real, así que no conviene depender solo de ella. En un día normal la real
+	 * no baja más de un 3 % en 30 min. Un dato de más de `maxAgeMinutes` no cuenta (copia vieja). Tras un
+	 * aviso, `waitHours` sin otro.
 	 */
-	blackout: { gap: 20, drop: 0.15, minutes: 30, maxAgeMinutes: 60, waitHours: 6 },
+	blackout: { gap: 20, drop: 0.15, hardDrop: 0.3, minutes: 30, maxAgeMinutes: 60, waitHours: 6 },
 	/** IODA: países grandes con nivel crítico; el de casa, también con aviso. */
 	ioda: { countries: BIG, home: 'ES' },
 	/** Páginas de estado: indicadores que avisan. */
@@ -145,17 +148,17 @@ export function steepestDrop(points: DemandData['recent'], minutes: number): num
 }
 
 /**
- * Posible apagón en España: demanda real muy por debajo de la prevista tras una caída brusca. Espera de 6 h
- * entre avisos. Id: blackout:<día>:<hora> (de Madrid).
+ * Posible apagón en España: caída brusca de la demanda real (y muy por debajo de la prevista, salvo que la
+ * caída sea enorme). Espera de 6 h entre avisos. Id: blackout:<día>:<hora> (de Madrid).
  */
 export function blackoutRule(d: WorldInputs, { now, log }: RuleContext): Draft[] {
 	const r = d.reeDemand;
 	const t = Date.parse(r?.time ?? '');
 	const w = WORLD.blackout;
 	if (!r || !Number.isFinite(t) || now - t > w.maxAgeMinutes * MIN) return [];
-	if (typeof r.gap !== 'number' || r.gap < w.gap) return [];
 	const drop = steepestDrop(r.recent, w.minutes);
-	if (drop < w.drop) return [];
+	const gap = typeof r.gap === 'number' ? r.gap : null;
+	if (drop < w.drop || (drop < w.hardDrop && (gap === null || gap < w.gap))) return [];
 	const last = Date.parse(log.last['blackout'] ?? '');
 	if (Number.isFinite(last) && t - last < w.waitHours * HOUR) return [];
 	const { date, hm } = madrid(t);
@@ -164,8 +167,10 @@ export function blackoutRule(d: WorldInputs, { now, log }: RuleContext): Draft[]
 			id: `blackout:${date}:${hm.slice(0, 2)}`,
 			title: '⚡ Posible apagón en España',
 			body:
-				`Demanda eléctrica ${pct(r.gap)} por debajo de la prevista (${Math.round(r.real).toLocaleString('es-ES')} MW frente a ` +
-				`${Math.round(r.forecast ?? 0).toLocaleString('es-ES')} MW) a las ${hm}, tras caer un ${pct(drop * 100)} en ${w.minutes} min (REE).`,
+				`La demanda eléctrica ha caído un ${pct(drop * 100)} en ${w.minutes} min o menos: ` +
+				`${Math.round(r.real).toLocaleString('es-ES')} MW a las ${hm}` +
+				(gap !== null && r.forecast ? `, ${pct(gap)} por debajo de la prevista (${Math.round(r.forecast).toLocaleString('es-ES')} MW)` : '') +
+				' (REE).',
 			tags: 'zap',
 			click: `${SITE}/luz`,
 			time: t,

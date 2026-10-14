@@ -1,12 +1,29 @@
 import { dataset } from '#lib/data.ts';
 import { crisisPoints, eventPoints, quakePoints, sanctionPoints, stormPoints, straitPoints, type LayerId, type MapPoint } from '#lib/geo/layers.ts';
 import type { ClimateData } from '#lib/climate.ts';
+import { advisoryCountry, levelCounts, recentChanges } from '#lib/advisories.ts';
+import type { MilexData } from '#lib/milex.ts';
+import { riskSignals } from '#lib/risk-signals.ts';
 import { headlines, trim } from '#lib/trim.ts';
-import type { Chokepoint, Disaster, ElectionsData, HazardsData, NewsData, PredictionsData, Quake, SwpcData, TradeDoc } from '#lib/types.ts';
+import type {
+	AdvisoriesData,
+	Chokepoint,
+	Disaster,
+	ElectionsData,
+	GdacsEvent,
+	HazardsData,
+	IodaOutage,
+	NewsData,
+	OutbreakNews,
+	PredictionsData,
+	Quake,
+	SwpcData,
+	TradeDoc
+} from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, gov, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc] = await Promise.all([
+	const [news, gov, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-gov'),
 		dataset<NewsData>('news-intl'),
@@ -19,7 +36,12 @@ export const load: PageServerLoad = async () => {
 		dataset<TradeDoc[]>('sanctions'),
 		dataset<ClimateData>('climate'),
 		dataset<ElectionsData>('elections'),
-		dataset<SwpcData>('swpc')
+		dataset<SwpcData>('swpc'),
+		dataset<AdvisoriesData>('advisories'),
+		dataset<MilexData>('sipri'),
+		dataset<GdacsEvent[]>('gdacs'),
+		dataset<IodaOutage[]>('ioda'),
+		dataset<OutbreakNews[]>('who-don')
 	]);
 	// Los comunicados oficiales y los de organismos internacionales: solo los 15 que se pintan, sin resumen.
 	// De Polymarket, los 8 mercados de geopolítica que se pintan (economía y tipos son de ECO).
@@ -48,6 +70,29 @@ export const load: PageServerLoad = async () => {
 		sanctions: trim(sanctions, (d) => d.slice(0, 8)),
 		climate,
 		elections,
-		swpc: trim(swpc, (d) => ({ ...d, kp24: [] }))
+		swpc: trim(swpc, (d) => ({ ...d, kp24: [] })),
+		advisories: advisories && advisorySummary(advisories.data, Date.parse(advisories.fetchedAt), advisories.fetchedAt),
+		// Señales de riesgo: solo las cifras y lo más grave de cada fuente, con la hora de cada descarga.
+		signals:
+			gdacs || ioda || who
+				? {
+						...riskSignals({ gdacs: gdacs?.data, ioda: ioda?.data, who: who?.data, advisories: advisories?.data }, Date.now()),
+						fetchedAt: { gdacs: gdacs?.fetchedAt, ioda: ioda?.fetchedAt, who: who?.fetchedAt }
+					}
+				: null,
+		// Gasto militar: los 15 países que más gastan.
+		sipri: trim(sipri, (d) => ({ ...d, rows: d.rows.slice(0, 15) }))
 	};
 };
+
+/** Avisos de viaje: el recuento por nivel y los cambios de los últimos 30 días, ya con el país en español. */
+function advisorySummary(data: AdvisoriesData, now: number, fetchedAt: string) {
+	return {
+		fetchedAt,
+		counts: levelCounts(data.items),
+		rows: recentChanges(data.items, now).map((a) => {
+			const c = advisoryCountry(a);
+			return { name: c?.name ?? a.name, code: c?.code, level: a.level, prevLevel: a.prevLevel, date: a.changedAt ?? a.updated, url: a.url };
+		})
+	};
+}

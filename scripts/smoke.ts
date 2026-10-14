@@ -1,6 +1,6 @@
 /// <reference types="node" />
 // Prueba de humo de todas las vistas (`pnpm smoke`, después de `pnpm build`). Arranca `vite preview`, abre
-// cada ruta de COMMANDS y la ficha de NVDA a 390 y 1280 px con Chromium, y falla si:
+// cada vista de build/ y la ficha de NVDA a 390 y 1280 px con Chromium, y falla si:
 // - hay errores en la consola o excepciones sin capturar;
 // - a 390 px la página es más ancha que la pantalla (scroll horizontal);
 // - la vista no tiene paneles o alguno dice «… todavía» (le faltan sus datos). Una fuente que ha respondido
@@ -9,10 +9,9 @@
 // (HTML, JS, CSS y datos) comprimido con gzip, como lo sirve GitHub Pages; sin TradingView ni otras webs.
 // Las peticiones a otras webs (TradingView, fuentes…) se contestan vacías: así la prueba no depende de la red.
 import { gzipSync } from 'node:zlib';
-import { COMMANDS } from '../src/lib/commands.ts';
-import { launch, preview } from './browser.ts';
+import { launch, preview, viewPaths } from './browser.ts';
 
-const PATHS = [...COMMANDS.map((c) => c.route), '/s?sym=NVDA'];
+const PATHS = [...viewPaths(), '/s?sym=NVDA'];
 const WIDTHS = [390, 1280];
 /** Vistas de texto, sin paneles. */
 const NO_PANELS = new Set(['/help', '/doc']);

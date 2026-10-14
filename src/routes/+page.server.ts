@@ -2,11 +2,18 @@
 // (unos pocos titulares, las series de las tablas…), no los JSON enteros de cada sección.
 import { dataset } from '#lib/data.ts';
 import type { FuelData } from '#lib/fuel.ts';
+import type { Puzzle } from '#lib/chess/puzzle.ts';
+import { minus, topImportant } from '#lib/imp.ts';
+import { madridDate } from '#lib/meetings.ts';
+import { computeRisk } from '#lib/risk.ts';
 import { pickSeries, trim } from '#lib/trim.ts';
 import type {
 	BoeData,
 	CryptoData,
+	FinnhubData,
+	HolidaysData,
 	HnItem,
+	ImpData,
 	NewsData,
 	PowerData,
 	PredictionsData,
@@ -21,7 +28,9 @@ const SECTIONS = ['es', 'eco', 'geo', 'ws', 'tech', 'ai'] as const;
 const TAIL = 40;
 
 export const load: PageServerLoad = async () => {
-	const [news, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn, predictions] = await Promise.all([
+	const today = madridDate(Date.now());
+	const tomorrow = minus(today, -1);
+	const [news, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn, predictions, imp, finnhub, holidays, fred, lichess] = await Promise.all([
 		Promise.all(SECTIONS.map((s) => dataset<NewsData>(`news-${s}`))),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('eurostat'),
@@ -33,7 +42,12 @@ export const load: PageServerLoad = async () => {
 		dataset<BoeData>('boe'),
 		dataset<Quake[]>('quakes'),
 		dataset<HnItem[]>('hn'),
-		dataset<PredictionsData>('predictions')
+		dataset<PredictionsData>('predictions'),
+		dataset<ImpData>('imp'),
+		dataset<FinnhubData>('finnhub'),
+		dataset<HolidaysData>('holidays'),
+		dataset<SeriesData>('fred'),
+		dataset<Puzzle>('lichess')
 	]);
 
 	// Titulares de portada: los 3 más recientes de cada sección, mezclados por hora (sin el resumen, que no se pinta).
@@ -71,6 +85,16 @@ export const load: PageServerLoad = async () => {
 				.slice(0, 4)
 		),
 		hn: trim(hn, (d) => d.slice(0, 5)),
-		predictions: trim(predictions, (d) => ({ geopolitics: d.geopolitics.slice(0, 4), economy: [] }))
+		predictions: trim(predictions, (d) => ({ geopolitics: d.geopolitics.slice(0, 4), economy: [] })),
+		// «Lo importante»: los 3 temas de más peso de hoy, ya elegidos (sin el histórico ni la memoria).
+		important: topImportant(imp?.data, 3).map(({ k, title, url, sources }) => ({ k, title, url, sources })),
+		// «Hoy en la agenda»: resultados y festivos de hoy y mañana (la web se vuelve a construir cada
+		// 15 min; mañana cubre la medianoche hasta la siguiente publicación).
+		earnings: (finnhub?.data.earnings ?? []).filter((e) => e.date === today || e.date === tomorrow),
+		holidays: (holidays?.data.items ?? []).filter((h) => h.date === today || h.date === tomorrow),
+		// Solo en la portada modular: el termómetro de riesgo de WS (ya calculado, con la historia entera) y
+		// el problema de ajedrez del día (unos cientos de bytes).
+		risk: computeRisk({ fred: fred?.data, ecb: ecb?.data, crypto: crypto?.data, predictions: predictions?.data }),
+		puzzle: lichess?.data ?? null
 	};
 };
