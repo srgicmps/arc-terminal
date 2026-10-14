@@ -152,3 +152,4 @@ Cuando termine una fase, actualiza esta lista.
 - ReliefWeb: falta el appname aprobado (RELIEFWEB_APPNAME); aparcado por Sergi.
 - Bonos a 10 años de Reino Unido, Japón y China: TradingView no da rentabilidades en sus widgets; hacen falta
   fuentes oficiales (BoE, MOF de Japón, ChinaBond). De momento no se hacen.
+- «Próximo dato» de Eurostat (M10): el .ics `cache/RELEASE_CALENDAR/calendar_EN.ics` da 404 y no se ha encontrado el nuevo. El de INE y EE. UU. (fechas de FRED; el .ics del BLS prohíbe robots) sí funcionan.

@@ -44,10 +44,10 @@
 <div class="grid grid-2">
 	<div class="col">
 		<Panel title="Paro" meta="% de la población activa">
-			<SeriesTable head="País" rows={byGeo('unemployment')} />
+			<SeriesTable next={data.next} head="País" rows={byGeo('unemployment')} />
 		</Panel>
 		<Panel title="Inflación" meta="IPCA, variación anual">
-			<SeriesTable head="País" rows={byGeo('inflation')} />
+			<SeriesTable next={data.next} head="País" rows={byGeo('inflation')} />
 		</Panel>
 		{#if data.g20}
 			{@const g20 = data.g20}
@@ -63,13 +63,13 @@
 			</Panel>
 		{/if}
 		<Panel title="PIB" meta="Variación trimestral">
-			<SeriesTable head="País" rows={byGeo('gdp')} />
+			<SeriesTable next={data.next} head="País" rows={byGeo('gdp')} />
 		</Panel>
 		<Panel title="Paro juvenil" meta="Menores de 25 años">
-			<SeriesTable head="País" rows={byGeo('youth-unemployment')} />
+			<SeriesTable next={data.next} head="País" rows={byGeo('youth-unemployment')} />
 		</Panel>
 		<Panel title="Deuda pública" meta="% del PIB">
-			<SeriesTable head="País" rows={byGeo('debt')} />
+			<SeriesTable next={data.next} head="País" rows={byGeo('debt')} />
 			{#snippet note()}Fuente: Eurostat · <Updated at={data.eurostat?.fetchedAt} source="eurostat" />{/snippet}
 		</Panel>
 	</div>
@@ -85,7 +85,7 @@
 			{#snippet note()}Calendarios oficiales del BCE y de la Fed. Probabilidades: Polymarket, apuestas y no pronósticos.{/snippet}
 		</Panel>
 		<Panel title="BCE" meta="Tipos y euríbor">
-			<SeriesTable
+			<SeriesTable next={data.next}
 				head="Tipo"
 				rows={[
 					{ series: get('ecb-dfr'), name: 'Facilidad de depósito', decimals: 2 },
@@ -117,7 +117,7 @@
 			{#snippet note()}Recopilados por el BIS · <Updated at={data.speeches?.fetchedAt} source="speeches" />{/snippet}
 		</Panel>
 		<Panel title="Bancos centrales" meta="Tipo oficial · último cambio">
-			<SeriesTable
+			<SeriesTable next={data.next}
 				head="Banco"
 				rows={(data.bis?.data.series ?? []).map((series) => ({ series, name: series.label, decimals: 2 }))}
 			/>
@@ -136,7 +136,7 @@
 			{/snippet}
 		</Panel>
 		<Panel title="Bonos a 10 años" meta="Rentabilidad media mensual">
-			<SeriesTable
+			<SeriesTable next={data.next}
 				head="País"
 				rows={[
 					{ series: get('bond10-es'), decimals: 2 },
@@ -154,7 +154,7 @@
 			{#snippet note()}Diferencia de rentabilidad a 10 años con Alemania, media mensual. Fuente: BCE{/snippet}
 		</Panel>
 		<Panel title="EE. UU." meta="BLS y Tesoro">
-			<SeriesTable
+			<SeriesTable next={data.next}
 				head="Indicador"
 				rows={[
 					{ series: get('cpi-us'), name: 'Inflación (IPC)', inverse: true },
@@ -175,7 +175,7 @@
 		</Panel>
 		<Panel title="Fed y mercados" meta="EE. UU. · FRED">
 			{#if data.fred}
-				<SeriesTable
+				<SeriesTable next={data.next}
 					head="Indicador"
 					rows={[
 						{ series: get('fedfunds-us'), name: 'Fondos federales', decimals: 2 },
