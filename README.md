@@ -1,6 +1,6 @@
 # Arc Terminal
 
-Terminal personal de mercados y actualidad, al estilo Bloomberg: economía, geopolítica, Wall Street,
+Terminal personal de mercados y actualidad: economía, geopolítica, Wall Street,
 tecnología, IA y utilidades del día a día, como las gasolineras más baratas de donde elijas.
 Se maneja desde una barra de comandos: escribes `NVDA`, `ECO` o `FUEL` y se abre.
 
