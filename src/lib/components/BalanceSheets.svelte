@@ -53,14 +53,6 @@
 {/if}
 
 <style>
-	a.name {
-		color: inherit;
-		text-decoration: none;
-	}
-
-	a.name:hover {
-		color: var(--amber);
-	}
 
 	.sp {
 		width: 80px;

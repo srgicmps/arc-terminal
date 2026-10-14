@@ -59,15 +59,6 @@
 		white-space: normal;
 	}
 
-	a.name {
-		color: inherit;
-		text-decoration: none;
-	}
-
-	a.name:hover {
-		color: var(--amber);
-	}
-
 	.sp {
 		width: 80px;
 		padding-block: 0;
