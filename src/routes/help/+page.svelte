@@ -3,7 +3,8 @@
 	import { resolve } from '$app/paths';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { COMMANDS, TICKERS } from '#lib/commands.ts';
+	import { COMMANDS } from '#lib/commands.ts';
+	import { TICKERS } from '#lib/tickers.ts';
 	import Table from '#lib/components/ui/Table.svelte';
 </script>
 

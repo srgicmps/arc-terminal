@@ -1,4 +1,5 @@
 import { dataset, type SourceStatus } from '#lib/data.ts';
+import type { FaoData } from '#lib/fao.ts';
 import { missingNote } from '#lib/missing.ts';
 import { headlines, pickSeries } from '#lib/trim.ts';
 import type { EuPowerData, G20Data, ImfData, NewsData, PredictionsData, SeriesData, ReleaseCalData } from '#lib/types.ts';
@@ -6,7 +7,7 @@ import { nextMap } from '#lib/nextrelease.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal, eupower] = await Promise.all([
+	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal, fao, eupower] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -23,6 +24,7 @@ export const load: PageServerLoad = async () => {
 		dataset<SourceStatus[]>('status'),
 		dataset<NewsData>('speeches'),
 		dataset<ReleaseCalData>('releases-cal'),
+		dataset<FaoData>('fao'),
 		dataset<EuPowerData>('energycharts')
 	]);
 	// Del BCE, todo menos los tipos de cambio (están en WS); de los titulares, los 25 que se pintan.
@@ -47,6 +49,7 @@ export const load: PageServerLoad = async () => {
 		news: headlines(news, 25),
 		predictions,
 		speeches: headlines(speeches, 12),
+		fao,
 		eupower,
 		// Próximo dato de cada serie, calculado aquí: al navegador solo le llega la fecha y el título.
 		next: nextMap(
