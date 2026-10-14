@@ -3,6 +3,7 @@ import type { Source } from '../lib.ts';
 import { air } from './air.ts';
 import { alerts } from './alerts.ts';
 import { bls } from './bls.ts';
+import { bis } from './bis.ts';
 import { boe } from './boe.ts';
 import { ecb } from './ecb.ts';
 import { eurostat } from './eurostat.ts';
@@ -29,6 +30,7 @@ export const sources: Source<any>[] = [
 	powerMix,
 	// Europa
 	ecb,
+	bis,
 	eurostat,
 	// EE. UU.
 	fedreg,

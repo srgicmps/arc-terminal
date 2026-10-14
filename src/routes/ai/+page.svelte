@@ -13,7 +13,7 @@
 	const AI = /\b(ai|a\.i\.|llms?|gpt|openai|anthropic|claude|gemini|llama|mistral|deepseek|transformer|neural|machine learning|agents?|diffusion|copilot|inference|model)\b/i;
 	const hnAi = $derived((data.hn?.data ?? []).filter((i) => AI.test(i.title)));
 	const papers = $derived(data.papers?.data ?? []);
-	const sources =$derived((data.news?.data.feeds ?? []).filter((f) => f.count).map((f) => f.name).join(', '));
+	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.count).map((f) => f.name).join(', '));
 </script>
 
 <ViewHeader code="AI" title="Inteligencia artificial" sub={sources} />

@@ -7,7 +7,8 @@
 	--line: #1d242d;
 	--fg: #dce1e7;
 	--muted: #808a97;
-	--faint: #56606c;
+	/* Gris más tenue para texto: 4,6:1 sobre --panel (WCAG AA). Antes #56606c (2,96:1). */
+	--faint: #747e8a;
 	--amber: #f2a83b;
 	--amber-soft: rgba(242, 168, 59, 0.13);
 	--amber-edge: rgba(242, 168, 59, 0.42);
@@ -54,6 +55,8 @@ select {
 	color: inherit;
 }
 
+/* Foco con teclado: contorno ámbar fino. Solo con :focus-visible, para que el ratón y el dedo no lo muestren.
+   Si un componente quita el outline, tiene que poner otra señal (borde ámbar, fondo…). */
 :focus-visible {
 	outline: 1px solid var(--amber);
 	outline-offset: 2px;
@@ -333,5 +336,64 @@ kbd {
 @media (max-width: 720px) {
 	.tiles {
 		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+/* Lista de tickers de HELP: cada enlace ocupa 24 px de alto (mínimo de WCAG 2.2) y las filas solo se separan 4 px más. */
+.tickers a {
+	display: block;
+	padding-block: 4px;
+	margin-block: -2px;
+}
+
+/* Pantallas táctiles: zonas pulsables de al menos 44 px sin engordar el diseño más de lo necesario. */
+@media (pointer: coarse) {
+	button,
+	select,
+	.cmd {
+		min-height: 44px;
+	}
+
+	/* Listas de enlaces: toda la fila es pulsable (el ::after invisible del enlace la cubre). */
+	.mini li:has(> a) {
+		position: relative;
+		min-height: 44px;
+		align-items: center;
+	}
+	.mini li > a::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+	}
+
+	.tickers a {
+		display: flex;
+		align-items: center;
+		min-height: 44px;
+		margin-block: 0;
+	}
+
+	/* Tablas: la celda que empieza por un enlace o botón (y no tiene otro) crece hasta 44 px
+	   y el ::after invisible del enlace la cubre entera. */
+	.t td:has(> :is(a, button):first-child):not(:has(:is(a, button) ~ :is(a, button))) {
+		position: relative;
+		height: 44px;
+	}
+	.t td:not(:has(:is(a, button) ~ :is(a, button))) > :is(a, button):first-child::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+	}
+}
+
+/* Quien pide menos movimiento en su sistema no ve animaciones ni transiciones. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
 	}
 }

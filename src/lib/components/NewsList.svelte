@@ -53,6 +53,19 @@
 		border-bottom: 1px solid var(--line);
 	}
 
+	/* En pantallas táctiles, toda la fila abre el titular: el ::after invisible del enlace la cubre. */
+	@media (pointer: coarse) {
+		.news li {
+			position: relative;
+		}
+
+		.h::after {
+			content: '';
+			position: absolute;
+			inset: 0;
+		}
+	}
+
 	.news li:last-child {
 		border-bottom: 0;
 	}
