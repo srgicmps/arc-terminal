@@ -4,6 +4,7 @@
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -95,10 +96,8 @@
 	/** Alto para que quepan todas las filas sin barra de desplazamiento (como en MIS). */
 	const quotesHeight = (n: number) => 90 + n * 46;
 
-	const heatmap = {
-		dataSource: 'SPX500',
-		grouping: 'sector',
-		blockSize: 'market_cap_basic',
+	// Mapas de calor de TradingView: acciones de un índice (widget «stock-heatmap») o cripto («crypto-coins-heatmap»).
+	const common = {
 		blockColor: 'change',
 		hasTopBar: false,
 		isDataSetEnabled: false,
@@ -106,14 +105,48 @@
 		hasSymbolTooltip: true,
 		isMonoSize: false
 	};
+	const stocks = (dataSource: string) => ({ ...common, dataSource, grouping: 'sector', blockSize: 'market_cap_basic' });
+	const MAPS = [
+		{ key: 'spx', label: 'S&P 500', widget: 'stock-heatmap', config: stocks('SPX500') },
+		{ key: 'ndx', label: 'Nasdaq 100', widget: 'stock-heatmap', config: stocks('NASDAQ100') },
+		{ key: 'dax', label: 'DAX', widget: 'stock-heatmap', config: stocks('DAX') },
+		{ key: 'ibex', label: 'IBEX 35', widget: 'stock-heatmap', config: stocks('IBEX35') },
+		{ key: 'crypto', label: 'Cripto', widget: 'crypto-coins-heatmap', config: { ...common, dataSource: 'Crypto', blockSize: 'market_cap_calc' } }
+	] as const;
+
+	// El mapa elegido se recuerda en este navegador (si no deja guardar, se queda en memoria).
+	const MAP_KEY = 'arc-ws-heatmap';
+	type MapKey = (typeof MAPS)[number]['key'];
+	let loadedMap = $state(false);
+	let mapKey = $state<MapKey>('spx');
+	$effect(() => {
+		try {
+			const saved = localStorage.getItem(MAP_KEY);
+			const found = MAPS.find((m) => m.key === saved);
+			if (found) mapKey = found.key;
+		} catch {}
+		loadedMap = true;
+	});
+	// Guarda cada cambio, después de haber leído lo guardado (para no pisarlo al arrancar).
+	$effect(() => {
+		const key = mapKey;
+		if (!loadedMap) return;
+		try {
+			localStorage.setItem(MAP_KEY, key);
+		} catch {}
+	});
+	const map = $derived(MAPS.find((m) => m.key === mapKey) ?? MAPS[0]);
 </script>
 
 <ViewHeader code="WS" title="Wall Street e inversión" sub="TradingView, Tesoro de EE. UU., BCE, CoinGecko y titulares de mercados" />
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Mapa de calor" meta="S&P 500 · variación del día">
-			<TvWidget widget="stock-heatmap" config={heatmap} height={520} />
+		<Panel title="Mapa de calor" meta="{map.label} · variación del día">
+			<div class="maps">
+				<Seg label="Mapa de calor" options={MAPS.map((m) => ({ value: m.key, label: m.label }))} bind:value={mapKey} />
+			</div>
+			<TvWidget widget={map.widget} config={map.config} height={520} />
 		</Panel>
 	</div>
 	<div class="col">
@@ -151,3 +184,11 @@
 		</Panel>
 	</div>
 </div>
+
+<style>
+	/* Selector de mapa encima del widget, con el espaciado de la cabecera del panel. */
+	.maps {
+		padding: var(--row-y) var(--pad-x);
+		border-bottom: var(--border);
+	}
+</style>
