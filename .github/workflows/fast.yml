@@ -8,9 +8,11 @@
 name: Vía rápida
 
 on:
-  # Minutos 2, 7, 12… GitHub puede retrasar el cron unos minutos cuando va cargado.
+  # Minutos 4, 9, 14… Nunca coinciden con los de deploy.yml (7, 22, 37, 52): si coincidieran, una pasada
+  # rápida pendiente podría sustituir a una normal y esa vez no correrían check, test ni issues.ts.
+  # GitHub puede retrasar el cron unos minutos cuando va cargado.
   schedule:
-    - cron: '2-57/5 * * * *'
+    - cron: '4-59/5 * * * *'
   workflow_dispatch:
   # En los PR que tocan este archivo: misma pasada, sin publicar, para comprobarla y medir cuánto tarda.
   pull_request:
