@@ -72,6 +72,18 @@ const FEEDS: Record<string, Feed[]> = {
 		{ name: 'ONU', url: 'https://press.un.org/en/rss.xml' },
 		{ name: 'Noticias ONU', url: 'https://news.un.org/feed/subscribe/en/news/topic/peace-and-security/feed/rss.xml' },
 		{ name: 'OMC', url: 'https://www.wto.org/library/rss/latest_news_e.xml' }
+	],
+	// Medios de Ucrania, China, Japón y África (M36), comprobados con probe el 14-10-2026. Descartado: Mail &
+	// Guardian (404).
+	world: [
+		{ name: 'Kyiv Independent', url: 'https://kyivindependent.com/news-archive/rss/' },
+		{ name: 'Ukrainska Pravda', url: 'https://www.pravda.com.ua/eng/rss/' },
+		{ name: 'South China Morning Post', url: 'https://www.scmp.com/rss/91/feed' },
+		{ name: 'Caixin', url: 'https://www.caixinglobal.com/rss/' },
+		{ name: 'The Japan Times', url: 'https://www.japantimes.co.jp/feed/' },
+		{ name: 'Nikkei Asia', url: 'https://asia.nikkei.com/rss/feed/nar' },
+		{ name: 'Africanews', url: 'https://www.africanews.com/feed/rss' },
+		{ name: 'AllAfrica', url: 'https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf' }
 	]
 };
 
@@ -100,7 +112,15 @@ export const ENGLISH = new Set([
 	'Google',
 	'Simon Willison',
 	'Casa Blanca',
-	'Reserva Federal'
+	'Reserva Federal',
+	'Kyiv Independent',
+	'Ukrainska Pravda',
+	'South China Morning Post',
+	'Caixin',
+	'The Japan Times',
+	'Nikkei Asia',
+	'Africanews',
+	'AllAfrica'
 ]);
 
 /** Marca los titulares de un medio en inglés. */
@@ -249,7 +269,8 @@ const LABELS: Record<string, string> = {
 	tech: 'Tecnología',
 	ai: 'Inteligencia artificial',
 	gov: 'Gobiernos e instituciones',
-	intl: 'Organismos internacionales'
+	intl: 'Organismos internacionales',
+	world: 'Ucrania, China, Japón y África'
 };
 
 export const newsSources: Source<NewsData>[] = Object.entries(FEEDS).map(([key, feeds]) => ({
