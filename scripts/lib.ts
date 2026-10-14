@@ -21,6 +21,77 @@ export interface Source<T = unknown> {
 	 * writeExtra() al descargar; si se reutiliza la copia publicada, update.ts los copia de la web.
 	 */
 	files?: (data: T) => string[];
+	/**
+	 * La fuente puede venir vacía (o con muchos menos elementos que la vez anterior) sin que sea un fallo.
+	 * Sin esto, update.ts trata un resultado vacío o encogido como error y reutiliza la copia anterior.
+	 */
+	allowEmpty?: true;
+	/** Mínimo de elementos (ver countItems) para dar los datos por buenos. */
+	minItems?: number;
+	/**
+	 * Plazo total de la descarga, en milisegundos (por defecto, DEFAULT_DEADLINE_MS). Solo para fuentes
+	 * lentas de verdad, como un ZIP grande; conviene acompañarlo de un maxAgeMinutes alto.
+	 */
+	deadlineMs?: number;
+}
+
+/** Plazo por defecto de cada fuente, con todos sus reintentos: una API colgada no retiene la Action. */
+export const DEFAULT_DEADLINE_MS = 90_000;
+
+/** Plazo de una fuente: el suyo, si lo define, o el de por defecto. */
+export function deadlineFor(source: Pick<Source, 'deadlineMs'>): number {
+	return source.deadlineMs ?? DEFAULT_DEADLINE_MS;
+}
+
+/**
+ * Cuántos elementos trae un resultado: la longitud si es una lista, o la suma de las listas de primer
+ * nivel si es un objeto. null si no hay ninguna lista que contar (p. ej. un objeto de objetos).
+ */
+export function countItems(data: unknown): number | null {
+	if (Array.isArray(data)) return data.length;
+	if (!data || typeof data !== 'object') return null;
+	const lists = Object.values(data).filter(Array.isArray);
+	return lists.length ? lists.reduce((sum, l) => sum + l.length, 0) : null;
+}
+
+/** Por debajo de esta fracción de la vez anterior, se sospecha de una respuesta incompleta. */
+const SHRINK = 0.2;
+
+/**
+ * Guardia contra datos vacíos o encogidos. Devuelve el motivo para no fiarse de `data`, o null si
+ * está bien. Una API que responde «200 OK» con la lista vacía no lanza error, pero publicarla
+ * dejaría el panel en blanco: es mejor quedarse con la copia anterior y avisar.
+ */
+export function checkShrink(
+	data: unknown,
+	previous: unknown,
+	source: Pick<Source, 'allowEmpty' | 'minItems'>
+): string | null {
+	const count = countItems(data);
+	if (count === null) return null;
+	if (source.minItems !== undefined && count < source.minItems) {
+		return `solo ${count} elementos; se esperan al menos ${source.minItems}`;
+	}
+	if (source.allowEmpty) return null;
+	if (count === 0) return 'datos vacíos';
+	const before = countItems(previous);
+	if (before && count < before * SHRINK) {
+		return `solo ${count} elementos (antes ${before}): parece una respuesta incompleta`;
+	}
+	return null;
+}
+
+/**
+ * Espera a `promise` como mucho `ms` milisegundos; si tarda más, falla con `message`. El temporizador se
+ * limpia siempre, para no dejar el proceso esperando. Ojo: la descarga de fondo no se cancela (las
+ * fuentes no reciben una señal de aborto), pero `request()` ya corta cada petición a los 45 s.
+ */
+export function withDeadline<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const deadline = new Promise<never>((_, reject) => {
+		timer = setTimeout(() => reject(new Error(message)), ms);
+	});
+	return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
 }
 
 /** Escribe un archivo extra de una fuente en static/data/<path>. */
