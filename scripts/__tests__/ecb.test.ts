@@ -64,3 +64,10 @@ describe('eacurve', () => {
 		await expect(eacurve.fetch(undefined)).rejects.toThrow('curva vacía');
 	});
 });
+
+describe('ecb.isStale', () => {
+	it('da por caducada la copia publicada si le falta alguna serie (p. ej., al añadir países)', () => {
+		const copy = (ids: string[]) => ({ series: ids.map((id) => ({ id, label: id, unit: '%', points: [], source: 'BCE' })) });
+		expect(ecb.isStale?.(copy(['ecb-dfr']))).toBe(true);
+	});
+});

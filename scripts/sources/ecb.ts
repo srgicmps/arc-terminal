@@ -28,6 +28,8 @@ const WANTED: Wanted[] = [
 	{ key: 'IRS.M.DE.L.L40.CI.0000.EUR.N.Z', id: 'bond10-de', label: 'Bono a 10 años', unit: '%', geo: 'DE', last: 36 },
 	{ key: 'IRS.M.IT.L.L40.CI.0000.EUR.N.Z', id: 'bond10-it', label: 'Bono a 10 años', unit: '%', geo: 'IT', last: 36 },
 	{ key: 'IRS.M.FR.L.L40.CI.0000.EUR.N.Z', id: 'bond10-fr', label: 'Bono a 10 años', unit: '%', geo: 'FR', last: 36 },
+	{ key: 'IRS.M.PT.L.L40.CI.0000.EUR.N.Z', id: 'bond10-pt', label: 'Bono a 10 años', unit: '%', geo: 'PT', last: 36 },
+	{ key: 'IRS.M.GR.L.L40.CI.0000.EUR.N.Z', id: 'bond10-gr', label: 'Bono a 10 años', unit: '%', geo: 'GR', last: 36 },
 	{ key: 'EXR.D.USD.EUR.SP00.A', id: 'eurusd', label: 'EUR/USD', unit: '$', last: 260 },
 	{ key: 'EXR.D.GBP.EUR.SP00.A', id: 'eurgbp', label: 'EUR/GBP', unit: '£', last: 260 },
 	{ key: 'EXR.D.JPY.EUR.SP00.A', id: 'eurjpy', label: 'EUR/JPY', unit: '¥', last: 260 },
@@ -60,6 +62,8 @@ export const ecb: Source<SeriesData> = {
 	name: 'ecb',
 	label: 'Tipos, euríbor, bonos y divisas · Banco Central Europeo',
 	maxAgeMinutes: 175,
+	// Si se añaden series a WANTED, la copia publicada no las tiene: se descarga de nuevo sin esperar.
+	isStale: (previous) => WANTED.some((w) => !previous.series?.some((s) => s.id === w.id)),
 	async fetch() {
 		const found = await settle('ecb', WANTED, (w) => w.key, series);
 		if (!found.length) throw new Error('ninguna serie del BCE');

@@ -39,3 +39,5 @@ https://www.mof.go.jp/jgbs/reference/interest_rate/data/jgbcm_all.csv ~ R6\.10\.
 # WS: subastas del Tesoro: tipos de valor y campos de las notas ya subastadas
 https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?fields=auction_date,security_type,security_term,floating_rate,high_yield,bid_to_cover_ratio,indirect_bidder_accepted,comp_accepted,offering_amt&filter=security_type:in:(Note,Bond),auction_date:lt:2026-10-14&sort=-auction_date&page[size]=12
 https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?fields=security_type,security_term&filter=auction_date:gte:2026-07-01&page[size]=200 ~ TIPS|FRN|CMB
+# ECO: bono a 10 años de Portugal y Grecia (BCE), para las primas de riesgo
+https://data-api.ecb.europa.eu/service/data/IRS/M.PT+GR.L.L40.CI.0000.EUR.N.Z?lastNObservations=2&format=csvdata&detail=dataonly
