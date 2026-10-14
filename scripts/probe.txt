@@ -86,3 +86,13 @@ https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-switzerland ~ <title>[
 https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-greece ~ <title>[^<]{0,80}
 # M40: ¿trae cada mercado de Polymarket su cambio en 24 h (oneDayPriceChange)?
 https://gamma-api.polymarket.com/events?active=true&closed=false&limit=2&order=volume24hr&ascending=false&tag_slug=geopolitics ~ oneDayPriceChange
+# GEO: análisis de conflictos (M35): Crisis Group, Foreign Affairs, Real Instituto Elcano, CFR, Chatham House, ECFR, IISS
+https://www.crisisgroup.org/rss ~ <title>[^<]{0,120}
+https://www.crisisgroup.org/rss.xml ~ <title>[^<]{0,120}
+https://www.foreignaffairs.com/rss.xml ~ <title>[^<]{0,120}
+https://www.realinstitutoelcano.org/feed/ ~ <title>[^<]{0,120}
+https://www.realinstitutoelcano.org/analisis/feed/ ~ <title>[^<]{0,120}
+https://www.cfr.org/rss.xml ~ <title>[^<]{0,120}
+https://www.chathamhouse.org/rss.xml ~ <title>[^<]{0,120}
+https://ecfr.eu/feed/ ~ <title>[^<]{0,120}
+https://www.iiss.org/rss ~ <title>[^<]{0,120}
