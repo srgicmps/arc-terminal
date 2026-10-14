@@ -27,3 +27,21 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
+# WS: curva de la zona euro (BCE, YC), bonos de Japón (MOF, Shift-JIS)
+https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_3M+SR_1Y+SR_2Y+SR_5Y+SR_10Y+SR_30Y?lastNObservations=2&format=csvdata&detail=dataonly
+https://www.mof.go.jp/jgbs/reference/interest_rate/jgbcm.csv
+https://www.mof.go.jp/jgbs/reference/interest_rate/data/jgbcm_all.csv ~ R7\.10\.\d+[^R]{0,90}
+https://www.mof.go.jp/jgbs/reference/interest_rate/data/jgbcm_all.csv ~ R6\.10\.1\d[^R]{0,90}
+# ECO: balance del Eurosistema (ILM, total del activo semanal)
+https://data-api.ecb.europa.eu/service/data/ILM/W.U2.C.T000000.Z5.Z01?lastNObservations=3&format=csvdata
+# GEO: comunicados de organismos internacionales
+https://press.un.org/en/rss.xml
+https://press.un.org/en/content/security-council/rss.xml
+https://news.un.org/feed/subscribe/en/news/topic/peace-and-security/feed/rss.xml
+https://www.nato.int/cps/rss/en/natohq/rssFeed.xsl/rssFeed.xml
+https://www.wto.org/library/rss/latest_news_e.xml
+https://www.imf.org/en/News/RSS?language=eng
+https://www.worldbank.org/en/rss/news
+https://www.worldbank.org/en/news/rss.xml
+https://www.opec.org/opec_web/en/press_room/rss.xml
+https://www.opec.org/opec_web/en/pressreleases.rss
