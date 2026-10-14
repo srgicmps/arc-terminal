@@ -18,3 +18,5 @@ https://gamma-api.polymarket.com/events?active=true&closed=false&limit=6&order=v
 https://gamma-api.polymarket.com/events?active=true&closed=false&limit=20&order=volume24hr&ascending=false&tag_slug=economy ~ ecb|fed decision|fomc
 https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm ~ \d{4} FOMC Meetings.{0,400}
 https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html ~ .{0,30}Monetary policy meeting.{0,40}
+# ECO: euríbor a 12 meses (media mensual) para la calculadora de hipoteca
+https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA?lastNObservations=14&format=csvdata&detail=dataonly
