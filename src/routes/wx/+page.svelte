@@ -176,7 +176,7 @@
 					<SunArc sunrise={sun.sunrise} sunset={sun.sunset} now={clock.now} />
 				</div>
 				<Tiles>
-					<Tile label="Sol" value="{hmIn(sun.sunrise, tz)} – {hmIn(sun.sunset, tz)}" sub="Salida y puesta" />
+					<Tile label="Sol" value="{hmIn(sun.sunrise, tz)} – {hmIn(sun.sunset, tz)}" sub="Salida y puesta · hora de {main.name}" />
 					<Tile
 						label="Duración del día"
 						value={hoursMinutes(sun.daylight)}
@@ -207,7 +207,7 @@
 				</Tiles>
 				<Table>
 					<thead>
-						<tr><th>Hora</th>{#each air.hours as h (h.time)}<th>{hour(h.time)}</th>{/each}</tr>
+						<tr><th>Hora local</th>{#each air.hours as h (h.time)}<th>{hour(h.time)}</th>{/each}</tr>
 					</thead>
 					<tbody>
 						<tr>
@@ -305,7 +305,7 @@
 	Fuentes: Open-Meteo (CC BY 4.0) · Calidad del aire, UV y polen: contiene información modificada del Servicio de
 	Vigilancia Atmosférica de Copernicus (CAMS), vía Open-Meteo · Avisos: EUMETNET-MeteoAlarm con datos de AEMET; el
 	aviso oficial es el de <a href="https://www.aemet.es/es/eltiempo/prediccion/avisos" target="_blank" rel="noopener">AEMET</a>
-	{#if local}· Tu sitio: pedido a Open-Meteo desde tu navegador a las {hm(local.fetchedAt)}{/if}
+	{#if local}· Tu sitio: pedido a Open-Meteo desde tu navegador a las {hm(local.fetchedAt)} h de Madrid{/if}
 	· Tiempo <Updated at={data.weather?.fetchedAt} source="weather" /> · Aire <Updated at={data.air?.fetchedAt} source="air" /> · Avisos
 	<Updated at={data.alerts?.fetchedAt} source="alerts" />
 </p>

@@ -112,7 +112,9 @@
 			<input
 				bind:this={input}
 				bind:value={query}
-				type="search"
+				type="text"
+				enterkeyhint="search"
+				aria-label="Buscar una ciudad"
 				placeholder="Busca una ciudad: Tokio, Lisboa…"
 				spellcheck="false"
 				onkeydown={(e) => {
