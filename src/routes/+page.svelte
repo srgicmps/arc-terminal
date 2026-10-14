@@ -400,6 +400,7 @@
 	earnings={data.earnings}
 	holidays={{ items: data.holidays }}
 	alerts={inMenorca(place.current) ? data.alerts?.data : null}
+	releases={data.releases}
 	city={place.current.name}
 />
 
