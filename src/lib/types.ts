@@ -492,6 +492,18 @@ export interface Disaster {
 	glide: string;
 }
 
+// ---------- Índice de búsqueda de la barra (static/data/search.json) ----------
+
+/** Una entrada del índice: título, enlace y etiqueta. Nombres de una letra para que pese poco. */
+export interface SearchEntry {
+	/** Título (recortado). */
+	t: string;
+	/** Enlace: externo (https://…) o interno de la web («/s?sym=NVDA», sin la base). */
+	u: string;
+	/** Etiqueta que se ve en la barra: NEWS, BOE o Valor. */
+	s: 'NEWS' | 'BOE' | 'Valor';
+}
+
 // ---------- Rutas marítimas clave (IMF PortWatch) ----------
 
 export interface Chokepoint {
@@ -542,4 +554,25 @@ export interface ShipsData {
 	ports: PortShips[];
 	/** Segundos que estuvo escuchando la última pasada. */
 	listened: number;
+}
+
+// ---------- Líderes: agenda de hoy (LIDER) ----------
+
+export interface AgendaEvent {
+	/** Cuándo empieza (ISO 8601, UTC), o null si la agenda no da hora. */
+	start: string | null;
+	/** Día de la agenda en la zona del propio líder (AAAA-MM-DD). */
+	date: string;
+	title: string;
+	place: string;
+}
+
+export interface LeaderAgenda {
+	/** «sanchez», «trump»… (ver src/lib/leaders.ts). */
+	id: string;
+	/** Actos de ayer a pasado mañana; null si la agenda no se ha podido leer. */
+	events: AgendaEvent[] | null;
+	/** De dónde sale la agenda. */
+	source: { name: string; url: string };
+	error?: string;
 }
