@@ -85,6 +85,8 @@ export interface NewsItem {
 	/** ISO 8601, o null si el feed no trae fecha. */
 	time: string | null;
 	summary: string;
+	/** La misma noticia en otros medios (scripts/cluster.ts), sin el de `source`. */
+	also?: { source: string; url: string }[];
 }
 
 export interface FeedStatus {
