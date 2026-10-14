@@ -9,6 +9,8 @@
 	import { seriesMap, spread } from '#lib/series.ts';
 	import { compass, sky } from '#lib/weather.ts';
 	import ModularGrid from '#lib/components/ModularGrid.svelte';
+	import Agenda from '#lib/components/top/Agenda.svelte';
+	import Markets from '#lib/components/top/Markets.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
@@ -21,6 +23,7 @@
 		{ id: 'rates', title: 'Tipos y bonos' },
 		{ id: 'macro', title: 'Macro' },
 		{ id: 'fx', title: 'Divisas y cripto' },
+		{ id: 'important', title: 'Lo importante' },
 		{ id: 'news', title: 'Titulares' },
 		{ id: 'weather', title: 'Tiempo' },
 		{ id: 'power', title: 'Luz' },
@@ -28,7 +31,10 @@
 		{ id: 'boe', title: 'BOE de hoy' },
 		{ id: 'quakes', title: 'Terremotos' },
 		{ id: 'predictions', title: 'Mercados de predicción' },
-		{ id: 'hn', title: 'Hacker News' }
+		{ id: 'hn', title: 'Hacker News' },
+		// Solo en la portada modular (en la general ya están la cinta de cotizaciones y CAL).
+		{ id: 'agenda', title: 'Hoy en la agenda' },
+		{ id: 'markets', title: 'Mercados' }
 	]);
 	// Como onMounted en Vue: lo guardado en el navegador se lee al arrancar en él.
 	$effect(() => top.load());
@@ -61,6 +67,9 @@
 			.sort((a, b) => (a.prices.g95 ?? 0) - (b.prices.g95 ?? 0))
 			.slice(0, 3)
 	);
+
+	// Los 3 temas de más peso de hoy (vista IMP); los elige +page.server.ts.
+	const important = $derived(data.important);
 
 	const boeGeneral = $derived(data.boe?.data.sections.find((s) => s.code === '1'));
 	const boeTotal = $derived((data.boe?.data.sections ?? []).reduce((n, s) => n + s.total, 0));
@@ -135,6 +144,31 @@
 			{/each}
 		</ul>
 	</Panel>
+{/snippet}
+
+{#snippet importante()}
+	<Panel id="important" title="Lo importante" meta="Hoy" jump={{ code: 'IMP', href: resolve('/imp') }}>
+		{#if important.length}
+			<ul class="mini">
+				{#each important as e (e.k)}
+					<li>
+						<a class="l" href={e.url} target="_blank" rel="noopener">{e.title}</a>
+						<b class="mut">{e.sources.length} {e.sources.length === 1 ? 'medio' : 'medios'}</b>
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<p class="empty">Sin datos todavía</p>
+		{/if}
+	</Panel>
+{/snippet}
+
+{#snippet agenda()}
+	<Agenda earnings={data.earnings} holidays={data.holidays} />
+{/snippet}
+
+{#snippet markets()}
+	<Markets />
 {/snippet}
 
 {#snippet titulares()}
@@ -249,7 +283,7 @@
 {#if mode.modular}
 	<ModularGrid
 		layout={top}
-		panels={{ rates: tipos, macro, fx: divisas, news: titulares, weather: menorca, power: luz, fuel: gasolina, boe, quakes: terremotos, predictions: predicciones, hn }}
+		panels={{ rates: tipos, macro, fx: divisas, important: importante, news: titulares, weather: menorca, power: luz, fuel: gasolina, boe, quakes: terremotos, predictions: predicciones, hn, agenda, markets }}
 	/>
 {:else}
 	<div class="grid grid-3">
@@ -260,6 +294,7 @@
 		</div>
 
 		<div class="col">
+			{@render importante()}
 			{@render titulares()}
 		</div>
 

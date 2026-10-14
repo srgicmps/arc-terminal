@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { boe } from '../sources/boe.ts';
+import { boe, buildWeek, compact } from '../sources/boe.ts';
+import { writeExtra } from '../lib.ts';
+import type { BoeData, BoeWeekDay } from '../../src/lib/types.ts';
 import { mockFetch } from './mock.ts';
+
+// Sin escribir en static/data (los archivos de la semana): los tests no deben tocar los datos de la pasada.
+vi.mock('../lib.ts', async (importOriginal) => ({ ...(await importOriginal<typeof import('../lib.ts')>()), writeExtra: vi.fn() }));
 
 // Respuesta reducida con la forma del sumario de la API del BOE. Ojo: cuando hay un solo
 // elemento, la API devuelve un objeto en vez de una lista.
@@ -49,7 +54,10 @@ beforeEach(() => {
 	vi.useFakeTimers({ toFake: ['Date'] });
 	vi.setSystemTime(new Date('2026-10-14T10:00:00Z'));
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+	vi.useRealTimers();
+	vi.mocked(writeExtra).mockClear();
+});
 
 describe('boe', () => {
 	it('lee el sumario de hoy: secciones, departamentos, epígrafes y enlaces', async () => {
@@ -82,12 +90,41 @@ describe('boe', () => {
 		const fetch = mockFetch((url) => (url.endsWith('/20261013') ? sumario : undefined));
 		const data = await boe.fetch(undefined);
 		expect(data.date).toBe('2026-10-13');
-		expect(fetch).toHaveBeenCalledTimes(2);
+		// Primero hoy y luego ayer; después vienen las peticiones de la semana.
+		expect(fetch.mock.calls.slice(0, 2).map(([url]) => String(url).slice(-8))).toEqual(['20261014', '20261013']);
 	});
 
 	it('falla si no hay sumario en una semana', async () => {
 		const fetch = mockFetch(() => undefined);
 		await expect(boe.fetch(undefined)).rejects.toThrow('últimos 7 días');
 		expect(fetch).toHaveBeenCalledTimes(8);
+		expect(writeExtra).not.toHaveBeenCalled();
+	});
+
+	it('escribe la semana: reutiliza lo publicado y pide al BOE solo lo que falta', async () => {
+		const saved: BoeWeekDay = { date: '2026-10-12', number: '245', sections: [] };
+		const fetch = mockFetch((url) =>
+			url.endsWith('/20261014') || url.endsWith('/20261010') ? sumario : url.endsWith('boe-week.json') ? { days: [saved] } : undefined
+		);
+		await boe.fetch(undefined);
+		const [[weekPath, week]] = vi.mocked(writeExtra).mock.calls as [string, any][];
+		expect(weekPath).toBe('boe-week.json');
+		expect(week.days.map((d: BoeWeekDay) => d.date)).toEqual(['2026-10-14', '2026-10-12', '2026-10-10']);
+		expect(fetch.mock.calls.some(([url]) => String(url).endsWith('/20261012'))).toBe(false);
+	});
+});
+
+describe('semana del BOE', () => {
+	const day = (date: string): BoeData => ({ date, number: '1', pdf: 'x.pdf', sections: [{ code: '1', name: 'I', total: 1, items: [{ id: 'A', title: 'Título', dept: 'Ministerio', epigraph: '', html: 'h', pdf: 'p' }] }] });
+
+	it('compacta un sumario sin enlaces', () => {
+		expect(compact(day('2026-10-14')).sections[0].items).toEqual([{ id: 'A', title: 'Título', dept: 'Ministerio', epigraph: '' }]);
+	});
+
+	it('7 días de calendario que acaban hoy, sin los días sin BOE', async () => {
+		const load = vi.fn(async (d: string) => (d === '20261008' || d === '20261007' ? day(`${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`) : null));
+		const week = await buildWeek(day('2026-10-14'), [], load, '20261014');
+		expect(week.days.map((d) => d.date)).toEqual(['2026-10-14', '2026-10-08']);
+		expect(load).toHaveBeenCalledTimes(6);
 	});
 });
