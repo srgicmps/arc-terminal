@@ -8,6 +8,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { foldKey, isFolded, toggleFold } from '#lib/folded.svelte.ts';
+	import { tv } from '#lib/tv.svelte.ts';
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import type { Snippet } from 'svelte';
 	import { getModular, type Span } from '#lib/layout.svelte.ts';
@@ -45,7 +46,8 @@
 	let max = $state(false);
 	// Plegado (M20): tocar el título lo pliega o despliega y se recuerda por vista y panel. Ampliar pasa a ⤢ y M.
 	const fkey = $derived(foldKey(page.route.id, title));
-	const shut = $derived(!max && isFolded(fkey));
+	// En el modo TV no hay quien despliegue: ahí todos los paneles salen abiertos.
+	const shut = $derived(!max && !tv.on && isFolded(fkey));
 	let titleButton: HTMLButtonElement;
 	let section: HTMLElement;
 	let closeButton = $state<HTMLButtonElement>();
@@ -136,31 +138,31 @@
 			</button>
 		</h2>
 		<div class="ph-r">
-				{#if meta}<span class:accent>{meta}</span>{/if}
-				{#if share}<Share source={share} />{/if}
-				{#if jump}<a class="jump" href={jump.href}>{jump.code} ›</a>{/if}
-				{#if max}
-					<button bind:this={closeButton} class="close" type="button" aria-label="Cerrar el panel ampliado" onclick={close}>✕</button>
-				{:else}
-					<button class="tool grow" type="button" aria-label="Ampliar {title}" title="Ampliar (M)" onclick={open}>⤢</button>
-				{/if}
-				{#if tools && id && !max}
-					<button
-						class="tool grip"
-						type="button"
-						draggable="true"
-						aria-expanded={menu}
-						aria-label="Mover o cambiar el ancho de {title}"
-						title="Arrastra para mover · toca para más opciones"
-						onclick={() => (menu = !menu)}
-						ondragstart={(e) => {
-							e.dataTransfer?.setData('text/plain', id);
-							tools.dragging = id;
-						}}
-						ondragend={() => (tools.dragging = null)}>⋮⋮</button
-					>
-					<button class="tool" type="button" aria-label="Ocultar {title}" title="Ocultar" onclick={() => tools.hide(id)}>✕</button>
-				{/if}
+			{#if meta}<span class:accent>{meta}</span>{/if}
+			{#if share}<Share source={share} />{/if}
+			{#if jump}<a class="jump" href={jump.href}>{jump.code} ›</a>{/if}
+			{#if max}
+				<button bind:this={closeButton} class="close" type="button" aria-label="Cerrar el panel ampliado" onclick={close}>✕</button>
+			{:else}
+				<button class="tool grow" type="button" aria-label="Ampliar {title}" title="Ampliar (M)" onclick={open}>⤢</button>
+			{/if}
+			{#if tools && id && !max}
+				<button
+					class="tool grip"
+					type="button"
+					draggable="true"
+					aria-expanded={menu}
+					aria-label="Mover o cambiar el ancho de {title}"
+					title="Arrastra para mover · toca para más opciones"
+					onclick={() => (menu = !menu)}
+					ondragstart={(e) => {
+						e.dataTransfer?.setData('text/plain', id);
+						tools.dragging = id;
+					}}
+					ondragend={() => (tools.dragging = null)}>⋮⋮</button
+				>
+				<button class="tool" type="button" aria-label="Ocultar {title}" title="Ocultar" onclick={() => tools.hide(id)}>✕</button>
+			{/if}
 		</div>
 	</header>
 	{#if tools && id && menu && !max}
