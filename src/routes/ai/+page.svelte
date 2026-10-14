@@ -31,7 +31,7 @@
 		</Panel>
 		<Panel title="Papers del día · Hugging Face" meta={papers.length ? `${papers.length} papers` : undefined}>
 			<PaperList items={papers} />
-			{#snippet note()}<Updated at={data.papers?.fetchedAt} />{/snippet}
+			{#snippet note()}<Updated at={data.papers?.fetchedAt} source="hfpapers" />{/snippet}
 		</Panel>
 	</div>
 </div>
