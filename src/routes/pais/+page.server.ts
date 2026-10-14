@@ -2,6 +2,7 @@ import { advisoryCountry } from '#lib/advisories.ts';
 import { COUNTRIES } from '#lib/countries.ts';
 import { countryProfile, type CountryProfile } from '#lib/country.ts';
 import { dataset } from '#lib/data.ts';
+import type { MilexData, MilexRow } from '#lib/milex.ts';
 import type { Mention } from '#lib/news.ts';
 import type { AdvisoriesData, EuPowerData, ImfData, SeriesData, TravelAdvisory, YieldCurveData } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
@@ -10,7 +11,7 @@ import type { PageServerLoad } from './$types';
 // cifras que pinta cada una (último dato y anterior), no las series enteras. Los países sin ningún dato no
 // van; los titulares llegan ya repartidos por país (scripts/news-index.ts → news-countries.json).
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news, advisories, eupower] = await Promise.all([
+	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news, advisories, eupower, sipri] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -20,7 +21,8 @@ export const load: PageServerLoad = async () => {
 		dataset<ImfData>('imf'),
 		dataset<Record<string, Mention[]>>('news-countries'),
 		dataset<AdvisoriesData>('advisories'),
-		dataset<EuPowerData>('energycharts')
+		dataset<EuPowerData>('energycharts'),
+		dataset<MilexData>('sipri')
 	]);
 	const sets = {
 		series: [eurostat, ecb, bls, fred, bis].flatMap((d) => d?.data.series ?? []),
@@ -38,6 +40,9 @@ export const load: PageServerLoad = async () => {
 		const c = advisoryCountry(a);
 		if (c) travel[c.code] = { level: a.level, url: a.url, updated: a.updated, prevLevel: a.prevLevel, changedAt: a.changedAt };
 	}
+	// Gasto militar (SIPRI): solo la fila de cada país que conoce la terminal.
+	const military: Record<string, MilexRow> = {};
+	for (const r of sipri?.data.rows ?? []) if (r.code && COUNTRIES.some((c) => c.code === r.code)) military[r.code] = r;
 	// Luz en Europa: todas las zonas (son pocas); la ficha enseña las del país frente a la media de todas.
 	return {
 		profiles,
@@ -45,6 +50,9 @@ export const load: PageServerLoad = async () => {
 		travel,
 		travelAt: advisories?.fetchedAt,
 		eupower: eupower?.data.zones ?? [],
-		eupowerAt: eupower?.fetchedAt
+		eupowerAt: eupower?.fetchedAt,
+		military,
+		militaryYear: sipri?.data.year ?? null,
+		militaryAt: sipri?.fetchedAt ?? null
 	};
 };

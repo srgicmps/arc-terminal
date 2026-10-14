@@ -2,12 +2,13 @@ import { dataset } from '#lib/data.ts';
 import { crisisPoints, eventPoints, quakePoints, sanctionPoints, stormPoints, straitPoints, type LayerId, type MapPoint } from '#lib/geo/layers.ts';
 import type { ClimateData } from '#lib/climate.ts';
 import { advisoryCountry, levelCounts, recentChanges } from '#lib/advisories.ts';
+import type { MilexData } from '#lib/milex.ts';
 import { headlines, trim } from '#lib/trim.ts';
 import type { AdvisoriesData, Chokepoint, Disaster, ElectionsData, HazardsData, NewsData, PredictionsData, Quake, SwpcData, TradeDoc } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, gov, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories] = await Promise.all([
+	const [news, gov, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-gov'),
 		dataset<NewsData>('news-intl'),
@@ -21,7 +22,8 @@ export const load: PageServerLoad = async () => {
 		dataset<ClimateData>('climate'),
 		dataset<ElectionsData>('elections'),
 		dataset<SwpcData>('swpc'),
-		dataset<AdvisoriesData>('advisories')
+		dataset<AdvisoriesData>('advisories'),
+		dataset<MilexData>('sipri')
 	]);
 	// Los comunicados oficiales y los de organismos internacionales: solo los 15 que se pintan, sin resumen.
 	// De Polymarket, los 8 mercados de geopolítica que se pintan (economía y tipos son de ECO).
@@ -51,7 +53,9 @@ export const load: PageServerLoad = async () => {
 		climate,
 		elections,
 		swpc: trim(swpc, (d) => ({ ...d, kp24: [] })),
-		advisories: advisories && advisorySummary(advisories.data, Date.parse(advisories.fetchedAt), advisories.fetchedAt)
+		advisories: advisories && advisorySummary(advisories.data, Date.parse(advisories.fetchedAt), advisories.fetchedAt),
+		// Gasto militar: los 15 países que más gastan.
+		sipri: trim(sipri, (d) => ({ ...d, rows: d.rows.slice(0, 15) }))
 	};
 };
 
