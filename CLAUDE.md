@@ -13,6 +13,16 @@
   «Aparcado», al final de este archivo.
 - Antes de dar algo por terminado: `pnpm check` y `pnpm build` sin errores.
 
+## Trabajo entre sesiones
+Varias sesiones de Claude trabajan a la vez en este repo. Para no pisarse:
+- **Coordinación** reparte las tareas. Antes de asignar una, revisa las ramas y los PR abiertos.
+- **Ideas** propone mejoras (qué es, fuente, si la ha comprobado y qué archivos tocaría) y se las manda a
+  Coordinación por lotes. No programa.
+- Las **sesiones que programan** piden tarea a Coordinación antes de empezar algo nuevo y le avisan al abrir el PR.
+  No toques archivos de otra tarea en curso sin hablarlo antes con su sesión.
+- Para hablar entre sesiones, usa `send_message` de Claude Code Remote; `list_sessions` dice quién está activo.
+- Si una fuente o vista nueva se solapa con otro PR abierto, el que llega después se adapta al primero.
+
 ## Qué es
 Terminal personal al estilo Bloomberg para el día a día de Sergi: economía y macro, geopolítica, Wall Street,
 tecnología, IA, acciones importantes y utilidades como las gasolineras más baratas de Menorca. Se maneja con
