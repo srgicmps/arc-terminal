@@ -77,4 +77,3 @@ export const sources: Source<any>[] = [
 	imp,
 	search
 ];
-import { archive } from './archive.ts'; sources.push(archive); // M15: quitar cuando el registro no exija index.ts
