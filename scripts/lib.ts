@@ -68,6 +68,19 @@ export function checkShrink(
 	return null;
 }
 
+/**
+ * Espera a `promise` como mucho `ms` milisegundos; si tarda más, falla con `message`. El temporizador se
+ * limpia siempre, para no dejar el proceso esperando. Ojo: la descarga de fondo no se cancela (las
+ * fuentes no reciben una señal de aborto), pero `request()` ya corta cada petición a los 45 s.
+ */
+export function withDeadline<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const deadline = new Promise<never>((_, reject) => {
+		timer = setTimeout(() => reject(new Error(message)), ms);
+	});
+	return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+}
+
 /** Escribe un archivo extra de una fuente en static/data/<path>. */
 export async function writeExtra(path: string, content: unknown) {
 	const { mkdir, writeFile } = await import('node:fs/promises');
