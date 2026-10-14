@@ -216,15 +216,16 @@ export interface LogEntry {
 /** Historial publicado (static/data/notify-log.json). Nunca lleva el tema de ntfy. */
 export interface NotifyLog {
 	entries: LogEntry[];
-	/** Último valor visto de cada cosa que se compara entre pasadas: periodos macro, tipos, estrechos. */
+	/**
+	 * Último valor visto de cada cosa que se compara entre pasadas: periodos macro, tipos, estrechos y, para
+	 * mercados y valores seguidos, «día|cierre de referencia|precio del último aviso» (mkt:<activo>, stock:<símbolo>).
+	 */
 	last: Record<string, string>;
-	/** Último aviso de cada activo de mercado: cuándo, cuánto se movía y de qué dato (para la espera de 4 h). */
-	assets: Record<string, { t: string; move: number; obs?: string }>;
 	/** Fotos de las probabilidades de Polymarket (una cada 4 h, unas 30 h) para comparar con hace 24 h. */
 	poly: Record<string, { t: string; p: Record<string, number> }[]>;
 }
 
-export const emptyLog = (): NotifyLog => ({ entries: [], last: {}, assets: {}, poly: {} });
+export const emptyLog = (): NotifyLog => ({ entries: [], last: {}, poly: {} });
 
 export interface Alert {
 	/** Id único y estable. */
@@ -347,7 +348,13 @@ export interface Reading {
 	move: number;
 	/** Valor actual, para los resúmenes. */
 	value?: number;
-	/** De qué dato sale (un día, una hora): el mismo dato no se vuelve a avisar pasada la espera. */
+	/**
+	 * Nivel actual y cierre de referencia, en unidades que se pueden comparar con `unit`: el precio para los
+	 * activos en % y los puntos básicos para los de pb. Para los escalones (stepMove).
+	 */
+	level: number;
+	ref: number;
+	/** De qué dato sale (un día, una hora): marca el día del activo (al cambiar, los escalones se reinician). */
 	obs?: string;
 }
 
@@ -356,28 +363,35 @@ export function readAsset(asset: Asset, d: Inputs): Reading | null {
 	const src = asset.source;
 	if (src.kind === 'coin') {
 		const c = list(d.crypto?.coins).find((x) => x?.id === src.id);
-		return c && typeof c.change24h === 'number' ? { move: c.change24h, value: c.usd } : null;
+		return c && typeof c.change24h === 'number' && okPrice(c.usd)
+			? { move: c.change24h, value: c.usd, level: c.usd, ref: c.usd / (1 + c.change24h / 100) }
+			: null;
 	}
 	if (src.kind === 'quote') {
 		const q = list(d.finnhub?.quotes).find((x) => x?.symbol === src.symbol);
-		return q && typeof q.changePct === 'number'
-			? { move: q.changePct, value: q.price, obs: q.time ?? undefined }
+		return q && typeof q.changePct === 'number' && okPrice(q.price)
+			? {
+					move: q.changePct,
+					value: q.price,
+					level: q.price,
+					ref: okPrice(q.prevClose) ? q.prevClose : q.price / (1 + q.changePct / 100),
+					obs: q.time ?? undefined
+				}
 			: null;
 	}
 	if (src.kind === 'series') {
 		const [last, prev] = lastPoints(seriesOf(d[src.file as 'ecb' | 'fred'], src.id));
-		return last && prev && prev.v ? { move: (last.v / prev.v - 1) * 100, value: last.v, obs: last.t } : null;
+		return last && prev && prev.v
+			? { move: (last.v / prev.v - 1) * 100, value: last.v, level: last.v, ref: prev.v, obs: last.t }
+			: null;
 	}
 	if (src.kind === 'curve') {
 		const i = list(d.uscurve?.tenors).indexOf(src.tenor);
 		const days = list(d.uscurve?.days).filter((x) => typeof x?.values?.[i] === 'number');
 		const [last, prev] = [days.at(-1), days.at(-2)];
 		if (i < 0 || !last || !prev) return null;
-		return {
-			move: ((last.values[i] as number) - (prev.values[i] as number)) * 100,
-			value: last.values[i] as number,
-			obs: last.date
-		};
+		const [now, before] = [(last.values[i] as number) * 100, (prev.values[i] as number) * 100];
+		return { move: now - before, value: last.values[i] as number, level: now, ref: before, obs: last.date };
 	}
 	// Prima de riesgo: diferencia con el bono alemán, en los dos últimos periodos que tienen ambos.
 	const base = new Map(list(seriesOf(d.ecb, src.base)?.points).map((p) => [p.t, p.v]));
@@ -385,8 +399,46 @@ export function readAsset(asset: Asset, d: Inputs): Reading | null {
 	const [last, prev] = [both.at(-1), both.at(-2)];
 	if (!last || !prev) return null;
 	const spread = (p: { t: string; v: number }) => (p.v - base.get(p.t)!) * 100;
-	return { move: spread(last) - spread(prev), value: spread(last), obs: last.t };
+	return { move: spread(last) - spread(prev), value: spread(last), level: spread(last), ref: spread(prev), obs: last.t };
 }
+
+/** Movimiento entre dos niveles de un activo: en % (precios) o en pb (niveles ya en pb). */
+export const stepMove = (unit: '%' | 'pb', from: number, to: number) => (unit === '%' ? (to / from - 1) * 100 : to - from);
+
+/** Día de un dato de mercado: el de su fecha («2026-10-14», «2026-09») o su hora en Madrid; si no, hoy. */
+export function obsDay(obs: string | undefined, today: string): string {
+	if (!obs) return today;
+	if (/^\d{4}-\d{2}(-\d{2})?$/.test(obs)) return obs;
+	const t = Date.parse(obs);
+	return Number.isFinite(t) ? madrid(t).date : today;
+}
+
+/**
+ * Escalones de mercados y valores seguidos, sin espera. El primer aviso del día sale cuando el movimiento
+ * desde el cierre anterior (`move`) pasa el umbral; los siguientes, cuando el nivel se mueve otro umbral
+ * desde el del último aviso (guardado en log.last[key] como «día|referencia|nivel»), suba o baje. Al cambiar
+ * de día se reinicia. `since`: el movimiento desde el último aviso (null si es el primero del día).
+ */
+export function stepHit(
+	log: NotifyLog,
+	key: string,
+	day: string,
+	r: { move: number; level: number },
+	unit: '%' | 'pb',
+	threshold: number,
+	upOnly = false
+): { since: number | null } | null {
+	const [lastDay, , lastLevel] = (log.last[key] ?? '').split('|');
+	const prev = Number(lastLevel);
+	const known = lastDay === day && Boolean(lastLevel) && Number.isFinite(prev) && (unit === 'pb' || prev !== 0);
+	const since = known ? stepMove(unit, prev, r.level) : null;
+	const m = since ?? r.move;
+	if (!Number.isFinite(m)) return null;
+	return (upOnly ? m >= threshold : Math.abs(m) >= threshold) ? { since } : null;
+}
+
+/** Lo que se guarda tras un aviso de escalón. */
+export const stepState = (day: string, r: { ref: number; level: number }) => `${day}|${r.ref}|${r.level}`;
 
 // ---------- P1 ----------
 
@@ -610,34 +662,34 @@ export function euriborText(s: Series | undefined): string | null {
 }
 
 /**
- * Mercados con umbrales «B» (config ASSETS). Cada activo espera 4 h entre avisos (y con un dato nuevo),
- * salvo que el movimiento se duplique. Si saltan 3 o más a la vez, van juntos en un solo aviso.
- * Id: mkt:<activo>:<minuto> o mkt:grupo:<minuto>.
+ * Mercados con umbrales «B» (config ASSETS), por escalones y sin espera: el primer aviso del día de cada
+ * activo sale al pasar el umbral desde el cierre anterior; los siguientes, cada vez que se mueve otro umbral
+ * desde el último aviso, suba o baje (las primas, solo al subir). Si saltan 3 o más a la vez, van juntos en
+ * un solo aviso. Id: mkt:<activo>:<minuto> o mkt:grupo:<minuto>.
  */
-export function marketRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+export function marketRule(d: Inputs, { now, today, log }: RuleContext): Draft[] {
 	const hits = ASSETS.flatMap((asset) => {
 		const r = readAsset(asset, d);
 		if (!r || !Number.isFinite(r.move)) return [];
-		const big = asset.upOnly ? r.move >= asset.threshold : Math.abs(r.move) >= asset.threshold;
-		if (!big) return [];
-		const st = log.assets[asset.name];
-		const doubled = st && Math.abs(r.move) >= 2 * Math.abs(st.move);
-		const waited =
-			st && now - Date.parse(st.t) >= MARKETS.waitHours * HOUR && (r.obs === undefined || r.obs !== st.obs);
-		return !st || doubled || waited ? [{ asset, r }] : [];
+		const day = obsDay(r.obs, today);
+		const key = `mkt:${asset.name}`;
+		const hit = stepHit(log, key, day, r, asset.unit, asset.threshold, asset.upOnly);
+		return hit ? [{ asset, r, day, key, since: hit.since }] : [];
 	});
 	if (!hits.length) return [];
+	type Hit = (typeof hits)[number];
 	const t = minute(now);
-	const commitAll = (items: typeof hits) => (l: NotifyLog) => {
-		for (const { asset, r } of items) l.assets[asset.name] = { t, move: r.move, obs: r.obs };
+	const commitAll = (items: Hit[]) => (l: NotifyLog) => {
+		for (const h of items) l.last[h.key] = stepState(h.day, h.r);
 	};
-	const text = ({ asset, r }: (typeof hits)[number]) => `${asset.name} ${move(r.move, asset.unit)}`;
+	const text = ({ asset, r }: Hit) => `${asset.name} ${move(r.move, asset.unit)}`;
+	const since = (h: Hit) => (h.since === null ? '' : `${move(h.since, h.asset.unit)} desde el último aviso`);
 	if (hits.length >= MARKETS.group) {
 		return [
 			{
 				id: `mkt:grupo:${t}`,
 				title: 'Mercados',
-				body: hits.map(text).join(', '),
+				body: hits.map((h) => text(h) + (h.since === null ? '' : ` (${since(h)})`)).join(', '),
 				tags: 'chart_with_downwards_trend',
 				click: `${SITE}/ws`,
 				time: now,
@@ -645,15 +697,20 @@ export function marketRule(d: Inputs, { now, log }: RuleContext): Draft[] {
 			}
 		];
 	}
-	return hits.map((h) => ({
-		id: `mkt:${h.asset.name}:${t}`,
-		title: `Mercados: ${text(h)}`,
-		body: `Movimiento del día (umbral ${move(h.asset.threshold, h.asset.unit).replace('+', '±')}).`,
-		tags: h.r.move >= 0 ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
-		click: `${SITE}/ws`,
-		time: now,
-		commit: commitAll([h])
-	}));
+	return hits.map((h) => {
+		// El umbral tal cual está en config (1,25 %, 7,5 pb), sin redondear.
+		const value = h.asset.threshold.toLocaleString('es-ES', { maximumFractionDigits: 2 });
+		const step = `${h.asset.upOnly ? '+' : '±'}${value} ${h.asset.unit}`;
+		return {
+			id: `mkt:${h.asset.name}:${t}`,
+			title: `Mercados: ${text(h)}`,
+			body: `Movimiento del día${h.since === null ? '' : `; ${since(h)}`} (escalón ${step}).`,
+			tags: (h.since ?? h.r.move) >= 0 ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
+			click: `${SITE}/ws`,
+			time: now,
+			commit: commitAll([h])
+		};
+	});
 }
 
 /**
@@ -882,37 +939,37 @@ export function aiRule(d: Inputs, { now, today, log, update }: RuleContext): Dra
 export const stockName = (symbol: string) => STOCKS.names[symbol] ?? symbol;
 
 /**
- * Valores seguidos (alert-quotes.json, P2): variación del día de ±3 % o más, un aviso por valor y día, y
- * otro si pasa de ±6 %. El día es el de la cotización (así el viernes no se repite el sábado). Si 3 o más
- * se mueven a la vez, van juntos. Solo cuentan los símbolos que traiga el archivo (con el plan gratuito de
- * Finnhub, los europeos no vienen). Id: stock:<símbolo>:<día>:<3|6> o stock:grupo:<minuto>.
+ * Valores seguidos (alert-quotes.json, P2), por escalones como los mercados y sin espera: el primer aviso
+ * del día sale con una variación de ±3 % (STOCKS.threshold) o más desde el cierre anterior; los siguientes,
+ * cada vez que el precio se mueve otro 3 % desde el último aviso, suba o baje. El día es el de la cotización
+ * (así el viernes no se repite el sábado). Si 3 o más se mueven a la vez, van juntos. Solo cuentan los
+ * símbolos que traiga el archivo (con el plan gratuito de Finnhub, los europeos no vienen).
+ * Id: stock:<símbolo>:<minuto> o stock:grupo:<minuto>.
  */
 export function stockRule(d: Inputs, { now, today, log }: RuleContext): Draft[] {
 	const hits = list(d.alertQuotes).flatMap((q) => {
 		const pct = q?.changePct;
-		if (!q?.symbol || typeof pct !== 'number' || !Number.isFinite(pct)) return [];
-		const step = [...STOCKS.steps].reverse().find((s) => Math.abs(pct) >= s);
-		if (step === undefined) return [];
-		const t = Date.parse(q.time ?? '');
-		const day = Number.isFinite(t) ? madrid(t).date : today;
+		if (!q?.symbol || typeof pct !== 'number' || !Number.isFinite(pct) || !okPrice(q.price)) return [];
+		const r = { move: pct, level: q.price, ref: okPrice(q.prevClose) ? q.prevClose : q.price / (1 + pct / 100) };
+		const day = obsDay(q.time ?? undefined, today);
 		const key = `stock:${q.symbol}`;
-		const [lastDay, lastStep] = (log.last[key] ?? '').split('|');
-		if (lastDay === day && Number(lastStep) >= step) return [];
-		return [{ q, pct, step, day, key }];
+		const hit = stepHit(log, key, day, r, '%', STOCKS.threshold);
+		return hit ? [{ q, pct, r, day, key, since: hit.since }] : [];
 	});
 	if (!hits.length) return [];
 	type Hit = (typeof hits)[number];
 	const commitAll = (items: Hit[]) => (l: NotifyLog) => {
-		for (const h of items) l.last[h.key] = `${h.day}|${h.step}`;
+		for (const h of items) l.last[h.key] = stepState(h.day, h.r);
 	};
 	const text = (h: Hit) => `${stockName(h.q.symbol)} ${signed(h.pct)} %`;
+	const since = (h: Hit) => (h.since === null ? '' : `${signed(h.since)} % desde el último aviso`);
 	const t0 = minute(now);
 	if (hits.length >= STOCKS.group) {
 		return [
 			{
 				id: `stock:grupo:${t0}`,
 				title: 'Valores seguidos',
-				body: hits.map(text).join(', '),
+				body: hits.map((h) => text(h) + (h.since === null ? '' : ` (${since(h)})`)).join(', '),
 				tags: hits.filter((h) => h.pct < 0).length > hits.length / 2 ? 'chart_with_downwards_trend' : 'chart_with_upwards_trend',
 				click: `${SITE}/ws`,
 				time: now,
@@ -921,12 +978,12 @@ export function stockRule(d: Inputs, { now, today, log }: RuleContext): Draft[] 
 		];
 	}
 	return hits.map((h) => ({
-		id: `stock:${h.q.symbol}:${h.day}:${h.step}`,
+		id: `stock:${h.q.symbol}:${t0}`,
 		title: text(h),
-		body: `Variación del día (aviso desde ±${h.step} %). Cotiza a ${num(h.q.price, 2)}${
+		body: `Variación del día${h.since === null ? '' : `; ${since(h)}`} (escalón ±${num(STOCKS.threshold, 0)} %). Cotiza a ${num(h.q.price, 2)}${
 			typeof h.q.prevClose === 'number' ? `; cierre anterior, ${num(h.q.prevClose, 2)}` : ''
 		}.`,
-		tags: h.pct >= 0 ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
+		tags: (h.since ?? h.pct) >= 0 ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
 		// La ficha de la web es de TradingView: los símbolos de EE. UU. de Finnhub valen tal cual.
 		click: h.q.symbol.includes('.') ? `${SITE}/ws` : `${SITE}/s?sym=${encodeURIComponent(h.q.symbol)}`,
 		time: now,

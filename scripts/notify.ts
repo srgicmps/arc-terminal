@@ -153,7 +153,6 @@ export function parseLog(body: unknown): NotifyLog | null {
 	return {
 		entries,
 		last: last as Record<string, string>,
-		assets: (isObject(data.assets) ? data.assets : {}) as NotifyLog['assets'],
 		poly: (isObject(data.poly) ? data.poly : {}) as NotifyLog['poly']
 	};
 }

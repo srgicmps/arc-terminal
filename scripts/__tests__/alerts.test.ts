@@ -242,9 +242,9 @@ describe('P2', () => {
 		expect(periodName('2026-Q2')).toBe('2.º trimestre de 2026');
 	});
 
-	const crypto = (btc: number, eth = 0) => ({
+	const crypto = (btc: number, eth = 0, usd = 60000) => ({
 		coins: [
-			{ id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', usd: 60000, eur: 0, change24h: btc, marketCap: 0 },
+			{ id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', usd, eur: 0, change24h: btc, marketCap: 0 },
 			{ id: 'ethereum', symbol: 'ETH', name: 'Ether', usd: 3000, eur: 0, change24h: eth, marketCap: 0 }
 		]
 	});
@@ -255,25 +255,50 @@ describe('P2', () => {
 		expect(alerts.map((a) => a.title)).toEqual(['Mercados: BTC −4,1 %']);
 	});
 
-	it('mercados: espera de 4 h por activo, salvo que el movimiento se duplique', () => {
-		const first = run(marketRule, { crypto: crypto(-4) });
+	it('mercados: sin espera, por escalones desde el último aviso, suba o baje', () => {
+		// 1.º del día: −4 % desde el cierre (60.000 → 57.600).
+		const first = run(marketRule, { crypto: crypto(-4, 0, 57600) });
+		expect(first.alerts.map((a) => a.title)).toEqual(['Mercados: BTC −4,0 %']);
+		expect(first.alerts[0].body).toBe('Movimiento del día (escalón ±3,5 %).');
 		const log = emptyLog();
 		first.alerts[0].commit!(log);
-		expect(run(marketRule, { crypto: crypto(-5) }, log, NOW + 2 * HOUR).ids).toEqual([]);
-		expect(run(marketRule, { crypto: crypto(-8) }, log, NOW + 2 * HOUR).alerts[0].title).toBe('Mercados: BTC −8,0 %');
-		expect(run(marketRule, { crypto: crypto(-5) }, log, NOW + 4 * HOUR).ids).toHaveLength(1);
+		expect(log.last['mkt:BTC']).toBe('2026-10-14|60000|57600');
+		// A los 15 min: −2,8 % desde el último aviso, todavía no; −3,6 %, sí (aunque no haya pasado ninguna espera).
+		expect(run(marketRule, { crypto: crypto(-6.7, 0, 56000) }, log, NOW + 15 * 60_000).ids).toEqual([]);
+		const second = run(marketRule, { crypto: crypto(-7.5, 0, 55500) }, log, NOW + 15 * 60_000);
+		expect(second.alerts[0].title).toBe('Mercados: BTC −7,5 %');
+		expect(second.alerts[0].body).toBe('Movimiento del día; −3,6 % desde el último aviso (escalón ±3,5 %).');
+		second.alerts[0].commit!(log);
+		// Rebote: +3,6 % desde el último aviso también avisa, aunque en el día siga en negativo.
+		const third = run(marketRule, { crypto: crypto(-4.2, 0, 57500) }, log, NOW + 30 * 60_000);
+		expect(third.alerts[0].body).toBe('Movimiento del día; +3,6 % desde el último aviso (escalón ±3,5 %).');
+		expect(third.alerts[0].tags).toBe('chart_with_upwards_trend');
+		third.alerts[0].commit!(log);
+		expect(run(marketRule, { crypto: crypto(-4.2, 0, 57500) }, log, NOW + HOUR).ids).toEqual([]);
+		// Al día siguiente se reinicia: vuelve a contar desde el cierre anterior.
+		const tomorrow = NOW + 24 * HOUR;
+		expect(run(marketRule, { crypto: crypto(-3.6, 0, 57400) }, log, tomorrow).alerts[0].body).toBe(
+			'Movimiento del día (escalón ±3,5 %).'
+		);
+		expect(run(marketRule, { crypto: crypto(-1, 0, 57400) }, log, tomorrow).ids).toEqual([]);
 	});
 
-	it('mercados: con un dato diario, pasadas las 4 h tampoco repite si el dato es el mismo', () => {
-		const ecb = series('eurusd', [
-			['2026-10-13', 1.1],
-			['2026-10-14', 1.09]
-		]);
-		const first = run(marketRule, { ecb });
-		expect(first.alerts[0].title).toBe('Mercados: EUR/USD −0,9 %');
+	it('mercados: en pb, el escalón es en puntos básicos; un dato que no cambia no repite', () => {
+		const curve = (v: number) => ({
+			tenors: ['10A'],
+			days: [
+				{ date: '2026-10-13', values: [4.0] },
+				{ date: '2026-10-14', values: [v] }
+			]
+		});
+		const first = run(marketRule, { uscurve: curve(4.09) });
+		expect(first.alerts[0].title).toBe('Mercados: US10Y +9 pb');
 		const log = emptyLog();
 		first.alerts[0].commit!(log);
-		expect(run(marketRule, { ecb }, log, NOW + 6 * HOUR).ids).toEqual([]);
+		expect(run(marketRule, { uscurve: curve(4.09) }, log, NOW + 6 * HOUR).ids).toEqual([]);
+		expect(run(marketRule, { uscurve: curve(4.15) }, log).ids).toEqual([]);
+		const next = run(marketRule, { uscurve: curve(4.17) }, log);
+		expect(next.alerts[0].body).toBe('Movimiento del día; +8 pb desde el último aviso (escalón ±7,5 pb).');
 	});
 
 	it('mercados: 3 o más a la vez van juntos en un solo aviso', () => {
@@ -297,7 +322,26 @@ describe('P2', () => {
 		expect(alerts[0].body).toBe('BTC −4,1 %, EUR/USD −0,7 %, US10Y +9 pb');
 		const log = emptyLog();
 		alerts[0].commit!(log);
-		expect(Object.keys(log.assets)).toEqual(['BTC', 'EUR/USD', 'US10Y']);
+		expect(Object.keys(log.last)).toEqual(['mkt:BTC', 'mkt:EUR/USD', 'mkt:US10Y']);
+		// La agrupación se mantiene en los escalones siguientes, con lo que se ha movido desde el último aviso.
+		const more: Inputs = {
+			crypto: crypto(-8, 0, 55000),
+			ecb: series('eurusd', [
+				['2026-10-13', 1.1],
+				['2026-10-14', 1.0834]
+			]),
+			uscurve: {
+				tenors: ['2A', '10A'],
+				days: [
+					{ date: '2026-10-13', values: [3.5, 4.0] },
+					{ date: '2026-10-14', values: [3.6, 4.17] }
+				]
+			}
+		};
+		expect(run(marketRule, more, log, NOW + HOUR).alerts[0].body).toBe(
+			'BTC −8,0 % (−8,3 % desde el último aviso), EUR/USD −1,5 % (−0,8 % desde el último aviso), ' +
+				'US10Y +17 pb (+8 pb desde el último aviso)'
+		);
 	});
 
 	it('mercados: las primas de riesgo solo cuentan al subir; sin datos, el activo no aplica', () => {
@@ -317,7 +361,9 @@ describe('P2', () => {
 				]).series
 			]
 		};
-		expect(run(marketRule, { ecb }).alerts.map((a) => a.title)).toEqual(['Mercados: Prima IT +12 pb']);
+		const first = run(marketRule, { ecb });
+		expect(first.alerts.map((a) => a.title)).toEqual(['Mercados: Prima IT +12 pb']);
+		expect(first.alerts[0].body).toBe('Movimiento del día (escalón +10 pb).');
 		const dax = ASSETS.find((a) => a.name === 'DAX')!;
 		expect(readAsset(dax, {})).toBeNull();
 	});

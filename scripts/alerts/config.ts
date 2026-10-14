@@ -115,9 +115,12 @@ export const ASSETS: Asset[] = [
 	{ name: 'Oro', source: { kind: 'series', file: 'fred', id: 'gold' }, unit: '%', threshold: 2 }
 ];
 
+/**
+ * Mercados, sin espera: el umbral de cada activo (ASSETS) hace de escalón. El primer aviso del día sale al
+ * pasarlo desde el cierre anterior; los siguientes, cada vez que el precio se mueve otro umbral desde el
+ * último aviso de ese activo, suba o baje.
+ */
 export const MARKETS = {
-	/** Espera entre dos avisos del mismo activo, salvo que el movimiento se duplique. */
-	waitHours: 4,
 	/** Desde cuántos activos a la vez van juntos en una sola notificación. */
 	group: 3
 };
@@ -163,12 +166,13 @@ export const AI_NEWS = {
 };
 
 /**
- * Valores seguidos (alert-quotes.json, PR #132): variación del día. Un aviso por valor y día al pasar de
- * `steps[0]` y otro al pasar de `steps[1]` (en %, en valor absoluto). Desde `group` a la vez, en uno solo.
- * Nombres legibles de los símbolos de Finnhub (ALERT_TICKERS de scripts/sources/alert-quotes.ts).
+ * Valores seguidos (alert-quotes.json, PR #132): escalones del `threshold` % (en valor absoluto), como los
+ * mercados y sin espera: el primero del día desde el cierre anterior y los siguientes desde el último aviso
+ * de ese valor. Desde `group` a la vez, en uno solo. Nombres legibles de los símbolos de Finnhub
+ * (ALERT_TICKERS de scripts/sources/alert-quotes.ts).
  */
 export const STOCKS = {
-	steps: [3, 6],
+	threshold: 3,
 	group: 3,
 	names: {
 		LMT: 'Lockheed Martin',

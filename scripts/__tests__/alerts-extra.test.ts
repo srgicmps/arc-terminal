@@ -206,33 +206,46 @@ const earning = (symbol: string, date: string, epsActual: number | null = null) 
 describe('Valores seguidos', () => {
 	// Forma de alert-quotes.json (PR #132): Quote[] de src/lib/types.ts. Con el plan gratuito de Finnhub
 	// solo vienen los de EE. UU.: los europeos faltan y no pasa nada.
-	const quote = (symbol: string, changePct: number | null, time = '2026-10-14T13:30:00.000Z') => ({
+	const quote = (symbol: string, changePct: number | null, time = '2026-10-14T13:30:00.000Z', price = 100) => ({
 		symbol,
-		price: 100,
+		price,
 		change: changePct,
 		changePct,
 		prevClose: 101,
 		time
 	});
 
-	it('±3 % un aviso por valor y día; otro al pasar del 6 %', () => {
+	it('±3 % el primero del día; después, otro cada 3 % desde el último aviso, suba o baje', () => {
 		const first = run(stockRule, { alertQuotes: [quote('LMT', -4.2), quote('RTX', 1), quote('NVDA', null)] });
-		expect(first.ids).toEqual(['stock:LMT:2026-10-14:3']);
+		expect(first.ids).toEqual(['stock:LMT:2026-10-14T10:00Z']);
 		expect(first.alerts[0].title).toBe('Lockheed Martin −4,2 %');
-		expect(first.alerts[0].body).toBe('Variación del día (aviso desde ±3 %). Cotiza a 100,00; cierre anterior, 101,00.');
+		expect(first.alerts[0].body).toBe('Variación del día (escalón ±3 %). Cotiza a 100,00; cierre anterior, 101,00.');
 		expect(first.alerts[0].click).toBe('https://srgicmps.github.io/arc-terminal/s?sym=LMT');
 		const log = emptyLog();
 		first.alerts[0].commit!(log);
-		expect(run(stockRule, { alertQuotes: [quote('LMT', -4.8)] }, log).ids).toEqual([]);
-		const six = run(stockRule, { alertQuotes: [quote('LMT', -6.3)] }, log);
-		expect(six.ids).toEqual(['stock:LMT:2026-10-14:6']);
-		six.alerts[0].commit!(log);
-		expect(run(stockRule, { alertQuotes: [quote('LMT', -7)] }, log).ids).toEqual([]);
+		expect(log.last['stock:LMT']).toBe('2026-10-14|101|100');
+		// 98 es un −2 % desde el último aviso (100): todavía no. 96,9, un −3,1 %: sí, sin esperar.
+		const later = NOW + 15 * 60_000;
+		expect(run(stockRule, { alertQuotes: [quote('LMT', -3, undefined, 98)] }, log, later).ids).toEqual([]);
+		const down = run(stockRule, { alertQuotes: [quote('LMT', -4.1, undefined, 96.9)] }, log, later);
+		expect(down.ids).toEqual(['stock:LMT:2026-10-14T10:15Z']);
+		expect(down.alerts[0].body).toBe(
+			'Variación del día; −3,1 % desde el último aviso (escalón ±3 %). Cotiza a 96,90; cierre anterior, 101,00.'
+		);
+		down.alerts[0].commit!(log);
+		// Rebote de 96,9 a 100: +3,2 %, también avisa.
+		const up = run(stockRule, { alertQuotes: [quote('LMT', -1, undefined, 100)] }, log, later + HOUR);
+		expect(up.alerts[0].body).toContain('+3,2 % desde el último aviso');
+		expect(up.alerts[0].tags).toBe('chart_with_upwards_trend');
 		// El sábado sigue la cotización del viernes: el día es el de la cotización, no se repite.
 		const saturday = Date.parse('2026-10-17T10:00:00Z');
 		const friday = [quote('LMT', -7, '2026-10-16T20:00:00.000Z')];
 		const fri = run(stockRule, { alertQuotes: friday }, emptyLog(), saturday);
-		expect(fri.ids).toEqual(['stock:LMT:2026-10-16:6']);
+		expect(fri.ids).toEqual(['stock:LMT:2026-10-17T10:00Z']);
+		const satLog = emptyLog();
+		fri.alerts[0].commit!(satLog);
+		expect(satLog.last['stock:LMT']).toBe('2026-10-16|101|100');
+		expect(run(stockRule, { alertQuotes: friday }, satLog, saturday + HOUR).ids).toEqual([]);
 	});
 
 	it('3 o más a la vez van en un solo aviso, solo con los que están', () => {

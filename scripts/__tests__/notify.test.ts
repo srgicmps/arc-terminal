@@ -164,7 +164,6 @@ describe('historial', () => {
 		).toEqual({
 			entries: [{ k: 'a', t: '2026-10-14T10:00Z', s: 'sent' }],
 			last: { a: 'b' },
-			assets: {},
 			poly: {}
 		});
 	});
