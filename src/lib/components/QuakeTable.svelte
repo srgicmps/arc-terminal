@@ -5,7 +5,16 @@
 	import Table from './ui/Table.svelte';
 	import type { Quake } from '#lib/types.ts';
 
-	let { quakes }: { quakes: Quake[] } = $props();
+	interface Props {
+		quakes: Quake[];
+		/**
+		 * Aviso cuando la lista llega vacía porque no ha habido terremotos (la fuente sí ha respondido).
+		 * Sin él se entiende que faltan los datos: «Sin datos todavía».
+		 */
+		empty?: string;
+	}
+
+	let { quakes, empty }: Props = $props();
 </script>
 
 {#if quakes.length}
@@ -29,7 +38,7 @@
 		</tbody>
 	</Table>
 {:else}
-	<p class="empty">Sin datos todavía.</p>
+	<p class="empty">{empty ?? 'Sin datos todavía.'}</p>
 {/if}
 
 <style>
