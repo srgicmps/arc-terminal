@@ -568,7 +568,7 @@
 		     menor: ninguno se queda en 2-3 filas;
 		   - el alto que sobra se reparte a partes iguales, sin que ningún panel pase de su contenido: lo
 		     que no usa una tabla corta se lo quedan las listas largas, que hacen scroll por dentro. */
-		:global(html[data-fit] main > .grid:last-child > .col > .panel) {
+		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max)) {
 			flex: 1 0 auto;
 			height: var(--fit-panel-min);
 			max-height: fit-content;
@@ -576,7 +576,7 @@
 		}
 
 		/* Gráficos, mapas y widgets tienen un alto fijo: recortados no se leen, así que van enteros. */
-		:global(html[data-fit] main > .grid:last-child > .col > .panel:has(.chart, .map, .tv, .curve, .bars)) {
+		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max):has(.chart, .map, .tv, .curve, .bars)) {
 			height: auto;
 		}
 	}
