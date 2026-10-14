@@ -85,5 +85,3 @@ Cuando termine una fase, actualiza esta lista.
   para paro (EPA), IPC y turismo de Baleares.
 - AEMET (avisos y predicción oficial) y FRED necesitan clave gratuita: GitHub Secrets.
 - Finnhub para cotizaciones y resultados de empresas (clave en GitHub Secrets).
-- Mapa del mundo con los terremotos, huracanes e incendios.
-- Mercados de predicción (Polymarket) en `GEO`: la API funciona, falta filtrar por política.
