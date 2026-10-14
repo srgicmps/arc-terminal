@@ -17,6 +17,7 @@ import { holidays } from './holidays.ts';
 import { imf } from './imf.ts';
 import { ine } from './ine.ts';
 import { newsSources } from './news.ts';
+import { portwatch } from './portwatch.ts';
 import { predictions } from './predictions.ts';
 import { powerMix } from './ree-mix.ts';
 import { reliefweb } from './reliefweb.ts';
@@ -54,6 +55,7 @@ export const sources: Source<any>[] = [
 	quakes,
 	quakesEs,
 	hazards,
+	portwatch,
 	reliefweb,
 	predictions,
 	weather,
