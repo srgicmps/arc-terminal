@@ -50,7 +50,7 @@
 	.clocks {
 		display: flex;
 		align-items: center;
-		gap: 14px;
+		gap: var(--sp-14);
 		font-size: var(--fs-s);
 		color: var(--muted);
 	}
@@ -58,19 +58,19 @@
 	.clock {
 		display: inline-flex;
 		align-items: center;
-		gap: 6px;
+		gap: var(--sp-6);
 		white-space: nowrap;
 	}
 
 	b {
 		color: var(--fg);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 
 	.dot {
 		display: inline-block;
-		width: 6px;
-		height: 6px;
+		width: var(--dot);
+		height: var(--dot);
 		border-radius: 50%;
 		background: var(--faint);
 	}

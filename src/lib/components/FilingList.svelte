@@ -44,10 +44,10 @@
 	li {
 		display: grid;
 		grid-template-columns: 4.6em 4.4em minmax(0, 1fr);
-		gap: 10px;
+		gap: var(--sp-10);
 		align-items: baseline;
-		padding: 6px 12px;
-		border-bottom: 1px solid var(--line);
+		padding: var(--sp-6) var(--pad-x);
+		border-bottom: var(--border);
 	}
 
 	li:last-child {
@@ -57,7 +57,7 @@
 	.form {
 		color: var(--muted);
 		font-size: var(--fs-xs);
-		letter-spacing: 0.04em;
+		letter-spacing: var(--track-tight);
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -78,7 +78,7 @@
 		color: var(--fg);
 		font-family: var(--sans);
 		font-size: var(--fs-m);
-		line-height: 1.35;
+		line-height: var(--lh-snug);
 		text-decoration: none;
 		overflow-wrap: anywhere;
 	}
