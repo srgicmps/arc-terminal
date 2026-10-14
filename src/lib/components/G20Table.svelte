@@ -5,6 +5,8 @@
 <script lang="ts">
 	import { sortRows, type EcstKey, type EcstRow } from '#lib/ecst.ts';
 	import { nf, signed } from '#lib/format.ts';
+	import { Sorter } from '#lib/sorter.svelte.ts';
+	import SortTh from './ui/SortTh.svelte';
 	import Table from './ui/Table.svelte';
 
 	let { rows }: { rows: EcstRow[] } = $props();
@@ -19,20 +21,8 @@
 		{ key: 'balance', label: 'Saldo', title: 'Saldo público (FMI), % del PIB; negativo = déficit' }
 	];
 
-	let key = $state<EcstKey | null>(null);
-	let dir = $state<'asc' | 'desc'>('desc');
-
-	function sortBy(next: EcstKey) {
-		if (key === next) dir = dir === 'desc' ? 'asc' : 'desc';
-		else {
-			key = next;
-			dir = next === 'name' ? 'asc' : 'desc';
-		}
-	}
-
-	const shown = $derived(key ? sortRows(rows, key, dir) : rows);
-	const aria = (k: EcstKey) => (key === k ? (dir === 'asc' ? 'ascending' : 'descending') : 'none');
-	const arrow = (k: EcstKey) => (key === k ? (dir === 'asc' ? ' ▲' : ' ▼') : '');
+	const sort = new Sorter<EcstKey>();
+	const shown = $derived(sort.key ? sortRows(rows, sort.key, sort.dir) : rows);
 	const cell = (v: number | null, d = 1) => (v === null ? '—' : nf(v, d));
 </script>
 
@@ -40,11 +30,9 @@
 	<Table>
 		<thead>
 			<tr>
-				<th aria-sort={aria('name')}><button type="button" onclick={() => sortBy('name')}>País{arrow('name')}</button></th>
+				<SortTh {sort} key="name" first="asc">País</SortTh>
 				{#each COLUMNS as c (c.key)}
-					<th aria-sort={aria(c.key)} title={c.title}>
-						<button type="button" onclick={() => sortBy(c.key)}>{c.label}{arrow(c.key)}</button>
-					</th>
+					<SortTh {sort} key={c.key} title={c.title}>{c.label}</SortTh>
 				{/each}
 			</tr>
 		</thead>
@@ -66,25 +54,3 @@
 {:else}
 	<p class="empty">Sin datos todavía.</p>
 {/if}
-
-<style>
-	th button {
-		font: inherit;
-		color: inherit;
-		letter-spacing: inherit;
-		text-transform: inherit;
-		background: none;
-		border: 0;
-		padding: 0;
-		cursor: pointer;
-	}
-
-	th button:focus-visible {
-		outline: var(--hair) solid var(--amber);
-	}
-
-	th[aria-sort='ascending'],
-	th[aria-sort='descending'] {
-		color: var(--amber);
-	}
-</style>

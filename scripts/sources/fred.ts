@@ -1,6 +1,6 @@
 // FRED, Banco de la Reserva Federal de San Luis: series macro de EE. UU. https://fred.stlouisfed.org/docs/api/fred/
 // Necesita una clave gratuita (FRED_API_KEY, en GitHub Secrets). Sin ella, la fuente se salta.
-// Límite: unas 120 consultas por minuto por clave; aquí son 27 cada 3 horas.
+// Límite: unas 120 consultas por minuto por clave; aquí son 28 cada 3 horas.
 // Condiciones: hay que avisar de que se usa la API de FRED sin su respaldo, y algunas series son de
 // terceros con copyright (el VIX de Cboe, los diferenciales de ICE BofA): solo se guardan unos pocos puntos
 // con enlace a FRED y la fuente citada.
@@ -65,7 +65,10 @@ const WANTED: Wanted[] = [
 	// pública (ECO y aviso P2 del alto rendimiento). Aprobado por Sergi (D31), citando «ICE Data Indices vía FRED».
 	{ code: 'BAMLH0A0HYM2', id: 'hy-us', label: 'Alto rendimiento EE. UU.', unit: '%', freq: 'd', last: 260 },
 	{ code: 'BAMLC0A0CM', id: 'ig-us', label: 'Grado de inversión EE. UU.', unit: '%', freq: 'd', last: 260 },
-	{ code: 'BAMLHE00EHYIOAS', id: 'hy-eu', label: 'Alto rendimiento euro', unit: '%', freq: 'd', last: 260 }
+	{ code: 'BAMLHE00EHYIOAS', id: 'hy-eu', label: 'Alto rendimiento euro', unit: '%', freq: 'd', last: 260 },
+	// Índice de estrés financiero de la Fed de San Luis (semanal): 0 = lo normal; cada punto, una desviación típica
+	// por encima o por debajo. Para el panel provisional «Estrés financiero» de ECO (src/lib/stress.ts).
+	{ code: 'STLFSI4', id: 'stlfsi-us', label: 'Estrés financiero (Fed de San Luis)', unit: 'pts', freq: 'w', last: 104 }
 ];
 
 /** «2026-09-01» → «2026-09» (mensual) o «2026-Q3» (trimestral); diaria y semanal, tal cual. */
