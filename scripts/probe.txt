@@ -27,3 +27,11 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
+# ES (M11): IPC adelantado del INE (tablas de la operación IPC cuyo nombre lo dice)
+https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPC ~ .{0,80}[Aa]delantad.{0,80}
+https://servicios.ine.es/wstempus/js/ES/OPERACIONES_DISPONIBLES ~ .{0,60}(IPC|[Aa]delantad|IPCA).{0,60}
+# ES (M11): afiliación a la Seguridad Social y paro registrado en datos.gob.es (catálogo de datos abiertos)
+https://datos.gob.es/apidata/catalog/dataset/title/afiliados?_pageSize=10 ~ "_about":"[^"]+"|"accessURL":"[^"]+"
+https://datos.gob.es/apidata/catalog/dataset/title/paro%20registrado?_pageSize=10 ~ "_about":"[^"]+"|"accessURL":"[^"]+"
+# ES (M11): CSV de datos abiertos del SEPE (paro registrado por municipios del año): cabecera y primeras filas
+https://sede.sepe.gob.es/es/portaltrabaja/resources/sede/datos_abiertos/datos/Paro_por_municipios_2026_csv.csv ~ ^.{0,200}
