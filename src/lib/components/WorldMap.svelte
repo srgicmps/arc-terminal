@@ -150,11 +150,12 @@
 		stroke: var(--muted);
 	}
 
-	.pt:hover circle,
+	/* :not(.hit): la zona de toque invisible no se pinta al pasar el ratón ni al tocarla. */
+	.pt:hover circle:not(.hit),
 	.pt:hover rect,
-	.pt:focus-visible circle,
+	.pt:focus-visible circle:not(.hit),
 	.pt:focus-visible rect,
-	.on circle,
+	.on circle:not(.hit),
 	.on rect {
 		stroke: var(--fg);
 	}

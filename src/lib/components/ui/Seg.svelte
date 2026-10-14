@@ -3,7 +3,7 @@
 	Uso: <Seg label="Combustible" options={[{ value: 'g95', label: 'Gasolina 95' }, …]} bind:value={fuel} />
 	(bind:value es el v-model de Svelte).
 	Con bind:values en lugar de bind:value, cada botón se enciende y se apaga por su cuenta y `values` es la
-	lista de los encendidos (capas de un mapa, filtros).
+	lista de los encendidos (capas de un mapa, filtros); los encendidos se marcan con un ámbar suave.
 -->
 <script lang="ts" generics="T extends string">
 	interface Props {
@@ -26,7 +26,7 @@
 	}
 </script>
 
-<div class="seg" role="group" aria-label={label}>
+<div class="seg" class:multi={values} role="group" aria-label={label}>
 	{#each options as o (o.value)}
 		<button type="button" aria-pressed={pressed(o.value)} onclick={() => press(o.value)}>{o.label}</button>
 	{/each}
@@ -52,5 +52,12 @@
 		background: var(--amber);
 		color: var(--on-amber);
 		font-weight: var(--fw-medium);
+	}
+
+	/* Con varios encendidos (al principio, todos), el ámbar macizo pesa demasiado: fondo suave y texto ámbar. */
+	.multi button[aria-pressed='true'] {
+		background: var(--amber-soft);
+		color: var(--amber);
+		font-weight: var(--fw-regular);
 	}
 </style>
