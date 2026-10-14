@@ -25,14 +25,14 @@ export interface Mention extends NewsItem {
 }
 
 /** Quita las tildes sin cambiar mayúsculas: «Telefónica» → «Telefonica». */
-const plain = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '');
+export const plain = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '');
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Expresión para un nombre: palabra entera y sin tildes. Las letras dan igual en mayúscula o minúscula,
  * salvo la primera si el nombre empieza por mayúscula («Meta» sí, «meta» no).
  */
-function namePattern(name: string): RegExp {
+export function namePattern(name: string): RegExp {
 	const chars = Array.from(plain(name.trim()));
 	const body = chars
 		.map((c, i) => {

@@ -1,3 +1,5 @@
+import { namePattern, plain } from './news.ts';
+
 // Países que conoce la terminal, para la ficha PAIS (/pais?c=DE) y, más adelante, el mapa de GEO.
 // Aquí solo hay datos fijos: nombre, gentilicio, moneda… Los datos de cada país salen de las fuentes
 // que ya existen (Eurostat, BCE, BIS, FMI, titulares); src/lib/country.ts los junta.
@@ -139,4 +141,37 @@ export function findCountry(query: string | null | undefined): Country | undefin
 		// Por el principio del nombre: «reino» → Reino Unido, «corea del s» → Corea del Sur.
 		(q.length >= 3 ? COUNTRIES.find((c) => fold(c.name).startsWith(q)) : undefined)
 	);
+}
+
+// Expresiones de cada país (nombre, otros nombres y gentilicios), de la más larga a la más corta.
+let patterns: { c: Country; re: RegExp }[] | undefined;
+
+/**
+ * Todos los países que nombra un texto («Notice of OFAC Sanctions… Russia-related» → Rusia), por palabra
+ * entera y sin tildes, en el orden en que aparecen. Los nombres largos ganan a los cortos que contienen
+ * («Corea del Norte» no cuenta también como «Corea»), y cada país sale una vez.
+ */
+export function findCountries(text: string | null | undefined): Country[] {
+	const t = plain(text ?? '');
+	if (!t) return [];
+	patterns ??= COUNTRIES.flatMap((c) => countryNames(c).map((n) => ({ c, n })))
+		.sort((a, b) => b.n.length - a.n.length)
+		.map(({ c, n }) => ({ c, re: new RegExp(namePattern(n).source, 'gu') }));
+	const taken: [number, number][] = [];
+	const found: { c: Country; at: number }[] = [];
+	for (const { c, re } of patterns) {
+		re.lastIndex = 0;
+		for (const m of t.matchAll(re)) {
+			const a = m.index;
+			const b = a + m[0].length;
+			if (taken.some(([x, y]) => a < y && b > x)) continue;
+			taken.push([a, b]);
+			found.push({ c, at: a });
+		}
+	}
+	const seen = new Set<string>();
+	return found
+		.sort((x, y) => x.at - y.at)
+		.filter(({ c }) => !seen.has(c.code) && seen.add(c.code))
+		.map(({ c }) => c);
 }

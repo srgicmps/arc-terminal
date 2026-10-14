@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COUNTRIES, countryTicker, demonymForms, findCountry } from './countries.ts';
+import { COUNTRIES, countryTicker, demonymForms, findCountries, findCountry } from './countries.ts';
 import { mentions } from './news.ts';
 
 describe('countries', () => {
@@ -50,5 +50,19 @@ describe('countries', () => {
 		// «China» con mayúscula: «la vajilla de china» no cuenta… pero el gentilicio sí, en minúscula.
 		const cn = countryTicker(findCountry('CN')!);
 		expect(mentions([item('Aranceles a China'), item('Exportaciones chinas'), item('Paris attack')], cn)).toHaveLength(2);
+	});
+});
+
+describe('findCountries', () => {
+	const codes = (t: string) => findCountries(t).map((c) => c.code);
+	it('todos los países de un texto largo, en orden y sin repetir', () => {
+		expect(codes('Notice of OFAC Sanctions Actions; Russia-related Designations')).toEqual(['RU']);
+		expect(codes('Irán amenaza a Israel; EE. UU. pide calma a los iraníes')).toEqual(['IR', 'IL', 'US']);
+		expect(codes('Sin países aquí')).toEqual([]);
+	});
+
+	it('el nombre largo gana: Corea del Norte no es también Corea del Sur, South Africa no es Africa', () => {
+		expect(codes('North Korea fires missile toward South Korea')).toEqual(['KP', 'KR']);
+		expect(codes('Elections in South Africa')).toEqual(['ZA']);
 	});
 });
