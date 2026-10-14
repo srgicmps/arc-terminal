@@ -74,17 +74,11 @@ https://stats.bis.org/api/v1/data/WS_SPP/Q.US+ES+KR.N+R.771/all?lastNObservation
 # ECO: índice FAO de precios de los alimentos (CSV y fecha de publicación)
 https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next release)[^<]{0,80}
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
-# CAL: calendarios oficiales de bancos centrales (lote 18, segunda ronda: tablas completas de 2026 y 2027)
-https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates ~ 202[67] confirmed dates.{0,700}
-https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm ~ Table : 202[67] Date of MPM.{0,900}
-https://www.bankofcanada.ca/core-functions/monetary-policy/key-interest-rate/ ~ Schedule for 202[67] Dates.{0,900}
-https://www.rba.gov.au/schedules-events/board-meeting-schedules.html ~ Board meeting schedules 202[67] Month.{0,700}
-https://www.snb.ch/en/services-events/digital-services/event-schedule ~ .{0,80}monetary policy assessment.{0,80}
-https://www.snb.ch/en/the-snb/mandates-goals/monetary-policy ~ .{0,100}(?:next|upcoming).{0,150}
-https://www.banxico.org.mx/publicaciones-y-prensa/anuncios-de-las-decisiones-de-politica-monetaria/anuncios-politica-monetaria-t.html ~ .{0,80}calendario.{0,300}
-https://www.banxico.org.mx/footer-en/monetary-policy-decisions-calendar.html ~ .{0,60}202[67].{0,300}
-https://www.bcb.gov.br/api/servico/sitebcb/copom/calendario?ano=2026
-https://www.bcb.gov.br/api/servico/sitebcb/copomcalendarios
-https://www.bcb.gov.br/content/copom/copomcalendars/calendario.json
-https://website.rbi.org.in/web/rbi/monetary-policy ~ .{0,100}(?:schedule|Schedule).{0,300}
-https://www.rbi.org.in/pressreleases_rss.xml ~ .{0,100}Monetary Policy Committee.{0,100}
+# CAL: bancos centrales, tercera ronda: BoE 2027 completo, horas oficiales (BoE, BoC, RBA) y el LPR del PBoC
+https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates ~ 2027 confirmed dates.{0,900}
+https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates ~ .{0,80}(?:noon|12:00|12pm|12 pm|7:00|7am).{0,80}
+https://www.bankofcanada.ca/core-functions/monetary-policy/key-interest-rate/ ~ .{0,80}(?:9:45|a\.m\.).{0,80}
+https://www.rba.gov.au/schedules-events/board-meeting-schedules.html ~ .{0,120}(?:2\.30|2:30|pm).{0,120}
+https://www.rba.gov.au/monetary-policy/ ~ .{0,120}(?:2\.30|2:30).{0,120}
+https://www.chinamoney.com.cn/english/bmklpr/ ~ .{0,150}(?:9:\d\d|a\.m\.|20th).{0,150}
+http://www.pbc.gov.cn/en/3688229/3688311/3688329/index.html ~ .{0,150}(?:Loan Prime Rate|LPR).{0,150}
