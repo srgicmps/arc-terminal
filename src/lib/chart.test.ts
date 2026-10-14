@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { axisTicks } from './chart.ts';
+import { axisTicks, periodChoices, periodDate, periodStart } from './chart.ts';
 
 describe('axisTicks', () => {
 	it('pone la primera y la última, y reparte las demás por igual', () => {
@@ -28,5 +28,22 @@ describe('axisTicks', () => {
 
 	it('en un eje muy estrecho deja solo la primera y la última', () => {
 		expect(axisTicks(30, 100, 70)).toEqual([0, 29]);
+	});
+});
+
+describe('periodos', () => {
+	it('lee los formatos del eje X', () => {
+		expect(periodDate('2026-10-14')?.toISOString().slice(0, 10)).toBe('2026-10-14');
+		expect(periodDate('2026-10')?.toISOString().slice(0, 10)).toBe('2026-10-01');
+		expect(periodDate('2026-Q3')?.toISOString().slice(0, 10)).toBe('2026-07-01');
+		expect(periodDate('2026')?.toISOString().slice(0, 10)).toBe('2026-01-01');
+	});
+	it('cuenta los meses desde el último dato', () => {
+		expect(periodStart('2026-10-14', 3)?.toISOString().slice(0, 10)).toBe('2026-07-14');
+	});
+	it('solo ofrece periodos que recortan y dejan 3 puntos o más', () => {
+		const days = Array.from({ length: 400 }, (_, i) => new Date(Date.UTC(2025, 8, 1 + i)).toISOString().slice(0, 10));
+		expect(periodChoices(days).map((c) => c.label)).toEqual(['1M', '3M', '1A', 'Todo']);
+		expect(periodChoices(['2026-08', '2026-09', '2026-10'])).toEqual([]);
 	});
 });
