@@ -57,7 +57,6 @@ export const sources: Source<any>[] = [
 	fred,
 	finnhub,
 	sec,
-	funds,
 	// Mundo
 	imf,
 	quakes,
@@ -75,6 +74,7 @@ export const sources: Source<any>[] = [
 	releases,
 	wiki,
 	...newsSources,
+	funds,
 	// Derivadas: se calculan después, con los datos de las anteriores.
 	imp,
 	search

@@ -15,7 +15,7 @@
 
 	let { data }: PageProps = $props();
 
-	const list = $derived(data.funds?.data.funds ?? []);
+	const list = $derived(data.funds?.funds ?? []);
 
 	/** «2026-06-30» → «T2 2026» */
 	const quarter = (date: string) => (date ? `T${Math.ceil(Number(date.slice(5, 7)) / 3)} ${date.slice(0, 4)}` : '—');
@@ -25,7 +25,7 @@
 	const pct = (w: number) => `${nf(w * 100, 1)} %`;
 
 	/** Qué ha pasado con la posición: nueva, fuera o el cambio de acciones. */
-	function detail(m: FundMove): string {
+	function detail(m: Pick<FundMove, 'status' | 'pct'>): string {
 		if (m.status === 'new') return 'Nueva';
 		if (m.status === 'exit') return 'Vende todo';
 		return m.pct === null ? '' : `${m.pct > 0 ? '+' : '−'}${nf(Math.abs(m.pct) * 100, 0)} % acciones`;
@@ -59,7 +59,7 @@
 							{/each}
 						</tbody>
 					</Table>
-					{#if fund.prev}
+					{#if fund.prevPeriod}
 						<div class="moves">
 							{#each [{ title: 'Más comprado', items: fund.bought }, { title: 'Más vendido', items: fund.sold }] as side (side.title)}
 								<div>
@@ -84,7 +84,7 @@
 						<p class="none">Sin el trimestre anterior para comparar.</p>
 					{/if}
 					{#snippet note()}
-						Presentado el {day(fund.filed)}{#if fund.prev}&nbsp;· frente al {quarter(fund.prev.period)}{/if} ·
+						Presentado el {day(fund.filed)}{#if fund.prevPeriod}&nbsp;· frente al {quarter(fund.prevPeriod)}{/if} ·
 						<a href={fund.url} target="_blank" rel="noopener">13F en EDGAR</a>
 					{/snippet}
 				</Panel>
