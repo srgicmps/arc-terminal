@@ -200,6 +200,7 @@
 			<VixCurve curve={data.vix?.data} />
 			{#snippet note()}
 				Lo normal es que suba con el plazo; invertida (lo corto por encima del de 3 meses), el mercado teme algo inmediato.
+				VVIX: la volatilidad del propio VIX. SKEW: lo que se paga por protegerse de una caída fuerte (100 es lo neutro).
 				Fuente: Cboe · <Updated at={data.vix?.fetchedAt} source="vix" />
 			{/snippet}
 		</Panel>

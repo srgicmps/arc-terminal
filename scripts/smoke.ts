@@ -7,7 +7,10 @@
 //   sin nada que contar (hoy no hay terremotos ni avisos) tiene que decirlo con otro aviso, sin «todavía».
 // Además avisa (sin fallar) si una vista pesa más de WEIGHT_LIMIT: lo que descarga de la propia web
 // (HTML, JS, CSS y datos) comprimido con gzip, como lo sirve GitHub Pages; sin TradingView ni otras webs.
+// También avisa (sin fallar, de momento) de los fallos de accesibilidad de axe-core en contraste y nombres de
+// controles, enlaces e imágenes (AXE_RULES), a 390 px.
 // Las peticiones a otras webs (TradingView, fuentes…) se contestan vacías: así la prueba no depende de la red.
+import { createRequire } from 'node:module';
 import { gzipSync } from 'node:zlib';
 import { launch, preview, viewPaths } from './browser.ts';
 
@@ -17,10 +20,15 @@ const WIDTHS = [390, 1280];
 const NO_PANELS = new Set(['/help', '/doc']);
 /** Peso máximo razonable de una vista en el móvil (4G), en bytes gzip. */
 const WEIGHT_LIMIT = 300 * 1024;
+/** Reglas de axe-core que se miran: contraste y que todo control, enlace e imagen tenga nombre o etiqueta. */
+const AXE_RULES = ['color-contrast', 'label', 'select-name', 'button-name', 'link-name', 'image-alt', 'input-button-name', 'aria-input-field-name'];
+const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 
 const { server, root: ROOT } = await preview(4317);
 const failures: string[] = [];
 const warnings: string[] = [];
+/** Fallos de accesibilidad por vista (axe-core): solo avisan. */
+const a11y: string[] = [];
 
 try {
 	const browser = await launch();
@@ -58,6 +66,16 @@ try {
 			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px`);
 			if (!NO_PANELS.has(path) && !check.panels) failures.push(`${where}: sin paneles`);
 			for (const text of check.missing) failures.push(`${where}: panel sin datos («${text}»)`);
+			if (width < 600) {
+				await page.addScriptTag({ path: AXE });
+				const found = await page.evaluate(async (rules) => {
+					const r = await (window as unknown as { axe: { run: (c: Document, o: object) => Promise<{ violations: { id: string; nodes: unknown[] }[] }> } }).axe.run(document, {
+						runOnly: { type: 'rule', values: rules }
+					});
+					return r.violations.map((v) => `${v.id} (${v.nodes.length})`);
+				}, AXE_RULES);
+				if (found.length) a11y.push(`${path}: ${found.join(', ')}`);
+			}
 			const weight = (await Promise.all(sizes)).reduce((a, b) => a + b, 0);
 			if (width < 600 && weight > WEIGHT_LIMIT) {
 				warnings.push(`${path} pesa ${Math.round(weight / 1024)} KB (gzip, sin terceros); el límite es ${WEIGHT_LIMIT / 1024} KB`);
@@ -75,6 +93,8 @@ try {
 
 // ::warning:: hace que GitHub muestre el aviso en el resumen de la Action.
 for (const w of warnings) console.log(`::warning title=Peso de las vistas::${w}`);
+for (const w of a11y) console.log(`::warning title=Accesibilidad (axe-core)::${w}`);
+if (!a11y.length) console.log(`axe-core: sin fallos de ${AXE_RULES.length} reglas en ${PATHS.length} vistas a 390 px`);
 
 if (failures.length) {
 	console.log(`✗ Prueba de humo: ${failures.length} fallos\n${failures.map((f) => `  - ${f}`).join('\n')}`);

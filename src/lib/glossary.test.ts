@@ -18,6 +18,9 @@ describe('glossary', () => {
 		expect(id('Inflación (IPCA)')).toBe('hicp');
 		expect(id('Inflación (IPC)')).toBe('cpi');
 		expect(id('IPC (INE)')).toBe('cpi');
+		expect(id('Inflación zona euro')).toBe('hicp');
+		expect(id('Peticiones de paro (miles)')).toBe('claims');
+		expect(id('Refinanciación')).toBe('mro');
 		expect(id('Inflación subyacente')).toBe('core');
 		expect(id('PCE subyacente, interanual')).toBe('pce');
 		expect(id('Paro juvenil (<25)')).toBe('youth');
