@@ -20,6 +20,7 @@ const WANTED: Wanted[] = [
 	{ key: 'FM.B.U2.EUR.4F.KR.DFR.LEV', id: 'ecb-dfr', label: 'Facilidad de depósito', unit: '%', geo: 'EA', last: 500 },
 	{ key: 'FM.B.U2.EUR.4F.KR.MRR_FR.LEV', id: 'ecb-mro', label: 'Operaciones principales de financiación', unit: '%', geo: 'EA', last: 500 },
 	{ key: 'EST.B.EU000A2X2A25.WT', id: 'estr', label: '€STR', unit: '%', geo: 'EA', last: 90 },
+	{ key: 'FM.M.U2.EUR.RT.MM.EURIBOR3MD_.HSTA', id: 'euribor-3m', label: 'Euríbor a 3 meses', unit: '%', geo: 'EA', last: 36 },
 	{ key: 'FM.M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA', id: 'euribor-12m', label: 'Euríbor a 12 meses', unit: '%', geo: 'EA', last: 36 },
 	{ key: 'MIR.M.ES.B.A2C.AM.R.A.2250.EUR.N', id: 'mortgage-es', label: 'Hipotecas nuevas', unit: '%', geo: 'ES', last: 36 },
 	{ key: 'MIR.M.U2.B.A2C.AM.R.A.2250.EUR.N', id: 'mortgage-ea', label: 'Hipotecas nuevas', unit: '%', geo: 'EA', last: 36 },
