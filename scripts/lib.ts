@@ -38,9 +38,11 @@ export interface Source<T = unknown> {
 	minItems?: number;
 	/**
 	 * Fuente derivada: no descarga (o casi) y se calcula con los datos de otras fuentes. update.ts la
-	 * ejecuta en una segunda fase, cuando las demás ya han terminado, y le pasa sus datos en `ctx`.
+	 * ejecuta cuando las demás ya han terminado y le pasa sus datos en `ctx`.
+	 * `true` (o 1) va justo después de las normales; un número mayor, detrás de las de número menor
+	 * (p. ej. la traducción, `after: 2`, usa lo que deja IMP, que es `after: true`).
 	 */
-	after?: true;
+	after?: true | number;
 	/**
 	 * Plazo total de la descarga, en milisegundos (por defecto, DEFAULT_DEADLINE_MS). Solo para fuentes
 	 * lentas de verdad, como un ZIP grande; conviene acompañarlo de un maxAgeMinutes alto.
@@ -64,9 +66,21 @@ export interface SourceContext {
 /** Sin datos de otras fuentes (primera fase y tests). */
 export const NO_CONTEXT: SourceContext = { get: () => undefined };
 
-/** Separa las fuentes normales (primera fase) de las derivadas (`after`, segunda fase). */
+/** Nivel de una fuente: 0 las normales, 1 `after: true`, y el número que diga `after` si es mayor. */
+export const level = (s: Pick<Source, 'after'>) => (s.after === true ? 1 : Math.max(0, Math.floor(s.after ?? 0)));
+
+/**
+ * Oleadas de update.ts: primero las fuentes normales y luego cada nivel de derivadas, en orden. Las de
+ * una oleada van a la vez y ven los datos de las anteriores. Sin derivadas, una sola oleada.
+ */
+export function waves<S extends Pick<Source, 'after'>>(sources: S[]): S[][] {
+	const levels = [...new Set(sources.map(level))].sort((a, b) => a - b);
+	return levels.map((n) => sources.filter((s) => level(s) === n));
+}
+
+/** Separa las fuentes normales (primera fase) de todas las derivadas (`after`). */
 export function phases<S extends Pick<Source, 'after'>>(sources: S[]): [S[], S[]] {
-	return [sources.filter((s) => !s.after), sources.filter((s) => s.after)];
+	return [sources.filter((s) => !level(s)), sources.filter((s) => level(s) > 0)];
 }
 
 /**
