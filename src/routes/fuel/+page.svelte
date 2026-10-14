@@ -231,7 +231,7 @@
 	});
 </script>
 
-<ViewHeader code="FUEL" title="Gasolineras" sub="Las más baratas de Menorca o de cualquier provincia · API del Ministerio" />
+<ViewHeader code="FUEL" title="Gasolineras" sub="Las más baratas de tu provincia o de cualquier otra · API del Ministerio" />
 
 <div class="grid">
 	<Panel
@@ -487,15 +487,6 @@
 
 	.nearest small {
 		color: var(--faint);
-	}
-
-	a.name {
-		color: inherit;
-		text-decoration: none;
-	}
-
-	a.name:hover {
-		color: var(--amber);
 	}
 
 	.more {

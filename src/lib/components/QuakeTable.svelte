@@ -59,17 +59,6 @@
 		white-space: normal;
 	}
 
-	a.name {
-		color: inherit;
-		text-decoration: none;
-		font-family: var(--sans);
-		font-size: var(--fs-m);
-	}
-
-	a.name:hover {
-		color: var(--amber);
-	}
-
 	.strong {
 		color: var(--amber);
 		font-weight: var(--fw-bold);

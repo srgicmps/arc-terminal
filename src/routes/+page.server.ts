@@ -92,6 +92,7 @@ export const load: PageServerLoad = async () => {
 				.slice(0, 3)
 		})),
 		// Gasolina 95 de cada provincia (media y mínimo), para la de «Tu sitio»; sin gasolineras ni historial.
+		fuelSpain: fuelEs?.data.avg.g95 ?? null,
 		fuelProvinces: (fuelEs?.data.provinces ?? []).map((p) => ({ id: p.id, name: p.name, avg: p.avg.g95, min: p.min.g95 })),
 		// Del BOE, el total de cada sección y las 4 primeras disposiciones generales.
 		boe: trim(boe, (d) => ({
