@@ -24,9 +24,11 @@
 	let text = $state('');
 	let codes = $state<string[]>([]);
 
+	// Solo depende de la URL: si leyera `codes` después de escribirlo, se volvería a disparar sin fin.
 	$effect(() => {
-		codes = parseSymbols(page.url.searchParams.get('s'));
-		text = codes.join(' ');
+		const next = parseSymbols(page.url.searchParams.get('s'));
+		codes = next;
+		text = next.join(' ');
 	});
 
 	const name = (code: string) => TICKERS.find((t) => t.code === code)?.name ?? code;
