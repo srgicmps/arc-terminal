@@ -17,6 +17,7 @@ import { hfpapers } from './hfpapers.ts';
 import { holidays } from './holidays.ts';
 import { imf } from './imf.ts';
 import { imp } from './imp.ts';
+import { launches } from './launches.ts';
 import { ine } from './ine.ts';
 import { leaders } from './leaders.ts';
 import { newsSources } from './news.ts';
@@ -69,6 +70,7 @@ export const sources: Source<any>[] = [
 	hn,
 	hfpapers,
 	releases,
+	launches,
 	wiki,
 	...newsSources,
 	// Derivadas: se calculan después, con los datos de las anteriores.
