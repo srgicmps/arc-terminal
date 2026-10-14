@@ -16,7 +16,8 @@ import {
 	deadlineFor,
 	makeContext,
 	NO_CONTEXT,
-	phases,
+	level,
+	waves,
 	withDeadline,
 	writeExtra,
 	type Source,
@@ -126,9 +127,8 @@ const sources = await loadSources();
 const selected = wanted.length ? sources.filter((s) => wanted.includes(s.name)) : sources;
 
 await mkdir(OUT_DIR, { recursive: true });
-// Primera fase: todas las fuentes normales a la vez. Segunda: las derivadas, con sus datos.
-const [first, second] = phases(selected);
-const statuses = await Promise.all(first.map((s) => run(s)));
+// Por oleadas: primero todas las fuentes normales a la vez; luego las derivadas, nivel a nivel
+// (`after: true`, después `after: 2`…), cada una con los datos de las anteriores.
 const ctx = makeContext(saved, (name) => {
 	try {
 		return (JSON.parse(readFileSync(`${OUT_DIR}/${name}.json`, 'utf8')) as Dataset<unknown>).data;
@@ -136,7 +136,11 @@ const ctx = makeContext(saved, (name) => {
 		return undefined;
 	}
 });
-statuses.push(...(await Promise.all(second.map((s) => run(s, ctx)))));
+const statuses: SourceStatus[] = [];
+for (const wave of waves(selected)) {
+	const derived = wave.some((s) => level(s) > 0);
+	statuses.push(...(await Promise.all(wave.map((s) => (derived ? run(s, ctx) : run(s))))));
+}
 
 if (!wanted.length) {
 	const now = Date.now();
