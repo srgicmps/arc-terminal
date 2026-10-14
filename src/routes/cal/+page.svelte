@@ -22,6 +22,17 @@
 
 	const earnings = $derived(data.finnhub?.data.earnings ?? []);
 
+	// Salidas a bolsa desde hoy (las de los últimos días quedan en el JSON por si la web se construyó ayer).
+	const ipos = $derived((data.finnhub?.data.ipos ?? []).filter((i) => i.date >= today).slice(0, 20));
+	/** «18.00-20.00» → «18–20» · «12.50» → «12,50» */
+	const price = (p: string) =>
+		p
+			? p
+					.split('-')
+					.map((n) => nf(Number(n), Number(n) % 1 ? 2 : 0))
+					.join('–')
+			: '—';
+
 	const HOUR: Record<string, string> = { bmo: 'Pre', amc: 'Post', dmh: 'Sesión' };
 
 	// Festivos de los próximos 12 meses: España y Baleares (Nager.Date) y días sin bolsa (por reglas).
@@ -58,7 +69,7 @@
 <ViewHeader
 	code="CAL"
 	title="Agenda económica"
-	sub="Datos macro de la semana (TradingView) y resultados empresariales (Finnhub)"
+	sub="Datos macro de la semana (TradingView), resultados empresariales y salidas a bolsa (Finnhub)"
 />
 
 <div class="grid grid-2">
@@ -176,6 +187,43 @@
 				{#if data.finnhub}· <Updated at={data.finnhub.fetchedAt} source="finnhub" />{/if}
 			{/snippet}
 		</Panel>
+		{#if data.finnhub}
+			<Panel title="Salidas a bolsa" meta="EE. UU. · próximas 4 semanas">
+				{#if ipos.length}
+					<Table>
+						<thead>
+							<tr>
+								<th>Día</th>
+								<th class="l">Empresa</th>
+								<th class="ex l">Bolsa</th>
+								<th>Precio</th>
+								<th>Importe</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each ipos as i, n (i.name + i.date)}
+								<tr>
+									<td class="mut">{n === 0 || ipos[n - 1].date !== i.date ? weekday(i.date) : ''}</td>
+									<td class="l name wrap"
+										>{i.name}{#if i.symbol}<span class="sub">{i.symbol}</span>{/if}</td
+									>
+									<td class="ex l mut">{i.exchange.replace(/ (Global|Capital)( Select)?( Market)?$/, '')}</td>
+									<td class:mut={i.status !== 'priced'}>{price(i.price)}</td>
+									<td class="mut">{i.value ? compact(i.value) : '—'}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</Table>
+				{:else}
+					<p class="empty">No hay salidas a bolsa de más de 50 M$ previstas en estas fechas.</p>
+				{/if}
+				{#snippet note()}
+					Precio por acción en $ (en gris, aún sin fijar: horquilla prevista) e importe de la colocación. Solo las de más de 50 M$.
+					Fuente: Finnhub
+					{#if data.finnhub}· <Updated at={data.finnhub.fetchedAt} source="finnhub" />{/if}
+				{/snippet}
+			</Panel>
+		{/if}
 	</div>
 </div>
 
@@ -196,7 +244,8 @@
 	}
 
 	@container (max-width: 440px) {
-		.rev {
+		.rev,
+		.ex {
 			display: none;
 		}
 	}

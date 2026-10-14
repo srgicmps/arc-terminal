@@ -1,8 +1,8 @@
-// Finnhub: calendario de resultados, noticias de mercado y cotizaciones de EE. UU. https://finnhub.io/docs/api
+// Finnhub: calendario de resultados, salidas a bolsa, noticias de mercado y cotizaciones de EE. UU. https://finnhub.io/docs/api
 // Necesita una clave gratuita (FINNHUB_API_KEY, en GitHub Secrets). Sin ella, la fuente se salta.
-// Plan gratuito: 60 consultas por minuto; aquí son 2 + una por valor (unas 16) cada media hora.
+// Plan gratuito: 60 consultas por minuto; aquí son 3 + una por valor (unas 17) cada media hora.
 // La clave va en una cabecera (X-Finnhub-Token), así que nunca aparece en URLs ni en mensajes de error.
-import type { Earnings, FinnhubData, NewsItem, Quote } from '../../src/lib/types.ts';
+import type { Earnings, FinnhubData, Ipo, NewsItem, Quote } from '../../src/lib/types.ts';
 import { getJson, madridDay, num, plain, settle, type Source } from '../lib.ts';
 
 const API = 'https://finnhub.io/api/v1';
@@ -63,6 +63,41 @@ export function toEarnings(body: RawEarnings): Earnings[] {
 		.slice(0, MAX_EARNINGS);
 }
 
+type RawIpos = {
+	ipoCalendar?: {
+		date?: string;
+		symbol?: string | null;
+		name?: string;
+		exchange?: string | null;
+		price?: string | null;
+		numberOfShares?: number | null;
+		totalSharesValue?: number | null;
+		status?: string;
+	}[];
+};
+
+/** Las colocaciones pequeñas (menos de 50 M$, casi siempre SPAC o microempresas) no se guardan. */
+const MIN_IPO_VALUE = 50e6;
+const MAX_IPOS = 40;
+
+export function toIpos(body: RawIpos): Ipo[] {
+	return (body.ipoCalendar ?? [])
+		.filter((i) => i.date && i.name && i.status !== 'withdrawn')
+		.map((i) => ({
+			date: i.date!,
+			symbol: i.symbol ?? '',
+			name: plain(i.name, 120),
+			exchange: i.exchange ?? '',
+			price: (i.price ?? '').trim(),
+			shares: num(i.numberOfShares),
+			value: num(i.totalSharesValue),
+			status: i.status ?? ''
+		}))
+		.filter((i) => i.value === null || i.value >= MIN_IPO_VALUE)
+		.sort((a, b) => a.date.localeCompare(b.date) || (b.value ?? 0) - (a.value ?? 0))
+		.slice(0, MAX_IPOS);
+}
+
 type RawNews = { headline: string; url: string; source: string; datetime: number; summary?: string }[];
 
 export function toNews(body: RawNews): NewsItem[] {
@@ -97,17 +132,18 @@ export function toQuote(symbol: string, q: RawQuote): Quote | null {
 
 export const finnhub: Source<FinnhubData> = {
 	name: 'finnhub',
-	label: 'Calendario de resultados, noticias de mercado y cotizaciones · Finnhub',
+	label: 'Resultados, salidas a bolsa, noticias de mercado y cotizaciones · Finnhub',
 	maxAgeMinutes: 25,
 	requires: ENV,
 	async fetch(previous) {
 		const key = process.env[ENV] ?? '';
-		const [earnings, news, quotes] = await Promise.allSettled([
+		const [earnings, ipos, news, quotes] = await Promise.allSettled([
 			get<RawEarnings>(`/calendar/earnings?from=${day(-3)}&to=${day(14)}`, key).then(toEarnings),
+			get<RawIpos>(`/calendar/ipo?from=${day(-7)}&to=${day(30)}`, key).then(toIpos),
 			get<RawNews>('/news?category=general', key).then(toNews),
 			settle('finnhub', QUOTES, (s) => s, async (s) => toQuote(s, await get<RawQuote>(`/quote?symbol=${encodeURIComponent(s)}`, key)))
 		]);
-		const parts = [earnings, news, quotes];
+		const parts = [earnings, ipos, news, quotes];
 		if (parts.every((p) => p.status === 'rejected' || !p.value.length)) {
 			const why = parts.find((p) => p.status === 'rejected')?.reason;
 			throw new Error(`Finnhub no ha devuelto datos${why ? `: ${why.message ?? why}` : ''}`);
@@ -120,6 +156,7 @@ export const finnhub: Source<FinnhubData> = {
 		};
 		return {
 			earnings: pick(earnings, previous?.earnings, 'resultados'),
+			ipos: pick(ipos, previous?.ipos, 'salidas a bolsa'),
 			news: pick(news, previous?.news, 'noticias'),
 			quotes: pick(quotes, previous?.quotes, 'cotizaciones')
 		};

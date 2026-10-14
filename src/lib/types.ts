@@ -410,10 +410,29 @@ export interface Quote {
 	time: string | null;
 }
 
+/** Salida a bolsa del calendario de Finnhub. */
+export interface Ipo {
+	/** «2026-10-14» */
+	date: string;
+	/** Puede venir vacío si aún no tiene. */
+	symbol: string;
+	name: string;
+	exchange: string;
+	/** Precio o horquilla en $, tal cual lo da Finnhub: «18.00» o «18.00-20.00». Vacío si no se sabe. */
+	price: string;
+	shares: number | null;
+	/** Importe de la colocación, en $. */
+	value: number | null;
+	/** expected: prevista · priced: con precio fijado · filed: registrada. */
+	status: string;
+}
+
 export interface FinnhubData {
 	earnings: Earnings[];
 	news: NewsItem[];
 	quotes: Quote[];
+	/** Las copias guardadas antes de añadir las salidas a bolsa no lo tienen. */
+	ipos?: Ipo[];
 }
 
 // ---------- Mercados de predicción (Polymarket) ----------
