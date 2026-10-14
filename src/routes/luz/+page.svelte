@@ -68,6 +68,11 @@
 	const currentPrice = $derived(
 		now ? blocks.find((b) => b.day === now.day)?.prices.find((p) => isHour(p, now)) : undefined
 	);
+
+	// Tira de arriba: la hora actual frente a la media de hoy, la mejor franja de 2 h de hoy y la media de mañana.
+	const todayBlock = $derived(now ? blocks.find((b) => b.day === now.day) : blocks[0]);
+	const nextBlock = $derived(todayBlock ? blocks.find((b) => b.day > todayBlock.day) : undefined);
+	const best2 = $derived(todayBlock?.windows.find((w) => w.n === 2));
 </script>
 
 <ViewHeader code="LUZ" title="Precio de la luz" sub="PVPC (tarifa regulada) y mercado mayorista · Red Eléctrica">
@@ -75,6 +80,29 @@
 		{#if currentPrice}Ahora: <b class="now">{nf(currentPrice.kwh, 3)} €/kWh</b>{/if}
 	{/snippet}
 </ViewHeader>
+
+{#if todayBlock}
+	<Tiles cols={3}>
+		<Tile
+			label="Ahora"
+			value={currentPrice ? `${nf(currentPrice.kwh, 3)} €/kWh` : '—'}
+			tone={!currentPrice ? 'mut' : currentPrice.kwh <= todayBlock.stats.avg ? 'up' : 'down'}
+			sub="media de hoy {nf(todayBlock.stats.avg, 3)}"
+		/>
+		<Tile
+			label="Mejor franja de 2 h"
+			value={best2 ? `${hourLabel(best2.w.first)}–${hourLabel(best2.w.after)}` : '—'}
+			tone={best2 ? undefined : 'mut'}
+			sub={best2 ? `${nf(best2.w.avg, 3)} €/kWh · ${nf(best2.saving, 0)} % menos que la media` : ''}
+		/>
+		<Tile
+			label="Mañana, media"
+			value={nextBlock ? `${nf(nextBlock.stats.avg, 3)} €/kWh` : '—'}
+			tone={!nextBlock ? 'mut' : nextBlock.stats.avg <= todayBlock.stats.avg ? 'up' : 'down'}
+			sub={nextBlock ? `${nextBlock.kind}` : 'aún sin publicar (sale hacia las 20:30)'}
+		/>
+	</Tiles>
+{/if}
 
 {#if !blocks.length}
 	<p class="empty">Sin datos todavía.</p>
