@@ -21,8 +21,6 @@
 		decimals?: number;
 		/** Si subir es malo (paro, inflación…), la variación se pinta al revés. */
 		inverse?: boolean;
-		/** Fila resaltada en ámbar tenue (p. ej., un diferencial por encima de su media del año). */
-		highlight?: boolean;
 	}
 
 	interface Extra {
@@ -86,7 +84,7 @@
 				{@const d = row.decimals ?? 1}
 				{@const diff = prev ? last.v - prev.v : null}
 				{@const nx = next?.[row.series.id]}
-				<tr class:hl={row.highlight}>
+				<tr>
 					<td>
 						<a class="name" href={row.series.url} target="_blank" rel="noopener">
 							{nameOf(row)}
@@ -95,14 +93,7 @@
 					</td>
 					<td>{nf(last.v, d)}{row.series.unit === '%' ? ' %' : ''}</td>
 					<td><Change value={diff} digits={d} invert={row.inverse} /></td>
-					{#each extra as x (x.head)}<td
-							><Change
-								value={x.value(row.series)}
-								digits={x.digits ?? d}
-								unit={x.unit ?? ''}
-								invert={row.inverse}
-							/></td
-						>{/each}
+					{#each extra as x (x.head)}<td><Change value={x.value(row.series)} digits={x.digits ?? d} unit={x.unit ?? ''} invert={row.inverse} /></td>{/each}
 					<td class="mut per">{period(last.t)}</td>
 					{#if anyNext}<td class="mut nx" title={nx?.title}>{nx ? shortDay(nx.date) : ''}</td>{/if}
 					<td class="sp"><Spark values={pts.slice(-spark).map((p) => p.v)} /></td>
@@ -115,10 +106,6 @@
 {/if}
 
 <style>
-	tr.hl td {
-		background: var(--amber-soft);
-	}
-
 	a.name {
 		color: inherit;
 		text-decoration: none;

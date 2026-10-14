@@ -19,7 +19,7 @@
 
 	const get = $derived(seriesMap(data.eurostat, data.ecb, data.bls, data.usdebt, data.fred));
 	const geos = ['es', 'ea', 'de', 'fr', 'it', 'pt'];
-	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: id !== 'gdp' }));
+	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: !id.startsWith('gdp') }));
 
 	// Primas de riesgo: diferencia con el bono alemán a 10 años, en puntos básicos.
 	const PREMIUMS = [
@@ -59,16 +59,18 @@
 					spark={12}
 				/>
 				{#snippet note()}
-					Fuente: {g20.data.via === 'oecd' ? 'OCDE' : 'OCDE, vía DBnomics'} · <Updated
-						at={g20.fetchedAt}
-						source="oecd"
-					/>
+					Fuente: {g20.data.via === 'oecd' ? 'OCDE' : 'OCDE, vía DBnomics'} · <Updated at={g20.fetchedAt} source="oecd" />
 				{/snippet}
 			</Panel>
 		{/if}
 		<Panel title="PIB" meta="Variación trimestral">
 			<SeriesTable next={data.next} head="País" rows={byGeo('gdp')} />
 		</Panel>
+		{#if get('gdp-yoy-es')}
+			<Panel title="PIB interanual" meta="Frente al mismo trimestre del año anterior">
+				<SeriesTable head="País" rows={byGeo('gdp-yoy')} />
+			</Panel>
+		{/if}
 		<Panel title="Paro juvenil" meta="Menores de 25 años">
 			<SeriesTable next={data.next} head="País" rows={byGeo('youth-unemployment')} />
 		</Panel>
@@ -78,11 +80,7 @@
 		</Panel>
 	</div>
 	<div class="col">
-		<Panel
-			title="Próximas reuniones"
-			meta="Decisión de tipos · hora de España"
-			jump={{ code: 'CAL', href: resolve('/cal') }}
-		>
+		<Panel title="Próximas reuniones" meta="Decisión de tipos · hora de España" jump={{ code: 'CAL', href: resolve('/cal') }}>
 			<MeetingList
 				markets={[
 					...(data.predictions?.data.rates ?? []),
@@ -93,8 +91,7 @@
 			{#snippet note()}Calendarios oficiales del BCE y de la Fed. Probabilidades: Polymarket, apuestas y no pronósticos.{/snippet}
 		</Panel>
 		<Panel title="BCE" meta="Tipos y euríbor">
-			<SeriesTable
-				next={data.next}
+			<SeriesTable next={data.next}
 				head="Tipo"
 				rows={[
 					{ series: get('ecb-dfr'), name: 'Facilidad de depósito', decimals: 2 },
@@ -111,10 +108,7 @@
 			<Panel title="Vivienda en el mundo" meta="Precio, variación interanual">
 				<HousingTable series={data.housing.data.series} />
 				{#if get('mortgage30-us')}
-					<SeriesTable
-						head="EE. UU."
-						rows={[{ series: get('mortgage30-us'), name: 'Hipoteca fija a 30 años', decimals: 2, inverse: true }]}
-					/>
+					<SeriesTable head="EE. UU." rows={[{ series: get('mortgage30-us'), name: 'Hipoteca fija a 30 años', decimals: 2, inverse: true }]} />
 				{/if}
 				{#snippet note()}
 					Real: descontada la inflación. Fuentes: BIS, precios de la vivienda; Freddie Mac vía FRED ·
@@ -124,8 +118,7 @@
 		{/if}
 		<Panel title="Tu hipoteca" meta="Variable · euríbor a 12 meses">
 			<MortgageCalc euribor={get('euribor-12m')} />
-			{#snippet note()}Cuota con el último euríbor mensual del BCE más tu diferencial. Se calcula y se guarda solo en
-				este navegador.{/snippet}
+			{#snippet note()}Cuota con el último euríbor mensual del BCE más tu diferencial. Se calcula y se guarda solo en este navegador.{/snippet}
 		</Panel>
 		{#if data.imf?.data.rows.length}
 			{@const imf = data.imf}
@@ -142,14 +135,11 @@
 			{#snippet note()}Recopilados por el BIS · <Updated at={data.speeches?.fetchedAt} source="speeches" />{/snippet}
 		</Panel>
 		<Panel title="Bancos centrales" meta="Tipo oficial · último cambio">
-			<SeriesTable
-				next={data.next}
+			<SeriesTable next={data.next}
 				head="Banco"
 				rows={(data.bis?.data.series ?? []).map((series) => ({ series, name: series.label, decimals: 2 }))}
 			/>
-			{#snippet note()}Fuente: BIS, tipos oficiales de los bancos centrales · <Updated
-					at={data.bis?.fetchedAt}
-				/>{/snippet}
+			{#snippet note()}Fuente: BIS, tipos oficiales de los bancos centrales · <Updated at={data.bis?.fetchedAt} />{/snippet}
 		</Panel>
 		<Panel title="Balances de los bancos centrales" meta="Total del activo · semanal">
 			<BalanceSheets
@@ -159,16 +149,12 @@
 				]}
 			/>
 			{#snippet note()}
-				Sube cuando el banco central compra deuda (QE, expansión cuantitativa) y baja cuando la deja vencer o la vende
-				(QT). Fuentes: BCE · <Updated at={data.ecb?.fetchedAt} source="ecb" /> y FRED · <Updated
-					at={data.fred?.fetchedAt}
-					source="fred"
-				/>
+				Sube cuando el banco central compra deuda (QE, expansión cuantitativa) y baja cuando la deja vencer o la vende (QT).
+				Fuentes: BCE · <Updated at={data.ecb?.fetchedAt} source="ecb" /> y FRED · <Updated at={data.fred?.fetchedAt} source="fred" />
 			{/snippet}
 		</Panel>
 		<Panel title="Bonos a 10 años" meta="Rentabilidad media mensual">
-			<SeriesTable
-				next={data.next}
+			<SeriesTable next={data.next}
 				head="País"
 				rows={[
 					{ series: get('bond10-es'), decimals: 2 },
@@ -186,8 +172,7 @@
 			{#snippet note()}Diferencia de rentabilidad a 10 años con Alemania, media mensual. Fuente: BCE{/snippet}
 		</Panel>
 		<Panel title="EE. UU." meta="BLS y Tesoro">
-			<SeriesTable
-				next={data.next}
+			<SeriesTable next={data.next}
 				head="Indicador"
 				rows={[
 					{ series: get('cpi-us'), name: 'Inflación (IPC)', inverse: true },
@@ -208,8 +193,7 @@
 		</Panel>
 		<Panel title="Fed y mercados" meta="EE. UU. · FRED">
 			{#if data.fred}
-				<SeriesTable
-					next={data.next}
+				<SeriesTable next={data.next}
 					head="Indicador"
 					rows={[
 						{ series: get('fedfunds-us'), name: 'Fondos federales', decimals: 2 },
