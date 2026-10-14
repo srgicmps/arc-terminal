@@ -73,7 +73,7 @@
 	});
 </script>
 
-<div class="tv" style:height="{height}px" bind:this={frame}>
+<div class="tv" data-widget={widget} style:height="{height}px" bind:this={frame}>
 	{#if !ready}
 		<span class="wait" aria-hidden="true">Cargando TradingView…</span>
 	{/if}
