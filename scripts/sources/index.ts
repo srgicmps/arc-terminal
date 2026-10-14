@@ -29,6 +29,7 @@ import { sanctions } from './sanctions.ts';
 import { search } from './search.ts';
 import { sec } from './sec.ts';
 import { uscurve, usdebt } from './treasury.ts';
+import { who } from './who.ts';
 import { wiki } from './wiki.ts';
 import { crypto, hn, power, quakes, weather } from './world.ts';
 
@@ -63,6 +64,7 @@ export const sources: Source<any>[] = [
 	hazards,
 	portwatch,
 	reliefweb,
+	who,
 	predictions,
 	weather,
 	air,
