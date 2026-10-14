@@ -121,6 +121,9 @@ export const TICKERS: Ticker[] = [
 	{ code: 'EURUSD', name: 'Euro / dólar', tv: 'FX:EURUSD' }
 ];
 
+/** Las grandes tecnológicas en bolsa (TECH y AI). */
+export const BIG_TECH = ['NVDA', 'MSFT', 'GOOGL', 'META', 'TSM', 'ASML', 'AMD'] as const;
+
 /** Símbolo de TradingView para lo que escriba Sergi: un valor conocido o el texto tal cual. */
 export function tvSymbol(code: string): string {
 	const upper = code.trim().toUpperCase();
