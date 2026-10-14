@@ -443,3 +443,12 @@ export interface Disaster {
 	/** Código GLIDE del desastre, si lo tiene. */
 	glide: string;
 }
+
+// ---------- Sanciones y aranceles (Federal Register) ----------
+
+export interface TradeDoc extends FedRegDoc {
+	/** Organismo, abreviado: «OFAC», «USTR», «ITA». */
+	agency: string;
+	/** «Sanciones» o «Aranceles». */
+	topic: string;
+}
