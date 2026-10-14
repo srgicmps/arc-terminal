@@ -10,6 +10,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import type { Dataset, SourceStatus } from '../src/lib/data.ts';
 import { writeExtra, type Source } from './lib.ts';
+import { buildNewsIndex } from './news-index.ts';
 import { sources } from './sources/index.ts';
 
 const OUT_DIR = 'static/data';
@@ -100,6 +101,13 @@ const statuses = await Promise.all(selected.map(run));
 
 if (!wanted.length) {
 	await save({ name: 'status', fetchedAt: new Date().toISOString(), data: statuses });
+}
+
+// «En las noticias» de cada valor, con los titulares que acaban de guardarse.
+if (selected.some((s) => s.name.startsWith('news-'))) {
+	const index = await buildNewsIndex(OUT_DIR);
+	await save(index);
+	console.log(`✓ news-index: ${Object.keys(index.data).length} valores con titulares`);
 }
 
 const failed = statuses.filter((s) => s.state === 'error' || s.state === 'stale');

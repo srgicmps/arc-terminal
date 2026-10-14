@@ -1,11 +1,17 @@
 <!-- MIS: tu lista de valores, guardada en este navegador, con cotizaciones en directo de TradingView. -->
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
+	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { TICKERS, tvSymbol } from '#lib/commands.ts';
 	import { moveWatch, toggleWatch, watchlist } from '#lib/watchlist.svelte.ts';
+	import type { Mention } from '#lib/news.ts';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
 
 	let adding = $state('');
 
@@ -19,6 +25,26 @@
 			}
 		]
 	});
+
+	// Titulares que nombran algún valor de la lista, sin repetir y de más reciente a más antiguo.
+	// `codes` guarda qué valores nombra cada uno, para la etiqueta.
+	const codes = $derived.by(() => {
+		const map = new Map<string, { item: Mention; codes: string[] }>();
+		for (const code of watchlist.codes) {
+			for (const item of data.news?.data[code] ?? []) {
+				const found = map.get(item.url);
+				if (found) found.codes.push(code);
+				else map.set(item.url, { item, codes: [code] });
+			}
+		}
+		return map;
+	});
+	const news = $derived(
+		[...codes.values()]
+			.map((v) => v.item)
+			.sort((a, b) => (b.time ?? '').localeCompare(a.time ?? ''))
+			.slice(0, 20)
+	);
 
 	function add(e: SubmitEvent) {
 		e.preventDefault();
@@ -42,6 +68,12 @@
 				</p>
 			{/if}
 		</Panel>
+		{#if news.length}
+			<Panel title="En las noticias" meta="Titulares que nombran tus valores">
+				<NewsList items={news} tag={(item) => codes.get(item.url)?.codes.join(' · ')} />
+				{#snippet note()}De todas las secciones de titulares · <Updated at={data.news?.fetchedAt} source="news-eco" />{/snippet}
+			</Panel>
+		{/if}
 	</div>
 	<div class="col">
 		<Panel title="Editar la lista">
