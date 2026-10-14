@@ -1,0 +1,122 @@
+/*
+ * Tokens de diseño de Arc Terminal: el ÚNICO sitio con colores, tipografías y medidas.
+ * Componentes y vistas usan siempre var(--…): nunca un color, una fuente ni un px de espaciado escritos a mano.
+ * Para cambiar la estética, se cambia aquí. Por ejemplo, el acento: --amber (y su versión de día, abajo).
+ * Explicación completa en CLAUDE.md, «Sistema de diseño».
+ */
+:root {
+	/* ── Colores · tema de noche (el de por defecto) ─────────────────────────────────────── */
+	color-scheme: dark;
+	--bg: #080a0d; /* fondo de la página */
+	--panel: #0d1116; /* fondo de los paneles */
+	--raise: #151b23; /* elementos sobre el panel: teclas, botones, fila activa */
+	--line: #1d242d; /* separaciones de 1 px */
+	--fg: #dce1e7; /* texto */
+	--muted: #808a97; /* texto secundario */
+	--faint: #747e8a; /* texto terciario: 4,6:1 sobre --panel (WCAG AA) */
+	--amber: #f2a83b; /* acento */
+	--amber-soft: rgba(242, 168, 59, 0.13); /* fondo con acento */
+	--amber-edge: rgba(242, 168, 59, 0.42); /* borde con acento */
+	--on-amber: #120c02; /* texto sobre ámbar */
+	--up: #4cc48a; /* sube (solo para subidas) */
+	--down: #f0646f; /* baja (solo para bajadas) */
+	--neutral: #3a434e; /* relleno gris de barras y gráficos */
+
+	/* ── Tipografía ──────────────────────────────────────────────────────────────────────── */
+	--mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; /* datos y comandos */
+	--sans: 'IBM Plex Sans Condensed', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif; /* titulares y textos */
+	--fs-xxs: 10px;
+	--fs-xs: 11px;
+	--fs-s: 12px;
+	--fs-m: 13px; /* tamaño base */
+	--fs-l: 14.5px;
+	--fs-xl: 20px;
+	--fs-big: 26px; /* cifra destacada (temperatura) */
+	--fs-xxl: 28px;
+	--fw-regular: 400;
+	--fw-medium: 500;
+	--fw-bold: 600;
+	--lh-loose: 1.5; /* textos largos */
+	--lh: 1.45; /* interlineado base */
+	--lh-text: 1.4;
+	--lh-snug: 1.35;
+	--lh-tight: 1.3;
+	--track-tight: 0.04em; /* espaciado entre letras */
+	--track-code: 0.06em; /* códigos y etiquetas */
+	--track-caps: 0.08em; /* cabeceras de tabla en mayúsculas */
+	--track-label: 0.14em; /* títulos de panel */
+	--track-brand: 0.18em; /* logotipo */
+
+	/* ── Espaciado ───────────────────────────────────────────────────────────────────────── */
+	/* Escala: el número es su tamaño en px. Para una web más o menos densa, se ajusta aquí. */
+	--sp-1: 1px;
+	--sp-2: 2px;
+	--sp-3: 3px;
+	--sp-4: 4px;
+	--sp-5: 5px;
+	--sp-6: 6px;
+	--sp-7: 7px;
+	--sp-8: 8px;
+	--sp-9: 9px;
+	--sp-10: 10px;
+	--sp-12: 12px;
+	--sp-14: 14px;
+	--sp-16: 16px;
+	--sp-18: 18px;
+	--sp-20: 20px;
+	--sp-24: 24px;
+	/* Con nombre propio: el ritmo principal. */
+	--pad-x: var(--sp-12); /* sangría horizontal de paneles, filas y tablas */
+	--row-y: var(--sp-8); /* margen vertical de una fila de lista */
+	--gutter: var(--sp-16); /* margen lateral de la página */
+
+	/* ── Líneas y medidas ────────────────────────────────────────────────────────────────── */
+	--hair: 1px; /* grosor de todas las líneas */
+	--border: var(--hair) solid var(--line);
+	--key-edge: 2px; /* borde inferior de <kbd> */
+	--btn-sm: 28px; /* botón cuadrado pequeño (tema) */
+	--control-h: 32px; /* buscadores y selectores de vista */
+	--cmd-h: 34px; /* barra de comandos */
+	--touch: 44px; /* zona pulsable mínima en pantallas táctiles */
+	--tabbar-h: 48px; /* barra inferior del móvil */
+	--logo: 22px;
+	--dot: 6px; /* punto de estado (relojes) */
+	--swatch: 8px; /* cuadradito de leyenda */
+	--bar-h: 6px; /* barras de comparación */
+	--bar-h-thin: 4px;
+	--bar-min: 80px; /* largo mínimo de una barra dentro de una tabla */
+	--select-max: 180px; /* ancho máximo de un desplegable */
+	--col-min: 340px; /* ancho mínimo de una columna de paneles */
+	--col-min-wide: 420px; /* el mismo, en .grid-3 por debajo de 1100 px */
+
+	/*
+	 * Puntos de corte (las @media no aceptan variables, así que se documentan aquí):
+	 *   720 px  móvil: una columna, barra inferior, cabecera compacta
+	 *   860 px  rejillas de 2 y 3 columnas → 1
+	 *   1100 px rejilla de 3 columnas → 2
+	 * Los paneles se adaptan además a su propio ancho con @container (300–480 px).
+	 */
+}
+
+/*
+ * Tema de día: <html data-theme="light">. Lo pone src/lib/theme.svelte.ts con el interruptor o, en
+ * modo «auto», cuando el sistema está en claro. Solo redefine tokens de color.
+ * Contraste comprobado (WCAG AA, 4,5:1) de --muted, --faint, ámbar, verde y rojo sobre --bg, --panel y --raise.
+ */
+:root[data-theme='light'] {
+	color-scheme: light;
+	--bg: #f5f4f0;
+	--panel: #ffffff;
+	--raise: #eeece6;
+	--line: #dcd8cf;
+	--fg: #16191d;
+	--muted: #5b636e;
+	--faint: #636a74;
+	--amber: #9a5a00;
+	--amber-soft: rgba(154, 90, 0, 0.1);
+	--amber-edge: rgba(154, 90, 0, 0.4);
+	--on-amber: #ffffff;
+	--up: #147345;
+	--down: #c3303c;
+	--neutral: #b9b4a8;
+}

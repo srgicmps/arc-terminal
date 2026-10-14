@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import ImfTable from '#lib/components/ImfTable.svelte';
 	import MortgageCalc from '#lib/components/MortgageCalc.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import MeetingList from '#lib/components/MeetingList.svelte';
@@ -73,6 +74,16 @@
 			<MortgageCalc euribor={get('euribor-12m')} />
 			{#snippet note()}Cuota con el último euríbor mensual del BCE más tu diferencial. Se calcula y se guarda solo en este navegador.{/snippet}
 		</Panel>
+		{#if data.imf?.data.rows.length}
+			{@const imf = data.imf}
+			<Panel title="Previsiones del FMI" meta="PIB real e inflación media · %">
+				<ImfTable data={imf.data} />
+				{#snippet note()}
+					Fuente: FMI, World Economic Outlook ({imf.data.edition ?? 'WEO'}) ·
+					<Updated at={imf.fetchedAt} source="imf" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Bancos centrales" meta="Tipo oficial · último cambio">
 			<SeriesTable
 				head="Banco"

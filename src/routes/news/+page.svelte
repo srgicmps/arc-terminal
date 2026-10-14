@@ -4,6 +4,7 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { NEWS_SECTIONS as SECTIONS } from '#lib/news.ts';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -35,12 +36,7 @@
 
 <div class="controls">
 	<input type="search" bind:value={query} placeholder="Buscar: Lagarde, aranceles, Menorca, Nvidia…" aria-label="Buscar en los titulares" />
-	<div class="seg" role="group" aria-label="Sección">
-		<button type="button" aria-pressed={section === 'all'} onclick={() => (section = 'all')}>Todas</button>
-		{#each SECTIONS as s (s.key)}
-			<button type="button" aria-pressed={section === s.key} onclick={() => (section = s.key)}>{s.label}</button>
-		{/each}
-	</div>
+	<Seg label="Sección" options={[{ value: 'all', label: 'Todas' }, ...SECTIONS.map((s) => ({ value: s.key, label: s.label }))]} bind:value={section} />
 </div>
 
 <div class="grid">
@@ -55,16 +51,16 @@
 	.controls {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px 12px;
-		margin-bottom: 12px;
+		gap: var(--sp-8) var(--sp-12);
+		margin-bottom: var(--sp-12);
 	}
 
 	input {
 		flex: 1 1 280px;
-		height: 32px;
-		padding: 0 10px;
+		height: var(--control-h);
+		padding: 0 var(--sp-10);
 		background: var(--panel);
-		border: 1px solid var(--line);
+		border: var(--border);
 		font-family: var(--sans);
 		font-size: var(--fs-l);
 	}
@@ -72,26 +68,5 @@
 	input:focus {
 		outline: none;
 		border-color: var(--amber);
-	}
-
-	.seg {
-		display: inline-flex;
-		flex-wrap: wrap;
-		border: 1px solid var(--line);
-	}
-
-	.seg button {
-		background: none;
-		border: 0;
-		padding: 5px 10px;
-		cursor: pointer;
-		color: var(--muted);
-		font-size: var(--fs-s);
-	}
-
-	.seg button[aria-pressed='true'] {
-		background: var(--amber);
-		color: var(--on-amber);
-		font-weight: 500;
 	}
 </style>

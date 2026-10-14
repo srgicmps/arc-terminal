@@ -6,7 +6,9 @@
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { compact, dm, nf, trend, weekday } from '#lib/format.ts';
+	import Change from '#lib/components/ui/Change.svelte';
+	import Table from '#lib/components/ui/Table.svelte';
+	import { compact, dm, nf, weekday } from '#lib/format.ts';
 	import { bmeHolidays, nyseHolidays } from '#lib/markets.ts';
 	import { madridDate } from '#lib/meetings.ts';
 	import type { PageProps } from './$types';
@@ -70,22 +72,20 @@
 				</ul>
 			{/if}
 			{#if days.length}
-				<div class="scroll">
-					<table class="t fest">
-						<thead>
-							<tr><th>Día</th><th class="l">Festivo</th><th class="l">Dónde</th></tr>
-						</thead>
-						<tbody>
-							{#each days as d (d.date)}
-								<tr>
-									<td class="mut">{weekday(d.date)} {dm(`${d.date}T12:00:00Z`).split(' ')[1]}</td>
-									<td class="l name">{d.names.join(' · ')}</td>
-									<td class="l mut">{d.tags.join(' ')}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+				<Table>
+					<thead>
+						<tr><th>Día</th><th class="l">Festivo</th><th class="l">Dónde</th></tr>
+					</thead>
+					<tbody>
+						{#each days as d (d.date)}
+							<tr>
+								<td class="mut">{weekday(d.date)} {dm(`${d.date}T12:00:00Z`).split(' ')[1]}</td>
+								<td class="l name wrap">{d.names.join(' · ')}</td>
+								<td class="l mut">{d.tags.join(' ')}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
 			{/if}
 			{#snippet note()}
 				ES: festivo en toda España · IB: en Baleares · NYSE y BME: sin bolsa en Nueva York o en Madrid.
@@ -98,34 +98,32 @@
 			{#if !data.finnhub}
 				<p class="empty">Falta la clave FINNHUB_API_KEY en GitHub Secrets.</p>
 			{:else if earnings.length}
-				<div class="scroll">
-					<table class="t">
-						<thead>
+				<Table>
+					<thead>
+						<tr>
+							<th>Día</th>
+							<th class="l">Valor</th>
+							<th class="h">Hora</th>
+							<th>BPA prev.</th>
+							<th>BPA real</th>
+							<th class="rev">Ventas prev.</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each earnings as e, i (e.symbol + e.date)}
 							<tr>
-								<th>Día</th>
-								<th class="l">Valor</th>
-								<th class="h">Hora</th>
-								<th>BPA prev.</th>
-								<th>BPA real</th>
-								<th class="rev">Ventas prev.</th>
+								<td class="mut">{i === 0 || earnings[i - 1].date !== e.date ? weekday(e.date) : ''}</td>
+								<td class="l"><a class="sym" href="{resolve('/s')}?sym={encodeURIComponent(e.symbol)}">{e.symbol}</a></td>
+								<td class="mut h">{HOUR[e.hour] ?? ''}</td>
+								<td>{nf(e.epsEstimate)}</td>
+								<td>
+									<Change value={e.epsActual !== null && e.epsEstimate !== null ? e.epsActual - e.epsEstimate : null} text={nf(e.epsActual)} />
+								</td>
+								<td class="mut rev">{e.revenueEstimate ? compact(e.revenueEstimate) : '—'}</td>
 							</tr>
-						</thead>
-						<tbody>
-							{#each earnings as e, i (e.symbol + e.date)}
-								<tr>
-									<td class="mut">{i === 0 || earnings[i - 1].date !== e.date ? weekday(e.date) : ''}</td>
-									<td class="l"><a class="sym" href="{resolve('/s')}?sym={encodeURIComponent(e.symbol)}">{e.symbol}</a></td>
-									<td class="mut h">{HOUR[e.hour] ?? ''}</td>
-									<td>{nf(e.epsEstimate)}</td>
-									<td class={e.epsActual !== null && e.epsEstimate !== null ? trend(e.epsActual - e.epsEstimate) : 'mut'}>
-										{nf(e.epsActual)}
-									</td>
-									<td class="mut rev">{e.revenueEstimate ? compact(e.revenueEstimate) : '—'}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+						{/each}
+					</tbody>
+				</Table>
 			{:else}
 				<p class="empty">No hay resultados de grandes empresas en estas fechas.</p>
 			{/if}
@@ -139,7 +137,8 @@
 
 <style>
 	/* Los nombres largos pasan a otra línea para que quepa la columna «Dónde» en el móvil. */
-	.fest .name {
+	/* Los nombres de los festivos pueden ocupar varias líneas. */
+	.wrap {
 		white-space: normal;
 	}
 
