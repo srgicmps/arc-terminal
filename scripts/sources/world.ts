@@ -19,24 +19,33 @@ type Raw = Record<string, any>;
 export const quakes: Source<Quake[]> = {
 	name: 'quakes',
 	label: 'Terremotos M4,5+ · Servicio Geológico de EE. UU. (USGS)',
-	maxAgeMinutes: 25,
+	maxAgeMinutes: 12,
 	async fetch() {
 		const body = await getJson<{ features: Raw[] }>(
 			'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson'
 		);
 		return list(body.features)
-			.map((f) => ({
-				id: String(f.id),
-				mag: Number(f.properties?.mag ?? 0),
-				place: plain(f.properties?.place),
-				time: new Date(Number(f.properties?.time)).toISOString(),
-				url: String(f.properties?.url ?? ''),
-				tsunami: Boolean(f.properties?.tsunami),
-				alert: f.properties?.alert ?? null,
-				lon: Number(f.geometry?.coordinates?.[0]),
-				lat: Number(f.geometry?.coordinates?.[1]),
-				depth: Number(f.geometry?.coordinates?.[2])
-			}))
+			.flatMap((f) => {
+				// Sin hora válida no se puede ordenar ni mostrar: se descarta ese terremoto, no la fuente.
+				// (Ojo: Number(null) es 0, que sería 1970.)
+				const t = f.properties?.time;
+				const ms = typeof t === 'number' ? t : NaN;
+				if (!Number.isFinite(ms) || Math.abs(ms) > 8.64e15) return [];
+				return [
+					{
+						id: String(f.id),
+						mag: Number(f.properties?.mag ?? 0),
+						place: plain(f.properties?.place),
+						time: new Date(ms).toISOString(),
+						url: String(f.properties?.url ?? ''),
+						tsunami: Boolean(f.properties?.tsunami),
+						alert: f.properties?.alert ?? null,
+						lon: Number(f.geometry?.coordinates?.[0]),
+						lat: Number(f.geometry?.coordinates?.[1]),
+						depth: Number(f.geometry?.coordinates?.[2])
+					}
+				];
+			})
 			.sort((a, b) => b.time.localeCompare(a.time))
 			.slice(0, 80);
 	}
@@ -52,7 +61,7 @@ function iso(day: string, time: string) {
 export const power: Source<PowerData> = {
 	name: 'power',
 	label: 'Precio de la luz (PVPC y mayorista) · Red Eléctrica',
-	maxAgeMinutes: 55,
+	maxAgeMinutes: 25,
 	async fetch(previous) {
 		const params = new URLSearchParams({
 			start_date: iso(madridDate(0), '00:00'),
@@ -103,7 +112,7 @@ const PLACES = [
 export const weather: Source<WeatherData> = {
 	name: 'weather',
 	label: 'Tiempo y temperatura del mar · Open-Meteo',
-	maxAgeMinutes: 55,
+	maxAgeMinutes: 25,
 	async fetch() {
 		const params = new URLSearchParams({
 			latitude: PLACES.map((p) => p.lat).join(','),
@@ -165,7 +174,7 @@ export const weather: Source<WeatherData> = {
 export const crypto: Source<CryptoData> = {
 	name: 'crypto',
 	label: 'Criptomonedas · CoinGecko',
-	maxAgeMinutes: 25,
+	maxAgeMinutes: 12,
 	async fetch() {
 		const params = new URLSearchParams({
 			vs_currency: 'usd',
@@ -200,7 +209,7 @@ export const crypto: Source<CryptoData> = {
 export const hn: Source<HnItem[]> = {
 	name: 'hn',
 	label: 'Portada de Hacker News · Algolia',
-	maxAgeMinutes: 25,
+	maxAgeMinutes: 12,
 	async fetch() {
 		const body = await getJson<{ hits: Raw[] }>(
 			'https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=40'

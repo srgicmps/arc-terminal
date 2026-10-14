@@ -171,6 +171,6 @@ const LABELS: Record<string, string> = {
 export const newsSources: Source<NewsData>[] = Object.entries(FEEDS).map(([key, feeds]) => ({
 	name: `news-${key}`,
 	label: `Titulares de ${LABELS[key]} · ${feeds.map((f) => f.name).join(', ')}`,
-	maxAgeMinutes: 25,
+	maxAgeMinutes: 12,
 	fetch: () => section(feeds)
 }));
