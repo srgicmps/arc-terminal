@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	canonical,
+	exampleTarget,
 	findCommand,
 	HISTORY_KEY,
 	historyOptions,
@@ -130,6 +131,16 @@ describe('comandos con texto detrás', () => {
 		expect(suggest('NEWS paro', ALL)).toEqual([
 			{ code: 'NEWS', desc: 'Buscar en los titulares: paro', kind: 'Función', run: 'NEWS paro' }
 		]);
+	});
+
+	it('cada ejemplo de HELP enlaza a lo mismo que abre la barra (también WX, que empieza por «LUGAR»)', () => {
+		for (const c of COMMANDS.filter((c) => c.arg)) {
+			const { route, search } = exampleTarget(c);
+			expect(route + search, c.code).toBe(open(c.arg!.example));
+			expect(search, c.code).not.toBe('');
+		}
+		const wx = COMMANDS.find((c) => c.code === 'WX')!;
+		expect(exampleTarget(wx).search).toBe(`?${wx.arg!.param}=Tokio`);
 	});
 
 	it('el historial guarda el texto', () => {
