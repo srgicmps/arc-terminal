@@ -1,1 +1,6 @@
 # URL que la Action de los PR consulta para explorar APIs nuevas (ver scripts/probe.ts).
+https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPC ~ general|comunidad|2025
+https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/EPA ~ tasa de paro.*(comunidad|aut.nom)|tasas de paro
+https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/FRONTUR ~ comunidad
+https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/EGATUR ~ comunidad
+https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/EOH ~ comunidad
