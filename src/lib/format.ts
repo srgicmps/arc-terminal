@@ -90,6 +90,8 @@ export function period(t: string): string {
 	if (m) return `${MONTHS[Number(m[2]) - 1]} ${m[1].slice(2)}`;
 	m = t.match(/^(\d{4})-Q(\d)$/);
 	if (m) return `T${m[2]} ${m[1].slice(2)}`;
+	m = t.match(/^(\d{4})-W(\d{2})$/);
+	if (m) return `sem ${Number(m[2])} ${m[1].slice(2)}`;
 	m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
 	if (m) return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]}`;
 	return t;

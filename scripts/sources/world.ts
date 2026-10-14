@@ -21,7 +21,7 @@ import {
 	parseSun,
 	seaTemp
 } from '../../src/lib/openmeteo.ts';
-import { appendDaily, getJson, list, madridDate, num, plain, type Source } from '../lib.ts';
+import { appendDaily, getJson, list, madridDate, madridDay, num, plain, type Source } from '../lib.ts';
 
 type Raw = Record<string, any>;
 
@@ -169,13 +169,14 @@ export const crypto: Source<CryptoData> = {
 	name: 'crypto',
 	label: 'Criptomonedas · CoinGecko',
 	maxAgeMinutes: 12,
-	async fetch() {
+	// Recibe la copia anterior para ir guardando el cierre diario de bitcoin (termómetro de riesgo de WS).
+	async fetch(previous) {
 		const params = new URLSearchParams({
 			vs_currency: 'usd',
 			order: 'market_cap_desc',
 			per_page: '15',
 			page: '1',
-			price_change_percentage: '24h'
+			price_change_percentage: '24h,7d'
 		});
 		const [usd, eur] = await Promise.all([
 			getJson<Raw[]>(`https://api.coingecko.com/api/v3/coins/markets?${params}`),
@@ -191,10 +192,16 @@ export const crypto: Source<CryptoData> = {
 			usd: Number(c.current_price),
 			eur: Number(eur[c.id]?.eur ?? NaN),
 			change24h: num(c.price_change_percentage_24h),
+			change7d: num(c.price_change_percentage_7d_in_currency),
 			marketCap: num(c.market_cap)
 		}));
 		if (!coins.length) throw new Error('sin monedas');
-		return { coins };
+		const btc = coins.find((c) => c.id === 'bitcoin');
+		const btcHistory =
+			btc && Number.isFinite(btc.usd)
+				? appendDaily(previous?.btcHistory, { date: madridDay(), usd: btc.usd }, 400)
+				: (previous?.btcHistory ?? []);
+		return { coins, btcHistory };
 	}
 };
 

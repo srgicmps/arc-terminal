@@ -14,9 +14,10 @@
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
-	import { nf } from '#lib/format.ts';
+	import { dm, nf } from '#lib/format.ts';
 	import { fuelShare, type ShareInfo } from '#lib/share.ts';
 	import { distanceKm, findProvince, FUELS, type FuelKey, type FuelProvinceDay, type FuelStation } from '#lib/fuel.ts';
+	import { urlState, writeParams } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -24,8 +25,10 @@
 	const MENORCA = 'menorca';
 	const SHOWN = 60;
 
-	// Estado de la vista (como ref() en Vue).
-	let fuel = $state<FuelKey>('g95');
+	// Estado de la vista (como ref() en Vue). El combustible y la zona van también en la URL
+	// (?combustible=diesel&zona=28): un enlace o un favorito abre lo mismo.
+	const fuelSel = urlState<FuelKey>('combustible', 'g95', (v) => FUELS.some((f) => f.key === v));
+	const fuel = $derived(fuelSel.value);
 	let zone = $state(MENORCA);
 	let town = $state('ALL');
 	let showAll = $state(false);
@@ -44,6 +47,7 @@
 		zone = id;
 		town = 'ALL';
 		showAll = false;
+		writeParams({ zona: id === MENORCA ? null : id });
 		try {
 			localStorage.setItem('fuel-zone', id);
 		} catch {}
@@ -209,7 +213,7 @@
 				<button class="near" type="button" onclick={locate} disabled={locating}>
 					{locating ? 'Buscando…' : here ? '◎ Actualizar ubicación' : '◎ Cerca de mí'}
 				</button>
-				<Seg label="Combustible" options={FUELS.map((f) => ({ value: f.key, label: f.label }))} bind:value={fuel} />
+				<Seg label="Combustible" options={FUELS.map((f) => ({ value: f.key, label: f.label }))} bind:value={fuelSel.value} />
 				<!-- bind:value es el v-model de Svelte -->
 				<Select label="Municipio" bind:value={town}>
 					<option value="ALL">Todos</option>
@@ -318,6 +322,32 @@
 				guarda día a día.
 			{/snippet}
 		</Panel>
+		{#if data.europe?.data.rows.length}
+			{@const eu = data.europe.data}
+			<Panel title="España frente a Europa" meta="€/L · con y sin impuestos">
+				<Table>
+					<thead>
+						<tr><th class="l">País</th><th>Gasolina 95</th><th>Sin imp.</th><th>Diésel</th><th>Sin imp.</th></tr>
+					</thead>
+					<tbody>
+						{#each eu.rows as r (r.code)}
+							<tr class:current={r.code === 'ES'}>
+								<td class="l">{r.name}</td>
+								<td>{nf(r.g95.tax, 3)}</td>
+								<td class="mut">{nf(r.g95.net, 3)}</td>
+								<td>{nf(r.diesel.tax, 3)}</td>
+								<td class="mut">{nf(r.diesel.net, 3)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
+				{#snippet note()}
+					Precios medios del lunes {dm(eu.date)}. Fuente: Comisión Europea,
+					<a href="https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en" target="_blank" rel="noopener">Weekly Oil Bulletin</a>;
+					la media de la UE está ponderada por consumo · <Updated at={data.europe?.fetchedAt} source="oilbulletin" />
+				{/snippet}
+			</Panel>
+		{/if}
 	</div>
 	<div class="col">
 		<Panel title="Precio medio por provincia" meta="{fuelLabel} · de más barata a más cara">
