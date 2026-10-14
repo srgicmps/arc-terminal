@@ -100,3 +100,5 @@ https://mempool.space/api/v1/mining/hashrate/3d ~ currentHashrate.{0,30}
 https://mempool.space/api/blocks/tip/height
 # GEO y PAIS: FEWS NET, población en fase IPC 3+ por país (la consulta de la fuente, recortada)
 https://fdw.fews.net/api/ipcpopulationsize/?format=json&phase=3%2B&unit_type=admin0&start_date=2025-10-01&page_size=2 ~ "country_code":"[A-Z]{2}".{0,40}
+# WS: Pink Sheet del Banco Mundial, enlace al .xlsx mensual
+https://www.worldbank.org/en/research/commodity-markets ~ CMO-Historical-Data-Monthly

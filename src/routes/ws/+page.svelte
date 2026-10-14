@@ -3,6 +3,7 @@
 	import AuctionList from '#lib/components/AuctionList.svelte';
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
 	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
+	import PinkSheetTable from '#lib/components/PinkSheetTable.svelte';
 	import FxConvert from '#lib/components/FxConvert.svelte';
 	import FxTable from '#lib/components/FxTable.svelte';
 	import HotLists from '#lib/components/HotLists.svelte';
@@ -13,7 +14,7 @@
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import StablecoinTable from '#lib/components/StablecoinTable.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
-	import { compact, dm, nf } from '#lib/format.ts';
+	import { compact, dm, nf, period } from '#lib/format.ts';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
@@ -166,6 +167,18 @@
 		<Panel title="Materias primas" meta="Precio en dólares · en directo">
 			<TvWidget widget="market-quotes" config={quotes('Materias primas', COMMODITIES)} height={quotesHeight(COMMODITIES.length)} />
 		</Panel>
+		{#if data.pinksheet?.data.rows.length}
+			{@const last = data.pinksheet.data.rows.map((r) => r.points.at(-1)?.t ?? '').sort().at(-1) ?? ''}
+			<Panel title="Más materias primas" meta="Media mensual · {period(last)} · en dólares">
+				<PinkSheetTable rows={data.pinksheet.data.rows} />
+				{#snippet note()}
+					Lo que no sale en directo arriba: gas europeo, alimentos, fertilizantes y metales industriales. Precio medio
+					del mes; se publica a primeros del siguiente. Fuente:
+					<a href="https://www.worldbank.org/en/research/commodity-markets" target="_blank" rel="noopener">Banco Mundial, Pink Sheet</a>
+					· <Updated at={data.pinksheet?.fetchedAt} source="pinksheet" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<DefenseQuotes />
 	</div>
 </div>
