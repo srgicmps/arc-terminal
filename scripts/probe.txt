@@ -3,3 +3,4 @@
 https://apidatos.ree.es/es/datos/generacion/estructura-generacion?start_date=2026-10-13T00:00&end_date=2026-10-14T23:59&time_trunc=day&geo_trunc=electric_system&geo_limit=baleares&geo_ids=8743
 https://apidatos.ree.es/es/datos/generacion/no-renovables-detalle-emisiones-CO2?start_date=2026-10-13T00:00&end_date=2026-10-14T23:59&time_trunc=day
 https://huggingface.co/api/daily_papers?limit=2
+https://data.sec.gov/submissions/CIK0001045810.json

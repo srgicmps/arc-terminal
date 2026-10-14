@@ -13,6 +13,7 @@ import { hfpapers } from './hfpapers.ts';
 import { newsSources } from './news.ts';
 import { predictions } from './predictions.ts';
 import { powerMix } from './ree-mix.ts';
+import { sec } from './sec.ts';
 import { uscurve, usdebt } from './treasury.ts';
 import { wiki } from './wiki.ts';
 import { crypto, hn, power, quakes, weather } from './world.ts';
@@ -34,6 +35,7 @@ export const sources: Source<any>[] = [
 	uscurve,
 	fred,
 	finnhub,
+	sec,
 	// Mundo
 	quakes,
 	quakesEs,
