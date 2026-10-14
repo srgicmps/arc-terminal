@@ -87,13 +87,44 @@
 	const pct = (v: number | null) => (v === null ? '—' : points ? nf(v, 2) : `${nf(v, 2)} %`);
 	/** Variación entre dos días: en pb para los tipos y en puntos (dos decimales) con `points`. */
 	const diff = (a: number | null, b: number | null) => (a === null || b === null ? null : points ? a - b : Math.round((a - b) * 100));
+	// Cursor (como en LineChart): el plazo más cercano al ratón o al dedo, y sus valores debajo del gráfico.
+	let hover = $state<number | null>(null);
+	function onmove(e: PointerEvent) {
+		// Del punto de la pantalla a las coordenadas del viewBox (ya cuenta el padding y la escala).
+		const m = (e.currentTarget as SVGSVGElement).getScreenCTM();
+		if (!m) return;
+		const px = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse()).x;
+		const i = Math.round(((px - pad.l) / (W - pad.l - pad.r)) * (labels.length - 1));
+		hover = Math.max(0, Math.min(labels.length - 1, i));
+	}
+	/** Lo que se lee en el plazo señalado: hoy y el día de comparación de cada curva. */
+	const readout = $derived.by(() => {
+		const i = hover;
+		if (i === null) return [];
+		if (curve && single) {
+			return [{ label: 'Hoy', now: single.today.values[i] ?? null, before: single.before?.values[i] ?? null, when: single.before ? period(single.before.date) : '' }];
+		}
+		return compared.map((c) => ({ label: c.label, now: c.now[i], before: c.year?.[i] ?? null, when: 'hace un año' }));
+	});
+
 	const aria = $derived(
 		curve ? `Curva ${points ? 'de volatilidad' : 'de tipos'} del ${single?.today.date}` : `Curvas de tipos de ${compared.map((c) => c.label).join(', ')}`
 	);
 </script>
 
 {#if all.length}
-	<svg class="curve" viewBox="0 0 {W} {H}" role="img" aria-label={aria}>
+	<svg
+		class="curve"
+		viewBox="0 0 {W} {H}"
+		role="img"
+		aria-label={aria}
+		onpointermove={onmove}
+		onpointerdown={onmove}
+		onpointerleave={(e) => {
+			// Con el dedo, el navegador «sale» al levantarlo: el valor se queda hasta tocar en otro sitio.
+			if (e.pointerType !== 'touch') hover = null;
+		}}
+	>
 		{#each ticks as t (t)}
 			<line class="grid" x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} />
 			<text class="lbl" x={pad.l - 6} y={y(t) + 4} text-anchor="end">{nf(t, t % 1 ? 1 : 0)}</text>
@@ -109,7 +140,18 @@
 				{#if v !== null}<circle class={l.cls} cx={x(i)} cy={y(v)} r="2.5" />{/if}
 			{/each}
 		{/each}
+		{#if hover !== null}
+			<line class="cursor" x1={x(hover)} x2={x(hover)} y1={pad.t} y2={H - pad.b} />
+		{/if}
 	</svg>
+	{#if hover !== null}
+		<p class="readout" aria-live="polite">
+			<b>{labels[hover]}</b>
+			{#each readout as r (r.label)}
+				<span>{r.label} {pct(r.now)}{#if r.before !== null}<span class="mut">{' · '}{r.when} {pct(r.before)}</span>{/if}</span>
+			{/each}
+		</p>
+	{/if}
 {/if}
 
 {#if curve && single}
@@ -175,6 +217,27 @@
 		width: 100%;
 		height: auto;
 		padding: var(--sp-8) var(--sp-4) 0;
+		touch-action: pan-y;
+	}
+
+	.cursor {
+		stroke: var(--muted);
+		stroke-dasharray: 2 3;
+	}
+
+	.readout {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--sp-2) var(--sp-12);
+		margin: 0;
+		padding: var(--sp-4) var(--pad-x) var(--sp-6);
+		font-family: var(--mono);
+		font-size: var(--fs-xs);
+	}
+
+	.readout b {
+		color: var(--amber);
+		font-weight: var(--fw-medium);
 	}
 
 	.grid {
