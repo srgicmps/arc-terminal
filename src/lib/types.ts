@@ -153,6 +153,23 @@ export interface Paper {
 	summary: string;
 }
 
+// ---------- Modelos en tendencia (Hugging Face) ----------
+
+export interface HfModel {
+	/** «autor/modelo», como en la URL de Hugging Face. */
+	id: string;
+	author: string;
+	name: string;
+	/** Tarea en inglés, tal como la da Hugging Face («text-generation»…): la vista la traduce. */
+	task: string;
+	likes: number;
+	/** Descargas del último mes. */
+	downloads: number;
+	url: string;
+	/** Cuándo se creó (ISO 8601), o vacío. */
+	created: string;
+}
+
 // ---------- Terremotos (USGS) ----------
 
 export interface Quake {
