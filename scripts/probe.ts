@@ -5,12 +5,16 @@ import { getText } from './lib.ts';
 import { parseFeed } from './sources/news.ts';
 
 const URLS = [
-	'https://e00-expansion.uecdn.es/rss/economia.xml',
-	'https://www.eldiario.es/rss/',
-	'https://e00-elmundo.uecdn.es/elmundo/rss/espana.xml',
-	'https://www.europarl.europa.eu/rss/doc/top-stories/es.xml'
+	'https://www.europarl.europa.eu/rss/doc/top-stories/es.xml',
+	'https://www.europarl.europa.eu/rss/doc/top-stories/en.xml',
+	'https://www.europarl.europa.eu/rss/doc/press-releases/es.xml',
+	'https://www.europarl.europa.eu/rss/doc/press-releases/en.xml',
+	'https://www.europarl.europa.eu/news/es/rss',
+	'https://www.europarl.europa.eu/news/en/rss',
+	'https://www.europarl.europa.eu/news/es/press-room/rss',
+	'https://www.europarl.europa.eu/news/en/press-room/rss'
 ];
-const ACCEPTS = ['application/rss+xml, application/atom+xml, application/xml, text/xml', '*/*'];
+const ACCEPTS = ['application/rss+xml, application/atom+xml, application/xml, text/xml'];
 
 for (const url of URLS) {
 	for (const accept of ACCEPTS) {
