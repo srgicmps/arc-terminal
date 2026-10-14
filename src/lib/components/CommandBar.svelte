@@ -6,14 +6,9 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { COMMANDS, TICKERS } from '#lib/commands.ts';
+	import { resolveInput, suggest, type Option } from '#lib/cmdline.ts';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
-
-	interface Option {
-		code: string;
-		desc: string;
-		kind: string;
-	}
 
 	// Tus valores primero; después, las funciones y los valores populares.
 	const ALL: Option[] = $derived([
@@ -33,19 +28,11 @@
 	let value = $state('');
 	let selected = $state(-1);
 	let open = $state(false);
+	// Si Sergi se ha movido con ↑ ↓, Intro abre la sugerencia marcada; si no, se decide con lo escrito.
+	let moved = $state(false);
 	let input: HTMLInputElement;
 
-	/** Sin tildes y en mayúsculas, para comparar. */
-	const norm = (s: string) =>
-		s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase();
-
-	const options = $derived.by(() => {
-		const q = norm(value);
-		if (!q) return [];
-		const starts = ALL.filter((o) => o.code.startsWith(q));
-		const contains = ALL.filter((o) => !o.code.startsWith(q) && norm(o.desc).includes(q));
-		return [...starts, ...contains].slice(0, 8);
-	});
+	const options = $derived(suggest(value, ALL));
 
 	// Al abrir la hoja desde la barra inferior del móvil, el cursor va directo a la barra.
 	$effect(() => {
@@ -53,16 +40,17 @@
 	});
 
 	function run(raw: string) {
-		const code = norm(raw);
+		// Se calcula antes de vaciar la barra: las sugerencias dependen de lo escrito.
+		const target = resolveInput(raw, suggest(raw, ALL));
 		ui.sheet = false;
 		value = '';
 		open = false;
 		selected = -1;
+		moved = false;
 		input.blur();
-		if (!code) return;
-		const command = COMMANDS.find((c) => c.code === code);
-		if (command) goto(resolve(command.route));
-		else goto(`${resolve('/s')}?sym=${encodeURIComponent(code)}`);
+		if (!target) return;
+		if (target.kind === 'command') goto(resolve(target.command.route));
+		else goto(`${resolve('/s')}?sym=${encodeURIComponent(target.sym)}`);
 	}
 
 	function onkeydown(e: KeyboardEvent) {
@@ -70,10 +58,12 @@
 		if (e.key === 'ArrowDown' && n) {
 			e.preventDefault();
 			open = true;
+			moved = true;
 			selected = (selected + 1) % n;
 		} else if (e.key === 'ArrowUp' && n) {
 			e.preventDefault();
 			open = true;
+			moved = true;
 			selected = (selected - 1 + n) % n;
 		} else if (e.key === 'Escape') {
 			e.preventDefault();
@@ -91,7 +81,7 @@
 
 	function onsubmit(e: SubmitEvent) {
 		e.preventDefault();
-		run(open && selected >= 0 && options[selected] ? options[selected].code : value);
+		run(open && moved && selected >= 0 && options[selected] ? options[selected].code : value);
 	}
 
 	/** Atajos de teclado en toda la página (como un listener en window en Vue, pero declarativo). */
@@ -119,6 +109,7 @@
 		bind:value
 		oninput={() => {
 			open = true;
+			moved = false;
 			selected = options.length ? 0 : -1;
 		}}
 		{onkeydown}
