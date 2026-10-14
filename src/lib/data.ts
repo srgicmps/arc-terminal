@@ -6,6 +6,7 @@ import type {
 	FedRegData,
 	FinnhubData,
 	HazardsData,
+	HolidaysData,
 	HnItem,
 	NewsData,
 	Paper,
@@ -71,6 +72,7 @@ export interface DataMap {
 	fuel: FuelData;
 	'fuel-es': FuelSpainData;
 	hazards: HazardsData;
+	holidays: HolidaysData;
 	hfpapers: Paper[];
 	hn: HnItem[];
 	ine: SeriesData;
