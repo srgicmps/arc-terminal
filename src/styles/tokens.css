@@ -21,6 +21,8 @@
 	--up: #4cc48a; /* sube (solo para subidas) */
 	--down: #f0646f; /* baja (solo para bajadas) */
 	--neutral: #3a434e; /* relleno gris de barras y gráficos */
+	--series-2: #7fa7d6; /* segunda y tercera serie de un gráfico (la primera es --amber) */
+	--series-3: #b59ad6;
 
 	/* ── Tipografía ──────────────────────────────────────────────────────────────────────── */
 	--mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; /* datos y comandos */
@@ -119,4 +121,6 @@
 	--up: #147345;
 	--down: #c3303c;
 	--neutral: #b9b4a8;
+	--series-2: #2f639e;
+	--series-3: #7449a0;
 }

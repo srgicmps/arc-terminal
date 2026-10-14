@@ -47,7 +47,7 @@ ${Object.entries(values)
 </feed>`;
 
 describe('uscurve', () => {
-	it('junta el mes anterior y el actual, sin días repetidos y en orden', async () => {
+	it('junta el mes anterior, el actual y los mismos de hace un año, sin días repetidos y en orden', async () => {
 		const fetch = mockFetch((url) => {
 			if (url.endsWith('=202609'))
 				return curveFeed([['2026-09-30', { BC_1MONTH: '4.10', BC_10YEAR: '4.05' }]]);
@@ -56,13 +56,15 @@ describe('uscurve', () => {
 					['2026-10-02', { BC_1MONTH: '4.12', BC_10YEAR: '4.10', BC_30YEAR: '4.60' }],
 					['2026-10-01', { BC_1MONTH: '4.11', BC_10YEAR: '4.08' }]
 				]);
+			if (url.endsWith('=202510')) return curveFeed([['2025-10-14', { BC_10YEAR: '4.02' }]]);
+			if (url.endsWith('=202509')) return curveFeed([]);
 			return undefined;
 		});
 		const data = await uscurve.fetch(undefined);
-		expect(fetch).toHaveBeenCalledTimes(2);
+		expect(fetch).toHaveBeenCalledTimes(4);
 		expect(data.tenors).toEqual(['1M', '3M', '6M', '1A', '2A', '5A', '10A', '30A']);
-		expect(data.days.map((d) => d.date)).toEqual(['2026-09-30', '2026-10-01', '2026-10-02']);
-		expect(data.days[2].values).toEqual([4.12, null, null, null, null, null, 4.1, 4.6]);
+		expect(data.days.map((d) => d.date)).toEqual(['2025-10-14', '2026-09-30', '2026-10-01', '2026-10-02']);
+		expect(data.days[3].values).toEqual([4.12, null, null, null, null, null, 4.1, 4.6]);
 	});
 
 	it('pide bien el mes anterior en enero', async () => {
@@ -70,7 +72,7 @@ describe('uscurve', () => {
 		const fetch = mockFetch(() => curveFeed([['2026-01-30', { BC_10YEAR: '4' }]]));
 		await uscurve.fetch(undefined);
 		const urls = fetch.mock.calls.map((c) => String(c[0]).split('=').at(-1));
-		expect(urls).toEqual(['202512', '202601']);
+		expect(urls).toEqual(['202412', '202501', '202512', '202601']);
 	});
 
 	it('acepta un mes con un solo día y falla si la curva está vacía', async () => {

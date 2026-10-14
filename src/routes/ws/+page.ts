@@ -3,11 +3,13 @@ import type { CryptoData, NewsData, SeriesData, YieldCurveData } from '#lib/type
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async () => {
-	const [news, curve, ecb, crypto] = await Promise.all([
+	const [news, curve, eacurve, jgb, ecb, crypto] = await Promise.all([
 		dataset<NewsData>('news-ws'),
 		dataset<YieldCurveData>('uscurve'),
+		dataset<YieldCurveData>('eacurve'),
+		dataset<YieldCurveData>('jgb'),
 		dataset<SeriesData>('ecb'),
 		dataset<CryptoData>('crypto')
 	]);
-	return { news, curve, ecb, crypto };
+	return { news, curve, eacurve, jgb, ecb, crypto };
 };
