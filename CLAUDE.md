@@ -45,7 +45,8 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - Las claves de las APIs van en **GitHub Secrets** y solo las usa el script de Actions. Nunca en el código
   que llega al navegador.
 - Cotizaciones y gráficos en directo: widgets de TradingView (sin clave).
-- **Avisos al móvil** con ntfy (`scripts/notify.ts`, tras `pnpm data`): reglas en la lista `RULES`. El tema
+- **Avisos al móvil** con ntfy (`scripts/notify.ts`, tras `pnpm data`): reglas P1–P4 en la lista `RULES` de
+  `scripts/alerts/rules.ts`, umbrales y cupos en `scripts/alerts/config.ts`. El tema
   va en el Secret `NTFY_TOPIC` y es la única protección: nunca en el repo, en registros ni en JSON.
 
 ## Stack

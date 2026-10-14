@@ -2,269 +2,172 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SourceHistory, SourceStatus } from '../../src/lib/data.ts';
-import type { Quake, SeriesData } from '../../src/lib/types.ts';
-import { appendSpan } from '../history.ts';
-import {
-	baselineLog,
-	candidates,
-	DAILY_LIMIT,
-	encodeHeader,
-	isQuiet,
-	pickAlerts,
-	RULES,
-	runNotify,
-	trim,
-	usedToday,
-	type Inputs,
-	type NotifyLog
-} from '../notify.ts';
+import type { Quake } from '../../src/lib/types.ts';
+import type { Level } from '../alerts/config.ts';
+import { emptyLog, type Draft, type LogEntry, type NotifyLog, type Rule } from '../alerts/rules.ts';
+import { baselineLog, encodeHeader, headers, parseLog, pickAlerts, runNotify, trim, usedToday } from '../notify.ts';
 import { mockFetch } from './mock.ts';
 
-// 14 oct 2026, 12:00 en Madrid (CEST): no hay reunión del BCE ni de la Fed ese día.
+// 14 oct 2026, 12:00 en Madrid (CEST).
 const NOW = Date.parse('2026-10-14T10:00:00Z');
 const HOUR = 3_600_000;
 const TOPIC = 'arc-secreto-Xy9q7ZpL2';
-const empty = (): NotifyLog => ({ entries: [], last: {} });
 
-const quake = (id: string, mag: number, hoursAgo = 1, now = NOW): Quake => ({
-	id,
-	mag,
-	place: 'Lugar de prueba',
-	time: new Date(now - hoursAgo * HOUR).toISOString(),
-	url: '',
-	tsunami: false,
-	alert: null,
-	lat: 0,
-	lon: 0,
-	depth: 10
+/** Una regla de prueba que devuelve `n` avisos de nivel `level`; el i-ésimo, `i` minutos más antiguo. */
+const fake = (type: string, level: Level, n: number): Rule => ({
+	type,
+	level,
+	run: (): Draft[] =>
+		Array.from({ length: n }, (_, i) => ({
+			id: `${type}:${i}`,
+			title: type,
+			body: '',
+			tags: '',
+			click: '',
+			time: NOW - i * 60_000
+		}))
 });
 
-function down(name: string, runs: number, now = NOW): { status: SourceStatus; history: SourceHistory } {
-	let spans = appendSpan(undefined, 'error', now - runs * 15 * 60_000);
-	for (let i = 1; i < runs; i++) spans = appendSpan(spans, 'error', now - (runs - i) * 15 * 60_000);
-	return {
-		status: { name, label: `Etiqueta ${name}`, state: 'error', fetchedAt: null, error: 'HTTP 500' },
-		history: { name, lastRun: '', history: spans }
-	};
-}
+const sent = (n: number, p: Level, t = '2026-10-14T07:00Z', prefix = `old${p}`): LogEntry[] =>
+	Array.from({ length: n }, (_, i) => ({ k: `${prefix}:${i}`, t, s: 'sent' as const, p }));
 
-const series = (id: string, t: string, v: number): SeriesData => ({
-	series: [
-		{
-			id,
-			label: id,
-			unit: '%',
-			points: [
-				{ t: '2026-07', v: 2 },
-				{ t, v }
-			],
-			source: 'X'
-		}
-	]
-});
+const pick = (rules: Rule[], entries: LogEntry[] = [], now = NOW) =>
+	pickAlerts({}, { ...emptyLog(), entries }, now, rules);
+const count = (alerts: { level: Level }[], level: Level) => alerts.filter((a) => a.level === level).length;
 
-const keys = (d: Inputs, log = empty(), now = NOW) => pickAlerts(d, log, now).send.map((a) => a.key);
-
-describe('reglas', () => {
-	it('RULES: terremoto y fuente caída arriba, luego BCE/Fed, IPC e IMP', () => {
-		expect(RULES.map((r) => [r.type, r.priority])).toEqual([
-			['quake', 50],
-			['down', 50],
-			['bank', 40],
-			['ipc', 30],
-			['imp', 20]
-		]);
+describe('cupos y tope diario', () => {
+	it('P1 sin cupo propio, P2 hasta 25, P3 hasta 15, P4 hasta 2', () => {
+		const { send, skipped } = pick([fake('a', 1, 10), fake('b', 2, 30), fake('c', 3, 20), fake('d', 4, 3)]);
+		expect([1, 2, 3, 4].map((l) => count(send, l as Level))).toEqual([10, 25, 15, 0]);
+		// 10 + 25 + 15 = 50: el tope total deja fuera a P4 y lo que no cabía en su cupo.
+		expect(send).toHaveLength(50);
+		expect(skipped).toHaveLength(5 + 5 + 3);
 	});
 
-	it('terremoto: M7 o más en las últimas 24 h, prioridad alta en ntfy', () => {
-		const { alerts } = candidates({ quakes: [quake('a', 7.1), quake('b', 6.9), quake('c', 7.5, 30)] }, {}, NOW);
-		expect(alerts.map((a) => a.key)).toEqual(['quake:a']);
-		expect(alerts[0].priority).toBe('high');
-		expect(alerts[0].title).toBe('Terremoto M7,1 · Lugar de prueba');
-		expect(alerts[0].click).toBe('https://srgicmps.github.io/arc-terminal/geo');
+	it('tope de 50 al día: si se llega, gana el nivel más alto', () => {
+		const { send } = pick([fake('p3', 3, 10), fake('p2', 2, 10), fake('p1', 1, 45)]);
+		expect([count(send, 1), count(send, 2), count(send, 3)]).toEqual([45, 5, 0]);
+		const later = pick([fake('p1', 1, 5)], sent(50, 3, '2026-10-14T07:00Z'));
+		expect(later.send).toEqual([]);
 	});
 
-	it('fuente caída: cuando issues.ts abriría el issue (3 pasadas en error)', () => {
-		const a = down('fred', 3);
-		const b = down('bls', 2);
-		const { alerts } = candidates({ status: [a.status, b.status], history: [a.history, b.history] }, {}, NOW);
-		expect(alerts.map((x) => x.key)).toEqual([`down:fred:${a.history.history[0].t}`]);
-		expect(alerts[0].priority).toBe('high');
-		expect(alerts[0].body).not.toContain('HTTP 500');
+	it('cuenta lo de hoy en Madrid: lo de ayer y lo visto sin enviar no cuentan', () => {
+		const entries = [
+			...sent(20, 2, '2026-10-14T06:00Z'),
+			...sent(30, 2, '2026-10-13T21:00Z', 'ayer'), // 23:00 CEST del 13
+			{ k: 'b', t: '2026-10-14T07:00Z', s: 'baseline' as const, p: 2 as const },
+			{ k: 'f', t: '2026-10-14T08:00Z', s: 'failed' as const, p: 3 as const }
+		];
+		expect(usedToday({ ...emptyLog(), entries }, NOW)).toEqual({ total: 21, byLevel: { 1: 0, 2: 20, 3: 1, 4: 0 } });
+		expect(count(pick([fake('x', 2, 10)], entries).send, 2)).toBe(5);
 	});
 
-	it('IPC: la primera vez se apunta sin avisar; luego avisa de cada mes nuevo una sola vez', () => {
-		const d = { ine: series('ipc-es', '2026-09', 2.9), bls: series('cpi-us', '2026-09', 3.1) };
-		const first = pickAlerts(d, empty(), NOW);
-		expect(first.send).toEqual([]);
-		expect(first.baseline).toEqual({ 'ipc-es': '2026-09', 'cpi-us': '2026-09' });
-		const after = pickAlerts(d, { entries: [], last: { 'ipc-es': '2026-08', 'cpi-us': '2026-09' } }, NOW);
-		expect(after.send.map((a) => a.key)).toEqual(['ipc-es:2026-09']);
-		expect(after.send[0].title).toBe('IPC de España: 2,9 %');
-		expect(after.send[0].mark).toEqual(['ipc-es', '2026-09']);
-		expect(after.send[0].priority).toBe('default');
+	it('orden: nivel más alto primero y, a igual nivel, el más reciente', () => {
+		const { send } = pick([fake('p3', 3, 2), fake('p1', 1, 2), fake('p2', 2, 2)]);
+		expect(send.map((a) => a.id)).toEqual(['p1:0', 'p1:1', 'p2:0', 'p2:1', 'p3:0', 'p3:1']);
+		const tight = pick([fake('p3', 3, 2), fake('p1', 1, 2), fake('p2', 2, 2)], sent(47, 1));
+		expect(tight.send.map((a) => a.id)).toEqual(['p1:0', 'p1:1', 'p2:0']);
+		expect(tight.skipped.map((a) => a.id)).toEqual(['p2:1', 'p3:0', 'p3:1']);
 	});
 
-	it('BCE: el día de la reunión, desde las 14:15 de Madrid', () => {
-		expect(keys({}, empty(), Date.parse('2026-10-29T13:00:00Z'))).toEqual([]); // 14:00 CET
-		expect(keys({}, empty(), Date.parse('2026-10-29T13:20:00Z'))).toEqual(['bce:2026-10-29']);
-		expect(keys({}, empty(), Date.parse('2026-10-30T10:00:00Z'))).toEqual([]);
-	});
-
-	it('Fed: 14:00 de Nueva York, que el 28 oct 2026 son las 19:00 en Madrid (EE. UU. aún no ha cambiado de hora)', () => {
-		expect(keys({}, empty(), Date.parse('2026-10-28T17:55:00Z'))).toEqual([]);
-		const { send } = pickAlerts({}, empty(), Date.parse('2026-10-28T18:05:00Z'));
-		expect(send.map((a) => a.key)).toEqual(['fed:2026-10-28']);
-		expect(send[0].body).toContain('19:00');
-	});
-
-	it('IMP: solo puntuación ≥ 11; sin imp.json no aplica', () => {
-		const imp = {
-			current: [
-				{ k: 'x', title: 'Tema enorme', sources: ['a', 'b', 'c', 'd', 'e'], score: 11, official: 'BCE' },
-				{ k: 'y', title: 'Tema normal', sources: ['a'], score: 10.9 }
-			]
-		};
-		expect(keys({ imp })).toEqual(['imp:x']);
-		expect(keys({})).toEqual([]);
-		expect(keys({ imp: {} as never })).toEqual([]);
-	});
-});
-
-describe('límites', () => {
-	it('una clave ya apuntada (enviada, fallida o vista) no se repite nunca', () => {
-		const d = { quakes: [quake('a', 7.2), quake('b', 7.3)] };
+	it('un id ya apuntado (enviado, fallido o visto) no se repite nunca', () => {
 		for (const s of ['sent', 'failed', 'baseline'] as const) {
-			expect(keys(d, { entries: [{ k: 'quake:a', t: '2026-10-13T10:00Z', s }], last: {} })).toEqual(['quake:b']);
+			expect(pick([fake('a', 1, 2)], [{ k: 'a:0', t: '2026-10-10T10:00Z', s }]).send.map((a) => a.id)).toEqual(['a:1']);
 		}
 	});
 
-	it(`como mucho ${DAILY_LIMIT} al día (día de Madrid); los de ayer no cuentan`, () => {
-		const d = { quakes: Array.from({ length: 25 }, (_, i) => quake(`q${i}`, 7.5, i / 10)) };
-		expect(pickAlerts(d, empty(), NOW).send).toHaveLength(20);
+	it('los resúmenes salen una sola vez al día (lo controla el id)', () => {
+		const at = Date.parse('2026-10-14T06:05:00Z'); // 08:05 CEST
+		const first = pickAlerts({}, emptyLog(), at);
+		expect(first.send.map((a) => a.id)).toEqual(['morning:2026-10-14']);
 		const log: NotifyLog = {
-			entries: [
-				...Array.from({ length: 18 }, (_, i) => ({ k: `old${i}`, t: '2026-10-14T06:30Z', s: 'sent' as const })),
-				...Array.from({ length: 30 }, (_, i) => ({ k: `ayer${i}`, t: '2026-10-13T20:00Z', s: 'sent' as const })),
-				...Array.from({ length: 30 }, (_, i) => ({ k: `vista${i}`, t: '2026-10-14T07:00Z', s: 'baseline' as const }))
-			],
-			last: {}
+			...emptyLog(),
+			entries: [{ k: 'morning:2026-10-14', t: '2026-10-14T06:05Z', s: 'sent', p: 4 }]
 		};
-		expect(usedToday(log, NOW)).toBe(18);
-		const { send, held } = pickAlerts(d, log, NOW);
-		expect(send).toHaveLength(2);
-		expect(held).toHaveLength(23);
-	});
-
-	it('si no caben, salen antes los de mayor prioridad y, a igual prioridad, el más reciente', () => {
-		const a = down('fred', 3); // empezó hace 45 min
-		const d: Inputs = {
-			quakes: [quake('viejo', 7.0, 5), quake('nuevo', 7.0, 0.5)],
-			status: [a.status],
-			history: [a.history],
-			ine: series('ipc-es', '2026-09', 2.9),
-			imp: { current: [{ k: 'x', title: 'T', sources: [], score: 20 }] }
-		};
-		const log: NotifyLog = {
-			entries: Array.from({ length: DAILY_LIMIT - 3 }, (_, i) => ({
-				k: `e${i}`,
-				t: '2026-10-14T07:00Z',
-				s: 'sent' as const
-			})),
-			last: { 'ipc-es': '2026-08' }
-		};
-		const { send, held } = pickAlerts(d, log, NOW);
-		expect(send.map((x) => x.key)).toEqual(['quake:nuevo', `down:fred:${a.history.history[0].t}`, 'quake:viejo']);
-		expect(held.map((x) => x.key)).toEqual(['ipc-es:2026-09', 'imp:x']);
-		// Con hueco de sobra, el orden completo: 50, 50, 50, 30, 20.
-		expect(keys(d, { entries: [], last: { 'ipc-es': '2026-08' } })).toEqual([
-			'quake:nuevo',
-			`down:fred:${a.history.history[0].t}`,
-			'quake:viejo',
-			'ipc-es:2026-09',
-			'imp:x'
+		expect(pickAlerts({}, log, at + 15 * 60_000).send).toEqual([]);
+		expect(pickAlerts({}, log, Date.parse('2026-10-15T06:05:00Z')).send.map((a) => a.id)).toEqual([
+			'morning:2026-10-15'
 		]);
 	});
 
-	it('BCE (40) va por delante de IPC (30) e IMP (20)', () => {
-		const now = Date.parse('2026-10-29T14:00:00Z'); // 15:00 en Madrid
-		const d: Inputs = { ine: series('ipc-es', '2026-09', 2.9), imp: { current: [{ k: 'x', title: 'T', score: 12 }] } };
+	it('se envía a cualquier hora, también de madrugada', () => {
+		expect(pick([fake('a', 1, 1)], [], Date.parse('2026-10-25T02:30:00Z')).send).toHaveLength(1); // 03:30 CET
+	});
+});
+
+describe('historial', () => {
+	it('trim deja 7 días de intentos y conserva los valores que se comparan', () => {
 		const log: NotifyLog = {
-			entries: Array.from({ length: DAILY_LIMIT - 1 }, (_, i) => ({
-				k: `e${i}`,
-				t: '2026-10-29T08:00Z',
-				s: 'sent' as const
-			})),
-			last: { 'ipc-es': '2026-08' }
-		};
-		expect(keys(d, log, now)).toEqual(['bce:2026-10-29']);
-	});
-
-	it('franja de 23:00 a 8:00 en hora de Madrid', () => {
-		expect(isQuiet(Date.parse('2026-10-14T20:59:00Z'))).toBe(false); // 22:59 CEST
-		expect(isQuiet(Date.parse('2026-10-14T21:00:00Z'))).toBe(true); // 23:00 CEST
-		expect(isQuiet(Date.parse('2026-10-14T05:59:00Z'))).toBe(true); // 07:59 CEST
-		expect(isQuiet(Date.parse('2026-10-14T06:00:00Z'))).toBe(false); // 08:00 CEST
-	});
-
-	it('cambio de hora del 25 oct 2026: las 8:00 pasan de las 06:00 a las 07:00 UTC', () => {
-		expect(isQuiet(Date.parse('2026-10-24T06:00:00Z'))).toBe(false); // sábado, 08:00 CEST
-		expect(isQuiet(Date.parse('2026-10-25T06:00:00Z'))).toBe(true); // domingo, 07:00 CET
-		expect(isQuiet(Date.parse('2026-10-25T06:59:00Z'))).toBe(true); // 07:59 CET
-		expect(isQuiet(Date.parse('2026-10-25T07:00:00Z'))).toBe(false); // 08:00 CET
-		expect(isQuiet(Date.parse('2026-10-25T21:59:00Z'))).toBe(false); // 22:59 CET
-		expect(isQuiet(Date.parse('2026-10-25T22:00:00Z'))).toBe(true); // 23:00 CET
-	});
-
-	it('el límite diario cuenta por día de Madrid, también la noche del cambio de hora', () => {
-		const log: NotifyLog = {
-			entries: [
-				{ k: 'a', t: '2026-10-24T21:59Z', s: 'sent' }, // 23:59 CEST del 24
-				{ k: 'b', t: '2026-10-24T22:00Z', s: 'sent' }, // 00:00 CEST del 25
-				{ k: 'c', t: '2026-10-25T22:59Z', s: 'sent' } // 23:59 CET del 25
-			],
-			last: {}
-		};
-		expect(usedToday(log, Date.parse('2026-10-25T12:00:00Z'))).toBe(2);
-	});
-
-	it('lo que surge de noche no se apunta: sale en la primera pasada desde las 8:00 si sigue siendo relevante', () => {
-		const night = Date.parse('2026-10-25T03:00:00Z'); // 04:00 CET
-		const d = { quakes: [quake('noche', 7.4, 0, night)] };
-		const quiet = pickAlerts(d, empty(), night);
-		expect(quiet.send).toEqual([]);
-		expect(quiet.held.map((a) => a.key)).toEqual(['quake:noche']);
-		expect(keys(d, empty(), Date.parse('2026-10-25T06:50:00Z'))).toEqual([]); // 07:50 CET
-		expect(keys(d, empty(), Date.parse('2026-10-25T07:05:00Z'))).toEqual(['quake:noche']); // 08:05 CET
-		// Si ya no es relevante (más de 24 h), se pierde.
-		expect(keys(d, empty(), night + 25 * HOUR)).toEqual([]);
-	});
-
-	it('trim deja 7 días de intentos y conserva los periodos macro', () => {
-		const log: NotifyLog = {
+			...emptyLog(),
 			entries: [
 				{ k: 'viejo', t: '2026-10-06T09:00Z', s: 'sent' },
 				{ k: 'nuevo', t: '2026-10-08T11:00Z', s: 'sent' }
 			],
-			last: { 'ipc-es': '2026-09' }
+			last: { 'macro:ipc-es': '2026-09' }
 		};
-		expect(trim(log, NOW)).toEqual({
-			entries: [{ k: 'nuevo', t: '2026-10-08T11:00Z', s: 'sent' }],
-			last: { 'ipc-es': '2026-09' }
-		});
+		const out = trim(log, NOW);
+		expect(out.entries.map((e) => e.k)).toEqual(['nuevo']);
+		expect(out.last).toEqual({ 'macro:ipc-es': '2026-09' });
 	});
 
 	it('sin historial, todo lo de ahora queda como visto y no se envía nada', () => {
-		const d = { quakes: [quake('a', 7.2)], ine: series('ipc-es', '2026-09', 2.9) };
+		const quake: Quake = {
+			id: 'a',
+			mag: 7.2,
+			place: 'X',
+			time: new Date(NOW - HOUR).toISOString(),
+			url: '',
+			tsunami: false,
+			alert: null,
+			lat: 0,
+			lon: 0,
+			depth: 10
+		};
+		const d = {
+			quakes: [quake],
+			ine: { series: [{ id: 'ipc-es', label: '', unit: '%', source: '', points: [{ t: '2026-09', v: 2.9 }] }] }
+		};
 		const log = baselineLog(d, NOW);
-		expect(log.entries).toEqual([{ k: 'quake:a', t: '2026-10-14T10:00Z', s: 'baseline' }]);
-		expect(log.last).toEqual({ 'ipc-es': '2026-09' });
-		expect(keys(d, log)).toEqual([]);
+		expect(log.entries).toEqual([{ k: 'quake:a', t: '2026-10-14T10:00Z', s: 'baseline', p: 1 }]);
+		expect(log.last['macro:ipc-es']).toBe('2026-09');
+		expect(pickAlerts(d, log, NOW).send).toEqual([]);
+	});
+
+	it('parseLog tolera historiales viejos o rotos', () => {
+		expect(parseLog(null)).toBeNull();
+		expect(parseLog({ data: { entries: 'x' } })).toBeNull();
+		expect(
+			parseLog({ data: { entries: [{ k: 'a', t: '2026-10-14T10:00Z', s: 'sent' }, { k: 1 }], last: { a: 'b', c: 3 } } })
+		).toEqual({
+			entries: [{ k: 'a', t: '2026-10-14T10:00Z', s: 'sent' }],
+			last: { a: 'b' },
+			assets: {},
+			poly: {}
+		});
+	});
+});
+
+describe('ntfy', () => {
+	const alert = (level: Level, markdown = false) => ({
+		id: 'x',
+		type: 'x',
+		level,
+		title: 'Fuente caída',
+		body: '',
+		tags: 'warning',
+		click: 'https://srgicmps.github.io/arc-terminal/geo',
+		time: NOW,
+		markdown
+	});
+
+	it('Priority 5/4/3/2 para P1–P4 y X-Markdown en los resúmenes', () => {
+		expect([1, 2, 3, 4].map((l) => headers(alert(l as Level)).Priority)).toEqual(['5', '4', '3', '2']);
+		expect(headers(alert(4, true))['X-Markdown']).toBe('yes');
+		expect(headers(alert(1))['X-Markdown']).toBeUndefined();
 	});
 
 	it('el título con acentos va en RFC 2047', () => {
-		expect(encodeHeader('BCE: decision')).toBe('BCE: decision');
+		expect(encodeHeader('Mercados')).toBe('Mercados');
 		expect(encodeHeader('Fuente caída')).toBe(`=?UTF-8?B?${Buffer.from('Fuente caída').toString('base64')}?=`);
 	});
 });
@@ -272,6 +175,18 @@ describe('límites', () => {
 describe('runNotify', () => {
 	let dir: string;
 	let logged: string[];
+	const quake = (id: string, mag: number, hoursAgo: number): Quake => ({
+		id,
+		mag,
+		place: 'Lugar de prueba',
+		time: new Date(NOW - hoursAgo * HOUR).toISOString(),
+		url: '',
+		tsunami: false,
+		alert: null,
+		lat: 0,
+		lon: 0,
+		depth: 10
+	});
 
 	beforeEach(async () => {
 		dir = await mkdtemp(join(tmpdir(), 'notify-'));
@@ -279,7 +194,7 @@ describe('runNotify', () => {
 		vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => void logged.push(args.map(String).join(' ')));
 		await writeFile(
 			join(dir, 'quakes.json'),
-			JSON.stringify({ name: 'quakes', fetchedAt: '', data: [quake('a', 7.2), quake('b', 7.6, 0.5)] })
+			JSON.stringify({ name: 'quakes', fetchedAt: '', data: [quake('a', 7.2, 1), quake('b', 7.6, 0.5)] })
 		);
 	});
 
@@ -300,7 +215,7 @@ describe('runNotify', () => {
 	it('envía con las cabeceras de ntfy; un 429 se descarta sin romper; el tema no sale en registros ni en el JSON', async () => {
 		const calls: { url: string; init?: RequestInit }[] = [];
 		mockFetch((url, init) => {
-			if (url.endsWith('/data/notify-log.json')) return published(empty());
+			if (url.endsWith('/data/notify-log.json')) return published(emptyLog());
 			if (url.startsWith('https://ntfy.sh/')) {
 				calls.push({ url, init });
 				// ntfy devuelve el tema en la respuesta: no debe acabar en ningún sitio.
@@ -312,26 +227,26 @@ describe('runNotify', () => {
 		const lines = await runNotify({ topic: TOPIC, dir, now: NOW });
 		expect(calls).toHaveLength(2);
 		expect(calls[0].url).toBe(`https://ntfy.sh/${TOPIC}`);
-		const headers = calls[0].init?.headers as Record<string, string>;
-		expect(headers.Priority).toBe('high');
-		expect(headers.Tags).toBe('warning');
-		expect(headers.Click).toBe('https://srgicmps.github.io/arc-terminal/geo');
-		expect(lines).toEqual(['ntfy · quake:b: enviado (200)', 'ntfy · quake:a: 429, se descarta']);
+		const h = calls[0].init?.headers as Record<string, string>;
+		expect(h.Priority).toBe('5');
+		expect(h.Tags).toBe('warning');
+		expect(h.Click).toBe('https://srgicmps.github.io/arc-terminal/geo');
+		expect(lines).toEqual(['ntfy · P1 quake:b: enviado (200)', 'ntfy · P1 quake:a: 429, se descarta']);
 		const json = await written();
 		expect(JSON.parse(json).data.entries).toEqual([
-			{ k: 'quake:b', t: '2026-10-14T10:00Z', s: 'sent' },
-			{ k: 'quake:a', t: '2026-10-14T10:00Z', s: 'failed' }
+			{ k: 'quake:b', t: '2026-10-14T10:00Z', s: 'sent', p: 1 },
+			{ k: 'quake:a', t: '2026-10-14T10:00Z', s: 'failed', p: 1 }
 		]);
 		for (const text of [...logged, ...lines, json]) expect(text).not.toContain(TOPIC);
 	});
 
 	it('un error de red con la URL en el mensaje se registra saneado', async () => {
 		mockFetch((url) => {
-			if (url.endsWith('/data/notify-log.json')) return published(empty());
+			if (url.endsWith('/data/notify-log.json')) return published(emptyLog());
 			throw new Error(`connect ECONNREFUSED ${url}?auth=x`);
 		});
 		const lines = await runNotify({ topic: TOPIC, dir, now: NOW });
-		expect(lines.some((l) => l.includes('sin respuesta') && l.includes('se descarta'))).toBe(true);
+		expect(lines.filter((l) => l.includes('sin respuesta') && l.includes('se descarta'))).toHaveLength(2);
 		for (const text of [...logged, await written()]) expect(text).not.toContain(TOPIC);
 	});
 
@@ -342,18 +257,5 @@ describe('runNotify', () => {
 		const json = await written();
 		expect(JSON.parse(json).data.entries.map((e: { s: string }) => e.s)).toEqual(['baseline', 'baseline']);
 		expect(json).not.toContain(TOPIC);
-	});
-
-	it('de noche no envía y no apunta nada', async () => {
-		const night = Date.parse('2026-10-14T23:00:00Z'); // 01:00 CEST
-		await writeFile(
-			join(dir, 'quakes.json'),
-			JSON.stringify({ name: 'quakes', fetchedAt: '', data: [quake('a', 7.2, 1, night)] })
-		);
-		const fetch = mockFetch((url) => (url.endsWith('/data/notify-log.json') ? published(empty()) : undefined));
-		const lines = await runNotify({ topic: TOPIC, dir, now: night });
-		expect(fetch).toHaveBeenCalledTimes(1);
-		expect(lines).toEqual(['ntfy: 1 avisos esperan (franja de 23:00 a 8:00)']);
-		expect(JSON.parse(await written()).data.entries).toEqual([]);
 	});
 });

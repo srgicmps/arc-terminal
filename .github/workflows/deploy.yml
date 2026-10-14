@@ -72,9 +72,9 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
 
-      # Avisos al móvil con ntfy (scripts/notify.ts): solo lo más importante, como mucho 20 al día y nunca
-      # de 23:00 a 8:00 (hora de Madrid). No en los PR. Si falla, no frena la publicación. Sin el secreto
-      # NTFY_TOPIC no hace nada. El tema es la única protección del canal: el script nunca lo registra.
+      # Avisos al móvil con ntfy (scripts/notify.ts y scripts/alerts/): niveles P1–P4 con cupos y un tope
+      # de 50 al día. No en los PR. Si falla, no frena la publicación. Sin el secreto NTFY_TOPIC no hace
+      # nada. El tema es la única protección del canal: el script nunca lo registra.
       - if: github.event_name != 'pull_request'
         run: node scripts/notify.ts
         continue-on-error: true
