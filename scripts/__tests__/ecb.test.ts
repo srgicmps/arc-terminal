@@ -39,3 +39,10 @@ describe('ecb', () => {
 		await expect(ecb.fetch(undefined)).rejects.toThrow('ninguna serie del BCE');
 	});
 });
+
+describe('ecb.isStale', () => {
+	it('da por caducada la copia publicada si le falta alguna serie (p. ej., al añadir países)', () => {
+		const copy = (ids: string[]) => ({ series: ids.map((id) => ({ id, label: id, unit: '%', points: [], source: 'BCE' })) });
+		expect(ecb.isStale?.(copy(['ecb-dfr']))).toBe(true);
+	});
+});
