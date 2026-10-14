@@ -9,7 +9,8 @@
 	import Table from './ui/Table.svelte';
 	import type { Series } from '#lib/types.ts';
 	import Spark from './Spark.svelte';
-	import { loadCalendar, nextFor, shortDay } from '#lib/nextrelease.ts';
+	import { loadCalendar } from '#lib/calendar.ts';
+	import { nextFor, shortDay } from '#lib/nextrelease.ts';
 	import type { ReleaseEvent } from '#lib/types.ts';
 
 	interface Row {

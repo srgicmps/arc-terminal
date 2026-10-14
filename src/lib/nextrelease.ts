@@ -1,8 +1,7 @@
 // «Próximo dato»: qué publicación de los calendarios oficiales corresponde a cada serie de la terminal.
 // La fuente (scripts/sources/releases-cal.ts) etiqueta cada evento con un tema; SeriesTable busca el de su
-// serie con nextFor().
-import { dataset } from './data.ts';
-import type { ReleaseCalData, ReleaseEvent } from './types.ts';
+// serie con nextFor(). Sin imports de Vite: lo usa también el script de Node.
+import type { ReleaseEvent } from './types.ts';
 
 export interface Topic {
 	id: string;
@@ -43,14 +42,4 @@ export function shortDay(iso: string): string {
 	return new Date(iso)
 		.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'Europe/Madrid' })
 		.replace('.', '');
-}
-
-/** Carga el calendario una sola vez para todas las tablas de la página (vacío si aún no hay datos). */
-let cache: Promise<ReleaseEvent[]> | null = null;
-export function loadCalendar(): Promise<ReleaseEvent[]> {
-	cache ??= dataset<ReleaseCalData>('releases-cal').then(
-		(d) => d?.data.events ?? [],
-		() => []
-	);
-	return cache;
 }
