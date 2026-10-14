@@ -20,3 +20,6 @@ https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm ~ \d{4} FOMC Mee
 https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html ~ .{0,30}Monetary policy meeting.{0,40}
 # ECO: euríbor a 12 meses (media mensual) para la calculadora de hipoteca
 https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA?lastNObservations=14&format=csvdata&detail=dataonly
+# GEO: rutas marítimas (IMF PortWatch): nombres e id de los pasos, y la forma de un registro
+https://services9.arcgis.com/weJ1QsnbMYJlCHdG/ArcGIS/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query?where=1%3D1&outFields=portid,portname&returnDistinctValues=true&returnGeometry=false&f=json
+https://services9.arcgis.com/weJ1QsnbMYJlCHdG/ArcGIS/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query?where=1%3D1&outFields=*&orderByFields=date%20DESC&resultRecordCount=2&returnGeometry=false&f=json
