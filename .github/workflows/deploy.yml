@@ -36,6 +36,8 @@ permissions:
   id-token: write
   # Para abrir y cerrar los issues «Fuente caída» (scripts/issues.ts).
   issues: write
+  # NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+  pull-requests: read
 
 # Un solo despliegue a la vez: si llega otro, espera a que acabe el que está en marcha. En un PR, un push
 # nuevo cancela la pasada anterior, que ya no sirve. La prueba de fuentes va en su propio grupo para no
@@ -72,6 +74,8 @@ jobs:
       # Descarga los datos en static/data/. Si una fuente falla, se reutiliza su última copia publicada.
       - run: pnpm data
         env:
+          # NOVEDADES: los PR fusionados, con el token que pone la Action (más límite que sin él).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Claves opcionales (Settings → Secrets and variables → Actions). Sin ellas, esas fuentes se saltan.
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
@@ -181,6 +185,7 @@ jobs:
       - run: pnpm data
         env:
           SAMPLE: '1'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
@@ -245,6 +250,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm data
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
@@ -278,6 +284,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm data
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
@@ -318,6 +325,7 @@ jobs:
           FUENTES: ${{ inputs.fuentes }}
           FORCE_REFRESH: '1'
           SAMPLE: '1'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
