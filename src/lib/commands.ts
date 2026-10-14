@@ -52,22 +52,36 @@ export const COMMANDS: Command[] = [
 	{ code: 'HELP', route: '/help', key: 'Ayuda', desc: 'Comandos y atajos de teclado', sources: '' }
 ];
 
+/** Un valor que la terminal conoce. */
+export interface Ticker {
+	code: string;
+	name: string;
+	/** Símbolo de TradingView. */
+	tv: string;
+	/**
+	 * CIK de la SEC (10 dígitos con ceros): solo en las empresas que cotizan en EE. UU. y presentan
+	 * documentos en la SEC. Con él, scripts/sources/sec.ts descarga sus últimos documentos.
+	 */
+	cik?: string;
+}
+
 /** Valores populares para sugerir en la barra (se abren con la ficha de TradingView). */
-export const TICKERS: { code: string; name: string; tv: string }[] = [
-	{ code: 'NVDA', name: 'NVIDIA', tv: 'NASDAQ:NVDA' },
-	{ code: 'AAPL', name: 'Apple', tv: 'NASDAQ:AAPL' },
-	{ code: 'MSFT', name: 'Microsoft', tv: 'NASDAQ:MSFT' },
-	{ code: 'GOOGL', name: 'Alphabet', tv: 'NASDAQ:GOOGL' },
-	{ code: 'AMZN', name: 'Amazon', tv: 'NASDAQ:AMZN' },
-	{ code: 'META', name: 'Meta', tv: 'NASDAQ:META' },
-	{ code: 'TSLA', name: 'Tesla', tv: 'NASDAQ:TSLA' },
-	{ code: 'AVGO', name: 'Broadcom', tv: 'NASDAQ:AVGO' },
-	{ code: 'TSM', name: 'TSMC', tv: 'NYSE:TSM' },
-	{ code: 'ASML', name: 'ASML', tv: 'NASDAQ:ASML' },
-	{ code: 'AMD', name: 'AMD', tv: 'NASDAQ:AMD' },
-	{ code: 'NFLX', name: 'Netflix', tv: 'NASDAQ:NFLX' },
-	{ code: 'BRK.B', name: 'Berkshire Hathaway', tv: 'NYSE:BRK.B' },
-	{ code: 'JPM', name: 'JPMorgan', tv: 'NYSE:JPM' },
+export const TICKERS: Ticker[] = [
+	{ code: 'NVDA', name: 'NVIDIA', tv: 'NASDAQ:NVDA', cik: '0001045810' },
+	{ code: 'AAPL', name: 'Apple', tv: 'NASDAQ:AAPL', cik: '0000320193' },
+	{ code: 'MSFT', name: 'Microsoft', tv: 'NASDAQ:MSFT', cik: '0000789019' },
+	{ code: 'GOOGL', name: 'Alphabet', tv: 'NASDAQ:GOOGL', cik: '0001652044' },
+	{ code: 'AMZN', name: 'Amazon', tv: 'NASDAQ:AMZN', cik: '0001018724' },
+	{ code: 'META', name: 'Meta', tv: 'NASDAQ:META', cik: '0001326801' },
+	{ code: 'TSLA', name: 'Tesla', tv: 'NASDAQ:TSLA', cik: '0001318605' },
+	{ code: 'AVGO', name: 'Broadcom', tv: 'NASDAQ:AVGO', cik: '0001730168' },
+	// TSMC y ASML son extranjeras, pero cotizan en EE. UU. y presentan 6-K y 20-F en la SEC.
+	{ code: 'TSM', name: 'TSMC', tv: 'NYSE:TSM', cik: '0001046179' },
+	{ code: 'ASML', name: 'ASML', tv: 'NASDAQ:ASML', cik: '0000937966' },
+	{ code: 'AMD', name: 'AMD', tv: 'NASDAQ:AMD', cik: '0000002488' },
+	{ code: 'NFLX', name: 'Netflix', tv: 'NASDAQ:NFLX', cik: '0001065280' },
+	{ code: 'BRK.B', name: 'Berkshire Hathaway', tv: 'NYSE:BRK.B', cik: '0001067983' },
+	{ code: 'JPM', name: 'JPMorgan', tv: 'NYSE:JPM', cik: '0000019617' },
 	{ code: 'SPY', name: 'S&P 500 (ETF)', tv: 'AMEX:SPY' },
 	{ code: 'QQQ', name: 'Nasdaq 100 (ETF)', tv: 'NASDAQ:QQQ' },
 	{ code: 'SAN', name: 'Banco Santander', tv: 'BME:SAN' },

@@ -17,13 +17,13 @@
 	<div class="col">
 		<Panel title="Titulares" meta="Tecnología">
 			<NewsList items={data.news?.data.items ?? []} summaries />
-			{#snippet note()}<Updated at={data.news?.fetchedAt} />{/snippet}
+			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-tech" />{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
 		<Panel title="Hacker News" meta="Portada, por puntos">
 			<HnTable items={data.hn?.data ?? []} />
-			{#snippet note()}Fuente: Hacker News (API de Algolia) · <Updated at={data.hn?.fetchedAt} />{/snippet}
+			{#snippet note()}Fuente: Hacker News (API de Algolia) · <Updated at={data.hn?.fetchedAt} source="hn" />{/snippet}
 		</Panel>
 	</div>
 </div>

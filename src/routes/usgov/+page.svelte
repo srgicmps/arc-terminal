@@ -22,7 +22,7 @@
 	<div class="col">
 		<Panel title="Documentos presidenciales" meta="Órdenes ejecutivas, proclamaciones, memorandos">
 			<DocList docs={data.fedreg?.data.presidential ?? []} />
-			{#snippet note()}Fuente: Federal Register · <Updated at={data.fedreg?.fetchedAt} />{/snippet}
+			{#snippet note()}Fuente: Federal Register · <Updated at={data.fedreg?.fetchedAt} source="fedreg" />{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
