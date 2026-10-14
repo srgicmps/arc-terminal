@@ -19,6 +19,10 @@ export interface SourceStatus {
 	state: 'ok' | 'cached' | 'stale' | 'error' | 'off';
 	fetchedAt: string | null;
 	error?: string;
+	/** Minutos durante los que se reutiliza la copia publicada sin volver a descargar. */
+	maxAgeMinutes?: number;
+	/** Clave de GitHub Secrets que necesita, si necesita alguna. */
+	requires?: string;
 }
 
 // Vite convierte cada JSON en un trozo aparte que solo se carga en la página que lo pide.
