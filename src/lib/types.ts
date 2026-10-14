@@ -46,12 +46,28 @@ export interface ImfRow {
 	cpi: [number | null, number | null];
 }
 
+/** Un país del G20 en el año en curso (estimación del WEO), para la tabla ECST. Todo en %. */
+export interface ImfCountry {
+	/** Código del FMI (ISO de 3 letras: USA, DEU…). */
+	code: string;
+	name: string;
+	/** Crecimiento del PIB real, inflación media y paro. */
+	gdp: number | null;
+	cpi: number | null;
+	unemployment: number | null;
+	/** Deuda pública bruta y saldo público (negativo = déficit), en % del PIB. */
+	debt: number | null;
+	balance: number | null;
+}
+
 export interface ImfData {
 	/** Edición del WEO en español («octubre de 2026»); null si la API no la dice. */
 	edition: string | null;
 	/** Los dos años de la tabla: [año actual, siguiente]. */
 	years: [number, number];
 	rows: ImfRow[];
+	/** Los países del G20 (y España, invitada permanente) en el año en curso. */
+	g20?: ImfCountry[];
 }
 
 // ---------- BOE ----------
