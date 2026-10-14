@@ -57,18 +57,8 @@
 						{ s: 'TVC:USOIL', d: 'WTI' },
 						{ s: 'TVC:GOLD', d: 'Oro' },
 						{ s: 'TVC:SILVER', d: 'Plata' },
-						{ s: 'COMEX:HG1!', d: 'Cobre' },
-						{ s: 'NYMEX:NG1!', d: 'Gas natural' }
-					]
-				},
-				{
-					title: 'Bonos',
-					symbols: [
-						{ s: 'TVC:US10Y', d: 'EE. UU. 10 años' },
-						{ s: 'TVC:US02Y', d: 'EE. UU. 2 años' },
-						{ s: 'TVC:DE10Y', d: 'Alemania 10 años' },
-						{ s: 'TVC:ES10Y', d: 'España 10 años' },
-						{ s: 'TVC:IT10Y', d: 'Italia 10 años' }
+						{ s: 'OANDA:XCUUSD', d: 'Cobre' },
+						{ s: 'OANDA:NATGASUSD', d: 'Gas natural' }
 					]
 				},
 				{
@@ -84,6 +74,26 @@
 			]
 		};
 	});
+
+	// Materias primas (widget «market-quotes»). Solo símbolos que TradingView sirve en sus widgets: los
+	// futuros (ICE, NYMEX, COMEX, CBOT) salen vacíos, así que el gas, el cobre y los cereales van con los
+	// CFD de OANDA. Comprobado en la Action con scripts/tv-shots.ts. El gas TTF europeo no tiene ninguno.
+	const COMMODITIES = [
+		{ name: 'TVC:UKOIL', displayName: 'Brent' },
+		{ name: 'TVC:USOIL', displayName: 'WTI' },
+		{ name: 'OANDA:NATGASUSD', displayName: 'Gas natural (Henry Hub)' },
+		{ name: 'TVC:GOLD', displayName: 'Oro' },
+		{ name: 'TVC:SILVER', displayName: 'Plata' },
+		{ name: 'OANDA:XCUUSD', displayName: 'Cobre' },
+		{ name: 'OANDA:WHEATUSD', displayName: 'Trigo' },
+		{ name: 'OANDA:CORNUSD', displayName: 'Maíz' }
+	];
+	const quotes = (name: string, symbols: { name: string; displayName: string }[]) => ({
+		showSymbolLogo: false,
+		symbolsGroups: [{ name, symbols }]
+	});
+	/** Alto para que quepan todas las filas sin barra de desplazamiento (como en MIS). */
+	const quotesHeight = (n: number) => 90 + n * 46;
 
 	const heatmap = {
 		dataSource: 'SPX500',
@@ -109,6 +119,9 @@
 	<div class="col">
 		<Panel title="Mercados" meta="En directo">
 			<TvWidget widget="market-overview" config={overview} height={520} />
+		</Panel>
+		<Panel title="Materias primas" meta="Precio en dólares · en directo">
+			<TvWidget widget="market-quotes" config={quotes('Materias primas', COMMODITIES)} height={quotesHeight(COMMODITIES.length)} />
 		</Panel>
 	</div>
 </div>
