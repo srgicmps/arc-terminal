@@ -1038,7 +1038,8 @@ export interface ReleaseEvent {
 	/** Si el organismo no da la hora. */
 	allDay: boolean;
 	title: string;
-	source: 'Eurostat' | 'BLS' | 'INE';
+	/** Organismo: BEA (PIB y PCE), DOL (paro semanal) y Fed (H.4.1) llegan, como el BLS, con las fechas de FRED. */
+	source: 'Eurostat' | 'BLS' | 'INE' | 'BEA' | 'DOL' | 'Fed';
 	/** Tema (src/lib/nextrelease.ts) si es uno de los datos que enseña la terminal, o null. */
 	topic: string | null;
 	url?: string;

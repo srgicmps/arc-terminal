@@ -128,7 +128,7 @@
 				</p>
 			{/if}
 			{#snippet note()}
-				IPC y empleo de EE. UU. (BLS, fechas vía FRED) e IPC, EPA, vivienda y turistas del INE.
+				EE. UU.: IPC y empleo (BLS), PIB y PCE (BEA), paro semanal (Departamento de Trabajo) y balance de la Fed (H.4.1), con las fechas de FRED. España: IPC, PIB, EPA, vivienda y turistas del INE.
 				{#if data.releases}<Updated at={data.releases.fetchedAt} source="releases-cal" />{/if}
 			{/snippet}
 		</Panel>
