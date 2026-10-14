@@ -1,6 +1,8 @@
 // Incertidumbre económica: índices EPU de Baker, Bloom y Davis (policyuncertainty.com). Sin clave.
 // - Mundial, mensual (GEPU: media de 21 países ponderada por su PIB; 100 = media de 1997–2015).
 // - EE. UU., diario (prensa de EE. UU.; muy ruidoso: se enseña la media de 30 días).
+// Uso: datos de descarga libre; la web pide citar a Baker, Bloom y Davis (2016) y a Davis (2016) para el mundial, y no
+// publica condiciones de uso ni límites por IP (/terms.html da 404). Aquí son dos descargas cada 12 h.
 // Sin imports de Vite: lo usa también el script de Node.
 import type { Point, Series } from './types.ts';
 
