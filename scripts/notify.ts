@@ -200,6 +200,18 @@ async function readData(dir: string, name: string): Promise<unknown> {
 	}
 }
 
+/** Aviso de prueba de la primera pasada (sin historial publicado). */
+const HELLO = (now: number): Alert => ({
+	id: 'hello',
+	type: 'hello',
+	level: 3,
+	title: 'Arc Terminal conectado ✅',
+	body: 'Los avisos llegarán por aquí: P1 urgentes, P2 datos y mercados, P3 resto y resúmenes a las 8:05 y a las 22:15.',
+	tags: 'white_check_mark',
+	click: SITE + '/',
+	time: now
+});
+
 async function publishedLog(): Promise<NotifyLog | null> {
 	try {
 		const res = await fetch(LOG_URL, { signal: AbortSignal.timeout(20_000) });
@@ -242,7 +254,12 @@ export async function runNotify({
 		let log: NotifyLog;
 		if (!previous) {
 			log = baselineLog(inputs, now);
-			say(`ntfy: sin historial publicado; ${log.entries.length} avisos posibles se dan por vistos, no se envía nada`);
+			say(`ntfy: sin historial publicado; ${log.entries.length} avisos posibles se dan por vistos`);
+			// Un único aviso de prueba, para confirmar que el tema y la app están bien configurados.
+			const { status } = await post(secret, HELLO(now));
+			const ok = status !== null && status >= 200 && status < 300;
+			log.entries.push({ k: 'hello', t: minute(now), s: ok ? 'sent' : 'failed', p: 3 });
+			say(`ntfy · aviso de prueba: ${ok ? 'enviado' : 'no enviado'} (${status ?? 'sin respuesta'})`);
 		} else {
 			log = trim(previous, now);
 			const { send, skipped, updates } = pickAlerts(inputs, log, now);

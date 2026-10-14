@@ -250,12 +250,18 @@ describe('runNotify', () => {
 		for (const text of [...logged, await written()]) expect(text).not.toContain(TOPIC);
 	});
 
-	it('sin historial publicado no envía nada y apunta lo de ahora como visto', async () => {
+	it('sin historial publicado solo envía el aviso de prueba y apunta lo de ahora como visto', async () => {
 		const fetch = mockFetch(() => undefined);
-		await runNotify({ topic: TOPIC, dir, now: NOW });
-		expect(fetch.mock.calls.map(([u]) => String(u)).filter((u) => u.includes('ntfy.sh'))).toEqual([]);
+		const lines = await runNotify({ topic: TOPIC, dir, now: NOW });
+		const sent = fetch.mock.calls.filter(([u]) => String(u).includes('ntfy.sh'));
+		expect(sent).toHaveLength(1);
+		expect(String(sent[0][1]?.body)).toContain('Los avisos llegarán por aquí');
 		const json = await written();
-		expect(JSON.parse(json).data.entries.map((e: { s: string }) => e.s)).toEqual(['baseline', 'baseline']);
-		expect(json).not.toContain(TOPIC);
+		expect(JSON.parse(json).data.entries.map((e: { k: string; s: string }) => e.k === 'hello' || e.s)).toEqual([
+			'baseline',
+			'baseline',
+			true
+		]);
+		for (const text of [...logged, ...lines, json]) expect(text).not.toContain(TOPIC);
 	});
 });
