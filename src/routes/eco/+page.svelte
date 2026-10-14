@@ -84,9 +84,42 @@
 	const premiumDay = $derived(last(daily('premium-es-d')));
 	const premiumWeek = $derived(diffDays(daily('premium-es-d'), 7));
 	const headlines = $derived(data.news?.data.items ?? []);
+
+	// Tira de arriba: inflación y paro de la zona euro y el tipo del BCE, con el dato anterior para comparar.
+	const strip = $derived(
+		[
+			{ id: 'inflation-ea', label: 'Inflación zona euro', d: 1, inverse: true },
+			{ id: 'unemployment-ea', label: 'Paro zona euro', d: 1, inverse: true },
+			{ id: 'ecb-dfr', label: 'Tipo del BCE (depósito)', d: 2, inverse: null }
+		].flatMap((x) => {
+			const pts = get(x.id)?.points ?? [];
+			const now = pts.at(-1);
+			if (!now) return [];
+			const prev = pts.at(-2);
+			const diff = prev ? now.v - prev.v : 0;
+			// Paro e inflación: bajar es buena noticia. Un tipo de interés va sin color (ni bueno ni malo).
+			const tone: 'up' | 'down' | 'flat' | undefined =
+				x.inverse === null ? undefined : !diff ? 'flat' : (diff > 0) !== x.inverse ? 'up' : 'down';
+			return [{ ...x, now, prev, tone }];
+		})
+	);
+	const fedNow = $derived(last(get('fedfunds-us')));
 </script>
 
 <ViewHeader code="ECO" title="Economía y macro" sub="Eurostat, Banco Central Europeo, BLS, Tesoro de EE. UU. y FRED" />
+
+{#if strip.length}
+	<Tiles cols={3}>
+		{#each strip as x (x.id)}
+			<Tile
+				label={x.label}
+				value="{nf(x.now.v, x.d)} %"
+				tone={x.tone}
+				sub="{period(x.now.t)}{x.prev ? ` · antes ${nf(x.prev.v, x.d)} %` : ''}{x.id === 'ecb-dfr' && fedNow ? ` · Fed ${nf(fedNow.v, 2)} %` : ''}"
+			/>
+		{/each}
+	</Tiles>
+{/if}
 
 <div class="grid grid-2">
 	<div class="col">
