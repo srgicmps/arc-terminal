@@ -49,6 +49,7 @@ jobs:
           SAMPLE: ${{ github.event_name == 'pull_request' && '1' || '' }}
           # Claves opcionales (Settings → Secrets and variables → Actions). Sin ellas, esas fuentes se saltan.
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           # La SEC pide un User-Agent con nombre y correo; va en un secreto porque el repo es público.

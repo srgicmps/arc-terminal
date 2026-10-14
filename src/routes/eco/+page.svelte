@@ -5,6 +5,7 @@
 	import MeetingList from '#lib/components/MeetingList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
+	import GasTable from '#lib/components/GasTable.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -136,6 +137,12 @@
 				{#if data.fred}· <Updated at={data.fred.fetchedAt} source="fred" />{/if}
 			{/snippet}
 		</Panel>
+		{#if data.gie?.data.series.length}
+			<Panel title="Gas almacenado" meta="% de llenado · en puntos">
+				<GasTable series={data.gie.data.series} />
+				{#snippet note()}Fuente: GIE AGSI+ · <Updated at={data.gie?.fetchedAt} source="gie" />{/snippet}
+			</Panel>
+		{/if}
 		{#if data.predictions?.data.economy.length}
 			<Panel title="Lo que descuenta el mercado" meta="Polymarket">
 				<PredictionList items={data.predictions.data.economy.slice(0, 6)} />
