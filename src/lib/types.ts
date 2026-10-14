@@ -585,3 +585,24 @@ export interface LeaderAgenda {
 	source: { name: string; url: string };
 	error?: string;
 }
+
+// ---------- Avisos de viaje (Departamento de Estado de EE. UU.) ----------
+
+/** El aviso de viaje de un país: nivel 1 (precauciones normales) a 4 (no viajar). */
+export interface TravelAdvisory {
+	/** Nombre del país en inglés, tal como lo da el título («Ukraine»). Se cruza con PAIS por nombre. */
+	name: string;
+	level: 1 | 2 | 3 | 4;
+	/** Título completo: «Ukraine - Level 4: Do Not Travel». */
+	title: string;
+	url: string;
+	/** Última actualización del aviso (ISO 8601). */
+	updated: string;
+	/** Si el nivel ha cambiado desde que la terminal lo sigue: el anterior y cuándo se vio el cambio. */
+	prevLevel?: 1 | 2 | 3 | 4;
+	changedAt?: string;
+}
+
+export interface AdvisoriesData {
+	items: TravelAdvisory[];
+}

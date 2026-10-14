@@ -77,3 +77,4 @@ export const sources: Source<any>[] = [
 	imp,
 	search
 ];
+import { advisories } from './advisories.ts'; sources.push(advisories); // Quitar cuando entre el #137.
