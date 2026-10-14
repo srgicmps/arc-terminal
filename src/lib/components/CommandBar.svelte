@@ -1,8 +1,9 @@
 <!--
 	Barra de comandos: escribes ECO, FUEL o un valor (NVDA) y se abre. Sugerencias con ↑ ↓ e Intro.
-	Atajos globales: «/» o empezar a escribir enfoca la barra; Esc vuelve a la portada.
+	Atajos globales: «/» o empezar a escribir enfoca la barra; Esc vuelve a la portada; Mayús+F, pantalla completa.
 -->
 <script lang="ts">
+	import { toggleFullscreen } from '#lib/fit.svelte.ts';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { COMMANDS, TICKERS } from '#lib/commands.ts';
@@ -109,6 +110,10 @@
 		if (e.key === '/') {
 			e.preventDefault();
 			input.focus();
+		} else if (e.key === 'F' && e.shiftKey) {
+			// Mayúsculas + F: pantalla completa. La f sola sigue escribiendo comandos (FUEL…).
+			e.preventDefault();
+			toggleFullscreen();
 		} else if (e.key === 'Escape') {
 			goto(resolve('/'));
 		} else if (e.key.length === 1 && /[a-z0-9]/i.test(e.key)) {
@@ -182,8 +187,8 @@
 		min-width: 0;
 		display: flex;
 		align-items: stretch;
-		height: 34px;
-		border: 1px solid var(--line);
+		height: var(--cmd-h);
+		border: var(--border);
 		background: var(--panel);
 	}
 
@@ -194,9 +199,9 @@
 	.prompt {
 		display: grid;
 		place-items: center;
-		padding-inline: 10px;
+		padding-inline: var(--sp-10);
 		color: var(--amber);
-		font-weight: 600;
+		font-weight: var(--fw-bold);
 	}
 
 	input {
@@ -207,7 +212,7 @@
 		outline: none;
 		font-size: var(--fs-m);
 		text-transform: uppercase;
-		letter-spacing: 0.04em;
+		letter-spacing: var(--track-tight);
 	}
 
 	input::placeholder {
@@ -220,24 +225,24 @@
 		background: var(--amber);
 		color: var(--on-amber);
 		border: 0;
-		font-weight: 600;
+		font-weight: var(--fw-bold);
 		font-size: var(--fs-s);
-		letter-spacing: 0.08em;
-		padding-inline: 14px;
+		letter-spacing: var(--track-caps);
+		padding-inline: var(--sp-14);
 		cursor: pointer;
 	}
 
 	.suggest {
 		position: absolute;
-		left: -1px;
-		right: -1px;
+		left: calc(-1 * var(--hair));
+		right: calc(-1 * var(--hair));
 		top: 100%;
 		z-index: 20;
 		margin: 0;
-		padding: 4px 0;
+		padding: var(--sp-4) 0;
 		list-style: none;
 		background: var(--raise);
-		border: 1px solid var(--amber);
+		border: var(--hair) solid var(--amber);
 		border-top-color: var(--line);
 		max-height: 320px;
 		overflow: auto;
@@ -249,10 +254,10 @@
 		position: fixed;
 		left: 0;
 		right: 0;
-		bottom: calc(49px + env(safe-area-inset-bottom, 0px));
+		bottom: calc(var(--tabbar-h) + var(--hair) + env(safe-area-inset-bottom, 0px));
 		z-index: 40;
-		height: 44px;
-		border-width: 1px 0 0;
+		height: var(--touch);
+		border-width: var(--hair) 0 0;
 		border-color: var(--amber);
 	}
 
@@ -267,8 +272,8 @@
 	li {
 		display: grid;
 		grid-template-columns: 7ch minmax(0, 1fr) auto;
-		gap: 12px;
-		padding: 6px 12px;
+		gap: var(--sp-12);
+		padding: var(--sp-6) var(--pad-x);
 		cursor: pointer;
 		align-items: baseline;
 	}
@@ -279,7 +284,7 @@
 
 	.code {
 		color: var(--amber);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 
 	.desc {

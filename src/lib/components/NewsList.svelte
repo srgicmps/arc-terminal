@@ -1,11 +1,13 @@
 <!--
 	Lista de titulares: hora, titular enlazado al medio original, medio y resumen opcional.
 	Si otros medios dan la misma noticia (scripts/cluster.ts), «+3 medios» los despliega.
+	Un punto ámbar marca los titulares posteriores a tu última visita (visit.svelte.ts).
 -->
 <script lang="ts">
 	import { clock } from '#lib/clock.svelte.ts';
 	import { when } from '#lib/format.ts';
 	import type { NewsItem } from '#lib/types.ts';
+	import { initVisit, isNew, visit } from '#lib/visit.svelte.ts';
 
 	interface Props {
 		items: NewsItem[];
@@ -16,13 +18,20 @@
 	}
 
 	let { items, summaries = false, tag }: Props = $props();
+
+	// Como onMounted en Vue: solo en el navegador, después de hidratar.
+	$effect(initVisit);
 </script>
 
 {#if items.length}
 	<ul class="news">
 		{#each items as item, i (i)}
 			<li>
-				<time datetime={item.time ?? undefined}>{when(item.time, clock.now)}</time>
+				<time datetime={item.time ?? undefined}>
+					{#if isNew(item, visit.last)}<span class="new" title="Nuevo desde tu última visita"
+							><span class="sr">Nuevo desde tu última visita</span></span
+						>{/if}{when(item.time, clock.now)}
+				</time>
 				<div>
 					<a class="h" href={item.url} target="_blank" rel="noopener">{item.title}</a>
 					<div class="m">
@@ -58,10 +67,10 @@
 	.news li {
 		display: grid;
 		grid-template-columns: 62px minmax(0, 1fr);
-		gap: 10px;
+		gap: var(--sp-10);
 		align-items: start;
-		padding: 8px 12px;
-		border-bottom: 1px solid var(--line);
+		padding: var(--row-y) var(--pad-x);
+		border-bottom: var(--border);
 	}
 
 	/* En pantallas táctiles, toda la fila abre el titular: el ::after invisible del enlace la cubre. */
@@ -88,10 +97,32 @@
 	}
 
 	time {
-		padding-top: 2px;
+		position: relative;
+		padding-top: var(--sp-2);
 		color: var(--faint);
 		font-size: var(--fs-xs);
-		line-height: 1.35;
+		line-height: var(--lh-snug);
+	}
+
+	/* Punto de «nuevo»: en el hueco entre el borde y la hora, sin mover nada de la fila. */
+	.new {
+		position: absolute;
+		/* Centrado en la primera línea de la hora: 2px de padding + media línea (1.35em / 2) − 2px. */
+		top: 0.675em;
+		left: calc(-1 * var(--sp-8));
+		width: 4px;
+		height: 4px;
+		border-radius: 50%;
+		background: var(--amber);
+	}
+
+	.sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
 	}
 
 	.h {
@@ -100,7 +131,7 @@
 		text-decoration: none;
 		font-family: var(--sans);
 		font-size: var(--fs-l);
-		line-height: 1.3;
+		line-height: var(--lh-tight);
 		text-wrap: pretty;
 	}
 
@@ -113,10 +144,10 @@
 	}
 
 	.m {
-		margin: 3px 0 0;
+		margin: var(--sp-3) 0 0;
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px 8px;
+		gap: var(--sp-4) var(--sp-8);
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-s);
@@ -159,14 +190,14 @@
 		color: var(--amber);
 		font-family: var(--mono);
 		font-size: var(--fs-xs);
-		letter-spacing: 0.04em;
+		letter-spacing: var(--track-tight);
 	}
 
 	.s {
-		margin: 4px 0 0;
+		margin: var(--sp-4) 0 0;
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-m);
-		line-height: 1.4;
+		line-height: var(--lh-text);
 	}
 </style>

@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
 	import { theme } from '#lib/theme.svelte.ts';
+	import Note from './ui/Note.svelte';
 
 	interface Props {
 		/** Nombre del widget: «stock-heatmap», «symbol-overview», «events»… */
@@ -80,9 +81,7 @@
 	<div class="box tradingview-widget-container" bind:this={box}></div>
 </div>
 {#if credit}
-	<p class="pnote">
-		Datos y gráficos de <a href="https://es.tradingview.com/" target="_blank" rel="noopener">TradingView</a>.
-	</p>
+	<Note>Datos y gráficos de <a href="https://es.tradingview.com/" target="_blank" rel="noopener">TradingView</a>.</Note>
 {/if}
 
 <style>
@@ -103,11 +102,11 @@
 		align-items: center;
 		justify-content: center;
 		background: var(--panel);
-		box-shadow: inset 0 0 0 1px var(--line);
+		box-shadow: inset 0 0 0 var(--hair) var(--line);
 		color: var(--faint);
 		font-family: var(--mono);
 		font-size: var(--fs-xs);
-		letter-spacing: 0.04em;
+		letter-spacing: var(--track-tight);
 		pointer-events: none;
 	}
 </style>

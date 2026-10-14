@@ -13,7 +13,7 @@
 	const AI = /\b(ai|a\.i\.|llms?|gpt|openai|anthropic|claude|gemini|llama|mistral|deepseek|transformer|neural|machine learning|agents?|diffusion|copilot|inference|model)\b/i;
 	const hnAi = $derived((data.hn?.data ?? []).filter((i) => AI.test(i.title)));
 	const papers = $derived(data.papers?.data ?? []);
-	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.count).map((f) => f.name).join(', '));
+	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
 </script>
 
 <ViewHeader code="AI" title="Inteligencia artificial" sub={sources} />
@@ -30,7 +30,7 @@
 			<HnTable items={hnAi} />
 		</Panel>
 		<Panel title="Papers del día · Hugging Face" meta={papers.length ? `${papers.length} papers` : undefined}>
-			<PaperList items={papers} />
+			<PaperList items={papers} empty={data.papers ? 'Hoy no hay papers en la lista de Hugging Face.' : undefined} />
 			{#snippet note()}<Updated at={data.papers?.fetchedAt} source="hfpapers" />{/snippet}
 		</Panel>
 	</div>

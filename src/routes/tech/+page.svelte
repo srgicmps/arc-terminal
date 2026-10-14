@@ -9,7 +9,7 @@
 
 	let { data }: PageProps = $props();
 
-	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.count).map((f) => f.name).join(', '));
+	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
 </script>
 
 <ViewHeader code="TECH" title="Tecnología" sub="Hacker News, {sources}" />

@@ -8,8 +8,9 @@
 // - si la copia publicada de una fuente es reciente (maxAgeMinutes), se reutiliza sin descargar;
 // - si una descarga falla, se reutiliza la copia publicada, aunque sea antigua, y se avisa.
 import { mkdir, writeFile } from 'node:fs/promises';
-import type { Dataset, SourceStatus } from '../src/lib/data.ts';
-import { checkShrink, writeExtra, type Source } from './lib.ts';
+import type { Dataset, SourceHistory, SourceStatus } from '../src/lib/data.ts';
+import { withHistory } from './history.ts';
+import { checkShrink, deadlineFor, withDeadline, writeExtra, type Source } from './lib.ts';
 import { sources } from './sources/index.ts';
 
 const OUT_DIR = 'static/data';
@@ -64,7 +65,10 @@ async function run(source: Source): Promise<SourceStatus> {
 	const age = previous ? (Date.now() - Date.parse(previous.fetchedAt)) / 60_000 : Infinity;
 	const force = process.env.FORCE_REFRESH === '1';
 
-	if (previous && age < source.maxAgeMinutes && !force) {
+	// La fuente puede dar por mala una copia reciente (p. ej., le faltan series nuevas).
+	const outdated = previous ? source.isStale?.(previous.data) === true : false;
+
+	if (previous && age < source.maxAgeMinutes && !force && !outdated) {
 		await save(previous);
 		await copyExtra(source, previous);
 		console.log(`= ${source.name}: copia de hace ${Math.round(age)} min`);
@@ -73,7 +77,12 @@ async function run(source: Source): Promise<SourceStatus> {
 
 	try {
 		const started = Date.now();
-		const data = await source.fetch(previous?.data);
+		const deadline = deadlineFor(source);
+		const data = await withDeadline(
+			source.fetch(previous?.data),
+			deadline,
+			`tiempo agotado (${deadline / 1000} s)`
+		);
 		// Vacío o encogido de golpe: se trata como un fallo (camino «stale», con la copia anterior).
 		const suspicious = checkShrink(data, previous?.data, source);
 		if (suspicious) throw new Error(suspicious);
@@ -102,7 +111,12 @@ await mkdir(OUT_DIR, { recursive: true });
 const statuses = await Promise.all(selected.map(run));
 
 if (!wanted.length) {
-	await save({ name: 'status', fetchedAt: new Date().toISOString(), data: statuses });
+	const now = Date.now();
+	await save({ name: 'status', fetchedAt: new Date(now).toISOString(), data: statuses });
+	// El historial va en un archivo aparte (solo lo carga STATUS): al publicado se le suma esta pasada.
+	const before = await published('status-history');
+	const history = withHistory(statuses, before?.data as SourceHistory[] | undefined, now);
+	await save({ name: 'status-history', fetchedAt: new Date(now).toISOString(), data: history });
 }
 
 const failed = statuses.filter((s) => s.state === 'error' || s.state === 'stale');

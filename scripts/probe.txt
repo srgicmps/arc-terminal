@@ -21,6 +21,7 @@ https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm ~ \d{4} FOMC Mee
 https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html ~ .{0,30}Monetary policy meeting.{0,40}
 # ECO: euríbor a 12 meses (media mensual) para la calculadora de hipoteca
 https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA?lastNObservations=14&format=csvdata&detail=dataonly
-# WS: valores de dataSource de los mapas de calor de TradingView (índices y cripto)
-https://www.tradingview-widget.com/embed-widget/stock-heatmap/?locale=es ~ .{0,60}(NASDAQ100|IBEX35|"DAX"|SPX500).{0,60}
-https://www.tradingview.com/heatmap/stock/ ~ .{0,60}("NASDAQ100"|"IBEX35"|"DAX"|"SPX500").{0,60}
+https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG286?nult=2
+https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG350?nult=2
+https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
+https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2

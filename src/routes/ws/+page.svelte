@@ -1,8 +1,10 @@
 <script lang="ts">
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
+	import FxConvert from '#lib/components/FxConvert.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -99,23 +101,29 @@
 		{ key: 'dax', label: 'DAX', widget: 'stock-heatmap', config: stocks('DAX') },
 		{ key: 'ibex', label: 'IBEX 35', widget: 'stock-heatmap', config: stocks('IBEX35') },
 		{ key: 'crypto', label: 'Cripto', widget: 'crypto-coins-heatmap', config: { ...common, dataSource: 'Crypto', blockSize: 'market_cap_calc' } }
-	];
+	] as const;
 
 	// El mapa elegido se recuerda en este navegador (si no deja guardar, se queda en memoria).
 	const MAP_KEY = 'arc-ws-heatmap';
-	let mapKey = $state('spx');
+	type MapKey = (typeof MAPS)[number]['key'];
+	let loadedMap = $state(false);
+	let mapKey = $state<MapKey>('spx');
 	$effect(() => {
 		try {
 			const saved = localStorage.getItem(MAP_KEY);
-			if (MAPS.some((m) => m.key === saved)) mapKey = saved!;
+			const found = MAPS.find((m) => m.key === saved);
+			if (found) mapKey = found.key;
 		} catch {}
+		loadedMap = true;
 	});
-	function chooseMap(key: string) {
-		mapKey = key;
+	// Guarda cada cambio, después de haber leído lo guardado (para no pisarlo al arrancar).
+	$effect(() => {
+		const key = mapKey;
+		if (!loadedMap) return;
 		try {
 			localStorage.setItem(MAP_KEY, key);
 		} catch {}
-	}
+	});
 	const map = $derived(MAPS.find((m) => m.key === mapKey) ?? MAPS[0]);
 </script>
 
@@ -124,10 +132,8 @@
 <div class="grid grid-2">
 	<div class="col">
 		<Panel title="Mapa de calor" meta="{map.label} · variación del día">
-			<div class="ph maps" role="group" aria-label="Mapa de calor">
-				{#each MAPS as m (m.key)}
-					<button type="button" aria-pressed={m.key === mapKey} onclick={() => chooseMap(m.key)}>{m.label}</button>
-				{/each}
+			<div class="maps">
+				<Seg label="Mapa de calor" options={MAPS.map((m) => ({ value: m.key, label: m.label }))} bind:value={mapKey} />
 			</div>
 			<TvWidget widget={map.widget} config={map.config} height={520} />
 		</Panel>
@@ -154,6 +160,10 @@
 		<Panel title="Divisas" meta="Cambio de referencia del BCE">
 			<SeriesTable head="Par" spark={60} rows={fx.map((id) => ({ series: get(id), name: get(id)?.label, decimals: 4 }))} />
 		</Panel>
+		<Panel title="Conversor" meta="Tipos de referencia del BCE">
+			<FxConvert series={fx.map(get)} />
+			{#snippet note()}Tipo de referencia del BCE, no de cambio en ventanilla · <Updated at={data.ecb?.fetchedAt} source="ecb" />{/snippet}
+		</Panel>
 		<Panel title="Cripto" meta="Por capitalización">
 			<CryptoTable coins={data.crypto?.data.coins ?? []} />
 			{#snippet note()}Fuente: CoinGecko · <Updated at={data.crypto?.fetchedAt} source="crypto" />{/snippet}
@@ -162,26 +172,9 @@
 </div>
 
 <style>
-	/* Selector de mapa: fila con el mismo espaciado que la cabecera del panel (.ph) y botones de texto. */
+	/* Selector de mapa encima del widget, con el espaciado de la cabecera del panel. */
 	.maps {
-		justify-content: flex-start;
-	}
-
-	.maps button {
-		background: none;
-		border: 0;
-		padding: 0;
-		color: var(--muted);
-		font-size: var(--fs-xs);
-		letter-spacing: 0.06em;
-		cursor: pointer;
-	}
-
-	.maps button:hover {
-		color: var(--fg);
-	}
-
-	.maps button[aria-pressed='true'] {
-		color: var(--amber);
+		padding: var(--row-y) var(--pad-x);
+		border-bottom: var(--border);
 	}
 </style>
