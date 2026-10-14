@@ -13,3 +13,9 @@ https://marine-api.open-meteo.com/v1/marine?latitude=40.09%2C39.87&longitude=4.1
 https://marine-api.open-meteo.com/v1/marine?latitude=40.06%2C39.89&longitude=4.13%2C4.07&current=wave_height%2Cswell_wave_height
 # WX: avisos de MeteoAlarm para España (se filtra Menorca)
 https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-spain
+# AGUA: sequía en Europa (EDO, Copernicus) y reserva de los embalses de España
+https://drought.emergency.copernicus.eu/data/wms-service ~ wms|GetMap|GetCapabilities
+https://drought.emergency.copernicus.eu/api/wms?SERVICE=WMS&REQUEST=GetCapabilities ~ <Name>[^<]*</Name>
+https://edo.jrc.ec.europa.eu/gdo/php/wms.php?SERVICE=WMS&REQUEST=GetCapabilities ~ <Name>[^<]*</Name>
+https://datos.gob.es/apidata/catalog/dataset/title/embalses.json ~ embals|reserva
+https://www.miteco.gob.es/es/agua/temas/evaluacion-de-los-recursos-hidricos/boletin-hidrologico.html ~ \.zip|\.csv|\.xlsx|\.json

@@ -19,11 +19,15 @@ for (const line of lines) {
 		});
 		let body = (await res.text()).replace(/\s+/g, ' ');
 		if (pattern) {
+			const re = new RegExp(pattern, 'i');
 			try {
-				const re = new RegExp(pattern, 'i');
 				const items = JSON.parse(body) as unknown[];
 				body = JSON.stringify(items.filter((i) => re.test(JSON.stringify(i))));
-			} catch {}
+			} catch {
+				// No es JSON (XML, HTML…): enseña un trozo alrededor de cada coincidencia.
+				const hits = [...body.matchAll(new RegExp(pattern, 'gi'))].slice(0, 15);
+				body = hits.map((m) => `…${body.slice(Math.max(0, m.index - 150), m.index + 250)}…`).join('\n');
+			}
 		}
 		console.log(`\nPROBE ${res.status} ${line}\n${body.slice(0, 3000)}`);
 	} catch (error) {
