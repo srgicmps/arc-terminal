@@ -85,6 +85,10 @@ Un cambio de estética se hace en un solo sitio.
   verde/roja con signo), `Note` (nota al pie), `ButtonRow` (fila de botones iguales) y `Share` (botón «Compartir»; se usa con la prop `share` de `Panel`,
   y su lógica está en `src/lib/share.ts`). Además, `Panel` y `ViewHeader` para paneles y cabeceras de vista.
   Antes de escribir CSS para algo que ya existe, se usa el componente.
+- **Modo «encajar en pantalla»** (≥1280 px): la última rejilla de la vista llena el alto; cada panel parte de
+  `--fit-panel-min` (o de su contenido, si es menor), el alto que sobra se reparte sin pasar del contenido, y los
+  gráficos, mapas y widgets van enteros. Si no cabe, hace scroll la vista, nunca se aplasta un panel. Las reglas
+  están en `src/routes/+layout.svelte`; no se ajusta panel a panel.
 - **`app.css`** solo tiene el reset, la tipografía base y lo que comparten todas las vistas: rejillas (`.grid`,
   `.grid-2`, `.grid-2e`, `.grid-3`, `.col`), listas `.mini`, `.empty` y los colores `.up`, `.down`, `.mut`.
   El resto va en el `<style>` de su componente.

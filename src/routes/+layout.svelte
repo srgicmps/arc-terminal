@@ -409,25 +409,32 @@
 			padding-bottom: 0;
 		}
 
+		/* La última rejilla llena el alto que queda, pero nunca mide menos que la suma de los altos mínimos
+		   de sus paneles: si no caben, hace scroll la vista, en vez de aplastar los paneles a 0 px. */
 		:global(html[data-fit] main > .grid:last-child) {
-			flex: 1;
-			min-height: 0;
+			flex: 1 1 0;
 		}
 
 		:global(html[data-fit] main > .grid:last-child > .col) {
 			display: flex;
 			flex-direction: column;
-			min-height: 0;
-			overflow: hidden;
 		}
 
-		/* Los paneles de una columna se reparten el alto a partes iguales, pero ninguno pasa de lo que
-		   necesita: lo que sobra de uno pequeño se lo quedan los demás. */
+		/* Reparto del alto de una columna, igual en todas las vistas:
+		   - cada panel parte de --fit-panel-min (cabecera y unas 9 filas) o de su contenido entero, si es
+		     menor: ninguno se queda en 2-3 filas;
+		   - el alto que sobra se reparte a partes iguales, sin que ningún panel pase de su contenido: lo
+		     que no usa una tabla corta se lo quedan las listas largas, que hacen scroll por dentro. */
 		:global(html[data-fit] main > .grid:last-child > .col > .panel) {
-			flex: 1 1 0;
-			min-height: 0;
+			flex: 1 0 auto;
+			height: var(--fit-panel-min);
 			max-height: fit-content;
 			overflow: auto;
+		}
+
+		/* Gráficos, mapas y widgets tienen un alto fijo: recortados no se leen, así que van enteros. */
+		:global(html[data-fit] main > .grid:last-child > .col > .panel:has(.chart, .map, .tv, .curve, .bars)) {
+			height: auto;
 		}
 	}
 </style>
