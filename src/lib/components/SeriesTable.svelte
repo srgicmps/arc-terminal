@@ -108,7 +108,7 @@
 				{#each extra as x (x.head)}<th>{x.head}</th>{/each}
 				<th class="per">Periodo</th>
 				{#if anyNext}<th class="nx">Próx.</th>{/if}
-				<th class="sp"><span class="sr">Evolución</span></th>
+				<th class="spark"><span class="sr">Evolución</span></th>
 			</tr>
 		</thead>
 		<tbody>
@@ -145,7 +145,7 @@
 					{#each extra as x (x.head)}<td><Change value={x.value(row.series)} digits={x.digits ?? d} unit={x.unit ?? ''} invert={row.inverse} /></td>{/each}
 					<td class="mut per">{period(last.t)}</td>
 					{#if anyNext}<td class="mut nx" title={nx?.title}>{nx ? shortDay(nx.date) : ''}</td>{/if}
-					<td class="sp"><Spark values={pts.slice(-spark).map((p) => p.v)} /></td>
+					<td class="spark"><Spark values={pts.slice(-spark).map((p) => p.v)} /></td>
 				</tr>
 				{#if editing === row.series.id}
 					<tr class="edit">
@@ -232,20 +232,6 @@
 		cursor: pointer;
 	}
 
-	a.name {
-		color: inherit;
-		text-decoration: none;
-	}
-
-	a.name:hover {
-		color: var(--amber);
-	}
-
-	.sp {
-		width: 80px;
-		padding-block: 0;
-	}
-
 	.alt {
 		display: block;
 		color: var(--faint);
@@ -266,19 +252,6 @@
 
 		.nx-sub {
 			display: block;
-		}
-	}
-
-	/* En paneles estrechos, el periodo cede su sitio al minigráfico; en los muy estrechos, también este. */
-	@container (max-width: 440px) {
-		.per {
-			display: none;
-		}
-	}
-
-	@container (max-width: 300px) {
-		.sp {
-			display: none;
 		}
 	}
 </style>

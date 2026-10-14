@@ -1,7 +1,9 @@
 <!--
 	Tabla densa con desplazamiento horizontal si no cabe. Dentro van <thead> y <tbody>, como en un <table>.
 	Clases para las celdas: .l (alineada a la izquierda; la primera columna ya lo está), .name (nombre en
-	letra de texto), .sub (detalle gris tras el nombre, se oculta en paneles estrechos), .mut (gris).
+	letra de texto; <a class="name"> enlaza sin subrayado y se pone ámbar al pasar), .sub (detalle gris tras el nombre,
+	se oculta en paneles estrechos), .mut (gris), .per (periodo, se oculta por debajo de 440 px) y .spark (columna
+	del minigráfico, 80 px, se oculta por debajo de 300 px).
 	Los estilos son globales (:global) porque las celdas las escribe quien usa la tabla, no este componente.
 	Debajo, un «⤓ CSV» discreto descarga la tabla tal y como se ve (en el ordenador, al pasar por encima);
 	con csv={false} no sale. El archivo se llama como el panel y la fecha.
@@ -139,6 +141,32 @@
 			color: var(--muted);
 			font-family: var(--sans);
 			font-size: var(--fs-s);
+		}
+		/* Nombre que enlaza a la fuente: del color del texto y en ámbar al pasar por encima. */
+		.t a.name {
+			color: inherit;
+			text-decoration: none;
+		}
+		.t a.name:hover {
+			color: var(--amber);
+		}
+		/* Columna del minigráfico (<Spark>): ancho fijo y sin margen vertical. */
+		.t .spark {
+			width: 80px;
+			padding-block: 0;
+		}
+	}
+
+	/* En paneles estrechos, el periodo (.per) cede su sitio al minigráfico; en los muy estrechos, también este. */
+	@container (max-width: 440px) {
+		:global(.t .per) {
+			display: none;
+		}
+	}
+
+	@container (max-width: 300px) {
+		:global(.t .spark) {
+			display: none;
 		}
 	}
 
