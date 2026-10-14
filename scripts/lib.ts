@@ -191,9 +191,16 @@ export function tidy(value: string | undefined, keepShort = false): string {
 	return text
 		.toLowerCase()
 		.split(' ')
-		.map((word, i) => {
+		.map((word, i, words) => {
 			if (i > 0 && SMALL_WORDS.has(word)) return word;
-			if (/^(n|s|e|w|o|ne|nw|se|sw|no|so|nne|nnw|sse|ssw|ene|ese|wnw|wsw)$/.test(word)) return word.toUpperCase();
+			// «n», «e» y «o» sueltas pueden ser conjunciones («bar o cafetería», «Francia e Italia»):
+			// solo son puntos cardinales al final o detrás de «km», «carretera» o una cifra.
+			if (/^(n|e|o)$/.test(word)) {
+				const cardinal = i === words.length - 1 || /^(km|carretera|ctra\.?|[\d.,]+)$/.test(words[i - 1] ?? '');
+				if (cardinal) return word.toUpperCase();
+				if (i > 0 && word !== 'n') return word;
+			}
+			if (/^(s|w|ne|nw|se|sw|no|so|nne|nnw|sse|ssw|ene|ese|wnw|wsw)$/.test(word)) return word.toUpperCase();
 			if (/\d/.test(word) || (keepShort && word.length <= 3)) return word.toUpperCase();
 			return word.charAt(0).toUpperCase() + word.slice(1);
 		})

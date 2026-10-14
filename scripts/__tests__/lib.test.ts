@@ -131,6 +131,19 @@ describe('tidy', () => {
 		expect(tidy('BP ES CASTELL')).toBe('Bp Es Castell');
 	});
 
+	it('deja en minúscula «o» y «e» cuando son conjunciones', () => {
+		expect(tidy('BAR O CAFETERIA')).toBe('Bar o Cafeteria');
+		expect(tidy('FRANCIA E ITALIA')).toBe('Francia e Italia');
+		expect(tidy('CALLE ESTE O OESTE')).toBe('Calle Este o Oeste');
+	});
+
+	it('trata «n», «e», «o» sueltas como puntos cardinales solo en contexto claro', () => {
+		expect(tidy('CARRETERA MAHON KM 5 O')).toBe('Carretera Mahon Km 5 O');
+		expect(tidy('20 KM E DE MAHON')).toBe('20 Km E de Mahon');
+		expect(tidy('12 N DE CIUTADELLA')).toBe('12 N de Ciutadella');
+		expect(tidy('CARRETERA O DE MAO')).toBe('Carretera O de Mao');
+	});
+
 	it('acepta undefined', () => {
 		expect(tidy(undefined)).toBe('');
 	});
