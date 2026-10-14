@@ -82,6 +82,7 @@
 									<div class="m">
 										{#each now?.sections ?? [] as s (s)}<span class="tag">{label[s] ?? s}</span>{/each}
 										<span>{outlets(item.sources)}</span>
+										{#if t.translated}<span class="auto" title={original(item)}>trad. auto</span>{/if}
 										{#if now?.official}<span class="ok">✓ {now.official}</span>{/if}
 										{#if now?.wiki}<span class="ok">✓ Wikipedia</span>{/if}
 										{#if 'days' in item}<span>{item.days} {item.days === 1 ? 'día' : 'días'}</span>{/if}
@@ -111,6 +112,14 @@
 		justify-content: space-between;
 		gap: var(--sp-8);
 		margin-bottom: var(--sp-12);
+	}
+
+	/* Marca de traducción automática: siempre visible, discreta. */
+	.auto {
+		color: var(--faint);
+		font-family: var(--mono);
+		font-size: var(--fs-xs);
+		letter-spacing: var(--track-tight);
 	}
 
 	/* Una traducción: en el móvil, la pulsación larga enseña el original en lugar del menú del enlace. */

@@ -79,6 +79,7 @@
 					<div class="m">
 						{#if tag?.(item)}<span class="tag">{tag(item)}</span>{/if}
 						<span>{item.source}</span>
+						{#if t.translated}<span class="auto" title={original(item)}>trad. auto</span>{/if}
 						{#if item.also?.length}
 							<details class="also">
 								<summary>+{item.also.length} {item.also.length === 1 ? 'medio' : 'medios'}</summary>
@@ -254,6 +255,14 @@
 
 	.also a:hover {
 		color: var(--amber);
+	}
+
+	/* Marca de traducción automática: siempre visible, discreta. */
+	.auto {
+		color: var(--faint);
+		font-family: var(--mono);
+		font-size: var(--fs-xs);
+		letter-spacing: var(--track-tight);
 	}
 
 	.tag {
