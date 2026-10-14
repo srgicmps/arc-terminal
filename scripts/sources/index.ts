@@ -63,7 +63,6 @@ export const sources: Source<any>[] = [
 	quakes,
 	quakesEs,
 	hazards,
-	swpc,
 	portwatch,
 	reliefweb,
 	predictions,
@@ -72,12 +71,14 @@ export const sources: Source<any>[] = [
 	alerts,
 	crypto,
 	hn,
-	cisaKev,
 	hfpapers,
 	releases,
 	wiki,
 	...newsSources,
 	// Derivadas: se calculan después, con los datos de las anteriores.
 	imp,
-	search
+	search,
+	// Fuentes nuevas: una línea cada una, al final, para no chocar con otras ramas.
+	cisaKev,
+	swpc
 ];
