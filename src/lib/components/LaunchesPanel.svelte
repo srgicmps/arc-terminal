@@ -3,7 +3,7 @@
 	de Madrid. Carga él solo sus datos (static/data/launches.json), así la vista solo tiene que ponerlo.
 -->
 <script lang="ts">
-	import { dataset, type Dataset } from '#lib/data.ts';
+	import type { Dataset } from '#lib/data.ts';
 	import { dm, hm } from '#lib/format.ts';
 	import { countdown, inProgress, nextLaunch, pending, type Launch, type LaunchesData } from '#lib/launches.ts';
 	import Panel from './Panel.svelte';
@@ -15,9 +15,15 @@
 	// Hora actual, al segundo. 0 al construir: en el HTML estático no hay cuenta atrás.
 	let now = $state(0);
 
+	// Su propio import.meta.glob, y no dataset() de data.ts: importar dataset() en un componente del
+	// navegador metería todos los JSON de static/data en la build (y en la precaché del service worker).
+	const loaders = import.meta.glob('/static/data/launches.json', { import: 'default' });
+
 	// $effect solo corre en el navegador (como onMounted en Vue).
 	$effect(() => {
-		dataset<LaunchesData>('launches').then((d) => (ds = d));
+		const load = loaders['/static/data/launches.json'];
+		if (!load) ds = null;
+		else load().then((d) => (ds = d as Dataset<LaunchesData>));
 	});
 
 	// El reloj de la cuenta atrás. La función que devuelve el $effect se ejecuta al desmontar el
