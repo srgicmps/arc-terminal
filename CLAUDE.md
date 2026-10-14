@@ -55,8 +55,8 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 
 ## Plan por fases
 1. ~~**Esqueleto publicado**: proyecto SvelteKit + GitHub Action que construye y publica en Pages.~~ Hecho.
-2. **Primer dato real de punta a punta**: `FUEL` (una fuente, sin clave). ← siguiente
-3. **Estilo de la maqueta y barra de comandos** con sugerencias y atajos de teclado.
+2. ~~**Primer dato real de punta a punta**: `FUEL` (una fuente, sin clave).~~ Hecho.
+3. **Estilo de la maqueta y barra de comandos** con sugerencias y atajos de teclado. ← siguiente
 4. **Noticias por RSS**: `ECO`, `GEO`, `TECH`, `AI`.
 5. **Mercados**: TradingView + Finnhub (primera clave en GitHub Secrets).
 6. **Macro** (FRED, BCE) y **portada `TOP`**.
@@ -70,4 +70,5 @@ Cuando termine una fase, actualiza esta lista.
 - GitHub desactiva los cron de un repo público tras 60 días sin actividad: tenerlo en cuenta en las Actions.
 
 ## Aparcado
-- (nada todavía)
+- Evitar que GitHub desactive el cron tras 60 días sin commits (aviso o «keepalive» en la Action).
+- `FUEL`: ordenar las gasolineras por distancia a donde estés (geolocalización del navegador).

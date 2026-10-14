@@ -35,10 +35,12 @@ Requisitos: Node 24 y pnpm.
 
 ```sh
 pnpm install
+pnpm fuel      # descarga los precios de las gasolineras en data/
 pnpm dev       # http://localhost:5173/
 pnpm check     # comprueba tipos y componentes
 pnpm build     # genera la web estática en build/
 pnpm preview   # sirve build/ en http://localhost:4173/arc-terminal/
 ```
 
-Cada push a `main` construye y publica la web en GitHub Pages (`.github/workflows/deploy.yml`).
+Cada push a `main`, y cada 30 minutos, GitHub Actions descarga los datos, construye la web y la publica en
+GitHub Pages (`.github/workflows/deploy.yml`). En los PR solo la construye, como prueba.
