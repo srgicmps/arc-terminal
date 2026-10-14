@@ -16,7 +16,8 @@
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import { dm, nf } from '#lib/format.ts';
 	import { fuelShare, type ShareInfo } from '#lib/share.ts';
-	import { distanceKm, findProvince, FUELS, taxShare, type FuelKey, type FuelProvinceDay, type FuelStation } from '#lib/fuel.ts';
+	import { distanceKm, findProvince, FUELS, taxShare, zoneFor, type FuelKey, type FuelProvinceDay, type FuelStation } from '#lib/fuel.ts';
+	import { place } from '#lib/place.svelte.ts';
 	import { urlState, writeParams } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
@@ -78,13 +79,25 @@
 		} catch {}
 	}
 
-	// Al abrir la vista en el navegador, recupera la última zona elegida (igual que onMounted en Vue).
-	onMount(() => {
-		if (page.url.searchParams.has('zona')) return; // la elige el $effect de abajo
-		try {
-			const saved = localStorage.getItem('fuel-zone');
-			if (saved && saved !== MENORCA && provinces.some((p) => p.id === saved)) choose(saved);
-		} catch {}
+	// Al abrir la vista sin ?zona: la provincia de «Tu sitio» si la has elegido y está en España (o Menorca, si
+	// está en la isla); si no, la última zona elegida. Si cambias de sitio con la vista abierta, cambia de provincia.
+	let fromUrl = false;
+	onMount(() => (fromUrl = page.url.searchParams.has('zona')));
+	$effect(() => {
+		if (!place.ready) return;
+		const sitio = place.current;
+		untrack(() => {
+			if (fromUrl) return; // la elige el $effect de abajo
+			const id = place.chosen ? zoneFor(sitio, provinces) : null;
+			if (id) {
+				if (id !== zone) choose(id);
+				return;
+			}
+			try {
+				const saved = localStorage.getItem('fuel-zone');
+				if (saved && saved !== MENORCA && provinces.some((p) => p.id === saved)) choose(saved);
+			} catch {}
+		});
 	});
 
 	// «FUEL Madrid» o «FUEL 28» en la barra abre /fuel?zona=…. Solo en el navegador (los efectos no
