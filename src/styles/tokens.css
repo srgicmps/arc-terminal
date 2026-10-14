@@ -88,6 +88,7 @@
 	--select-max: 180px; /* ancho máximo de un desplegable */
 	--col-min: 340px; /* ancho mínimo de una columna de paneles */
 	--col-min-wide: 420px; /* el mismo, en .grid-3 por debajo de 1100 px */
+	--fit-panel-min: 280px; /* «encajar en pantalla»: alto mínimo de un panel (cabecera y unas 9 filas) */
 
 	/*
 	 * Puntos de corte (las @media no aceptan variables, así que se documentan aquí):
