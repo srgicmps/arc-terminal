@@ -59,6 +59,8 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           # ReliefWeb solo responde con un appname aprobado por ellos (no es una clave, pero es personal).
           RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
+          # aisstream.io (barcos en los puertos, AIS en directo).
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
 
       # Abre un issue si una fuente lleva 3 pasadas sin datos y lo cierra cuando vuelve. No en los PR.
       # Si falla, no frena la publicación. Las claves van para taparlas si salen en un error.
@@ -71,6 +73,7 @@ jobs:
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
 
       - run: pnpm check
       - run: pnpm test
