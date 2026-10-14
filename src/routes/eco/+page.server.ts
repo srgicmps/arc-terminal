@@ -37,7 +37,8 @@ export const load: PageServerLoad = async () => {
 	const fx = (ecb?.data.series ?? [])
 		.filter((s) => s.id.startsWith('eur') && !s.id.startsWith('euribor'))
 		.map((s) => s.id);
-	const rest = (ecb?.data.series ?? []).map((s) => s.id).filter((id) => !fx.includes(id));
+	// El CISS va aparte, recortado, para el panel de estrés financiero.
+	const rest = (ecb?.data.series ?? []).map((s) => s.id).filter((id) => !fx.includes(id) && id !== 'ciss-ea');
 	// Si no hay datos de FRED, solo el motivo (sin clave, error de descarga…), no todo status.json.
 	const fredMissing = fred ? null : missingNote(status?.data, 'fred');
 	return {
@@ -47,6 +48,8 @@ export const load: PageServerLoad = async () => {
 		usdebt,
 		fred,
 		fredMissing,
+		// Panel provisional «Estrés financiero»: CISS (~6 meses de días hábiles) y STLFSI4 (un año de semanas).
+		stress: { ecb: pickSeries(ecb, ['ciss-ea'], 120), fred: pickSeries(fred, ['stlfsi-us'], 52) },
 		bis,
 		gie,
 		housing,

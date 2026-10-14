@@ -1,5 +1,6 @@
 <script lang="ts">
 	import EuPowerTable from '#lib/components/EuPowerTable.svelte';
+	import FinancialStress from '#lib/components/FinancialStress.svelte';
 	import { resolve } from '$app/paths';
 	import BalanceSheets from '#lib/components/BalanceSheets.svelte';
 	import HousingTable from '#lib/components/HousingTable.svelte';
@@ -378,6 +379,7 @@
 				{/snippet}
 			</Panel>
 		{/if}
+		<FinancialStress ecb={data.stress.ecb} fred={data.stress.fred} />
 		{#if data.gie?.data.series.length}
 			<Panel title="Gas almacenado" meta="% de llenado · en puntos">
 				<SeriesTable

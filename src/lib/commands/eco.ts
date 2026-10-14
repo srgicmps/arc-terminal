@@ -28,6 +28,7 @@ export default {
 			{ name: 'EE. UU.', what: 'Datos del BLS y del Tesoro.' },
 			{ name: 'Fed y mercados', what: 'Series de FRED (con clave).' },
 			{ name: 'Inflación esperada y tipos reales', what: 'Lo que descuenta el mercado de bonos de EE. UU.' },
+			{ name: 'Estrés financiero', what: 'CISS del BCE (zona euro) y el índice de la Fed de San Luis (EE. UU.), con aviso si el estrés es alto.' },
 			{ name: 'Gas almacenado', what: 'Llenado de los almacenes de gas de Europa.' },
 			{ name: 'Lo que descuenta el mercado', what: 'Apuestas de Polymarket sobre economía.' },
 			{ name: 'Titulares', what: 'Noticias de economía.' }

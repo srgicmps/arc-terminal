@@ -33,6 +33,22 @@ describe('ecb', () => {
 		expect(url).toContain('format=csvdata');
 	});
 
+	it('lee el CISS, diario, con la fecha del día tal cual', async () => {
+		vi.spyOn(console, 'log').mockImplementation(() => {});
+		const fetch = mockFetch((url) =>
+			url.includes('/CISS/D.U2.Z0Z.4F.EC.SS_CIN.IDX?') ? csv([['2026-10-13', '0.0115'], ['2026-10-10', '0.0121']]) : undefined
+		);
+		const { series } = await ecb.fetch(undefined);
+		expect(series).toHaveLength(1);
+		expect(series[0]).toMatchObject({ id: 'ciss-ea', unit: 'índice', geo: 'EA', source: 'BCE' });
+		expect(series[0].points).toEqual([
+			{ t: '2026-10-10', v: 0.0121 },
+			{ t: '2026-10-13', v: 0.0115 }
+		]);
+		const url = String(fetch.mock.calls.find((c) => String(c[0]).includes('/CISS/'))![0]);
+		expect(url).toContain('lastNObservations=260');
+	});
+
 	it('falla si no llega ninguna serie', async () => {
 		vi.spyOn(console, 'log').mockImplementation(() => {});
 		mockFetch(() => 'KEY,TIME_PERIOD,OBS_VALUE\n');
