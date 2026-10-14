@@ -13,7 +13,9 @@
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import StablecoinTable from '#lib/components/StablecoinTable.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
-	import { dm, nf } from '#lib/format.ts';
+	import { compact, dm, nf } from '#lib/format.ts';
+	import Tile from '#lib/components/ui/Tile.svelte';
+	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -230,6 +232,28 @@
 			<CryptoTable coins={data.crypto?.data.coins ?? []} />
 			{#snippet note()}Fuente: CoinGecko · <Updated at={data.crypto?.fetchedAt} source="crypto" />{/snippet}
 		</Panel>
+		{#if data.bitcoin}
+			{@const b = data.bitcoin.data}
+			<Panel title="Red de bitcoin" meta="Bloque {nf(b.height, 0)}">
+				<Tiles cols={4}>
+					<Tile label="Comisión" value={b.feeFast === null ? '—' : `${nf(b.feeFast, 1)} sat/vB`}>
+						{b.feeHalfHour === null ? 'próximo bloque' : `${nf(b.feeHalfHour, 1)} en media hora`}
+					</Tile>
+					<Tile label="Mempool" value={b.mempoolTx === null ? '—' : compact(b.mempoolTx)}>
+						{b.mempoolVmb === null ? 'transacciones esperando' : `esperando · ${nf(b.mempoolVmb, 1)} vMB`}
+					</Tile>
+					<Tile label="Potencia" value={b.hashrate === null ? '—' : `${nf(b.hashrate, 0)} EH/s`} sub="minado, media de 3 días" />
+					<Tile label="Halving" value="{nf(b.halving.blocks, 0)} bloques">
+						hacia {dm(b.halving.date)} {b.halving.date.slice(0, 4)}
+					</Tile>
+				</Tiles>
+				{#snippet note()}
+					Comisión para entrar en el próximo bloque, en satoshis por byte virtual. El halving (la recompensa por bloque
+					se reduce a la mitad) llega cada 210 000 bloques; fecha estimada a 10 minutos por bloque. Fuente:
+					<a href="https://mempool.space" target="_blank" rel="noopener">mempool.space</a> · <Updated at={data.bitcoin?.fetchedAt} source="bitcoin" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Stablecoins" meta="Monedas ligadas al dólar · en circulación">
 			<StablecoinTable data={data.stables?.data} />
 			{#snippet note()}

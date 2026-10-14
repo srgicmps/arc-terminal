@@ -90,3 +90,7 @@ https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-switzerland ~ <title>[
 https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-greece ~ <title>[^<]{0,80}
 # M40: ¿trae cada mercado de Polymarket su cambio en 24 h (oneDayPriceChange)?
 https://gamma-api.polymarket.com/events?active=true&closed=false&limit=2&order=volume24hr&ascending=false&tag_slug=geopolitics ~ oneDayPriceChange
+# WS: red de bitcoin (mempool.space), las tres consultas de la fuente
+https://mempool.space/api/v1/fees/mempool-blocks ~ medianFee.{0,20}
+https://mempool.space/api/v1/mining/hashrate/3d ~ currentHashrate.{0,30}
+https://mempool.space/api/blocks/tip/height
