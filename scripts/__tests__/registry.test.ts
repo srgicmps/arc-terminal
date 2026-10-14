@@ -5,9 +5,11 @@ import { sources as listed } from '../sources/index.ts';
 const fake = (name: string) => ({ name, label: name, maxAgeMinutes: 10, fetch: async () => [] });
 
 describe('registro de fuentes', () => {
-	it('descubre las mismas fuentes que index.ts, en su orden y sin repetir', async () => {
-		const found = await loadSources();
-		expect(found.map((s) => s.name)).toEqual(listed.map((s) => s.name));
+	// Una fuente nueva solo necesita su archivo en scripts/sources/: no hace falta añadirla a index.ts.
+	it('incluye las de index.ts primero y en su orden, más las sueltas, sin repetir', async () => {
+		const names = (await loadSources()).map((s) => s.name);
+		expect(names.slice(0, listed.length)).toEqual(listed.map((s) => s.name));
+		expect(new Set(names).size).toBe(names.length);
 	});
 
 	it('reconoce fuentes sueltas y en listas, y no lo que solo se le parece', () => {
