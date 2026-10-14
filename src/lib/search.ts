@@ -1,6 +1,6 @@
 // Búsqueda de la barra de comandos en el índice static/data/search.json (scripts/sources/search.ts).
 // Lógica pura, sin Svelte, para probarla con Vitest. El índice se carga aparte, en diferido.
-import { commandWithArg, findCommand, isTickerLike, norm, splitInput, type Option } from './cmdline.ts';
+import { commandWithArg, findCommand, isTickerLike, norm, splitInput, symbolFunction, type Option } from './cmdline.ts';
 import type { SearchEntry } from './types.ts';
 
 /** Una entrada lista para buscar: con su título ya normalizado (sin tildes y en mayúsculas). */
@@ -71,7 +71,7 @@ const TICKER_MAX = 5;
  */
 export function searchOptions(raw: string, suggestions: Option[], index: Indexed[] | null, limit = 5): Option[] {
 	if (!raw.trim()) return [];
-	if (findCommand(raw) || commandWithArg(raw) || findCommand(splitInput(raw).head)) return [];
+	if (findCommand(raw) || commandWithArg(raw) || findCommand(splitInput(raw).head) || symbolFunction(raw)) return [];
 	const hits = indexHits(raw, suggestions, index ?? [], limit);
 	const text = raw.trim();
 	if (norm(text).length < MIN_QUERY) return hits;
