@@ -4,7 +4,7 @@ import type { BoeData, NewsData, PowerData, Quake, SeriesData } from '#lib/types
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async () => {
-	const [news, gov, boe, power, eurostat, ecb, fuel, quakes] = await Promise.all([
+	const [news, gov, boe, power, eurostat, ecb, fuel, quakes, ine] = await Promise.all([
 		dataset<NewsData>('news-es'),
 		dataset<NewsData>('news-gov'),
 		dataset<BoeData>('boe'),
@@ -12,7 +12,8 @@ export const load: PageLoad = async () => {
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<FuelSpainData>('fuel-es'),
-		dataset<Quake[]>('quakes-es')
+		dataset<Quake[]>('quakes-es'),
+		dataset<SeriesData>('ine')
 	]);
-	return { news, gov, boe, power, eurostat, ecb, fuel, quakes };
+	return { news, gov, boe, power, eurostat, ecb, fuel, quakes, ine };
 };
