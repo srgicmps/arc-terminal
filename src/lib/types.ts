@@ -1048,6 +1048,8 @@ export interface ReleaseEvent {
 export interface ReleaseCalData {
 	/** Próximas publicaciones de los datos que enseña la terminal (con tema), por fecha. */
 	events: ReleaseEvent[];
+	/** Las publicadas en los últimos 8 días (de la copia anterior), por fecha: para el resumen SEMANA. */
+	past?: ReleaseEvent[];
 }
 
 // ---------- NOVEDADES: lo fusionado en Arc Terminal (PR de GitHub) ----------
