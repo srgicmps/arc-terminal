@@ -29,6 +29,12 @@ describe('Pink Sheet del Banco Mundial', () => {
 		const html = '<a href="https://thedocs.worldbank.org/en/doc/abc-0050012025/related/CMO-Historical-Data-Monthly.xlsx">Monthly prices</a>';
 		expect(pinkLink(html)).toBe('https://thedocs.worldbank.org/en/doc/abc-0050012025/related/CMO-Historical-Data-Monthly.xlsx');
 		expect(pinkLink('<a href="/x.pdf">')).toBeNull();
+		// Solo del Banco Mundial: otro dominio (aunque lo imite) no vale, y se toma el siguiente que sí lo sea.
+		expect(pinkLink('<a href="https://evil.example/CMO-Historical-Data-Monthly.xlsx">')).toBeNull();
+		expect(pinkLink('<a href="https://worldbank.org.evil.example/CMO-Historical-Data-Monthly.xlsx">')).toBeNull();
+		expect(pinkLink('<a href="https://evil.example/CMO-Historical-Data-Monthly.xlsx"> <a href="https://thedocs.worldbank.org/x/CMO-Historical-Data-Monthly.xlsx">')).toBe(
+			'https://thedocs.worldbank.org/x/CMO-Historical-Data-Monthly.xlsx'
+		);
 	});
 });
 

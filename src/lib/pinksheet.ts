@@ -46,9 +46,16 @@ const KEEP = 13;
 
 const clean = (c: unknown) => String(c ?? '').replace(/\*/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
 
-/** El enlace al .xlsx mensual que da la página («…/CMO-Historical-Data-Monthly.xlsx»). */
+/**
+ * El enlace al .xlsx mensual que da la página («…/CMO-Historical-Data-Monthly.xlsx»). Solo si es del Banco
+ * Mundial (worldbank.org o un subdominio): sale de una página web y luego se descargan varios MB.
+ */
 export function pinkLink(html: string): string | null {
-	return /https?:\/\/[^"'<>\s]+CMO-Historical-Data-Monthly\.xlsx/i.exec(html)?.[0] ?? null;
+	for (const [link] of html.matchAll(/https:\/\/[^"'<>\s]+CMO-Historical-Data-Monthly\.xlsx/gi)) {
+		const host = new URL(link).hostname;
+		if (host === 'worldbank.org' || host.endsWith('.worldbank.org')) return link;
+	}
+	return null;
 }
 
 /**
