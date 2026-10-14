@@ -101,7 +101,8 @@
 	/** Alto para que quepan todas las filas sin barra de desplazamiento (como en MIS). */
 	const quotesHeight = (n: number) => 90 + n * 46;
 
-	// Mapas de calor de TradingView: acciones de un índice (widget «stock-heatmap») o cripto («crypto-coins-heatmap»).
+	// Mapas de calor de TradingView: acciones de un índice («stock-heatmap»), cripto («crypto-coins-heatmap»)
+	// o divisas («forex-heat-map»: cada casilla es la variación del día de un par).
 	const common = {
 		blockColor: 'change',
 		hasTopBar: false,
@@ -116,7 +117,8 @@
 		{ key: 'ndx', label: 'Nasdaq 100', widget: 'stock-heatmap', config: stocks('NASDAQ100') },
 		{ key: 'dax', label: 'DAX', widget: 'stock-heatmap', config: stocks('DAX') },
 		{ key: 'ibex', label: 'IBEX 35', widget: 'stock-heatmap', config: stocks('IBEX35') },
-		{ key: 'crypto', label: 'Cripto', widget: 'crypto-coins-heatmap', config: { ...common, dataSource: 'Crypto', blockSize: 'market_cap_calc' } }
+		{ key: 'crypto', label: 'Cripto', widget: 'crypto-coins-heatmap', config: { ...common, dataSource: 'Crypto', blockSize: 'market_cap_calc' } },
+		{ key: 'fx', label: 'Divisas', widget: 'forex-heat-map', config: { currencies: ['USD', 'EUR', 'JPY', 'GBP', 'CHF', 'CNY', 'AUD', 'CAD', 'MXN'] } }
 	] as const;
 
 	// El mapa elegido se recuerda en este navegador (si no deja guardar, se queda en memoria).
