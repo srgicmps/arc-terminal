@@ -23,8 +23,8 @@ async function sheets(data: ArrayBuffer, pattern?: string): Promise<string> {
 				.map((v) => (v && typeof v === 'object' && !(v instanceof Date) && 'result' in v ? v.result : v))
 				.map((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v ?? '')))
 				.join(' | ');
-			if (shown < 40 && (!re || re.test(text))) {
-				out.push(`fila ${n}: ${text.slice(0, 300)}`);
+			if (shown < 15 && (!re || re.test(text))) {
+				out.push(`fila ${n}: ${text.slice(0, 600)}`);
 				shown++;
 			}
 		});
@@ -44,8 +44,8 @@ for (const line of lines) {
 			headers: { 'User-Agent': 'ArcTerminal/1.0 (+https://github.com/srgicmps/arc-terminal)', Accept: '*/*' },
 			signal: AbortSignal.timeout(30_000)
 		});
-		if (/\.xlsx($|\?)/i.test(url) || (res.headers.get('content-type') ?? '').includes('spreadsheet')) {
-			console.log(`\nPROBE ${res.status} ${line}\n${(await sheets(await res.arrayBuffer(), pattern)).slice(0, 6000)}`);
+		if (/\.xlsx($|\?|&)/i.test(url) || (res.headers.get('content-type') ?? '').includes('spreadsheet')) {
+			console.log(`\nPROBE ${res.status} ${line}\n${(await sheets(await res.arrayBuffer(), pattern)).slice(0, 20000)}`);
 			continue;
 		}
 		let body = (await res.text()).replace(/\s+/g, ' ');
