@@ -55,6 +55,13 @@ export const MACRO = [
 	{ id: 'euribor-12m', file: 'ecb', name: 'Euríbor a 12 meses', unit: '%', source: 'BCE' }
 ] as const;
 
+/**
+ * Riesgo macro (fred.json; la serie llega con el PR #179: sin ella, no hay aviso).
+ * Liquidez neta de la Fed ('fed-net-liquidity', semanal, en millones de $): cae al menos LIQUIDITY_DROP_M
+ * en 4 semanas (el último dato frente al de 4 datos antes).
+ */
+export const MACRO_RISK = { LIQUIDITY_DROP_M: 100_000 };
+
 /** Hipoteca tipo del aviso del euríbor: variable, sistema francés, euríbor + diferencial (puntos). */
 export const MORTGAGE = { capital: 150_000, years: 25, spread: 0.8 };
 

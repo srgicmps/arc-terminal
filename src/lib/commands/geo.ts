@@ -1,7 +1,7 @@
 import type { Command } from '../commands.ts';
 
 export default {
-	order: 40, code: 'GEO', route: '/geo', key: 'Geopolítica', desc: 'Geopolítica, terremotos y elecciones', sources: 'BBC, Al Jazeera, DW, France 24, The Guardian, USGS, Wikidata', pinned: true,
+	order: 40, code: 'GEO', route: '/geo', key: 'Geopolítica', desc: 'Geopolítica, terremotos y elecciones', sources: 'BBC, Al Jazeera, DW, France 24, The Guardian, USGS, NOAA SWPC, Wikidata', pinned: true,
 	manual: {
 		section: 'Mundo',
 		what: 'Geopolítica: titulares internacionales, un mapa con terremotos, ciclones, incendios y crisis, elecciones, sanciones y mercados de predicción.',
@@ -18,7 +18,9 @@ export default {
 			{ name: 'Gobiernos e instituciones', what: 'Comunicados oficiales.' },
 			{ name: 'Terremotos en el mundo', what: 'M4,5 o más de los últimos 7 días (USGS).' },
 			{ name: 'Terremotos en España', what: 'Los más fuertes de los últimos 10 días (IGN).' },
-			{ name: 'Huracanes, incendios y volcanes', what: 'Los activos ahora.' }
+			{ name: 'Huracanes, incendios y volcanes', what: 'Los activos ahora.' },
+			{ name: 'Gasto militar', what: 'Los 15 países que más gastan en defensa (SIPRI).' },
+			{ name: 'Avisos de viaje de EE. UU.', what: 'Nivel de riesgo del Departamento de Estado, de 1 a 4.' }
 		]
 	}
 } satisfies Command;

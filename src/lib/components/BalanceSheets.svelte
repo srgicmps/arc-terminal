@@ -25,7 +25,7 @@
 		<thead>
 			<tr>
 				<th class="l">Banco</th>
-				<th>Activo</th>
+				<th>Saldo</th>
 				<th>4 sem.</th>
 				<th>1 año</th>
 				<th class="sp"><span class="sr">Evolución en 3 años</span></th>
