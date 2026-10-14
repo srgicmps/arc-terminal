@@ -15,6 +15,37 @@ describe('num', () => {
 		expect(num(-3.25)).toBe(-3.25);
 	});
 
+	it('entiende los formatos de todas las fuentes', () => {
+		expect(num('-4,265833')).toBe(-4.265833); // carburantes: longitud
+		expect(num('38123456789012.34')).toBe(38123456789012.34); // Tesoro de EE. UU.
+		expect(num('2.7')).toBe(2.7); // IGN
+		expect(num('-0.25')).toBe(-0.25);
+		expect(num('1.5E-3')).toBe(0.0015);
+		expect(num('.5')).toBe(0.5);
+	});
+
+	it('entiende miles con punto y decimales con coma', () => {
+		expect(num('1.599,50')).toBe(1599.5);
+		expect(num('-12.345.678,9')).toBe(-12345678.9);
+		expect(num('1.234.567')).toBe(1234567);
+		// Al revés, el formato inglés.
+		expect(num('1,599.50')).toBe(1599.5);
+	});
+
+	it('«1.599» con un solo punto es decimal, no miles (ambiguo: se mantiene)', () => {
+		expect(num('1.599')).toBe(1.599);
+		expect(num('1,599')).toBe(1.599);
+	});
+
+	it('rechaza basura al final o en medio', () => {
+		expect(num('12abc')).toBeNull();
+		expect(num('1,2,3')).toBeNull();
+		expect(num('1.2.3')).toBeNull();
+		expect(num('1.599,50,1')).toBeNull();
+		expect(num('NaN')).toBeNull();
+		expect(num('-')).toBeNull();
+	});
+
 	it('devuelve null si no hay número', () => {
 		expect(num('')).toBeNull();
 		expect(num('   ')).toBeNull();
@@ -49,6 +80,27 @@ describe('plain', () => {
 		expect(plain('Espa&#241;a')).toBe('España');
 	});
 
+	it('no deja espacio antes de la puntuación cuando una etiqueta cierra justo antes', () => {
+		expect(plain('Sube un <b>2%</b>.')).toBe('Sube un 2%.');
+		expect(plain('<a href="x">BCE</a>, <i>Fed</i>; y <em>BoE</em>: hoy')).toBe('BCE, Fed; y BoE: hoy');
+		expect(plain('(<b>dato</b>)')).toBe('(dato)');
+		// Entre palabras, las etiquetas siguen separando.
+		expect(plain('uno<br>dos')).toBe('uno dos');
+	});
+
+	it('descodifica las entidades una sola vez', () => {
+		expect(plain('&amp;lt;b&amp;gt;')).toBe('&lt;b&gt;');
+		expect(plain('&amp;amp;')).toBe('&amp;');
+	});
+
+	it('entiende entidades hexadecimales y emojis', () => {
+		expect(plain('It&#x27;s')).toBe('It’s');
+		expect(plain('&#x41;&#X42;')).toBe('AB');
+		expect(plain('&#128640; &#x1F680;')).toBe('🚀 🚀');
+		// Códigos imposibles o entidades desconocidas se dejan como están.
+		expect(plain('&#x110000; &foo;')).toBe('&#x110000; &foo;');
+	});
+
 	it('junta espacios y recorta con puntos suspensivos', () => {
 		expect(plain('  a \n\t b  ')).toBe('a b');
 		expect(plain('abcdefghij', 5)).toBe('abcd…');
@@ -77,6 +129,19 @@ describe('tidy', () => {
 		expect(tidy('20 KM NE DE MAHON')).toBe('20 Km NE de Mahon');
 		expect(tidy('BP ES CASTELL', true)).toBe('BP ES Castell');
 		expect(tidy('BP ES CASTELL')).toBe('Bp Es Castell');
+	});
+
+	it('deja en minúscula «o» y «e» cuando son conjunciones', () => {
+		expect(tidy('BAR O CAFETERIA')).toBe('Bar o Cafeteria');
+		expect(tidy('FRANCIA E ITALIA')).toBe('Francia e Italia');
+		expect(tidy('CALLE ESTE O OESTE')).toBe('Calle Este o Oeste');
+	});
+
+	it('trata «n», «e», «o» sueltas como puntos cardinales solo en contexto claro', () => {
+		expect(tidy('CARRETERA MAHON KM 5 O')).toBe('Carretera Mahon Km 5 O');
+		expect(tidy('20 KM E DE MAHON')).toBe('20 Km E de Mahon');
+		expect(tidy('12 N DE CIUTADELLA')).toBe('12 N de Ciutadella');
+		expect(tidy('CARRETERA O DE MAO')).toBe('Carretera O de Mao');
 	});
 
 	it('acepta undefined', () => {

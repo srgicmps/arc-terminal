@@ -294,3 +294,30 @@ export interface PredictionsData {
 	geopolitics: Prediction[];
 	economy: Prediction[];
 }
+
+/** Un grupo de tecnologías del mix eléctrico (Eólica, Solar…). */
+export interface MixGroup {
+	key: 'wind' | 'solar' | 'hydro' | 'nuclear' | 'gas' | 'other';
+	label: string;
+	mwh: number;
+	/** Parte del total, de 0 a 1. */
+	share: number;
+	/** Tecnologías de REE que entran en el grupo. */
+	techs: string[];
+}
+/** De dónde sale la electricidad un día en un sistema eléctrico (España, Baleares). */
+export interface PowerMix {
+	id: string;
+	label: string;
+	/** Día del dato: «2026-10-14». */
+	date: string;
+	mwh: number;
+	/** Parte renovable, de 0 a 1. */
+	renewable: number;
+	/** Toneladas de CO₂ equivalente del día, si REE las publica. */
+	co2: number | null;
+	groups: MixGroup[];
+}
+export interface PowerMixData {
+	systems: PowerMix[];
+}

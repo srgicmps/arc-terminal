@@ -70,6 +70,14 @@ describe('weather', () => {
 		expect(compass(360)).toBe('N');
 		expect(compass(NaN)).toBe('');
 	});
+
+	it('compass normaliza grados negativos o mayores de 360', () => {
+		expect(compass(-90)).toBe('O');
+		expect(compass(-45)).toBe('NO');
+		expect(compass(-360)).toBe('N');
+		expect(compass(450)).toBe('E');
+		expect(compass(720 + 225)).toBe('SO');
+	});
 });
 
 describe('commands', () => {

@@ -83,6 +83,11 @@ export const ine: Source<SeriesData> = {
 	async fetch() {
 		const series = await settle('ine', WANTED, (w) => w.id, fetchSeries);
 		if (!series.length) throw new Error('ninguna serie del INE');
+		// Último dato de cada serie en el registro de la Action, para revisarlo de un vistazo.
+		for (const s of series) {
+			const last = s.points.at(-1);
+			console.log(`  ine · ${s.id} (${s.url?.split('s=')[1]}): ${last?.t} = ${last?.v} ${s.unit}`);
+		}
 		return { series };
 	}
 };

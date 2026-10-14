@@ -53,6 +53,14 @@ describe('fechas (hora de Madrid)', () => {
 		expect(dm('2026-10-14T22:30:00Z')).toBe('15 oct');
 	});
 
+	it('dm y period abrevian igual todos los meses («sep», no «sept»)', () => {
+		for (let m = 1; m <= 12; m++) {
+			const mm = String(m).padStart(2, '0');
+			expect(dm(`2026-${mm}-14T12:00:00Z`)).toBe(period(`2026-${mm}-14`));
+		}
+		expect(dm('2026-09-14T12:00:00Z')).toBe('14 sep');
+	});
+
 	it('longDay y weekday', () => {
 		expect(longDay('2026-10-14T12:00:00Z')).toBe('miércoles, 14 de octubre de 2026');
 		expect(weekday('2026-10-14')).toBe('mié 14');
