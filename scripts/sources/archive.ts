@@ -2,7 +2,7 @@
 // (de 90 a 120 días), partido por meses para que la web solo descargue lo que busca.
 // Fuente derivada (`after`): no descarga titulares, usa los de esta pasada.
 //   - news-archive.json: índice pequeño (meses, cuántos titulares y cuánto pesa cada uno).
-//   - news-archive/AAAA-MM.json: los titulares del mes (título, medio, fecha y enlace), del más nuevo
+//   - news-archive/AAAA-MM.json: los titulares del mes de Madrid (título, medio, hora y enlace), del más nuevo
 //     al más antiguo. Van en una subcarpeta para no entrar en la build (ver src/lib/data.ts).
 // Para añadir al mes en curso se lee su copia publicada. Si no se puede leer y el mes ya existía, la
 // pasada falla y update.ts se queda con la copia anterior: así nunca se pierde lo acumulado.
@@ -18,10 +18,11 @@ export const MONTHS = 4;
 
 export const monthFile = (month: string) => `news-archive/${month}.json`;
 
-/** Día y hora de Madrid, al minuto: «2026-10-14T16:05». */
-export function madridMinute(iso: string): string {
-	return new Date(iso).toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' }).slice(0, 16).replace(' ', 'T');
-}
+/** Hora UTC al minuto: «2026-10-14T14:05Z» (sigue siendo una fecha ISO válida y ocupa menos). */
+export const minute = (iso: string) => `${new Date(iso).toISOString().slice(0, 16)}Z`;
+
+/** Mes de Madrid de una hora: a las 00:30 del 1 de noviembre en Madrid ya es noviembre. */
+export const monthOf = (iso: string) => new Date(iso).toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' }).slice(0, 7);
 
 /** Titulares de esta pasada (con fecha), sin repetir enlace. */
 export function entries(sections: NewsItem[][]): ArchiveEntry[] {
@@ -32,7 +33,7 @@ export function entries(sections: NewsItem[][]): ArchiveEntry[] {
 		const key = normUrl(item.url);
 		if (seen.has(key)) continue;
 		seen.add(key);
-		out.push({ t: item.title, s: item.source, d: madridMinute(item.time), u: item.url });
+		out.push({ t: item.title, s: item.source, d: minute(item.time), u: item.url });
 	}
 	return out;
 }
@@ -72,12 +73,12 @@ export const archive: Source<NewsArchive> = {
 	async fetch(previous, ctx = NO_CONTEXT) {
 		const fresh = entries(NEWS_SECTIONS.map((s) => ctx.get<NewsData>(`news-${s.key}`)?.items ?? []));
 		if (!fresh.length) throw new Error('sin titulares en esta pasada');
-		const current = madridMinute(new Date().toISOString()).slice(0, 7);
+		const current = monthOf(new Date().toISOString());
 		const oldest = monthsBefore(current, MONTHS - 1);
 		const known = new Map((previous?.months ?? []).map((m) => [m.month, m]));
 		const byMonth = Map.groupBy(
-			fresh.filter((e) => e.d.slice(0, 7) >= oldest),
-			(e) => e.d.slice(0, 7)
+			fresh.filter((e) => monthOf(e.d) >= oldest),
+			(e) => monthOf(e.d)
 		);
 		for (const [month, items] of byMonth) {
 			const merged = mergeMonth(await published(month, known.has(month)), items);
@@ -87,7 +88,7 @@ export const archive: Source<NewsArchive> = {
 			console.log(`  news-archive · ${month}: ${merged.length} titulares, ${Math.round(bytes / 1024)} KB`);
 		}
 		// Medida del peso: los titulares de las últimas 24 h, como si todo el mes fuera igual.
-		const day = fresh.filter((e) => e.d >= madridMinute(new Date(Date.now() - 86_400_000).toISOString()));
+		const day = fresh.filter((e) => e.d >= minute(new Date(Date.now() - 86_400_000).toISOString()));
 		const sample = Buffer.from(JSON.stringify(day));
 		console.log(
 			`  news-archive · ${day.length} titulares en 24 h → un mes ≈ ${Math.round((sample.length * 30) / 1024)} KB` +

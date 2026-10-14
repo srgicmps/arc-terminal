@@ -594,7 +594,7 @@ export interface ArchiveEntry {
 	t: string;
 	/** Medio. */
 	s: string;
-	/** Día y hora de Madrid, al minuto: «2026-10-14T16:05». */
+	/** Hora UTC al minuto: «2026-10-14T14:05Z». */
 	d: string;
 	/** Enlace. */
 	u: string;
