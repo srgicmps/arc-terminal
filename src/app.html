@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="color-scheme" content="dark" />
+		<meta name="color-scheme" content="dark light" />
 		<meta name="theme-color" content="#080a0d" />
 		<!-- PWA: se puede instalar en la pantalla de inicio (las rutas son relativas a /arc-terminal/) -->
 		<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
@@ -19,6 +19,16 @@
 			rel="stylesheet"
 			href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap"
 		/>
+		<script>
+			// Tema que se ve (día o noche), puesto antes de pintar para que no parpadee. El modo guardado
+			// manda; si no hay o es «auto», el del sistema. Lo mantiene al día src/lib/theme.svelte.ts.
+			var t;
+			try {
+				t = localStorage.getItem('arc-theme');
+			} catch (e) {}
+			if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+			document.documentElement.dataset.theme = t;
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

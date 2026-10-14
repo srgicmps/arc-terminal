@@ -2,6 +2,7 @@
 // siempre con su medio: para leerla entera hay que ir a la web original.
 import { XMLParser } from 'fast-xml-parser';
 import type { FeedStatus, NewsData, NewsItem } from '../../src/lib/types.ts';
+import { cluster } from '../cluster.ts';
 import { getText, list, plain, type Source } from '../lib.ts';
 
 interface Feed {
@@ -153,9 +154,9 @@ async function section(feeds: Feed[]): Promise<NewsData> {
 		}
 	});
 	if (!items.length) throw new Error('ningún feed ha respondido');
-	// Más recientes primero; las que no traen fecha, al final.
+	// Más recientes primero; las que no traen fecha, al final. Luego se juntan los titulares repetidos.
 	items.sort((a, b) => (b.time ?? '').localeCompare(a.time ?? ''));
-	return { items: items.slice(0, PER_SECTION), feeds: status };
+	return { items: cluster(items).slice(0, PER_SECTION), feeds: status };
 }
 
 const LABELS: Record<string, string> = {
