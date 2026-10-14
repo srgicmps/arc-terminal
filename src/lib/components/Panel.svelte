@@ -176,9 +176,8 @@
 	/* El título como botón, con el mismo aspecto que el h2: sin fondo ni borde. */
 	.ttl {
 		all: unset;
-		display: inline-flex;
-		align-items: baseline;
-		gap: var(--sp-6);
+		/* inline, como el texto del h2: así la cabecera mide exactamente lo mismo que antes. */
+		display: inline;
 		cursor: pointer;
 		font: inherit;
 		letter-spacing: inherit;
@@ -193,6 +192,7 @@
 
 	/* ⤢ solo se insinúa al pasar por encima o con el foco. */
 	.ico {
+		margin-left: var(--sp-6);
 		opacity: 0;
 		color: var(--faint);
 		font-weight: var(--fw-regular);
