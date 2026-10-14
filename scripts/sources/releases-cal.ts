@@ -27,25 +27,29 @@ const FRED_RELEASES = [
 ];
 
 const DAYS = 45;
-/** Como mucho, eventos por calendario (el del INE trae muchos al día). */
-const MAX = 150;
+/** Como mucho, eventos por calendario. */
+const MAX = 60;
 
 /** Eventos de un calendario entre `from` y `from + DAYS`, con su tema. */
 export function upcoming(source: ReleaseEvent['source'], ics: string, tz: string, from: Date): ReleaseEvent[] {
 	const to = new Date(from.getTime() + DAYS * 86_400_000).toISOString();
 	const start = from.toISOString();
-	return parseIcs(ics, tz)
-		.filter((e) => e.start >= start && e.start <= to)
-		.sort((a, b) => a.start.localeCompare(b.start))
-		.slice(0, MAX)
-		.map((e) => ({
-			date: e.start,
-			allDay: e.allDay,
-			title: e.summary.slice(0, 160),
-			source,
-			topic: topicOf(source, e.summary),
-			...(e.url ? { url: e.url } : {})
-		}));
+	return (
+		parseIcs(ics, tz)
+			.filter((e) => e.start >= start && e.start <= to)
+			.sort((a, b) => a.start.localeCompare(b.start))
+			.map((e) => ({
+				date: e.start,
+				allDay: e.allDay,
+				title: e.summary.slice(0, 160),
+				source,
+				topic: topicOf(source, e.summary),
+				...(e.url ? { url: e.url } : {})
+			}))
+			// Solo los datos que enseña la terminal: así el JSON es pequeño y el navegador lo puede pedir entero.
+			.filter((e) => e.topic !== null)
+			.slice(0, MAX)
+	);
 }
 
 /** Próximas fechas del IPC y del empleo de EE. UU. según FRED (solo el día; la hora es la del BLS). */

@@ -601,6 +601,6 @@ export interface ReleaseEvent {
 }
 
 export interface ReleaseCalData {
-	/** Próximas publicaciones, por fecha. */
+	/** Próximas publicaciones de los datos que enseña la terminal (con tema), por fecha. */
 	events: ReleaseEvent[];
 }

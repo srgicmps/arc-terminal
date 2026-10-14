@@ -1,15 +1,16 @@
-// Carga el calendario de próximos datos (releases-cal.json) una sola vez para todas las tablas de la
-// página. Va aparte de nextrelease.ts porque usa dataset() (import.meta.glob de Vite), que Node no entiende.
-import { dataset } from './data.ts';
+// Carga el calendario de próximos datos (data/releases-cal.json) una sola vez para todas las tablas de la
+// página. Se pide en el navegador, como los JSON de FUEL: es pequeño (solo los datos que enseña la terminal)
+// y así SeriesTable no obliga a tocar el +page.server.ts de cada vista. Sin red o sin archivo, lista vacía.
+import { asset } from '$app/paths';
+import type { Dataset } from './data.ts';
 import type { ReleaseCalData, ReleaseEvent } from './types.ts';
 
 let cache: Promise<ReleaseEvent[]> | null = null;
 
-/** Eventos del calendario, o una lista vacía si aún no hay datos. */
 export function loadCalendar(): Promise<ReleaseEvent[]> {
-	cache ??= dataset<ReleaseCalData>('releases-cal').then(
-		(d) => d?.data.events ?? [],
-		() => []
-	);
+	cache ??= fetch(asset('data/releases-cal.json' as Parameters<typeof asset>[0]))
+		.then((r) => (r.ok ? (r.json() as Promise<Dataset<ReleaseCalData>>) : null))
+		.then((d) => d?.data.events ?? [])
+		.catch(() => []);
 	return cache;
 }
