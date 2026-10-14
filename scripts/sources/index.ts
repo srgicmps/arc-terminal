@@ -1,5 +1,6 @@
 // Lista de todas las fuentes que descarga `pnpm data`.
 import type { Source } from '../lib.ts';
+import { ais } from './ais.ts';
 import { air } from './air.ts';
 import { alerts } from './alerts.ts';
 import { bls } from './bls.ts';
@@ -15,6 +16,7 @@ import { hazards, quakesEs } from './hazards.ts';
 import { hfpapers } from './hfpapers.ts';
 import { holidays } from './holidays.ts';
 import { imf } from './imf.ts';
+import { imp } from './imp.ts';
 import { ine } from './ine.ts';
 import { newsSources } from './news.ts';
 import { portwatch } from './portwatch.ts';
@@ -31,6 +33,7 @@ export const sources: Source<any>[] = [
 	// España
 	fuel,
 	fuelSpain,
+	ais,
 	boe,
 	power,
 	powerMix,
@@ -64,5 +67,7 @@ export const sources: Source<any>[] = [
 	hfpapers,
 	releases,
 	wiki,
-	...newsSources
+	...newsSources,
+	// Derivadas: se calculan después, con los datos de las anteriores.
+	imp
 ];

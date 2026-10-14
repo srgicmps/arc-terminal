@@ -68,6 +68,9 @@ const FEEDS: Record<string, Feed[]> = {
 	]
 };
 
+/** Medios oficiales (gobiernos, bancos centrales): IMP los usa para confirmar noticias. */
+export const OFFICIAL = new Set([...FEEDS.gov.map((f) => f.name), 'BCE']);
+
 /** Cuántos titulares por medio y por sección como máximo. */
 const PER_FEED = 15;
 const PER_SECTION = 60;

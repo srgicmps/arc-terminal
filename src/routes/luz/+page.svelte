@@ -8,6 +8,7 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { dm, longDay, nf } from '#lib/format.ts';
 	import { days, hourly, madridNow, type HourPrice } from '#lib/power.ts';
+	import { luzShare, relativeDay, type ShareInfo } from '#lib/share.ts';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import type { PageProps } from './$types';
@@ -40,6 +41,16 @@
 		{ label: 'Máximo', color: '--down', points: history.map((d) => ({ t: d.date, v: d.max })) }
 	]);
 
+	// «Compartir» de un día: media y hora más barata. «hoy» o «mañana» según la fecha de Madrid al pulsar.
+	function share(b: (typeof blocks)[number]): () => ShareInfo {
+		return () => {
+			const when = relativeDay(b.day, madridNow(Date.now()).day, longDay(`${b.day}T12:00:00Z`));
+			const { min, avg, cheap } = b.stats;
+			if (!min) return { title: `Precio de la luz ${when}` };
+			return luzShare({ when, kind: b.kind, avg, cheapHour: min.hour, cheapKwh: min.kwh, cheapest: cheap.map((p) => p.hour) });
+		};
+	}
+
 	const hh = (h: number) => `${String(h).padStart(2, '0')}:00`;
 	const currentPrice = $derived(
 		now ? blocks.find((b) => b.day === now.day)?.prices.find((p) => p.hour === now.hour) : undefined
@@ -59,7 +70,7 @@
 <div class="grid" class:grid-2e={blocks.length > 1}>
 	{#each blocks as b (b.day)}
 		<div class="col">
-			<Panel title={longDay(`${b.day}T12:00:00Z`)} meta="{b.kind} · €/kWh">
+			<Panel title={longDay(`${b.day}T12:00:00Z`)} meta="{b.kind} · €/kWh" share={share(b)}>
 				{#if b.stats.min && b.stats.max}
 					<Tiles>
 						<Tile label="Media" value={nf(b.stats.avg, 3)} />
