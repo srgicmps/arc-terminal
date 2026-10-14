@@ -19,6 +19,8 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  # Para abrir y cerrar los issues «Fuente caída» (scripts/issues.ts).
+  issues: write
 
 # Un solo despliegue a la vez: si llega otro, espera a que acabe el que está en marcha.
 # Cada PR va por su lado y no hace esperar a main.
@@ -54,6 +56,18 @@ jobs:
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           # La SEC pide un User-Agent con nombre y correo; va en un secreto porque el repo es público.
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+
+      # Abre un issue si una fuente lleva 3 pasadas sin datos y lo cierra cuando vuelve. No en los PR.
+      # Si falla, no frena la publicación. Las claves van para taparlas si salen en un error.
+      - if: github.event_name != 'pull_request'
+        run: node scripts/issues.ts
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
 
       - run: pnpm check
