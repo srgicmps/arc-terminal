@@ -1,1 +1,2 @@
 # URL que la Action de los PR consulta para explorar APIs nuevas (ver scripts/probe.ts).
+https://huggingface.co/api/daily_papers?limit=2
