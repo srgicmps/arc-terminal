@@ -90,7 +90,7 @@ La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`)
 |---|---|---|
 | `TOP` | Portada | Resumen de todas |
 | `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FRED*, RSS |
-| `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket |
+| `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Wikidata |
 | `ES` | España en cifras, BOE, luz | INE, BOE, REE, RSS |
 | `WS` | Wall Street, mapa de calor, curva de tipos, divisas, cripto | TradingView, Tesoro de EE. UU., BCE, CoinGecko |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |

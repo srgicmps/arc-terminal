@@ -15,6 +15,7 @@
 	--muted: #808a97; /* texto secundario */
 	--faint: #747e8a; /* texto terciario: 4,6:1 sobre --panel (WCAG AA) */
 	--amber: #f2a83b; /* acento */
+	--amber-dim: #c99447; /* ámbar tenue, para texto destacado sin gritar: 7:1 sobre --panel */
 	--amber-soft: rgba(242, 168, 59, 0.13); /* fondo con acento */
 	--amber-edge: rgba(242, 168, 59, 0.42); /* borde con acento */
 	--on-amber: #120c02; /* texto sobre ámbar */
@@ -113,6 +114,7 @@
 	--muted: #5b636e;
 	--faint: #636a74;
 	--amber: #9a5a00;
+	--amber-dim: #8a5d2c;
 	--amber-soft: rgba(154, 90, 0, 0.1);
 	--amber-edge: rgba(154, 90, 0, 0.4);
 	--on-amber: #ffffff;

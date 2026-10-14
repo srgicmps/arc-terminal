@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ChokepointTable from '#lib/components/ChokepointTable.svelte';
 	import DisasterList from '#lib/components/DisasterList.svelte';
+	import ElectionTable from '#lib/components/ElectionTable.svelte';
 	import HazardList from '#lib/components/HazardList.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
@@ -58,6 +59,16 @@
 				{#snippet note()}
 					Fuente: <a href="https://reliefweb.int/disasters" target="_blank" rel="noopener">ReliefWeb</a> (OCHA, ONU), que recoge
 					informes de gobiernos, agencias de la ONU y ONG: cada ficha enlaza a sus fuentes originales · <Updated at={data.reliefweb?.fetchedAt} source="reliefweb" />
+				{/snippet}
+			</Panel>
+		{/if}
+		<!-- Sin datos (en local, o si Wikidata falla sin copia anterior), el panel no sale. -->
+		{#if data.elections?.data.items.length}
+			<Panel title="Próximas elecciones" meta="90 días · G20 y UE en ámbar">
+				<ElectionTable items={data.elections.data.items} />
+				{#snippet note()}
+					Datos de <a href="https://www.wikidata.org" target="_blank" rel="noopener">Wikidata</a>; pueden estar incompletos ·
+					<Updated at={data.elections?.fetchedAt} source="elections" />
 				{/snippet}
 			</Panel>
 		{/if}
