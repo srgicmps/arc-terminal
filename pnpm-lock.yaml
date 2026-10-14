@@ -23,6 +23,9 @@ importers:
       '@types/node':
         specifier: ^24.19.2
         version: 24.19.2
+      chess.js:
+        specifier: 1.4.0
+        version: 1.4.0
       eslint:
         specifier: ^10.12.0
         version: 10.12.0
@@ -433,6 +436,9 @@ packages:
   chai@6.3.0:
     resolution: {integrity: sha512-XWAtwJ6OHO+tj0EKCs0Y2UamnyOxseZWltU4x2U2wh8g4AigdjwvtUjvLP2tqkA/avxHEtzxNaqGq/YGNwckKg==}
     engines: {node: '>=18'}
+
+  chess.js@1.4.0:
+    resolution: {integrity: sha512-BBJgrrtKQOzFLonR0l+k64A98NLemPwNsCskwb+29bRwobUa4iTm51E1kwGPbWXAcfdDa18nad6vpPPKPWarqw==}
 
   chokidar@4.0.3:
     resolution: {integrity: sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA==}
@@ -1454,6 +1460,8 @@ snapshots:
       qified: 0.10.1
 
   chai@6.3.0: {}
+
+  chess.js@1.4.0: {}
 
   chokidar@4.0.3:
     dependencies:

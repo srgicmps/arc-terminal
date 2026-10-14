@@ -36,6 +36,7 @@ La maqueta de diseño está en [`docs/maqueta.html`](docs/maqueta.html) (datos d
 | `NEWS` | Buscador en todos los titulares |
 | `WIKI` | Lo más leído en Wikipedia y efemérides |
 | `CAL` | Agenda económica de la semana y resultados de empresas |
+| `CHESS` | Ajedrez en un tablero propio; la partida se guarda en el navegador (reglas: [chess.js](https://github.com/jhlywa/chess.js), BSD-2) |
 | `STATUS` | Estado de todas las fuentes |
 | `HELP` | Comandos y atajos |
 
