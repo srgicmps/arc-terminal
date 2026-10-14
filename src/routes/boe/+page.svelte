@@ -3,7 +3,10 @@
 	import { page } from '$app/state';
 	import Panel from '#lib/components/Panel.svelte';
 	import Updated from '#lib/components/Updated.svelte';
+	import ChipInput from '#lib/components/ui/ChipInput.svelte';
+	import Search from '#lib/components/ui/Search.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
+	import { hasWords, queryWords } from '#lib/search.ts';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { dm, longDay } from '#lib/format.ts';
 	import { dayData } from '#lib/boe.ts';
@@ -24,21 +27,15 @@
 		query = page.url.searchParams.get('q') ?? '';
 	});
 
-	const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-
-	// Filtra por texto en el título, el ministerio o el epígrafe.
-	const sections = $derived.by(() => {
-		const q = norm(query.trim());
-		return (boe?.sections ?? []).map((s) => ({
+	// Filtra por palabras sueltas en el título, el ministerio o el epígrafe.
+	const words = $derived(queryWords(query));
+	const sections = $derived(
+		(boe?.sections ?? []).map((s) => ({
 			...s,
-			items: q
-				? s.items.filter((i) => norm(`${i.title} ${i.dept} ${i.epigraph}`).includes(q))
-				: s.items
-		}));
-	});
+			items: s.items.filter((i) => hasWords(`${i.title} ${i.dept} ${i.epigraph}`, words))
+		}))
+	);
 	onMount(initWatchwords);
-	let newWord = $state('');
-
 	// Hoy o la semana (?vista=semana). La semana (boe-week.json, unos días de sumarios) solo se pide al elegirla.
 	const views = [
 		{ value: 'hoy', label: 'Hoy' },
@@ -68,25 +65,19 @@
 	// «Semana»: un panel por día. Sin búsqueda, solo las disposiciones generales (sección I), para no pintar
 	// más de mil filas; con búsqueda, todo lo que coincida.
 	const days = $derived.by(() => {
-		const q = norm(query.trim());
 		return (week ?? []).map((d) => ({
 			date: d.date,
 			items: d.sections
-				.filter((s) => q || s.code === '1')
+				.filter((s) => words.length || s.code === '1')
 				.flatMap((s) => s.items)
-				.filter((i) => !q || norm(`${i.title} ${i.dept} ${i.epigraph}`).includes(q))
+				.filter((i) => hasWords(`${i.title} ${i.dept} ${i.epigraph}`, words))
 		}));
 	});
-
-	function add(event: SubmitEvent) {
-		event.preventDefault();
-		addWatchword(newWord);
-		newWord = '';
-	}
 
 	const shown = $derived(
 		weekly ? days.reduce((n, d) => n + d.items.length, 0) : sections.reduce((n, s) => n + s.items.length, 0)
 	);
+	const listed = $derived((boe?.sections ?? []).reduce((n, s) => n + s.items.length, 0));
 	const total = $derived((boe?.sections ?? []).reduce((n, s) => n + s.total, 0));
 
 	// Diario Oficial de la UE (serie L): filtro por tema, solo con los temas que hay.
@@ -124,11 +115,12 @@
 	<div class="views"><Seg label="Periodo" options={views} bind:value={view.value} /></div>
 
 	<div class="search">
-		<label>
-			<span class="sr">{weekly ? 'Buscar en el BOE de la semana' : 'Buscar en el BOE de hoy'}</span>
-			<input type="search" bind:value={query} placeholder="Buscar: ayudas, Menorca, oposiciones, Hacienda…" />
-		</label>
-		<span class="count">{shown} {shown === 1 ? 'resultado' : 'resultados'}</span>
+		<Search
+			label={weekly ? 'Buscar en el BOE de la semana' : 'Buscar en el BOE de hoy'}
+			placeholder="Buscar: ayudas, Menorca, oposiciones, Hacienda…"
+			bind:value={query}
+		/>
+		{#if words.length}<span class="count">{weekly ? `${shown} ${shown === 1 ? 'resultado' : 'resultados'}` : `${shown} de ${listed}`}</span>{/if}
 	</div>
 
 	{#snippet entry(item: BoeItem, date = '')}
@@ -149,17 +141,7 @@
 	<div class="grid">
 		<div class="col">
 			<Panel title="Palabras vigiladas" meta={hits.length === 1 ? '1 coincidencia' : `${hits.length} coincidencias`}>
-				<form class="words" onsubmit={add}>
-					{#each watchwords.words as w (w)}
-						<button type="button" class="word" onclick={() => removeWatchword(w)} aria-label="Dejar de vigilar «{w}»">
-							{w} <span aria-hidden="true">×</span>
-						</button>
-					{/each}
-					<label>
-						<span class="sr">Añadir una palabra vigilada</span>
-						<input bind:value={newWord} placeholder="Añadir palabra…" enterkeyhint="done" />
-					</label>
-				</form>
+				<ChipInput label="Añadir una palabra vigilada" placeholder="Añadir palabra…" items={watchwords.words} onadd={addWatchword} onremove={removeWatchword} />
 				{#if hits.length}
 					<ol class="boe">
 						{#each hits as { item, date } (item.id)}{@render entry(item, date)}{/each}
@@ -201,7 +183,7 @@
 							{#each s.items as item (item.id)}{@render entry(item)}{/each}
 						</ol>
 						{#snippet note()}
-							{#if s.items.length < s.total && !query}
+							{#if s.items.length < s.total && !words.length}
 								Solo se muestran los primeros {s.items.length}: el resto, en el sumario en PDF.
 							{/if}
 						{/snippet}
@@ -256,24 +238,7 @@
 		margin-bottom: var(--sp-12);
 	}
 
-	.search label {
-		flex: 1;
-	}
 
-	input {
-		width: 100%;
-		height: var(--control-h);
-		padding: 0 var(--sp-10);
-		background: var(--panel);
-		border: var(--border);
-		font-family: var(--sans);
-		font-size: var(--fs-l);
-	}
-
-	input:focus {
-		outline: none;
-		border-color: var(--amber);
-	}
 
 	.count {
 		color: var(--faint);
@@ -365,33 +330,9 @@
 		text-decoration: none;
 	}
 
-	.words {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.5em;
-		padding: 0.75em 1em;
-		border-bottom: var(--border);
-	}
 
-	.words label {
-		flex: 1;
-		min-width: 10em;
-	}
 
-	.word {
-		font-family: var(--mono);
-		font-size: var(--fs-xs);
-		color: var(--amber);
-		background: var(--amber-soft);
-		border: var(--hair) solid var(--amber-edge);
-		padding: 0.2em 0.6em;
-		cursor: pointer;
-	}
 
-	.word:hover {
-		border-color: var(--amber);
-	}
 
 	mark {
 		color: var(--amber);

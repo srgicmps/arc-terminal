@@ -1,6 +1,8 @@
 <!--
 	Ficha de un valor: /s?sym=NVDA. Cotización y gráficos llegan en directo de TradingView;
 	los documentos de la SEC, de static/data/sec.json.
+	Con &fn= (funciones por valor de la barra, src/lib/functions.ts: «NVDA GP»), se abre la ficha entera
+	con ese panel ya ampliado; Esc vuelve a la ficha.
 	El símbolo se lee de la URL al arrancar en el navegador (al construir la web no hay URL con ?sym=).
 -->
 <script lang="ts">
@@ -22,9 +24,12 @@
 	let { data }: PageProps = $props();
 
 	let code = $state('');
+	/** La función de la barra («gp», «des»…), si la hay. */
+	let fn = $state('');
 
 	$effect(() => {
 		code = (page.url.searchParams.get('sym') ?? 'NVDA').toUpperCase();
+		fn = (page.url.searchParams.get('fn') ?? '').toLowerCase();
 	});
 
 	const symbol = $derived(tvSymbol(code));
@@ -59,7 +64,7 @@
 	{#key symbol}
 		<div class="grid grid-2">
 			<div class="col">
-				<Panel title="Gráfico" meta={symbol} {share}>
+				<Panel title="Gráfico" meta={symbol} {share} expand={fn === 'gp'}>
 					<TvWidget
 						widget="advanced-chart"
 						config={{ symbol, interval: 'D', timezone: 'Europe/Madrid', style: '1', allow_symbol_change: false, hide_side_toolbar: true }}
@@ -71,19 +76,19 @@
 				<Panel title="Cotización">
 					<TvWidget widget="symbol-info" config={{ symbol }} height={190} credit={false} />
 				</Panel>
-				<Panel title="Análisis técnico">
+				<Panel title="Análisis técnico" expand={fn === 'ta'}>
 					<TvWidget widget="technical-analysis" config={{ symbol, interval: '1D', showIntervalTabs: true, displayMode: 'single' }} height={420} credit={false} />
 				</Panel>
 			</div>
 		</div>
 		<div class="grid grid-2e">
 			<div class="col">
-				<Panel title="Datos fundamentales">
+				<Panel title="Datos fundamentales" expand={fn === 'fa'}>
 					<TvWidget widget="financials" config={{ symbol, displayMode: 'regular' }} height={560} credit={false} />
 				</Panel>
 			</div>
 			<div class="col">
-				<Panel title="Perfil de la empresa">
+				<Panel title="Perfil de la empresa" expand={fn === 'des'}>
 					<TvWidget widget="symbol-profile" config={{ symbol }} height={560} />
 				</Panel>
 			</div>
@@ -99,21 +104,29 @@
 				</div>
 			</div>
 		{/if}
-		{#if news.length}
+		{#if news.length || fn === 'cn'}
 			<div class="grid">
 				<div class="col">
-					<Panel title="En las noticias" meta="{news.length} {news.length === 1 ? 'titular' : 'titulares'}">
-						<NewsList items={news} tag={(item) => sectionLabel(item)} />
+					<Panel title="En las noticias" meta="{news.length} {news.length === 1 ? 'titular' : 'titulares'}" expand={fn === 'cn'}>
+						{#if news.length}
+							<NewsList items={news} tag={(item) => sectionLabel(item)} />
+						{:else}
+							<p class="empty">Sin titulares que la nombren hoy.</p>
+						{/if}
 						{#snippet note()}Titulares de todas las secciones que nombran a {name || code} · <Updated at={data.news?.fetchedAt} source="news-eco" />{/snippet}
 					</Panel>
 				</div>
 			</div>
 		{/if}
-		{#if sec?.filings.length}
+		{#if sec?.filings.length || fn === 'sec'}
 			<div class="grid">
 				<div class="col">
-					<Panel title="Documentos SEC" meta={sec.name}>
-						<FilingList items={sec.filings} strong={(form) => form.startsWith('8-K')} />
+					<Panel title="Documentos SEC" meta={sec?.name} expand={fn === 'sec'}>
+						{#if sec?.filings.length}
+							<FilingList items={sec.filings} strong={(form) => form.startsWith('8-K')} />
+						{:else}
+							<p class="empty">Sin documentos SEC: no presenta en EE. UU.</p>
+						{/if}
 						{#snippet note()}Fuente: SEC EDGAR · <Updated at={data.sec?.fetchedAt} />{/snippet}
 					</Panel>
 				</div>
