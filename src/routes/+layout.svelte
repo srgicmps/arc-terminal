@@ -6,10 +6,12 @@
 	import { COMMANDS } from '#lib/commands.ts';
 	import Clocks from '#lib/components/Clocks.svelte';
 	import CommandBar from '#lib/components/CommandBar.svelte';
+	import PlacePicker from '#lib/components/PlacePicker.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { fit, initFit, toggleFit } from '#lib/fit.svelte.ts';
 	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
+	import { initPlace } from '#lib/place.svelte.ts';
 	import { initWatchlist } from '#lib/watchlist.svelte.ts';
 	import type { LayoutProps } from './$types';
 
@@ -18,6 +20,7 @@
 	// El reloj arranca en el navegador (como onMounted en Vue) y se para al salir.
 	$effect(startClock);
 	$effect(initWatchlist);
+	$effect(initPlace);
 	$effect(initTheme);
 	$effect(initFit);
 
@@ -66,6 +69,7 @@
 		</a>
 		<CommandBar />
 		{#if !online}<span class="offline" title="Se muestra la última copia guardada">Sin conexión</span>{/if}
+		<PlacePicker />
 		<Clocks />
 		<button
 			class="theme fit"

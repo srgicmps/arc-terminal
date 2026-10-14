@@ -4,7 +4,13 @@
 	import { clock } from '#lib/clock.svelte.ts';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { dm, hm, nf, weekday } from '#lib/format.ts';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+	import { untrack } from 'svelte';
+	import { dm, hm, hmIn, nf, weekday } from '#lib/format.ts';
+	import { fetchLocal, type LocalWeather } from '#lib/localweather.ts';
+	import { inMenorca, learnTimezone, place, searchPlaces, setPlace } from '#lib/place.svelte.ts';
 	import {
 		ALERT_NAMES,
 		POLLEN_KEYS,
@@ -23,17 +29,58 @@
 
 	let { data }: PageProps = $props();
 
-	const places = $derived(data.weather?.data.places ?? []);
-	const coasts = $derived(data.weather?.data.coasts ?? []);
-	const air = $derived(data.air?.data ?? null);
+	// Tu sitio (place.svelte.ts): su tiempo, aire y mar se piden desde el navegador. weather.json y air.json
+	// (Menorca y unas pocas ciudades fijas) quedan como reserva y como comparación.
+	const here = $derived(place.current);
+	const menorca = $derived(inMenorca(here));
+	let local = $state<LocalWeather | null>(null);
+	let localError = $state('');
+
+	// Se vuelve a pedir solo si cambia el sitio (no cuando se le añade la zona horaria).
+	const placeKey = $derived(`${here.lat},${here.lon},${here.name}`);
+	$effect(() => {
+		if (!place.ready || !placeKey) return;
+		const p = untrack(() => place.current);
+		const ctrl = new AbortController();
+		local = null;
+		localError = '';
+		fetchLocal(p, ctrl.signal)
+			.then((d) => {
+				local = d;
+				learnTimezone(p, d.tz);
+			})
+			.catch(() => {
+				if (!ctrl.signal.aborted) localError = `No se pudo pedir el tiempo de ${p.name} ahora mismo.`;
+			});
+		return () => ctrl.abort();
+	});
+
+	// «LUGAR Tokio» llega como /wx?buscar=Tokio: se busca, se elige el primer resultado y se limpia la URL.
+	$effect(() => {
+		const q = page.url.searchParams.get('buscar');
+		if (!q || !place.ready) return;
+		searchPlaces(q)
+			.then(([first]) => (first ? setPlace(first) : (localError = `No encuentro «${q}».`)))
+			.catch(() => (localError = 'No se pudo buscar el sitio.'))
+			.finally(() => goto(resolve('/wx'), { replaceState: true }));
+	});
+
+	const fixed = $derived(data.weather?.data.places ?? []);
+	// El sitio elegido, primero; si no llega, el mismo de weather.json (Menorca), si está.
+	const main = $derived(local?.weather ?? fixed.find((p) => p.name === here.name) ?? (menorca ? fixed[0] : null) ?? null);
+	const places = $derived(main ? [main, ...fixed.filter((p) => p.name !== main.name)] : fixed);
+	// Costas norte y sur solo en Menorca; en otro sitio con mar, el oleaje frente a él.
+	const coasts = $derived(menorca ? (data.weather?.data.coasts ?? []) : local?.sea ? [local.sea] : []);
+	const air = $derived(local?.air ?? (menorca ? (data.air?.data ?? null) : null));
+	// Los avisos de MeteoAlarm que guarda la Action son los de Menorca.
 	const alerts = $derived(data.alerts?.data.alerts ?? null);
+	const tz = $derived(local?.tz || here.tz || 'Europe/Madrid');
 
 	// Solo los pólenes que se notan algún día (fuera de temporada, CAMS los deja vacíos o a cero).
 	const pollens = $derived(
 		air ? POLLEN_KEYS.filter((k) => air.days.some((d) => (d.pollen[k] ?? 0) >= 1)) : []
 	);
 	const aqiNow = $derived(aqiLevel(air?.now.aqi));
-	const mao = $derived(places.find((p) => p.name === 'Maó') ?? null);
 	// La luna se calcula en el navegador; antes de arrancar (clock.now = 0) se usa la hora de los datos.
 	const luna = $derived(moon(clock.now || Date.parse(data.weather?.fetchedAt ?? '') || 0));
 
@@ -44,10 +91,13 @@
 	const m = (v: number | null) => (v === null ? '—' : `${nf(v, 1)} m`);
 </script>
 
-<ViewHeader code="WX" title="El tiempo" sub="Menorca, Madrid, Barcelona y Nueva York · Open-Meteo, CAMS y MeteoAlarm" />
+<ViewHeader code="WX" title="El tiempo" sub="{here.name} y otras ciudades · Open-Meteo, CAMS y MeteoAlarm" />
+
+{#if localError}<p class="empty">{localError}</p>{/if}
 
 <div class="grid grid-2e">
 	<div class="col">
+		{#if menorca}
 		<Panel title="Avisos · Menorca" meta="AEMET vía MeteoAlarm">
 			{#if alerts === null}
 				<p class="empty">Sin datos de avisos todavía.</p>
@@ -67,8 +117,10 @@
 				</ul>
 			{/if}
 		</Panel>
+		{/if}
 
-		<Panel title="Mar · Menorca" meta="Norte frente a sur">
+		{#if menorca || coasts.length}
+		<Panel title="Mar · {menorca ? 'Menorca' : here.name}" meta={menorca ? 'Norte frente a sur' : 'Frente a la costa'}>
 			{#if !coasts.length}
 				<p class="empty">Sin datos del mar todavía.</p>
 			{:else}
@@ -115,16 +167,17 @@
 				</div>
 			{/if}
 		</Panel>
-		{#if mao?.sun}
-			{@const sun = mao.sun}
-			<Panel title="Sol y luna · Maó" meta={`${luna.name} · ${nf(luna.illumination * 100, 0)} %`}>
+		{/if}
+		{#if main?.sun}
+			{@const sun = main.sun}
+			<Panel title="Sol y luna · {main.name}" meta={`${luna.name} · ${nf(luna.illumination * 100, 0)} %`}>
 				<div class="tile">
 					<SunArc sunrise={sun.sunrise} sunset={sun.sunset} now={clock.now} />
 				</div>
 				<div class="tiles">
 					<div class="tile">
 						<span class="lbl">Sol</span>
-						<b>{hm(sun.sunrise)} – {hm(sun.sunset)}</b>
+						<b>{hmIn(sun.sunrise, tz)} – {hmIn(sun.sunset, tz)}</b>
 						<span class="sub">Salida y puesta</span>
 					</div>
 					<div class="tile">
@@ -143,7 +196,7 @@
 	</div>
 
 	<div class="col">
-		<Panel title="Aire · {air?.place ?? 'Maó'}" meta="Índice europeo">
+		<Panel title="Aire · {air?.place ?? here.name}" meta="Índice europeo">
 			{#if !air}
 				<p class="empty">Sin datos de calidad del aire todavía.</p>
 			{:else}
@@ -234,7 +287,7 @@
 	{#each places as p (p.name)}
 		{@const now = sky(p.current.code)}
 		<div class="col">
-			<Panel title={p.name} meta={now.label}>
+			<Panel title={p.name} meta={p === main ? `Tu sitio · ${now.label}` : now.label}>
 				<div class="now">
 					<span class="icon" aria-hidden="true">{now.icon}</span>
 					<b>{nf(p.current.temp, 0)}°</b>
@@ -270,6 +323,7 @@
 	Fuentes: Open-Meteo (CC BY 4.0) · Calidad del aire, UV y polen: contiene información modificada del Servicio de
 	Vigilancia Atmosférica de Copernicus (CAMS), vía Open-Meteo · Avisos: EUMETNET-MeteoAlarm con datos de AEMET; el
 	aviso oficial es el de <a href="https://www.aemet.es/es/eltiempo/prediccion/avisos" target="_blank" rel="noopener">AEMET</a>
+	{#if local}· Tu sitio: pedido a Open-Meteo desde tu navegador a las {hm(local.fetchedAt)}{/if}
 	· Tiempo <Updated at={data.weather?.fetchedAt} source="weather" /> · Aire <Updated at={data.air?.fetchedAt} source="air" /> · Avisos
 	<Updated at={data.alerts?.fetchedAt} source="alerts" />
 </p>
