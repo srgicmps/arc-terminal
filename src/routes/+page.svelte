@@ -25,7 +25,7 @@
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
 	import type { BoeWeek } from '#lib/types.ts';
 	import { initWatchwords, matches, watchwords } from '#lib/watchwords.svelte.ts';
-	import { place } from '#lib/place.svelte.ts';
+	import { inMenorca, inSpain, place } from '#lib/place.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
 	import type { PageProps } from './$types';
 
@@ -134,6 +134,8 @@
 	// Línea de arriba: titulares nuevos desde la última visita y la franja de luz más barata.
 	const fresh = $derived(clock.now && visit.ready ? newSinceText(newCount(data.headlines, visit.last), visit.last, clock.now) : '');
 	const cheapWindow = $derived(clock.now ? cheapestNow(pvpc, clock.now) : null);
+	// La luz de mañana en la línea «hoy», solo si «Tu sitio» está en España (el PVPC es de España).
+	const luzManana = $derived(!!cheapWindow?.tomorrow && inSpain(place.current));
 
 	// Terremotos de las últimas 48 h, los más fuertes.
 	const quakes = $derived(
@@ -370,20 +372,21 @@
 	</Panel>
 {/snippet}
 
-<!-- «Mi mañana»: el tiempo de «Tu sitio», la luz, la agenda y los avisos de hoy (se pliega a partir de las 11). -->
+<!-- «Mi mañana»: el tiempo de «Tu sitio», la luz, la agenda y los avisos de hoy (se pliega a partir de las 11).
+	La luz (PVPC) solo si «Tu sitio» está en España, y los avisos de MeteoAlarm (son los de Menorca) solo en Menorca. -->
 <Morning
 	weather={data.weather?.data}
-	power={data.power?.data}
+	power={inSpain(place.current) ? data.power?.data : null}
 	earnings={data.earnings}
 	holidays={{ items: data.holidays }}
-	alerts={data.alerts?.data}
+	alerts={inMenorca(place.current) ? data.alerts?.data : null}
 	city={place.current.name}
 />
 
 <!-- Hoy, en una línea: titulares nuevos y la luz de mañana (la de hoy ya está en «Mi mañana»). Siempre ocupa su
 	sitio para que nada salte al cargar. -->
 <p class="today">
-	{fresh}{#if fresh && cheapWindow?.tomorrow}{' · '}{/if}{#if cheapWindow?.tomorrow}Luz más barata mañana: <b>{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)}</b> · {nf(cheapWindow.avg, 3)} €/kWh{/if}
+	{fresh}{#if fresh && luzManana}{' · '}{/if}{#if luzManana && cheapWindow}Luz más barata mañana: <b>{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)}</b> · {nf(cheapWindow.avg, 3)} €/kWh{/if}
 </p>
 
 {#if mode.modular}
