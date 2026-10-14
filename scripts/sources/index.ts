@@ -5,7 +5,7 @@ import { boe } from './boe.ts';
 import { ecb } from './ecb.ts';
 import { eurostat } from './eurostat.ts';
 import { fedreg } from './fedreg.ts';
-import { fuel } from './fuel.ts';
+import { fuel, fuelSpain } from './fuel.ts';
 import { hazards, quakesEs } from './hazards.ts';
 import { newsSources } from './news.ts';
 import { uscurve, usdebt } from './treasury.ts';
@@ -15,6 +15,7 @@ import { crypto, hn, power, quakes, weather } from './world.ts';
 export const sources: Source<any>[] = [
 	// España
 	fuel,
+	fuelSpain,
 	boe,
 	power,
 	// Europa

@@ -9,7 +9,7 @@
 // - si una descarga falla, se reutiliza la copia publicada, aunque sea antigua, y se avisa.
 import { mkdir, writeFile } from 'node:fs/promises';
 import type { Dataset, SourceStatus } from '../src/lib/data.ts';
-import type { Source } from './lib.ts';
+import { writeExtra, type Source } from './lib.ts';
 import { sources } from './sources/index.ts';
 
 const OUT_DIR = 'static/data';
@@ -32,6 +32,17 @@ async function save(dataset: Dataset<unknown>) {
 	await writeFile(`${OUT_DIR}/${dataset.name}.json`, JSON.stringify(dataset) + '\n');
 }
 
+/** Al reutilizar una copia publicada, copia también sus archivos extra desde la web. */
+async function copyExtra(source: Source, dataset: Dataset<unknown>) {
+	const paths = source.files?.(dataset.data) ?? [];
+	await Promise.all(
+		paths.map(async (path) => {
+			const res = await fetch(`${PUBLISHED}/${path}`, { signal: AbortSignal.timeout(30_000) }).catch(() => null);
+			if (res?.ok) await writeExtra(path, await res.json());
+		})
+	);
+}
+
 function summary(data: unknown): string {
 	if (Array.isArray(data)) return `${data.length} elementos`;
 	if (data && typeof data === 'object') {
@@ -51,6 +62,7 @@ async function run(source: Source): Promise<SourceStatus> {
 
 	if (previous && age < source.maxAgeMinutes && !force) {
 		await save(previous);
+		await copyExtra(source, previous);
 		console.log(`= ${source.name}: copia de hace ${Math.round(age)} min`);
 		return { ...base, state: 'cached', fetchedAt: previous.fetchedAt };
 	}
@@ -69,6 +81,7 @@ async function run(source: Source): Promise<SourceStatus> {
 		console.log(`::warning title=${source.name}::${message}`);
 		if (previous) {
 			await save(previous);
+			await copyExtra(source, previous);
 			return { ...base, state: 'stale', fetchedAt: previous.fetchedAt, error: message };
 		}
 		return { ...base, state: 'error', fetchedAt: null, error: message };
