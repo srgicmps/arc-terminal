@@ -13,7 +13,7 @@
 	let { data }: PageProps = $props();
 
 	const items = $derived(data.news?.data.items ?? []);
-	const spainEu = new Set(['La Moncloa', 'Banco de España', 'Comisión Europea', 'Parlamento Europeo']);
+	const spainEu = new Set(['La Moncloa', 'Banco de España', 'Comisión Europea']);
 	const official = $derived((data.gov?.data.items ?? []).filter((i) => spainEu.has(i.source)));
 	// Del BOE, las disposiciones generales (leyes, reales decretos, órdenes).
 	const general = $derived(data.boe?.data.sections.find((s) => s.code === '1')?.items ?? []);

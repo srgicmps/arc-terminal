@@ -59,7 +59,9 @@ export function lastRuns(spans: StateSpan[] | undefined, n: number): SourceStatu
 	return out.reverse();
 }
 
-// Vite convierte cada JSON en un trozo aparte que solo se carga en la página que lo pide.
+// Lo usan los +page.server.ts, que solo se ejecutan al construir la web: el navegador nunca descarga estos
+// JSON enteros, sino el recorte que devuelve cada load (va dentro del HTML y en __data.json).
+// No importes dataset() desde un componente: metería todos los JSON en la build del navegador.
 // Si un archivo no existe (en local, antes de `pnpm data`), simplemente no aparece aquí.
 const loaders = import.meta.glob('/static/data/*.json', { import: 'default' });
 
