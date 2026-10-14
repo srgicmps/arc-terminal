@@ -25,7 +25,7 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG286?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG350?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
-# ECO: inflación del G20 (OCDE, SDMX). Ojo: la OCDE limita las descargas por IP; una sola consulta.
-https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_G20_PRICES@DF_G20_PRICES,1.0/.M.N.CPI.PA._T.N.GY?startPeriod=2026-06&dimensionAtObservation=AllDimensions&format=csvfile
-# Copia en DBnomics del mismo dataset (dimensiones y códigos de las series)
-https://api.db.nomics.world/v22/series/OECD/DSD_G20_PRICES@DF_G20_PRICES?dimensions=%7B%22FREQ%22%3A%5B%22M%22%5D%2C%22TRANSFORMATION%22%3A%5B%22GY%22%5D%2C%22REF_AREA%22%3A%5B%22ESP%22%2C%22G20%22%5D%7D&observations=1&metadata=false&limit=2 ~ "period":\[.{0,40}|.{0,200}\]\}
+# IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
+https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
+# ECO: inflación del G20, copia de la OCDE en DBnomics (la API de la OCDE da 500 desde los runners de GitHub)
+https://api.db.nomics.world/v22/series/OECD/DSD_G20_PRICES@DF_G20_PRICES?dimensions=%7B%22FREQ%22%3A%5B%22M%22%5D%2C%22TRANSFORMATION%22%3A%5B%22GY%22%5D%7D&observations=1&metadata=false&limit=50 ~ "series_code":"[^"]+"|.{0,24}\],"period_start_day"
