@@ -2,6 +2,7 @@
 	import DocList from '#lib/components/DocList.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import TradeList from '#lib/components/TradeList.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import type { PageProps } from './$types';
@@ -28,6 +29,10 @@
 	<div class="col">
 		<Panel title="Casa Blanca y Fed" meta="Comunicados">
 			<NewsList items={official.slice(0, 20)} />
+		</Panel>
+		<Panel title="Sanciones y aranceles" meta="OFAC, USTR e ITA (Section 232)">
+			<TradeList items={data.sanctions?.data.slice(0, 15) ?? []} />
+			{#snippet note()}Fuente: Federal Register · <Updated at={data.sanctions?.fetchedAt} source="sanctions" />{/snippet}
 		</Panel>
 		<Panel title="Normas nuevas" meta="Reglamentos definitivos">
 			<DocList docs={data.fedreg?.data.rules ?? []} />
