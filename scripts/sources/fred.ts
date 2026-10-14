@@ -76,7 +76,7 @@ const WANTED: Wanted[] = [
 	{ code: 'FEDTARMD', id: 'sep-rate-md', label: 'Fondos federales, proyección (mediana)', unit: '%', freq: 'a', last: 4 },
 	{ code: 'FEDTARRL', id: 'sep-rate-lo', label: 'Fondos federales, proyección (mínimo)', unit: '%', freq: 'a', last: 4 },
 	{ code: 'FEDTARRH', id: 'sep-rate-hi', label: 'Fondos federales, proyección (máximo)', unit: '%', freq: 'a', last: 4 },
-	{ code: 'PCECTPICTMD', id: 'sep-pce-md', label: 'Inflación PCE, proyección (mediana)', unit: '%', freq: 'a', last: 4 },
+	{ code: 'PCECTPIMD', id: 'sep-pce-md', label: 'Inflación PCE, proyección (mediana)', unit: '%', freq: 'a', last: 4 },
 	{ code: 'PCECTPIRL', id: 'sep-pce-lo', label: 'Inflación PCE, proyección (mínimo)', unit: '%', freq: 'a', last: 4 },
 	{ code: 'PCECTPIRH', id: 'sep-pce-hi', label: 'Inflación PCE, proyección (máximo)', unit: '%', freq: 'a', last: 4 },
 	{ code: 'UNRATEMD', id: 'sep-unrate-md', label: 'Paro, proyección (mediana)', unit: '%', freq: 'a', last: 4 },
