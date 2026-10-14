@@ -503,3 +503,22 @@ export interface SearchEntry {
 	/** Etiqueta que se ve en la barra: NEWS, BOE o Valor. */
 	s: 'NEWS' | 'BOE' | 'Valor';
 }
+
+// ---------- Rutas marítimas clave (IMF PortWatch) ----------
+
+export interface Chokepoint {
+	/** «chokepoint6» */
+	id: string;
+	/** En español: «Ormuz». */
+	name: string;
+	/** Último día con datos (AAAA-MM-DD). */
+	last: string;
+	/** Media de tránsitos diarios de los últimos 7 días. */
+	avg7: number;
+	/** La misma media, un año antes. */
+	avg7PrevYear: number | null;
+	/** Cambio en % frente al año anterior. */
+	change: number | null;
+	/** Media móvil de 7 días de los últimos 90 días, para el minigráfico. */
+	spark: number[];
+}
