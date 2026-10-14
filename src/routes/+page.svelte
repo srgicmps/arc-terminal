@@ -10,7 +10,6 @@
 	import { compass, sky } from '#lib/weather.ts';
 	import ModularGrid from '#lib/components/ModularGrid.svelte';
 	import MarketSessions from '#lib/components/MarketSessions.svelte';
-	import PuzzleCard from '#lib/components/PuzzleCard.svelte';
 	import RiskGauge from '#lib/components/RiskGauge.svelte';
 	import Agenda from '#lib/components/top/Agenda.svelte';
 	import Markets from '#lib/components/top/Markets.svelte';
@@ -188,7 +187,12 @@
 {/snippet}
 
 {#snippet puzzle()}
-	<PuzzleCard id="puzzle" puzzle={data.puzzle} />
+	<!-- Se carga aparte (import dinámico): lleva chess.js, unos 17 KB que la portada no necesita si no está este panel. -->
+	{#await import('#lib/components/PuzzleCard.svelte')}
+		<Panel id="puzzle" title="Problema del día"><p class="empty">Cargando…</p></Panel>
+	{:then { default: PuzzleCard }}
+		<PuzzleCard id="puzzle" puzzle={data.puzzle} />
+	{/await}
 {/snippet}
 
 {#snippet titulares()}
