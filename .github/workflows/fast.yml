@@ -26,8 +26,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # Fuentes urgentes. Las que aún no existen (gdacs, statuspage, ioda, ree-demand, alert-quotes) se ignoran
-  # hasta que entren. Mercados, para que un -10 % de Bitcoin o de un valor seguido avise en ≤5 min:
+  # Fuentes urgentes (si alguna deja de existir, update.ts la ignora). Mercados, para que un -10 % de
+  # Bitcoin o de un valor seguido avise en ≤5 min:
   # crypto son 2 peticiones a CoinGecko y alert-quotes, 16 a Finnhub por pasada (límites: ~30/min y 60/min).
   URGENT: >-
     quakes quakes-es alerts hazards gdacs statuspage ioda ree-demand
@@ -62,12 +62,29 @@ jobs:
           RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
 
-      # Avisos al móvil con ntfy, como en deploy.yml. Si falla, no frena la publicación.
+      # Avisos al móvil con ntfy, como en deploy.yml y con la misma caché del historial (las cachés son por
+      # rama, así que las dos vías comparten la de main y ninguna repite un aviso de la otra). Si falla, no
+      # frena la publicación.
+      - if: github.event_name != 'pull_request'
+        uses: actions/cache/restore@v4
+        continue-on-error: true
+        with:
+          path: .notify-cache
+          key: notify-log-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: notify-log-
       - if: github.event_name != 'pull_request'
         run: node scripts/notify.ts
         continue-on-error: true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NOTIFY_CACHE: .notify-cache/notify-log.json
+          ALERT_FUEL_ZONE: ${{ secrets.ALERT_FUEL_ZONE }}
+      - if: github.event_name != 'pull_request' && hashFiles('.notify-cache/notify-log.json') != ''
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: .notify-cache
+          key: notify-log-${{ github.run_id }}-${{ github.run_attempt }}
 
       - run: pnpm build --logLevel warn
 
