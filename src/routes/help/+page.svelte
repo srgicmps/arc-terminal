@@ -79,8 +79,8 @@
 		</Panel>
 		<Panel title="A tu gusto" meta="Solo en este navegador">
 			{#if incoming}
+				{@const n = Object.keys(incoming).length}
 				<div class="incoming" role="status">
-					{@const n = Object.keys(incoming).length}
 					<p>Este enlace trae {n} {n === 1 ? 'ajuste' : 'ajustes'} de otro dispositivo. {n === 1 ? 'Sustituye al' : 'Sustituyen a los'} de aquí.</p>
 					<button type="button" class="yes" onclick={bring}>Traerlos</button>
 					<button type="button" onclick={forget}>No</button>
