@@ -76,11 +76,13 @@ export const predictions: Source<PredictionsData> = {
 	label: 'Mercados de predicción · Polymarket',
 	maxAgeMinutes: 25,
 	async fetch() {
-		const [geopolitics, economy] = await Promise.all([
+		const [geopolitics, economy, rates] = await Promise.all([
 			events('geopolitics', 12),
-			events('economy', 8).catch(() => [])
+			events('economy', 8).catch(() => []),
+			// Decisiones de tipos de la Fed y del BCE, para la próxima reunión que enseña ECO (src/lib/meetings.ts).
+			events('fed-rates', 6).catch(() => [])
 		]);
 		if (!geopolitics.length && !economy.length) throw new Error('sin mercados');
-		return { geopolitics, economy };
+		return { geopolitics, economy, rates };
 	}
 };

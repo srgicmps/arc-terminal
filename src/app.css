@@ -15,6 +15,8 @@
 	--on-amber: #120c02;
 	--up: #4cc48a;
 	--down: #f0646f;
+	/* Gris de relleno para barras y gráficos (se ajusta con el tema). */
+	--neutral: #3a434e;
 	--mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 	--sans: 'IBM Plex Sans Condensed', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
 	--fs-xs: 11px;
@@ -23,6 +25,29 @@
 	--fs-l: 14.5px;
 	--fs-xl: 20px;
 	--fs-xxl: 28px;
+}
+
+/*
+ * Tema de día: <html data-theme="light">. Lo pone src/lib/theme.svelte.ts con el interruptor o, en
+ * modo «auto», cuando el sistema está en claro. Solo redefine tokens de color.
+ * Contraste comprobado (WCAG AA, 4,5:1) de --muted, --faint, ámbar, verde y rojo sobre --bg, --panel y --raise.
+ */
+:root[data-theme='light'] {
+	color-scheme: light;
+	--bg: #f5f4f0;
+	--panel: #ffffff;
+	--raise: #eeece6;
+	--line: #dcd8cf;
+	--fg: #16191d;
+	--muted: #5b636e;
+	--faint: #636a74;
+	--amber: #9a5a00;
+	--amber-soft: rgba(154, 90, 0, 0.1);
+	--amber-edge: rgba(154, 90, 0, 0.4);
+	--on-amber: #ffffff;
+	--up: #147345;
+	--down: #c3303c;
+	--neutral: #b9b4a8;
 }
 
 *,
