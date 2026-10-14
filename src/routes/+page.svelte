@@ -13,7 +13,6 @@
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
 	import { cheapestNow } from '#lib/power.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
-	import { initWatchwords, watchedToday } from '#lib/watchwords.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -35,7 +34,6 @@
 	// Como onMounted en Vue: lo guardado en el navegador se lee al arrancar en él.
 	$effect(() => top.load());
 	$effect(initVisit);
-	$effect(initWatchwords);
 
 	const get = $derived(seriesMap(data.ecb, data.eurostat, data.bls));
 	const premium = $derived(spread(get('bond10-es'), get('bond10-de'), 'premium-es', 'Prima de riesgo'));
@@ -67,8 +65,6 @@
 
 	const boeGeneral = $derived(data.boe?.data.sections.find((s) => s.code === '1'));
 	const boeTotal = $derived((data.boe?.data.sections ?? []).reduce((n, s) => n + s.total, 0));
-	// Disposiciones de hoy con alguna palabra vigilada (se eligen en BOE).
-	const boeWatched = $derived(clock.now ? watchedToday(data.boe?.data, clock.now) : 0);
 
 	// Línea de arriba: titulares nuevos desde la última visita y la franja de luz más barata.
 	const fresh = $derived(clock.now && visit.ready ? newSinceText(newCount(data.headlines, visit.last), visit.last, clock.now) : '');
@@ -191,7 +187,7 @@
 {/snippet}
 
 {#snippet boe()}
-	<Panel id="boe" title="BOE de hoy" meta="{boeTotal} publicaciones{boeWatched ? ` · ${boeWatched} vigiladas` : ''}" jump={{ code: 'BOE', href: resolve('/boe') }}>
+	<Panel id="boe" title="BOE de hoy" meta="{boeTotal} publicaciones" jump={{ code: 'BOE', href: resolve('/boe') }}>
 		<ul class="mini">
 			{#each (boeGeneral?.items ?? []).slice(0, 4) as item (item.id)}
 				<li><a class="l" href={item.html} target="_blank" rel="noopener">{item.title}</a></li>
