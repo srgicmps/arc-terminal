@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { routeHref } from '#lib/routes.ts';
 	import { resolve } from '$app/paths';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -16,7 +17,7 @@
 				<tbody>
 					{#each COMMANDS as c (c.code)}
 						<tr>
-							<td><a class="code" href={resolve(c.route)}>{c.code}</a></td>
+							<td><a class="code" href={routeHref(c.route)}>{c.code}</a></td>
 							<td class="l wrap">
 								{c.desc}
 								{#if c.aliases}<small class="mut">También: {c.aliases.join(', ')}</small>{/if}
@@ -43,7 +44,7 @@
 				{#each COMMANDS.filter((c) => c.arg) as c (c.code)}
 					{@const text = c.arg!.example.slice(c.code.length + 1)}
 					<li>
-						<a class="l" href="{resolve(c.route)}?{c.arg!.param}={encodeURIComponent(text)}">
+						<a class="l" href="{routeHref(c.route)}?{c.arg!.param}={encodeURIComponent(text)}">
 							<b class="code">{c.arg!.example}</b>
 						</a>
 						<b>{c.arg!.label}</b>

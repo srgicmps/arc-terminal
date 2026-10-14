@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { routeHref } from '#lib/routes.ts';
 	import '../app.css';
 	import { asset, resolve } from '$app/paths';
 	import { page, updated } from '$app/state';
@@ -92,7 +93,7 @@
 		{#each keys as key (key.code)}
 			<a
 				class="key"
-				href={resolve(key.route)}
+				href={routeHref(key.route)}
 				aria-current={page.route.id === key.route ? 'page' : undefined}
 			>
 				{key.code}<span>{key.key}</span>
@@ -120,7 +121,7 @@
 
 	<nav class="thumb" aria-label="Accesos rápidos">
 		{#each thumb as c (c.code)}
-			<a href={resolve(c.route)} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
+			<a href={routeHref(c.route)} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
 		{/each}
 		<button type="button" aria-label="Abrir la barra de comandos" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>/</button>
 	</nav>
