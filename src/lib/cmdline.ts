@@ -112,6 +112,16 @@ export function targetPath(target: Target): { route: Command['route'] | '/s'; se
 	return { route: command.route, search };
 }
 
+/**
+ * El enlace del ejemplo de un comando en HELP, igual que si se escribiera en la barra. El texto se
+ * separa por palabras, no por la longitud del código: el ejemplo de WX empieza por su alias «LUGAR».
+ */
+export function exampleTarget(command: Command): { route: Command['route']; search: string } {
+	const arg = command.arg ? splitInput(command.arg.example).arg : '';
+	const { search } = targetPath({ kind: 'command', command, arg });
+	return { route: command.route, search };
+}
+
 // ---- Historial: los últimos comandos, guardados en este navegador ----
 
 export const HISTORY_KEY = 'arc-cmd-history';

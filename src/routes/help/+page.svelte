@@ -4,6 +4,7 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { COMMANDS, TICKERS } from '#lib/commands.ts';
+	import { exampleTarget } from '#lib/cmdline.ts';
 	import Table from '#lib/components/ui/Table.svelte';
 </script>
 
@@ -45,9 +46,9 @@
 		<Panel title="Con texto detrás" meta="Comando, espacio y lo que buscas">
 			<ul class="mini">
 				{#each COMMANDS.filter((c) => c.arg) as c (c.code)}
-					{@const text = c.arg!.example.slice(c.code.length + 1)}
+					{@const ex = exampleTarget(c)}
 					<li>
-						<a class="l" href="{routeHref(c.route)}?{c.arg!.param}={encodeURIComponent(text)}">
+						<a class="l" href="{routeHref(ex.route)}{ex.search}">
 							<b class="code">{c.arg!.example}</b>
 						</a>
 						<b>{c.arg!.label}</b>
