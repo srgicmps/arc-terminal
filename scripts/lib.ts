@@ -9,6 +9,11 @@ export interface Source<T = unknown> {
 	label: string;
 	/** Si la última copia publicada tiene menos de estos minutos, se reutiliza sin llamar a la API. */
 	maxAgeMinutes: number;
+	/**
+	 * Variable de entorno con la clave de la API (viene de GitHub Secrets). Si no existe, la fuente
+	 * se salta sin llamar a nadie y aparece en STATUS como «Sin clave», sin contar como fallo.
+	 */
+	requires?: string;
 	/** Recibe los datos publicados la vez anterior (si los hay), para ir acumulando historial. */
 	fetch: (previous: T | undefined) => Promise<T>;
 	/**
@@ -202,7 +207,8 @@ export function tidy(value: string | undefined, keepShort = false): string {
 			}
 			if (/^(s|w|ne|nw|se|sw|no|so|nne|nnw|sse|ssw|ene|ese|wnw|wsw)$/.test(word)) return word.toUpperCase();
 			if (/\d/.test(word) || (keepShort && word.length <= 3)) return word.toUpperCase();
-			return word.charAt(0).toUpperCase() + word.slice(1);
+			// «atlántico-marruecos» → «Atlántico-Marruecos»
+			return word.replace(/(^|-)(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toUpperCase());
 		})
 		.join(' ');
 }

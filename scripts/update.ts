@@ -56,6 +56,10 @@ function summary(data: unknown): string {
 
 async function run(source: Source): Promise<SourceStatus> {
 	const base = { name: source.name, label: source.label };
+	if (source.requires && !process.env[source.requires]) {
+		console.log(`- ${source.name}: sin clave ${source.requires}, se salta`);
+		return { ...base, state: 'off', fetchedAt: null, error: `Falta la clave ${source.requires} en GitHub Secrets` };
+	}
 	const previous = await published(source.name);
 	const age = previous ? (Date.now() - Date.parse(previous.fetchedAt)) / 60_000 : Infinity;
 	const force = process.env.FORCE_REFRESH === '1';
@@ -99,5 +103,7 @@ if (!wanted.length) {
 }
 
 const failed = statuses.filter((s) => s.state === 'error' || s.state === 'stale');
-console.log(`\n${statuses.length - failed.length}/${statuses.length} fuentes al día.`);
+const off = statuses.filter((s) => s.state === 'off').length;
+const active = statuses.length - off;
+console.log(`\n${active - failed.length}/${active} fuentes al día${off ? ` (${off} sin clave)` : ''}.`);
 if (samples.length) console.log(`\nMuestras:\n${samples.join('\n\n')}`);
