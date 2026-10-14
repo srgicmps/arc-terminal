@@ -29,8 +29,11 @@ export const ZONES: { zone: string; country: string; name: string }[] = [
 const API = 'https://api.energy-charts.info/price';
 export const ATTRIBUTION = 'Energy-Charts / SMARD (Bundesnetzagentur)';
 
-/** Pausa entre peticiones: la API responde 429 si se le piden más de 4 o 5 seguidas. */
-export const GAP_MS = 1_500;
+/**
+ * Pausa entre peticiones: la API responde 429 si se le piden más de 4 o 5 seguidas. Con 1,5 s aún saltaba
+ * y los reintentos alargaban la descarga a 94 s; con 3 s son unos 40 s sin reintentos.
+ */
+export const GAP_MS = 3_000;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const fmtDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -82,7 +85,10 @@ export const energycharts: Source<EuPowerData> = {
 			try {
 				const body = await getJson<Raw>(`${API}?bzn=${encodeURIComponent(z.zone)}&start=${today}&end=${tomorrow}`);
 				// Solo las zonas que se pueden publicar.
-				if (!/CC BY/i.test(body.license_info ?? '')) continue;
+				if (!/CC BY/i.test(body.license_info ?? '')) {
+					console.log(`  energycharts · ${z.zone}: sin licencia CC BY, no se guarda`);
+					continue;
+				}
 				const ts = body.unix_seconds ?? [];
 				const means = dailyMeans(ts.map((t, k) => ({ t: t * 1000, v: Number(body.price?.[k] ?? NaN) })));
 				const zone = { ...z, today: means.get(today) ?? null, tomorrow: means.get(tomorrow) ?? null, source: ATTRIBUTION };
