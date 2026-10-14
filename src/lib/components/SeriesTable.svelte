@@ -1,8 +1,10 @@
 <!-- Tabla de series: último dato, variación frente al anterior, periodo y minigráfico. -->
 <script lang="ts">
 	import { GEO, nf, period } from '#lib/format.ts';
+	import { lookup } from '#lib/glossary.ts';
 	import Change from './ui/Change.svelte';
 	import Table from './ui/Table.svelte';
+	import Term from './ui/Term.svelte';
 	import type { Series } from '#lib/types.ts';
 	import Spark from './Spark.svelte';
 
@@ -25,6 +27,20 @@
 	let { rows, head = 'Indicador', spark = 24 }: Props = $props();
 
 	const visible = $derived(rows.filter((r): r is Row & { series: Series } => Boolean(r.series?.points.length)));
+
+	const nameOf = (row: Row & { series: Series }) => row.name ?? GEO[row.series.geo ?? ''] ?? row.series.label;
+	// ⓘ del glosario: solo en la primera fila de cada término, para no repetirlo en toda la tabla.
+	const withTerm = $derived.by(() => {
+		const seen = new Set<string>();
+		return new Set(
+			visible.flatMap((row) => {
+				const id = lookup(nameOf(row))?.id;
+				if (!id || seen.has(id)) return [];
+				seen.add(id);
+				return [row.series.id];
+			})
+		);
+	});
 </script>
 
 {#if visible.length}
@@ -48,8 +64,8 @@
 				<tr>
 					<td>
 						<a class="name" href={row.series.url} target="_blank" rel="noopener">
-							{row.name ?? GEO[row.series.geo ?? ''] ?? row.series.label}
-						</a>
+							{nameOf(row)}
+						</a>{#if withTerm.has(row.series.id)}<Term of={nameOf(row)} />{/if}
 					</td>
 					<td>{nf(last.v, d)}{row.series.unit === '%' ? ' %' : ''}</td>
 					<td><Change value={diff} digits={d} invert={row.inverse} /></td>

@@ -6,10 +6,12 @@ import type { Quote } from '../../src/lib/types.ts';
 import { getJson, type Source } from '../lib.ts';
 import { toQuote } from './finnhub.ts';
 
-/** Símbolos en formato de Finnhub. */
+/**
+ * Símbolos en formato de Finnhub. Solo de EE. UU.: el plan gratuito no da los europeos (Airbus, BAE,
+ * Rheinmetall, Leonardo, Thales, Saab e Indra salían vacíos); van aparte, con otra fuente.
+ */
 export const ALERT_TICKERS = [
 	'PLTR', 'LMT', 'RTX', 'NOC', 'GD', 'LHX', 'BA',
-	'AIR.PA', 'BA.L', 'RHM.DE', 'LDO.MI', 'HO.PA', 'SAAB-B.ST', 'IDR.MC',
 	'NVDA', 'AAPL'
 ];
 

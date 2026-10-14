@@ -29,6 +29,11 @@ export interface SeriesData {
 	series: Series[];
 }
 
+/** Inflación del G20 (scripts/sources/oecd.ts): series de la OCDE y de dónde salieron en esta descarga. */
+export interface G20Data extends SeriesData {
+	via: 'oecd' | 'dbnomics';
+}
+
 // ---------- Previsiones del FMI (World Economic Outlook) ----------
 
 export interface ImfRow {
@@ -105,6 +110,10 @@ export interface NewsItem {
 	/** ISO 8601, o null si el feed no trae fecha. */
 	time: string | null;
 	summary: string;
+	/** 'en' si el medio publica en inglés (scripts/sources/news.ts). */
+	lang?: 'en';
+	/** El titular traducido al español (scripts/translate.ts), si lo hay. */
+	titleEs?: string;
 	/** La misma noticia en otros medios (scripts/cluster.ts), sin el de `source`. */
 	also?: { source: string; url: string }[];
 }
@@ -153,6 +162,23 @@ export interface Paper {
 	summary: string;
 }
 
+// ---------- Modelos en tendencia (Hugging Face) ----------
+
+export interface HfModel {
+	/** «autor/modelo», como en la URL de Hugging Face. */
+	id: string;
+	author: string;
+	name: string;
+	/** Tarea en inglés, tal como la da Hugging Face («text-generation»…): la vista la traduce. */
+	task: string;
+	likes: number;
+	/** Descargas del último mes. */
+	downloads: number;
+	url: string;
+	/** Cuándo se creó (ISO 8601), o vacío. */
+	created: string;
+}
+
 // ---------- Terremotos (USGS) ----------
 
 export interface Quake {
@@ -194,6 +220,29 @@ export interface PowerData {
 	history?: PowerDay[];
 }
 
+// ---------- Precio de la luz en Europa (Energy-Charts y REE) ----------
+
+/** Media diaria del mercado mayorista en una zona de precio («DE-LU»), en €/MWh. */
+export interface EuPowerZone {
+	/** Zona de precio del mercado europeo: «DE-LU», «FR», «IT-North»… */
+	zone: string;
+	/** País (ISO2) al que corresponde, para enlazar con PAIS. */
+	country: string;
+	/** Nombre en español: «Alemania y Luxemburgo», «Italia (norte)». */
+	name: string;
+	/** Media de hoy y de mañana (día de Madrid); null si aún no se conoce o el día está incompleto. */
+	today: number | null;
+	tomorrow: number | null;
+	/** Quién lo publica: «Energy-Charts / SMARD» o «REE» (España). */
+	source: string;
+}
+
+export interface EuPowerData {
+	/** Día de «hoy» (Madrid): «2026-10-14». */
+	date: string;
+	zones: EuPowerZone[];
+}
+
 // ---------- Tiempo (Open-Meteo) ----------
 
 export interface WeatherDay {
@@ -230,11 +279,15 @@ export interface Coin {
 	usd: number;
 	eur: number;
 	change24h: number | null;
+	/** Variación en 7 días (%). Opcional: las copias antiguas no la traen. */
+	change7d?: number | null;
 	marketCap: number | null;
 }
 
 export interface CryptoData {
 	coins: Coin[];
+	/** Cierre diario de bitcoin en dólares (hora de Madrid), hasta 400 días. Para el termómetro de riesgo. */
+	btcHistory?: { date: string; usd: number }[];
 }
 
 // ---------- Curva de tipos del Tesoro de EE. UU. ----------
@@ -243,6 +296,34 @@ export interface YieldCurveData {
 	tenors: string[];
 	/** Una fila por día, del más antiguo al más reciente. */
 	days: { date: string; values: (number | null)[] }[];
+}
+
+// ---------- Subastas de deuda de EE. UU. (Fiscal Data) ----------
+
+export interface Auction {
+	/** Día de la subasta (AAAA-MM-DD). */
+	date: string;
+	/** Plazo: «10-Year», «29-Year 10-Month» (reaperturas)… */
+	term: string;
+	/** «Note», «Bond» o «FRN» (tipo flotante). */
+	kind: string;
+	reopening: boolean;
+	/** Importe ofrecido, en dólares. */
+	offering: number | null;
+	/** Rentabilidad máxima adjudicada (%). Null si aún no se ha hecho. */
+	highYield: number | null;
+	bidToCover: number | null;
+	/** Parte adjudicada a postores indirectos (bancos centrales y fondos extranjeros, sobre todo), en %. */
+	indirectPct: number | null;
+	/** Media del bid-to-cover de las 6 subastas anteriores del mismo plazo y tipo. */
+	avgBidToCover?: number | null;
+}
+
+export interface AuctionsData {
+	/** Anunciadas y pendientes, de la más cercana a la más lejana. */
+	upcoming: Auction[];
+	/** Las últimas 10 hechas, de la más reciente a la más antigua. */
+	recent: Auction[];
 }
 
 // ---------- Wikipedia: lo más leído y efemérides ----------
@@ -254,12 +335,20 @@ export interface WikiPage {
 	views?: number;
 }
 
-export interface WikiData {
-	date: string;
+/** Lo del día en una Wikipedia (español o inglés). */
+export interface WikiEdition {
 	/** Artículo destacado del día, si lo hay. */
 	featured: WikiPage | null;
 	mostRead: WikiPage[];
 	onThisDay: { year: number; text: string; url: string }[];
+	/** «In the news» (solo la Wikipedia en inglés lo tiene en el feed). */
+	news?: { text: string; url: string }[];
+}
+
+/** Arriba, la Wikipedia en español; en `en`, la inglesa (si respondió). */
+export interface WikiData extends WikiEdition {
+	date: string;
+	en?: WikiEdition;
 }
 
 // ---------- Riesgos naturales: huracanes (NOAA) y eventos (NASA EONET) ----------
@@ -433,6 +522,9 @@ export interface ImpEntry {
 	/** Clave estable del tema entre pasadas y días (para desduplicar). */
 	k: string;
 	title: string;
+	/** 'en' si el titular está en inglés, y su traducción (scripts/translate.ts). */
+	lang?: 'en';
+	titleEs?: string;
 	url: string;
 	/** Medios distintos que lo dan. */
 	sources: string[];
@@ -584,4 +676,64 @@ export interface LeaderAgenda {
 	/** De dónde sale la agenda. */
 	source: { name: string; url: string };
 	error?: string;
+}
+
+// ---------- Diario Oficial de la UE, serie L (scripts/sources/eurlex.ts) ----------
+
+export type EuLexType = 'Reglamento' | 'Directiva' | 'Decisión' | 'Otro';
+
+/** Un acto de la serie L del Diario Oficial de la UE. */
+export interface EuLexDoc {
+	/** Número CELEX: «32026R1753». */
+	id: string;
+	/** Título oficial, en inglés. */
+	title: string;
+	type: EuLexType;
+	/** Temas (Sanciones, Aranceles, Energía…), por palabras del título. */
+	tags: string[];
+	/** Día de publicación: «2026-10-14». */
+	date: string;
+	/** Ficha en EUR-Lex, en español. */
+	url: string;
+}
+
+// ---------- Archivo de titulares (scripts/sources/archive.ts) ----------
+
+/** Un titular archivado. Claves cortas: un mes son miles. */
+export interface ArchiveEntry {
+	/** Titular. */
+	t: string;
+	/** Medio. */
+	s: string;
+	/** Hora UTC al minuto: «2026-10-14T14:05Z». */
+	d: string;
+	/** Enlace. */
+	u: string;
+}
+
+/** Índice del archivo (news-archive.json). Cada mes está en news-archive/AAAA-MM.json. */
+export interface NewsArchive {
+	/** Del más reciente al más antiguo. */
+	months: { month: string; count: number; bytes: number }[];
+}
+
+// ---------- Avisos de viaje (Departamento de Estado de EE. UU.) ----------
+
+/** El aviso de viaje de un país: nivel 1 (precauciones normales) a 4 (no viajar). */
+export interface TravelAdvisory {
+	/** Nombre del país en inglés, tal como lo da el título («Ukraine»). Se cruza con PAIS por nombre. */
+	name: string;
+	level: 1 | 2 | 3 | 4;
+	/** Título completo: «Ukraine - Level 4: Do Not Travel». */
+	title: string;
+	url: string;
+	/** Última actualización del aviso (ISO 8601). */
+	updated: string;
+	/** Si el nivel ha cambiado desde que la terminal lo sigue: el anterior y cuándo se vio el cambio. */
+	prevLevel?: 1 | 2 | 3 | 4;
+	changedAt?: string;
+}
+
+export interface AdvisoriesData {
+	items: TravelAdvisory[];
 }

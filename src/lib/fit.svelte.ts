@@ -6,8 +6,12 @@ const KEY = 'arc-fit';
 
 export const fit = $state({ on: false });
 
-function apply() {
-	if (fit.on) document.documentElement.dataset.fit = '';
+/**
+ * Pone o quita <html data-fit>. Sin argumento, según la preferencia guardada; el modo TV lo fuerza con
+ * `force` sin tocar la preferencia, y al salir vuelve a llamarla sin argumento.
+ */
+export function applyFit(force?: boolean) {
+	if (force ?? fit.on) document.documentElement.dataset.fit = '';
 	else delete document.documentElement.dataset.fit;
 }
 
@@ -16,7 +20,7 @@ export function initFit() {
 	try {
 		fit.on = localStorage.getItem(KEY) === '1';
 	} catch {}
-	apply();
+	applyFit();
 }
 
 export function toggleFit() {
@@ -24,7 +28,7 @@ export function toggleFit() {
 	try {
 		localStorage.setItem(KEY, fit.on ? '1' : '0');
 	} catch {}
-	apply();
+	applyFit();
 }
 
 /** Pantalla completa del navegador (Fullscreen API), para usar Arc Terminal como un monitor. */
