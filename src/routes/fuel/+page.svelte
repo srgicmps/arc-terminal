@@ -11,12 +11,15 @@
 	import Note from '#lib/components/ui/Note.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
+	import SortTh from '#lib/components/ui/SortTh.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import { dm, nf } from '#lib/format.ts';
 	import { fuelShare, type ShareInfo } from '#lib/share.ts';
 	import { distanceKm, findProvince, FUELS, taxShare, type FuelKey, type FuelProvinceDay, type FuelStation } from '#lib/fuel.ts';
+	import { sortBy } from '#lib/sort.ts';
+	import { Sorter } from '#lib/sorter.svelte.ts';
 	import { urlState, writeParams } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
@@ -192,6 +195,27 @@
 
 	const mapUrl = (s: FuelStation) => `https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lon}`;
 	const barWidth = (price: number) => 20 + (80 * (price - min)) / (max - min || 1);
+
+	// Tablas ordenables. Sin ordenar, de más barata a más cara; el «#» es siempre el puesto por precio.
+	type Row = (typeof list)[number];
+	const stationCols = { name: (s: Row) => s.name, town: (s: Row) => s.town, price: (s: Row) => s.price, km: (s: Row) => s.km };
+	const stationSort = new Sorter<keyof typeof stationCols>();
+	const sortedList = $derived(stationSort.key ? sortBy(list, stationCols[stationSort.key], stationSort.dir) : list);
+	const priceRank = $derived(new Map(list.map((s, i) => [s.id, i + 1])));
+
+	type Province = (typeof ranking)[number];
+	const provinceCols = { name: (p: Province) => p.name, avg: (p: Province) => p.avg[fuel], min: (p: Province) => p.min[fuel], count: (p: Province) => p.count };
+	const provinceSort = new Sorter<keyof typeof provinceCols>();
+	const sortedRanking = $derived(provinceSort.key ? sortBy(ranking, provinceCols[provinceSort.key], provinceSort.dir) : ranking);
+	const provinceRank = $derived(new Map(ranking.map((p, i) => [p.id, i + 1])));
+
+	type EuRow = NonNullable<typeof data.europe>['data']['rows'][number];
+	const euCols = { name: (r: EuRow) => r.name, g95: (r: EuRow) => r.g95.tax, g95Tax: (r: EuRow) => taxShare(r.g95), diesel: (r: EuRow) => r.diesel.tax, dieselTax: (r: EuRow) => taxShare(r.diesel) };
+	const euSort = new Sorter<keyof typeof euCols>();
+	const euRows = $derived.by(() => {
+		const rows = data.europe?.data.rows ?? [];
+		return euSort.key ? sortBy(rows, euCols[euSort.key], euSort.dir) : rows;
+	});
 </script>
 
 <ViewHeader code="FUEL" title="Gasolineras" sub="Las más baratas de Menorca o de cualquier provincia · API del Ministerio" />
@@ -262,27 +286,28 @@
 					<thead>
 						<tr>
 							<th>#</th>
-							<th class="l">Estación</th>
-							<th class="l">Municipio</th>
-							<th>€/L</th>
+							<SortTh sort={stationSort} key="name" first="asc" class="l">Estación</SortTh>
+							<SortTh sort={stationSort} key="town" first="asc" class="l">Municipio</SortTh>
+							<SortTh sort={stationSort} key="price" first="asc">€/L</SortTh>
 							<th class="sp"><span class="sr">Comparativa</span></th>
 							<th>Frente a la media</th>
-							{#if here}<th>Distancia</th>{/if}
+							{#if here}<SortTh sort={stationSort} key="km" first="asc">Distancia</SortTh>{/if}
 							<th>Horario</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each showAll ? list : list.slice(0, SHOWN) as s, i (s.id)}
+						{#each showAll ? sortedList : sortedList.slice(0, SHOWN) as s (s.id)}
 							{@const diff = s.price - avg}
-							<tr class:best={i === 0}>
-								<td class="mut">{i + 1}</td>
+							{@const rank = priceRank.get(s.id) ?? 0}
+							<tr class:best={rank === 1}>
+								<td class="mut">{rank}</td>
 								<td class="l">
 									<a class="name" href={mapUrl(s)} target="_blank" rel="noopener">{s.name}</a>
 									<span class="sub">{s.address}</span>
 								</td>
 								<td class="l">{s.town}</td>
 								<td>{nf(s.price, 3)}</td>
-								<td class="sp"><Bar pct={barWidth(s.price)} tone={i === 0 ? 'up' : 'faint'} /></td>
+								<td class="sp"><Bar pct={barWidth(s.price)} tone={rank === 1 ? 'up' : 'faint'} /></td>
 								<!-- Más cara que la media es malo: el color va al revés que el signo. -->
 								<td><Change value={diff} digits={3} invert /></td>
 								{#if here}<td class="mut">{s.km === null ? '—' : `${nf(s.km, 1)} km`}</td>{/if}
@@ -332,10 +357,16 @@
 			<Panel title="España frente a Europa" meta="€/L · y parte que son impuestos">
 				<Table>
 					<thead>
-						<tr><th class="l">País</th><th>Gasolina 95</th><th>Imp.</th><th>Diésel</th><th>Imp.</th></tr>
+						<tr>
+							<SortTh sort={euSort} key="name" first="asc" class="l">País</SortTh>
+							<SortTh sort={euSort} key="g95" first="asc">Gasolina 95</SortTh>
+							<SortTh sort={euSort} key="g95Tax">Imp.</SortTh>
+							<SortTh sort={euSort} key="diesel" first="asc">Diésel</SortTh>
+							<SortTh sort={euSort} key="dieselTax">Imp.</SortTh>
+						</tr>
 					</thead>
 					<tbody>
-						{#each eu.rows as r (r.code)}
+						{#each euRows as r (r.code)}
 							<tr class:current={r.code === 'ES'}>
 								<td class="l">{r.name}</td>
 								<td>{nf(r.g95.tax, 3)}</td>
@@ -359,11 +390,19 @@
 		<Panel title="Precio medio por provincia" meta="{fuelLabel} · de más barata a más cara">
 			{#if ranking.length}
 				<Table maxHeight="420px">
-					<thead><tr><th>#</th><th class="l">Provincia</th><th>Media</th><th>Mínimo</th><th>Estaciones</th></tr></thead>
+					<thead>
+						<tr>
+							<th>#</th>
+							<SortTh sort={provinceSort} key="name" first="asc" class="l">Provincia</SortTh>
+							<SortTh sort={provinceSort} key="avg" first="asc">Media</SortTh>
+							<SortTh sort={provinceSort} key="min" first="asc">Mínimo</SortTh>
+							<SortTh sort={provinceSort} key="count">Estaciones</SortTh>
+						</tr>
+					</thead>
 					<tbody>
-						{#each ranking as p, i (p.id)}
+						{#each sortedRanking as p (p.id)}
 							<tr class:current={p.id === zone}>
-								<td class="mut">{i + 1}</td>
+								<td class="mut">{provinceRank.get(p.id)}</td>
 								<td class="l"><button type="button" class="link" onclick={() => choose(p.id)}>{p.name}</button></td>
 								<td>{nf(p.avg[fuel], 3)}</td>
 								<td class="up">{nf(p.min[fuel], 3)}</td>

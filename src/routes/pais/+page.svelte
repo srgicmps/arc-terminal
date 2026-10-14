@@ -26,6 +26,7 @@
 	import { COUNTRIES, findCountry } from '#lib/countries.ts';
 	import type { CountryProfile, Rate } from '#lib/country.ts';
 	import { compact, dm, nf, period, signed } from '#lib/format.ts';
+	import { peopleRange, vsYearText } from '#lib/food.ts';
 	import { sectionLabel } from '#lib/news.ts';
 	import type { PageProps } from './$types';
 
@@ -44,6 +45,7 @@
 	const travel = $derived(country ? data.travel[country.code] : undefined);
 	const risk = $derived(country ? data.risks[country.code] : undefined);
 	const refugees = $derived(country ? data.refugees[country.code] : undefined);
+	const food = $derived(country ? data.food[country.code] : undefined);
 	const hasPower = $derived(!!country && data.eupower.some((z) => z.country === country.code));
 	const rates = $derived(profile ? [profile.policy, profile.bond, profile.premium].filter((r): r is Rate => r !== null) : []);
 	const military = $derived(country ? (data.military[country.code] ?? null) : null);
@@ -249,7 +251,7 @@
 		</div>
 
 		<div class="col">
-			{#if travel || risk}
+			{#if travel || risk || food}
 				{@const at = data.riskAt}
 				<Panel title="Riesgo" meta="Aviso de viaje, catástrofes, internet y brotes">
 					<ul class="mini">
@@ -280,6 +282,17 @@
 								>
 							</li>
 						{/if}
+						{#if food}
+							<li>
+								<a class="l" href="https://fews.net" target="_blank" rel="noopener"
+									>Hambre aguda<small>Personas en fase IPC 3 o peor · {period(food.from.slice(0, 7))}{vsYearText(food.vsYear)
+											? ` · ${vsYearText(food.vsYear)}`
+											: ''}</small
+									></a
+								>
+								<span>{peopleRange(food.low, food.high)}</span>
+							</li>
+						{/if}
 						{#each risk?.outbreaks ?? [] as o (o.id)}
 							<li>
 								<a class="l" href={o.url} target="_blank" rel="noopener">{o.title}<small>Parte de la OMS</small></a>
@@ -296,6 +309,7 @@
 									at={at.ioda}
 									source="ioda"
 								/>{/if}; brotes de los últimos 30 días de la OMS{#if at.who}&nbsp;· <Updated at={at.who} source="who-don" />{/if}.{/if}
+						{#if food}Hambre aguda: FEWS NET{#if data.foodAt}&nbsp;· <Updated at={data.foodAt} source="fewsnet" />{/if}.{/if}
 					{/snippet}
 				</Panel>
 			{/if}

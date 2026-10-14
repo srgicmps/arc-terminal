@@ -28,6 +28,25 @@ export const FRED_RELEASES: { id: number; title: string; source: ReleaseEvent['s
 ];
 
 const DAYS = 45;
+/** Días hacia atrás que se guardan en `past`. */
+const PAST_DAYS = 8;
+
+/**
+ * Las publicaciones que ya pasaron (antes de `from`) en los últimos PAST_DAYS días, sacadas de la copia
+ * anterior: las que eran próximas y las que ya estaban en `past`. Sin repetir y por fecha.
+ */
+export function pastEvents(previous: ReleaseCalData | undefined, from: Date): ReleaseEvent[] {
+	const fromIso = from.toISOString();
+	const since = new Date(from.getTime() - PAST_DAYS * 86_400_000).toISOString();
+	const seen = new Set<string>();
+	return [...(previous?.past ?? []), ...(previous?.events ?? [])]
+		.filter((e) => e.date < fromIso && e.date >= since)
+		.filter((e) => {
+			const k = `${e.date}|${e.source}|${e.title}`;
+			return !seen.has(k) && !!seen.add(k);
+		})
+		.sort((a, b) => a.date.localeCompare(b.date));
+}
 /** Como mucho, eventos por calendario. */
 const MAX = 60;
 
@@ -115,6 +134,6 @@ export const releasesCal: Source<ReleaseCalData> = {
 			return (previous?.events ?? []).filter((e) => jobs[i].mine(e) && e.date >= fromIso);
 		});
 		if (results.every((r) => r.status === 'rejected')) throw new Error('ningún calendario responde');
-		return { events: events.sort((a, b) => a.date.localeCompare(b.date)) };
+		return { events: events.sort((a, b) => a.date.localeCompare(b.date)), past: pastEvents(previous, from) };
 	}
 };

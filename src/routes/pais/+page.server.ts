@@ -9,6 +9,7 @@ import type { Mention } from '#lib/news.ts';
 import type {
 	AdvisoriesData,
 	EuPowerData,
+	FoodInsecurity,
 	GdacsEvent,
 	ImfData,
 	IodaOutage,
@@ -25,7 +26,7 @@ import type { PageServerLoad } from './$types';
 // cifras que pinta cada una (último dato y anterior), no las series enteras. Los países sin ningún dato no
 // van; los titulares llegan ya repartidos por país (scripts/news-index.ts → news-countries.json).
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news, advisories, eupower, sipri, gdacs, ioda, who, unhcr, indeed] = await Promise.all([
+	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news, advisories, eupower, sipri, gdacs, ioda, who, unhcr, food, indeed] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -41,6 +42,7 @@ export const load: PageServerLoad = async () => {
 		dataset<IodaOutage[]>('ioda'),
 		dataset<OutbreakNews[]>('who-don'),
 		dataset<UnhcrData>('unhcr'),
+		dataset<FoodInsecurity[]>('fewsnet'),
 		dataset<SeriesData>('indeed')
 	]);
 	const sets = {
@@ -79,6 +81,9 @@ export const load: PageServerLoad = async () => {
 		refugees: byCountry(unhcr?.data),
 		refugeesYear: unhcr?.data.year ?? null,
 		refugeesAt: unhcr?.fetchedAt ?? null,
+		// Hambre aguda (FEWS NET): el dato de cada país que conoce la terminal.
+		food: Object.fromEntries((food?.data ?? []).filter((f) => COUNTRIES.some((c) => c.code === f.code)).map((f) => [f.code, f])),
+		foodAt: food?.fetchedAt ?? null,
 		riskAt: { gdacs: gdacs?.fetchedAt, ioda: ioda?.fetchedAt, who: who?.fetchedAt },
 		eupower: eupower?.data.zones ?? [],
 		eupowerAt: eupower?.fetchedAt,
