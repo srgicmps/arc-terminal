@@ -10,14 +10,18 @@
 	import { seriesMap, spread } from '#lib/series.ts';
 	import { compass, sky } from '#lib/weather.ts';
 	import ModularGrid from '#lib/components/ModularGrid.svelte';
+	import Morning from '#lib/components/Morning.svelte';
 	import MarketSessions from '#lib/components/MarketSessions.svelte';
 	import RiskGauge from '#lib/components/RiskGauge.svelte';
 	import Agenda from '#lib/components/top/Agenda.svelte';
 	import Markets from '#lib/components/top/Markets.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
+	import Select from '#lib/components/ui/Select.svelte';
+	import { initRefCountry, REF_COUNTRIES, refCountry, refName, setRefCountry } from '#lib/refcountry.svelte.ts';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
 	import type { BoeWeek } from '#lib/types.ts';
-	import { initWatchwords, watchwords } from '#lib/watchwords.svelte.ts';
+	import { initWatchwords, matches, watchwords } from '#lib/watchwords.svelte.ts';
+	import { place } from '#lib/place.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
 	import type { PageProps } from './$types';
 
@@ -47,6 +51,7 @@
 	// Como onMounted en Vue: lo guardado en el navegador se lee al arrancar en él.
 	$effect(() => top.load());
 	$effect(initVisit);
+	$effect(initRefCountry);
 
 	const get = $derived(seriesMap(data.ecb, data.eurostat, data.bls));
 	const premium = $derived(spread(get('bond10-es'), get('bond10-de'), 'premium-es', 'Prima de riesgo'));
@@ -80,6 +85,8 @@
 	const important = $derived(data.important);
 
 	const boeGeneral = $derived(data.boe?.data.sections.find((s) => s.code === '1'));
+	// Titulares de la portada que nombran alguna palabra vigilada (resaltadas en la lista).
+	const watchedNews = $derived(data.headlines.filter((h) => matches(h.title, watchwords.words).length).length);
 	const boeTotal = $derived((data.boe?.data.sections ?? []).reduce((n, s) => n + s.total, 0));
 
 	// Palabras vigiladas (las de la vista BOE, guardadas en este navegador): cuántas disposiciones del último
@@ -129,12 +136,18 @@
 
 {#snippet macro()}
 	<Panel id="macro" title="Macro" meta="Último dato" jump={{ code: 'ECO', href: resolve('/eco') }}>
+		<div class="ref">
+			<Select label="País" value={refCountry.code} onchange={setRefCountry}>
+				{#each REF_COUNTRIES as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+			</Select>
+		</div>
 		<SeriesTable
 			head="Indicador"
 			spark={13}
 			rows={[
-				{ series: get('unemployment-es'), name: 'Paro España', inverse: true },
-				{ series: get('inflation-es'), name: 'IPCA España', inverse: true },
+				{ series: get(`unemployment-${refCountry.code}`), name: `Paro ${refName()}`, inverse: true },
+				{ series: get(`inflation-${refCountry.code}`), name: `IPCA ${refName()}`, inverse: true },
+				{ series: get(`debt-${refCountry.code}`), name: `Deuda ${refName()} (% PIB)`, decimals: 1, inverse: true },
 				{ series: get('inflation-ea'), name: 'IPCA zona euro', inverse: true },
 				{ series: get('cpi-us'), name: 'IPC EE. UU.', inverse: true },
 				{ series: get('unemployment-us'), name: 'Paro EE. UU.', inverse: true }
@@ -212,7 +225,12 @@
 {/snippet}
 
 {#snippet titulares()}
-	<Panel id="news" title="Titulares" meta="Todas las secciones">
+	<Panel
+		id="news"
+		title="Titulares"
+		meta={`${data.headlines.length} de ${data.headlinesTotal}${watchedNews ? ` · ${watchedNews} con tus palabras` : ''}`}
+		jump={{ code: 'NEWS', href: resolve('/news') }}
+	>
 		<NewsList items={data.headlines} tag={(i) => tags.get(i.url)} />
 	</Panel>
 {/snippet}
@@ -272,7 +290,7 @@
 				</li>
 			{/if}
 			{#each (boeGeneral?.items ?? []).slice(0, 4) as item (item.id)}
-				<li><a class="l" href={item.html} target="_blank" rel="noopener">{item.title}</a></li>
+				<li><a class="l" href={item.html || item.pdf} target="_blank" rel="noopener">{item.title}</a></li>
 			{:else}
 				<li><span class="l">Hoy no hay disposiciones generales.</span></li>
 			{/each}
@@ -322,11 +340,20 @@
 	</Panel>
 {/snippet}
 
-<!-- Hoy, en una línea: titulares nuevos y la luz más barata. Siempre ocupa su sitio para que nada salte al cargar. -->
+<!-- «Mi mañana»: el tiempo de «Tu sitio», la luz, la agenda y los avisos de hoy (se pliega a partir de las 11). -->
+<Morning
+	weather={data.weather?.data}
+	power={data.power?.data}
+	earnings={data.earnings}
+	holidays={{ items: data.holidays }}
+	alerts={data.alerts?.data}
+	city={place.current.name}
+/>
+
+<!-- Hoy, en una línea: titulares nuevos y la luz de mañana (la de hoy ya está en «Mi mañana»). Siempre ocupa su
+	sitio para que nada salte al cargar. -->
 <p class="today">
-	{fresh}{#if fresh && cheapWindow}{' · '}{/if}{#if cheapWindow}Luz más barata {cheapWindow.tomorrow
-			? 'mañana'
-			: 'hoy'}: <b>{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)}</b> · {nf(cheapWindow.avg, 3)} €/kWh{/if}
+	{fresh}{#if fresh && cheapWindow?.tomorrow}{' · '}{/if}{#if cheapWindow?.tomorrow}Luz más barata mañana: <b>{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)}</b> · {nf(cheapWindow.avg, 3)} €/kWh{/if}
 </p>
 
 {#if mode.modular}
@@ -360,6 +387,12 @@
 {/if}
 
 <style>
+	/* «País» del panel Macro: una fila discreta encima de la tabla. */
+	.ref {
+		padding: var(--sp-6) var(--pad-x);
+		border-bottom: var(--border);
+	}
+
 	.today {
 		min-height: calc(var(--fs-xs) * var(--lh));
 		margin: 0 0 var(--sp-8);

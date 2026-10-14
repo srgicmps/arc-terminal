@@ -1,5 +1,10 @@
 # URL que la Action de los PR consulta para explorar APIs nuevas (ver scripts/probe.ts).
 # Formato: «URL» o «URL ~ patrón».
+# ES (M11): afiliados medios en el PXWeb de la Seguridad Social (consultas guardadas): formato y primeras filas
+https://w6.seg-social.es/PXWeb/sq/70e873b9-c993-4c57-ada4-99f66e3a86e2 ~ ^.{0,900}
+https://w6.seg-social.es/PXWeb/sq/14514a01-21fb-4663-94fd-9bc0a8f5526e ~ ^.{0,900}
+# ES (M11): IPC del INE, las tablas del final de la lista (Id altos)
+https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPC ~ "Id":(7615[7-9]|761[6-9]\d|76[2-9]\d\d|7[7-9]\d{3}|[89]\d{4})
 https://apidatos.ree.es/es/datos/generacion/estructura-generacion?start_date=2026-10-13T00:00&end_date=2026-10-14T23:59&time_trunc=day&geo_trunc=electric_system&geo_limit=baleares&geo_ids=8743
 https://apidatos.ree.es/es/datos/generacion/no-renovables-detalle-emisiones-CO2?start_date=2026-10-13T00:00&end_date=2026-10-14T23:59&time_trunc=day
 https://stats.bis.org/api/v1/data/WS_CBPOL/D.US+XM+JP/all?lastNObservations=2&detail=dataonly&format=csv
@@ -76,8 +81,17 @@ https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next 
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
 # GEO/PAIS: gasto militar del SIPRI (Milex), enlace al Excel
 https://www.sipri.org/databases/milex ~ [^"' <>]{0,200}\.xlsx[^"' <>]{0,40}
-# ES (M11): afiliados medios en el PXWeb de la Seguridad Social (consultas guardadas): formato y primeras filas
-https://w6.seg-social.es/PXWeb/sq/70e873b9-c993-4c57-ada4-99f66e3a86e2 ~ ^.{0,900}
-https://w6.seg-social.es/PXWeb/sq/14514a01-21fb-4663-94fd-9bc0a8f5526e ~ ^.{0,900}
-# ES (M11): IPC del INE, las tablas del final de la lista (Id altos)
-https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPC ~ "Id":(7615[7-9]|761[6-9]\d|76[2-9]\d\d|7[7-9]\d{3}|[89]\d{4})
+# M41: sanciones del Reino Unido (OFSI) en la API de búsqueda de GOV.UK
+https://www.gov.uk/api/search.json?filter_organisations=office-of-financial-sanctions-implementation&count=3&order=-public_timestamp&fields=title,link,description,public_timestamp,content_store_document_type
+# M33: control de exportaciones de la BIS en el Federal Register
+https://www.federalregister.gov/api/v1/documents.json?per_page=3&order=newest&conditions%5Bagencies%5D%5B%5D=industry-and-security-bureau&fields%5B%5D=title&fields%5B%5D=publication_date
+# COT de la CFTC (Socrata, sin clave): informe «legacy» solo futuros, último informe de oro, WTI, euro, yen, bono a 10 años, S&P 500 (E-mini) y bitcoin
+https://publicreporting.cftc.gov/resource/6dca-aqww.json?$select=report_date_as_yyyy_mm_dd,market_and_exchange_names,cftc_contract_market_code,open_interest_all,noncomm_positions_long_all,noncomm_positions_short_all,change_in_noncomm_long_all,change_in_noncomm_short_all&$where=cftc_contract_market_code%20in('088691','067651','099741','097741','043602','13874A','133741')&$order=report_date_as_yyyy_mm_dd%20DESC&$limit=8
+https://publicreporting.cftc.gov/resource/6dca-aqww.json?$select=count(*)&$where=cftc_contract_market_code='088691'
+https://www.cftc.gov/MarketReports/CommitmentsofTraders/ReleaseSchedule/index.htm ~ .{0,80}2026.{0,200}
+# WX (2e.16): feeds de MeteoAlarm por país; solo el título del feed, para comprobar los nombres
+https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-portugal ~ <title>[^<]{0,80}
+https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-switzerland ~ <title>[^<]{0,80}
+https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-greece ~ <title>[^<]{0,80}
+# M40: ¿trae cada mercado de Polymarket su cambio en 24 h (oneDayPriceChange)?
+https://gamma-api.polymarket.com/events?active=true&closed=false&limit=2&order=volume24hr&ascending=false&tag_slug=geopolitics ~ oneDayPriceChange

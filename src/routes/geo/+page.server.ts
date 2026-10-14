@@ -4,12 +4,14 @@ import type { ClimateData } from '#lib/climate.ts';
 import { advisoryCountry, levelCounts, recentChanges } from '#lib/advisories.ts';
 import type { MilexData } from '#lib/milex.ts';
 import { riskSignals } from '#lib/risk-signals.ts';
+import { mergeSanctions } from '#lib/sanctions.ts';
 import { headlines, trim } from '#lib/trim.ts';
 import type {
 	AdvisoriesData,
 	Chokepoint,
 	Disaster,
 	ElectionsData,
+	EuLexDoc,
 	GdacsEvent,
 	HazardsData,
 	IodaOutage,
@@ -23,12 +25,10 @@ import type {
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, gov, intl, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who] = await Promise.all([
+	const [news, intl, quakes, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex] = await Promise.all([
 		dataset<NewsData>('news-geo'),
-		dataset<NewsData>('news-gov'),
 		dataset<NewsData>('news-intl'),
 		dataset<Quake[]>('quakes'),
-		dataset<Quake[]>('quakes-es'),
 		dataset<HazardsData>('hazards'),
 		dataset<PredictionsData>('predictions'),
 		dataset<Chokepoint[]>('portwatch'),
@@ -41,8 +41,13 @@ export const load: PageServerLoad = async () => {
 		dataset<MilexData>('sipri'),
 		dataset<GdacsEvent[]>('gdacs'),
 		dataset<IodaOutage[]>('ioda'),
-		dataset<OutbreakNews[]>('who-don')
+		dataset<OutbreakNews[]>('who-don'),
+		dataset<TradeDoc[]>('sanctions-uk'),
+		dataset<EuLexDoc[]>('eurlex')
 	]);
+	// Sanciones y aranceles: EE. UU. (Federal Register), Reino Unido (OFSI) y UE (actos de la serie L con el tema
+	// «Sanciones»), juntos y de lo más reciente a lo más antiguo (M41).
+	const trade = mergeSanctions(sanctions?.data, sanctionsUk?.data, eurlex?.data);
 	// Los comunicados oficiales y los de organismos internacionales: solo los 15 que se pintan, sin resumen.
 	// De Polymarket, los 8 mercados de geopolítica que se pintan (economía y tipos son de ECO).
 	// Sanciones y aranceles: los 8 que se pintan. Tormentas solares: el aviso no pinta el Kp de 24 h.
@@ -53,21 +58,22 @@ export const load: PageServerLoad = async () => {
 		storms: stormPoints(hazards?.data.storms ?? []),
 		events: eventPoints(hazards?.data.events ?? []),
 		straits: straitPoints(portwatch?.data ?? []),
-		sanctions: sanctionPoints(sanctions?.data ?? []),
+		sanctions: sanctionPoints(trade),
 		crises: crisisPoints(reliefweb?.data ?? [])
 	};
 	return {
 		layers,
 		news,
-		gov: headlines(gov, 15),
-		intl: headlines(intl, 15),
+		// Organismos y diplomacia salen del mismo canal: 40 titulares para que haya de los dos paneles.
+		intl: headlines(intl, 40),
 		quakes,
-		quakesEs,
 		hazards,
 		predictions: trim(predictions, (d) => ({ geopolitics: d.geopolitics.slice(0, 8), economy: [] })),
 		portwatch,
 		reliefweb,
-		sanctions: trim(sanctions, (d) => d.slice(0, 8)),
+		sanctions: sanctions || sanctionsUk || eurlex
+			? { fetchedAt: sanctions?.fetchedAt, ukAt: sanctionsUk?.fetchedAt, euAt: eurlex?.fetchedAt, data: trade.slice(0, 10) }
+			: null,
 		climate,
 		elections,
 		swpc: trim(swpc, (d) => ({ ...d, kp24: [] })),

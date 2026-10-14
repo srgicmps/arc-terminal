@@ -38,6 +38,23 @@
 	const geos = ['es', 'ea', 'de', 'fr', 'it', 'pt'];
 	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: !id.startsWith('gdp') }));
 
+	// EE. UU., Reino Unido, Japón y China, detrás de los europeos. EE. UU. sale de BLS (va al día); los demás, de
+	// la OCDE vía DBnomics (oecd-g4) o de la inflación del G20, que van unos meses por detrás. Aparte de `get`
+	// porque FRED ya tiene otro «gdp-us» (anualizado).
+	const g4 = $derived(seriesMap(data.g4));
+	const g20 = (code: string) => data.g20?.data.series.find((s) => s.id === `g20cpi-${code}`);
+	const MAJORS = [
+		{ geo: 'us', iso: 'usa', name: 'EE. UU.' },
+		{ geo: 'gb', iso: 'gbr', name: 'Reino Unido' },
+		{ geo: 'jp', iso: 'jpn', name: 'Japón' },
+		{ geo: 'cn', iso: 'chn', name: 'China' }
+	];
+	const majors = $derived({
+		unemployment: MAJORS.map((m) => ({ series: m.geo === 'us' ? get('unemployment-us') : g4(`unemployment-${m.geo}`), name: m.name, inverse: true })),
+		inflation: MAJORS.map((m) => ({ series: m.geo === 'us' ? get('cpi-us') : g20(m.iso), name: m.name, decimals: 1, inverse: true })),
+		gdp: MAJORS.map((m) => ({ series: g4(`gdp-${m.geo}`), name: m.name }))
+	});
+
 	// Primas de riesgo: diferencia con el bono alemán a 10 años, en puntos básicos.
 	const PREMIUMS = [
 		{ geo: 'es', name: 'España' },
@@ -62,6 +79,7 @@
 	const sofrIorb = $derived(spread(get('sofr-us'), get('iorb-us'), 'sofr-iorb', 'SOFR − IORB'));
 	const premiumDay = $derived(last(daily('premium-es-d')));
 	const premiumWeek = $derived(diffDays(daily('premium-es-d'), 7));
+	const headlines = $derived(data.news?.data.items ?? []);
 </script>
 
 <ViewHeader code="ECO" title="Economía y macro" sub="Eurostat, Banco Central Europeo, BLS, Tesoro de EE. UU. y FRED" />
@@ -69,10 +87,12 @@
 <div class="grid grid-2">
 	<div class="col">
 		<Panel title="Paro" meta="% de la población activa">
-			<SeriesTable next={data.next} head="País" rows={byGeo('unemployment')} />
+			<SeriesTable next={data.next} head="País" rows={[...byGeo('unemployment'), ...majors.unemployment]} />
+			{#snippet note()}EE. UU.: BLS. Reino Unido y Japón: OCDE, vía DBnomics, con unos meses de retraso. China no publica una tasa comparable.{/snippet}
 		</Panel>
 		<Panel title="Inflación" meta="IPCA, variación anual">
-			<SeriesTable next={data.next} head="País" rows={byGeo('inflation')} />
+			<SeriesTable next={data.next} head="País" rows={[...byGeo('inflation'), ...majors.inflation]} />
+			{#snippet note()}EE. UU., Reino Unido, Japón y China: IPC nacional, no IPCA (el índice armonizado de la UE). EE. UU.: BLS; los demás: OCDE, vía DBnomics, con unos meses de retraso.{/snippet}
 		</Panel>
 		{#if data.g20}
 			{@const g20 = data.g20}
@@ -88,7 +108,8 @@
 			</Panel>
 		{/if}
 		<Panel title="PIB" meta="Variación trimestral">
-			<SeriesTable next={data.next} head="País" rows={byGeo('gdp')} />
+			<SeriesTable next={data.next} head="País" rows={[...byGeo('gdp'), ...majors.gdp]} />
+			{#snippet note()}EE. UU., Reino Unido, Japón y China: OCDE, vía DBnomics, con un trimestre de retraso · <Updated at={data.g4?.fetchedAt} source="oecd-g4" />{/snippet}
 		</Panel>
 		{#if get('gdp-yoy-es')}
 			<Panel title="PIB interanual" meta="Frente al mismo trimestre del año anterior">
@@ -154,6 +175,21 @@
 					{ series: get('mortgage-ea'), name: 'Hipotecas nuevas zona euro', decimals: 2, inverse: true }
 				]}
 			/>
+		</Panel>
+		<Panel title="Lo que esperan los expertos" meta="Zona euro · encuesta SPF del BCE · %">
+			<SeriesTable
+				head="Previsión"
+				rows={(['hicp', 'gdp', 'unem'] as const).flatMap((t) =>
+					(['y0', 'y1', 'lt'] as const).map((h) => {
+						const series = get(`spf-${t}-${h}`);
+						return { series, name: series?.label, decimals: 1, inverse: t !== 'gdp' };
+					})
+				)}
+			/>
+			{#snippet note()}
+				Media de unos 50 expertos, cada trimestre; la variación es la revisión frente a la encuesta anterior. Largo plazo: dentro
+				de 5 años. Fuente: BCE · <Updated at={data.ecb?.fetchedAt} source="ecb" />
+			{/snippet}
 		</Panel>
 		{#if data.housing}
 			<Panel title="Vivienda en el mundo" meta="Precio, variación interanual">
@@ -269,6 +305,7 @@
 						{ series: get('t10y2y-us'), name: 'Diferencial 10 a − 2 a', decimals: 2 },
 						{ series: get('core-pce-us'), name: 'PCE subyacente, interanual', inverse: true },
 						{ series: get('gdp-us'), name: 'PIB real, anualizado' },
+						{ series: get('gdpnow-us'), name: 'GDPNow: PIB del trimestre en curso' },
 						{ series: get('claims-us'), name: 'Peticiones de paro (miles)', decimals: 0, inverse: true },
 						{ series: get('m2-us'), name: 'M2, interanual' },
 						{ series: get('vix'), name: 'VIX', decimals: 1, inverse: true },
@@ -367,8 +404,8 @@
 				{#snippet note()}Precios de mercados de predicción: reflejan apuestas, no pronósticos oficiales.{/snippet}
 			</Panel>
 		{/if}
-		<Panel title="Titulares" meta="Economía">
-			<NewsList items={data.news?.data.items.slice(0, 25) ?? []} />
+		<Panel title="Titulares" meta={headlines.length > 25 ? `25 de ${headlines.length}` : 'Economía'} jump={{ code: 'NEWS', href: `${resolve('/news')}?s=eco` }}>
+			<NewsList items={headlines.slice(0, 25)} />
 		</Panel>
 	</div>
 </div>

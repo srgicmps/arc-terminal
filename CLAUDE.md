@@ -39,7 +39,8 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   respuesta en el registro. Sirve para explorar APIs nuevas cuando el entorno de desarrollo no tiene red.
 - **Probar una fuente sin la pasada completa**: Actions → «Publicar en Pages» → Run workflow, con «fuentes»
   (p. ej. `fao climate`). Descarga solo esas fuentes, sin copia guardada, y lanza el sondeo, sin publicar.
-- En los PR, la Action va en jobs a la vez: `checks` (check, test, build: el verde o el rojo rápido), `smoke`
+- En los PR, la Action va en jobs a la vez: `checks` (check, test, build y el tope de peso por vista de
+  `scripts/weight.ts`: el verde o el rojo rápido), `smoke`
   (datos reales y prueba de humo) y `probe` solo si el PR toca `scripts/`. `compare` (vistas del PR frente a
   main) y `tv-shots` se lanzan a mano: Run workflow sobre la rama, con «herramienta».
 
@@ -77,7 +78,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 ## Sistema de diseño
 Un cambio de estética se hace en un solo sitio.
 - **Tokens** en `src/styles/tokens.css` (lo importa `src/app.css`): colores, tipografía (`--fs-*`, `--fw-*`,
-  `--lh*`, `--track-*`), escala de espaciado (`--sp-N`, donde N son los px), ritmo principal (`--pad-x`,
+  `--lh*`, `--track-*`), escala de espaciado (`--sp-N`, donde N son los px), ritmo principal (`--pad-x`, `--head-y`,
   `--row-y`, `--gutter`), líneas (`--hair`, `--border`) y medidas (`--control-h`, `--touch`…). Los puntos de corte
   están documentados en el mismo archivo. El tema de día solo redefine colores en `:root[data-theme='light']`.
 - **Regla: nada de valores fijos.** Ni colores, ni fuentes, ni px de espaciado, bordes o letra en vistas y
@@ -94,7 +95,8 @@ Un cambio de estética se hace en un solo sitio.
   (`role=radiogroup`, `aria-checked`, flechas); con varias, botones con `aria-pressed`.
 - **Modo «encajar en pantalla»** (≥1280 px): la última rejilla de la vista llena el alto; cada panel parte de
   `--fit-panel-min` (o de su contenido, si es menor), el alto que sobra se reparte sin pasar del contenido, y los
-  gráficos, mapas y widgets van enteros. Si no cabe, hace scroll la vista, nunca se aplasta un panel. Las reglas
+  gráficos, mapas y widgets van enteros. Si no cabe, hace scroll la vista, nunca se aplasta un panel. Desde ~1680 px, una columna ancha con varios
+  paneles se parte en dos subcolumnas también al encajar. Las reglas
   están en `src/routes/+layout.svelte`; no se ajusta panel a panel.
 - **`app.css`** solo tiene el reset, la tipografía base y lo que comparten todas las vistas: rejillas (`.grid`,
   `.grid-2`, `.grid-2e`, `.grid-3`, `.col`), listas `.mini`, `.empty` y los colores `.up`, `.down`, `.mut`.

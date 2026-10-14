@@ -3,6 +3,7 @@
 	import NewsList from '#lib/components/NewsList.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import QuakeTable from '#lib/components/QuakeTable.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { nf } from '#lib/format.ts';
@@ -35,9 +36,16 @@
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Titulares" meta="{items.length} noticias">
+		<Panel title="Titulares" meta="{items.length} noticias" jump={{ code: 'NEWS', href: `${resolve('/news')}?s=es` }}>
 			<NewsList {items} summaries />
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-es" />{/snippet}
+		</Panel>
+		<Panel title="Terremotos en España" meta="Últimos 10 días · los 15 más fuertes">
+			<QuakeTable
+				quakes={[...(data.quakes?.data ?? [])].sort((a, b) => b.mag - a.mag).slice(0, 15)}
+				empty={data.quakes ? 'Sin terremotos en España en los últimos 10 días.' : undefined}
+			/>
+			{#snippet note()}Fuente: Instituto Geográfico Nacional · <Updated at={data.quakes?.fetchedAt} source="quakes-es" />{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
@@ -96,7 +104,7 @@
 				<ul class="mini">
 					{#each general.slice(0, 12) as item (item.id)}
 						<li>
-							<a class="l" href={item.html} target="_blank" rel="noopener">{item.title}</a>
+							<a class="l" href={item.html || item.pdf} target="_blank" rel="noopener">{item.title}</a>
 						</li>
 					{/each}
 				</ul>

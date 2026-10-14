@@ -46,12 +46,28 @@ export interface ImfRow {
 	cpi: [number | null, number | null];
 }
 
+/** Un país del G20 en el año en curso (estimación del WEO), para la tabla ECST. Todo en %. */
+export interface ImfCountry {
+	/** Código del FMI (ISO de 3 letras: USA, DEU…). */
+	code: string;
+	name: string;
+	/** Crecimiento del PIB real, inflación media y paro. */
+	gdp: number | null;
+	cpi: number | null;
+	unemployment: number | null;
+	/** Deuda pública bruta y saldo público (negativo = déficit), en % del PIB. */
+	debt: number | null;
+	balance: number | null;
+}
+
 export interface ImfData {
 	/** Edición del WEO en español («octubre de 2026»); null si la API no la dice. */
 	edition: string | null;
 	/** Los dos años de la tabla: [año actual, siguiente]. */
 	years: [number, number];
 	rows: ImfRow[];
+	/** Los países del G20 (y España, invitada permanente) en el año en curso. */
+	g20?: ImfCountry[];
 }
 
 // ---------- BOE ----------
@@ -319,6 +335,12 @@ export interface YieldCurveData {
 	days: { date: string; values: (number | null)[] }[];
 }
 
+/** VIX y su curva (scripts/sources/vix.ts), con el VVIX y el SKEW de Cboe: último cierre y el anterior. */
+export interface VixData extends YieldCurveData {
+	vvix?: { date: string; value: number; previous: number | null } | null;
+	skew?: { date: string; value: number; previous: number | null } | null;
+}
+
 // ---------- Subastas de deuda de EE. UU. (Fiscal Data) ----------
 
 export interface Auction {
@@ -532,8 +554,11 @@ export interface Prediction {
 	/** Volumen negociado en 24 h, en dólares. */
 	volume24h: number;
 	endDate: string;
-	/** Opciones con su probabilidad implícita (0–1), de más a menos probable. */
-	outcomes: { label: string; p: number }[];
+	/**
+	 * Opciones con su probabilidad implícita (0–1), de más a menos probable, y `d`, cuánto ha cambiado en
+	 * 24 h (en tanto por uno: 0,05 = 5 puntos), si Polymarket lo da.
+	 */
+	outcomes: { label: string; p: number; d?: number }[];
 }
 
 export interface PredictionsData {
@@ -1094,4 +1119,25 @@ export interface OutbreakNews {
 	/** Primeras frases del resumen, en texto plano. */
 	summary: string;
 	url: string;
+}
+
+// ---------- Demanda eléctrica en tiempo real (REE, scripts/sources/ree-demand.ts) ----------
+
+export interface DemandPoint {
+	/** Hora del dato en ISO (UTC). */
+	time: string;
+	real: number | null;
+	forecast: number | null;
+}
+
+export interface DemandData {
+	/** Último dato con demanda real y su prevista, en MW. */
+	time: string;
+	real: number;
+	forecast: number | null;
+	scheduled: number | null;
+	/** Cuánto está la real por debajo (+) o por encima (−) de la prevista, en %. */
+	gap: number | null;
+	/** Las dos últimas horas, para ver si la caída es brusca o progresiva. */
+	recent: DemandPoint[];
 }

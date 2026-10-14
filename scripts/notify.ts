@@ -48,6 +48,7 @@ import {
 	type Rule
 } from './alerts/rules.ts';
 import { minute } from './history.ts';
+import { EU_ADRS, EU_GAP_MS, fetchQuotes } from './sources/alert-quotes.ts';
 import { redact } from './issues.ts';
 
 const LOG_URL = `${SITE}/data/notify-log.json`;
@@ -249,6 +250,21 @@ const HELLO = (now: number): Alert => ({
 	time: now
 });
 
+/** ¿Es una clave de un ADR europeo («stock:EADSY», «stock:EADSY:2026-10-14T10:00Z»)? */
+const isEuAdr = (key: string) => EU_ADRS.some((s) => key === `stock:${s}` || key.startsWith(`stock:${s}:`));
+
+/**
+ * La copia del historial que se publica en la web, sin rastro de los ADR europeos (D25: datos de Finnhub
+ * solo para los avisos; el estado de los escalones lleva sus precios). La caché de Actions guarda la entera.
+ */
+export function publicLog(log: NotifyLog): NotifyLog {
+	return {
+		...log,
+		entries: log.entries.filter((e) => !isEuAdr(e.k)),
+		last: Object.fromEntries(Object.entries(log.last).filter(([k]) => !isEuAdr(k)))
+	};
+}
+
 async function publishedLog(): Promise<NotifyLog | null> {
 	try {
 		const res = await fetch(LOG_URL, { signal: AbortSignal.timeout(20_000) });
@@ -290,6 +306,8 @@ export async function runNotify({
 	zone,
 	dir = 'static/data',
 	cache,
+	finnhubKey,
+	euGap = EU_GAP_MS,
 	now = Date.now()
 }: {
 	topic: string | undefined;
@@ -298,6 +316,10 @@ export async function runNotify({
 	dir?: string;
 	/** Archivo del historial en la caché de Actions (se lee y se reescribe). */
 	cache?: string;
+	/** FINNHUB_API_KEY: con ella se piden los ADR europeos (D25), solo en memoria. */
+	finnhubKey?: string;
+	/** Pausa entre llamadas de los ADR (en los tests, 0). */
+	euGap?: number;
 	now?: number;
 }): Promise<string[]> {
 	const lines: string[] = [];
@@ -315,6 +337,12 @@ export async function runNotify({
 		const inputs: Inputs = {};
 		for (const [key, file] of Object.entries(FILES)) {
 			(inputs as Record<string, unknown>)[key] = await readData(dir, file);
+		}
+		// ADR europeos (D25): solo en memoria para decidir los avisos; nunca se escriben en static/data.
+		if (finnhubKey?.trim()) {
+			const { quotes, failed } = await fetchQuotes(EU_ADRS, finnhubKey.trim(), euGap);
+			inputs.alertQuotes = [...(inputs.alertQuotes ?? []), ...quotes];
+			say(`ntfy: ${quotes.length} de ${EU_ADRS.length} ADR europeos${failed.length ? ` (sin dato: ${failed.join(', ')})` : ''}`);
 		}
 		if (zone?.trim()) {
 			const found = await loadZone(zone.trim(), inputs, dir);
@@ -352,13 +380,13 @@ export async function runNotify({
 			if (skipped.length) say(`ntfy: ${skipped.length} avisos no caben en los cupos de hoy`);
 			if (!send.length && !skipped.length) say('ntfy: nada que avisar');
 		}
-		const dataset = JSON.stringify({ name: 'notify-log', fetchedAt: new Date(now).toISOString(), data: log }) + '\n';
+		const file = (data: NotifyLog) => JSON.stringify({ name: 'notify-log', fetchedAt: new Date(now).toISOString(), data }) + '\n';
 		await mkdir(dir, { recursive: true });
-		await writeFile(`${dir}/notify-log.json`, dataset);
-		// La misma copia, para la caché de Actions (no depende de que la web llegue a publicarse).
+		await writeFile(`${dir}/notify-log.json`, file(publicLog(log)));
+		// La copia entera, para la caché de Actions (no depende de que la web llegue a publicarse).
 		if (cache) {
 			await mkdir(dirname(cache), { recursive: true });
-			await writeFile(cache, dataset);
+			await writeFile(cache, file(log));
 		}
 	} catch (error) {
 		say(`::warning title=ntfy::${error instanceof Error ? error.message : String(error)}`);
@@ -371,6 +399,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 	await runNotify({
 		topic: process.env.NTFY_TOPIC,
 		zone: process.env.ALERT_FUEL_ZONE,
-		cache: process.env.NOTIFY_CACHE || undefined
+		cache: process.env.NOTIFY_CACHE || undefined,
+		finnhubKey: process.env.FINNHUB_API_KEY
 	});
 }

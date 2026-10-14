@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { asset } from '$app/paths';
 	import { page } from '$app/state';
+	import EntityCard from '#lib/components/EntityCard.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
+	import { findEntity } from '#lib/entities.ts';
+	import { newsPrefs, setMuted, setOrigin, type NewsOrigin } from '#lib/newsprefs.svelte.ts';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { NEWS_SECTIONS as SECTIONS } from '#lib/news.ts';
@@ -19,9 +22,14 @@
 	// «NEWS inflación» en la barra abre /news?q=inflación y rellena el buscador (solo en el navegador).
 	$effect(() => {
 		query = page.url.searchParams.get('q') ?? '';
+		// «Titulares › NEWS» de cada vista abre /news?s=eco con esa sección elegida.
+		const s = page.url.searchParams.get('s');
+		section = SECTIONS.some((x) => x.key === s) ? s! : 'all';
 	});
 
 	const words = $derived(queryWords(query));
+	// Si lo buscado tiene ficha (valor, líder, banco central o país), sale arriba y los titulares debajo.
+	const entity = $derived(findEntity(query));
 	const inSection = $derived(data.items.filter((i) => section === 'all' || i.section === section));
 	const filtered = $derived(inSection.filter((i) => hasWords(`${i.title} ${i.summary} ${i.source}`, words)));
 
@@ -71,6 +79,17 @@
 			.map(({ e }) => ({ title: e.t, url: e.u, source: e.s, time: e.d, summary: '' }));
 	});
 
+	// Tus medios (M23): encendidos los que se ven; al apagar uno, se silencia en todas las vistas.
+	const sources = $derived([...new Set(data.items.map((i) => i.source))].sort((a, b) => a.localeCompare(b, 'es')));
+	const sourceOptions = $derived(sources.map((s) => ({ value: s, label: s })));
+	const origins = [
+		{ value: 'all', label: 'Todos' },
+		{ value: 'es', label: 'En español' },
+		{ value: 'en', label: 'En inglés' }
+	] as const satisfies readonly { value: NewsOrigin; label: string }[];
+	const shownSources = () => sources.filter((s) => !newsPrefs.muted.includes(s));
+	const setShown = (on: string[]) => setMuted(sources.filter((s) => !on.includes(s)));
+
 	const label = Object.fromEntries(SECTIONS.map((s) => [s.key, s.label.toUpperCase()]));
 	const sectionOf = $derived(new Map(data.items.map((i) => [i.url, i.section])));
 </script>
@@ -84,6 +103,7 @@
 
 <div class="grid">
 	<div class="col">
+		{#if entity}<EntityCard {entity} />{/if}
 		<Panel title="Resultados" meta={words.length ? `${filtered.length} de ${inSection.length}` : `${filtered.length} titulares`}>
 			<NewsList items={filtered.slice(0, 150)} summaries tag={(i) => label[sectionOf.get(i.url) ?? '']} />
 		</Panel>
@@ -104,6 +124,13 @@
 				{/snippet}
 			</Panel>
 		{/if}
+		<Panel title="Tus medios" meta={newsPrefs.muted.length ? `${newsPrefs.muted.length} silenciados` : 'Todos'}>
+			<div class="prefs">
+				<Seg label="Idioma original" options={origins} bind:value={() => newsPrefs.origin, setOrigin} />
+				{#if sources.length}<Seg label="Medios" options={sourceOptions} bind:values={shownSources, setShown} />{/if}
+			</div>
+			{#snippet note()}Se aplica a los titulares de todas las vistas y se guarda en este navegador. Apaga un medio para silenciarlo.{/snippet}
+		</Panel>
 	</div>
 </div>
 
@@ -113,6 +140,12 @@
 		flex-wrap: wrap;
 		gap: var(--sp-8) var(--sp-12);
 		margin-bottom: var(--sp-12);
+	}
+
+	.prefs {
+		display: grid;
+		gap: var(--sp-8);
+		padding: var(--sp-8) var(--pad-x);
 	}
 
 	.more {
