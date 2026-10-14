@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import ShortVolume from '#lib/components/ShortVolume.svelte';
 	import ChipInput from '#lib/components/ui/ChipInput.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
@@ -132,6 +133,8 @@
 				{/snippet}
 			</Panel>
 		{/if}
+		<!-- Volumen en corto (FINRA) de los valores de la lista que cotizan en EE. UU.; si no hay ninguno, no sale. -->
+		<ShortVolume data={data.finra} codes={watchlist.codes} />
 		<Panel title="Editar la lista">
 			{#if watchlist.ready}
 				<div class="lists">

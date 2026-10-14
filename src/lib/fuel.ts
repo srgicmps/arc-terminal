@@ -108,6 +108,30 @@ export function findProvince(raw: string | null, provinces: Pick<FuelProvince, '
 	return hit?.id ?? null;
 }
 
+/**
+ * Zona de FUEL para «Tu sitio»: Menorca si está en la isla; si está en España, su provincia (por admin2,
+ * admin1 o el nombre, y si no encaja entero, por su palabra más larga: «Illes Balears» → «Balears (Illes)»);
+ * fuera de España, null.
+ */
+export function zoneFor(
+	p: { name: string; cc: string; lat: number; lon: number; admin1?: string; admin2?: string },
+	provinces: Pick<FuelProvince, 'id' | 'name'>[]
+): string | null {
+	if (p.lat > 39.78 && p.lat < 40.11 && p.lon > 3.78 && p.lon < 4.35) return 'menorca';
+	if (p.cc !== 'ES') return null;
+	const names = [p.admin2, p.admin1, p.name].filter((n): n is string => !!n);
+	for (const n of names) {
+		const id = findProvince(n, provinces);
+		if (id && id !== 'menorca') return id;
+	}
+	for (const n of names) {
+		const word = [...n.split(/[\s/-]+/)].sort((a, b) => b.length - a.length)[0];
+		const id = word && word.length >= 4 ? findProvince(word, provinces) : null;
+		if (id && id !== 'menorca') return id;
+	}
+	return null;
+}
+
 // ---------- España frente a Europa (Weekly Oil Bulletin de la Comisión Europea) ----------
 
 /** Países que se comparan, en el orden de la tabla; EU es la media ponderada de la UE. */
