@@ -148,7 +148,9 @@
 
 	async function copyPgn() {
 		chess.setHeader('Event', 'Arc Terminal');
-		chess.setHeader('Date', new Date().toISOString().slice(0, 10).replaceAll('-', '.'));
+		// Fecha de hoy en Madrid («2026.10.14», el formato del PGN); en UTC, de 0 a 2 h saldría el día anterior.
+		const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date());
+		chess.setHeader('Date', today.replaceAll('-', '.'));
 		chess.setHeader('Result', resultTag(end));
 		try {
 			await navigator.clipboard.writeText(chess.pgn());
@@ -224,7 +226,7 @@
 				<a href="https://github.com/jhlywa/chess.js" target="_blank" rel="noopener">chess.js</a> (BSD-2).
 			{/snippet}
 		</Panel>
-		<Panel title="Jugadas" meta={end ? resultTag(end) : `${history.length} medias jugadas`}>
+		<Panel title="Jugadas" meta={end ? resultTag(end) : `${history.length} ${history.length === 1 ? 'media jugada' : 'medias jugadas'}`}>
 			{#if pairs.length}
 				<div class="moves" bind:this={moveList}>
 					<Table maxHeight="420px">
