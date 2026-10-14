@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { checkShrink, countItems } from '../lib.ts';
-import { sources } from '../sources/index.ts';
+import { loadSources } from '../registry.ts';
+
+const sources = await loadSources();
 
 const items = (n: number) => Array.from({ length: n }, (_, i) => i);
 
