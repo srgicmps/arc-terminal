@@ -100,3 +100,13 @@ https://api.github.com/repos/hiring-lab/job_postings_tracker/contents ~ "name": 
 https://raw.githubusercontent.com/hiring-lab/job_postings_tracker/master/README.md ~ .{0,200}(licen|terms|attribut|cite|permission).{0,300}
 # Lote 23.6: Pink Sheet del Banco Mundial (enlace al XLSX mensual)
 https://www.worldbank.org/en/research/commodity-markets ~ [^"]*CMO-Historical-Data-Monthly[^"]*
+# Lote 24.2: tenencias de deuda de EE. UU. por país (TIC del Tesoro)
+https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/mfh.txt ~ .{0,600}
+# Lote 24.3: ratio put/call del CBOE (los CSV cambian de sitio)
+https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/totalpc.csv ~ .{0,200}$
+https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/equitypc.csv ~ .{0,200}$
+https://www.cboe.com/us/options/market_statistics/daily/ ~ .{0,120}(put.call|P/C).{0,200}
+# Lote 24.4: volumen en corto de FINRA (Reg SHO)
+https://cdn.finra.org/equity/regsho/daily/CNMSshvol20261013.txt ~ ^Date.{0,120}|\|NVDA\|.{0,80}
+# Lote 24.5: oro de los bancos centrales (FMI, API nueva de 2025)
+https://api.imf.org/external/sdmx/2.1/dataflow ~ .{0,60}(IRFCL|IFS|RESERVE).{0,120}
