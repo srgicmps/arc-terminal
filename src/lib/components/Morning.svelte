@@ -10,7 +10,7 @@
 	import { bmeHolidays, nyseHolidays } from '#lib/markets.ts';
 	import { BANKS, MEETINGS, madridDate } from '#lib/meetings.ts';
 	import { earningsLine, myEarnings } from '#lib/myearnings.ts';
-	import { cheapestWindow, hourly, madridNow } from '#lib/power.ts';
+	import { cheapestWindow, hourLabel, hourly, madridNow } from '#lib/power.ts';
 	import type { Earnings, HolidaysData, PowerData, WeatherData } from '#lib/types.ts';
 	import { ALERT_NAMES, sky, type AlertsData } from '#lib/weather.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
@@ -34,8 +34,6 @@
 	const hour = $derived(madridNow(now).hour);
 	let open = $state(false);
 	const folded = $derived(hour >= 11 && !open);
-
-	const hh = (h: number) => `${String(h).padStart(2, '0')}:00`;
 
 	// Tiempo de hoy en la ciudad elegida.
 	const place = $derived(weather?.places.find((p) => p.name === city) ?? weather?.places[0] ?? null);
@@ -88,7 +86,7 @@
 						sub: sky(day.code).label + (day.rain ? ` · ${nf(day.rain, 1)} mm` : '')
 					}
 				: null,
-			cheap ? { label: 'Luz más barata', value: `${hh(cheap.first.hour)}–${hh(cheap.after.hour)}`, sub: `${nf(cheap.avg, 3)} €/kWh` } : null,
+			cheap ? { label: 'Luz más barata', value: `${hourLabel(cheap.first)}–${hourLabel(cheap.after)}`, sub: `${nf(cheap.avg, 3)} €/kWh` } : null,
 			agenda.length ? { label: 'Hoy', value: agenda[0], sub: agenda.slice(1).join(' · ') } : null,
 			closed ? { label: 'Calendario', value: closed, sub: '' } : null,
 			warning ? { label: 'Aviso', value: warning, sub: '' } : null
