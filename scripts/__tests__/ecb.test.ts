@@ -39,3 +39,11 @@ describe('ecb', () => {
 		await expect(ecb.fetch(undefined)).rejects.toThrow('ninguna serie del BCE');
 	});
 });
+
+describe('ecb.isStale', () => {
+	it('descarga de nuevo una copia sin el balance del Eurosistema', () => {
+		const series = (id: string) => ({ id, label: '', unit: '', points: [], source: 'BCE', url: '' });
+		expect(ecb.isStale!({ series: [series('ecb-dfr')] })).toBe(true);
+		expect(ecb.isStale!({ series: [series('ecb-dfr'), series('ecb-balance')] })).toBe(false);
+	});
+});

@@ -101,6 +101,8 @@ export const fred: Source<SeriesData> = {
 	label: 'Fed, balance de la Fed, curva, PCE, PIB, paro semanal, M2, VIX, petróleo y dólar · FRED (Fed de San Luis)',
 	maxAgeMinutes: 175,
 	requires: ENV,
+	// Una copia sin el balance de la Fed es de antes de añadirlo: se descarga de nuevo.
+	isStale: (previous) => !previous.series?.some((s) => s.id === 'fed-balance'),
 	async fetch() {
 		const key = process.env[ENV] ?? '';
 		const found = await settle('fred', WANTED, (w) => w.code, (w) => series(w, key));
