@@ -3,6 +3,7 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { COMMANDS, TICKERS } from '#lib/commands.ts';
+	import Table from '#lib/components/ui/Table.svelte';
 </script>
 
 <ViewHeader code="HELP" title="Comandos y atajos" sub="Escribe un comando o un valor en la barra de arriba y pulsa Intro" />
@@ -10,23 +11,21 @@
 <div class="grid grid-2">
 	<div class="col">
 		<Panel title="Comandos" meta="{COMMANDS.length} funciones">
-			<div class="scroll">
-				<table class="t">
-					<thead><tr><th>Comando</th><th class="l">Qué abre</th><th class="l">Fuentes</th></tr></thead>
-					<tbody>
-						{#each COMMANDS as c (c.code)}
-							<tr>
-								<td><a class="code" href={resolve(c.route)}>{c.code}</a></td>
-								<td class="l wrap">
-									{c.desc}
-									{#if c.aliases}<small class="mut">También: {c.aliases.join(', ')}</small>{/if}
-								</td>
-								<td class="l wrap mut">{c.sources}</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
+			<Table>
+				<thead><tr><th>Comando</th><th class="l">Qué abre</th><th class="l">Fuentes</th></tr></thead>
+				<tbody>
+					{#each COMMANDS as c (c.code)}
+						<tr>
+							<td><a class="code" href={resolve(c.route)}>{c.code}</a></td>
+							<td class="l wrap">
+								{c.desc}
+								{#if c.aliases}<small class="mut">También: {c.aliases.join(', ')}</small>{/if}
+							</td>
+							<td class="l wrap mut">{c.sources}</td>
+						</tr>
+					{/each}
+				</tbody>
+			</Table>
 		</Panel>
 	</div>
 	<div class="col">
@@ -66,7 +65,7 @@
 <style>
 	.code {
 		color: var(--amber);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 		text-decoration: none;
 	}
 
@@ -84,13 +83,17 @@
 	.tickers {
 		list-style: none;
 		margin: 0;
-		padding: 8px 12px;
+		padding: var(--row-y) var(--pad-x);
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-		gap: 4px 12px;
+		gap: var(--sp-4) var(--sp-12);
 	}
 
+	/* Cada enlace ocupa 24 px de alto (mínimo de WCAG 2.2) y las filas solo se separan 4 px más. */
 	.tickers a {
+		display: block;
+		padding-block: var(--sp-4);
+		margin-block: calc(-1 * var(--sp-2));
 		color: var(--muted);
 		text-decoration: none;
 		font-family: var(--sans);
@@ -100,10 +103,20 @@
 	.tickers b {
 		color: var(--amber);
 		font-family: var(--mono);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 
 	.tickers a:hover {
 		color: var(--fg);
+	}
+
+	/* Pantallas táctiles: 44 px de alto pulsable. */
+	@media (pointer: coarse) {
+		.tickers a {
+			display: flex;
+			align-items: center;
+			min-height: var(--touch);
+			margin-block: 0;
+		}
 	}
 </style>

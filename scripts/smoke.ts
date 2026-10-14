@@ -3,7 +3,8 @@
 // cada ruta de COMMANDS y la ficha de NVDA a 390 y 1280 px con Chromium, y falla si:
 // - hay errores en la consola o excepciones sin capturar;
 // - a 390 px la página es más ancha que la pantalla (scroll horizontal);
-// - la vista no tiene paneles o alguno dice «… todavía» (le faltan sus datos).
+// - la vista no tiene paneles o alguno dice «… todavía» (le faltan sus datos). Una fuente que ha respondido
+//   sin nada que contar (hoy no hay terremotos ni avisos) tiene que decirlo con otro aviso, sin «todavía».
 // Las peticiones a otras webs (TradingView, fuentes…) se contestan vacías: así la prueba no depende de la red.
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
