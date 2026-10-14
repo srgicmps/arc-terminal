@@ -20,7 +20,7 @@
 	import { initRefCountry, REF_COUNTRIES, refCountry, refName, setRefCountry } from '#lib/refcountry.svelte.ts';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
 	import type { BoeWeek } from '#lib/types.ts';
-	import { initWatchwords, watchwords } from '#lib/watchwords.svelte.ts';
+	import { initWatchwords, matches, watchwords } from '#lib/watchwords.svelte.ts';
 	import { place } from '#lib/place.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
 	import type { PageProps } from './$types';
@@ -85,6 +85,8 @@
 	const important = $derived(data.important);
 
 	const boeGeneral = $derived(data.boe?.data.sections.find((s) => s.code === '1'));
+	// Titulares de la portada que nombran alguna palabra vigilada (resaltadas en la lista).
+	const watchedNews = $derived(data.headlines.filter((h) => matches(h.title, watchwords.words).length).length);
 	const boeTotal = $derived((data.boe?.data.sections ?? []).reduce((n, s) => n + s.total, 0));
 
 	// Palabras vigiladas (las de la vista BOE, guardadas en este navegador): cuántas disposiciones del último
@@ -223,7 +225,12 @@
 {/snippet}
 
 {#snippet titulares()}
-	<Panel id="news" title="Titulares" meta="{data.headlines.length} de {data.headlinesTotal}" jump={{ code: 'NEWS', href: resolve('/news') }}>
+	<Panel
+		id="news"
+		title="Titulares"
+		meta={`${data.headlines.length} de ${data.headlinesTotal}${watchedNews ? ` · ${watchedNews} con tus palabras` : ''}`}
+		jump={{ code: 'NEWS', href: resolve('/news') }}
+	>
 		<NewsList items={data.headlines} tag={(i) => tags.get(i.url)} />
 	</Panel>
 {/snippet}
