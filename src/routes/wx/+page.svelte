@@ -19,6 +19,9 @@
 		sky,
 		uvLevel
 	} from '#lib/weather.ts';
+	import Table from '#lib/components/ui/Table.svelte';
+	import Tile from '#lib/components/ui/Tile.svelte';
+	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -72,72 +75,62 @@
 			{#if !coasts.length}
 				<p class="empty">Sin datos del mar todavía.</p>
 			{:else}
-				<div class="scroll">
-					<table class="t">
-						<thead>
-							<tr><th>Costa</th><th class="l">Estado</th><th>Ola</th><th>Fondo</th><th class="wide">Periodo</th><th class="wide">De</th></tr>
-						</thead>
-						<tbody>
-							{#each coasts as c (c.name)}
-								{@const lv = seaLevel(c.now.wave)}
-								<tr>
-									<td>{c.name}<span class="sub">{c.spot}</span></td>
-									<td class="l">{#if lv}<span class="lv lv-{lv.tone}">{lv.label}</span>{:else}—{/if}</td>
-									<td>{m(c.now.wave)}</td>
-									<td class="mut">{m(c.now.swell)}</td>
-									<td class="mut wide">{c.now.wavePeriod === null ? '—' : `${nf(c.now.wavePeriod, 0)} s`}</td>
-									<td class="mut wide">{c.now.waveDir === null ? '—' : compass(c.now.waveDir)}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-				<div class="scroll sep">
-					<table class="t">
-						<thead>
+				<Table>
+					<thead>
+						<tr><th>Costa</th><th class="l">Estado</th><th>Ola</th><th>Fondo</th><th class="wide">Periodo</th><th class="wide">De</th></tr>
+					</thead>
+					<tbody>
+						{#each coasts as c (c.name)}
+							{@const lv = seaLevel(c.now.wave)}
 							<tr>
-								<th>Ola máx.</th>
-								{#each coasts[0].daily as d (d.date)}<th>{weekday(d.date)}</th>{/each}
+								<td>{c.name}<span class="sub">{c.spot}</span></td>
+								<td class="l">{#if lv}<span class="lv lv-{lv.tone}">{lv.label}</span>{:else}—{/if}</td>
+								<td>{m(c.now.wave)}</td>
+								<td class="mut">{m(c.now.swell)}</td>
+								<td class="mut wide">{c.now.wavePeriod === null ? '—' : `${nf(c.now.wavePeriod, 0)} s`}</td>
+								<td class="mut wide">{c.now.waveDir === null ? '—' : compass(c.now.waveDir)}</td>
 							</tr>
-						</thead>
-						<tbody>
-							{#each coasts as c (c.name)}
-								<tr>
-									<td>{c.name}</td>
-									{#each c.daily as d (d.date)}
-										{@const lv = seaLevel(d.waveMax)}
-										<td class="lv-{lv?.tone ?? 'ok'}">{m(d.waveMax)}</td>
-									{/each}
-								</tr>
-							{/each}
-						</tbody>
-					</table>
+						{/each}
+					</tbody>
+				</Table>
+				<div class="sep">
+					<Table>
+										<thead>
+											<tr>
+												<th>Ola máx.</th>
+												{#each coasts[0].daily as d (d.date)}<th>{weekday(d.date)}</th>{/each}
+											</tr>
+										</thead>
+										<tbody>
+											{#each coasts as c (c.name)}
+												<tr>
+													<td>{c.name}</td>
+													{#each c.daily as d (d.date)}
+														{@const lv = seaLevel(d.waveMax)}
+														<td class="lv-{lv?.tone ?? 'ok'}">{m(d.waveMax)}</td>
+													{/each}
+												</tr>
+											{/each}
+										</tbody>
+					</Table>
 				</div>
 			{/if}
 		</Panel>
 		{#if mao?.sun}
 			{@const sun = mao.sun}
 			<Panel title="Sol y luna · Maó" meta={`${luna.name} · ${nf(luna.illumination * 100, 0)} %`}>
-				<div class="tile">
+				<div class="arc">
 					<SunArc sunrise={sun.sunrise} sunset={sun.sunset} now={clock.now} />
 				</div>
-				<div class="tiles">
-					<div class="tile">
-						<span class="lbl">Sol</span>
-						<b>{hm(sun.sunrise)} – {hm(sun.sunset)}</b>
-						<span class="sub">Salida y puesta</span>
-					</div>
-					<div class="tile">
-						<span class="lbl">Duración del día</span>
-						<b>{hoursMinutes(sun.daylight)}</b>
-						<span class="sub">{sun.delta === null ? '' : `${signedMinSec(sun.delta)} que ayer`}</span>
-					</div>
-					<div class="tile">
-						<span class="lbl">Luna</span>
-						<b>{nf(luna.illumination * 100, 0)} %</b>
-						<span class="sub">{luna.name} · iluminada</span>
-					</div>
-				</div>
+				<Tiles>
+					<Tile label="Sol" value="{hm(sun.sunrise)} – {hm(sun.sunset)}" sub="Salida y puesta" />
+					<Tile
+						label="Duración del día"
+						value={hoursMinutes(sun.daylight)}
+						sub={sun.delta === null ? '' : `${signedMinSec(sun.delta)} que ayer`}
+					/>
+					<Tile label="Luna" value="{nf(luna.illumination * 100, 0)} %" sub="{luna.name} · iluminada" />
+				</Tiles>
 			</Panel>
 		{/if}
 	</div>
@@ -147,78 +140,66 @@
 			{#if !air}
 				<p class="empty">Sin datos de calidad del aire todavía.</p>
 			{:else}
-				<div class="tiles">
-					<div class="tile">
-						<span class="lbl">Índice</span>
-						<b>{nf(air.now.aqi, 0)}</b>
-						{#if aqiNow}<span class="sub"><span class="lv lv-{aqiNow.tone}">{aqiNow.label}</span></span>{/if}
-					</div>
-					<div class="tile">
-						<span class="lbl">PM2,5 · PM10</span>
-						<b>{nf(air.now.pm25, 0)} · {nf(air.now.pm10, 0)}</b>
-						<span class="sub">Partículas, µg/m³</span>
-					</div>
-					<div class="tile">
-						<span class="lbl">O₃ · NO₂</span>
-						<b>{nf(air.now.o3, 0)} · {nf(air.now.no2, 0)}</b>
-						<span class="sub">Gases, µg/m³</span>
-					</div>
-				</div>
-				<div class="scroll">
-					<table class="t">
-						<thead>
-							<tr><th>Hora</th>{#each air.hours as h (h.time)}<th>{hour(h.time)}</th>{/each}</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<td>Aire</td>
-								{#each air.hours as h (h.time)}<td class="lv-{aqiLevel(h.aqi)?.tone ?? 'ok'}">{nf(h.aqi, 0)}</td>{/each}
-							</tr>
-							<tr>
-								<td>UV</td>
-								{#each air.hours as h (h.time)}<td class="lv-{uvLevel(h.uv)?.tone ?? 'ok'}">{nf(h.uv, 0)}</td>{/each}
-							</tr>
-						</tbody>
-					</table>
-				</div>
+				<Tiles>
+					{#if aqiNow}
+						<Tile label="Índice" value={nf(air.now.aqi, 0)}><span class="lv lv-{aqiNow.tone}">{aqiNow.label}</span></Tile>
+					{:else}
+						<Tile label="Índice" value={nf(air.now.aqi, 0)} />
+					{/if}
+					<Tile label="PM2,5 · PM10" value="{nf(air.now.pm25, 0)} · {nf(air.now.pm10, 0)}" sub="Partículas, µg/m³" />
+					<Tile label="O₃ · NO₂" value="{nf(air.now.o3, 0)} · {nf(air.now.no2, 0)}" sub="Gases, µg/m³" />
+				</Tiles>
+				<Table>
+					<thead>
+						<tr><th>Hora</th>{#each air.hours as h (h.time)}<th>{hour(h.time)}</th>{/each}</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Aire</td>
+							{#each air.hours as h (h.time)}<td class="lv-{aqiLevel(h.aqi)?.tone ?? 'ok'}">{nf(h.aqi, 0)}</td>{/each}
+						</tr>
+						<tr>
+							<td>UV</td>
+							{#each air.hours as h (h.time)}<td class="lv-{uvLevel(h.uv)?.tone ?? 'ok'}">{nf(h.uv, 0)}</td>{/each}
+						</tr>
+					</tbody>
+				</Table>
 			{/if}
 		</Panel>
 
 		{#if air}
 			{@const uvNow = uvLevel(air.now.uv)}
 			<Panel title="UV y polen" meta={uvNow ? `UV ahora ${nf(air.now.uv, 0)} · ${uvNow.label}` : undefined}>
-				<div class="scroll">
-					<table class="t">
-						<thead>
+				<Table>
+					<thead>
+						<tr>
+							<th>Máx.</th>
+							{#each air.days as d (d.date)}<th>{weekday(d.date)}</th>{/each}
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Aire</td>
+							{#each air.days as d (d.date)}<td class="lv-{aqiLevel(d.aqi)?.tone ?? 'ok'}">{nf(d.aqi, 0)}</td>{/each}
+						</tr>
+						<tr>
+							<td>UV</td>
+							{#each air.days as d (d.date)}
+								{@const lv = uvLevel(d.uv)}
+								<td class="lv-{lv?.tone ?? 'ok'}">{nf(d.uv, 0)}<span class="sub">{lv?.label ?? ''}</span></td>
+							{/each}
+						</tr>
+						{#each pollens as k (k)}
 							<tr>
-								<th>Máx.</th>
-								{#each air.days as d (d.date)}<th>{weekday(d.date)}</th>{/each}
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<td>Aire</td>
-								{#each air.days as d (d.date)}<td class="lv-{aqiLevel(d.aqi)?.tone ?? 'ok'}">{nf(d.aqi, 0)}</td>{/each}
-							</tr>
-							<tr>
-								<td>UV</td>
+								<td>{POLLEN_NAMES[k]}</td>
 								{#each air.days as d (d.date)}
-									{@const lv = uvLevel(d.uv)}
-									<td class="lv-{lv?.tone ?? 'ok'}">{nf(d.uv, 0)}<span class="sub">{lv?.label ?? ''}</span></td>
+									{@const lv = pollenLevel(k, d.pollen[k])}
+									<td class="lv-{lv?.tone ?? 'ok'}">{lv?.label ?? '—'}</td>
 								{/each}
 							</tr>
-							{#each pollens as k (k)}
-								<tr>
-									<td>{POLLEN_NAMES[k]}</td>
-									{#each air.days as d (d.date)}
-										{@const lv = pollenLevel(k, d.pollen[k])}
-										<td class="lv-{lv?.tone ?? 'ok'}">{lv?.label ?? '—'}</td>
-									{/each}
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+						{/each}
+					</tbody>
+				</Table>
 				{#if !pollens.length}<p class="empty">Polen: nulo o sin datos estos días.</p>{/if}
 				{#snippet note()}
 					Partículas y gases en µg/m³. Polen en granos/m³, con umbrales orientativos.
@@ -244,24 +225,22 @@
 						{#if p.sea !== null}<li>Agua del mar <span>{nf(p.sea, 1)}°</span></li>{/if}
 					</ul>
 				</div>
-				<div class="scroll">
-					<table class="t">
-						<thead><tr><th>Día</th><th class="l">Cielo</th><th>Máx.</th><th>Mín.</th><th>Lluvia</th><th>Viento</th></tr></thead>
-						<tbody>
-							{#each p.daily as d (d.date)}
-								{@const s = sky(d.code)}
-								<tr>
-									<td>{weekday(d.date)}</td>
-									<td class="l"><span class="i" aria-hidden="true">{s.icon}</span> {s.label}</td>
-									<td>{nf(d.max, 0)}°</td>
-									<td class="mut">{nf(d.min, 0)}°</td>
-									<td class:rain={d.rain >= 50}>{nf(d.rain, 0)} %</td>
-									<td class="mut">{nf(d.wind, 0)}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+				<Table>
+					<thead><tr><th>Día</th><th class="l">Cielo</th><th>Máx.</th><th>Mín.</th><th>Lluvia</th><th>Viento</th></tr></thead>
+					<tbody>
+						{#each p.daily as d (d.date)}
+							{@const s = sky(d.code)}
+							<tr>
+								<td>{weekday(d.date)}</td>
+								<td class="l"><span class="i" aria-hidden="true">{s.icon}</span> {s.label}</td>
+								<td>{nf(d.max, 0)}°</td>
+								<td class="mut">{nf(d.min, 0)}°</td>
+								<td class:rain={d.rain >= 50}>{nf(d.rain, 0)} %</td>
+								<td class="mut">{nf(d.wind, 0)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
 			</Panel>
 		</div>
 	{/each}
@@ -315,11 +294,21 @@
 		color: var(--amber);
 	}
 
-	/* En el móvil, la tabla del mar se queda con lo esencial (como .t .sub en app.css). */
+	/* En el móvil, la tabla del mar se queda con lo esencial (como .t .sub en ui/Table.svelte). */
 	@container (max-width: 390px) {
 		.wide {
 			display: none;
 		}
+	}
+
+	/* Hueco del arco del sol: el mismo relleno que un recuadro de cifra. */
+	.arc {
+		background: var(--panel);
+		padding: var(--sp-12);
+		display: flex;
+		flex-direction: column;
+		gap: var(--sp-3);
+		min-width: 0;
 	}
 
 	.sep {

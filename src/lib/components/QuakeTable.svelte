@@ -2,33 +2,32 @@
 <script lang="ts">
 	import { clock } from '#lib/clock.svelte.ts';
 	import { nf, when } from '#lib/format.ts';
+	import Table from './ui/Table.svelte';
 	import type { Quake } from '#lib/types.ts';
 
 	let { quakes }: { quakes: Quake[] } = $props();
 </script>
 
 {#if quakes.length}
-	<div class="scroll">
-		<table class="t">
-			<thead>
-				<tr><th>Mag.</th><th class="l">Lugar</th><th>Prof.</th><th>Cuándo</th></tr>
-			</thead>
-			<tbody>
-				{#each quakes as q (q.id)}
-					<tr>
-						<td class:strong={q.mag >= 6}>{nf(q.mag, 1)}</td>
-						<td class="l">
-							<a class="name" href={q.url} target="_blank" rel="noopener">{q.place}</a>
-							{#if q.tsunami}<span class="flag">tsunami</span>{/if}
-							{#if q.alert && q.alert !== 'green'}<span class="flag {q.alert}">alerta {q.alert}</span>{/if}
-						</td>
-						<td class="mut">{nf(q.depth, 0)} km</td>
-						<td class="mut">{when(q.time, clock.now)}</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
+	<Table>
+		<thead>
+			<tr><th>Mag.</th><th class="l">Lugar</th><th>Prof.</th><th>Cuándo</th></tr>
+		</thead>
+		<tbody>
+			{#each quakes as q (q.id)}
+				<tr>
+					<td class:strong={q.mag >= 6}>{nf(q.mag, 1)}</td>
+					<td class="l">
+						<a class="name" href={q.url} target="_blank" rel="noopener">{q.place}</a>
+						{#if q.tsunami}<span class="flag">tsunami</span>{/if}
+						{#if q.alert && q.alert !== 'green'}<span class="flag {q.alert}">alerta {q.alert}</span>{/if}
+					</td>
+					<td class="mut">{nf(q.depth, 0)} km</td>
+					<td class="mut">{when(q.time, clock.now)}</td>
+				</tr>
+			{/each}
+		</tbody>
+	</Table>
 {:else}
 	<p class="empty">Sin datos todavía.</p>
 {/if}

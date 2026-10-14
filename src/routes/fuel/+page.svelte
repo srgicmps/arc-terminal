@@ -6,7 +6,15 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { nf, signed, trend } from '#lib/format.ts';
+	import Bar from '#lib/components/ui/Bar.svelte';
+	import Change from '#lib/components/ui/Change.svelte';
+	import Note from '#lib/components/ui/Note.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
+	import Select from '#lib/components/ui/Select.svelte';
+	import Table from '#lib/components/ui/Table.svelte';
+	import Tile from '#lib/components/ui/Tile.svelte';
+	import Tiles from '#lib/components/ui/Tiles.svelte';
+	import { nf } from '#lib/format.ts';
 	import { distanceKm, findProvince, FUELS, type FuelKey, type FuelStation } from '#lib/fuel.ts';
 	import type { PageProps } from './$types';
 
@@ -159,69 +167,51 @@
 <ViewHeader code="FUEL" title="Gasolineras" sub="Las más baratas de Menorca o de cualquier provincia · API del Ministerio" />
 
 <div class="grid">
-	<section class="panel">
-		<header class="ph">
-			<h2>{fuelLabel} · {zoneName}</h2>
-			<div class="ph-r">
-				<span>{list.length} {list.length === 1 ? 'estación' : 'estaciones'}</span>
-			</div>
-		</header>
+	<Panel title="{fuelLabel} · {zoneName}" meta="{list.length} {list.length === 1 ? 'estación' : 'estaciones'}">
 
 		{#if !data.fuel && !data.spain}
 			<p class="empty">Todavía no hay datos. En local, ejecuta <code>pnpm data</code> y recarga.</p>
 		{:else}
 			<div class="controls">
-				<label class="sel">
-					Zona
-					<select value={zone} onchange={(e) => choose(e.currentTarget.value)}>
-						<option value={MENORCA}>Menorca</option>
-						{#each provinces as p (p.id)}
-							<option value={p.id}>{p.name}</option>
-						{/each}
-					</select>
-				</label>
+				<Select label="Zona" value={zone} onchange={choose}>
+					<option value={MENORCA}>Menorca</option>
+					{#each provinces as p (p.id)}
+						<option value={p.id}>{p.name}</option>
+					{/each}
+				</Select>
 				<button class="near" type="button" onclick={locate} disabled={locating}>
 					{locating ? 'Buscando…' : here ? '◎ Actualizar ubicación' : '◎ Cerca de mí'}
 				</button>
-				<div class="seg" role="group" aria-label="Combustible">
-					{#each FUELS as f (f.key)}
-						<button type="button" aria-pressed={fuel === f.key} onclick={() => (fuel = f.key)}>{f.label}</button>
+				<Seg label="Combustible" options={FUELS.map((f) => ({ value: f.key, label: f.label }))} bind:value={fuel} />
+				<!-- bind:value es el v-model de Svelte -->
+				<Select label="Municipio" bind:value={town}>
+					<option value="ALL">Todos</option>
+					{#each towns as t (t)}
+						<option value={t}>{t}</option>
 					{/each}
-				</div>
-				<label class="sel">
-					Municipio
-					<!-- bind:value es el v-model de Svelte -->
-					<select bind:value={town}>
-						<option value="ALL">Todos</option>
-						{#each towns as t (t)}
-							<option value={t}>{t}</option>
-						{/each}
-					</select>
-				</label>
+				</Select>
 			</div>
 
 			{#if message}<p class="empty">{message}</p>{/if}
 
 			{#if best}
-				<div class="tiles">
-					<div class="tile">
-						<span class="lbl">Más barata{town === 'ALL' ? '' : ` en ${town}`}</span>
-						<b>{nf(best.price, 3)} €/L</b>
-						<span class="sub">{best.town} · {best.name}</span>
-					</div>
-					<div class="tile">
-						<span class="lbl">Media de {zoneName}</span>
-						<b>{nf(avg, 3)} €/L</b>
-						<span class="sub">
-							{priced.length} estaciones{spainAvg !== null ? ` · España ${nf(spainAvg, 3)}` : ''}
-						</span>
-					</div>
-					<div class="tile">
-						<span class="lbl">{save >= 0 ? 'Ahorras' : 'Pagas de más'} en un depósito de 50 L</span>
-						<b>{nf(Math.abs(save), 2)} €</b>
-						<span class="sub">en la más barata, frente a la media</span>
-					</div>
-				</div>
+				<Tiles>
+					<Tile
+						label="Más barata{town === 'ALL' ? '' : ` en ${town}`}"
+						value="{nf(best.price, 3)} €/L"
+						sub="{best.town} · {best.name}"
+					/>
+					<Tile
+						label="Media de {zoneName}"
+						value="{nf(avg, 3)} €/L"
+						sub="{priced.length} estaciones{spainAvg !== null ? ` · España ${nf(spainAvg, 3)}` : ''}"
+					/>
+					<Tile
+						label="{save >= 0 ? 'Ahorras' : 'Pagas de más'} en un depósito de 50 L"
+						value="{nf(Math.abs(save), 2)} €"
+						sub="en la más barata, frente a la media"
+					/>
+				</Tiles>
 
 				{#if nearest.length}
 					<div class="nearest">
@@ -234,42 +224,39 @@
 					</div>
 				{/if}
 
-				<div class="scroll">
-					<table class="t">
-						<thead>
-							<tr>
-								<th>#</th>
-								<th class="l">Estación</th>
-								<th class="l">Municipio</th>
-								<th>€/L</th>
-								<th class="sp"><span class="sr">Comparativa</span></th>
-								<th>Frente a la media</th>
-								{#if here}<th>Distancia</th>{/if}
-								<th>Horario</th>
+				<Table>
+					<thead>
+						<tr>
+							<th>#</th>
+							<th class="l">Estación</th>
+							<th class="l">Municipio</th>
+							<th>€/L</th>
+							<th class="sp"><span class="sr">Comparativa</span></th>
+							<th>Frente a la media</th>
+							{#if here}<th>Distancia</th>{/if}
+							<th>Horario</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each showAll ? list : list.slice(0, SHOWN) as s, i (s.id)}
+							{@const diff = s.price - avg}
+							<tr class:best={i === 0}>
+								<td class="mut">{i + 1}</td>
+								<td class="l">
+									<a class="name" href={mapUrl(s)} target="_blank" rel="noopener">{s.name}</a>
+									<span class="sub">{s.address}</span>
+								</td>
+								<td class="l">{s.town}</td>
+								<td>{nf(s.price, 3)}</td>
+								<td class="sp"><Bar pct={barWidth(s.price)} tone={i === 0 ? 'up' : 'faint'} /></td>
+								<!-- Más cara que la media es malo: el color va al revés que el signo. -->
+								<td><Change value={diff} digits={3} invert /></td>
+								{#if here}<td class="mut">{s.km === null ? '—' : `${nf(s.km, 1)} km`}</td>{/if}
+								<td class="mut">{s.schedule}</td>
 							</tr>
-						</thead>
-						<tbody>
-							{#each showAll ? list : list.slice(0, SHOWN) as s, i (s.id)}
-								{@const diff = s.price - avg}
-								<tr class:best={i === 0}>
-									<td class="mut">{i + 1}</td>
-									<td class="l">
-										<a class="name" href={mapUrl(s)} target="_blank" rel="noopener">{s.name}</a>
-										<span class="sub">{s.address}</span>
-									</td>
-									<td class="l">{s.town}</td>
-									<td>{nf(s.price, 3)}</td>
-									<td class="sp">
-										<span class="bar" aria-hidden="true"><i style:width="{barWidth(s.price).toFixed(0)}%"></i></span>
-									</td>
-									<td class={trend(-diff)}>{signed(diff, 3)}</td>
-									{#if here}<td class="mut">{s.km === null ? '—' : `${nf(s.km, 1)} km`}</td>{/if}
-									<td class="mut">{s.schedule}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+						{/each}
+					</tbody>
+				</Table>
 				{#if list.length > SHOWN && !showAll}
 					<button class="more" type="button" onclick={() => (showAll = true)}>Ver las {list.length}</button>
 				{/if}
@@ -277,26 +264,26 @@
 				<p class="empty">Ninguna estación de {town === 'ALL' ? zoneName : town} vende {fuelLabel.toLowerCase()}.</p>
 			{/if}
 
-			<p class="pnote">
+			<Note>
 				Fuente: <a href="https://geoportalgasolineras.es/" target="_blank" rel="noopener"
 					>Ministerio para la Transición Ecológica y el Reto Demográfico</a
 				>. Datos del {sourceDate}. Toca una estación para abrirla en el mapa.
-			</p>
+			</Note>
 		{/if}
-	</section>
+	</Panel>
 </div>
 
 <div class="grid grid-2e">
 	<div class="col">
 		<Panel title="{zoneName} frente a España" meta="{fuelLabel} · precio medio diario · €/L">
 			{#if gapCents !== null}
-				<div class="tiles">
-					<div class="tile">
-						<span class="lbl">{zoneName}, hoy</span>
-						<b>{nf(gapCents >= 0 ? gapCents : -gapCents, 1)} cts/L</b>
-						<span class="sub">{gapCents >= 0 ? 'más cara' : 'más barata'} que la media de España</span>
-					</div>
-				</div>
+				<Tiles>
+					<Tile
+						label="{zoneName}, hoy"
+						value="{nf(gapCents >= 0 ? gapCents : -gapCents, 1)} cts/L"
+						sub="{gapCents >= 0 ? 'más cara' : 'más barata'} que la media de España"
+					/>
+				</Tiles>
 			{/if}
 			<LineChart lines={historyLines} decimals={3} />
 			{#snippet note()}
@@ -308,22 +295,20 @@
 	<div class="col">
 		<Panel title="Precio medio por provincia" meta="{fuelLabel} · de más barata a más cara">
 			{#if ranking.length}
-				<div class="scroll rank">
-					<table class="t">
-						<thead><tr><th>#</th><th class="l">Provincia</th><th>Media</th><th>Mínimo</th><th>Estaciones</th></tr></thead>
-						<tbody>
-							{#each ranking as p, i (p.id)}
-								<tr class:current={p.id === zone}>
-									<td class="mut">{i + 1}</td>
-									<td class="l"><button type="button" class="link" onclick={() => choose(p.id)}>{p.name}</button></td>
-									<td>{nf(p.avg[fuel], 3)}</td>
-									<td class="up">{nf(p.min[fuel], 3)}</td>
-									<td class="mut">{p.count}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+				<Table maxHeight="420px">
+					<thead><tr><th>#</th><th class="l">Provincia</th><th>Media</th><th>Mínimo</th><th>Estaciones</th></tr></thead>
+					<tbody>
+						{#each ranking as p, i (p.id)}
+							<tr class:current={p.id === zone}>
+								<td class="mut">{i + 1}</td>
+								<td class="l"><button type="button" class="link" onclick={() => choose(p.id)}>{p.name}</button></td>
+								<td>{nf(p.avg[fuel], 3)}</td>
+								<td class="up">{nf(p.min[fuel], 3)}</td>
+								<td class="mut">{p.count}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
 			{:else}
 				<p class="empty">Sin datos todavía.</p>
 			{/if}
@@ -340,44 +325,6 @@
 		gap: var(--sp-10) var(--sp-18);
 		padding: var(--sp-10) var(--pad-x);
 		border-bottom: var(--border);
-	}
-
-	.seg {
-		display: inline-flex;
-		flex-wrap: wrap;
-		border: var(--border);
-	}
-
-	.seg button {
-		background: none;
-		border: 0;
-		padding: var(--sp-5) var(--pad-x);
-		cursor: pointer;
-		color: var(--muted);
-		font-size: var(--fs-s);
-	}
-
-	.seg button[aria-pressed='true'] {
-		background: var(--amber);
-		color: var(--on-amber);
-		font-weight: var(--fw-medium);
-	}
-
-	.sel {
-		display: inline-flex;
-		align-items: center;
-		gap: var(--sp-8);
-		color: var(--muted);
-		font-size: var(--fs-s);
-	}
-
-	.sel select {
-		background: var(--raise);
-		border: var(--border);
-		color: var(--fg);
-		padding: var(--sp-4) var(--sp-8);
-		font-size: var(--fs-s);
-		max-width: 180px;
 	}
 
 	.near {
@@ -435,24 +382,6 @@
 		color: var(--amber);
 	}
 
-	.bar {
-		display: block;
-		position: relative;
-		height: var(--bar-h);
-		min-width: 80px;
-		background: var(--raise);
-	}
-
-	.bar i {
-		position: absolute;
-		inset: 0 auto 0 0;
-		background: var(--faint);
-	}
-
-	tr.best .bar i {
-		background: var(--up);
-	}
-
 	.more {
 		display: block;
 		width: 100%;
@@ -463,11 +392,6 @@
 		color: var(--amber);
 		font-size: var(--fs-s);
 		cursor: pointer;
-	}
-
-	.rank {
-		max-height: 420px;
-		overflow-y: auto;
 	}
 
 	.link {

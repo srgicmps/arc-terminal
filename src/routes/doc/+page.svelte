@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import Table from '#lib/components/ui/Table.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -146,20 +147,18 @@
 	<div class="col">
 		<Panel title="3 · Fuentes" meta="{data.sources.length} fuentes">
 			{#if data.sources.length}
-				<div class="scroll">
-					<table class="t">
-						<thead><tr><th>Fuente</th><th class="l">Qué trae</th><th>Reutiliza</th></tr></thead>
-						<tbody>
-							{#each data.sources as src (src.name)}
-								<tr>
-									<td class="mut">{src.name}</td>
-									<td class="l wrap">{src.label}{#if src.requires}<small>Clave {src.requires}</small>{/if}</td>
-									<td class="mut">{age(src.maxAgeMinutes)}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+				<Table>
+					<thead><tr><th>Fuente</th><th class="l">Qué trae</th><th>Reutiliza</th></tr></thead>
+					<tbody>
+						{#each data.sources as src (src.name)}
+							<tr>
+								<td class="mut">{src.name}</td>
+								<td class="l wrap">{src.label}{#if src.requires}<small>Clave {src.requires}</small>{/if}</td>
+								<td class="mut">{age(src.maxAgeMinutes)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
 			{:else}
 				<p class="empty">Sin datos todavía: se generan con <code>pnpm data</code>.</p>
 			{/if}
@@ -172,16 +171,14 @@
 		</Panel>
 
 		<Panel title="4 · Svelte 5 frente a Vue 3">
-			<div class="scroll">
-				<table class="t">
-					<thead><tr><th>Svelte 5</th><th class="l">Vue 3</th></tr></thead>
-					<tbody>
-						{#each VS as [svelte, vue] (svelte)}
-							<tr><td><code>{svelte}</code></td><td class="l wrap">{vue}</td></tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
+			<Table>
+				<thead><tr><th>Svelte 5</th><th class="l">Vue 3</th></tr></thead>
+				<tbody>
+					{#each VS as [svelte, vue] (svelte)}
+						<tr><td><code>{svelte}</code></td><td class="l wrap">{vue}</td></tr>
+					{/each}
+				</tbody>
+			</Table>
 			<ul class="mini">
 				{#each examples as ex (ex.title)}
 					<li>

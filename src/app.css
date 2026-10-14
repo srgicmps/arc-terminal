@@ -1,4 +1,8 @@
-/* Estilos globales de Arc Terminal: reset, tipografía base y piezas compartidas. Los tokens están en styles/tokens.css. */
+/*
+ * Estilos globales de Arc Terminal: reset, tipografía base y las pocas piezas que comparten todas las
+ * vistas (rejillas, listas .mini, colores de subida y bajada). Los tokens están en styles/tokens.css;
+ * lo demás vive en su componente (src/lib/components y src/lib/components/ui).
+ */
 @import './styles/tokens.css';
 
 *,
@@ -47,88 +51,6 @@ select {
 	white-space: nowrap;
 }
 
-/* Vistas y paneles: piezas que repetirán todas las vistas (ECO, GEO, WS…). */
-.vh {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-end;
-	justify-content: space-between;
-	gap: var(--sp-8) var(--sp-24);
-	padding-block: var(--sp-2) var(--sp-12);
-}
-.vh h1 {
-	margin: 0;
-	display: flex;
-	align-items: baseline;
-	gap: var(--sp-12);
-	font-family: var(--sans);
-	font-weight: var(--fw-medium);
-	font-size: var(--fs-xl);
-	text-wrap: balance;
-}
-.vh h1 .code {
-	font-family: var(--mono);
-	font-size: var(--fs-l);
-	font-weight: var(--fw-bold);
-	letter-spacing: var(--track-code);
-	color: var(--amber);
-}
-.vh p {
-	margin: var(--sp-4) 0 0;
-	color: var(--muted);
-	font-size: var(--fs-xs);
-}
-.grid {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
-	gap: var(--hair);
-	background: var(--line);
-	border: var(--border);
-}
-.panel {
-	background: var(--panel);
-	min-width: 0;
-	container-type: inline-size;
-}
-.ph {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--sp-6) var(--sp-12);
-	padding: var(--row-y) var(--pad-x);
-	border-bottom: var(--border);
-}
-.ph h2 {
-	margin: 0;
-	font-size: var(--fs-xs);
-	font-weight: var(--fw-bold);
-	letter-spacing: var(--track-label);
-	text-transform: uppercase;
-	color: var(--amber);
-}
-.ph-r {
-	display: flex;
-	align-items: center;
-	gap: var(--sp-12);
-	font-size: var(--fs-xs);
-	color: var(--faint);
-}
-.scroll {
-	position: relative;
-	overflow-x: auto;
-}
-.pnote {
-	margin: 0;
-	padding: var(--sp-8) var(--pad-x) var(--sp-10);
-	border-top: var(--border);
-	color: var(--faint);
-	font-family: var(--sans);
-	font-size: var(--fs-s);
-}
-.pnote a {
-	color: var(--muted);
-}
 .empty {
 	margin: 0;
 	padding: var(--sp-14) var(--pad-x);
@@ -146,51 +68,6 @@ select {
 	color: var(--muted);
 }
 
-/* Tablas */
-.t {
-	width: 100%;
-	border-collapse: collapse;
-	font-size: var(--fs-s);
-}
-.t th,
-.t td {
-	padding: var(--sp-5) var(--sp-10);
-	text-align: right;
-	white-space: nowrap;
-	border-bottom: var(--border);
-}
-.t tbody tr:last-child td {
-	border-bottom: 0;
-}
-.t th {
-	padding-block: var(--sp-6);
-	font-weight: var(--fw-regular);
-	font-size: var(--fs-xs);
-	letter-spacing: var(--track-caps);
-	text-transform: uppercase;
-	color: var(--faint);
-}
-.t th:first-child,
-.t td:first-child,
-.t .l {
-	text-align: left;
-}
-.t .name {
-	font-family: var(--sans);
-	font-size: var(--fs-m);
-}
-.t .sub {
-	margin-left: var(--sp-6);
-	color: var(--muted);
-	font-family: var(--sans);
-	font-size: var(--fs-s);
-}
-@container (max-width: 390px) {
-	.t .sub {
-		display: none;
-	}
-}
-
 kbd {
 	font-family: var(--mono);
 	font-size: var(--fs-xs);
@@ -201,7 +78,15 @@ kbd {
 	padding: 0 var(--sp-5);
 }
 
-/* Rejillas de varias columnas: en el móvil, todas en una. */
+/* Rejillas de paneles separados por líneas de 1 px; con .grid-2, .grid-2e o .grid-3, varias columnas
+   (en el móvil, todas en una). Cada columna es un .col con uno o más paneles. */
+.grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--hair);
+	background: var(--line);
+	border: var(--border);
+}
 .col {
 	background: var(--panel);
 	min-width: 0;
@@ -270,50 +155,6 @@ kbd {
 	white-space: nowrap;
 }
 
-/* Recuadros con una cifra grande (FUEL, LUZ…) */
-.tiles {
-	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: var(--hair);
-	background: var(--line);
-	border-bottom: var(--border);
-}
-.tile {
-	background: var(--panel);
-	padding: var(--sp-12);
-	display: flex;
-	flex-direction: column;
-	gap: var(--sp-3);
-	min-width: 0;
-}
-.tile .lbl {
-	color: var(--muted);
-	font-size: var(--fs-xs);
-	letter-spacing: var(--track-code);
-	text-transform: uppercase;
-}
-.tile b {
-	font-size: var(--fs-xl);
-	font-weight: var(--fw-medium);
-}
-.tile .sub {
-	color: var(--muted);
-	font-family: var(--sans);
-	font-size: var(--fs-s);
-}
-@media (max-width: 720px) {
-	.tiles {
-		grid-template-columns: minmax(0, 1fr);
-	}
-}
-
-/* Lista de tickers de HELP: cada enlace ocupa 24 px de alto (mínimo de WCAG 2.2) y las filas solo se separan 4 px más. */
-.tickers a {
-	display: block;
-	padding-block: var(--sp-4);
-	margin-block: calc(-1 * var(--sp-2));
-}
-
 /* Pantallas táctiles: zonas pulsables de al menos 44 px sin engordar el diseño más de lo necesario. */
 @media (pointer: coarse) {
 	button,
@@ -334,24 +175,6 @@ kbd {
 		inset: 0;
 	}
 
-	.tickers a {
-		display: flex;
-		align-items: center;
-		min-height: var(--touch);
-		margin-block: 0;
-	}
-
-	/* Tablas: la celda que empieza por un enlace o botón (y no tiene otro) crece hasta 44 px
-	   y el ::after invisible del enlace la cubre entera. */
-	.t td:has(> :is(a, button):first-child):not(:has(:is(a, button) ~ :is(a, button))) {
-		position: relative;
-		height: var(--touch);
-	}
-	.t td:not(:has(:is(a, button) ~ :is(a, button))) > :is(a, button):first-child::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-	}
 }
 
 /* Quien pide menos movimiento en su sistema no ve animaciones ni transiciones. */

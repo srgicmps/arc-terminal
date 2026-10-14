@@ -1,6 +1,7 @@
 <!-- Mercados de predicción: pregunta y probabilidad de cada opción, con una barra fina. -->
 <script lang="ts">
 	import { compact, nf } from '#lib/format.ts';
+	import Bar from './ui/Bar.svelte';
 	import type { Prediction } from '#lib/types.ts';
 
 	let { items }: { items: Prediction[] } = $props();
@@ -14,7 +15,7 @@
 				{#each e.outcomes as o (o.label)}
 					<div class="o">
 						<span class="lab">{o.label}</span>
-						<span class="bar" aria-hidden="true"><i style:width="{(o.p * 100).toFixed(0)}%"></i></span>
+						<Bar pct={o.p * 100} tone="amber" thin />
 						<b>{nf(o.p * 100, 0)} %</b>
 					</div>
 				{/each}
@@ -73,18 +74,6 @@
 		white-space: nowrap;
 	}
 
-	.bar {
-		display: block;
-		height: var(--bar-h-thin);
-		background: var(--raise);
-	}
-
-	.bar i {
-		display: block;
-		height: 100%;
-		background: var(--amber);
-		opacity: 0.75;
-	}
 
 	b {
 		font-weight: var(--fw-medium);

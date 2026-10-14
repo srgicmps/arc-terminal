@@ -1,6 +1,8 @@
 <!-- Curva de tipos del Tesoro de EE. UU.: hoy (ámbar) frente a hace un mes (gris), y tabla con la variación. -->
 <script lang="ts">
-	import { nf, period, signed, trend } from '#lib/format.ts';
+	import { nf, period } from '#lib/format.ts';
+	import Change from './ui/Change.svelte';
+	import Table from './ui/Table.svelte';
 	import type { YieldCurveData } from '#lib/types.ts';
 
 	let { curve }: { curve: YieldCurveData } = $props();
@@ -47,33 +49,29 @@
 			{#if v !== null}<circle cx={x(i)} cy={y(v)} r="2.5" />{/if}
 		{/each}
 	</svg>
-	<div class="scroll">
-		<table class="t">
-			<thead>
+	<Table>
+		<thead>
+			<tr>
+				<th>Plazo</th>
+				<th>{period(today.date)}</th>
+				{#if before}<th>{period(before.date)}</th><th>Var. (pb)</th>{/if}
+			</tr>
+		</thead>
+		<tbody>
+			{#each curve.tenors as tenor, i (tenor)}
+				{@const a = today.values[i]}
+				{@const b = before?.values[i] ?? null}
 				<tr>
-					<th>Plazo</th>
-					<th>{period(today.date)}</th>
-					{#if before}<th>{period(before.date)}</th><th>Var. (pb)</th>{/if}
+					<td>{tenor}</td>
+					<td>{a === null ? '—' : `${nf(a, 2)} %`}</td>
+					{#if before}
+						<td class="mut">{b === null ? '—' : `${nf(b, 2)} %`}</td>
+						<td><Change value={a !== null && b !== null ? Math.round((a - b) * 100) : null} digits={0} /></td>
+					{/if}
 				</tr>
-			</thead>
-			<tbody>
-				{#each curve.tenors as tenor, i (tenor)}
-					{@const a = today.values[i]}
-					{@const b = before?.values[i] ?? null}
-					<tr>
-						<td>{tenor}</td>
-						<td>{a === null ? '—' : `${nf(a, 2)} %`}</td>
-						{#if before}
-							<td class="mut">{b === null ? '—' : `${nf(b, 2)} %`}</td>
-							<td class={trend(a !== null && b !== null ? a - b : 0)}>
-								{a !== null && b !== null ? signed(Math.round((a - b) * 100), 0) : '—'}
-							</td>
-						{/if}
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
+			{/each}
+		</tbody>
+	</Table>
 {:else}
 	<p class="empty">Sin datos todavía.</p>
 {/if}
