@@ -30,7 +30,7 @@
 			<HnTable items={hnAi} />
 		</Panel>
 		<Panel title="Papers del día · Hugging Face" meta={papers.length ? `${papers.length} papers` : undefined}>
-			<PaperList items={papers} />
+			<PaperList items={papers} empty={data.papers ? 'Hoy no hay papers en la lista de Hugging Face.' : undefined} />
 			{#snippet note()}<Updated at={data.papers?.fetchedAt} source="hfpapers" />{/snippet}
 		</Panel>
 	</div>

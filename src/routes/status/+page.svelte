@@ -4,6 +4,7 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { lastRuns } from '#lib/data.ts';
 	import { when } from '#lib/format.ts';
+	import Table from '#lib/components/ui/Table.svelte';
 	import type { FeedStatus } from '#lib/types.ts';
 	import type { PageProps } from './$types';
 
@@ -33,31 +34,29 @@
 	<div class="col">
 		<Panel title="Fuentes" meta="{ok} de {active} al día">
 			{#if rows.length}
-				<div class="scroll">
-					<table class="t">
-						<thead><tr><th>Fuente</th><th class="l">Qué trae</th><th>Estado</th><th>Datos de</th></tr></thead>
-						<tbody>
-							{#each rows as r (r.name)}
-								{@const runs = strips.get(r.name) ?? []}
-								<tr>
-									<td class="mut">{r.name}</td>
-									<td class="l wrap">{r.label}{#if r.error}<small class:off={r.state === 'off'}>{r.error}</small>{/if}</td>
-									<td class={r.state === 'ok' || r.state === 'cached' ? 'up' : r.state === 'off' ? 'mut' : 'down'}>
-										{LABEL[r.state]}
-										{#if runs.length}
-											<span class="strip" aria-label="Últimas {runs.length} pasadas">
-												{#each runs as state, i (i)}
-													<i class={TONE[state]} title={LABEL[state]}></i>
-												{/each}
-											</span>
-										{/if}
-									</td>
-									<td class="mut">{when(r.fetchedAt, clock.now)}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+				<Table>
+					<thead><tr><th>Fuente</th><th class="l">Qué trae</th><th>Estado</th><th>Datos de</th></tr></thead>
+					<tbody>
+						{#each rows as r (r.name)}
+							{@const runs = strips.get(r.name) ?? []}
+							<tr>
+								<td class="mut">{r.name}</td>
+								<td class="l wrap">{r.label}{#if r.error}<small class:off={r.state === 'off'}>{r.error}</small>{/if}</td>
+								<td class={r.state === 'ok' || r.state === 'cached' ? 'up' : r.state === 'off' ? 'mut' : 'down'}>
+									{LABEL[r.state]}
+									{#if runs.length}
+										<span class="strip" aria-label="Últimas {runs.length} pasadas">
+											{#each runs as state, i (i)}
+												<i class={TONE[state]} title={LABEL[state]}></i>
+											{/each}
+										</span>
+									{/if}
+								</td>
+								<td class="mut">{when(r.fetchedAt, clock.now)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
 			{:else}
 				<p class="empty">Sin datos todavía.</p>
 			{/if}
@@ -121,8 +120,8 @@
 	.strip {
 		display: flex;
 		justify-content: flex-end;
-		gap: 1px;
-		margin-top: 4px;
+		gap: var(--hair);
+		margin-top: var(--sp-4);
 	}
 
 	.strip i {
@@ -153,7 +152,7 @@
 	}
 
 	.rss > li {
-		border-top: 1px solid var(--line);
+		border-top: var(--border);
 	}
 
 	.rss > li:first-child {
@@ -163,8 +162,8 @@
 	.rss summary {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 2px 10px;
-		padding: 6px 10px;
+		gap: var(--sp-2) var(--sp-10);
+		padding: var(--sp-6) var(--sp-10);
 		font-family: var(--mono);
 		font-size: var(--fs-s);
 		cursor: pointer;
@@ -180,15 +179,16 @@
 		background: var(--raise);
 	}
 
+	/* Sangría: la del resumen (10 px) más el hueco del marcador (12 px). */
 	.feeds {
-		padding: 2px 10px 8px 22px;
+		padding: var(--sp-2) var(--sp-10) var(--sp-8) calc(var(--sp-10) + var(--sp-12));
 	}
 
 	.feeds li {
 		display: flex;
 		justify-content: space-between;
-		gap: 10px;
-		padding: 2px 0;
+		gap: var(--sp-10);
+		padding: var(--sp-2) 0;
 		font-family: var(--sans);
 		font-size: var(--fs-m);
 	}

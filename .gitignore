@@ -24,3 +24,4 @@ vite.config.ts.timestamp-*
 
 # Datos descargados por scripts/update.ts (se generan en cada build)
 /static/data
+shots/

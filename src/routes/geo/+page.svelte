@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ChokepointTable from '#lib/components/ChokepointTable.svelte';
 	import DisasterList from '#lib/components/DisasterList.svelte';
 	import HazardList from '#lib/components/HazardList.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
@@ -43,6 +44,13 @@
 				Precios de Polymarket: reflejan apuestas, no pronósticos oficiales · <Updated at={data.predictions?.fetchedAt} source="predictions" />
 			{/snippet}
 		</Panel>
+		<Panel title="Rutas marítimas clave" meta="Barcos al día (media de 7 días) y cambio en 1 año">
+			<ChokepointTable items={data.portwatch?.data ?? []} />
+			{#snippet note()}
+				Fuente: <a href="https://portwatch.imf.org" target="_blank" rel="noopener">IMF PortWatch</a> (FMI). Estimación a partir de AIS, unos 5 días de
+				retraso · <Updated at={data.portwatch?.fetchedAt} source="portwatch" />
+			{/snippet}
+		</Panel>
 		<!-- Hasta que ReliefWeb apruebe el appname (secreto RELIEFWEB_APPNAME) no hay datos: el panel no sale. -->
 		{#if data.reliefweb}
 			<Panel title="Crisis y desastres activos" meta="{data.reliefweb.data.length} abiertos · los 20 más recientes">
@@ -57,11 +65,14 @@
 			<NewsList items={data.gov?.data.items.slice(0, 15) ?? []} />
 		</Panel>
 		<Panel title="Terremotos en el mundo" meta="M4,5+ · últimos 7 días">
-			<QuakeTable quakes={strongest} />
+			<QuakeTable quakes={strongest} empty={data.quakes ? 'Sin terremotos fuertes estos días.' : undefined} />
 			{#snippet note()}Fuente: USGS · <Updated at={data.quakes?.fetchedAt} source="quakes" />{/snippet}
 		</Panel>
 		<Panel title="Terremotos en España" meta="Últimos 10 días · los 15 más fuertes">
-			<QuakeTable quakes={[...(data.quakesEs?.data ?? [])].sort((a, b) => b.mag - a.mag).slice(0, 15)} />
+			<QuakeTable
+				quakes={[...(data.quakesEs?.data ?? [])].sort((a, b) => b.mag - a.mag).slice(0, 15)}
+				empty={data.quakesEs ? 'Sin terremotos en España en los últimos 10 días.' : undefined}
+			/>
 			{#snippet note()}Fuente: Instituto Geográfico Nacional · <Updated at={data.quakesEs?.fetchedAt} source="quakes-es" />{/snippet}
 		</Panel>
 		<Panel title="Huracanes, incendios y volcanes" meta="Activos ahora">

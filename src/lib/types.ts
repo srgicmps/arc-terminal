@@ -29,6 +29,26 @@ export interface SeriesData {
 	series: Series[];
 }
 
+// ---------- Previsiones del FMI (World Economic Outlook) ----------
+
+export interface ImfRow {
+	/** Código del FMI: USA, EURO, WEOWORLD… */
+	code: string;
+	name: string;
+	/** Crecimiento del PIB real (%) en [año, año + 1]; null si el FMI no lo da. */
+	gdp: [number | null, number | null];
+	/** Inflación media (%) en [año, año + 1]. */
+	cpi: [number | null, number | null];
+}
+
+export interface ImfData {
+	/** Edición del WEO en español («octubre de 2026»); null si la API no la dice. */
+	edition: string | null;
+	/** Los dos años de la tabla: [año actual, siguiente]. */
+	years: [number, number];
+	rows: ImfRow[];
+}
+
 // ---------- BOE ----------
 
 export interface BoeItem {
@@ -446,4 +466,23 @@ export interface Disaster {
 	url: string;
 	/** Código GLIDE del desastre, si lo tiene. */
 	glide: string;
+}
+
+// ---------- Rutas marítimas clave (IMF PortWatch) ----------
+
+export interface Chokepoint {
+	/** «chokepoint6» */
+	id: string;
+	/** En español: «Ormuz». */
+	name: string;
+	/** Último día con datos (AAAA-MM-DD). */
+	last: string;
+	/** Media de tránsitos diarios de los últimos 7 días. */
+	avg7: number;
+	/** La misma media, un año antes. */
+	avg7PrevYear: number | null;
+	/** Cambio en % frente al año anterior. */
+	change: number | null;
+	/** Media móvil de 7 días de los últimos 90 días, para el minigráfico. */
+	spark: number[];
 }

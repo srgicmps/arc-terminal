@@ -5,6 +5,7 @@
 <script lang="ts">
 	import { nf, period } from '#lib/format.ts';
 	import { convert, fxRates } from '#lib/fx.ts';
+	import Tile from './ui/Tile.svelte';
 	import type { Series } from '#lib/types.ts';
 
 	let { series }: { series: (Series | undefined)[] } = $props();
@@ -47,7 +48,7 @@
 </script>
 
 {#if codes.length > 1}
-	<div class="ph fx">
+	<div class="fx">
 		<input type="number" inputmode="decimal" min="0" step="any" bind:value={form.amount} aria-label="Cantidad" />
 		<select bind:value={form.from} aria-label="De">
 			{#each codes as c (c)}<option value={c}>{c}</option>{/each}
@@ -57,20 +58,23 @@
 			{#each codes as c (c)}<option value={c}>{c}</option>{/each}
 		</select>
 	</div>
-	<div class="tile">
-		<span class="lbl">{nf(form.amount)} {form.from} =</span>
-		<b>{nf(result)} {form.to}</b>
-		<span class="sub">
-			1 {form.to} = {nf(unit, 4)} {form.from}{date ? ` · tipo del ${period(date)}` : ''}
-		</span>
-	</div>
+	<Tile
+		label="{nf(form.amount)} {form.from} ="
+		value="{nf(result)} {form.to}"
+		sub="1 {form.to} = {nf(unit, 4)} {form.from}{date ? ` · tipo del ${period(date)}` : ''}"
+	/>
 {:else}
 	<p class="empty">Sin datos todavía.</p>
 {/if}
 
 <style>
-	/* La fila de controles usa el espaciado de la cabecera del panel (.ph). */
+	/* La fila de controles, con el mismo espaciado que la cabecera de un panel. */
 	.fx {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--sp-6) var(--sp-12);
+		padding: var(--row-y) var(--pad-x);
+		border-bottom: var(--border);
 		justify-content: flex-start;
 		/* El campo de la cantidad mide lo mismo que los desplegables (que en pantallas táctiles crecen a 44 px). */
 		align-items: stretch;
@@ -79,7 +83,7 @@
 	input,
 	select {
 		background: var(--raise);
-		border: 1px solid var(--line);
+		border: var(--border);
 	}
 
 	input {
@@ -94,7 +98,7 @@
 
 	button {
 		background: none;
-		border: 1px solid var(--line);
+		border: var(--border);
 		color: var(--muted);
 		cursor: pointer;
 	}
