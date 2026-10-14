@@ -66,3 +66,6 @@ export function mentions<T extends NewsItem>(items: T[], ticker: Pick<Ticker, 'n
 		return patterns.some((re) => re.test(title));
 	});
 }
+
+/** Canales de diplomacia dentro de news-intl (scripts/sources/news.ts): GEO los saca a su propio panel. */
+export const DIPLOMACY_FEEDS = ['Exteriores británico', 'OIEA'];

@@ -20,6 +20,7 @@
 	import WorldMap from '#lib/components/WorldMap.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { LAYERS, type LayerId } from '#lib/geo/layers.ts';
+	import { DIPLOMACY_FEEDS } from '#lib/news.ts';
 	import { REGIONS, inRegion, type RegionId } from '#lib/regions.ts';
 	import { urlState } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
@@ -41,6 +42,9 @@
 	const points = $derived(available.filter((l) => on.includes(l.value)).flatMap((l) => layerPoints[l.value]));
 
 	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
+	// Canales de diplomacia dentro de news-intl; el resto son organismos internacionales.
+	const DIPLO = new Set(DIPLOMACY_FEEDS);
+	const diplo = $derived((data.intl?.data.items ?? []).filter((i) => DIPLO.has(i.source)).slice(0, 15));
 </script>
 
 <ViewHeader code="GEO" title="Geopolítica" sub={sources} />
@@ -149,12 +153,18 @@
 			</Panel>
 		{/if}
 		<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">
-			<NewsList items={data.intl?.data.items.slice(0, 15) ?? []} />
+			<NewsList items={(data.intl?.data.items ?? []).filter((i) => !DIPLO.has(i.source)).slice(0, 15)} />
 			{#snippet note()}<Updated at={data.intl?.fetchedAt} source="news-intl" />{/snippet}
 		</Panel>
-		<Panel title="Gobiernos e instituciones" meta="Comunicados oficiales">
-			<NewsList items={data.gov?.data.items.slice(0, 15) ?? []} />
-		</Panel>
+		{#if diplo.length}
+			<Panel title="Diplomacia" meta="Exteriores británico y OIEA · comunicados">
+				<NewsList items={diplo} />
+				{#snippet note()}
+					Declaraciones en la ONU, la OSCE y otros foros, y el organismo atómico de la ONU ·
+					<Updated at={data.intl?.fetchedAt} source="news-intl" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Terremotos en el mundo" meta="M4,5+ · últimos 7 días">
 			<QuakeTable quakes={strongest} empty={data.quakes ? 'Sin terremotos fuertes estos días.' : undefined} />
 			{#snippet note()}Fuente: USGS · <Updated at={data.quakes?.fetchedAt} source="quakes" />{/snippet}

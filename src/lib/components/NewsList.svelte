@@ -13,6 +13,9 @@
 	import { headlineList } from '#lib/titles.svelte.ts';
 	import { initVisit, isNew, visit } from '#lib/visit.svelte.ts';
 	import { highlight, initWatchwords, watchwords } from '#lib/watchwords.svelte.ts';
+	import type { EntityLink } from '#lib/entities.ts';
+	import { resolve } from '$app/paths';
+	import { initNewsPrefs, newsPrefs, visibleNews } from '#lib/newsprefs.svelte.ts';
 	import AutoTag from './AutoTag.svelte';
 	import TitleLang from './TitleLang.svelte';
 
@@ -30,16 +33,25 @@
 	$effect(initVisit);
 	// Las palabras vigiladas del BOE (guardadas en este navegador) salen resaltadas también en los titulares.
 	$effect(initWatchwords);
+	// Nombres con ficha (M30). entities.ts lleva las listas de países, valores y líderes (unos 15 KB): se
+	// carga aparte, después de pintar, y hasta entonces no hay enlaces.
+	let entitiesIn = $state<((text: string) => EntityLink[]) | null>(null);
+	$effect(() => {
+		import('#lib/entities.ts').then((m) => (entitiesIn = m.entitiesIn));
+	});
 	// Traducción de los titulares en inglés (ES / EN, titles.svelte.ts).
-	const list = headlineList<number>(() => items);
+	// Tus medios (M23, se eligen en NEWS): sin los silenciados y del idioma original elegido.
+	$effect(initNewsPrefs);
+	const shown = $derived(visibleNews(items, newsPrefs.muted, newsPrefs.origin));
+	const list = headlineList<number>(() => shown);
 </script>
 
-{#if items.length}
+{#if shown.length}
 	{#if list.toggle}
 		<div class="lang"><TitleLang /></div>
 	{/if}
 	<ul class="news">
-		{#each items as item, i (i)}
+		{#each shown as item, i (i)}
 			{@const t = list.link(item, i)}
 			<li>
 				<time datetime={item.time ?? undefined}>
@@ -61,6 +73,8 @@
 					<div class="m">
 						{#if tag?.(item)}<span class="tag">{tag(item)}</span>{/if}
 						<span>{item.source}</span>
+						<!-- Nombres con ficha (valores, líderes, bancos centrales, países): llevan a su ficha en NEWS. -->
+						{#each entitiesIn?.(item.title) ?? [] as e (e.query)}<a class="ent" href="{resolve('/news')}?q={encodeURIComponent(e.query)}">{e.label}</a>{/each}
 						{#if t.translated}<AutoTag {item} />{/if}
 						{#if item.also?.length}
 							{@const n = item.also.length}
@@ -81,6 +95,8 @@
 			</li>
 		{/each}
 	</ul>
+{:else if items.length}
+	<p class="empty">Todos ocultos por tus filtros de medios e idioma (en NEWS).</p>
 {:else}
 	<p class="empty">Sin titulares todavía.</p>
 {/if}
@@ -199,6 +215,16 @@
 	}
 
 	.also a:hover {
+		color: var(--amber);
+	}
+
+	.ent {
+		color: var(--muted);
+		text-decoration: none;
+		border-bottom: var(--hair) dotted var(--line);
+	}
+
+	.ent:hover {
 		color: var(--amber);
 	}
 
