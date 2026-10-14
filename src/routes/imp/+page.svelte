@@ -6,7 +6,7 @@
 	import { urlState } from '#lib/urlstate.svelte.ts';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { IMP_PERIODS, aggregate, minus, topImportant, type ImpTotal } from '#lib/imp.ts';
+	import { IMP_GROUPS, IMP_PERIODS, aggregate, inGroup, minus, topImportant, type ImpGroup, type ImpTotal } from '#lib/imp.ts';
 	import { NEWS_SECTIONS } from '#lib/news.ts';
 	import { headlineList } from '#lib/titles.svelte.ts';
 	import type { ImpCurrent, ImpEntry } from '#lib/types.ts';
@@ -22,12 +22,25 @@
 	const period = $derived(periodSel.value);
 	const span = $derived(IMP_PERIODS.find((p) => p.key === period)!.span);
 
-	// Hoy: los 10 temas del día. Semana, mes y año: el histórico diario sumado (ver src/lib/imp.ts).
-	const items = $derived<(ImpEntry | ImpTotal)[]>(
-		!imp ? [] : period === 'day' ? topImportant(imp, 10) : aggregate(imp.days, imp.date, span, 10)
-	);
+	// Filtro por sección, también en la URL (?seccion=eco…).
+	const groupSel = urlState<ImpGroup>('seccion', 'all', (v) => IMP_GROUPS.some((g) => g.key === v));
+	const groups = IMP_GROUPS.map((g) => ({ value: g.key, label: g.label }));
+
 	// Detalle de los temas que siguen en el top de ahora (secciones, confirmación oficial, Wikipedia).
 	const live = $derived(new Map<string, ImpCurrent>((imp?.current ?? []).map((c) => [c.k, c])));
+	// Secciones de un tema: las guardadas o, en los temas de antes de que se guardaran, las del top de ahora.
+	const sectionsOf = (item: ImpEntry) => item.sections ?? live.get(item.k)?.sections ?? [];
+
+	// Hoy: los temas del día y, para filtrar, también los del top de ahora. Semana, mes y año: el histórico
+	// diario sumado (ver src/lib/imp.ts). Con filtro se busca entre todos y se quedan los 10 primeros.
+	const items = $derived.by<(ImpEntry | ImpTotal)[]>(() => {
+		if (!imp) return [];
+		const pool =
+			period === 'day'
+				? [...topImportant(imp, 10), ...(groupSel.value === 'all' ? [] : imp.current)]
+				: aggregate(imp.days, imp.date, span, groupSel.value === 'all' ? 10 : 500);
+		return inGroup<ImpEntry | ImpTotal>(pool, groupSel.value, sectionsOf, 10);
+	});
 	const label: Record<string, string> = Object.fromEntries(NEWS_SECTIONS.map((s) => [s.key, s.label.toUpperCase()]));
 	// Días del periodo de los que hay histórico (al principio, menos que los del periodo).
 	const recorded = $derived(imp ? imp.days.filter((d) => d.date > minus(imp.date, span) && d.date <= imp.date).length : 0);
@@ -47,6 +60,7 @@
 
 <div class="controls">
 	<Seg label="Periodo" options={periods} bind:value={periodSel.value} />
+	<Seg label="Sección" options={groups} bind:value={groupSel.value} />
 	{#if list.toggle}<TitleLang />{/if}
 </div>
 
@@ -79,7 +93,7 @@
 										{@attach list.press(item, item.k)}>{t.text}</a
 									>
 									<div class="m">
-										{#each now?.sections ?? [] as s (s)}<span class="tag">{label[s] ?? s}</span>{/each}
+										{#each sectionsOf(item) as s (s)}<span class="tag">{label[s] ?? s}</span>{/each}
 										<span class="src">
 											{#each open.has(item.k) ? item.sources : item.sources.slice(0, FEW) as s (s)}
 												{@const href = (item.links ?? now?.links)?.find((l) => l.source === s)?.url}

@@ -113,7 +113,8 @@
 		background: none;
 		border: var(--border);
 		color: var(--muted);
-		padding: var(--sp-5) var(--sp-10);
+		min-height: var(--control-h);
+		padding: 0 var(--sp-10);
 		font-size: var(--fs-s);
 		cursor: pointer;
 		text-decoration: none;
