@@ -15,6 +15,7 @@
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import { nf } from '#lib/format.ts';
+	import { fuelShare, type ShareInfo } from '#lib/share.ts';
 	import { distanceKm, findProvince, FUELS, type FuelKey, type FuelStation } from '#lib/fuel.ts';
 	import type { PageProps } from './$types';
 
@@ -160,6 +161,16 @@
 		provinces.filter((p) => p.avg[fuel] != null).sort((a, b) => a.avg[fuel]! - b.avg[fuel]!)
 	);
 
+	// «Compartir»: la más barata que se ve ahora, con un enlace que abre la misma zona (?zona=…).
+	function share(): ShareInfo {
+		const url = new URL(location.href);
+		url.searchParams.set('zona', zone);
+		const place = town === 'ALL' ? zoneName : town;
+		if (!best) return { title: `Gasolineras · ${zoneName}`, url: url.href };
+		const text = fuelShare({ fuel: fuelLabel, place, station: best.name, town: best.town, price: best.price, avg });
+		return { ...text, url: url.href };
+	}
+
 	const mapUrl = (s: FuelStation) => `https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lon}`;
 	const barWidth = (price: number) => 20 + (80 * (price - min)) / (max - min || 1);
 </script>
@@ -167,7 +178,11 @@
 <ViewHeader code="FUEL" title="Gasolineras" sub="Las más baratas de Menorca o de cualquier provincia · API del Ministerio" />
 
 <div class="grid">
-	<Panel title="{fuelLabel} · {zoneName}" meta="{list.length} {list.length === 1 ? 'estación' : 'estaciones'}">
+	<Panel
+		title="{fuelLabel} · {zoneName}"
+		meta="{list.length} {list.length === 1 ? 'estación' : 'estaciones'}"
+		{share}
+	>
 
 		{#if !data.fuel && !data.spain}
 			<p class="empty">Todavía no hay datos. En local, ejecuta <code>pnpm data</code> y recarga.</p>
