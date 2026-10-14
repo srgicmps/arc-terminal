@@ -21,6 +21,7 @@ import { ine } from './ine.ts';
 import { leaders } from './leaders.ts';
 import { newsSources } from './news.ts';
 import { portwatch } from './portwatch.ts';
+import { perf } from './perf.ts';
 import { predictions } from './predictions.ts';
 import { powerMix } from './ree-mix.ts';
 import { reliefweb } from './reliefweb.ts';
@@ -55,6 +56,7 @@ export const sources: Source<any>[] = [
 	uscurve,
 	fred,
 	finnhub,
+	perf,
 	sec,
 	// Mundo
 	imf,

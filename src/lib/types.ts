@@ -321,6 +321,14 @@ export interface Quote {
 	time: string | null;
 }
 
+/**
+ * Rentabilidad por plazos de cada valor (static/data/perf.json), en %. Claves de Finnhub sin el
+ * «PriceReturnDaily»: «5Day», «13Week», «26Week», «52Week», «yearToDate», «monthToDate»…
+ */
+export interface PerfData {
+	symbols: Record<string, Record<string, number>>;
+}
+
 export interface FinnhubData {
 	earnings: Earnings[];
 	news: NewsItem[];
