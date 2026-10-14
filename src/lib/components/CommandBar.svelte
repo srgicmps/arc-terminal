@@ -1,9 +1,10 @@
 <!--
 	Barra de comandos: escribes ECO, FUEL o un valor (NVDA) y se abre. Sugerencias con ↑ ↓ e Intro.
 	También busca (como Ctrl+K) en titulares, BOE y valores: el índice se carga al enfocarla por primera vez.
-	Atajos globales: «/» o empezar a escribir enfoca la barra; Esc vuelve a la portada.
+	Atajos globales: «/» o empezar a escribir enfoca la barra; Esc vuelve a la portada; Mayús+F, pantalla completa.
 -->
 <script lang="ts">
+	import { toggleFullscreen } from '#lib/fit.svelte.ts';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { COMMANDS, TICKERS } from '#lib/commands.ts';
@@ -141,6 +142,10 @@
 		if (e.key === '/') {
 			e.preventDefault();
 			input.focus();
+		} else if (e.key === 'F' && e.shiftKey) {
+			// Mayúsculas + F: pantalla completa. La f sola sigue escribiendo comandos (FUEL…).
+			e.preventDefault();
+			toggleFullscreen();
 		} else if (e.key === 'Escape') {
 			goto(resolve('/'));
 		} else if (e.key.length === 1 && /[a-z0-9]/i.test(e.key)) {
