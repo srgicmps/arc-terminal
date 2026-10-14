@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Panel from '#lib/components/Panel.svelte';
+	import StormNotice from '#lib/components/StormNotice.svelte';
 	import SunArc from '#lib/components/SunArc.svelte';
 	import { clock } from '#lib/clock.svelte.ts';
 	import Updated from '#lib/components/Updated.svelte';
@@ -48,6 +49,8 @@
 </script>
 
 <ViewHeader code="WX" title="El tiempo" sub="Menorca, Madrid, Barcelona y Nueva York · Open-Meteo, CAMS y MeteoAlarm" />
+
+<StormNotice data={data.swpc?.data} />
 
 <div class="grid grid-2e">
 	<div class="col">

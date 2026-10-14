@@ -28,6 +28,7 @@ import { reliefweb } from './reliefweb.ts';
 import { releases } from './releases.ts';
 import { sanctions } from './sanctions.ts';
 import { search } from './search.ts';
+import { swpc } from './swpc.ts';
 import { sec } from './sec.ts';
 import { uscurve, usdebt } from './treasury.ts';
 import { wiki } from './wiki.ts';
@@ -62,6 +63,7 @@ export const sources: Source<any>[] = [
 	quakes,
 	quakesEs,
 	hazards,
+	swpc,
 	portwatch,
 	reliefweb,
 	predictions,

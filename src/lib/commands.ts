@@ -46,7 +46,7 @@ export const COMMANDS: Command[] = [
 	{ code: 'TOP', route: '/', key: 'Portada', desc: 'Portada: lo más importante de cada sección', sources: 'Todas', pinned: true },
 	{ code: 'IMP', route: '/imp', key: 'Importante', desc: 'Lo más importante de hoy, la semana, el mes y el año (sin IA)', sources: 'Todos los titulares, BOE, Federal Register, Wikipedia', pinned: true, aliases: ['importante', 'destacado'] },
 	{ code: 'ECO', route: '/eco', key: 'Economía', desc: 'Economía y macro: paro, inflación, PIB, tipos', sources: 'Eurostat, BCE, BLS, Tesoro de EE. UU., El País, Expansión, FT', pinned: true },
-	{ code: 'GEO', route: '/geo', key: 'Geopolítica', desc: 'Geopolítica y terremotos', sources: 'BBC, Al Jazeera, DW, France 24, The Guardian, USGS', pinned: true },
+	{ code: 'GEO', route: '/geo', key: 'Geopolítica', desc: 'Geopolítica y terremotos', sources: 'BBC, Al Jazeera, DW, France 24, The Guardian, USGS, NOAA SWPC', pinned: true },
 	{ code: 'ES', route: '/es', key: 'España', desc: 'España: actualidad, BOE y luz', sources: 'El País, RTVE, elDiario.es, El Mundo, Europa Press, BOE, REE', pinned: true, aliases: ['españa'] },
 	{ code: 'WS', route: '/ws', key: 'Wall Street', desc: 'Wall Street: mapa de calor, curva de tipos, divisas y cripto', sources: 'TradingView, Tesoro de EE. UU., BCE, CoinGecko, CNBC, WSJ', pinned: true, aliases: ['bolsa', 'wall street'] },
 	{ code: 'TECH', route: '/tech', key: 'Tecnología', desc: 'Tecnología y Hacker News', sources: 'Hacker News, CISA, TechCrunch, The Verge, Ars Technica, Xataka, Wired', pinned: true },

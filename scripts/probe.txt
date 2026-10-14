@@ -27,3 +27,8 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
+# TECH: catálogo KEV de la CISA (1,5 MB): solo la cabecera y la primera vulnerabilidad, para ver los campos
+https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json ~ "title".{0,200}|"vulnerabilities":\s*\[\s*\{[^}]{0,900}\}
+# WX, GEO y STATUS: tormentas solares (NOAA SWPC). ¿El Kp es una tabla en arrays con cabecera o una lista de objetos?
+https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json
+https://services.swpc.noaa.gov/products/noaa-scales.json
