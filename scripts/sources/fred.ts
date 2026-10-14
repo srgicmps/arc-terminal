@@ -44,14 +44,22 @@ function periodOf(date: string, freq: Wanted['freq']): string {
 	return date;
 }
 
-type Raw = { observations?: { date: string; value: string }[] };
+type Raw = { observations?: { date?: unknown; value?: unknown }[] | null };
+
+/** ¿Es una fecha real con la forma «2026-09-01»? (Descarta «2026-13-45», texto suelto o nada.) */
+function isDate(value: unknown): value is string {
+	if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+	const d = new Date(`${value}T00:00:00Z`);
+	return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value;
+}
 
 /** Convierte la respuesta de FRED en una serie. Separada para poder probarla con una respuesta de ejemplo. */
 export function toSeries(w: Wanted, body: Raw): Series | null {
 	const points = (body.observations ?? [])
 		.map((o) => {
 			const v = num(o.value); // FRED marca los huecos con «.»
-			return v === null ? null : { t: periodOf(o.date, w.freq), v: w.scale ? Math.round(v * w.scale * 10) / 10 : v };
+			// Una observación sin fecha válida se descarta sola; el resto de la serie sigue.
+			return v === null || !isDate(o.date) ? null : { t: periodOf(o.date, w.freq), v: w.scale ? Math.round(v * w.scale * 10) / 10 : v };
 		})
 		.filter((p): p is Point => p !== null)
 		.sort((a, b) => a.t.localeCompare(b.t));
