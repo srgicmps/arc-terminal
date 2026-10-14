@@ -130,3 +130,6 @@ https://raw.githubusercontent.com/hiring-lab/job_postings_tracker/master/ES/aggr
 https://raw.githubusercontent.com/hiring-lab/job_postings_tracker/master/ES/aggregate_job_postings_ES.csv ~ ^.{0,500}|.{0,300}$
 # Quinta ronda: códigos del oro del IRFCL en el XML (atributos largos)
 https://api.imf.org/external/sdmx/2.1/datastructure/IMF.STA/DSD_IRFCL_PUB?references=children ~ Code id="[^"]+"[^>]*>.{0,300}?[Gg]old.{0,100}
+# Sexta ronda: el oro en el texto sin etiquetas y el nombre de la lista de códigos de los indicadores
+https://api.imf.org/external/sdmx/2.1/datastructure/IMF.STA/DSD_IRFCL_PUB?references=children ~ .{0,120}[Gg]old.{0,120}
+https://api.imf.org/external/sdmx/2.1/datastructure/IMF.STA/DSD_IRFCL_PUB ~ Ref [^>]*id="CL_[A-Z_]+"[^>]*
