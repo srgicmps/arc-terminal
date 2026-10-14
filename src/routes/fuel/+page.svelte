@@ -16,11 +16,14 @@
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import { dm, nf } from '#lib/format.ts';
 	import { fuelShare, type ShareInfo } from '#lib/share.ts';
-	import { distanceKm, findProvince, FUELS, type FuelKey, type FuelProvinceDay, type FuelStation } from '#lib/fuel.ts';
+	import { distanceKm, findProvince, FUELS, taxShare, type FuelKey, type FuelProvinceDay, type FuelStation } from '#lib/fuel.ts';
 	import { urlState, writeParams } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+
+	/** Parte que son impuestos, sin decimales: «58 %». */
+	const pct = (v: number | null) => (v === null ? '—' : `${nf(v, 0)} %`);
 
 	const MENORCA = 'menorca';
 	const SHOWN = 60;
@@ -324,25 +327,26 @@
 		</Panel>
 		{#if data.europe?.data.rows.length}
 			{@const eu = data.europe.data}
-			<Panel title="España frente a Europa" meta="€/L · con y sin impuestos">
+			<Panel title="España frente a Europa" meta="€/L · y parte que son impuestos">
 				<Table>
 					<thead>
-						<tr><th class="l">País</th><th>Gasolina 95</th><th>Sin imp.</th><th>Diésel</th><th>Sin imp.</th></tr>
+						<tr><th class="l">País</th><th>Gasolina 95</th><th>Imp.</th><th>Diésel</th><th>Imp.</th></tr>
 					</thead>
 					<tbody>
 						{#each eu.rows as r (r.code)}
 							<tr class:current={r.code === 'ES'}>
 								<td class="l">{r.name}</td>
 								<td>{nf(r.g95.tax, 3)}</td>
-								<td class="mut">{nf(r.g95.net, 3)}</td>
+								<td class="mut" title="Sin impuestos: {nf(r.g95.net, 3)} €/L">{pct(taxShare(r.g95))}</td>
 								<td>{nf(r.diesel.tax, 3)}</td>
-								<td class="mut">{nf(r.diesel.net, 3)}</td>
+								<td class="mut" title="Sin impuestos: {nf(r.diesel.net, 3)} €/L">{pct(taxShare(r.diesel))}</td>
 							</tr>
 						{/each}
 					</tbody>
 				</Table>
 				{#snippet note()}
-					Precios medios del lunes {dm(eu.date)}. Fuente: Comisión Europea,
+					Precios medios del lunes {dm(eu.date)}. «Imp.»: parte del precio que son impuestos (IVA e impuestos
+					especiales); el precio sin ellos, al pasar por encima. Fuente: Comisión Europea,
 					<a href="https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en" target="_blank" rel="noopener">Weekly Oil Bulletin</a>;
 					la media de la UE está ponderada por consumo · <Updated at={data.europe?.fetchedAt} source="oilbulletin" />
 				{/snippet}
