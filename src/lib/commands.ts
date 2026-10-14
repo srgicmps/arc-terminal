@@ -19,6 +19,7 @@ export interface Command {
 		| '/cal'
 		| '/wiki'
 		| '/news'
+		| '/mis'
 		| '/help'
 		| '/status';
 	/** Nombre corto para la tecla. */
@@ -42,6 +43,7 @@ export const COMMANDS: Command[] = [
 	{ code: 'USGOV', route: '/usgov', key: 'Gob. EE. UU.', desc: 'Federal Register: decretos presidenciales y normas de EE. UU.', sources: 'Federal Register, Casa Blanca, Reserva Federal' },
 	{ code: 'LUZ', route: '/luz', key: 'Luz', desc: 'Precio de la luz hora a hora, hoy y mañana', sources: 'Red Eléctrica (REE)', pinned: true },
 	{ code: 'WX', route: '/wx', key: 'Tiempo', desc: 'Tiempo en Menorca y otras ciudades', sources: 'Open-Meteo' },
+	{ code: 'MIS', route: '/mis', key: 'Mis valores', desc: 'Tu lista de valores, con cotización en directo', sources: 'TradingView', pinned: true },
 	{ code: 'FUEL', route: '/fuel', key: 'Gasolina', desc: 'Gasolineras más baratas de Menorca', sources: 'Ministerio para la Transición Ecológica', pinned: true },
 	{ code: 'NEWS', route: '/news', key: 'Buscar', desc: 'Buscador en todos los titulares de todas las secciones', sources: 'Todos los medios' },
 	{ code: 'WIKI', route: '/wiki', key: 'Wikipedia', desc: 'Lo más leído en Wikipedia y efemérides del día', sources: 'Wikipedia en español' },
