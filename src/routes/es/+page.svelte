@@ -28,7 +28,7 @@
 	});
 	const strongestQuake = $derived([...(data.quakes?.data ?? [])].sort((a, b) => b.mag - a.mag)[0]);
 
-	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.count).map((f) => f.name).join(', '));
+	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
 </script>
 
 <ViewHeader code="ES" title="España" sub={sources} />
