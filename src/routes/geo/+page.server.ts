@@ -1,9 +1,10 @@
 import { dataset } from '#lib/data.ts';
 import type { ClimateData } from '#lib/climate.ts';
+import { headlines, trim } from '#lib/trim.ts';
 import type { Chokepoint, Disaster, HazardsData, NewsData, PredictionsData, Quake, TradeDoc } from '#lib/types.ts';
-import type { PageLoad } from './$types';
+import type { PageServerLoad } from './$types';
 
-export const load: PageLoad = async () => {
+export const load: PageServerLoad = async () => {
 	const [news, gov, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-gov'),
@@ -16,5 +17,19 @@ export const load: PageLoad = async () => {
 		dataset<TradeDoc[]>('sanctions'),
 		dataset<ClimateData>('climate')
 	]);
-	return { news, gov, quakes, quakesEs, hazards, predictions, portwatch, reliefweb, sanctions, climate };
+	// Los comunicados oficiales: solo los 15 que se pintan, sin resumen.
+	// De Polymarket, los 8 mercados de geopolítica que se pintan (economía y tipos son de ECO).
+	// Sanciones y aranceles: los 8 que se pintan.
+	return {
+		news,
+		gov: headlines(gov, 15),
+		quakes,
+		quakesEs,
+		hazards,
+		predictions: trim(predictions, (d) => ({ geopolitics: d.geopolitics.slice(0, 8), economy: [] })),
+		portwatch,
+		reliefweb,
+		sanctions: trim(sanctions, (d) => d.slice(0, 8)),
+		climate
+	};
 };

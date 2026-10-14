@@ -2,9 +2,9 @@ import { dataset } from '#lib/data.ts';
 import type { ClimateData } from '#lib/climate.ts';
 import type { WeatherData } from '#lib/types.ts';
 import type { AirData, AlertsData } from '#lib/weather.ts';
-import type { PageLoad } from './$types';
+import type { PageServerLoad } from './$types';
 
-export const load: PageLoad = async () => {
+export const load: PageServerLoad = async () => {
 	const [weather, air, alerts, climate] = await Promise.all([
 		dataset<WeatherData>('weather'),
 		dataset<AirData>('air'),
