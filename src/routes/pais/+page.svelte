@@ -15,7 +15,7 @@
 	import Table from '#lib/components/ui/Table.svelte';
 	import KpiStrip from '#lib/components/ui/KpiStrip.svelte';
 	import { COUNTRIES, findCountry } from '#lib/countries.ts';
-	import { countryProfile, type Rate } from '#lib/country.ts';
+	import type { CountryProfile, Rate } from '#lib/country.ts';
 	import { nf, period, signed, trend } from '#lib/format.ts';
 	import { sectionLabel } from '#lib/news.ts';
 	import type { PageProps } from './$types';
@@ -28,7 +28,9 @@
 	});
 
 	const country = $derived(findCountry(query));
-	const profile = $derived(country && countryProfile(country, data));
+	// La ficha viene calculada del servidor; un país sin ningún dato tiene la ficha vacía (solo titulares).
+	const EMPTY: CountryProfile = { kpis: [], policy: null, bond: null, premium: null, fx: [], imf: null };
+	const profile = $derived(country && (data.profiles[country.code] ?? EMPTY));
 	const news = $derived(country ? (data.news[country.code] ?? []) : []);
 	const rates = $derived(profile ? [profile.policy, profile.bond, profile.premium].filter((r): r is Rate => r !== null) : []);
 	const empty = $derived(profile && !profile.kpis.length && !rates.length && !profile.fx.length && !profile.imf && !news.length);
