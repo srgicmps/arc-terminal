@@ -310,7 +310,10 @@ export async function runNotify({
 		}
 		if (zone?.trim()) {
 			const found = await loadZone(zone.trim(), inputs, dir);
-			if (found) inputs.zone = found;
+			if (found) {
+				inputs.zone = found;
+				say('ntfy: zona del diésel reconocida');
+			}
 			// Sin decir cuál: la zona no sale en el registro.
 			else say('ntfy: ALERT_FUEL_ZONE no corresponde a ninguna zona; el diésel se vigila solo en España');
 		}
