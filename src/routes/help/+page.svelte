@@ -17,7 +17,10 @@
 						{#each COMMANDS as c (c.code)}
 							<tr>
 								<td><a class="code" href={resolve(c.route)}>{c.code}</a></td>
-								<td class="l wrap">{c.desc}</td>
+								<td class="l wrap">
+									{c.desc}
+									{#if c.aliases}<small class="mut">También: {c.aliases.join(', ')}</small>{/if}
+								</td>
 								<td class="l wrap mut">{c.sources}</td>
 							</tr>
 						{/each}
@@ -30,9 +33,23 @@
 		<Panel title="Atajos de teclado">
 			<ul class="mini">
 				<li><span class="l"><kbd>/</kbd> o empieza a escribir</span><b>Ir a la barra</b></li>
+				<li><span class="l">Barra vacía</span><b>Tus 5 últimos comandos</b></li>
 				<li><span class="l"><kbd>↑</kbd> <kbd>↓</kbd></span><b>Moverte por las sugerencias</b></li>
 				<li><span class="l"><kbd>Intro</kbd></span><b>Abrir</b></li>
 				<li><span class="l"><kbd>Esc</kbd></span><b>Volver a la portada</b></li>
+			</ul>
+		</Panel>
+		<Panel title="Con texto detrás" meta="Comando, espacio y lo que buscas">
+			<ul class="mini">
+				{#each COMMANDS.filter((c) => c.arg) as c (c.code)}
+					{@const text = c.arg!.example.slice(c.code.length + 1)}
+					<li>
+						<a class="l" href="{resolve(c.route)}?{c.arg!.param}={encodeURIComponent(text)}">
+							<b class="code">{c.arg!.example}</b>
+						</a>
+						<b>{c.arg!.label}</b>
+					</li>
+				{/each}
 			</ul>
 		</Panel>
 		<Panel title="Valores" meta="Escribe el código: abre su ficha">
@@ -57,6 +74,11 @@
 		white-space: normal;
 		font-family: var(--sans);
 		font-size: var(--fs-m);
+	}
+
+	.wrap small {
+		display: block;
+		font-size: var(--fs-s);
 	}
 
 	.tickers {
