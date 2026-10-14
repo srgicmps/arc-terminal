@@ -1,4 +1,5 @@
 import { dataset } from '#lib/data.ts';
+import { crisisPoints, eventPoints, quakePoints, sanctionPoints, stormPoints, straitPoints, type LayerId, type MapPoint } from '#lib/geo/layers.ts';
 import { headlines, trim } from '#lib/trim.ts';
 import type { Chokepoint, Disaster, HazardsData, NewsData, PredictionsData, Quake, TradeDoc } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
@@ -18,7 +19,18 @@ export const load: PageServerLoad = async () => {
 	// Los comunicados oficiales: solo los 15 que se pintan, sin resumen.
 	// De Polymarket, los 8 mercados de geopolítica que se pintan (economía y tipos son de ECO).
 	// Sanciones y aranceles: los 8 que se pintan.
+	// Capas del mapa: se calculan aquí con los datos completos (las sanciones, antes de recortarlas a 8)
+	// y a la página solo le llegan los puntos.
+	const layers: Record<LayerId, MapPoint[]> = {
+		quakes: quakePoints(quakes?.data ?? []),
+		storms: stormPoints(hazards?.data.storms ?? []),
+		events: eventPoints(hazards?.data.events ?? []),
+		straits: straitPoints(portwatch?.data ?? []),
+		sanctions: sanctionPoints(sanctions?.data ?? []),
+		crises: crisisPoints(reliefweb?.data ?? [])
+	};
 	return {
+		layers,
 		news,
 		gov: headlines(gov, 15),
 		quakes,

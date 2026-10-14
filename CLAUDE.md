@@ -34,8 +34,13 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   acumular historial (gasolina, luz). Los tipos compartidos están en `src/lib/types.ts` y `src/lib/fuel.ts`.
 - Cada vista lee sus datos en `+page.ts` con `dataset('nombre')` (`src/lib/data.ts`).
 - Componentes comunes en `src/lib/components/` (Panel, NewsList, SeriesTable, LineChart, TvWidget…).
-- `scripts/probe.ts` + `scripts/probe.txt`: en los PR la Action consulta esas URL y deja la respuesta en el
-  registro. Sirve para explorar APIs nuevas cuando el entorno de desarrollo no tiene red.
+- `scripts/probe.ts` + `scripts/probe.txt`: en los PR que tocan `scripts/`, la Action consulta esas URL y deja la
+  respuesta en el registro. Sirve para explorar APIs nuevas cuando el entorno de desarrollo no tiene red.
+- **Probar una fuente sin la pasada completa**: Actions → «Publicar en Pages» → Run workflow, con «fuentes»
+  (p. ej. `fao climate`). Descarga solo esas fuentes, sin copia guardada, y lanza el sondeo, sin publicar.
+- En los PR, la Action va en jobs a la vez: `checks` (check, test, build: el verde o el rojo rápido), `smoke`
+  (datos reales y prueba de humo) y `probe` solo si el PR toca `scripts/`. `compare` (vistas del PR frente a
+  main) y `tv-shots` se lanzan a mano: Run workflow sobre la rama, con «herramienta».
 
 ## Arquitectura
 - **GitHub Pages** sirve la web estática en https://srgicmps.github.io/arc-terminal/ (por eso hay que
@@ -77,9 +82,13 @@ Un cambio de estética se hace en un solo sitio.
 - **Componentes base** en `src/lib/components/ui/`:
   `Seg` (botones de opción), `Select` (desplegable con etiqueta), `Tiles` + `Tile` (cifras grandes), `Table`
   (tabla densa: celdas `.l`, `.name`, `.sub`, `.mut`), `Bar` (barra de comparación), `Change` (variación
-  verde/roja con signo), `Note` (nota al pie) y `Share` (botón «Compartir»; se usa con la prop `share` de `Panel`,
+  verde/roja con signo), `Note` (nota al pie), `ButtonRow` (fila de botones iguales) y `Share` (botón «Compartir»; se usa con la prop `share` de `Panel`,
   y su lógica está en `src/lib/share.ts`). Además, `Panel` y `ViewHeader` para paneles y cabeceras de vista.
   Antes de escribir CSS para algo que ya existe, se usa el componente.
+- **Modo «encajar en pantalla»** (≥1280 px): la última rejilla de la vista llena el alto; cada panel parte de
+  `--fit-panel-min` (o de su contenido, si es menor), el alto que sobra se reparte sin pasar del contenido, y los
+  gráficos, mapas y widgets van enteros. Si no cabe, hace scroll la vista, nunca se aplasta un panel. Las reglas
+  están en `src/routes/+layout.svelte`; no se ajusta panel a panel.
 - **`app.css`** solo tiene el reset, la tipografía base y lo que comparten todas las vistas: rejillas (`.grid`,
   `.grid-2`, `.grid-2e`, `.grid-3`, `.col`), listas `.mini`, `.empty` y los colores `.up`, `.down`, `.mut`.
   El resto va en el `<style>` de su componente.
@@ -104,8 +113,10 @@ La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`)
 | `BOE` / `USGOV` | Boletines oficiales | BOE, Federal Register |
 | `LUZ` | Precio de la luz y mix de generación | REE |
 | `WX` | Tiempo, mar, aire, avisos, sol y luna | Open-Meteo, MeteoAlarm |
-| `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica |
+| `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica, Comisión Europea (Weekly Oil Bulletin) |
 | `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
+| `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista, análisis y problema del día | Stockfish, chess.js, Lichess |
+| `TV` | Modo TV: las vistas rotan solas, encajadas y a pantalla completa | — |
 | `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
 
 \* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`):
@@ -138,4 +149,6 @@ Cuando termine una fase, actualiza esta lista.
 - Descartadas: GDELT (429 desde Actions), RSS de la CNMV (no responde) y RSS del Parlamento Europeo (todo
   europarl.europa.eu responde 202 vacío desde Actions: muro anti-robots).
 - ReliefWeb: falta el appname aprobado (RELIEFWEB_APPNAME); aparcado por Sergi.
+- Bonos a 10 años de Reino Unido, Japón y China: TradingView no da rentabilidades en sus widgets; hacen falta
+  fuentes oficiales (BoE, MOF de Japón, ChinaBond). De momento no se hacen.
 - «Próximo dato» de Eurostat (M10): el .ics `cache/RELEASE_CALENDAR/calendar_EN.ics` da 404 y no se ha encontrado el nuevo. El de INE y EE. UU. (fechas de FRED; el .ics del BLS prohíbe robots) sí funcionan.

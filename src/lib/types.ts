@@ -153,6 +153,23 @@ export interface Paper {
 	summary: string;
 }
 
+// ---------- Modelos en tendencia (Hugging Face) ----------
+
+export interface HfModel {
+	/** «autor/modelo», como en la URL de Hugging Face. */
+	id: string;
+	author: string;
+	name: string;
+	/** Tarea en inglés, tal como la da Hugging Face («text-generation»…): la vista la traduce. */
+	task: string;
+	likes: number;
+	/** Descargas del último mes. */
+	downloads: number;
+	url: string;
+	/** Cuándo se creó (ISO 8601), o vacío. */
+	created: string;
+}
+
 // ---------- Terremotos (USGS) ----------
 
 export interface Quake {
@@ -230,11 +247,15 @@ export interface Coin {
 	usd: number;
 	eur: number;
 	change24h: number | null;
+	/** Variación en 7 días (%). Opcional: las copias antiguas no la traen. */
+	change7d?: number | null;
 	marketCap: number | null;
 }
 
 export interface CryptoData {
 	coins: Coin[];
+	/** Cierre diario de bitcoin en dólares (hora de Madrid), hasta 400 días. Para el termómetro de riesgo. */
+	btcHistory?: { date: string; usd: number }[];
 }
 
 // ---------- Curva de tipos del Tesoro de EE. UU. ----------
