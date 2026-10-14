@@ -77,5 +77,3 @@ export const sources: Source<any>[] = [
 	imp,
 	search
 ];
-// M10 (Próximo dato), en una línea hasta que el registro sea automático (arreglo de Prog 5): entonces se quita.
-sources.push((await import('./releases-cal.ts')).releasesCal);

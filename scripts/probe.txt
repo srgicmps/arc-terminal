@@ -27,7 +27,6 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
-# M10 «Próximo dato»: el enlace ICS de Eurostat (la URL de su página antigua da 404)
-https://ec.europa.eu/eurostat/subscribe/ics.format ~ .{0,120}(\.ics|ical|webcal).{0,160}
-https://ec.europa.eu/eurostat/news/release-calendar ~ .{0,120}(\.ics|ical|webcal|subscribe).{0,160}
-https://ec.europa.eu/eurostat/news/internet-calendar ~ .{0,120}(\.ics|ical|webcal).{0,160}
+# M10 «Próximo dato»: posibles enlaces ICS del calendario nuevo de Eurostat
+https://ec.europa.eu/eurostat/o/calendars/eventsIcal ~ ^.{0,600}
+https://ec.europa.eu/eurostat/o/calendars/eventsIcal?theme=0&category=0 ~ ^.{0,600}
