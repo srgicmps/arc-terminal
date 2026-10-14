@@ -328,11 +328,6 @@
 		text-decoration: none;
 	}
 
-	mark {
-		color: var(--amber);
-		background: var(--amber-soft);
-	}
-
 	.foot {
 		margin: var(--sp-8) 0 0;
 		color: var(--faint);
