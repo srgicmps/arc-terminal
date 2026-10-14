@@ -2,23 +2,32 @@
 // API DOC 2.0 (sin clave, uso libre citando a GDELT). Pide no hacer más de una consulta cada 5 s,
 // así que se hace una sola consulta por actualización.
 import type { NewsData, NewsItem } from '../../src/lib/types.ts';
-import { getJson, list, plain, type Source } from '../lib.ts';
+import { getText, list, plain, type Source } from '../lib.ts';
 
 type Raw = Record<string, any>;
 
 // Temas de GDELT (GKG) que encajan con geopolítica. Solo medios en español, últimas 24 h.
-const QUERY = '(theme:ARMEDCONFLICT OR theme:MILITARY OR theme:SANCTIONS OR theme:CEASEFIRE) sourcelang:spanish';
+// Si la primera consulta no trae nada, se prueba la segunda, más sencilla.
+const QUERIES = [
+	'(theme:ARMEDCONFLICT OR theme:MILITARY OR theme:SANCTIONS OR theme:CEASEFIRE) sourcelang:spanish',
+	'theme:ARMEDCONFLICT sourcelang:spanish'
+];
 
-const ENDPOINT =
+const endpoint = (query: string) =>
 	'https://api.gdeltproject.org/api/v2/doc/doc?' +
-	new URLSearchParams({
-		query: QUERY,
-		mode: 'artlist',
-		format: 'json',
-		maxrecords: '75',
-		timespan: '24h',
-		sort: 'hybridrel'
-	});
+	new URLSearchParams({ query, mode: 'artlist', format: 'json', maxrecords: '75', timespan: '24h', sort: 'hybridrel' });
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Artículos de una consulta. Si GDELT no devuelve JSON (límite de uso, consulta mal hecha), avisa con su texto. */
+async function articles(query: string): Promise<{ list: Raw[]; raw: string }> {
+	const raw = await getText(endpoint(query));
+	try {
+		return { list: list<Raw>(JSON.parse(raw).articles), raw };
+	} catch {
+		throw new Error(`GDELT no ha devuelto JSON: ${plain(raw, 160)}`);
+	}
+}
 
 /** «20261014T113000Z» → ISO 8601. */
 function seenDate(value: unknown): string | null {
@@ -31,11 +40,15 @@ export const gdelt: Source<NewsData> = {
 	label: 'Conflictos en medios de todo el mundo · GDELT',
 	maxAgeMinutes: 55,
 	async fetch() {
-		// Si la consulta no le gusta, GDELT responde con un texto en vez de JSON: getJson falla y se avisa.
-		const body = await getJson<Raw>(ENDPOINT);
+		let result = await articles(QUERIES[0]);
+		if (!result.list.length) {
+			// GDELT pide al menos 5 s entre consultas.
+			await wait(6_000);
+			result = await articles(QUERIES[1]);
+		}
 		const seen = new Set<string>();
 		const items: NewsItem[] = [];
-		for (const a of list<Raw>(body.articles)) {
+		for (const a of result.list) {
 			const title = plain(a.title, 200);
 			// El mismo teletipo sale en muchos medios: se queda solo el primero.
 			const key = title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
@@ -50,7 +63,7 @@ export const gdelt: Source<NewsData> = {
 				summary: ''
 			});
 		}
-		if (!items.length) throw new Error('GDELT no ha devuelto noticias');
+		if (!items.length) throw new Error(`GDELT no ha devuelto noticias: ${plain(result.raw, 160)}`);
 		return { items: items.slice(0, 30), feeds: [{ name: 'GDELT', count: items.length }] };
 	}
 };
