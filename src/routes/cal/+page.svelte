@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { clock } from '#lib/clock.svelte.ts';
 	import Panel from '#lib/components/Panel.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { compact, nf, trend, weekday } from '#lib/format.ts';
+	import { compact, dm, nf, trend, weekday } from '#lib/format.ts';
+	import { bmeHolidays, nyseHolidays } from '#lib/markets.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -16,6 +18,30 @@
 
 	const earnings = $derived(data.finnhub?.data.earnings ?? []);
 	const HOUR: Record<string, string> = { bmo: 'Pre', amc: 'Post', dmh: 'Sesión' };
+
+	// Festivos de los próximos 12 meses: España y Baleares (Nager.Date) y días sin bolsa (por reglas).
+	// Hasta que arranca el reloj en el navegador se usa la fecha en la que se construyó la página.
+	const today = $derived(new Date(clock.now || Date.now()).toISOString().slice(0, 10));
+	const days = $derived.by(() => {
+		const year = Number(today.slice(0, 4));
+		const limit = `${year + 1}${today.slice(4)}`;
+		const all = [
+			...(data.holidays?.data.items ?? []).map((h) => ({ date: h.date, name: h.name, tag: h.scope })),
+			...[year, year + 1].flatMap((y) => [...nyseHolidays(y), ...bmeHolidays(y)]).map((h) => ({ ...h, tag: h.market }))
+		].filter((h) => h.date >= today && h.date < limit);
+		// Un día por fila: si coinciden varios, se juntan las etiquetas y los nombres distintos.
+		const byDate = new Map<string, { date: string; names: string[]; tags: string[] }>();
+		for (const h of all.sort((a, b) => a.date.localeCompare(b.date))) {
+			const row = byDate.get(h.date) ?? { date: h.date, names: [], tags: [] };
+			if (!row.names.includes(h.name)) row.names.push(h.name);
+			if (!row.tags.includes(h.tag)) row.tags.push(h.tag);
+			byDate.set(h.date, row);
+		}
+		return [...byDate.values()];
+	});
+	// El próximo festivo de España o Baleares (los días sin bolsa no cuentan).
+	const next = $derived(days.find((d) => d.tags.includes('ES') || d.tags.includes('IB')));
+	const inDays = (date: string) => Math.round((Date.parse(date) - Date.parse(today)) / 86_400_000);
 </script>
 
 <ViewHeader code="CAL" title="Agenda económica" sub="Datos macro de la semana (TradingView) y resultados empresariales (Finnhub)" />
@@ -27,6 +53,40 @@
 		</Panel>
 	</div>
 	<div class="col">
+		<Panel title="Festivos" meta="Próximos 12 meses">
+			{#if next}
+				<ul class="mini">
+					<li>
+						<span class="l">Próximo festivo<small>{next.names.join(' · ')}</small></span>
+						<b>{dm(`${next.date}T12:00:00Z`)} · {inDays(next.date) === 0 ? 'hoy' : `en ${inDays(next.date)} días`}</b>
+					</li>
+				</ul>
+			{/if}
+			{#if days.length}
+				<div class="scroll">
+					<table class="t fest">
+						<thead>
+							<tr><th>Día</th><th class="l">Festivo</th><th class="l">Dónde</th></tr>
+						</thead>
+						<tbody>
+							{#each days as d (d.date)}
+								<tr>
+									<td class="mut">{weekday(d.date)} {dm(`${d.date}T12:00:00Z`).split(' ')[1]}</td>
+									<td class="l name">{d.names.join(' · ')}</td>
+									<td class="l mut">{d.tags.join(' ')}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
+			{#snippet note()}
+				ES: festivo en toda España · IB: en Baleares · NYSE y BME: sin bolsa en Nueva York o en Madrid.
+				Festivos: Nager.Date{#if data.holidays}&nbsp;· <Updated at={data.holidays.fetchedAt} />{/if}.
+				Días sin bolsa calculados con las reglas de la NYSE y del calendario TARGET2 (BME).
+				Los festivos locales de cada municipio no están incluidos.
+			{/snippet}
+		</Panel>
 		<Panel title="Resultados" meta="Grandes empresas de EE. UU. · próximas 2 semanas">
 			{#if !data.finnhub}
 				<p class="empty">Falta la clave FINNHUB_API_KEY en GitHub Secrets.</p>
@@ -71,6 +131,11 @@
 </div>
 
 <style>
+	/* Los nombres largos pasan a otra línea para que quepa la columna «Dónde» en el móvil. */
+	.fest .name {
+		white-space: normal;
+	}
+
 	a.sym {
 		color: inherit;
 		text-decoration: none;

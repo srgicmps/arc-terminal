@@ -365,3 +365,14 @@ export interface PowerMix {
 export interface PowerMixData {
 	systems: PowerMix[];
 }
+
+/** Un festivo: nacional (ES) o de Baleares (IB). */
+export interface Holiday {
+	/** «2026-12-08» */
+	date: string;
+	name: string;
+	scope: 'ES' | 'IB';
+}
+export interface HolidaysData {
+	items: Holiday[];
+}
