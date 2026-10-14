@@ -169,6 +169,12 @@
 				{/snippet}
 			</Panel>
 		{/if}
+		{#if data.world?.data.items.length}
+			<Panel title="Desde Ucrania, China, Japón y África" meta="Medios de cada región">
+				<NewsList items={data.world.data.items} />
+				{#snippet note()}<Updated at={data.world?.fetchedAt} source="news-world" />{/snippet}
+			</Panel>
+		{/if}
 		{#if data.analysis?.data.items.length}
 			<Panel title="Análisis" meta="Crisis Group y Foreign Affairs">
 				<NewsList items={data.analysis.data.items} />

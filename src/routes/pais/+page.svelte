@@ -13,7 +13,9 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
+	import { favCountries, initFavCountries, toggleFavCountry } from '#lib/favcountries.svelte.ts';
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
@@ -49,6 +51,11 @@
 	// Para la lista y el desplegable, por orden alfabético.
 	const sorted = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, 'es'));
 
+	// Tus países (favcountries.svelte.ts): arriba del desplegable y de la lista; se marcan con ★.
+	$effect(initFavCountries);
+	const favs = $derived(favCountries.codes.map((code) => COUNTRIES.find((c) => c.code === code)).filter((c) => c !== undefined));
+	const followed = $derived(!!country && favCountries.codes.includes(country.code));
+
 	function choose(code: string) {
 		goto(resolve('/pais') + `?c=${code}`);
 	}
@@ -68,9 +75,24 @@
 		: 'Cifras, tipos, moneda, previsiones y titulares de cada país'}
 >
 	{#snippet aside()}
+		{#if country}
+			{@const code = country.code}
+			<Seg
+				label="Tus países"
+				options={[{ value: 'fav', label: followed ? '★ Siguiendo' : '☆ Seguir' }]}
+				bind:values={() => (followed ? ['fav'] : []), () => toggleFavCountry(code)}
+			/>
+		{/if}
 		<Select label="País" value={country?.code ?? ''} onchange={choose}>
 			{#if !country}<option value="" disabled>Elige…</option>{/if}
-			{#each sorted as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+			{#if favs.length}
+				<optgroup label="Tus países">
+					{#each favs as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+				</optgroup>
+			{/if}
+			<optgroup label="Todos">
+				{#each sorted as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+			</optgroup>
 		</Select>
 	{/snippet}
 </ViewHeader>
@@ -78,6 +100,15 @@
 {#if !country}
 	<div class="grid">
 		<div class="col">
+			{#if favs.length}
+				<Panel title="Tus países" meta="Los que sigues (★ en su ficha)">
+					<ul class="mini">
+						{#each favs as c (c.code)}
+							<li><a class="l" href="{resolve('/pais')}?c={c.code}">{c.name}</a><b class="mut">{c.code}</b></li>
+						{/each}
+					</ul>
+				</Panel>
+			{/if}
 			<Panel title="Países" meta="{COUNTRIES.length} países">
 				{#if query}<p class="empty">No conozco «{query}». Prueba con el nombre o el código: PAIS Alemania, PAIS DE.</p>{/if}
 				<Table>

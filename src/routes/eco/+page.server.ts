@@ -48,6 +48,8 @@ export const load: PageServerLoad = async () => {
 		usdebt,
 		fred,
 		fredMissing,
+		// Señales de recesión (provisional): solo sus tres series y los puntos del minigráfico.
+		recession: pickSeries(fred, ['sahm-us', 'recprob-us', 't10y3m-us'], 60),
 		// Panel provisional «Estrés financiero»: CISS (~6 meses de días hábiles) y STLFSI4 (un año de semanas).
 		stress: { ecb: pickSeries(ecb, ['ciss-ea'], 120), fred: pickSeries(fred, ['stlfsi-us'], 52) },
 		bis,

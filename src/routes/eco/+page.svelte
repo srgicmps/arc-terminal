@@ -11,6 +11,7 @@
 	import MeetingList from '#lib/components/MeetingList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
+	import RecessionSignals from '#lib/components/RecessionSignals.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
@@ -322,6 +323,7 @@
 				{#if data.fred}· <Updated at={data.fred.fetchedAt} source="fred" />{/if}
 			{/snippet}
 		</Panel>
+		{#if data.recession}<RecessionSignals data={data.recession} />{/if}
 		<Panel title="Mercado monetario" meta="Tipos a corto plazo · zona euro y EE. UU.">
 			<SeriesTable
 				next={data.next}
