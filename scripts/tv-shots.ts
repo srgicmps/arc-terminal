@@ -85,6 +85,18 @@ try {
 				console.log(`  mapa ${label}: ${(await topColors(page, png)).join(' · ')}`);
 				if (theme === 'dark') console.log(`    texto: ${await frameText(el)}`);
 			}
+			// En WS, una captura de cada bolsa del panel «Los que más se mueven» (comprueba que el widget la admite).
+			const hots = page.locator('.hot button');
+			for (let h = 0; h < (await hots.count()); h++) {
+				await hots.nth(h).click();
+				await page.waitForTimeout(5000);
+				const el = page.locator('.tv[data-widget="hotlists"]').first();
+				const png = await el.screenshot();
+				const label = (await hots.nth(h).textContent())?.trim() ?? String(h);
+				writeFileSync(`shots/${theme}-hot-${label.replace(/\W+/g, '_')}.png`, png);
+				console.log(`  bolsa ${label}: ${(await topColors(page, png)).join(' · ')}`);
+				if (theme === 'dark') console.log(`    texto: ${await frameText(el)}`);
+			}
 			for (let i = 0; i < n; i++) {
 				const el = widgets.nth(i);
 				const name = (await el.getAttribute('data-widget')) ?? `widget${i}`;
