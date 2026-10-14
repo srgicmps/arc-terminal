@@ -11,7 +11,8 @@ export const NEWS_SECTIONS = [
 	{ key: 'ai', label: 'IA' },
 	{ key: 'gov', label: 'Gobiernos' },
 	{ key: 'intl', label: 'Organismos' },
-	{ key: 'analysis', label: 'Análisis' }
+	{ key: 'analysis', label: 'Análisis' },
+	{ key: 'world', label: 'Mundo' }
 ] as const;
 
 /** «eco» → «Economía», para la etiqueta de cada titular. */
