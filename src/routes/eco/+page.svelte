@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import MortgageCalc from '#lib/components/MortgageCalc.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
+	import MeetingList from '#lib/components/MeetingList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
@@ -42,6 +44,16 @@
 		</Panel>
 	</div>
 	<div class="col">
+		<Panel title="Próximas reuniones" meta="Decisión de tipos · hora de España" jump={{ code: 'CAL', href: resolve('/cal') }}>
+			<MeetingList
+				markets={[
+					...(data.predictions?.data.rates ?? []),
+					...(data.predictions?.data.economy ?? []),
+					...(data.predictions?.data.geopolitics ?? [])
+				]}
+			/>
+			{#snippet note()}Calendarios oficiales del BCE y de la Fed. Probabilidades: Polymarket, apuestas y no pronósticos.{/snippet}
+		</Panel>
 		<Panel title="BCE" meta="Tipos y euríbor">
 			<SeriesTable
 				head="Tipo"
