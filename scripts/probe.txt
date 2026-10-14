@@ -27,7 +27,3 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
-# Alertas: demanda eléctrica de REE en tiempo real (real frente a prevista), para detectar un apagón
-https://apidatos.ree.es/es/datos/demanda/demanda-tiempo-real?start_date=2026-10-14T00:00&end_date=2026-10-14T23:59&time_trunc=hour
-https://apidatos.ree.es/es/datos/demanda/evolucion?start_date=2026-10-14T00:00&end_date=2026-10-14T23:59&time_trunc=hour
-https://demanda.ree.es/WSvisionaMovilesPeninsulaRest/resources/demandaGeneracionPeninsula?callback=cb&curva=DEMANDA&fecha=2026-10-14
