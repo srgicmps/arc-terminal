@@ -4,6 +4,7 @@
 	import BalanceSheets from '#lib/components/BalanceSheets.svelte';
 	import HousingTable from '#lib/components/HousingTable.svelte';
 	import ImfTable from '#lib/components/ImfTable.svelte';
+	import LineChart from '#lib/components/LineChart.svelte';
 	import MortgageCalc from '#lib/components/MortgageCalc.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import MeetingList from '#lib/components/MeetingList.svelte';
@@ -20,7 +21,20 @@
 
 	let { data }: PageProps = $props();
 
+	// Diferenciales de crédito de ICE BofA (FRED): id, nombre y color de la línea del gráfico.
+	const CREDIT = [
+		['hy-us', 'Alto rendimiento EE. UU.', '--amber'],
+		['hy-eu', 'Alto rendimiento euro', '--muted'],
+		['ig-us', 'Grado de inversión EE. UU.', '--faint']
+	] as const;
+
 	const get = $derived(seriesMap(data.eurostat, data.ecb, data.bls, data.usdebt, data.fred));
+	const creditLines = $derived(
+		CREDIT.flatMap(([id, label, color]) => {
+			const points = get(id)?.points;
+			return points?.length ? [{ label, color, points }] : [];
+		})
+	);
 	const geos = ['es', 'ea', 'de', 'fr', 'it', 'pt'];
 	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: !id.startsWith('gdp') }));
 
@@ -44,6 +58,8 @@
 
 	// Prima de España a diario (Banco de España): último día hábil y cambio en una semana.
 	const daily = $derived(seriesMap(data.bde));
+	// Diferencial SOFR − IORB en pb: si el repo cobra más que las reservas en la Fed, falta liquidez.
+	const sofrIorb = $derived(spread(get('sofr-us'), get('iorb-us'), 'sofr-iorb', 'SOFR − IORB'));
 	const premiumDay = $derived(last(daily('premium-es-d')));
 	const premiumWeek = $derived(diffDays(daily('premium-es-d'), 7));
 </script>
@@ -100,6 +116,17 @@
 					Fuente: <a href="https://www.fao.org/worldfoodsituation/foodpricesindex/en/" target="_blank" rel="noopener">FAO</a>, precios
 					internacionales en dólares · variación mensual y anual{fao.data.released ? ` · publicado el ${dm(fao.data.released)}` : ''} ·
 					<Updated at={fao.fetchedAt} source="fao" />
+				{/snippet}
+			</Panel>
+		{/if}
+		{#if data.uncertainty?.data.series.length}
+			{@const epu = data.uncertainty}
+			<Panel title="Incertidumbre económica" meta="Índice EPU · 100 = media histórica">
+				<SeriesTable head="Índice" rows={epu.data.series.map((series) => ({ series, name: series.label, inverse: true }))} spark={36} />
+				{#snippet note()}
+					Fuente: <a href="https://www.policyuncertainty.com/" target="_blank" rel="noopener">Economic Policy Uncertainty</a> (Baker,
+					Bloom y Davis), menciones en prensa de la incertidumbre sobre la política económica ·
+					<Updated at={epu.fetchedAt} source="uncertainty" />
 				{/snippet}
 			</Panel>
 		{/if}
@@ -257,6 +284,25 @@
 				{#if data.fred}· <Updated at={data.fred.fetchedAt} source="fred" />{/if}
 			{/snippet}
 		</Panel>
+		<Panel title="Mercado monetario" meta="Tipos a corto plazo · zona euro y EE. UU.">
+			<SeriesTable
+				next={data.next}
+				head="Tipo"
+				rows={[
+					{ series: get('estr'), name: '€STR (a un día)', decimals: 3 },
+					{ series: get('euribor-3m'), name: 'Euríbor 3 meses', decimals: 3 },
+					{ series: get('euribor-12m'), name: 'Euríbor 12 meses', decimals: 3 },
+					{ series: get('sofr-us'), name: 'SOFR (repo a un día)', decimals: 2 },
+					{ series: get('fedfunds-us'), name: 'Fondos federales (EFFR)', decimals: 2 },
+					{ series: get('iorb-us'), name: 'Reservas en la Fed (IORB)', decimals: 2 },
+					{ series: get('tbill3m-us'), name: 'Letra a 3 meses', decimals: 2 },
+					{ series: sofrIorb, name: 'SOFR − IORB (pb)', decimals: 0, inverse: true }
+				]}
+			/>
+			{#snippet note()}
+				SOFR por encima de IORB es señal de tensión en la liquidez del dólar. Fuentes: BCE y FRED (Fed de San Luis)
+			{/snippet}
+		</Panel>
 		{#if data.fred}
 			<Panel title="Inflación esperada y tipos reales" meta="EE. UU. · mercado de bonos">
 				<SeriesTable
@@ -273,6 +319,25 @@
 				{#snippet note()}
 					Inflación esperada: diferencia entre el bono del Tesoro y el ligado a la inflación (TIPS) del mismo plazo.
 					Fuente: FRED · <Updated at={data.fred?.fetchedAt} source="fred" />
+				{/snippet}
+			</Panel>
+		{/if}
+		{#if get('hy-us')}
+			<Panel title="Diferenciales de crédito" meta="Bonos de empresa sobre la deuda pública · último año">
+				<SeriesTable
+					head="Bonos"
+					spark={60}
+					rows={CREDIT.map(([id, name]) => ({ series: get(id), name, decimals: 2, inverse: true }))}
+					extra={[
+						{ head: '7 días', value: (s) => diffDays(s, 7) },
+						{ head: '1 año', value: (s) => diffDays(s, 365) }
+					]}
+				/>
+				<LineChart lines={creditLines} unit=" %" height={160} />
+				{#snippet note()}
+					Diferencial ajustado por opciones (OAS), en puntos porcentuales: lo que pagan de más los bonos de empresa.
+					Si sube, el mercado pide más prima por el riesgo de impago. Fuente: ICE Data Indices, LLC, vía FRED ·
+					<Updated at={data.fred?.fetchedAt} source="fred" />
 				{/snippet}
 			</Panel>
 		{/if}

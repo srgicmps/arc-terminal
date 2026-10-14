@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { asset, resolve } from '$app/paths';
+	import { latestWatched } from '#lib/boe.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
-	import { nf, when } from '#lib/format.ts';
+	import { dm, nf, when } from '#lib/format.ts';
 	import { cheapestNow, hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
 	import { seriesMap, spread } from '#lib/series.ts';
 	import { compass, sky } from '#lib/weather.ts';
@@ -13,6 +14,8 @@
 	import Markets from '#lib/components/top/Markets.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
+	import type { BoeWeek } from '#lib/types.ts';
+	import { initWatchwords, watchwords } from '#lib/watchwords.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
 	import type { PageProps } from './$types';
 
@@ -73,6 +76,19 @@
 
 	const boeGeneral = $derived(data.boe?.data.sections.find((s) => s.code === '1'));
 	const boeTotal = $derived((data.boe?.data.sections ?? []).reduce((n, s) => n + s.total, 0));
+
+	// Palabras vigiladas (las de la vista BOE, guardadas en este navegador): cuántas disposiciones del último
+	// sumario las nombran. boe-week.json se pide en el navegador y solo si hay alguna palabra.
+	let boeWeek = $state.raw<BoeWeek | null>(null);
+	$effect(() => initWatchwords());
+	$effect(() => {
+		if (!watchwords.ready || !watchwords.words.length || boeWeek) return;
+		fetch(asset('data/boe-week.json' as Parameters<typeof asset>[0]))
+			.then((res) => (res.ok ? (res.json() as Promise<BoeWeek>) : null))
+			.then((w) => (boeWeek = w))
+			.catch(() => {});
+	});
+	const boeWatch = $derived(latestWatched(boeWeek, watchwords.words));
 
 	// Línea de arriba: titulares nuevos desde la última visita y la franja de luz más barata.
 	const fresh = $derived(clock.now && visit.ready ? newSinceText(newCount(data.headlines, visit.last), visit.last, clock.now) : '');
@@ -222,6 +238,14 @@
 {#snippet boe()}
 	<Panel id="boe" title="BOE de hoy" meta="{boeTotal} publicaciones" jump={{ code: 'BOE', href: resolve('/boe') }}>
 		<ul class="mini">
+			{#if boeWatch}
+				<li>
+					<a class="l" href={resolve('/boe')}
+						>Con tus palabras vigiladas{#if boeWatch.date !== now?.day}<small>BOE del {dm(boeWatch.date)}</small>{/if}</a
+					>
+					<b class:strong={boeWatch.count > 0}>{boeWatch.count}</b>
+				</li>
+			{/if}
 			{#each (boeGeneral?.items ?? []).slice(0, 4) as item (item.id)}
 				<li><a class="l" href={item.html} target="_blank" rel="noopener">{item.title}</a></li>
 			{:else}
