@@ -1179,4 +1179,20 @@ export interface NeoPass {
 	speed: number | null;
 	/** Tamaño en metros: el medido si lo hay; si no, la horquilla que sale de su brillo (albedo 0,25 a 0,05). */
 	size: { min: number; max: number; measured: boolean } | null;
+// ---------- Red de bitcoin (mempool.space, scripts/sources/bitcoin.ts) ----------
+
+export interface BitcoinNet {
+	/** Comisión para entrar en el próximo bloque, en sat/vB. */
+	feeFast: number | null;
+	/** La del tercer bloque (unos 30 min). */
+	feeHalfHour: number | null;
+	/** Transacciones esperando (mempool) y su tamaño en vMB. */
+	mempoolTx: number | null;
+	mempoolVmb: number | null;
+	/** Potencia de minado, en EH/s. */
+	hashrate: number | null;
+	/** Altura del último bloque. */
+	height: number;
+	/** Próximo halving: su altura, bloques que faltan y fecha estimada (10 min por bloque). */
+	halving: { height: number; blocks: number; date: string };
 }
