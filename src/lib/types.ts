@@ -194,6 +194,29 @@ export interface PowerData {
 	history?: PowerDay[];
 }
 
+// ---------- Precio de la luz en Europa (Energy-Charts y REE) ----------
+
+/** Media diaria del mercado mayorista en una zona de precio («DE-LU»), en €/MWh. */
+export interface EuPowerZone {
+	/** Zona de precio del mercado europeo: «DE-LU», «FR», «IT-North»… */
+	zone: string;
+	/** País (ISO2) al que corresponde, para enlazar con PAIS. */
+	country: string;
+	/** Nombre en español: «Alemania y Luxemburgo», «Italia (norte)». */
+	name: string;
+	/** Media de hoy y de mañana (día de Madrid); null si aún no se conoce o el día está incompleto. */
+	today: number | null;
+	tomorrow: number | null;
+	/** Quién lo publica: «Energy-Charts / SMARD» o «REE» (España). */
+	source: string;
+}
+
+export interface EuPowerData {
+	/** Día de «hoy» (Madrid): «2026-10-14». */
+	date: string;
+	zones: EuPowerZone[];
+}
+
 // ---------- Tiempo (Open-Meteo) ----------
 
 export interface WeatherDay {

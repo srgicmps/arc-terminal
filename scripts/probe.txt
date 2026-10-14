@@ -27,15 +27,6 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
-# LUZ/ECO/PAIS: precio de la luz por país (Energy-Charts, Fraunhofer ISE). Zonas que acepta y forma de la respuesta.
-https://api.energy-charts.info/openapi.json ~ .{0,200}bzn.{0,900}
-https://api.energy-charts.info/price?bzn=ES&start=2026-10-14&end=2026-10-15
-https://api.energy-charts.info/price?bzn=DE-LU&start=2026-10-15&end=2026-10-15
-https://api.energy-charts.info/price?bzn=IT-North
-https://api.energy-charts.info/price?bzn=NO2
-https://api.energy-charts.info/price?bzn=SE3
-https://api.energy-charts.info/price?bzn=DK1
-https://api.energy-charts.info/price?bzn=CH
 # GEO/PAIS (M12): avisos de viaje del Departamento de Estado de EE. UU. (nivel 1–4 por país)
 https://cadataapi.state.gov/api/TravelAdvisories
 https://cadataapi.state.gov/api/TravelAdvisories ~ Spain|Ukraine
