@@ -27,3 +27,19 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
+# Cotizaciones europeas sin clave para alertas (solo exploración): Euronext (Airbus, Thales, Leonardo)
+https://live.euronext.com/en/ajax/getDetailedQuote/NL0000235190-XPAR
+https://live.euronext.com/intraday_chart/getChartData/NL0000235190-XPAR/intraday
+https://live.euronext.com/en/ajax/AwlHistoricalPrice/getFullDownloadAjax/FR0000121329-XPAR?format=csv&decimal_separator=.&date_form=d/m/Y&startdate=2026-10-01&enddate=2026-10-14
+https://live.euronext.com/en/ajax/getDetailedQuote/IT0003856405-MTAA
+https://www.euronext.com/en/terms-use ~ .{0,200}(automat|scrap|robot|reproduc|commercial).{0,200}
+# Börse Frankfurt (Rheinmetall) y London Stock Exchange (BAE)
+https://api.boerse-frankfurt.de/v1/data/price_information/single?isin=DE0007030033&mic=XETR
+https://api.londonstockexchange.com/api/gw/lse/instruments/alldata/BA.
+https://www.londonstockexchange.com/terms-and-conditions ~ .{0,200}(automat|scrap|robot|reproduc).{0,200}
+# Nasdaq Nordic (Saab B) y BME (Indra)
+https://api.nasdaq.com/api/nordic/search?searchText=SAAB
+https://www.nasdaqomxnordic.com/webproxy/DataFeedProxy.aspx?SubSystem=History&Action=GetChartData&inst.an=id,nm,fnm,isin,tp,chp,ltp,t,cp&FromDate=2026-10-01&ToDate=2026-10-14&json=true&showAdjusted=true&app=/aktier/microsite&timezone=CET&DefaultDecimals=false&Instrument=SSE125
+https://www.bolsasymercados.es/bme-exchange/es/Mercados-y-Cotizaciones/Acciones/Mercado-Continuo/Ficha/Indra-A-ES0118594417 ~ .{0,80}(Último|Cierre|Precio).{0,80}
+# Datos abiertos con licencia: Deutsche Börse (dataset público en AWS)
+https://deutsche-boerse-xetra-pds.s3.amazonaws.com/?list-type=2&max-keys=3&prefix=2026-10-13/
