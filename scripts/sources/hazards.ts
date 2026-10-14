@@ -12,6 +12,8 @@ export const quakesEs: Source<Quake[]> = {
 	name: 'quakes-es',
 	label: 'Terremotos en España · Instituto Geográfico Nacional',
 	maxAgeMinutes: 12,
+	// Cuántos terremotos hay depende de la actividad sísmica: tras un enjambre, el número cae de golpe.
+	allowEmpty: true,
 	async fetch() {
 		const items = parseFeed(await getText('https://www.ign.es/ign/RssTools/sismologia.xml'), 'IGN');
 		// «Se ha producido un terremoto de magnitud 2.7 en SW CABO DE SAN VICENTE en la fecha
