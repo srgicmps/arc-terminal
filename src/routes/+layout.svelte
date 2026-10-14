@@ -7,14 +7,19 @@
 	import Clocks from '#lib/components/Clocks.svelte';
 	import CommandBar from '#lib/components/CommandBar.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
+	import { ui } from '#lib/ui.svelte.ts';
+	import { initWatchlist } from '#lib/watchlist.svelte.ts';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
 
 	// El reloj arranca en el navegador (como onMounted en Vue) y se para al salir.
 	$effect(startClock);
+	$effect(initWatchlist);
 
 	const keys = COMMANDS.filter((c) => c.pinned);
+	// Barra inferior del móvil: los accesos más usados, a mano del pulgar.
+	const thumb = ['TOP', 'ECO', 'WS', 'FUEL'].map((code) => COMMANDS.find((c) => c.code === code)!);
 
 	// navigator.onLine, enlazado como en Vue con un ref que se actualiza solo.
 	let online = $state(true);
@@ -86,6 +91,13 @@
 	<main>
 		{@render children()}
 	</main>
+
+	<nav class="thumb" aria-label="Accesos rápidos">
+		{#each thumb as c (c.code)}
+			<a href={resolve(c.route)} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
+		{/each}
+		<button type="button" aria-label="Abrir la barra de comandos" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>/</button>
+	</nav>
 
 	<footer class="status">
 		<span>Datos públicos actualizados cada 15 min con GitHub Actions · cotizaciones de TradingView</span>
@@ -229,7 +241,61 @@
 		color: var(--muted);
 	}
 
+	/* Barra inferior para el pulgar: solo en pantallas estrechas. */
+	.thumb {
+		display: none;
+	}
+
 	@media (max-width: 720px) {
+		.thumb {
+			position: fixed;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			z-index: 35;
+			display: grid;
+			grid-template-columns: repeat(5, minmax(0, 1fr));
+			background: var(--panel);
+			border-top: 1px solid var(--line);
+			padding-bottom: env(safe-area-inset-bottom, 0px);
+		}
+
+		.thumb a,
+		.thumb button {
+			display: grid;
+			place-items: center;
+			height: 48px;
+			background: none;
+			border: 0;
+			color: var(--muted);
+			text-decoration: none;
+			font-family: var(--mono);
+			font-size: var(--fs-s);
+			letter-spacing: 0.06em;
+			cursor: pointer;
+		}
+
+		.thumb [aria-current='page'],
+		.thumb [aria-pressed='true'] {
+			color: var(--amber);
+			text-decoration: underline 1px;
+			text-underline-offset: 5px;
+		}
+
+		.thumb button {
+			color: var(--amber);
+			font-size: var(--fs-l);
+		}
+
+		/* Que el contenido no quede tapado por la barra. */
+		.app {
+			padding-bottom: calc(49px + env(safe-area-inset-bottom, 0px));
+		}
+
+		.fresh {
+			bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+		}
+
 		.key span {
 			display: none;
 		}
