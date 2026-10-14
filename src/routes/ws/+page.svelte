@@ -56,18 +56,8 @@
 						{ s: 'TVC:USOIL', d: 'WTI' },
 						{ s: 'TVC:GOLD', d: 'Oro' },
 						{ s: 'TVC:SILVER', d: 'Plata' },
-						{ s: 'COMEX:HG1!', d: 'Cobre' },
-						{ s: 'NYMEX:NG1!', d: 'Gas natural' }
-					]
-				},
-				{
-					title: 'Bonos',
-					symbols: [
-						{ s: 'TVC:US10Y', d: 'EE. UU. 10 años' },
-						{ s: 'TVC:US02Y', d: 'EE. UU. 2 años' },
-						{ s: 'TVC:DE10Y', d: 'Alemania 10 años' },
-						{ s: 'TVC:ES10Y', d: 'España 10 años' },
-						{ s: 'TVC:IT10Y', d: 'Italia 10 años' }
+						{ s: 'OANDA:XCUUSD', d: 'Cobre' },
+						{ s: 'OANDA:NATGASUSD', d: 'Gas natural' }
 					]
 				},
 				{
@@ -84,31 +74,18 @@
 		};
 	});
 
-	// Materias primas y bonos a 10 años del mundo (widget «market-quotes»). Símbolos de TradingView:
-	// futuros continuos («1!») donde no hay índice de contado.
-	// PRUEBA TEMPORAL de símbolos (se quita antes del merge)
-	const COMMODITIES_TEST = [{name: 'OANDA:NATGASUSD', displayName: 'OANDA:NATGASUSD'}, {name: 'CAPITALCOM:NATURALGAS', displayName: 'CAPITALCOM:NATURALGAS'}, {name: 'PEPPERSTONE:NATGAS', displayName: 'PEPPERSTONE:NATGAS'}, {name: 'CAPITALCOM:DUTCHTTF', displayName: 'CAPITALCOM:DUTCHTTF'}, {name: 'ICEENDEX:TFM1!', displayName: 'ICEENDEX:TFM1!'}, {name: 'OANDA:XCUUSD', displayName: 'OANDA:XCUUSD'}, {name: 'CAPITALCOM:COPPER', displayName: 'CAPITALCOM:COPPER'}, {name: 'PEPPERSTONE:COPPER', displayName: 'PEPPERSTONE:COPPER'}, {name: 'OANDA:WHEATUSD', displayName: 'OANDA:WHEATUSD'}, {name: 'CAPITALCOM:WHEAT', displayName: 'CAPITALCOM:WHEAT'}, {name: 'OANDA:CORNUSD', displayName: 'OANDA:CORNUSD'}, {name: 'CAPITALCOM:CORN', displayName: 'CAPITALCOM:CORN'}, {name: 'TVC:NATGAS', displayName: 'TVC:NATGAS'}, {name: 'TVC:COPPER', displayName: 'TVC:COPPER'}];
-	const BONDS_TEST = [{name: 'TVC:US10', displayName: 'TVC:US10'}, {name: 'FRED:DGS10', displayName: 'FRED:DGS10'}, {name: 'OANDA:USB10YUSD', displayName: 'OANDA:USB10YUSD'}, {name: 'OANDA:DE10YBEUR', displayName: 'OANDA:DE10YBEUR'}, {name: 'OANDA:UK10YBGBP', displayName: 'OANDA:UK10YBGBP'}, {name: 'EUREX:FGBL1!', displayName: 'EUREX:FGBL1!'}, {name: 'CAPITALCOM:US10Y', displayName: 'CAPITALCOM:US10Y'}, {name: 'PEPPERSTONE:US10Y', displayName: 'PEPPERSTONE:US10Y'}, {name: 'BOND:US10Y', displayName: 'BOND:US10Y'}, {name: 'ECONOMICS:US10Y', displayName: 'ECONOMICS:US10Y'}, {name: 'TVC:TNX', displayName: 'TVC:TNX'}, {name: 'CBOE:TNX', displayName: 'CBOE:TNX'}, {name: 'NASDAQ:TNX', displayName: 'NASDAQ:TNX'}, {name: 'TVC:DE10', displayName: 'TVC:DE10'}, {name: 'TVC:ES10', displayName: 'TVC:ES10'}];
+	// Materias primas (widget «market-quotes»). Solo símbolos que TradingView sirve en sus widgets: los
+	// futuros (ICE, NYMEX, COMEX, CBOT) salen vacíos, así que el gas, el cobre y los cereales van con los
+	// CFD de OANDA. Comprobado en la Action con scripts/tv-shots.ts. El gas TTF europeo no tiene ninguno.
 	const COMMODITIES = [
 		{ name: 'TVC:UKOIL', displayName: 'Brent' },
 		{ name: 'TVC:USOIL', displayName: 'WTI' },
-		{ name: 'ICEEUR:TFM1!', displayName: 'Gas TTF (Europa)' },
-		{ name: 'NYMEX:NG1!', displayName: 'Gas Henry Hub (EE. UU.)' },
+		{ name: 'OANDA:NATGASUSD', displayName: 'Gas natural (Henry Hub)' },
 		{ name: 'TVC:GOLD', displayName: 'Oro' },
 		{ name: 'TVC:SILVER', displayName: 'Plata' },
-		{ name: 'COMEX:HG1!', displayName: 'Cobre' },
-		{ name: 'CBOT:ZW1!', displayName: 'Trigo' },
-		{ name: 'CBOT:ZC1!', displayName: 'Maíz' }
-	];
-	const BONDS = [
-		{ name: 'TVC:US10Y', displayName: 'EE. UU.' },
-		{ name: 'TVC:DE10Y', displayName: 'Alemania' },
-		{ name: 'TVC:GB10Y', displayName: 'Reino Unido' },
-		{ name: 'TVC:JP10Y', displayName: 'Japón' },
-		{ name: 'TVC:IT10Y', displayName: 'Italia' },
-		{ name: 'TVC:ES10Y', displayName: 'España' },
-		{ name: 'TVC:FR10Y', displayName: 'Francia' },
-		{ name: 'TVC:CN10Y', displayName: 'China' }
+		{ name: 'OANDA:XCUUSD', displayName: 'Cobre' },
+		{ name: 'OANDA:WHEATUSD', displayName: 'Trigo' },
+		{ name: 'OANDA:CORNUSD', displayName: 'Maíz' }
 	];
 	const quotes = (name: string, symbols: { name: string; displayName: string }[]) => ({
 		showSymbolLogo: false,
@@ -142,11 +119,8 @@
 		<Panel title="Mercados" meta="En directo">
 			<TvWidget widget="market-overview" config={overview} height={520} />
 		</Panel>
-		<Panel title="Materias primas" meta="Futuros y contado · en directo">
-			<TvWidget widget="market-quotes" config={quotes('Materias primas', COMMODITIES_TEST)} height={quotesHeight(COMMODITIES_TEST.length)} />
-		</Panel>
-		<Panel title="Bonos a 10 años" meta="Rentabilidad · en directo">
-			<TvWidget widget="market-quotes" config={quotes('Bonos a 10 años', BONDS_TEST)} height={quotesHeight(BONDS_TEST.length)} />
+		<Panel title="Materias primas" meta="Precio en dólares · en directo">
+			<TvWidget widget="market-quotes" config={quotes('Materias primas', COMMODITIES)} height={quotesHeight(COMMODITIES.length)} />
 		</Panel>
 	</div>
 </div>
