@@ -7,6 +7,8 @@
 	import { TICKERS } from '#lib/tickers.ts';
 	import { exampleTarget } from '#lib/cmdline.ts';
 	import Table from '#lib/components/ui/Table.svelte';
+	import { keyJoin, SHORTCUTS } from '#lib/shortcuts.ts';
+	import { FUNCTIONS } from '#lib/functions.ts';
 </script>
 
 <ViewHeader code="HELP" title="Comandos y atajos" sub="Escribe un comando o un valor en la barra de arriba y pulsa Intro" />
@@ -34,14 +36,11 @@
 	<div class="col">
 		<Panel title="Atajos de teclado">
 			<ul class="mini">
-				<li><span class="l"><kbd>/</kbd> o empieza a escribir</span><b>Ir a la barra</b></li>
-				<li><span class="l">Barra vacía</span><b>Tus 5 últimos comandos</b></li>
-				<li><span class="l"><kbd>↑</kbd> <kbd>↓</kbd></span><b>Moverte por las sugerencias</b></li>
-				<li><span class="l"><kbd>Intro</kbd></span><b>Abrir</b></li>
-				<li><span class="l"><kbd>Esc</kbd></span><b>Volver a la portada</b></li>
-				<li><span class="l">Pulsa el título de un panel, o <kbd>M</kbd> con el foco en él</span><b>Ampliar el panel</b></li>
-				<li><span class="l"><kbd>Esc</kbd> o <kbd>✕</kbd> con un panel ampliado</span><b>Cerrarlo</b></li>
-				<li><span class="l"><kbd>⇧</kbd> <kbd>F</kbd></span><b>Pantalla completa</b></li>
+				{#each SHORTCUTS as s (s.id)}
+					<li>
+						<span class="l">{#each s.keys as k, i (i)}{#if i}{keyJoin(s)}{/if}<kbd>{k}</kbd>{/each}{#if 'how' in s}{s.keys.length ? ' ' : ''}{s.how}{/if}</span><b>{s.action}</b>
+					</li>
+				{/each}
 			</ul>
 		</Panel>
 		<Panel title="Con texto detrás" meta="Comando, espacio y lo que buscas">
@@ -56,6 +55,16 @@
 					</li>
 				{/each}
 			</ul>
+		</Panel>
+		<Panel title="Funciones por valor" meta="Valor, espacio y función: NVDA GP">
+			<ul class="mini">
+				{#each FUNCTIONS as f (f.code)}
+					<li>
+						<a class="l" href="{resolve('/s')}?sym=NVDA&fn={f.code.toLowerCase()}"><b class="code">NVDA {f.code}</b> {f.desc}</a>
+					</li>
+				{/each}
+			</ul>
+			{#snippet note()}Con cualquier valor (BME:REP DES). Los comandos ganan: para un valor llamado como un comando, escribe la bolsa delante (NYSE:AI DES).{/snippet}
 		</Panel>
 		<Panel title="Valores" meta="Escribe el código: abre su ficha">
 			<ul class="tickers">

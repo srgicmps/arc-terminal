@@ -97,7 +97,7 @@ describe('checkShrink', () => {
 describe('fuentes', () => {
 	it('solo las que pueden venir vacías llevan allowEmpty', () => {
 		const allowed = sources.filter((s) => s.allowEmpty).map((s) => s.name);
-		expect(allowed.sort()).toEqual(['alerts', 'gdacs', 'hazards', 'hfpapers', 'ioda', 'quakes-es']);
+		expect(allowed.sort()).toEqual(['alerts', 'changes', 'gdacs', 'hazards', 'hfpapers', 'ioda', 'quakes-es']);
 	});
 
 	it('un día sin avisos ni desastres no es un fallo', () => {
