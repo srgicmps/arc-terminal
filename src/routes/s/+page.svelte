@@ -7,6 +7,7 @@
 	import { page } from '$app/state';
 	import Panel from '#lib/components/Panel.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
+	import AnalystPanel from '#lib/components/AnalystPanel.svelte';
 	import FilingList from '#lib/components/FilingList.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -31,6 +32,8 @@
 	const sec = $derived(data.sec?.data.companies[code]);
 	// Titulares de todas las secciones que nombran la empresa (scripts/news-index.ts).
 	const news = $derived(data.news?.data[code] ?? []);
+	// Analistas, sorpresas de resultados y directivos (Finnhub; solo EE. UU. y con la clave).
+	const analysis = $derived(data.analysts?.data[code]);
 
 	// «Compartir»: símbolo y nombre, con ?sym en el enlace (la ficha sin ?sym abre NVDA).
 	function share(): ShareInfo {
@@ -83,6 +86,17 @@
 				</Panel>
 			</div>
 		</div>
+		{#if analysis}
+			<div class="grid">
+				<div class="col">
+					<Panel title="Analistas y resultados" meta="Finnhub">
+						<AnalystPanel a={analysis} />
+						{#snippet note()}Recomendaciones del último mes, BPA de los últimos trimestres y operaciones de directivos (formulario 4) ·
+							<Updated at={analysis.fetchedAt} source="analysts" />{/snippet}
+					</Panel>
+				</div>
+			</div>
+		{/if}
 		{#if news.length}
 			<div class="grid">
 				<div class="col">

@@ -435,6 +435,65 @@ export interface FinnhubData {
 	ipos?: Ipo[];
 }
 
+// ---------- Ficha de valor: analistas, resultados y directivos (Finnhub) ----------
+
+/** Recomendaciones de los analistas en un mes (cuántos dicen cada cosa). */
+export interface AnalystRecs {
+	/** Mes de la encuesta: «2026-10-01». */
+	period: string;
+	strongBuy: number;
+	buy: number;
+	hold: number;
+	sell: number;
+	strongSell: number;
+}
+
+/** Beneficio por acción de un trimestre: lo esperado y lo que salió. */
+export interface EarningsSurprise {
+	/** Fin del trimestre: «2026-06-30». */
+	period: string;
+	actual: number | null;
+	estimate: number | null;
+	/** Sorpresa en %, positiva si superó lo esperado. */
+	surprisePct: number | null;
+}
+
+/** Compra o venta de acciones de un directivo (formulario 4 de la SEC). */
+export interface InsiderTrade {
+	name: string;
+	/** Acciones compradas (+) o vendidas (−). */
+	change: number;
+	price: number | null;
+	/** Fecha de la operación (ISO, día). */
+	date: string;
+	/** 'P' compra, 'S' venta. */
+	code: 'P' | 'S';
+}
+
+/** Precio objetivo medio de los analistas (solo si el plan de Finnhub lo da). */
+export interface PriceTarget {
+	mean: number | null;
+	high: number | null;
+	low: number | null;
+	/** Cuándo lo actualizó Finnhub (ISO). */
+	updated: string | null;
+}
+
+export interface StockAnalysis {
+	/** Cuándo se descargó este valor (ISO): se refresca a las 24 h. */
+	fetchedAt: string;
+	/** Los últimos meses, del más reciente al más antiguo. */
+	recs: AnalystRecs[];
+	/** Los últimos trimestres, del más reciente al más antiguo. */
+	surprises: EarningsSurprise[];
+	/** Compras y ventas de directivos en los últimos 90 días, de la más reciente a la más antigua. */
+	insiders: InsiderTrade[];
+	target?: PriceTarget;
+}
+
+/** Por código del valor («NVDA»). */
+export type AnalystsData = Record<string, StockAnalysis>;
+
 // ---------- Mercados de predicción (Polymarket) ----------
 
 export interface Prediction {
