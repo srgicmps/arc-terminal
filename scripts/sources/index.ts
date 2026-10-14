@@ -24,6 +24,7 @@ import { leaders } from './leaders.ts';
 import { newsSources } from './news.ts';
 import { portwatch } from './portwatch.ts';
 import { predictions } from './predictions.ts';
+import { reeDemand } from './ree-demand.ts';
 import { powerMix } from './ree-mix.ts';
 import { reliefweb } from './reliefweb.ts';
 import { releases } from './releases.ts';
@@ -44,6 +45,7 @@ export const sources: Source<any>[] = [
 	boe,
 	power,
 	powerMix,
+	reeDemand,
 	holidays,
 	ine,
 	// Europa
