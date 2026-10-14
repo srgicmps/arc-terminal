@@ -372,3 +372,27 @@ export interface PowerMix {
 export interface PowerMixData {
 	systems: PowerMix[];
 }
+
+/** Reserva de agua de los embalses de España en una semana. */
+export interface WaterBasin {
+	name: string;
+	hm3: number;
+	capacity: number;
+	pct: number;
+}
+export interface WaterData {
+	/** Semana del dato: «2026-10-13». */
+	date: string;
+	/** Agua embalsada y capacidad total, en hm³. */
+	hm3: number;
+	capacity: number;
+	/** % de llenado. */
+	pct: number;
+	/** % de la misma semana hace un año y media de esa semana en los 10 años anteriores. */
+	yearAgo: number;
+	avg10: number;
+	/** % semanal de los últimos 10 años. */
+	history: Point[];
+	/** Cuencas (ámbitos) en la última semana, de menos a más llena. */
+	basins: WaterBasin[];
+}
