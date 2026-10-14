@@ -15,6 +15,7 @@ import { hazards, quakesEs } from './hazards.ts';
 import { hfpapers } from './hfpapers.ts';
 import { holidays } from './holidays.ts';
 import { imf } from './imf.ts';
+import { imp } from './imp.ts';
 import { ine } from './ine.ts';
 import { newsSources } from './news.ts';
 import { portwatch } from './portwatch.ts';
@@ -64,5 +65,7 @@ export const sources: Source<any>[] = [
 	hfpapers,
 	releases,
 	wiki,
-	...newsSources
+	...newsSources,
+	// Derivadas: se calculan después, con los datos de las anteriores.
+	imp
 ];
