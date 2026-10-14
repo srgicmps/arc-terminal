@@ -154,6 +154,17 @@
 				{/each}
 			</ul>
 		</Panel>
+		<Panel title="Mercados de predicción" meta="Polymarket" jump={{ code: 'GEO', href: resolve('/geo') }}>
+			<ul class="mini">
+				{#each (data.predictions?.data.geopolitics ?? []).slice(0, 4) as e (e.id)}
+					{@const top = e.outcomes[0]}
+					<li>
+						<a class="l" href={e.url} target="_blank" rel="noopener">{e.title}<small>{top.label}</small></a>
+						<b>{nf(top.p * 100, 0)} %</b>
+					</li>
+				{/each}
+			</ul>
+		</Panel>
 		<Panel title="Hacker News" jump={{ code: 'TECH', href: resolve('/tech') }}>
 			<ul class="mini">
 				{#each (data.hn?.data ?? []).slice(0, 5) as item (item.id)}
