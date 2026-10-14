@@ -43,7 +43,12 @@ describe('FAO', () => {
 
 	it('fecha de publicación', () => {
 		expect(releaseDate('<p>Release date: 03/10/2026</p>')).toBe('2026-10-03');
-		expect(releaseDate('<b>Release date</b>: 3 October 2026')).toBe('2026-10-03');
+		expect(releaseDate('<b>Release date:</b> 3 October 2026')).toBe('2026-10-03');
 		expect(releaseDate('nada')).toBeNull();
+		// Como en la página real: el calendario de publicaciones va antes que la fecha del último dato.
+		const page =
+			'<p>Next release dates for 2026: 9 January, 6 February, 6 March, 3 April, 8 May, 5 June, 3 July, 7 August</p>' +
+			'<p>Release date: 02/10/2026&nbsp; Download datasets: Excel: Nominal and real indices from 1990</p>';
+		expect(releaseDate(page)).toBe('2026-10-02');
 	});
 });

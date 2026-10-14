@@ -66,9 +66,12 @@ export function parseFaoSheet(cells: unknown[][]): Series[] {
 
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
 
-/** «Release date: 03/10/2026» o «3 October 2026» en la página de la FAO → «2026-10-03». */
+/**
+ * «Release date: 03/10/2026» o «Release date: 3 October 2026» en la página de la FAO → «2026-10-03».
+ * Con los dos puntos: antes, la página dice «Next release dates for 2026: 9 January, …».
+ */
 export function releaseDate(html: string): string | null {
-	const near = /Release date[^0-9a-z]{0,40}([^<]{0,40})/i.exec(html)?.[1] ?? '';
+	const near = /Release date:(?:\s|&nbsp;|<[^>]*>)*([^<]{0,40})/i.exec(html)?.[1] ?? '';
 	let m = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(near);
 	if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
 	m = /(\d{1,2}) ([a-z]+) (\d{4})/i.exec(near);
