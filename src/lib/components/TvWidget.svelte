@@ -6,6 +6,8 @@
 	En el HTML generado al construir queda el hueco con el aviso «Cargando TradingView…».
 -->
 <script lang="ts">
+	import { theme } from '#lib/theme.svelte.ts';
+
 	interface Props {
 		/** Nombre del widget: «stock-heatmap», «symbol-overview», «events»… */
 		widget: string;
@@ -44,7 +46,8 @@
 		return () => io.disconnect();
 	});
 
-	// 2) Cuando está cerca, crea el script. Se rehace si cambian widget o config (p. ej. otro símbolo).
+	// 2) Cuando está cerca, crea el script. Se rehace si cambian widget, config (p. ej. otro símbolo)
+	//    o el tema (día / noche), porque TradingView solo lee los colores al crearse.
 	$effect(() => {
 		if (!near) return;
 		ready = false;
@@ -52,7 +55,7 @@
 		script.src = `https://s3.tradingview.com/external-embedding/embed-widget-${widget}.js`;
 		script.async = true;
 		script.textContent = JSON.stringify({
-			colorTheme: 'dark',
+			colorTheme: theme.resolved,
 			isTransparent: true,
 			locale: 'es',
 			width: '100%',

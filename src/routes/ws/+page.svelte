@@ -8,6 +8,7 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import YieldCurve from '#lib/components/YieldCurve.svelte';
 	import { seriesMap } from '#lib/series.ts';
+	import { theme } from '#lib/theme.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -16,17 +17,24 @@
 	const fx = ['eurusd', 'eurgbp', 'eurjpy', 'eurchf', 'eurcny', 'eurmxn'];
 
 	// Resumen de mercados en directo (TradingView), con pestañas.
-	const overview = {
+	// TradingView necesita los colores escritos (no entiende variables CSS): salen del tema activo.
+	const palette = $derived(
+		theme.resolved === 'light'
+			? { up: '20, 115, 69', down: '195, 48, 60', grid: 'rgba(220, 216, 207, 1)', scale: 'rgba(91, 99, 110, 1)', amber: '154, 90, 0' }
+			: { up: '76, 196, 138', down: '240, 100, 111', grid: 'rgba(29, 36, 45, 1)', scale: 'rgba(128, 138, 151, 1)', amber: '242, 168, 59' }
+	);
+
+	const overview = $derived({
 		showChart: true,
 		showSymbolLogo: false,
 		showFloatingTooltip: true,
-		plotLineColorGrowing: 'rgba(76, 196, 138, 1)',
-		plotLineColorFalling: 'rgba(240, 100, 111, 1)',
-		belowLineFillColorGrowing: 'rgba(76, 196, 138, 0.08)',
-		belowLineFillColorFalling: 'rgba(240, 100, 111, 0.08)',
-		gridLineColor: 'rgba(29, 36, 45, 1)',
-		scaleFontColor: 'rgba(128, 138, 151, 1)',
-		symbolActiveColor: 'rgba(242, 168, 59, 0.13)',
+		plotLineColorGrowing: `rgba(${palette.up}, 1)`,
+		plotLineColorFalling: `rgba(${palette.down}, 1)`,
+		belowLineFillColorGrowing: `rgba(${palette.up}, 0.08)`,
+		belowLineFillColorFalling: `rgba(${palette.down}, 0.08)`,
+		gridLineColor: palette.grid,
+		scaleFontColor: palette.scale,
+		symbolActiveColor: `rgba(${palette.amber}, 0.13)`,
 		tabs: [
 			{
 				title: 'Índices',
@@ -72,7 +80,7 @@
 				]
 			}
 		]
-	};
+	});
 
 	const heatmap = {
 		dataSource: 'SPX500',

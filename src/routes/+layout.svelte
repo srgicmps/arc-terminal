@@ -8,6 +8,7 @@
 	import CommandBar from '#lib/components/CommandBar.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import { ui } from '#lib/ui.svelte.ts';
+	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
 	import { initWatchlist } from '#lib/watchlist.svelte.ts';
 	import type { LayoutProps } from './$types';
 
@@ -16,6 +17,10 @@
 	// El reloj arranca en el navegador (como onMounted en Vue) y se para al salir.
 	$effect(startClock);
 	$effect(initWatchlist);
+	$effect(initTheme);
+
+	const THEME_LABEL = { auto: 'Tema automático (sigue al sistema)', light: 'Tema de día', dark: 'Tema de noche' };
+	const THEME_ICON = { auto: '◐', light: '☀', dark: '☾' };
 
 	const keys = COMMANDS.filter((c) => c.pinned);
 	// Barra inferior del móvil: los accesos más usados, a mano del pulgar.
@@ -60,6 +65,15 @@
 		<CommandBar />
 		{#if !online}<span class="offline" title="Se muestra la última copia guardada">Sin conexión</span>{/if}
 		<Clocks />
+		<button
+			class="theme"
+			type="button"
+			onclick={cycleTheme}
+			title="{THEME_LABEL[theme.mode]} · toca para cambiar"
+			aria-label="{THEME_LABEL[theme.mode]}. Cambiar tema"
+		>
+			<span aria-hidden="true">{THEME_ICON[theme.mode]}</span>
+		</button>
 	</header>
 
 	<nav class="keys" aria-label="Secciones">
@@ -140,6 +154,23 @@
 		stroke: var(--amber);
 		stroke-width: 2;
 		stroke-linecap: round;
+	}
+
+	.theme {
+		display: grid;
+		place-items: center;
+		width: 28px;
+		height: 28px;
+		background: none;
+		border: 1px solid var(--line);
+		color: var(--muted);
+		font-size: var(--fs-m);
+		cursor: pointer;
+	}
+
+	.theme:hover {
+		color: var(--amber);
+		border-color: var(--amber-edge);
 	}
 
 	.brand-sub {
@@ -303,6 +334,16 @@
 		.top :global(.cmd) {
 			order: 2;
 			flex-basis: 100%;
+		}
+
+		/* El botón del tema, en la línea del logo; los relojes, debajo. */
+		.theme {
+			order: 1;
+			margin-left: auto;
+		}
+
+		.top :global(.clocks) {
+			order: 3;
 		}
 	}
 </style>
