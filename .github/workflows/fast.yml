@@ -26,9 +26,12 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # Fuentes urgentes. Las que aún no existen (gdacs, statuspage, ioda, ree-demand) se ignoran hasta que entren.
+  # Fuentes urgentes. Las que aún no existen (gdacs, statuspage, ioda, ree-demand, alert-quotes) se ignoran
+  # hasta que entren. Mercados, para que un -10 % de Bitcoin o de un valor seguido avise en ≤5 min:
+  # crypto son 2 peticiones a CoinGecko y alert-quotes, 16 a Finnhub por pasada (límites: ~30/min y 60/min).
   URGENT: >-
     quakes quakes-es alerts hazards gdacs statuspage ioda ree-demand
+    crypto alert-quotes
     news-eco news-geo news-es news-ws news-tech news-ai news-gov imp search
 
 jobs:
