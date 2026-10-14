@@ -99,6 +99,7 @@ export const STOCK: GuideSection & { examples: string[]; panels: { name: string;
 		{ name: 'Datos fundamentales', what: 'Valoración, márgenes y cuentas.' },
 		{ name: 'Perfil de la empresa', what: 'Qué hace, sector y sede.' },
 		{ name: 'Documentos SEC', what: 'Últimos informes en la SEC (empresas de EE. UU.).' },
+		{ name: 'Volumen en corto', what: 'Parte del volumen del último día vendida en corto y su media de 20 días (FINRA, EE. UU.). No es el interés en corto.' },
 		{ name: 'En las noticias', what: 'Titulares que la nombran.' }
 	]
 };
