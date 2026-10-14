@@ -15,6 +15,7 @@
 	import RiskGauge from '#lib/components/RiskGauge.svelte';
 	import YieldCurve from '#lib/components/YieldCurve.svelte';
 	import { seriesMap } from '#lib/series.ts';
+	import { urlState } from '#lib/urlstate.svelte.ts';
 	import { rgba, token } from '#lib/color.ts';
 	import { theme } from '#lib/theme.svelte.ts';
 	import type { PageProps } from './$types';
@@ -121,28 +122,30 @@
 		{ key: 'fx', label: 'Divisas', widget: 'forex-heat-map', config: { currencies: ['USD', 'EUR', 'JPY', 'GBP', 'CHF', 'CNY', 'AUD', 'CAD', 'MXN'] } }
 	] as const;
 
-	// El mapa elegido se recuerda en este navegador (si no deja guardar, se queda en memoria).
+	// El mapa elegido va en la URL (/ws?mapa=dax), para compartirlo o guardarlo en favoritos. Sin parámetro, el
+	// último elegido en este navegador (si no deja guardar, se queda en memoria).
 	const MAP_KEY = 'arc-ws-heatmap';
 	type MapKey = (typeof MAPS)[number]['key'];
+	const isMap = (v: string) => MAPS.some((m) => m.key === v);
+	const mapSel = urlState<MapKey>('mapa', 'spx', isMap);
 	let loadedMap = $state(false);
-	let mapKey = $state<MapKey>('spx');
+	// Una vez, al abrir: si la URL no dice qué mapa, el guardado.
 	$effect(() => {
 		try {
 			const saved = localStorage.getItem(MAP_KEY);
-			const found = MAPS.find((m) => m.key === saved);
-			if (found) mapKey = found.key;
+			if (saved && isMap(saved) && !new URLSearchParams(location.search).has('mapa')) mapSel.value = saved as MapKey;
 		} catch {}
 		loadedMap = true;
 	});
 	// Guarda cada cambio, después de haber leído lo guardado (para no pisarlo al arrancar).
 	$effect(() => {
-		const key = mapKey;
+		const key = mapSel.value;
 		if (!loadedMap) return;
 		try {
 			localStorage.setItem(MAP_KEY, key);
 		} catch {}
 	});
-	const map = $derived(MAPS.find((m) => m.key === mapKey) ?? MAPS[0]);
+	const map = $derived(MAPS.find((m) => m.key === mapSel.value) ?? MAPS[0]);
 </script>
 
 <ViewHeader code="WS" title="Wall Street e inversión" sub="TradingView, Tesoro de EE. UU., BCE, CoinGecko y titulares de mercados" />
@@ -160,7 +163,7 @@
 	<div class="col">
 		<Panel title="Mapa de calor" meta="{map.label} · variación del día">
 			<div class="maps">
-				<Seg label="Mapa de calor" options={MAPS.map((m) => ({ value: m.key, label: m.label }))} bind:value={mapKey} />
+				<Seg label="Mapa de calor" options={MAPS.map((m) => ({ value: m.key, label: m.label }))} bind:value={mapSel.value} />
 			</div>
 			<TvWidget widget={map.widget} config={map.config} height={520} />
 		</Panel>
