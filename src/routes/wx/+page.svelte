@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ClimatePanel from '#lib/components/ClimatePanel.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import SunArc from '#lib/components/SunArc.svelte';
 	import { clock } from '#lib/clock.svelte.ts';
@@ -206,6 +207,7 @@
 				{/snippet}
 			</Panel>
 		{/if}
+		<ClimatePanel climate={data.climate} />
 	</div>
 </div>
 

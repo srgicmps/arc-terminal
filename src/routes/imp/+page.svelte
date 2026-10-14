@@ -2,6 +2,7 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import TitleLang from '#lib/components/TitleLang.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
+	import { urlState } from '#lib/urlstate.svelte.ts';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { IMP_PERIODS, aggregate, minus, topImportant, type ImpTotal } from '#lib/imp.ts';
@@ -13,7 +14,10 @@
 	let { data }: PageProps = $props();
 
 	const imp = $derived(data.imp?.data);
-	let period = $state<(typeof IMP_PERIODS)[number]['key']>('day');
+	// La pestaña va en la URL (?periodo=semana…): un enlace o un favorito abre la misma.
+	type Period = (typeof IMP_PERIODS)[number]['key'];
+	const periodSel = urlState<Period>('periodo', 'day', (v) => IMP_PERIODS.some((p) => p.key === v));
+	const period = $derived(periodSel.value);
 	const span = $derived(IMP_PERIODS.find((p) => p.key === period)!.span);
 
 	// Hoy: los 5 temas del día. Semana, mes y año: el histórico diario sumado (ver src/lib/imp.ts).
@@ -46,7 +50,7 @@
 <ViewHeader code="IMP" title="Lo más importante" sub="Lo que cuentan más medios, en más secciones y durante más tiempo; sin IA" />
 
 <div class="controls">
-	<Seg label="Periodo" options={periods} bind:value={period} />
+	<Seg label="Periodo" options={periods} bind:value={periodSel.value} />
 	{#if toggle}<TitleLang />{/if}
 </div>
 

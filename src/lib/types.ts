@@ -157,6 +157,23 @@ export interface Paper {
 	summary: string;
 }
 
+// ---------- Modelos en tendencia (Hugging Face) ----------
+
+export interface HfModel {
+	/** «autor/modelo», como en la URL de Hugging Face. */
+	id: string;
+	author: string;
+	name: string;
+	/** Tarea en inglés, tal como la da Hugging Face («text-generation»…): la vista la traduce. */
+	task: string;
+	likes: number;
+	/** Descargas del último mes. */
+	downloads: number;
+	url: string;
+	/** Cuándo se creó (ISO 8601), o vacío. */
+	created: string;
+}
+
 // ---------- Terremotos (USGS) ----------
 
 export interface Quake {
@@ -234,11 +251,15 @@ export interface Coin {
 	usd: number;
 	eur: number;
 	change24h: number | null;
+	/** Variación en 7 días (%). Opcional: las copias antiguas no la traen. */
+	change7d?: number | null;
 	marketCap: number | null;
 }
 
 export interface CryptoData {
 	coins: Coin[];
+	/** Cierre diario de bitcoin en dólares (hora de Madrid), hasta 400 días. Para el termómetro de riesgo. */
+	btcHistory?: { date: string; usd: number }[];
 }
 
 // ---------- Curva de tipos del Tesoro de EE. UU. ----------
@@ -247,6 +268,34 @@ export interface YieldCurveData {
 	tenors: string[];
 	/** Una fila por día, del más antiguo al más reciente. */
 	days: { date: string; values: (number | null)[] }[];
+}
+
+// ---------- Subastas de deuda de EE. UU. (Fiscal Data) ----------
+
+export interface Auction {
+	/** Día de la subasta (AAAA-MM-DD). */
+	date: string;
+	/** Plazo: «10-Year», «29-Year 10-Month» (reaperturas)… */
+	term: string;
+	/** «Note», «Bond» o «FRN» (tipo flotante). */
+	kind: string;
+	reopening: boolean;
+	/** Importe ofrecido, en dólares. */
+	offering: number | null;
+	/** Rentabilidad máxima adjudicada (%). Null si aún no se ha hecho. */
+	highYield: number | null;
+	bidToCover: number | null;
+	/** Parte adjudicada a postores indirectos (bancos centrales y fondos extranjeros, sobre todo), en %. */
+	indirectPct: number | null;
+	/** Media del bid-to-cover de las 6 subastas anteriores del mismo plazo y tipo. */
+	avgBidToCover?: number | null;
+}
+
+export interface AuctionsData {
+	/** Anunciadas y pendientes, de la más cercana a la más lejana. */
+	upcoming: Auction[];
+	/** Las últimas 10 hechas, de la más reciente a la más antigua. */
+	recent: Auction[];
 }
 
 // ---------- Wikipedia: lo más leído y efemérides ----------
@@ -258,12 +307,20 @@ export interface WikiPage {
 	views?: number;
 }
 
-export interface WikiData {
-	date: string;
+/** Lo del día en una Wikipedia (español o inglés). */
+export interface WikiEdition {
 	/** Artículo destacado del día, si lo hay. */
 	featured: WikiPage | null;
 	mostRead: WikiPage[];
 	onThisDay: { year: number; text: string; url: string }[];
+	/** «In the news» (solo la Wikipedia en inglés lo tiene en el feed). */
+	news?: { text: string; url: string }[];
+}
+
+/** Arriba, la Wikipedia en español; en `en`, la inglesa (si respondió). */
+export interface WikiData extends WikiEdition {
+	date: string;
+	en?: WikiEdition;
 }
 
 // ---------- Riesgos naturales: huracanes (NOAA) y eventos (NASA EONET) ----------
@@ -591,4 +648,43 @@ export interface LeaderAgenda {
 	/** De dónde sale la agenda. */
 	source: { name: string; url: string };
 	error?: string;
+}
+
+// ---------- Diario Oficial de la UE, serie L (scripts/sources/eurlex.ts) ----------
+
+export type EuLexType = 'Reglamento' | 'Directiva' | 'Decisión' | 'Otro';
+
+/** Un acto de la serie L del Diario Oficial de la UE. */
+export interface EuLexDoc {
+	/** Número CELEX: «32026R1753». */
+	id: string;
+	/** Título oficial, en inglés. */
+	title: string;
+	type: EuLexType;
+	/** Temas (Sanciones, Aranceles, Energía…), por palabras del título. */
+	tags: string[];
+	/** Día de publicación: «2026-10-14». */
+	date: string;
+	/** Ficha en EUR-Lex, en español. */
+	url: string;
+}
+
+// ---------- Archivo de titulares (scripts/sources/archive.ts) ----------
+
+/** Un titular archivado. Claves cortas: un mes son miles. */
+export interface ArchiveEntry {
+	/** Titular. */
+	t: string;
+	/** Medio. */
+	s: string;
+	/** Hora UTC al minuto: «2026-10-14T14:05Z». */
+	d: string;
+	/** Enlace. */
+	u: string;
+}
+
+/** Índice del archivo (news-archive.json). Cada mes está en news-archive/AAAA-MM.json. */
+export interface NewsArchive {
+	/** Del más reciente al más antiguo. */
+	months: { month: string; count: number; bytes: number }[];
 }
