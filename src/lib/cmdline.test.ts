@@ -1,10 +1,22 @@
 // Barra de comandos: sugerencias y qué se abre al pulsar Intro.
 import { describe, expect, it } from 'vitest';
-import { isTickerLike, norm, resolveInput, suggest, type Option } from './cmdline.ts';
+import {
+	findCommand,
+	HISTORY_KEY,
+	historyOptions,
+	isTickerLike,
+	norm,
+	pushHistory,
+	readHistory,
+	resolveInput,
+	suggest,
+	writeHistory,
+	type Option
+} from './cmdline.ts';
 import { COMMANDS, TICKERS } from './commands.ts';
 
 const ALL: Option[] = [
-	...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función' })),
+	...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función', aliases: c.aliases })),
 	...TICKERS.map((t) => ({ code: t.code, desc: t.name, kind: 'Valor' }))
 ];
 
@@ -38,7 +50,31 @@ describe('suggest', () => {
 	});
 });
 
+describe('alias en español', () => {
+	it('encuentran el comando sin tildes ni mayúsculas', () => {
+		expect(findCommand('Diesel')?.code).toBe('FUEL');
+		expect(findCommand('ESPAÑA')?.code).toBe('ES');
+		expect(findCommand('boletin')?.code).toBe('BOE');
+		expect(findCommand('Wall Street')?.code).toBe('WS');
+		expect(findCommand('nada')).toBeUndefined();
+	});
+
+	it('las sugerencias encuentran por alias', () => {
+		expect(suggest('gaso', ALL)[0].code).toBe('FUEL');
+		expect(suggest('pvpc', ALL)[0].code).toBe('LUZ');
+		expect(suggest('clim', ALL)[0].code).toBe('WX');
+		expect(suggest('ayu', ALL)[0].code).toBe('HELP');
+	});
+});
+
 describe('resolveInput', () => {
+	it('«gasolina» abre FUEL, no la ficha GASOLINA', () => {
+		expect(open('gasolina')).toBe('/fuel');
+		expect(open('diésel')).toBe('/fuel');
+		expect(open('wall street')).toBe('/ws');
+		expect(open('tiempo')).toBe('/wx');
+	});
+
 	it('una palabra con sugerencias abre la primera, no una ficha', () => {
 		expect(open('gasolineras')).toBe('/fuel');
 		expect(open('wikipedia')).toBe('/wiki');
@@ -61,5 +97,49 @@ describe('resolveInput', () => {
 
 	it('vacío no abre nada', () => {
 		expect(open('')).toBeNull();
+	});
+});
+
+describe('historial', () => {
+	/** Un localStorage de mentira. */
+	const memory = (initial?: string) => {
+		const data = new Map<string, string>(initial === undefined ? [] : [[HISTORY_KEY, initial]]);
+		return {
+			getItem: (k: string) => data.get(k) ?? null,
+			setItem: (k: string, v: string) => void data.set(k, v)
+		};
+	};
+
+	it('guarda los 5 últimos, el más reciente primero y sin repetir', () => {
+		let list: string[] = [];
+		for (const e of ['ECO', 'NVDA', 'FUEL', 'eco', 'WS', 'LUZ', 'BOE']) list = pushHistory(list, e);
+		expect(list).toEqual(['BOE', 'LUZ', 'WS', 'eco', 'FUEL']);
+		expect(pushHistory(list, '  ')).toBe(list);
+	});
+
+	it('lee y escribe en el almacenamiento', () => {
+		const store = memory();
+		writeHistory(['FUEL', 'NVDA'], () => store);
+		expect(readHistory(() => store)).toEqual(['FUEL', 'NVDA']);
+	});
+
+	it('no rompe sin almacenamiento, con datos corruptos o si el navegador lo bloquea', () => {
+		expect(readHistory(() => undefined)).toEqual([]);
+		expect(readHistory(() => memory('{no es json'))).toEqual([]);
+		expect(readHistory(() => memory('{"a":1}'))).toEqual([]);
+		expect(readHistory(() => memory('["ECO", 3, ""]'))).toEqual(['ECO']);
+		const blocked = () => {
+			throw new Error('SecurityError');
+		};
+		expect(readHistory(blocked)).toEqual([]);
+		expect(() => writeHistory(['ECO'], blocked)).not.toThrow();
+	});
+
+	it('se muestra como sugerencias', () => {
+		expect(historyOptions(['FUEL', 'NVDA', 'BME:REP'])).toEqual([
+			{ code: 'FUEL', desc: COMMANDS.find((c) => c.code === 'FUEL')!.desc, kind: 'Reciente', run: 'FUEL' },
+			{ code: 'NVDA', desc: 'NVIDIA', kind: 'Reciente', run: 'NVDA' },
+			{ code: 'BME:REP', desc: 'Valor', kind: 'Reciente', run: 'BME:REP' }
+		]);
 	});
 });

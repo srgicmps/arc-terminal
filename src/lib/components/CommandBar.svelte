@@ -6,7 +6,16 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { COMMANDS, TICKERS } from '#lib/commands.ts';
-	import { resolveInput, suggest, type Option } from '#lib/cmdline.ts';
+	import {
+		canonical,
+		historyOptions,
+		pushHistory,
+		readHistory,
+		resolveInput,
+		suggest,
+		writeHistory,
+		type Option
+	} from '#lib/cmdline.ts';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
 
@@ -17,7 +26,7 @@
 			desc: TICKERS.find((t) => t.code === code)?.name ?? 'Tu lista',
 			kind: 'Mi lista'
 		})),
-		...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función' })),
+		...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función', aliases: c.aliases })),
 		...TICKERS.filter((t) => !watchlist.codes.includes(t.code)).map((t) => ({
 			code: t.code,
 			desc: t.name,
@@ -31,8 +40,11 @@
 	// Si Sergi se ha movido con ↑ ↓, Intro abre la sugerencia marcada; si no, se decide con lo escrito.
 	let moved = $state(false);
 	let input: HTMLInputElement;
+	// Últimos comandos ejecutados: se leen de localStorage al enfocar la barra (nunca al prerenderizar).
+	let recent = $state<string[]>([]);
 
-	const options = $derived(suggest(value, ALL));
+	// Con la barra vacía, el historial; al escribir, las sugerencias.
+	const options = $derived(value.trim() ? suggest(value, ALL) : historyOptions(recent));
 
 	// Al abrir la hoja desde la barra inferior del móvil, el cursor va directo a la barra.
 	$effect(() => {
@@ -49,6 +61,8 @@
 		moved = false;
 		input.blur();
 		if (!target) return;
+		recent = pushHistory(readHistory(), canonical(target));
+		writeHistory(recent);
 		if (target.kind === 'command') goto(resolve(target.command.route));
 		else goto(`${resolve('/s')}?sym=${encodeURIComponent(target.sym)}`);
 	}
@@ -79,9 +93,12 @@
 		}
 	}
 
+	/** Lo que se ejecuta al elegir una sugerencia: su código o, en el historial, la entrada guardada. */
+	const pick = (o: Option) => o.run ?? o.code;
+
 	function onsubmit(e: SubmitEvent) {
 		e.preventDefault();
-		run(open && moved && selected >= 0 && options[selected] ? options[selected].code : value);
+		run(open && moved && selected >= 0 && options[selected] ? pick(options[selected]) : value);
 	}
 
 	/** Atajos de teclado en toda la página (como un listener en window en Vue, pero declarativo). */
@@ -113,6 +130,12 @@
 			selected = options.length ? 0 : -1;
 		}}
 		{onkeydown}
+		onfocus={() => {
+			recent = readHistory();
+			open = true;
+			moved = false;
+			selected = -1;
+		}}
 		onblur={() =>
 			setTimeout(() => {
 				open = false;
@@ -132,14 +155,14 @@
 	<button class="go" type="submit">GO</button>
 	{#if open && options.length}
 		<ul class="suggest" id="suggest" role="listbox" aria-label="Sugerencias">
-			{#each options as o, i (o.code + o.kind)}
+			{#each options as o, i (pick(o) + o.kind)}
 				<li
 					role="option"
 					id="opt{i}"
 					aria-selected={i === selected}
 					onmousedown={(e) => {
 						e.preventDefault();
-						run(o.code);
+						run(pick(o));
 					}}
 				>
 					<span class="code">{o.code}</span>

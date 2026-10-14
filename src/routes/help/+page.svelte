@@ -17,7 +17,10 @@
 						{#each COMMANDS as c (c.code)}
 							<tr>
 								<td><a class="code" href={resolve(c.route)}>{c.code}</a></td>
-								<td class="l wrap">{c.desc}</td>
+								<td class="l wrap">
+									{c.desc}
+									{#if c.aliases}<small class="mut">También: {c.aliases.join(', ')}</small>{/if}
+								</td>
 								<td class="l wrap mut">{c.sources}</td>
 							</tr>
 						{/each}
@@ -30,6 +33,7 @@
 		<Panel title="Atajos de teclado">
 			<ul class="mini">
 				<li><span class="l"><kbd>/</kbd> o empieza a escribir</span><b>Ir a la barra</b></li>
+				<li><span class="l">Barra vacía</span><b>Tus 5 últimos comandos</b></li>
 				<li><span class="l"><kbd>↑</kbd> <kbd>↓</kbd></span><b>Moverte por las sugerencias</b></li>
 				<li><span class="l"><kbd>Intro</kbd></span><b>Abrir</b></li>
 				<li><span class="l"><kbd>Esc</kbd></span><b>Volver a la portada</b></li>
@@ -57,6 +61,11 @@
 		white-space: normal;
 		font-family: var(--sans);
 		font-size: var(--fs-m);
+	}
+
+	.wrap small {
+		display: block;
+		font-size: var(--fs-s);
 	}
 
 	.tickers {
