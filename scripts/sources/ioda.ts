@@ -3,25 +3,12 @@
 // telescopio «merit-nt» y tráfico a Google, «gtr») y lanza alertas cuando una cae por debajo de lo
 // normal. API pública y sin clave. Términos: uso libre citando a IODA; no publican límite por IP, así
 // que se pide cada 30 min. Las horas de la API son segundos Unix.
+import type { IodaOutage } from '../../src/lib/types.ts';
 import { getJson, list, num, plain, type Source } from '../lib.ts';
 
 type Raw = Record<string, any>;
 
-export interface IodaOutage {
-	/** Código ISO del país (p. ej. «IR»). */
-	code: string;
-	name: string;
-	/** El peor nivel de las señales que siguen en alerta. */
-	level: 'critical' | 'warning';
-	/** Señales en alerta ahora: «bgp», «ping-slash24», «merit-nt»… */
-	signals: string[];
-	/** Primera alerta de la racha actual y la última, en ISO (UTC). */
-	since: string;
-	last: string;
-	/** Cuánto ha caído la peor señal frente a lo normal, en % (p. ej. 85 = queda el 15 %). */
-	drop: number | null;
-	url: string;
-}
+export type { IodaOutage };
 
 /** Horas hacia atrás que se miran. */
 const HOURS = 12;
