@@ -11,7 +11,7 @@ type Raw = Record<string, any>;
 export const quakesEs: Source<Quake[]> = {
 	name: 'quakes-es',
 	label: 'Terremotos en España · Instituto Geográfico Nacional',
-	maxAgeMinutes: 25,
+	maxAgeMinutes: 12,
 	async fetch() {
 		const items = parseFeed(await getText('https://www.ign.es/ign/RssTools/sismologia.xml'), 'IGN');
 		// «Se ha producido un terremoto de magnitud 2.7 en SW CABO DE SAN VICENTE en la fecha
@@ -47,7 +47,7 @@ export const quakesEs: Source<Quake[]> = {
 export const hazards: Source<HazardsData> = {
 	name: 'hazards',
 	label: 'Huracanes (NOAA) y eventos naturales: incendios, volcanes, tormentas (NASA EONET)',
-	maxAgeMinutes: 55,
+	maxAgeMinutes: 25,
 	async fetch() {
 		const [nhc, eonet] = await Promise.all([
 			getJson<Raw>('https://www.nhc.noaa.gov/CurrentStorms.json').catch(() => null),
