@@ -8,7 +8,7 @@
 // - si la copia publicada de una fuente es reciente (maxAgeMinutes), se reutiliza sin descargar;
 // - si una descarga falla, se reutiliza la copia publicada, aunque sea antigua, y se avisa.
 import { mkdir, writeFile } from 'node:fs/promises';
-import type { Dataset, SourceStatus } from '../src/lib/data.ts';
+import type { Dataset, SourceHistory, SourceStatus } from '../src/lib/data.ts';
 import { withHistory } from './history.ts';
 import { checkShrink, withDeadline, writeExtra, type Source } from './lib.ts';
 import { sources } from './sources/index.ts';
@@ -109,11 +109,12 @@ await mkdir(OUT_DIR, { recursive: true });
 const statuses = await Promise.all(selected.map(run));
 
 if (!wanted.length) {
-	// El status publicado trae el historial de las pasadas anteriores: se le añade la de ahora.
-	const before = await published('status');
 	const now = Date.now();
-	const data = withHistory(statuses, before?.data as SourceStatus[] | undefined, now);
-	await save({ name: 'status', fetchedAt: new Date(now).toISOString(), data });
+	await save({ name: 'status', fetchedAt: new Date(now).toISOString(), data: statuses });
+	// El historial va en un archivo aparte (solo lo carga STATUS): al publicado se le suma esta pasada.
+	const before = await published('status-history');
+	const history = withHistory(statuses, before?.data as SourceHistory[] | undefined, now);
+	await save({ name: 'status-history', fetchedAt: new Date(now).toISOString(), data: history });
 }
 
 const failed = statuses.filter((s) => s.state === 'error' || s.state === 'stale');

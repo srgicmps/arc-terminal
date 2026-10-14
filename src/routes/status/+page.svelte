@@ -2,6 +2,7 @@
 	import { clock } from '#lib/clock.svelte.ts';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import { lastRuns } from '#lib/data.ts';
 	import { when } from '#lib/format.ts';
 	import type { PageProps } from './$types';
 
@@ -12,10 +13,12 @@
 	const ok = $derived(rows.filter((r) => r.state === 'ok' || r.state === 'cached').length);
 	// Las fuentes sin clave no son un fallo: no cuentan en el total.
 	const active = $derived(rows.filter((r) => r.state !== 'off').length);
-	// Tira con las últimas pasadas de cada fuente (status.json guarda 7 días).
+	// Tira con las últimas pasadas de cada fuente, reconstruida a partir de los tramos de status-history.
 	const STRIP = 28;
 	const TONE = { ok: 'good', cached: 'good', stale: 'stale', error: 'bad', off: 'off' };
-	const hour = (t: string) => t.replace('T', ' ').replace('Z', ' UTC');
+	const strips = $derived(
+		new Map((data.history?.data ?? []).map((h) => [h.name, lastRuns(h.history, STRIP)]))
+	);
 </script>
 
 <ViewHeader code="STATUS" title="Estado de las fuentes" sub="Qué tal fue la última descarga de cada fuente de datos" />
@@ -29,15 +32,16 @@
 						<thead><tr><th>Fuente</th><th class="l">Qué trae</th><th>Estado</th><th>Datos de</th></tr></thead>
 						<tbody>
 							{#each rows as r (r.name)}
+								{@const runs = strips.get(r.name) ?? []}
 								<tr>
 									<td class="mut">{r.name}</td>
 									<td class="l wrap">{r.label}{#if r.error}<small class:off={r.state === 'off'}>{r.error}</small>{/if}</td>
 									<td class={r.state === 'ok' || r.state === 'cached' ? 'up' : r.state === 'off' ? 'mut' : 'down'}>
 										{LABEL[r.state]}
-										{#if r.history?.length}
-											<span class="strip" aria-label="Últimas {Math.min(STRIP, r.history.length)} pasadas">
-												{#each r.history.slice(-STRIP) as p (p.t)}
-													<i class={TONE[p.state]} title="{hour(p.t)} · {LABEL[p.state]}"></i>
+										{#if runs.length}
+											<span class="strip" aria-label="Últimas {runs.length} pasadas">
+												{#each runs as state, i (i)}
+													<i class={TONE[state]} title={LABEL[state]}></i>
 												{/each}
 											</span>
 										{/if}
