@@ -48,12 +48,20 @@ function toSeries(area: string, points: Point[], via: G20Data['via']): Series {
 	};
 }
 
-/** Ordena como AREAS (el G20 primero) y descarta los países sin datos. */
+/** «2026-04» menos 12 meses: «2025-04». */
+const yearBefore = (t: string) => `${Number(t.slice(0, 4)) - 1}${t.slice(4)}`;
+
+/**
+ * Ordena como AREAS (el G20 primero) y descarta los países sin datos o con el último dato más de un año
+ * más viejo que el más reciente de todos (Rusia dejó de publicarse en 2022).
+ */
 function ordered(byArea: Map<string, Point[]>, via: G20Data['via']): Series[] {
-	return Object.keys(AREAS).flatMap((area) => {
+	const series = Object.keys(AREAS).flatMap((area) => {
 		const points = byArea.get(area);
 		return points?.length ? [toSeries(area, points, via)] : [];
 	});
+	const newest = series.map((s) => s.points.at(-1)!.t).sort().at(-1) ?? '';
+	return series.filter((s) => s.points.at(-1)!.t >= yearBefore(newest));
 }
 
 /** CSV SDMX de la OCDE: una fila por país y mes (REF_AREA, TIME_PERIOD, OBS_VALUE). */

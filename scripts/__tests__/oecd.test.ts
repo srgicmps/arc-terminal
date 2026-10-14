@@ -99,6 +99,16 @@ describe('oecd', () => {
 		expect(data.series[0].source).toBe('OCDE vía DBnomics');
 	});
 
+	it('descarta los países que dejaron de publicar (último dato con más de un año de retraso)', async () => {
+		mockFetch((url) =>
+			url.includes('db.nomics.world')
+				? { series: { docs: [doc('G20', ['2026-04'], [4.2]), doc('RUS', ['2022-02'], [9.2]), doc('TUR', ['2025-12'], [30])] } }
+				: undefined
+		);
+		const data = await oecd.fetch(undefined);
+		expect(data.series.map((s) => s.label)).toEqual(['G20', 'Turquía']);
+	});
+
 	it('falla si ninguna de las dos responde', async () => {
 		mockFetch(() => undefined);
 		await expect(oecd.fetch(undefined)).rejects.toThrow(/ni la OCDE ni DBnomics/);
