@@ -1,6 +1,7 @@
 // Lista de todas las fuentes que descarga `pnpm data`.
 import type { Source } from '../lib.ts';
 import { ais } from './ais.ts';
+import { alertQuotes } from './alert-quotes.ts';
 import { air } from './air.ts';
 import { alerts } from './alerts.ts';
 import { bls } from './bls.ts';
@@ -55,6 +56,7 @@ export const sources: Source<any>[] = [
 	uscurve,
 	fred,
 	finnhub,
+	alertQuotes,
 	sec,
 	// Mundo
 	imf,
