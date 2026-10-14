@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onRowKey } from '#lib/rownav.ts';
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import '../app.css';
@@ -50,6 +51,13 @@
 		}, 250);
 		return () => clearInterval(id);
 	});
+
+	/** j/k, ↓/↑ y «o» con el foco en una fila (rownav.ts): antes que la barra de comandos, que se quedaría la letra. */
+	function onListKey(e: KeyboardEvent) {
+		if (tv.on || !onRowKey(e)) return;
+		e.preventDefault();
+		e.stopImmediatePropagation();
+	}
 
 	/** En modo TV, Esc sale (antes de que la barra de comandos lo lleve a la portada) y Espacio pausa. */
 	function onTvKey(e: KeyboardEvent) {
@@ -104,7 +112,7 @@
 	);
 </script>
 
-<svelte:window bind:online onkeydowncapture={onTvKey} onpointerdown={onTvTap} />
+<svelte:window bind:online onkeydowncapture={(e) => (onTvKey(e), onListKey(e))} onpointerdown={onTvTap} />
 
 <svelte:head>
 	<link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
