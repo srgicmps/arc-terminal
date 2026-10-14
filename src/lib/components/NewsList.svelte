@@ -216,4 +216,16 @@
 		font-size: var(--fs-m);
 		line-height: var(--lh-text);
 	}
+
+	/* Impreso: la dirección de la noticia debajo del titular, para poder ir a la fuente desde el papel. */
+	@media print {
+		.h::after {
+			content: attr(href);
+			display: block;
+			color: var(--muted);
+			font-family: var(--mono);
+			font-size: var(--fs-xs);
+			word-break: break-all;
+		}
+	}
 </style>

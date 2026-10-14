@@ -644,4 +644,17 @@
 			grid-column: 1 / -1;
 		}
 	}
+
+	/* Informe impreso (TOP, IMP…): solo el contenido, sin cabecera, barras, cinta de cotizaciones ni pie. */
+	@media print {
+		.top,
+		.keys,
+		.tape,
+		.thumb,
+		.status,
+		.tv-progress,
+		.tv-chip {
+			display: none;
+		}
+	}
 </style>
