@@ -71,11 +71,3 @@ https://mymemory.translated.net/doc/usagelimits.php ~ .{0,250}(chars|characters|
 https://api.db.nomics.world/v22/series/OECD/DSD_G20_PRICES@DF_G20_PRICES?dimensions=%7B%22FREQ%22%3A%5B%22M%22%5D%2C%22TRANSFORMATION%22%3A%5B%22GY%22%5D%7D&observations=1&metadata=false&limit=50 ~ "series_code":"[^"]+"|.{0,24}\],"period_start_day"
 # ECO: precio de la vivienda del BIS (WS_SPP), variación interanual nominal (N) y real (R): forma de la clave
 https://stats.bis.org/api/v1/data/WS_SPP/Q.US+ES+KR.N+R.771/all?lastNObservations=2&detail=dataonly&format=csv
-# TECH, estado de internet: OpenAI (incident.io) y Microsoft 365 / Azure
-https://status.openai.com/api/v2/summary.json
-https://status.openai.com/api/v2/status.json
-https://status.openai.com/feed.rss
-https://status.cloud.microsoft/api/posts/m365Consumer
-https://status.cloud.microsoft/
-https://azure.status.microsoft/en-us/status/feed/
-https://rssfeed.azure.status.microsoft/en-us/status/feed/

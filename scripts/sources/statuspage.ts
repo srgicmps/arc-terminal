@@ -1,8 +1,9 @@
-// Estado de los grandes servicios de internet: Cloudflare, GitHub, Anthropic, Discord… con la API pública
-// de Atlassian Statuspage (/api/v2/summary.json), y además Google Cloud (incidents.json) y AWS Health
-// (currentevents), que tienen su propio formato. Todo sin clave. Términos: son páginas de estado públicas
-// pensadas para consultarse así; no publican límite por IP, así que se pide cada 15 min (una petición por
-// servicio). Si un servicio falla, se deja su estado anterior marcado como `stale`.
+// Estado de los grandes servicios de internet: Cloudflare, GitHub, OpenAI, Anthropic, Discord… con la API
+// pública de Atlassian Statuspage (/api/v2/summary.json), y además Google Cloud (incidents.json), AWS Health
+// (currentevents) y Microsoft 365 (status.cloud.microsoft), que tienen su propio formato. Todo sin clave.
+// Términos: son páginas de estado públicas pensadas para consultarse así; no publican límite por IP, así que
+// se pide cada 15 min (una petición por servicio). Si un servicio falla, se deja su estado anterior
+// marcado como `stale`.
 import { list, plain, request, settle, type Source } from '../lib.ts';
 
 import { RANK, type Indicator, type ServiceIncident, type ServiceStatus } from '../../src/lib/statuspage.ts';
@@ -12,17 +13,20 @@ export type { Indicator, ServiceIncident, ServiceStatus };
 
 type Raw = Record<string, any>;
 
-type Kind = 'statuspage' | 'gcp' | 'aws';
+type Kind = 'statuspage' | 'gcp' | 'aws' | 'm365';
 
 export const SERVICES: { id: string; name: string; kind: Kind; url: string; page: string }[] = [
 	{ id: 'cloudflare', name: 'Cloudflare', kind: 'statuspage', url: 'https://www.cloudflarestatus.com/api/v2/summary.json', page: 'https://www.cloudflarestatus.com' },
 	{ id: 'github', name: 'GitHub', kind: 'statuspage', url: 'https://www.githubstatus.com/api/v2/summary.json', page: 'https://www.githubstatus.com' },
+	// OpenAI usa incident.io, que da la misma API que Statuspage.
+	{ id: 'openai', name: 'OpenAI', kind: 'statuspage', url: 'https://status.openai.com/api/v2/summary.json', page: 'https://status.openai.com' },
 	{ id: 'anthropic', name: 'Anthropic (Claude)', kind: 'statuspage', url: 'https://status.claude.com/api/v2/summary.json', page: 'https://status.claude.com' },
 	{ id: 'discord', name: 'Discord', kind: 'statuspage', url: 'https://discordstatus.com/api/v2/summary.json', page: 'https://discordstatus.com' },
 	{ id: 'reddit', name: 'Reddit', kind: 'statuspage', url: 'https://www.redditstatus.com/api/v2/summary.json', page: 'https://www.redditstatus.com' },
 	{ id: 'vercel', name: 'Vercel', kind: 'statuspage', url: 'https://www.vercel-status.com/api/v2/summary.json', page: 'https://www.vercel-status.com' },
 	{ id: 'npm', name: 'npm', kind: 'statuspage', url: 'https://status.npmjs.org/api/v2/summary.json', page: 'https://status.npmjs.org' },
 	{ id: 'gcp', name: 'Google Cloud', kind: 'gcp', url: 'https://status.cloud.google.com/incidents.json', page: 'https://status.cloud.google.com' },
+	{ id: 'm365', name: 'Microsoft 365', kind: 'm365', url: 'https://status.cloud.microsoft/api/posts/m365Consumer', page: 'https://status.cloud.microsoft' },
 	{ id: 'aws', name: 'AWS', kind: 'aws', url: 'https://health.aws.amazon.com/public/currentevents', page: 'https://health.aws.amazon.com/health/status' }
 ];
 
@@ -101,6 +105,30 @@ export function parseAws(body: unknown): Omit<ServiceStatus, 'id' | 'name' | 'pa
 	return { indicator: ind, description: ind === 'none' ? 'All services operating normally' : `${incidents.length} eventos abiertos`, incidents };
 }
 
+/**
+ * Microsoft 365 (status.cloud.microsoft): una fila por servicio (Outlook, Teams, Copilot…) con su estado
+ * («Operational» si va bien) y, si hay incidencia, título y mensaje. Una interrupción cuenta como caída
+ * parcial; cualquier otro estado distinto de «Operational», como incidencia menor.
+ */
+export function parseM365(body: unknown): Omit<ServiceStatus, 'id' | 'name' | 'page'> {
+	if (!Array.isArray(body)) throw new Error('posts de Microsoft no es una lista');
+	const incidents = (body as Raw[])
+		.filter((p) => p?.Status && !/^operational$/i.test(String(p.Status)))
+		.map(
+			(p): ServiceIncident => ({
+				id: String(p.Id ?? p.ServiceWorkloadName ?? ''),
+				name: plain([p.ServiceDisplayName, p.Title].filter(Boolean).join(': ') || p.Status, 200),
+				impact: /interrupt|outage|down/i.test(String(p.Status)) ? 'major' : 'minor',
+				status: plain(p.Status, 40),
+				started: isoOrNull(/^0001-/.test(String(p.AuthoredDateTime)) ? null : p.AuthoredDateTime),
+				updated: isoOrNull(p.LastUpdatedTime),
+				url: 'https://status.cloud.microsoft'
+			})
+		);
+	const ind = worst(incidents);
+	return { indicator: ind, description: ind === 'none' ? 'All services operational' : `${incidents.length} servicios con incidencias`, incidents };
+}
+
 /** Lee JSON que puede venir en UTF-16 (AWS lo sirve así, con BOM). */
 export function decodeJson(buffer: ArrayBuffer): unknown {
 	const bytes = new Uint8Array(buffer);
@@ -117,7 +145,8 @@ export const statuspage: Source<ServiceStatus[]> = {
 		const fresh = await settle('statuspage', SERVICES, (s) => s.id, async (s) => {
 			const res = await request(s.url, { headers: { Accept: 'application/json' } });
 			const body = decodeJson(await res.arrayBuffer());
-			const parsed = s.kind === 'gcp' ? parseGcp(body) : s.kind === 'aws' ? parseAws(body) : parseStatuspage(body as Raw, s.page);
+			const parsed =
+				s.kind === 'gcp' ? parseGcp(body) : s.kind === 'aws' ? parseAws(body) : s.kind === 'm365' ? parseM365(body) : parseStatuspage(body as Raw, s.page);
 			return { id: s.id, name: s.name, page: s.page, ...parsed } satisfies ServiceStatus;
 		});
 		if (!fresh.length) throw new Error('No responde ninguna página de estado');
