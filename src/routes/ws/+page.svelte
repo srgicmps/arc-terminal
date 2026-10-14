@@ -9,6 +9,7 @@
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
+	import StablecoinTable from '#lib/components/StablecoinTable.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -212,6 +213,13 @@
 		<Panel title="Cripto" meta="Por capitalización">
 			<CryptoTable coins={data.crypto?.data.coins ?? []} />
 			{#snippet note()}Fuente: CoinGecko · <Updated at={data.crypto?.fetchedAt} source="crypto" />{/snippet}
+		</Panel>
+		<Panel title="Stablecoins" meta="Monedas ligadas al dólar · en circulación">
+			<StablecoinTable data={data.stables?.data} />
+			{#snippet note()}
+				«Dinero»: respaldadas con dólares y deuda pública; «cripto»: con otras criptomonedas. En ámbar, el precio que se
+				separa medio céntimo o más del dólar. Fuente: DefiLlama · <Updated at={data.stables?.fetchedAt} source="stablecoins" />
+			{/snippet}
 		</Panel>
 		<Panel title="Subastas del Tesoro" meta="EE. UU. · próximas y resultados de bonos y notas">
 			{#if data.auctions}<AuctionList data={data.auctions.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
