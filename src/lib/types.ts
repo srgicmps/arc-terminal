@@ -89,9 +89,14 @@ export interface NewsItem {
 	also?: { source: string; url: string }[];
 }
 
+/** Cómo fue la última descarga de cada canal RSS de una sección. */
 export interface FeedStatus {
 	name: string;
-	count: number;
+	/** true si el canal respondió con al menos un titular. */
+	ok: boolean;
+	/** Titulares que se han guardado de este canal. */
+	items: number;
+	/** Resumen corto del fallo («HTTP 404», «tiempo agotado», «XML no válido»…), sin URL. */
 	error?: string;
 }
 
