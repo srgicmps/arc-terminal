@@ -64,6 +64,22 @@ describe('archivo de titulares', () => {
 		expect(archive.files!(data)).toEqual(['news-archive/2026-10.json', 'news-archive/2026-09.json']);
 	});
 
+	it('sin índice anterior (no se pudo leer) conserva igualmente los meses publicados', async () => {
+		vi.useFakeTimers({ toFake: ['Date'] });
+		vi.setSystemTime(new Date('2026-10-14T12:00:00Z'));
+		mockFetch((url) => (url.endsWith('news-archive/2026-08.json') ? [e('agosto', '2026-08-20T09:00Z')] : undefined));
+		const ctx = makeContext(new Map([['news-es', { items: [news('Nuevo', 'https://elpais.com/n', '2026-10-14T10:00:00Z')] }]]));
+		const data = await archive.fetch(undefined, ctx);
+		expect(data.months.map((m) => m.month)).toEqual(['2026-10', '2026-08']);
+		expect(vi.mocked(writeExtra).mock.calls.map(([path]) => path)).toEqual(['news-archive/2026-10.json', 'news-archive/2026-08.json']);
+	});
+
+	it('sin índice anterior, un mes de la ventana que no responde (no 404) hace fallar la pasada', async () => {
+		mockFetch(() => new Response('', { status: 503 }));
+		const ctx = makeContext(new Map([['news-es', { items: [news('Nuevo', 'https://elpais.com/n', new Date().toISOString())] }]]));
+		await expect(archive.fetch(undefined, ctx)).rejects.toThrow(/no se puede leer/);
+	});
+
 	it('falla si no puede leer un mes que ya existía (para no perderlo)', async () => {
 		mockFetch(() => new Response('', { status: 500 }));
 		const ctx = makeContext(new Map([['news-es', { items: [news('Nuevo', 'https://elpais.com/n', new Date().toISOString())] }]]));

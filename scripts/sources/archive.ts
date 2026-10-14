@@ -76,19 +76,21 @@ export const archive: Source<NewsArchive> = {
 		if (!fresh.length) throw new Error('sin titulares en esta pasada');
 		const current = monthOf(new Date().toISOString());
 		const oldest = monthsBefore(current, MONTHS - 1);
-		const known = new Map((previous?.months ?? []).map((m) => [m.month, m]));
+		const known = new Set((previous?.months ?? []).map((m) => m.month));
 		const byMonth = Map.groupBy(
 			fresh.filter((e) => monthOf(e.d) >= oldest),
 			(e) => monthOf(e.d)
 		);
-		// Todos los meses que se guardan, tengan titulares nuevos o no: la web se publica entera en cada
-		// pasada, así que un mes que no se vuelva a escribir desaparecería de Pages.
-		const keep = [...new Set([...byMonth.keys(), ...known.keys()])].filter((m) => m >= oldest);
-		for (const month of keep) {
+		// Todos los meses de la ventana, tengan titulares nuevos o no y haya índice anterior o no: la web
+		// se publica entera en cada pasada, así que un mes que no se vuelva a escribir desaparecería de Pages.
+		const months: NewsArchive['months'] = [];
+		for (let i = 0; i < MONTHS; i++) {
+			const month = monthsBefore(current, i);
 			const merged = mergeMonth(await published(month, known.has(month)), byMonth.get(month) ?? []);
+			if (!merged.length) continue;
 			await writeExtra(monthFile(month), merged);
 			const bytes = Buffer.byteLength(JSON.stringify(merged));
-			known.set(month, { month, count: merged.length, bytes });
+			months.push({ month, count: merged.length, bytes });
 			console.log(`  news-archive · ${month}: ${merged.length} titulares, ${Math.round(bytes / 1024)} KB`);
 		}
 		// Medida del peso: los titulares de las últimas 24 h, como si todo el mes fuera igual.
@@ -98,7 +100,6 @@ export const archive: Source<NewsArchive> = {
 			`  news-archive · ${day.length} titulares en 24 h → un mes ≈ ${Math.round((sample.length * 30) / 1024)} KB` +
 				` (${Math.round((gzipSync(sample).length * 30) / 1024)} KB con gzip)`
 		);
-		const months = [...known.values()].filter((m) => m.month >= oldest).sort((a, b) => b.month.localeCompare(a.month));
 		return { months };
 	}
 };

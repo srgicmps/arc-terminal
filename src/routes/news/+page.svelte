@@ -6,6 +6,7 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { NEWS_SECTIONS as SECTIONS } from '#lib/news.ts';
 	import Seg from '#lib/components/ui/Seg.svelte';
+	import { MIN_QUERY } from '#lib/search.ts';
 	import type { ArchiveEntry, NewsItem } from '#lib/types.ts';
 	import type { PageProps } from './$types';
 
@@ -33,9 +34,8 @@
 	// Archivo de 3 meses (scripts/sources/archive.ts): cada mes es un JSON aparte (de 1 a 2 MB, unos
 	// 700 KB con gzip) que solo se pide al buscar algo de 3 letras o más. Primero el mes en curso; los
 	// anteriores, de uno en uno con el botón. Se guarda ya normalizado.
-	const MIN = 3;
 	const words = $derived(norm(query).split(/\s+/).filter(Boolean));
-	const searching = $derived(words.join('').length >= MIN);
+	const searching = $derived(words.join('').length >= MIN_QUERY);
 	// $state.raw (como shallowRef en Vue): son miles de titulares y no hace falta que cada uno sea reactivo.
 	let archive = $state.raw<Record<string, { e: ArchiveEntry; key: string }[]>>({});
 	let failed = $state(false);
