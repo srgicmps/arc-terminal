@@ -37,7 +37,7 @@
 				<p class="empty">Sin datos todavía.</p>
 			{/if}
 			{#snippet note()}
-				Cada 30 minutos, GitHub Actions descarga las fuentes. Las que cambian poco (Eurostat, BLS) se
+				Cada 15 minutos, GitHub Actions descarga las fuentes. Las que cambian poco (Eurostat, BLS) se
 				reutilizan unas horas. Si una falla, se mantiene su última copia.
 			{/snippet}
 		</Panel>
