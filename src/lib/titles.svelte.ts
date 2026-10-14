@@ -58,6 +58,11 @@ export function shown(item: Headline): { text: string; translated: boolean } {
 	return es ? { text: es, translated: true } : { text: item.title, translated: false };
 }
 
+/** Texto al pasar el ratón por un titular traducido: el original y quién lo ha traducido. */
+export function original(item: Headline): string {
+	return `${item.title}\nTraducción automática · ${item.titleEs ? 'MyMemory' : 'Chrome'}`;
+}
+
 // ---------- Translator API (Chrome) ----------
 
 type Availability = 'unavailable' | 'downloadable' | 'downloading' | 'available';

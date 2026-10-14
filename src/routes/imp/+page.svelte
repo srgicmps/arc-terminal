@@ -6,7 +6,7 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { IMP_PERIODS, aggregate, minus, topImportant, type ImpTotal } from '#lib/imp.ts';
 	import { NEWS_SECTIONS } from '#lib/news.ts';
-	import { canTranslate, initTitles, longPress, shown, spanish, titles, translateMissing } from '#lib/titles.svelte.ts';
+	import { canTranslate, initTitles, longPress, original, shown, spanish, titles, translateMissing } from '#lib/titles.svelte.ts';
 	import type { ImpCurrent, ImpEntry } from '#lib/types.ts';
 	import type { PageProps } from './$types';
 
@@ -76,7 +76,7 @@
 										target="_blank"
 										rel="noopener"
 										lang={t.translated ? 'es' : item.lang}
-										title={t.translated ? item.title : undefined}
+										title={t.translated ? original(item) : undefined}
 										{@attach longPress((on) => (peek = on ? item.k : null))}>{t.text}</a
 									>
 									<div class="m">

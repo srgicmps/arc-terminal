@@ -9,7 +9,16 @@
 	import { clock } from '#lib/clock.svelte.ts';
 	import { when } from '#lib/format.ts';
 	import type { NewsItem } from '#lib/types.ts';
-	import { canTranslate, initTitles, longPress, shown, spanish, titles, translateMissing } from '#lib/titles.svelte.ts';
+	import {
+		canTranslate,
+		initTitles,
+		longPress,
+		original,
+		shown,
+		spanish,
+		titles,
+		translateMissing
+	} from '#lib/titles.svelte.ts';
 	import { initVisit, isNew, visit } from '#lib/visit.svelte.ts';
 	import TitleLang from './TitleLang.svelte';
 
@@ -64,7 +73,7 @@
 						target="_blank"
 						rel="noopener"
 						lang={t.translated ? 'es' : item.lang}
-						title={t.translated ? item.title : undefined}
+						title={t.translated ? original(item) : undefined}
 						{@attach longPress((on) => (peek = on ? i : null))}>{t.text}</a
 					>
 					<div class="m">
