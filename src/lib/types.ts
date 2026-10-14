@@ -585,3 +585,24 @@ export interface LeaderAgenda {
 	source: { name: string; url: string };
 	error?: string;
 }
+
+// ---------- Archivo de titulares (scripts/sources/archive.ts) ----------
+
+/** Un titular archivado. Claves cortas: un mes son miles. */
+export interface ArchiveEntry {
+	/** Titular. */
+	t: string;
+	/** Medio. */
+	s: string;
+	/** Día y hora de Madrid, al minuto: «2026-10-14T16:05». */
+	d: string;
+	/** Enlace. */
+	u: string;
+}
+
+/** Índice del archivo (news-archive.json). Cada mes está en news-archive/AAAA-MM.json. */
+export interface NewsArchive {
+	/** Del más reciente al más antiguo. */
+	months: { month: string; count: number; bytes: number }[];
+}
+
