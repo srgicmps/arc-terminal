@@ -1,6 +1,7 @@
 // Ayudantes pequeños de src/lib: series, tiempo y comandos.
 import { describe, expect, it } from 'vitest';
-import { COMMANDS, TICKERS, tvSymbol } from './commands.ts';
+import { COMMANDS } from './commands.ts';
+import { TICKERS, tvSymbol } from './tickers.ts';
 import { at, change, diffDays, last, seriesMap, spread } from './series.ts';
 import type { Series } from './types.ts';
 import { compass, sky } from './weather.ts';

@@ -6,7 +6,7 @@
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { TICKERS, tvSymbol } from '#lib/commands.ts';
+	import { TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import { madridDate } from '#lib/meetings.ts';
 	import { earningsLine, myEarnings } from '#lib/myearnings.ts';
