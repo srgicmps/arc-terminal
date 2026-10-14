@@ -9,6 +9,7 @@ import { finnhub } from './finnhub.ts';
 import { fred } from './fred.ts';
 import { fuel, fuelSpain } from './fuel.ts';
 import { hazards, quakesEs } from './hazards.ts';
+import { ine } from './ine.ts';
 import { newsSources } from './news.ts';
 import { predictions } from './predictions.ts';
 import { uscurve, usdebt } from './treasury.ts';
@@ -21,6 +22,7 @@ export const sources: Source<any>[] = [
 	fuelSpain,
 	boe,
 	power,
+	ine,
 	// Europa
 	ecb,
 	eurostat,
