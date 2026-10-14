@@ -51,6 +51,8 @@ export const COUNTRIES: Country[] = [
 	{ code: 'RU', iso3: 'RUS', name: 'Rusia', aliases: ['Russia', 'Russian', 'Russians', 'Kremlin', 'Moscú', 'Moscow', 'Putin'], demonym: 'ruso', currency: 'RUB', center: [61.5, 99.0] },
 	{ code: 'TR', iso3: 'TUR', name: 'Turquía', aliases: ['Turkey', 'Türkiye', 'Turkish', 'Ankara', 'Erdogan', 'Erdoğan'], demonym: 'turco', currency: 'TRY', center: [39.0, 35.2] },
 
+	{ code: 'BY', iso3: 'BLR', name: 'Bielorrusia', aliases: ['Belarus', 'Belarusian', 'Minsk', 'Lukashenko'], demonym: 'bielorruso', currency: 'BYN', center: [53.7, 27.9] },
+
 	// América
 	{ code: 'US', iso3: 'USA', name: 'Estados Unidos', aliases: ['EE. UU.', 'EE.UU.', 'EEUU', 'United States', 'U.S.', 'US', 'USA', 'Casa Blanca', 'White House'], demonym: 'estadounidense', currency: 'USD', center: [39.8, -98.6] },
 	{ code: 'CA', iso3: 'CAN', name: 'Canadá', aliases: ['Canada', 'Canadian', 'Ottawa'], demonym: 'canadiense', currency: 'CAD', center: [56.1, -106.3] },
@@ -61,8 +63,14 @@ export const COUNTRIES: Country[] = [
 	{ code: 'CO', iso3: 'COL', name: 'Colombia', aliases: ['Colombian', 'Bogotá'], demonym: 'colombiano', currency: 'COP', center: [4.6, -74.3] },
 	{ code: 'VE', iso3: 'VEN', name: 'Venezuela', aliases: ['Venezuelan', 'Caracas'], demonym: 'venezolano', currency: 'VES', center: [6.4, -66.6] },
 	{ code: 'CU', iso3: 'CUB', name: 'Cuba', aliases: ['Cuban', 'La Habana', 'Havana'], demonym: 'cubano', currency: 'CUP', center: [21.5, -77.8] },
+	{ code: 'HT', iso3: 'HTI', name: 'Haití', aliases: ['Haiti', 'Haitian', 'Puerto Príncipe', 'Port-au-Prince'], demonym: 'haitiano', currency: 'HTG', center: [18.9, -72.3] },
+	{ code: 'NI', iso3: 'NIC', name: 'Nicaragua', aliases: ['Nicaraguan', 'Managua'], demonym: 'nicaragüense', currency: 'NIO', center: [12.9, -85.2] },
 
 	// Asia y Oceanía
+	{ code: 'PH', iso3: 'PHL', name: 'Filipinas', aliases: ['Philippines', 'Philippine', 'Filipino', 'Manila'], demonym: 'filipino', currency: 'PHP', center: [12.9, 121.8] },
+	{ code: 'BD', iso3: 'BGD', name: 'Bangladés', aliases: ['Bangladesh', 'Bangladeshi', 'Daca', 'Dhaka'], demonym: 'bangladesí', currency: 'BDT', center: [23.7, 90.4] },
+	{ code: 'MM', iso3: 'MMR', name: 'Myanmar', aliases: ['Birmania', 'Burma', 'Burmese'], demonym: 'birmano', currency: 'MMK', center: [21.9, 95.9] },
+	{ code: 'AF', iso3: 'AFG', name: 'Afganistán', aliases: ['Afghanistan', 'Afghan', 'Kabul', 'talibanes', 'Taliban'], demonym: 'afgano', currency: 'AFN', center: [33.9, 67.7] },
 	{ code: 'CN', iso3: 'CHN', name: 'China', aliases: ['Chinese', 'Pekín', 'Beijing', 'Xi Jinping'], demonym: 'chino', currency: 'CNY', center: [35.9, 104.2] },
 	{ code: 'JP', iso3: 'JPN', name: 'Japón', aliases: ['Japan', 'Japanese', 'Tokio', 'Tokyo'], demonym: 'japonés', currency: 'JPY', center: [36.2, 138.3] },
 	{ code: 'IN', iso3: 'IND', name: 'India', aliases: ['Indian', 'Nueva Delhi', 'New Delhi', 'Modi'], demonym: 'indio', currency: 'INR', center: [20.6, 79.0] },
@@ -74,6 +82,18 @@ export const COUNTRIES: Country[] = [
 	{ code: 'AU', iso3: 'AUS', name: 'Australia', aliases: ['Australian', 'Canberra', 'Sídney', 'Sydney'], demonym: 'australiano', currency: 'AUD', center: [-25.3, 133.8] },
 
 	// Oriente Próximo y África
+	{ code: 'SY', iso3: 'SYR', name: 'Siria', aliases: ['Syria', 'Syrian', 'Damasco', 'Damascus'], demonym: 'sirio', currency: 'SYP', center: [34.8, 38.9] },
+	{ code: 'IQ', iso3: 'IRQ', name: 'Irak', aliases: ['Iraq', 'Iraqi', 'Bagdad', 'Baghdad'], demonym: 'iraquí', currency: 'IQD', center: [33.2, 43.7] },
+	{ code: 'LB', iso3: 'LBN', name: 'Líbano', aliases: ['Lebanon', 'Lebanese', 'Beirut', 'Hezbolá', 'Hezbollah', 'Hizballah'], demonym: 'libanés', currency: 'LBP', center: [33.9, 35.9] },
+	{ code: 'YE', iso3: 'YEM', name: 'Yemen', aliases: ['Yemeni', 'hutíes', 'Houthis', 'Houthi', 'Saná', 'Sanaa'], demonym: 'yemení', currency: 'YER', center: [15.6, 48.5] },
+	{ code: 'SD', iso3: 'SDN', name: 'Sudán', aliases: ['Sudan', 'Sudanese', 'Jartum', 'Khartoum'], demonym: 'sudanés', currency: 'SDG', center: [12.9, 30.2] },
+	{ code: 'SS', iso3: 'SSD', name: 'Sudán del Sur', aliases: ['South Sudan', 'South Sudanese', 'Yuba', 'Juba'], demonym: 'sursudanés', currency: 'SSP', center: [6.9, 31.3] },
+	{ code: 'LY', iso3: 'LBY', name: 'Libia', aliases: ['Libya', 'Libyan', 'Trípoli', 'Tripoli'], demonym: 'libio', currency: 'LYD', center: [26.3, 17.2] },
+	{ code: 'SO', iso3: 'SOM', name: 'Somalia', aliases: ['Somali', 'Mogadiscio', 'Mogadishu', 'al-Shabaab', 'Al Shabaab'], demonym: 'somalí', currency: 'SOS', center: [5.2, 46.2] },
+	{ code: 'ET', iso3: 'ETH', name: 'Etiopía', aliases: ['Ethiopia', 'Ethiopian', 'Adís Abeba', 'Addis Ababa'], demonym: 'etíope', currency: 'ETB', center: [9.1, 40.5] },
+	{ code: 'ML', iso3: 'MLI', name: 'Malí', aliases: ['Mali', 'Malian', 'Bamako'], demonym: 'maliense', currency: 'XOF', center: [17.6, -4.0] },
+	{ code: 'CD', iso3: 'COD', name: 'República Democrática del Congo', aliases: ['RD Congo', 'RDC', 'DRC', 'Democratic Republic of the Congo', 'Congo', 'Kinshasa'], demonym: 'congoleño', currency: 'CDF', center: [-4.0, 21.8] },
+	{ code: 'MZ', iso3: 'MOZ', name: 'Mozambique', aliases: ['Mozambican', 'Maputo'], demonym: 'mozambiqueño', currency: 'MZN', center: [-18.7, 35.5] },
 	{ code: 'IL', iso3: 'ISR', name: 'Israel', aliases: ['Israeli', 'Israelis', 'Netanyahu', 'Tel Aviv'], demonym: 'israelí', currency: 'ILS', center: [31.0, 34.9] },
 	{ code: 'PS', iso3: 'PSE', name: 'Palestina', aliases: ['Palestine', 'Palestinian', 'Palestinians', 'Gaza', 'Cisjordania', 'West Bank'], demonym: 'palestino', currency: 'ILS', center: [31.9, 35.2] },
 	{ code: 'IR', iso3: 'IRN', name: 'Irán', aliases: ['Iran', 'Iranian', 'Teherán', 'Tehran'], demonym: 'iraní', currency: 'IRR', center: [32.4, 53.7] },

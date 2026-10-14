@@ -64,5 +64,8 @@ describe('findCountries', () => {
 	it('el nombre largo gana: Corea del Norte no es también Corea del Sur, South Africa no es Africa', () => {
 		expect(codes('North Korea fires missile toward South Korea')).toEqual(['KP', 'KR']);
 		expect(codes('Elections in South Africa')).toEqual(['ZA']);
+		expect(codes('Fighting in South Sudan and Sudan')).toEqual(['SS', 'SD']);
+		expect(codes('Combates en Sudán del Sur')).toEqual(['SS']);
+		expect(codes('Sanctions on Hizballah financiers and Houthis')).toEqual(['LB', 'YE']);
 	});
 });
