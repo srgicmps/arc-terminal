@@ -9,15 +9,17 @@
 	import { page } from '$app/state';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
+	import { LEVELS } from '#lib/advisories.ts';
 	import { COUNTRIES, findCountry } from '#lib/countries.ts';
 	import type { CountryProfile, Rate } from '#lib/country.ts';
-	import { nf, period, signed } from '#lib/format.ts';
+	import { dm, nf, period, signed } from '#lib/format.ts';
 	import { sectionLabel } from '#lib/news.ts';
 	import type { PageProps } from './$types';
 
@@ -33,6 +35,7 @@
 	const EMPTY: CountryProfile = { kpis: [], policy: null, bond: null, premium: null, fx: [], imf: null };
 	const profile = $derived(country && (data.profiles[country.code] ?? EMPTY));
 	const news = $derived(country ? (data.news[country.code] ?? []) : []);
+	const travel = $derived(country ? data.travel[country.code] : undefined);
 	const rates = $derived(profile ? [profile.policy, profile.bond, profile.premium].filter((r): r is Rate => r !== null) : []);
 	const empty = $derived(profile && !profile.kpis.length && !rates.length && !profile.fx.length && !profile.imf && !news.length);
 
@@ -168,6 +171,22 @@
 		</div>
 
 		<div class="col">
+			{#if travel}
+				<Panel title="Aviso de viaje de EE. UU." meta="Nivel {travel.level} de 4">
+					<ul class="mini">
+						<li>
+							<span class="l" class:grave={travel.level === 4}>{LEVELS[travel.level]}</span>
+							<span class="mut">
+								{#if travel.prevLevel && travel.changedAt}antes nivel {travel.prevLevel} · cambió el {dm(travel.changedAt)}{:else}actualizado el {dm(travel.updated)}{/if}
+							</span>
+						</li>
+					</ul>
+					{#snippet note()}
+						Fuente: <a href={travel.url} target="_blank" rel="noopener">Departamento de Estado de EE. UU.</a>, para viajeros
+						estadounidenses · <Updated at={data.travelAt} source="advisories" />
+					{/snippet}
+				</Panel>
+			{/if}
 			<Panel title="En las noticias" meta="{news.length} {news.length === 1 ? 'titular' : 'titulares'}">
 				{#if news.length}
 					<NewsList items={news} tag={(item) => sectionLabel(item)} />
@@ -181,6 +200,10 @@
 {/if}
 
 <style>
+	.grave {
+		color: var(--down);
+	}
+
 	.pick {
 		color: var(--fg);
 		text-decoration: none;
