@@ -233,3 +233,14 @@ export function commandText(c: Command): string {
 
 /** Todo el texto de una sección de la guía, para buscar en ella. */
 export const sectionText = (s: GuideSection) => [s.title, ...s.paras, ...(s.items ?? [])].join(' ');
+
+// ---------- Miniaturas ----------
+
+/**
+ * Nombre de la miniatura de una vista en static/manual/ (sin «.jpg»): la ruta sin barras, y la portada,
+ * «top». «/» → «top», «/eco» → «eco». scripts/thumbs.ts, que las captura, lleva una copia (Node no puede
+ * importar este archivo): si cambia aquí, cambia allí.
+ */
+export function thumbSlug(route: string): string {
+	return route.replace(/\//g, '') || 'top';
+}

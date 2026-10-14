@@ -424,4 +424,17 @@
 			opacity: 0;
 		}
 	}
+
+	/* Impreso: cada panel entero en su página y sin los botones de la cabecera (ampliar, compartir, mover, ocultar). */
+	@media print {
+		.panel {
+			break-inside: avoid;
+		}
+
+		.ico,
+		.ph-r :global(button),
+		.menu {
+			display: none;
+		}
+	}
 </style>

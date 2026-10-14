@@ -10,7 +10,8 @@ export const NEWS_SECTIONS = [
 	{ key: 'tech', label: 'Tecnología' },
 	{ key: 'ai', label: 'IA' },
 	{ key: 'gov', label: 'Gobiernos' },
-	{ key: 'intl', label: 'Organismos' }
+	{ key: 'intl', label: 'Organismos' },
+	{ key: 'analysis', label: 'Análisis' }
 ] as const;
 
 /** «eco» → «Economía», para la etiqueta de cada titular. */
@@ -65,3 +66,6 @@ export function mentions<T extends NewsItem>(items: T[], ticker: Pick<Ticker, 'n
 		return patterns.some((re) => re.test(title));
 	});
 }
+
+/** Canales de diplomacia dentro de news-intl (scripts/sources/news.ts): GEO los saca a su propio panel. */
+export const DIPLOMACY_FEEDS = ['Exteriores británico', 'OIEA'];

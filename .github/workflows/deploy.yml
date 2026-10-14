@@ -136,6 +136,25 @@ jobs:
 
       - run: pnpm check
       - run: pnpm test
+
+      # Miniaturas de las vistas para el MANUAL (scripts/thumbs.ts), una vez al día: se capturan de la web ya
+      # publicada y se guardan en la caché de Actions con la fecha (UTC). Si la caché de hoy ya está, no se
+      # repiten; si no, se trae la última y se rehacen. Si fallan, no frenan la publicación: el manual
+      # enseña solo las que hay. La caché se guarda sola al acabar el job (si sale bien).
+      - id: hoy
+        run: echo "fecha=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+      - id: thumbs
+        uses: actions/cache@v4
+        continue-on-error: true
+        with:
+          path: static/manual
+          key: thumbs-${{ steps.hoy.outputs.fecha }}
+          restore-keys: thumbs-
+      - if: steps.thumbs.outputs.cache-hit != 'true'
+        run: node scripts/thumbs.ts
+        continue-on-error: true
+        timeout-minutes: 4
+
       - run: pnpm build --logLevel warn
 
       # Empaqueta la carpeta build/ en el formato que espera Pages.
@@ -169,6 +188,8 @@ jobs:
       - run: pnpm check
       - run: pnpm test
       - run: pnpm build --logLevel warn
+      # Presupuesto de peso por vista (JS, CSS y HTML propios, gzip, sin datos): falla si alguna pasa del tope.
+      - run: node scripts/weight.ts
 
   # PR: datos reales y prueba de humo. Abre todas las vistas a 390 y 1280 px con el Chrome del runner y
   # falla si alguna da errores en la consola, tiene scroll horizontal en el móvil o se queda sin datos.

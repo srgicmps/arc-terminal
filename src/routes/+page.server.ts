@@ -1,5 +1,6 @@
 // Portada. Es +page.server.ts: se ejecuta al construir la web y el navegador solo recibe lo que se pinta
 // (unos pocos titulares, las series de las tablas…), no los JSON enteros de cada sección.
+import { REF_COUNTRIES } from '#lib/refcountry.svelte.ts';
 import { dataset } from '#lib/data.ts';
 import type { FuelData } from '#lib/fuel.ts';
 import type { Puzzle } from '#lib/chess/puzzle.ts';
@@ -61,7 +62,12 @@ export const load: PageServerLoad = async () => {
 		headlines,
 		headlinesTotal: news.reduce((n, d) => n + (d?.data.items.length ?? 0), 0),
 		ecb: pickSeries(ecb, ['ecb-dfr', 'euribor-12m', 'bond10-es', 'bond10-de', 'eurusd', 'eurgbp', 'eurjpy'], TAIL),
-		eurostat: pickSeries(eurostat, ['unemployment-es', 'inflation-es', 'inflation-ea'], TAIL),
+		// Paro, inflación y deuda de cada país de referencia que se puede elegir en «Macro» (M22).
+		eurostat: pickSeries(
+			eurostat,
+			[...REF_COUNTRIES.flatMap(({ code }) => ['unemployment', 'inflation', 'debt'].map((id) => `${id}-${code}`)), 'inflation-ea'],
+			TAIL
+		),
 		bls: pickSeries(bls, ['cpi-us', 'unemployment-us'], TAIL),
 		crypto: trim(crypto, (d) => ({ coins: d.coins.slice(0, 2) })),
 		power: trim(power, (d) => ({ pvpc: d.pvpc, spot: [] })),

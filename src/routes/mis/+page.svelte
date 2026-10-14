@@ -4,6 +4,7 @@
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import ChipInput from '#lib/components/ui/ChipInput.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -11,11 +12,21 @@
 	import { clock } from '#lib/clock.svelte.ts';
 	import { madridDate } from '#lib/meetings.ts';
 	import { earningsLine, myEarnings } from '#lib/myearnings.ts';
-	import { moveWatch, toggleWatch, watchlist } from '#lib/watchlist.svelte.ts';
+	import { moveWatch, setTape, toggleWatch, watchlist } from '#lib/watchlist.svelte.ts';
 	import type { Mention } from '#lib/news.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+
+	// Qué enseña la cinta de arriba: los índices de siempre o tu lista (como un v-model con get y set).
+	const tapeSel = {
+		get value() {
+			return watchlist.tape ? 'mis' : 'general';
+		},
+		set value(v: string) {
+			setTape(v === 'mis');
+		}
+	};
 
 	// Resultados de los próximos 14 días de los valores de tu lista (fecha de hoy en Madrid).
 	const today = $derived(madridDate(clock.now || Date.now()));
@@ -113,6 +124,16 @@
 						</li>
 					{/each}
 				</ul>
+				<div class="tape">
+					<Seg
+						label="Cinta de arriba"
+						options={[
+							{ value: 'general', label: 'Índices' },
+							{ value: 'mis', label: 'Mis valores' }
+						]}
+						bind:value={tapeSel.value}
+					/>
+				</div>
 			{/if}
 		</Panel>
 		<Panel title="Sugerencias" meta="Toca para añadir">
@@ -126,6 +147,10 @@
 </div>
 
 <style>
+	.tape {
+		padding: var(--row-y) var(--pad-x);
+		border-top: var(--border);
+	}
 
 	.c {
 		color: var(--amber);
