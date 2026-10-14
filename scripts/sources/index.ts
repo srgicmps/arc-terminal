@@ -12,6 +12,7 @@ import { fedreg } from './fedreg.ts';
 import { finnhub } from './finnhub.ts';
 import { fred } from './fred.ts';
 import { fuel, fuelSpain } from './fuel.ts';
+import { funds } from './funds.ts';
 import { hazards, quakesEs } from './hazards.ts';
 import { hfpapers } from './hfpapers.ts';
 import { holidays } from './holidays.ts';
@@ -56,6 +57,7 @@ export const sources: Source<any>[] = [
 	fred,
 	finnhub,
 	sec,
+	funds,
 	// Mundo
 	imf,
 	quakes,

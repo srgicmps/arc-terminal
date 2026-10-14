@@ -97,6 +97,9 @@ jobs:
       - if: github.event_name == 'pull_request'
         run: node scripts/probe.ts
         continue-on-error: true
+        env:
+          # Para las URL de sec.gov (la SEC pide un User-Agent con nombre y correo).
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
 
       # Solo en los PR: capturas de los widgets de TradingView en tema oscuro y claro (scripts/tv-shots.ts).
       # Los colores salen en el registro y las imágenes, en el artefacto «tradingview».

@@ -373,6 +373,69 @@ export interface SecData {
 	companies: Record<string, SecCompany>;
 }
 
+// ---------- Carteras 13F de grandes fondos (SEC) ----------
+
+/** Una posición de la cartera, sumadas todas sus líneas del 13F (por CUSIP). */
+export interface FundPosition {
+	cusip: string;
+	/** Emisor, como lo escribe el fondo («Apple Inc»). */
+	name: string;
+	/** Valor declarado, en dólares. */
+	value: number;
+	/** Acciones (o nominal, en los bonos). */
+	shares: number;
+	/** Peso en la cartera declarada (0–1). */
+	weight: number;
+	/** Opciones: el valor es el del subyacente. */
+	putCall?: 'Put' | 'Call';
+}
+
+/** Compra o venta frente al trimestre anterior. */
+export interface FundMove {
+	cusip: string;
+	name: string;
+	putCall?: 'Put' | 'Call';
+	/** Cambio en acciones (negativo si vende). */
+	shares: number;
+	/** Ese cambio valorado al precio del trimestre, en dólares (negativo si vende). */
+	value: number;
+	/** Cambio relativo de acciones (0,25 = +25 %); null si la posición es nueva. */
+	pct: number | null;
+	/** new: posición nueva · exit: la vende entera · add: compra más · trim: vende parte. */
+	status: 'new' | 'exit' | 'add' | 'trim';
+}
+
+export interface Fund {
+	/** Clave corta: «BRK», «ARK»… */
+	key: string;
+	name: string;
+	manager: string;
+	cik: string;
+	/** Nombre oficial en la SEC. */
+	filer: string;
+	/** Fin del trimestre declarado: «2026-06-30». */
+	period: string;
+	/** Fecha de presentación. */
+	filed: string;
+	/** Índice del expediente en sec.gov. */
+	url: string;
+	/** Valor total declarado, en dólares. */
+	total: number;
+	/** Número de posiciones. */
+	count: number;
+	/** Las 10 mayores. */
+	top: FundPosition[];
+	/** Trimestre anterior, si se ha podido leer. Sin él, bought y sold van vacíos. */
+	prev?: { period: string; total: number };
+	/** Las 5 mayores compras y ventas por valor. */
+	bought: FundMove[];
+	sold: FundMove[];
+}
+
+export interface FundsData {
+	funds: Fund[];
+}
+
 /** Un grupo de tecnologías del mix eléctrico (Eólica, Solar…). */
 export interface MixGroup {
 	key: 'wind' | 'solar' | 'hydro' | 'nuclear' | 'gas' | 'other';
