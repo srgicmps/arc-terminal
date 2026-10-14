@@ -86,6 +86,3 @@ https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-switzerland ~ <title>[
 https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-greece ~ <title>[^<]{0,80}
 # M40: ¿trae cada mercado de Polymarket su cambio en 24 h (oneDayPriceChange)?
 https://gamma-api.polymarket.com/events?active=true&closed=false&limit=2&order=volume24hr&ascending=false&tag_slug=geopolitics ~ oneDayPriceChange
-# VIX: formato de los CSV de VVIX y SKEW (cabecera y últimos días)
-https://cdn.cboe.com/api/global/us_indices/daily_prices/VVIX_History.csv ~ ^.{0,60}|.{0,120}$
-https://cdn.cboe.com/api/global/us_indices/daily_prices/SKEW_History.csv ~ ^.{0,60}|.{0,120}$
