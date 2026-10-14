@@ -62,6 +62,7 @@
 	const sofrIorb = $derived(spread(get('sofr-us'), get('iorb-us'), 'sofr-iorb', 'SOFR − IORB'));
 	const premiumDay = $derived(last(daily('premium-es-d')));
 	const premiumWeek = $derived(diffDays(daily('premium-es-d'), 7));
+	const headlines = $derived(data.news?.data.items ?? []);
 </script>
 
 <ViewHeader code="ECO" title="Economía y macro" sub="Eurostat, Banco Central Europeo, BLS, Tesoro de EE. UU. y FRED" />
@@ -367,8 +368,8 @@
 				{#snippet note()}Precios de mercados de predicción: reflejan apuestas, no pronósticos oficiales.{/snippet}
 			</Panel>
 		{/if}
-		<Panel title="Titulares" meta="Economía">
-			<NewsList items={data.news?.data.items.slice(0, 25) ?? []} />
+		<Panel title="Titulares" meta={headlines.length > 25 ? `25 de ${headlines.length}` : 'Economía'} jump={{ code: 'NEWS', href: `${resolve('/news')}?s=eco` }}>
+			<NewsList items={headlines.slice(0, 25)} />
 		</Panel>
 	</div>
 </div>

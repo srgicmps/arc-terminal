@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import AuctionList from '#lib/components/AuctionList.svelte';
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
 	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
@@ -184,7 +185,7 @@
 		<Panel title="Los que más se mueven" meta="Suben, bajan y más negociados · hoy">
 			<HotLists />
 		</Panel>
-		<Panel title="Titulares" meta="Mercados">
+		<Panel title="Titulares" meta="Mercados" jump={{ code: 'NEWS', href: `${resolve('/news')}?s=ws` }}>
 			<NewsList items={data.news?.data.items ?? []} />
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-ws" />{/snippet}
 		</Panel>

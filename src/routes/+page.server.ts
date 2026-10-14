@@ -57,6 +57,7 @@ export const load: PageServerLoad = async () => {
 
 	return {
 		headlines,
+		headlinesTotal: news.reduce((n, d) => n + (d?.data.items.length ?? 0), 0),
 		ecb: pickSeries(ecb, ['ecb-dfr', 'euribor-12m', 'bond10-es', 'bond10-de', 'eurusd', 'eurgbp', 'eurjpy'], TAIL),
 		eurostat: pickSeries(eurostat, ['unemployment-es', 'inflation-es', 'inflation-ea'], TAIL),
 		bls: pickSeries(bls, ['cpi-us', 'unemployment-us'], TAIL),
