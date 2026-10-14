@@ -16,34 +16,43 @@ function parseList(value: unknown): string[] {
 	}
 }
 
+/** Enlace al evento; si no trae slug, al de su mercado (Polymarket redirige al evento). Sin ninguno, null. */
+function urlOf(e: Raw, markets: Raw[]): string | null {
+	if (typeof e.slug === 'string' && e.slug) return `https://polymarket.com/event/${e.slug}`;
+	const slug = markets.map((m) => m.slug).find((s) => typeof s === 'string' && s);
+	return slug ? `https://polymarket.com/market/${slug}` : null;
+}
+
 function toPrediction(e: Raw): Prediction | null {
 	const markets = list<Raw>(e.markets).filter((m) => !m.closed && m.active !== false);
-	let outcomes: { label: string; p: number }[];
+	// Sin precio no hay probabilidad: esas opciones se descartan en vez de mostrarse como 0 %.
+	let outcomes: { label: string; p: number | null }[];
 	if (markets.length === 1) {
 		// Un solo mercado: sus opciones (normalmente Sí / No).
 		const labels = parseList(markets[0].outcomes);
 		const prices = parseList(markets[0].outcomePrices).map(num);
-		outcomes = labels.map((label, i) => ({ label, p: prices[i] ?? 0 }));
+		outcomes = labels.map((label, i) => ({ label, p: prices[i] ?? null }));
 	} else {
 		// Varios mercados (fechas, candidatos…): la probabilidad del «Sí» de cada uno.
 		outcomes = markets.map((m) => ({
 			label: plain(m.groupItemTitle || m.question),
-			p: num(parseList(m.outcomePrices)[0]) ?? 0
+			p: num(parseList(m.outcomePrices)[0])
 		}));
 	}
-	outcomes = outcomes
-		.map((o) => ({ label: o.label === 'Yes' ? 'Sí' : o.label === 'No' ? 'No' : o.label, p: o.p ?? 0 }))
-		.filter((o) => o.label)
+	const valid = outcomes
+		.filter((o): o is { label: string; p: number } => !!o.label && o.p !== null)
+		.map((o) => ({ label: o.label === 'Yes' ? 'Sí' : o.label === 'No' ? 'No' : o.label, p: o.p }))
 		.sort((a, b) => b.p - a.p)
 		.slice(0, 4);
-	if (!outcomes.length) return null;
+	const url = urlOf(e, markets);
+	if (!valid.length || !url) return null;
 	return {
 		id: String(e.id),
 		title: plain(e.title),
-		url: `https://polymarket.com/event/${e.slug}`,
+		url,
 		volume24h: Number(e.volume24hr ?? 0),
 		endDate: String(e.endDate ?? ''),
-		outcomes
+		outcomes: valid
 	};
 }
 
