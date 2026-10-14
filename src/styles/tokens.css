@@ -28,6 +28,8 @@
 	--piece-w-edge: #0b0e12; /* su contorno y detalles */
 	--piece-b: #07090c; /* pieza negra */
 	--piece-b-edge: #9aa4b0;
+	--series-2: #7fa7d6; /* segunda y tercera serie de un gráfico (la primera es --amber) */
+	--series-3: #b59ad6;
 
 	/* ── Tipografía ──────────────────────────────────────────────────────────────────────── */
 	--mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; /* datos y comandos */
@@ -137,4 +139,6 @@
 	--piece-w-edge: #16191d;
 	--piece-b: #23272d;
 	--piece-b-edge: #23272d;
+	--series-2: #2f639e;
+	--series-3: #7449a0;
 }

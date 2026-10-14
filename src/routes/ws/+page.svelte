@@ -1,7 +1,9 @@
 <script lang="ts">
+	import AuctionList from '#lib/components/AuctionList.svelte';
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
 	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
 	import FxConvert from '#lib/components/FxConvert.svelte';
+	import HotLists from '#lib/components/HotLists.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
@@ -164,6 +166,9 @@
 
 <div class="grid grid-2">
 	<div class="col">
+		<Panel title="Los que más se mueven" meta="Suben, bajan y más negociados · hoy">
+			<HotLists />
+		</Panel>
 		<Panel title="Titulares" meta="Mercados">
 			<NewsList items={data.news?.data.items ?? []} />
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-ws" />{/snippet}
@@ -171,9 +176,19 @@
 	</div>
 	<div class="col">
 		<RiskGauge risk={data.risk} />
-		<Panel title="Curva de tipos de EE. UU." meta="Hoy frente a hace un mes">
-			{#if data.curve}<YieldCurve curve={data.curve.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
-			{#snippet note()}Fuente: Tesoro de EE. UU. · <Updated at={data.curve?.fetchedAt} source="uscurve" />{/snippet}
+		<Panel title="Curvas de tipos" meta="EE. UU., zona euro y Japón · hoy y hace un año">
+			<YieldCurve
+				curves={[
+					{ label: 'EE. UU.', curve: data.curve?.data },
+					{ label: 'Zona euro (AAA)', curve: data.eacurve?.data },
+					{ label: 'Japón', curve: data.jgb?.data }
+				]}
+			/>
+			{#snippet note()}
+				Tesoro de EE. UU. · <Updated at={data.curve?.fetchedAt} source="uscurve" /> — BCE ·
+				<Updated at={data.eacurve?.fetchedAt} source="eacurve" /> — Ministerio de Finanzas de Japón ·
+				<Updated at={data.jgb?.fetchedAt} source="jgb" />
+			{/snippet}
 		</Panel>
 		<Panel title="Divisas" meta="Cambio de referencia del BCE">
 			<SeriesTable head="Par" spark={60} rows={fx.map((id) => ({ series: get(id), name: get(id)?.label, decimals: 4 }))} />
@@ -185,6 +200,13 @@
 		<Panel title="Cripto" meta="Por capitalización">
 			<CryptoTable coins={data.crypto?.data.coins ?? []} />
 			{#snippet note()}Fuente: CoinGecko · <Updated at={data.crypto?.fetchedAt} source="crypto" />{/snippet}
+		</Panel>
+		<Panel title="Subastas del Tesoro" meta="Bonos y notas de EE. UU.">
+			{#if data.auctions}<AuctionList data={data.auctions.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
+			{#snippet note()}
+				B/C (bid-to-cover): demanda frente a lo adjudicado; en ámbar, por debajo de la media de sus 6 subastas anteriores ·
+				Fuente: Tesoro de EE. UU. · <Updated at={data.auctions?.fetchedAt} source="auctions" />
+			{/snippet}
 		</Panel>
 	</div>
 </div>

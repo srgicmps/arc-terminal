@@ -266,6 +266,34 @@ export interface YieldCurveData {
 	days: { date: string; values: (number | null)[] }[];
 }
 
+// ---------- Subastas de deuda de EE. UU. (Fiscal Data) ----------
+
+export interface Auction {
+	/** Día de la subasta (AAAA-MM-DD). */
+	date: string;
+	/** Plazo: «10-Year», «29-Year 10-Month» (reaperturas)… */
+	term: string;
+	/** «Note», «Bond» o «FRN» (tipo flotante). */
+	kind: string;
+	reopening: boolean;
+	/** Importe ofrecido, en dólares. */
+	offering: number | null;
+	/** Rentabilidad máxima adjudicada (%). Null si aún no se ha hecho. */
+	highYield: number | null;
+	bidToCover: number | null;
+	/** Parte adjudicada a postores indirectos (bancos centrales y fondos extranjeros, sobre todo), en %. */
+	indirectPct: number | null;
+	/** Media del bid-to-cover de las 6 subastas anteriores del mismo plazo y tipo. */
+	avgBidToCover?: number | null;
+}
+
+export interface AuctionsData {
+	/** Anunciadas y pendientes, de la más cercana a la más lejana. */
+	upcoming: Auction[];
+	/** Las últimas 10 hechas, de la más reciente a la más antigua. */
+	recent: Auction[];
+}
+
 // ---------- Wikipedia: lo más leído y efemérides ----------
 
 export interface WikiPage {
