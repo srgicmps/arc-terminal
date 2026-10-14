@@ -37,6 +37,7 @@
 	const profile = $derived(country && (data.profiles[country.code] ?? EMPTY));
 	const news = $derived(country ? (data.news[country.code] ?? []) : []);
 	const travel = $derived(country ? data.travel[country.code] : undefined);
+	const risk = $derived(country ? data.risks[country.code] : undefined);
 	const hasPower = $derived(!!country && data.eupower.some((z) => z.country === country.code));
 	const rates = $derived(profile ? [profile.policy, profile.bond, profile.premium].filter((r): r is Rate => r !== null) : []);
 	const military = $derived(country ? (data.military[country.code] ?? null) : null);
@@ -201,19 +202,53 @@
 		</div>
 
 		<div class="col">
-			{#if travel}
-				<Panel title="Aviso de viaje de EE. UU." meta="Nivel {travel.level} de 4">
+			{#if travel || risk}
+				{@const at = data.riskAt}
+				<Panel title="Riesgo" meta="Aviso de viaje, catástrofes, internet y brotes">
 					<ul class="mini">
-						<li>
-							<span class="l" class:grave={travel.level === 4}>{LEVELS[travel.level]}</span>
-							<span class="mut">
-								{#if travel.prevLevel && travel.changedAt}antes nivel {travel.prevLevel} · cambió el {dm(travel.changedAt)}{:else}actualizado el {dm(travel.updated)}{/if}
-							</span>
-						</li>
+						{#if travel}
+							<li>
+								<a class="l" href={travel.url} target="_blank" rel="noopener">
+									<span class:grave={travel.level === 4}>Viaje · {LEVELS[travel.level]}</span>
+									<small>
+										Nivel {travel.level} de 4 · {#if travel.prevLevel && travel.changedAt}antes nivel {travel.prevLevel}, cambió el {dm(
+												travel.changedAt
+											)}{:else}actualizado el {dm(travel.updated)}{/if}
+									</small>
+								</a>
+							</li>
+						{/if}
+						{#each risk?.disasters ?? [] as e (e.id)}
+							<li>
+								<a class="l" href={e.url} target="_blank" rel="noopener">{e.kind} · {e.name}<small>Alerta de GDACS</small></a>
+								<span class:grave={e.level === 'red'} class:mut={e.level !== 'red'}>{e.level === 'red' ? 'Roja' : 'Naranja'}</span>
+							</li>
+						{/each}
+						{#if risk?.outage}
+							{@const o = risk.outage}
+							<li>
+								<a class="l" href={o.url} target="_blank" rel="noopener">Caída de internet<small>Desde el {dm(o.since)} · IODA</small></a>
+								<span class:grave={o.level === 'critical'} class:mut={o.level !== 'critical'}
+									>{o.drop === null ? (o.level === 'critical' ? 'Crítica' : 'Aviso') : `−${nf(o.drop, 0)} %`}</span
+								>
+							</li>
+						{/if}
+						{#each risk?.outbreaks ?? [] as o (o.id)}
+							<li>
+								<a class="l" href={o.url} target="_blank" rel="noopener">{o.title}<small>Parte de la OMS</small></a>
+								<span class="mut">{o.date ? dm(o.date) : ''}</span>
+							</li>
+						{/each}
 					</ul>
 					{#snippet note()}
-						Fuente: <a href={travel.url} target="_blank" rel="noopener">Departamento de Estado de EE. UU.</a>, para viajeros
-						estadounidenses · <Updated at={data.travelAt} source="advisories" />
+						{#if travel}Aviso del Departamento de Estado de EE. UU., para viajeros estadounidenses · <Updated
+								at={data.travelAt}
+								source="advisories"
+							/>.{/if}
+						{#if risk}Alertas naranjas y rojas de GDACS{#if at.gdacs}&nbsp;· <Updated at={at.gdacs} source="gdacs" />{/if}; caídas de internet de IODA (Georgia Tech){#if at.ioda}&nbsp;· <Updated
+									at={at.ioda}
+									source="ioda"
+								/>{/if}; brotes de los últimos 30 días de la OMS{#if at.who}&nbsp;· <Updated at={at.who} source="who-don" />{/if}.{/if}
 					{/snippet}
 				</Panel>
 			{/if}

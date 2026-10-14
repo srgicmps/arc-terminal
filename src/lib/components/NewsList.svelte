@@ -6,6 +6,7 @@
 	original aparece al pasar el ratón o con una pulsación larga en el móvil.
 -->
 <script lang="ts">
+	import Disclosure from './ui/Disclosure.svelte';
 	import { clock } from '#lib/clock.svelte.ts';
 	import { when } from '#lib/format.ts';
 	import type { NewsItem } from '#lib/types.ts';
@@ -58,12 +59,15 @@
 						<span>{item.source}</span>
 						{#if t.translated}<AutoTag {item} />{/if}
 						{#if item.also?.length}
-							<details class="also">
-								<summary>+{item.also.length} {item.also.length === 1 ? 'medio' : 'medios'}</summary>
-								{#each item.also as other, j (other.url)}
-									{j ? ' · ' : ' '}<a href={other.url} target="_blank" rel="noopener">{other.source}</a>
-								{/each}
-							</details>
+							{@const n = item.also.length}
+							<span class="also">
+								<Disclosure inline>
+									{#snippet summary()}+{n} {n === 1 ? 'medio' : 'medios'}{/snippet}
+									{#each item.also as other, j (other.url)}
+										{j ? ' · ' : ' '}<a href={other.url} target="_blank" rel="noopener">{other.source}</a>
+									{/each}
+								</Disclosure>
+							</span>
 						{/if}
 					</div>
 					{#if summaries && item.summary && item.summary !== item.title}
@@ -109,18 +113,6 @@
 		.also {
 			position: relative;
 			z-index: 1;
-		}
-
-		/* «+3 medios» es una línea de texto pequeña: una capa invisible le da la altura de una zona táctil
-		   (--touch), centrada en el texto, sin mover nada. */
-		.also summary {
-			position: relative;
-		}
-
-		.also summary::after {
-			content: '';
-			position: absolute;
-			inset: calc((100% - var(--touch)) / 2) calc(-1 * var(--sp-8));
 		}
 	}
 
@@ -193,27 +185,8 @@
 	}
 
 	/* «+3 medios»: al abrirlo, ocupa su propia línea con los enlaces a los demás medios. */
-	.also summary {
-		color: var(--faint);
-		cursor: pointer;
-		list-style: none;
-	}
-
-	.also summary::-webkit-details-marker {
-		display: none;
-	}
-
-	.also summary:hover,
-	.also[open] summary {
-		color: var(--muted);
-	}
-
-	.also[open] {
+	.also:has(:global(details[open])) {
 		flex-basis: 100%;
-	}
-
-	.also summary {
-		display: inline;
 	}
 
 	.also a {

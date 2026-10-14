@@ -3,15 +3,26 @@ import { COUNTRIES } from '#lib/countries.ts';
 import { countryProfile, type CountryProfile } from '#lib/country.ts';
 import { dataset } from '#lib/data.ts';
 import type { MilexData, MilexRow } from '#lib/milex.ts';
+import { countryRisks } from '#lib/risk-signals.ts';
 import type { Mention } from '#lib/news.ts';
-import type { AdvisoriesData, EuPowerData, ImfData, SeriesData, TravelAdvisory, YieldCurveData } from '#lib/types.ts';
+import type {
+	AdvisoriesData,
+	EuPowerData,
+	GdacsEvent,
+	ImfData,
+	IodaOutage,
+	OutbreakNews,
+	SeriesData,
+	TravelAdvisory,
+	YieldCurveData
+} from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
 // El país se elige en el navegador (?c=DE), así que aquí se calcula la ficha de todos: solo viajan las
 // cifras que pinta cada una (último dato y anterior), no las series enteras. Los países sin ningún dato no
 // van; los titulares llegan ya repartidos por país (scripts/news-index.ts → news-countries.json).
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news, advisories, eupower, sipri] = await Promise.all([
+	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news, advisories, eupower, sipri, gdacs, ioda, who] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -22,7 +33,10 @@ export const load: PageServerLoad = async () => {
 		dataset<Record<string, Mention[]>>('news-countries'),
 		dataset<AdvisoriesData>('advisories'),
 		dataset<EuPowerData>('energycharts'),
-		dataset<MilexData>('sipri')
+		dataset<MilexData>('sipri'),
+		dataset<GdacsEvent[]>('gdacs'),
+		dataset<IodaOutage[]>('ioda'),
+		dataset<OutbreakNews[]>('who-don')
 	]);
 	const sets = {
 		series: [eurostat, ecb, bls, fred, bis].flatMap((d) => d?.data.series ?? []),
@@ -49,6 +63,9 @@ export const load: PageServerLoad = async () => {
 		news: news?.data ?? {},
 		travel,
 		travelAt: advisories?.fetchedAt,
+		// Riesgo: catástrofes (GDACS), caída de internet (IODA) y brotes (OMS) de cada país, solo los que tienen algo.
+		risks: countryRisks({ gdacs: gdacs?.data, ioda: ioda?.data, who: who?.data }, Date.now()),
+		riskAt: { gdacs: gdacs?.fetchedAt, ioda: ioda?.fetchedAt, who: who?.fetchedAt },
 		eupower: eupower?.data.zones ?? [],
 		eupowerAt: eupower?.fetchedAt,
 		military,

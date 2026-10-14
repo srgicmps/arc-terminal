@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Disclosure from '#lib/components/ui/Disclosure.svelte';
 	import { clock } from '#lib/clock.svelte.ts';
 	import Panel from '#lib/components/Panel.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -98,12 +99,12 @@
 					{#each data.rss as s (s.name)}
 						{@const down = s.feeds.filter((f) => !feedOk(f))}
 						<li>
-							<details>
-								<summary>
+							<Disclosure>
+								{#snippet summary()}
 									<span class="mut">{s.name}</span>
 									<span class:down={down.length}>{s.feeds.length - down.length}/{s.feeds.length} canales</span>
 									{#each down as f (f.name)}<span class="down">{f.name}: {f.error ?? 'sin titulares'}</span>{/each}
-								</summary>
+								{/snippet}
 								<ul class="feeds">
 									{#each s.feeds as f (f.name)}
 										<li class:down={!feedOk(f)}>
@@ -112,7 +113,7 @@
 										</li>
 									{/each}
 								</ul>
-							</details>
+							</Disclosure>
 						</li>
 					{/each}
 				</ul>
@@ -211,24 +212,10 @@
 		border-top: 0;
 	}
 
-	.rss summary {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--sp-2) var(--sp-10);
-		padding: var(--sp-6) var(--sp-10);
+	/* Los canales de cada fuente, en mono como en el resumen. */
+	.rss :global(summary) {
 		font-family: var(--mono);
 		font-size: var(--fs-s);
-		cursor: pointer;
-		list-style: none;
-	}
-
-	.rss summary::-webkit-details-marker {
-		display: none;
-	}
-
-	.rss summary:hover,
-	.rss details[open] summary {
-		background: var(--raise);
 	}
 
 	/* Sangría: la del resumen (10 px) más el hueco del marcador (12 px). */
