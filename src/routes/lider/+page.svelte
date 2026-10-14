@@ -78,7 +78,7 @@
 			</Panel>
 			<!-- Sin comunicados recientes, el panel no sale: nada de huecos. -->
 			{#if c.recent.length}
-				<Panel title="Lo último" meta={c.leader.fedreg ? 'Casa Blanca y Federal Register' : 'Comunicados de La Moncloa'}>
+				<Panel title="Lo último" meta={c.leader.recentLabel}>
 					<NewsList items={c.recent} />
 				</Panel>
 			{/if}

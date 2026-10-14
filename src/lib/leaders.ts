@@ -11,6 +11,8 @@ export interface Leader {
 	news: { source: string; match?: RegExp }[];
 	/** Si los documentos presidenciales del Federal Register son suyos. */
 	fedreg?: boolean;
+	/** De dónde sale «Lo último», para la cabecera del panel. */
+	recentLabel: string;
 }
 
 export const LEADERS: Leader[] = [
@@ -18,14 +20,16 @@ export const LEADERS: Leader[] = [
 		id: 'sanchez',
 		name: 'Pedro Sánchez',
 		role: 'Presidente del Gobierno · España',
-		news: [{ source: 'La Moncloa', match: /\b(presidente del gobierno|s[aá]nchez)\b/i }]
+		news: [{ source: 'La Moncloa', match: /\b(presidente del gobierno|s[aá]nchez)\b/i }],
+		recentLabel: 'Comunicados de La Moncloa'
 	},
 	{
 		id: 'trump',
 		name: 'Donald Trump',
 		role: 'Presidente · Estados Unidos',
 		news: [{ source: 'Casa Blanca' }],
-		fedreg: true
+		fedreg: true,
+		recentLabel: 'Casa Blanca y Federal Register'
 	}
 ];
 
