@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import Panel from '#lib/components/Panel.svelte';
 	import Updated from '#lib/components/Updated.svelte';
+	import ChipInput from '#lib/components/ui/ChipInput.svelte';
 	import Search from '#lib/components/ui/Search.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { hasWords, queryWords } from '#lib/search.ts';
@@ -31,15 +32,8 @@
 		}))
 	);
 	onMount(initWatchwords);
-	let newWord = $state('');
 	// Las disposiciones que nombran alguna palabra vigilada salen arriba, en su propio panel.
 	const hits = $derived(watched(boe, watchwords.words));
-
-	function add(event: SubmitEvent) {
-		event.preventDefault();
-		addWatchword(newWord);
-		newWord = '';
-	}
 
 	const shown = $derived(sections.reduce((n, s) => n + s.items.length, 0));
 	const listed = $derived((boe?.sections ?? []).reduce((n, s) => n + s.items.length, 0));
@@ -99,17 +93,7 @@
 	<div class="grid">
 		<div class="col">
 			<Panel title="Palabras vigiladas" meta={hits.length === 1 ? '1 coincidencia' : `${hits.length} coincidencias`}>
-				<form class="words" onsubmit={add}>
-					{#each watchwords.words as w (w)}
-						<button type="button" class="word" onclick={() => removeWatchword(w)} aria-label="Dejar de vigilar «{w}»">
-							{w} <span aria-hidden="true">×</span>
-						</button>
-					{/each}
-					<label>
-						<span class="sr">Añadir una palabra vigilada</span>
-						<input bind:value={newWord} placeholder="Añadir palabra…" enterkeyhint="done" />
-					</label>
-				</form>
+				<ChipInput label="Añadir una palabra vigilada" placeholder="Añadir palabra…" items={watchwords.words} onadd={addWatchword} onremove={removeWatchword} />
 				{#if hits.length}
 					<ol class="boe">
 						{#each hits as item (item.id)}{@render entry(item)}{/each}
@@ -183,20 +167,7 @@
 		margin-bottom: var(--sp-12);
 	}
 
-	input {
-		width: 100%;
-		height: var(--control-h);
-		padding: 0 var(--sp-10);
-		background: var(--panel);
-		border: var(--border);
-		font-family: var(--sans);
-		font-size: var(--fs-l);
-	}
 
-	input:focus {
-		outline: none;
-		border-color: var(--amber);
-	}
 
 	.count {
 		color: var(--faint);
@@ -278,33 +249,9 @@
 		text-decoration: none;
 	}
 
-	.words {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.5em;
-		padding: 0.75em 1em;
-		border-bottom: var(--border);
-	}
 
-	.words label {
-		flex: 1;
-		min-width: 10em;
-	}
 
-	.word {
-		font-family: var(--mono);
-		font-size: var(--fs-xs);
-		color: var(--amber);
-		background: var(--amber-soft);
-		border: var(--hair) solid var(--amber-edge);
-		padding: 0.2em 0.6em;
-		cursor: pointer;
-	}
 
-	.word:hover {
-		border-color: var(--amber);
-	}
 
 	mark {
 		color: var(--amber);
