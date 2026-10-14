@@ -1,0 +1,33 @@
+import { COUNTRIES } from '#lib/countries.ts';
+import { countryProfile, type CountryProfile } from '#lib/country.ts';
+import { dataset } from '#lib/data.ts';
+import type { Mention } from '#lib/news.ts';
+import type { ImfData, SeriesData, YieldCurveData } from '#lib/types.ts';
+import type { PageServerLoad } from './$types';
+
+// El país se elige en el navegador (?c=DE), así que aquí se calcula la ficha de todos: solo viajan las
+// cifras que pinta cada una (último dato y anterior), no las series enteras. Los países sin ningún dato no
+// van; los titulares llegan ya repartidos por país (scripts/news-index.ts → news-countries.json).
+export const load: PageServerLoad = async () => {
+	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news] = await Promise.all([
+		dataset<SeriesData>('eurostat'),
+		dataset<SeriesData>('ecb'),
+		dataset<SeriesData>('bls'),
+		dataset<SeriesData>('fred'),
+		dataset<SeriesData>('bis'),
+		dataset<YieldCurveData>('uscurve'),
+		dataset<ImfData>('imf'),
+		dataset<Record<string, Mention[]>>('news-countries')
+	]);
+	const sets = {
+		series: [eurostat, ecb, bls, fred, bis].flatMap((d) => d?.data.series ?? []),
+		curve: uscurve?.data ?? null,
+		imf: imf?.data ?? null
+	};
+	const profiles: Record<string, CountryProfile> = {};
+	for (const c of COUNTRIES) {
+		const p = countryProfile(c, sets);
+		if (p.kpis.length || p.policy || p.bond || p.premium || p.fx.length || p.imf) profiles[c.code] = p;
+	}
+	return { profiles, news: news?.data ?? {} };
+};

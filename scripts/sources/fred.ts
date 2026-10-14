@@ -1,6 +1,6 @@
 // FRED, Banco de la Reserva Federal de San Luis: series macro de EE. UU. https://fred.stlouisfed.org/docs/api/fred/
 // Necesita una clave gratuita (FRED_API_KEY, en GitHub Secrets). Sin ella, la fuente se salta.
-// Límite: unas 120 consultas por minuto por clave; aquí son 9 cada 3 horas.
+// Límite: unas 120 consultas por minuto por clave; aquí son 11 cada 3 horas.
 // Condiciones: hay que avisar de que se usa la API de FRED sin su respaldo, y algunas series son de
 // terceros con copyright (por ejemplo, el VIX de Cboe): solo se guardan unos pocos puntos con enlace a FRED.
 import type { Point, Series, SeriesData } from '../../src/lib/types.ts';
@@ -32,9 +32,13 @@ const WANTED: Wanted[] = [
 	{ code: 'GDPC1', id: 'gdp-us', label: 'PIB real, tasa anualizada', unit: '%', freq: 'q', units: 'pca', last: 16 },
 	{ code: 'ICSA', id: 'claims-us', label: 'Solicitudes de paro (miles)', unit: 'miles', freq: 'w', last: 104, scale: 1 / 1000 },
 	{ code: 'M2SL', id: 'm2-us', label: 'M2, interanual', unit: '%', freq: 'm', units: 'pc1', last: 36 },
+	// Balance de la Fed: total del activo, semanal (miércoles), en millones de dólares.
+	{ code: 'WALCL', id: 'fed-balance', label: 'Balance de la Fed', unit: 'M$', freq: 'w', last: 160 },
 	{ code: 'VIXCLS', id: 'vix', label: 'VIX', unit: 'pts', freq: 'd', last: 260 },
 	{ code: 'DCOILWTICO', id: 'wti', label: 'Petróleo WTI', unit: '$', freq: 'd', last: 260 },
-	{ code: 'DTWEXBGS', id: 'dollar-broad', label: 'Dólar, índice amplio', unit: 'pts', freq: 'd', last: 260 }
+	{ code: 'DTWEXBGS', id: 'dollar-broad', label: 'Dólar, índice amplio', unit: 'pts', freq: 'd', last: 260 },
+	// Hipoteca fija a 30 años (encuesta semanal de Freddie Mac): dos años de jueves.
+	{ code: 'MORTGAGE30US', id: 'mortgage30-us', label: 'Hipoteca fija a 30 años', unit: '%', freq: 'w', last: 104 }
 ];
 
 /** «2026-09-01» → «2026-09» (mensual) o «2026-Q3» (trimestral); diaria y semanal, tal cual. */
@@ -96,9 +100,11 @@ async function series(w: Wanted, key: string): Promise<Series | null> {
 
 export const fred: Source<SeriesData> = {
 	name: 'fred',
-	label: 'Fed, curva, PCE, PIB, paro semanal, M2, VIX, petróleo y dólar · FRED (Fed de San Luis)',
+	label: 'Fed, balance de la Fed, curva, PCE, PIB, paro semanal, M2, VIX, petróleo y dólar · FRED (Fed de San Luis)',
 	maxAgeMinutes: 175,
 	requires: ENV,
+	// Si a la copia le falta alguna serie (p. ej., recién añadida, como el balance de la Fed o la hipoteca), se descarga de nuevo.
+	isStale: (previous) => WANTED.some((w) => !previous.series?.some((s) => s.id === w.id)),
 	async fetch() {
 		const key = process.env[ENV] ?? '';
 		const found = await settle('fred', WANTED, (w) => w.code, (w) => series(w, key));
