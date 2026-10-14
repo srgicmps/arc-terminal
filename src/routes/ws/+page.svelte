@@ -33,6 +33,17 @@
 	let { data }: PageProps = $props();
 
 	const get = $derived(seriesMap(data.ecb));
+
+	// Tira de arriba: el bono de EE. UU. a 10 años (y a 2), el euro frente al dólar y el bitcoin.
+	const usDays = $derived(data.curve?.data.days ?? []);
+	const tenorAt = (name: string) => data.curve?.data.tenors.indexOf(name) ?? -1;
+	const us10 = $derived(usDays.at(-1)?.values[tenorAt('10A')] ?? null);
+	const us2 = $derived(usDays.at(-1)?.values[tenorAt('2A')] ?? null);
+	const us10prev = $derived(usDays.at(-2)?.values[tenorAt('10A')] ?? null);
+	const eurusd = $derived(get('eurusd')?.points ?? []);
+	const fxPct = $derived(eurusd.length > 1 ? (eurusd.at(-1)!.v / eurusd.at(-2)!.v - 1) * 100 : null);
+	const btc = $derived(data.crypto?.data.coins.find((c) => c.id === 'bitcoin'));
+	const tone = (v: number | null | undefined) => (v == null ? 'mut' : v > 0 ? 'up' : v < 0 ? 'down' : 'flat');
 	const fx = ['eurusd', 'eurgbp', 'eurjpy', 'eurchf', 'eurcny', 'eurmxn'];
 
 	// Resumen de mercados en directo (TradingView), con pestañas.
@@ -141,6 +152,29 @@
 </script>
 
 <ViewHeader code="WS" title="Wall Street e inversión" sub="TradingView, Tesoro de EE. UU., BCE, CoinGecko y titulares de mercados" />
+
+<Tiles cols={3}>
+	<Tile
+		label="Bono EE. UU. 10 años"
+		value={us10 === null ? '—' : `${nf(us10, 2)} %`}
+		tone={us10 === null ? 'mut' : undefined}
+		sub={us10 === null
+			? ''
+			: `${us10prev === null ? '' : `${us10 >= us10prev ? '+' : '−'}${nf(Math.abs(us10 - us10prev) * 100, 0)} pb hoy`}${us2 === null ? '' : ` · 2 años ${nf(us2, 2)} % (${nf((us10 - us2) * 100, 0)} pb)`}`}
+	/>
+	<Tile
+		label="EUR/USD"
+		value={eurusd.length ? nf(eurusd.at(-1)!.v, 4) : '—'}
+		tone={tone(fxPct)}
+		sub={fxPct === null ? '' : `${fxPct >= 0 ? '+' : '−'}${nf(Math.abs(fxPct), 2)} % · BCE, ${dm(`${eurusd.at(-1)!.t}T12:00:00Z`)}`}
+	/>
+	<Tile
+		label="Bitcoin"
+		value={btc ? `${compact(btc.usd)} $` : '—'}
+		tone={tone(btc?.change24h)}
+		sub={btc?.change24h == null ? '' : `${btc.change24h >= 0 ? '+' : '−'}${nf(Math.abs(btc.change24h), 1)} % en 24 h`}
+	/>
+</Tiles>
 
 <div class="grid">
 	<div class="col">
