@@ -32,13 +32,14 @@ function perMillion(v: string | undefined): number | null {
 
 /**
  * Los modelos que entraron en los últimos `days` días antes de `now`, del más nuevo al más antiguo. Las variantes
- * gratuitas («…:free») se saltan si también está el modelo de pago.
+ * gratuitas («…:free») se saltan si también está el modelo de pago, y los alias de OpenRouter («~lab/…-latest»),
+ * que repiten un modelo que ya sale.
  */
 export function parseAiModels(raw: Raw[], now: number, days = 31, max = 15): AiModel[] {
 	const since = now / 1000 - days * 86_400;
 	const ids = new Set(raw.map((m) => m.id));
 	return raw
-		.filter((m) => m.id && m.name && typeof m.created === 'number' && m.created >= since)
+		.filter((m) => m.id && !m.id.startsWith('~') && m.name && typeof m.created === 'number' && m.created >= since)
 		.filter((m) => !(m.id!.endsWith(':free') && ids.has(m.id!.slice(0, -5))))
 		.sort((a, b) => b.created! - a.created!)
 		.slice(0, max)

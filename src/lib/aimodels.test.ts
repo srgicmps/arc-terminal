@@ -11,6 +11,7 @@ describe('parseAiModels', () => {
 				{ id: 'old/model', name: 'Old: Model', created: day('2026-08-01'), pricing: { prompt: '0.000001', completion: '0.000002' } },
 				{ id: 'anthropic/claude-x', name: 'Anthropic: Claude X', created: day('2026-10-10'), context_length: 200000, pricing: { prompt: '0.000003', completion: '0.000015' } },
 				{ id: 'meta/llama-z', name: 'Meta: Llama Z', created: day('2026-10-12'), pricing: { prompt: '0', completion: '0' } },
+				{ id: '~meta/llama-latest', name: 'Meta: Llama Latest', created: day('2026-10-13'), pricing: { prompt: '0', completion: '0' } },
 				{ id: 'meta/llama-z:free', name: 'Meta: Llama Z (free)', created: day('2026-10-12'), pricing: { prompt: '0', completion: '0' } }
 			],
 			NOW
