@@ -16,6 +16,7 @@
 	import Agenda from '#lib/components/top/Agenda.svelte';
 	import Markets from '#lib/components/top/Markets.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
+	import Listen from '#lib/components/ui/Listen.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
 	import { initRefCountry, REF_COUNTRIES, refCountry, refName, setRefCountry } from '#lib/refcountry.svelte.ts';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
@@ -82,7 +83,23 @@
 	);
 
 	// Los 3 temas de más peso de hoy (vista IMP); los elige +page.server.ts.
-	const important = $derived(data.important);
+	const important = $derived(data.important.slice(0, 3));
+
+	// «Escuchar» (lote 25): los 5 titulares más importantes de hoy y las cifras clave, en voz alta.
+	const spoken = () => {
+		const figure = (id: string, name: string, d = 1) => {
+			const v = get(id)?.points.at(-1)?.v;
+			return v === undefined ? [] : [{ text: `${name}: ${nf(v, d)} %.`, lang: 'es' as const }];
+		};
+		return [
+			{ text: 'Lo más importante de hoy.', lang: 'es' as const },
+			...data.important.map((e) => ({ text: `${e.titleEs ?? e.title}.`, lang: e.titleEs || e.lang !== 'en' ? ('es' as const) : ('en' as const) })),
+			{ text: 'Las cifras.', lang: 'es' as const },
+			...figure(`unemployment-${refCountry.code}`, `Paro en ${refName()}`),
+			...figure(`inflation-${refCountry.code}`, `Inflación en ${refName()}`),
+			...figure('euribor-12m', 'Euríbor a doce meses', 2)
+		];
+	};
 
 	const boeGeneral = $derived(data.boe?.data.sections.find((s) => s.code === '1'));
 	// Titulares de la portada que nombran alguna palabra vigilada (resaltadas en la lista).
@@ -194,6 +211,7 @@
 		{:else}
 			<p class="empty">Sin datos todavía</p>
 		{/if}
+		{#snippet note()}<Listen lines={spoken} label="Escuchar los 5 titulares y las cifras" />{/snippet}
 	</Panel>
 {/snippet}
 
