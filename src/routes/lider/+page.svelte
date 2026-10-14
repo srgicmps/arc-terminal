@@ -76,9 +76,12 @@
 					{/if}
 				{/snippet}
 			</Panel>
-			<Panel title="Lo último" meta={c.leader.fedreg ? 'Casa Blanca y Federal Register' : 'Comunicados de La Moncloa'}>
-				<NewsList items={c.recent} />
-			</Panel>
+			<!-- Sin comunicados recientes, el panel no sale: nada de huecos. -->
+			{#if c.recent.length}
+				<Panel title="Lo último" meta={c.leader.fedreg ? 'Casa Blanca y Federal Register' : 'Comunicados de La Moncloa'}>
+					<NewsList items={c.recent} />
+				</Panel>
+			{/if}
 		</div>
 	{/each}
 </div>
