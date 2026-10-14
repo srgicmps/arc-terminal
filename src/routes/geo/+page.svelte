@@ -13,7 +13,9 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
 	import { foodCountry, peopleRange } from '#lib/food.ts';
-	import { period } from '#lib/format.ts';
+	import { dm, hm, nf, period } from '#lib/format.ts';
+	import Tile from '#lib/components/ui/Tile.svelte';
+	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import TradeList from '#lib/components/TradeList.svelte';
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
 	import RefugeeTables from '#lib/components/RefugeeTables.svelte';
@@ -49,9 +51,35 @@
 	// Canales de diplomacia dentro de news-intl; el resto son organismos internacionales.
 	const DIPLO = new Set(DIPLOMACY_FEEDS);
 	const diplo = $derived((data.intl?.data.items ?? []).filter((i) => DIPLO.has(i.source)).slice(0, 15));
+
+	// Tira de arriba: el terremoto más fuerte de la semana, los ciclones activos y las alertas de catástrofe.
+	const topQuake = $derived(strongest[0]);
+	const storms = $derived([...(data.hazards?.data.storms ?? [])].sort((a, b) => b.knots - a.knots));
+	const alerts = $derived(data.signals?.counts);
 </script>
 
 <ViewHeader code="GEO" title="Geopolítica" sub={sources} />
+
+<Tiles cols={3}>
+	<Tile
+		label="Terremoto más fuerte, 7 días"
+		value={topQuake ? `M${nf(topQuake.mag, 1)}` : '—'}
+		tone={topQuake ? undefined : 'mut'}
+		sub={topQuake ? `${topQuake.place} · ${dm(topQuake.time)} ${hm(topQuake.time)}` : ''}
+	/>
+	<Tile
+		label="Ciclones activos"
+		value={data.hazards ? String(storms.length) : '—'}
+		tone={data.hazards ? undefined : 'mut'}
+		sub={storms[0] ? `${storms[0].name} · ${nf(storms[0].knots * 1.852, 0)} km/h` : data.hazards ? 'Ninguno ahora' : ''}
+	/>
+	<Tile
+		label="Alertas de catástrofe"
+		value={alerts ? String(alerts.red + alerts.orange) : '—'}
+		tone={alerts ? undefined : 'mut'}
+		sub={alerts ? `${alerts.red} rojas · ${alerts.orange} naranjas · GDACS` : ''}
+	/>
+</Tiles>
 
 <StormNotice data={data.swpc?.data} />
 
