@@ -23,16 +23,23 @@
 <div class="map">
 	<svg viewBox="0 8 360 150" role="img" aria-label="Mapa: {quakes.length} terremotos, {storms.length} ciclones y {events.length} eventos naturales">
 		<path class="land" d={LAND} />
+		<!-- Cada punto enlaza a su fuente: en el móvil, se toca y se abre. -->
 		{#each events.filter(ok) as e (e.id)}
-			<circle class="ev" cx={x(e.lon)} cy={y(e.lat)} r="0.9"><title>{e.title}</title></circle>
+			<a href={e.url} target="_blank" rel="noopener">
+				<circle class="ev" cx={x(e.lon)} cy={y(e.lat)} r="0.9"><title>{e.title}</title></circle>
+			</a>
 		{/each}
 		{#each quakes.filter(ok) as q (q.id)}
-			<circle class="eq" class:big={q.mag >= 6} cx={x(q.lon)} cy={y(q.lat)} r={Math.max(0.8, (q.mag - 4) * 1.1)}>
-				<title>M{nf(q.mag, 1)} · {q.place}</title>
-			</circle>
+			<a href={q.url} target="_blank" rel="noopener">
+				<circle class="eq" class:big={q.mag >= 6} cx={x(q.lon)} cy={y(q.lat)} r={Math.max(0.8, (q.mag - 4) * 1.1)}>
+					<title>M{nf(q.mag, 1)} · {q.place}</title>
+				</circle>
+			</a>
 		{/each}
 		{#each storms.filter(ok) as s (s.id)}
-			<circle class="st" cx={x(s.lon)} cy={y(s.lat)} r="2.6"><title>{s.name} · {s.classification}</title></circle>
+			<a href={s.url} target="_blank" rel="noopener">
+				<circle class="st" cx={x(s.lon)} cy={y(s.lat)} r="2.6"><title>{s.name} · {s.classification}</title></circle>
+			</a>
 		{/each}
 	</svg>
 	<p class="legend">
@@ -53,32 +60,41 @@
 		height: auto;
 	}
 
+	/* Trazos de 1 px, se vea el mapa al tamaño que se vea. */
+	.land,
+	circle {
+		vector-effect: non-scaling-stroke;
+	}
+
 	.land {
 		fill: var(--raise);
 		stroke: var(--line);
-		stroke-width: 0.3;
+		stroke-width: 1;
 	}
 
+	/* Rojo y verde quedan para subidas y bajadas: los terremotos van en ámbar. */
 	.eq {
-		fill: var(--down);
-		fill-opacity: 0.45;
-		stroke: var(--down);
-		stroke-width: 0.25;
+		fill: var(--amber-soft);
+		stroke: var(--amber);
+		stroke-width: 1;
 	}
 
 	.eq.big {
-		fill-opacity: 0.75;
+		fill: var(--amber-edge);
 	}
 
 	.st {
 		fill: none;
 		stroke: var(--fg);
-		stroke-width: 0.6;
+		stroke-width: 1;
 	}
 
 	.ev {
-		fill: var(--amber);
-		fill-opacity: 0.8;
+		fill: var(--muted);
+	}
+
+	a:hover circle {
+		stroke: var(--fg);
 	}
 
 	.legend {
@@ -100,7 +116,8 @@
 	}
 
 	.legend i.eq {
-		background: var(--down);
+		background: var(--amber-soft);
+		border: 1px solid var(--amber);
 	}
 
 	.legend i.st {
@@ -108,6 +125,6 @@
 	}
 
 	.legend i.ev {
-		background: var(--amber);
+		background: var(--muted);
 	}
 </style>

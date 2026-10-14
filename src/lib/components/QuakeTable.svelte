@@ -50,7 +50,7 @@
 	}
 
 	.strong {
-		color: var(--down);
+		color: var(--amber);
 		font-weight: 600;
 	}
 
@@ -64,6 +64,7 @@
 
 	.flag.orange,
 	.flag.red {
-		color: var(--down);
+		color: var(--fg);
+		font-weight: 600;
 	}
 </style>

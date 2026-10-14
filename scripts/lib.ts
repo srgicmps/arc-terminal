@@ -9,6 +9,11 @@ export interface Source<T = unknown> {
 	label: string;
 	/** Si la última copia publicada tiene menos de estos minutos, se reutiliza sin llamar a la API. */
 	maxAgeMinutes: number;
+	/**
+	 * Variable de entorno con la clave de la API (viene de GitHub Secrets). Si no existe, la fuente
+	 * se salta sin llamar a nadie y aparece en STATUS como «Sin clave», sin contar como fallo.
+	 */
+	requires?: string;
 	/** Recibe los datos publicados la vez anterior (si los hay), para ir acumulando historial. */
 	fetch: (previous: T | undefined) => Promise<T>;
 	/**
@@ -100,14 +105,16 @@ export function plain(value: unknown, max = 400): string {
 
 /** Fecha de hoy en Madrid como «YYYYMMDD», con un desfase opcional en días. */
 export function madridDate(offsetDays = 0): string {
-	const d = new Date(Date.now() + offsetDays * 86_400_000);
-	const parts = new Intl.DateTimeFormat('en-CA', {
+	// Primero el día de hoy en Madrid y luego se suman días de calendario. Sumar 24 h al instante
+	// actual falla la noche del cambio de hora (ese día dura 23 o 25 horas).
+	const today = new Intl.DateTimeFormat('en-CA', {
 		timeZone: 'Europe/Madrid',
 		year: 'numeric',
 		month: '2-digit',
 		day: '2-digit'
-	}).format(d);
-	return parts.replaceAll('-', '');
+	}).format(new Date());
+	const [y, m, d] = today.split('-').map(Number);
+	return new Date(Date.UTC(y, m - 1, d + offsetDays)).toISOString().slice(0, 10).replaceAll('-', '');
 }
 
 /**
@@ -160,7 +167,8 @@ export function tidy(value: string | undefined, keepShort = false): string {
 			if (i > 0 && SMALL_WORDS.has(word)) return word;
 			if (/^(n|s|e|w|o|ne|nw|se|sw|no|so|nne|nnw|sse|ssw|ene|ese|wnw|wsw)$/.test(word)) return word.toUpperCase();
 			if (/\d/.test(word) || (keepShort && word.length <= 3)) return word.toUpperCase();
-			return word.charAt(0).toUpperCase() + word.slice(1);
+			// «atlántico-marruecos» → «Atlántico-Marruecos»
+			return word.replace(/(^|-)(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toUpperCase());
 		})
 		.join(' ');
 }

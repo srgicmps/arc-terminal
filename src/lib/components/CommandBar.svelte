@@ -6,6 +6,8 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { COMMANDS, TICKERS } from '#lib/commands.ts';
+	import { ui } from '#lib/ui.svelte.ts';
+	import { watchlist } from '#lib/watchlist.svelte.ts';
 
 	interface Option {
 		code: string;
@@ -13,10 +15,20 @@
 		kind: string;
 	}
 
-	const ALL: Option[] = [
+	// Tus valores primero; después, las funciones y los valores populares.
+	const ALL: Option[] = $derived([
+		...watchlist.codes.map((code) => ({
+			code,
+			desc: TICKERS.find((t) => t.code === code)?.name ?? 'Tu lista',
+			kind: 'Mi lista'
+		})),
 		...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función' })),
-		...TICKERS.map((t) => ({ code: t.code, desc: t.name, kind: 'Valor' }))
-	];
+		...TICKERS.filter((t) => !watchlist.codes.includes(t.code)).map((t) => ({
+			code: t.code,
+			desc: t.name,
+			kind: 'Valor'
+		}))
+	]);
 
 	let value = $state('');
 	let selected = $state(-1);
@@ -35,8 +47,14 @@
 		return [...starts, ...contains].slice(0, 8);
 	});
 
+	// Al abrir la hoja desde la barra inferior del móvil, el cursor va directo a la barra.
+	$effect(() => {
+		if (ui.sheet) input.focus();
+	});
+
 	function run(raw: string) {
 		const code = norm(raw);
+		ui.sheet = false;
 		value = '';
 		open = false;
 		selected = -1;
@@ -61,7 +79,10 @@
 			e.preventDefault();
 			if (open && n) open = false;
 			else if (value) value = '';
-			else {
+			else if (ui.sheet) {
+				ui.sheet = false;
+				input.blur();
+			} else {
 				input.blur();
 				goto(resolve('/'));
 			}
@@ -90,7 +111,7 @@
 
 <svelte:window onkeydown={onWindowKeydown} />
 
-<form class="cmd" role="search" autocomplete="off" {onsubmit}>
+<form class="cmd" class:sheet={ui.sheet} role="search" autocomplete="off" {onsubmit}>
 	<label class="prompt" for="cmd">&gt;<span class="sr">Comando</span></label>
 	<input
 		id="cmd"
@@ -101,7 +122,11 @@
 			selected = options.length ? 0 : -1;
 		}}
 		{onkeydown}
-		onblur={() => setTimeout(() => (open = false), 120)}
+		onblur={() =>
+			setTimeout(() => {
+				open = false;
+				ui.sheet = false;
+			}, 120)}
 		type="text"
 		spellcheck="false"
 		autocapitalize="characters"
@@ -201,6 +226,27 @@
 		border-top-color: var(--line);
 		max-height: 320px;
 		overflow: auto;
+	}
+
+	/* Hoja desde abajo (móvil): la barra se pega encima de la barra inferior y las sugerencias se
+	   abren hacia arriba, cerca del pulgar. */
+	.cmd.sheet {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: calc(49px + env(safe-area-inset-bottom, 0px));
+		z-index: 40;
+		height: 44px;
+		border-width: 1px 0 0;
+		border-color: var(--amber);
+	}
+
+	.cmd.sheet .suggest {
+		top: auto;
+		bottom: 100%;
+		border-top-color: var(--amber);
+		border-bottom-color: var(--line);
+		max-height: 50vh;
 	}
 
 	li {
