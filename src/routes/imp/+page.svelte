@@ -1,10 +1,12 @@
 <script lang="ts">
 	import Panel from '#lib/components/Panel.svelte';
+	import TitleLang from '#lib/components/TitleLang.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { IMP_PERIODS, aggregate, minus, topImportant, type ImpTotal } from '#lib/imp.ts';
 	import { NEWS_SECTIONS } from '#lib/news.ts';
+	import { canTranslate, initTitles, longPress, shown, spanish, titles, translateMissing } from '#lib/titles.svelte.ts';
 	import type { ImpCurrent, ImpEntry } from '#lib/types.ts';
 	import type { PageProps } from './$types';
 
@@ -24,6 +26,18 @@
 	// Días del periodo de los que hay histórico (al principio, menos que los del periodo).
 	const recorded = $derived(imp ? imp.days.filter((d) => d.date > minus(imp.date, span) && d.date <= imp.date).length : 0);
 
+	// Titulares en español (ver NewsList): de la Action o, si no, del navegador.
+	$effect(initTitles);
+	$effect(() => {
+		if (titles.lang === 'es') translateMissing(items);
+	});
+	let browser = $state(false);
+	$effect(() => {
+		browser = canTranslate();
+	});
+	const toggle = $derived(items.some((i) => spanish(i)) || (browser && items.some((i) => i.lang === 'en')));
+	let peek = $state<string | null>(null);
+
 	const periods = IMP_PERIODS.map((p) => ({ value: p.key, label: p.label }));
 	const fmt = (n: number) => n.toLocaleString('es-ES', { maximumFractionDigits: 1 });
 	const outlets = (s: string[]) => (s.length > 3 ? `${s.slice(0, 3).join(', ')} +${s.length - 3}` : s.join(', '));
@@ -33,6 +47,7 @@
 
 <div class="controls">
 	<Seg label="Periodo" options={periods} bind:value={period} />
+	{#if toggle}<TitleLang />{/if}
 </div>
 
 {#if !imp}
@@ -50,10 +65,20 @@
 					<ol class="imp">
 						{#each items as item, i (item.k)}
 							{@const now = period === 'day' ? live.get(item.k) : undefined}
+							{@const t = peek === item.k ? { text: item.title, translated: false } : shown(item)}
 							<li>
 								<span class="rk">{i + 1}</span>
 								<div>
-									<a class="h" href={item.url} target="_blank" rel="noopener">{item.title}</a>
+									<a
+										class="h"
+										class:es={t.translated || peek === item.k}
+										href={item.url}
+										target="_blank"
+										rel="noopener"
+										lang={t.translated ? 'es' : item.lang}
+										title={t.translated ? item.title : undefined}
+										{@attach longPress((on) => (peek = on ? item.k : null))}>{t.text}</a
+									>
 									<div class="m">
 										{#each now?.sections ?? [] as s (s)}<span class="tag">{label[s] ?? s}</span>{/each}
 										<span>{outlets(item.sources)}</span>
@@ -81,7 +106,20 @@
 
 <style>
 	.controls {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: var(--sp-8);
 		margin-bottom: var(--sp-12);
+	}
+
+	/* Una traducción: en el móvil, la pulsación larga enseña el original en lugar del menú del enlace. */
+	@media (pointer: coarse) {
+		.h.es {
+			-webkit-touch-callout: none;
+			-webkit-user-select: none;
+			user-select: none;
+		}
 	}
 
 	.imp {
