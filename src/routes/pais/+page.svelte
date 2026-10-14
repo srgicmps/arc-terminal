@@ -9,6 +9,7 @@
 	import { page } from '$app/state';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
@@ -34,7 +35,10 @@
 	const profile = $derived(country && (data.profiles[country.code] ?? EMPTY));
 	const news = $derived(country ? (data.news[country.code] ?? []) : []);
 	const rates = $derived(profile ? [profile.policy, profile.bond, profile.premium].filter((r): r is Rate => r !== null) : []);
-	const empty = $derived(profile && !profile.kpis.length && !rates.length && !profile.fx.length && !profile.imf && !news.length);
+	const military = $derived(country ? (data.military[country.code] ?? null) : null);
+	const empty = $derived(
+		profile && !profile.kpis.length && !rates.length && !profile.fx.length && !profile.imf && !military && !news.length
+	);
 
 	// Para la lista y el desplegable, por orden alfabético.
 	const sorted = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, 'es'));
@@ -157,6 +161,20 @@
 						</tbody>
 					</Table>
 					{#snippet note()}World Economic Outlook: crecimiento del PIB real e inflación media del año.{/snippet}
+				</Panel>
+			{/if}
+
+			{#if military}
+				<Panel title="Gasto militar" meta={data.militaryYear ? String(data.militaryYear) : undefined}>
+					<Tiles>
+						<Tile label="Gasto" value="{nf(military.usd / 1000, 1)} mil M$" sub="{military.rank}.º del mundo" />
+						<Tile label="% del PIB" value={military.gdp === null ? '—' : `${nf(military.gdp, 1)} %`} />
+						<Tile label="Variación real" value={military.real === null ? '—' : `${signed(military.real, 1)} %`} sub="Frente al año anterior" />
+					</Tiles>
+					{#snippet note()}
+						Fuente: <a href="https://www.sipri.org/databases/milex" target="_blank" rel="noopener">SIPRI</a>, en dólares corrientes; la
+						variación, en dólares constantes · <Updated at={data.militaryAt} source="sipri" />
+					{/snippet}
 				</Panel>
 			{/if}
 

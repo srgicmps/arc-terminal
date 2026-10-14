@@ -6,6 +6,7 @@
 	import DisasterList from '#lib/components/DisasterList.svelte';
 	import ElectionTable from '#lib/components/ElectionTable.svelte';
 	import HazardList from '#lib/components/HazardList.svelte';
+	import MilexTable from '#lib/components/MilexTable.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
@@ -53,6 +54,16 @@
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-geo" />{/snippet}
 		</Panel>
 		<ClimatePanel climate={data.climate} />
+		{#if data.sipri?.data.rows.length}
+			{@const sipri = data.sipri}
+			<Panel title="Gasto militar" meta="Los 15 que más gastan · {sipri.data.year}">
+				<MilexTable rows={sipri.data.rows} />
+				{#snippet note()}
+					Fuente: <a href="https://www.sipri.org/databases/milex" target="_blank" rel="noopener">SIPRI Military Expenditure Database</a>.
+					Dólares corrientes; la variación real, en dólares constantes · <Updated at={sipri.fetchedAt} source="sipri" />
+				{/snippet}
+			</Panel>
+		{/if}
 	</div>
 	<div class="col">
 		<Panel title="Mercados de predicción" meta="Probabilidad que da el mercado">
