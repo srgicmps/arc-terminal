@@ -76,13 +76,10 @@ https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next 
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
 # GEO/PAIS: gasto militar del SIPRI (Milex), enlace al Excel
 https://www.sipri.org/databases/milex ~ [^"' <>]{0,200}\.xlsx[^"' <>]{0,40}
-# ES (M11): IPC adelantado del INE (nombres de las tablas de la operación IPC)
-https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPC ~ [Ii]ndicador|[Ee]stimaci|[Ff]lash|[Aa]delant
-# ES (M11): datos.gob.es en bruto (afiliación y paro registrado)
-https://datos.gob.es/apidata/catalog/dataset/title/afiliados?_pageSize=5 ~ ^.{0,800}
-https://datos.gob.es/apidata/catalog/dataset/title/paro?_pageSize=5 ~ ^.{0,800}
-# ES (M11): afiliación media de la Seguridad Social (enlaces a sus hojas)
-https://www.seg-social.es/wps/portal/wss/internet/EstadisticasPresupuestosEstudios/Estadisticas/EST8 ~ [^"' <>]{0,160}\.(xlsx?|csv)
-# ES (M11): datos abiertos del SEPE (enlaces a los CSV; el CSV directo se colgó)
-https://www.sepe.es/HomeSepe/que-es-el-sepe/estadisticas/datos-avance/paro.html ~ [^"' <>]{0,160}\.(csv|xlsx?)
-https://sede.sepe.gob.es/es/portaltrabaja/resources/sede/datos_abiertos/datos/ ~ ^.{0,800}
+# ES (M11): IPC adelantado (¿en las tablas del IPCA?) y evolución del paro registrado del SEPE (.xls)
+https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPCA ~ [Aa]delant|[Ii]ndicador|[Ff]lash|[Ee]stimaci
+https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPC ~ "Nombre" ?: ?"[^"]{0,70}
+https://www.sepe.es/SiteSepe/contenidos/que_es_el_sepe/estadisticas/datos_avance/xls/empleo/evolparo.xls ~ [A-Za-zÁÉÍÓÚáéíóúñ ]{6,60}
+# ES (M11): datos.gob.es, títulos y enlaces de descarga (su JSON lleva espacios: "clave" : "valor")
+https://datos.gob.es/apidata/catalog/dataset/title/afiliados?_pageSize=10 ~ "accessURL" ?: ?"[^"]+"|"_value" ?: ?"[^"]{0,90}afilia[^"]{0,60}"
+https://datos.gob.es/apidata/catalog/dataset/title/paro?_pageSize=10 ~ "accessURL" ?: ?"[^"]+"|"_value" ?: ?"[^"]{0,90}[Pp]aro[^"]{0,60}"
