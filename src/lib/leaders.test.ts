@@ -38,8 +38,8 @@ describe('leaders', () => {
 		expect(findLeader('lagarde')?.id).toBe('lagarde');
 		expect(findLeader('SANCHEZ')?.id).toBe('sanchez');
 		expect(findLeader('Von der Leyen')?.id).toBe('vonderleyen');
-		expect(findLeader('pow')?.id).toBe('powell');
-		expect(findLeader('reserva federal')?.id).toBe('powell');
+		expect(findLeader('war')?.id).toBe('warsh');
+		expect(findLeader('reserva federal')?.id).toBe('warsh');
 		expect(findLeader('xx')).toBeUndefined();
 		expect(new Set(LEADERS.map((l) => l.id)).size).toBe(LEADERS.length);
 	});

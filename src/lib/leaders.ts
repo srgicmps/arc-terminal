@@ -49,12 +49,12 @@ export const LEADERS: Leader[] = [
 		recentLabel: 'Discursos y entrevistas del BCE'
 	},
 	{
-		id: 'powell',
-		name: 'Jerome Powell',
-		// Su mandato de presidente acababa en mayo de 2026; sigue en la Junta de Gobernadores (hasta 2028).
-		role: 'Reserva Federal · Estados Unidos',
-		aliases: ['powell', 'jerome powell', 'fed', 'reserva federal'],
-		news: [{ section: 'gov', source: 'Reserva Federal', match: /\bPowell\b/i }],
+		// Presidente de la Fed desde mayo de 2026 (federalreserve.gov, sondeo del 14-10-2026).
+		id: 'warsh',
+		name: 'Kevin Warsh',
+		role: 'Presidente · Reserva Federal',
+		aliases: ['warsh', 'kevin warsh', 'fed', 'reserva federal'],
+		news: [{ section: 'gov', source: 'Reserva Federal', match: /\b(Warsh|Chairman)\b/i }],
 		recentLabel: 'Comunicados de la Reserva Federal'
 	},
 	{
