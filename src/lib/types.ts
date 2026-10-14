@@ -423,3 +423,4 @@ export interface Release {
 	time: string | null;
 	/** Página de la release en GitHub, con las notas. */
 	url: string;
+}
