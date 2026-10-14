@@ -1,6 +1,6 @@
 // Índice de paneles (Mejora continua 5): cada Panel se apunta aquí al montarse y se borra al desmontarse.
 // El layout crea el registro con setContext (como provide/inject en Vue) y PanelIndex lo pinta en el móvil.
-import { getContext, setContext } from 'svelte';
+import { getContext, setContext, untrack } from 'svelte';
 
 const KEY = Symbol('panel-index');
 
@@ -14,13 +14,14 @@ export class PanelRegistry {
 	items = $state<Entry[]>([]);
 	#next = 0;
 
-	/** Apunta un panel; devuelve la función que lo borra (para el return de un $effect). */
+	/**
+	 * Apunta un panel; devuelve la función que lo borra (para el return de un $effect). La lista se lee con
+	 * untrack: si no, el $effect del panel dependería de ella y se volvería a lanzar al cambiarla, sin fin.
+	 */
 	add(title: string, el: HTMLElement) {
 		const id = ++this.#next;
-		this.items = [...this.items, { id, title, el }];
-		return () => {
-			this.items = this.items.filter((i) => i.id !== id);
-		};
+		untrack(() => (this.items = [...this.items, { id, title, el }]));
+		return () => untrack(() => (this.items = this.items.filter((i) => i.id !== id)));
 	}
 
 	/** En el orden en que salen en la página. */
