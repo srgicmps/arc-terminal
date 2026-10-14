@@ -5,6 +5,7 @@ https://apidatos.ree.es/es/datos/generacion/no-renovables-detalle-emisiones-CO2?
 https://stats.bis.org/api/v1/data/WS_CBPOL/D.US+XM+JP/all?lastNObservations=2&detail=dataonly&format=csv
 https://huggingface.co/api/daily_papers?limit=2
 https://data.sec.gov/submissions/CIK0001045810.json
+https://date.nager.at/api/v3/PublicHolidays/2026/ES ~ ES-IB|"global":true
 # WX: calidad del aire, UV y polen en Maó (CAMS vía Open-Meteo)
 https://air-quality-api.open-meteo.com/v1/air-quality?latitude=39.8885&longitude=4.2658&current=european_aqi%2Cpm2_5%2Cpm10%2Cozone%2Cnitrogen_dioxide%2Cuv_index%2Colive_pollen%2Cgrass_pollen%2Cbirch_pollen%2Calder_pollen%2Cmugwort_pollen%2Cragweed_pollen&hourly=european_aqi%2Cuv_index%2Colive_pollen%2Cgrass_pollen%2Cbirch_pollen%2Calder_pollen%2Cmugwort_pollen%2Cragweed_pollen&timezone=Europe%2FMadrid&forecast_days=4
 # WX: oleaje en Menorca, costa norte (Fornells) y sur (Son Bou), puntos un poco mar adentro

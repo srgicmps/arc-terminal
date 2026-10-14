@@ -14,6 +14,7 @@ import { fred } from './fred.ts';
 import { fuel, fuelSpain } from './fuel.ts';
 import { hazards, quakesEs } from './hazards.ts';
 import { hfpapers } from './hfpapers.ts';
+import { holidays } from './holidays.ts';
 import { ine } from './ine.ts';
 import { newsSources } from './news.ts';
 import { predictions } from './predictions.ts';
@@ -32,6 +33,7 @@ export const sources: Source<any>[] = [
 	boe,
 	power,
 	powerMix,
+	holidays,
 	ine,
 	// Europa
 	ecb,
