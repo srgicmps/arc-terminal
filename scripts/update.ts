@@ -9,8 +9,19 @@
 // - si una descarga falla, se reutiliza la copia publicada, aunque sea antigua, y se avisa.
 import { readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
-import type { Dataset, SourceStatus } from '../src/lib/data.ts';
-import { checkShrink, makeContext, NO_CONTEXT, phases, writeExtra, type Source, type SourceContext } from './lib.ts';
+import type { Dataset, SourceHistory, SourceStatus } from '../src/lib/data.ts';
+import { withHistory } from './history.ts';
+import {
+	checkShrink,
+	deadlineFor,
+	makeContext,
+	NO_CONTEXT,
+	phases,
+	withDeadline,
+	writeExtra,
+	type Source,
+	type SourceContext
+} from './lib.ts';
 import { sources } from './sources/index.ts';
 
 const OUT_DIR = 'static/data';
@@ -79,7 +90,12 @@ async function run(source: Source, ctx: SourceContext = NO_CONTEXT): Promise<Sou
 
 	try {
 		const started = Date.now();
-		const data = await source.fetch(previous?.data, ctx);
+		const deadline = deadlineFor(source);
+		const data = await withDeadline(
+			source.fetch(previous?.data, ctx),
+			deadline,
+			`tiempo agotado (${deadline / 1000} s)`
+		);
 		// Vacío o encogido de golpe: se trata como un fallo (camino «stale», con la copia anterior).
 		const suspicious = checkShrink(data, previous?.data, source);
 		if (suspicious) throw new Error(suspicious);
@@ -118,7 +134,12 @@ const ctx = makeContext(saved, (name) => {
 statuses.push(...(await Promise.all(second.map((s) => run(s, ctx)))));
 
 if (!wanted.length) {
-	await save({ name: 'status', fetchedAt: new Date().toISOString(), data: statuses });
+	const now = Date.now();
+	await save({ name: 'status', fetchedAt: new Date(now).toISOString(), data: statuses });
+	// El historial va en un archivo aparte (solo lo carga STATUS): al publicado se le suma esta pasada.
+	const before = await published('status-history');
+	const history = withHistory(statuses, before?.data as SourceHistory[] | undefined, now);
+	await save({ name: 'status-history', fetchedAt: new Date(now).toISOString(), data: history });
 }
 
 const failed = statuses.filter((s) => s.state === 'error' || s.state === 'stale');

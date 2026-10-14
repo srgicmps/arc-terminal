@@ -452,4 +452,21 @@ export interface ImpData {
 	/** Top 10 de cada día (lo máximo que alcanzó cada tema ese día), el último año. */
 	days: { date: string; items: ImpEntry[] }[];
 	seen: ImpSeen[];
+
+// ---------- Crisis y desastres activos (ReliefWeb, OCHA) ----------
+
+export interface Disaster {
+	id: string;
+	/** «Afghanistan: Floods - Oct 2026» */
+	name: string;
+	/** País principal, en inglés como lo da ReliefWeb. */
+	country: string;
+	/** Tipo principal en inglés («Flood», «Epidemic»…): la vista lo traduce. */
+	type: string;
+	/** Cuándo empezó (ISO 8601). */
+	date: string | null;
+	/** Ficha en ReliefWeb, con los informes y sus fuentes originales. */
+	url: string;
+	/** Código GLIDE del desastre, si lo tiene. */
+	glide: string;
 }

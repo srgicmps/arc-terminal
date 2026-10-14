@@ -21,5 +21,9 @@ https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm ~ \d{4} FOMC Mee
 https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html ~ .{0,30}Monetary policy meeting.{0,40}
 # ECO: euríbor a 12 meses (media mensual) para la calculadora de hipoteca
 https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA?lastNObservations=14&format=csvdata&detail=dataonly
+https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG286?nult=2
+https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG350?nult=2
+https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
+https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
