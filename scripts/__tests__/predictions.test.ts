@@ -87,7 +87,7 @@ describe('predictions', () => {
 						event('sin-mercados', null),
 						event('cerrados', [market({ closed: true }), market({ active: false })]),
 						event('raro', [market({ outcomes: 'no es JSON', outcomePrices: null })]),
-						event('nulos', [market({ outcomePrices: 'no es JSON' })], { volume24hr: null, endDate: null }),
+						event('nulos', [market()], { volume24hr: null, endDate: null }),
 						event('pregunta', [market({ groupItemTitle: null, question: 'Sin título de grupo' }), market({ groupItemTitle: '', question: null, outcomePrices: '[]' })])
 					]
 				: []
@@ -98,12 +98,49 @@ describe('predictions', () => {
 			volume24h: 0,
 			endDate: '',
 			outcomes: [
-				{ label: 'Sí', p: 0 },
-				{ label: 'No', p: 0 }
+				{ label: 'No', p: 0.77 },
+				{ label: 'Sí', p: 0.23 }
 			]
 		});
 		// Sin groupItemTitle se usa la pregunta; sin pregunta ni título, fuera.
 		expect(data.geopolitics[1].outcomes).toEqual([{ label: 'Sin título de grupo', p: 0.23 }]);
+	});
+
+	it('descarta los mercados sin precios en vez de darles un 0 %', async () => {
+		mockFetch((url) =>
+			tagOf(url) === 'geopolitics'
+				? [
+						event('sin-precios', [market({ outcomePrices: undefined })]),
+						event('precios-vacios', [market({ outcomePrices: '[]' })]),
+						event('precios-no-json', [market({ outcomePrices: 'no es JSON' })]),
+						event('falta-uno', [market({ outcomePrices: '["0.4"]' })]),
+						event('varios', [
+							market({ id: 'a', groupItemTitle: 'Con precio', outcomePrices: '["0.3","0.7"]' }),
+							market({ id: 'b', groupItemTitle: 'Sin precio', outcomePrices: '' }),
+							market({ id: 'c', groupItemTitle: 'Precio null', outcomePrices: null })
+						])
+					]
+				: []
+		);
+		const data = await predictions.fetch(undefined);
+		expect(data.geopolitics.map((p) => p.id)).toEqual(['falta-uno', 'varios']);
+		expect(data.geopolitics[0].outcomes).toEqual([{ label: 'Sí', p: 0.4 }]);
+		expect(data.geopolitics[1].outcomes).toEqual([{ label: 'Con precio', p: 0.3 }]);
+	});
+
+	it('sin slug del evento enlaza al mercado, y si tampoco hay, descarta el evento', async () => {
+		mockFetch((url) =>
+			tagOf(url) === 'geopolitics'
+				? [
+						event('con-mercado', [market({ slug: 'mercado-x' })], { slug: undefined }),
+						event('sin-nada', [market()], { slug: null }),
+						event('vacio', [market({ slug: '' })], { slug: '' })
+					]
+				: []
+		);
+		const data = await predictions.fetch(undefined);
+		expect(data.geopolitics.map((p) => p.url)).toEqual(['https://polymarket.com/market/mercado-x']);
+		for (const p of data.geopolitics) expect(p.url).not.toContain('undefined');
 	});
 
 	it('si falla la parte de economía, sigue con geopolítica', async () => {

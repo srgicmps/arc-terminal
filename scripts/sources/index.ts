@@ -13,11 +13,13 @@ import { fred } from './fred.ts';
 import { fuel, fuelSpain } from './fuel.ts';
 import { hazards, quakesEs } from './hazards.ts';
 import { hfpapers } from './hfpapers.ts';
+import { holidays } from './holidays.ts';
 import { imf } from './imf.ts';
 import { ine } from './ine.ts';
 import { newsSources } from './news.ts';
 import { predictions } from './predictions.ts';
 import { powerMix } from './ree-mix.ts';
+import { releases } from './releases.ts';
 import { sec } from './sec.ts';
 import { uscurve, usdebt } from './treasury.ts';
 import { wiki } from './wiki.ts';
@@ -30,6 +32,7 @@ export const sources: Source<any>[] = [
 	boe,
 	power,
 	powerMix,
+	holidays,
 	ine,
 	// Europa
 	ecb,
@@ -55,6 +58,7 @@ export const sources: Source<any>[] = [
 	crypto,
 	hn,
 	hfpapers,
+	releases,
 	wiki,
 	...newsSources
 ];

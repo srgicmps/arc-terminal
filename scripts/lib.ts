@@ -21,6 +21,51 @@ export interface Source<T = unknown> {
 	 * writeExtra() al descargar; si se reutiliza la copia publicada, update.ts los copia de la web.
 	 */
 	files?: (data: T) => string[];
+	/**
+	 * La fuente puede venir vacía (o con muchos menos elementos que la vez anterior) sin que sea un fallo.
+	 * Sin esto, update.ts trata un resultado vacío o encogido como error y reutiliza la copia anterior.
+	 */
+	allowEmpty?: true;
+	/** Mínimo de elementos (ver countItems) para dar los datos por buenos. */
+	minItems?: number;
+}
+
+/**
+ * Cuántos elementos trae un resultado: la longitud si es una lista, o la suma de las listas de primer
+ * nivel si es un objeto. null si no hay ninguna lista que contar (p. ej. un objeto de objetos).
+ */
+export function countItems(data: unknown): number | null {
+	if (Array.isArray(data)) return data.length;
+	if (!data || typeof data !== 'object') return null;
+	const lists = Object.values(data).filter(Array.isArray);
+	return lists.length ? lists.reduce((sum, l) => sum + l.length, 0) : null;
+}
+
+/** Por debajo de esta fracción de la vez anterior, se sospecha de una respuesta incompleta. */
+const SHRINK = 0.2;
+
+/**
+ * Guardia contra datos vacíos o encogidos. Devuelve el motivo para no fiarse de `data`, o null si
+ * está bien. Una API que responde «200 OK» con la lista vacía no lanza error, pero publicarla
+ * dejaría el panel en blanco: es mejor quedarse con la copia anterior y avisar.
+ */
+export function checkShrink(
+	data: unknown,
+	previous: unknown,
+	source: Pick<Source, 'allowEmpty' | 'minItems'>
+): string | null {
+	const count = countItems(data);
+	if (count === null) return null;
+	if (source.minItems !== undefined && count < source.minItems) {
+		return `solo ${count} elementos; se esperan al menos ${source.minItems}`;
+	}
+	if (source.allowEmpty) return null;
+	if (count === 0) return 'datos vacíos';
+	const before = countItems(previous);
+	if (before && count < before * SHRINK) {
+		return `solo ${count} elementos (antes ${before}): parece una respuesta incompleta`;
+	}
+	return null;
 }
 
 /** Escribe un archivo extra de una fuente en static/data/<path>. */
