@@ -26,7 +26,8 @@ const DOLLARS_SINCE = '2023-01-03';
 export const FUNDS: { key: string; name: string; manager: string; cik: string; match: RegExp }[] = [
 	{ key: 'BRK', name: 'Berkshire Hathaway', manager: 'Warren Buffett', cik: '0001067983', match: /berkshire/i },
 	{ key: 'PSH', name: 'Pershing Square', manager: 'Bill Ackman', cik: '0001336528', match: /pershing/i },
-	{ key: 'SCION', name: 'Scion Asset Management', manager: 'Michael Burry', cik: '0001649339', match: /scion/i },
+	// Scion (Michael Burry) dejó de presentar 13F tras el T3 2025: en su lugar, Third Point.
+	{ key: 'TP', name: 'Third Point', manager: 'Dan Loeb', cik: '0001040273', match: /third point/i },
 	{ key: 'BW', name: 'Bridgewater Associates', manager: 'Ray Dalio', cik: '0001350694', match: /bridgewater/i },
 	{ key: 'ARK', name: 'ARK Investment Management', manager: 'Cathie Wood', cik: '0001697748', match: /\bark\b/i },
 	{ key: 'RENTEC', name: 'Renaissance Technologies', manager: 'Jim Simons (fundador)', cik: '0001037389', match: /renaissance/i }

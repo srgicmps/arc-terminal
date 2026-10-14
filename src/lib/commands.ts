@@ -60,7 +60,7 @@ export const COMMANDS: Command[] = [
 	{ code: 'PORT', route: '/port', key: 'Puertos', desc: 'Barcos en puertos y estrechos (Gibraltar, Róterdam, Singapur, Maó…) con AIS en directo', sources: 'aisstream.io', aliases: ['barcos', 'puertos', 'ais'] },
 	{ code: 'MIS', route: '/mis', key: 'Mis valores', desc: 'Tu lista de valores, con cotización en directo', sources: 'TradingView', pinned: true },
 	{ code: 'FUEL', route: '/fuel', key: 'Gasolina', desc: 'Gasolineras más baratas de Menorca', sources: 'Ministerio para la Transición Ecológica', pinned: true, aliases: ['gasolina', 'diésel', 'carburante'], arg: { param: 'zona', label: 'Provincia (nombre o número)', example: 'FUEL Madrid' } },
-	{ code: 'FONDOS', route: '/fondos', key: 'Fondos', desc: 'Carteras de Berkshire, Pershing Square, Scion, Bridgewater, ARK y Renaissance: mayores posiciones, compras y ventas', sources: 'SEC EDGAR (13F)', aliases: ['13f', 'carteras', 'buffett'] },
+	{ code: 'FONDOS', route: '/fondos', key: 'Fondos', desc: 'Carteras de Berkshire, Pershing Square, Third Point, Bridgewater, ARK y Renaissance: mayores posiciones, compras y ventas', sources: 'SEC EDGAR (13F)', aliases: ['13f', 'carteras', 'buffett'] },
 	{ code: 'NEWS', route: '/news', key: 'Buscar', desc: 'Buscador en todos los titulares de todas las secciones', sources: 'Todos los medios', arg: { param: 'q', label: 'Buscar en los titulares', example: 'NEWS inflación' } },
 	{ code: 'WIKI', route: '/wiki', key: 'Wikipedia', desc: 'Lo más leído en Wikipedia y efemérides del día', sources: 'Wikipedia en español' },
 	{ code: 'CAL', route: '/cal', key: 'Agenda', desc: 'Agenda económica de la semana', sources: 'TradingView' },
