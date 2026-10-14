@@ -88,7 +88,7 @@
 						sub: sky(day.code).label + (day.rain ? ` · ${nf(day.rain, 1)} mm` : '')
 					}
 				: null,
-			cheap ? { label: 'Luz más barata', value: `${hh(cheap.start)}–${hh(cheap.end)}`, sub: `${nf(cheap.avg, 3)} €/kWh` } : null,
+			cheap ? { label: 'Luz más barata', value: `${hh(cheap.first.hour)}–${hh(cheap.after.hour)}`, sub: `${nf(cheap.avg, 3)} €/kWh` } : null,
 			agenda.length ? { label: 'Hoy', value: agenda[0], sub: agenda.slice(1).join(' · ') } : null,
 			closed ? { label: 'Calendario', value: closed, sub: '' } : null,
 			warning ? { label: 'Aviso', value: warning, sub: '' } : null

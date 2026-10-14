@@ -10,6 +10,7 @@
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { fit, initFit, toggleFit } from '#lib/fit.svelte.ts';
+	import { initMode, mode, toggleMode } from '#lib/layout.svelte.ts';
 	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
 	import { initWatchlist } from '#lib/watchlist.svelte.ts';
 	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
@@ -23,6 +24,7 @@
 	$effect(initWatchlist);
 	$effect(initTheme);
 	$effect(initFit);
+	$effect(initMode);
 
 	// Modo TV: cualquier URL con ?tv=TOP,WS…&s=30 lo arranca y salta a la primera vista.
 	$effect(() => {
@@ -108,6 +110,19 @@
 		<CommandBar />
 		{#if !online}<span class="offline" title="Se muestra la última copia guardada">Sin conexión</span>{/if}
 		<Clocks />
+		{#if page.route.id === '/'}
+			<!-- General / Modular: de momento solo la portada se puede personalizar. -->
+			<button
+				class="theme mode"
+				type="button"
+				onclick={toggleMode}
+				aria-pressed={mode.modular}
+				title={mode.modular ? 'Portada modular · toca para volver a la general' : 'Personalizar la portada: ocultar, ordenar y ensanchar paneles'}
+				aria-label="Portada modular"
+			>
+				<span aria-hidden="true">▦</span>
+			</button>
+		{/if}
 		<button
 			class="theme fit"
 			type="button"
@@ -481,6 +496,11 @@
 			margin-left: auto;
 			margin-block: calc((var(--logo) - var(--btn-sm)) / 2);
 		}
+
+		/* Con el botón de la portada modular delante, el del tema va pegado a él. */
+		.mode + .fit + .theme {
+			margin-left: 0;
+		}
 	}
 
 	/* El interruptor de «encajar» solo tiene sentido en escritorio. */
@@ -488,7 +508,8 @@
 		display: none;
 	}
 
-	.fit[aria-pressed='true'] {
+	.fit[aria-pressed='true'],
+	.mode[aria-pressed='true'] {
 		color: var(--amber);
 	}
 
