@@ -11,7 +11,7 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { compact, period } from '#lib/format.ts';
-	import { last, seriesMap, spread } from '#lib/series.ts';
+	import { diffDays, last, seriesMap, spread } from '#lib/series.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -197,6 +197,20 @@
 				{#if data.fred}· <Updated at={data.fred.fetchedAt} source="fred" />{/if}
 			{/snippet}
 		</Panel>
+		{#if data.gie?.data.series.length}
+			<Panel title="Gas almacenado" meta="% de llenado · en puntos">
+				<SeriesTable
+					head="Zona"
+					spark={90}
+					rows={data.gie.data.series.map((series) => ({ series, name: series.label, decimals: 1 }))}
+					extra={[
+						{ head: '7 días', value: (s) => diffDays(s, 7) },
+						{ head: '1 año', value: (s) => diffDays(s, 365) }
+					]}
+				/>
+				{#snippet note()}Fuente: GIE AGSI+ · <Updated at={data.gie?.fetchedAt} source="gie" />{/snippet}
+			</Panel>
+		{/if}
 		{#if data.predictions?.data.economy.length}
 			<Panel title="Lo que descuenta el mercado" meta="Polymarket">
 				<PredictionList items={data.predictions.data.economy.slice(0, 6)} />

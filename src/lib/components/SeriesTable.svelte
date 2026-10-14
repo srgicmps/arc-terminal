@@ -1,7 +1,8 @@
 <!--
 	Tabla de series: último dato, variación frente al anterior, periodo, próximo dato y minigráfico.
 	El próximo dato llega en la prop `next` (lo calcula el +page.server.ts con nextMap() de nextrelease.ts);
-	la columna solo aparece si alguna serie tiene fecha.
+	la columna solo aparece si alguna serie tiene fecha. Con `extra`, columnas de variación propias
+	(por ejemplo, frente a hace 7 días y a hace un año, con `diffDays` de series.ts).
 -->
 <script lang="ts">
 	import { GEO, nf, period } from '#lib/format.ts';
@@ -22,6 +23,16 @@
 		inverse?: boolean;
 	}
 
+	interface Extra {
+		head: string;
+		/** Variación en las unidades de la serie, o null si no hay dato con qué comparar. */
+		value: (s: Series) => number | null;
+		/** Se añade detrás del número (« %»…); por defecto, nada. */
+		unit?: string;
+		/** Decimales; por defecto, los de la fila. */
+		digits?: number;
+	}
+
 	interface Props {
 		rows: Row[];
 		head?: string;
@@ -29,9 +40,10 @@
 		spark?: number;
 		/** Próxima publicación de cada serie (por id), de los calendarios oficiales. */
 		next?: NextMap;
+		extra?: Extra[];
 	}
 
-	let { rows, head = 'Indicador', spark = 24, next }: Props = $props();
+	let { rows, head = 'Indicador', spark = 24, next, extra = [] }: Props = $props();
 
 	const visible = $derived(rows.filter((r): r is Row & { series: Series } => Boolean(r.series?.points.length)));
 
@@ -58,6 +70,7 @@
 				<th>{head}</th>
 				<th>Último</th>
 				<th>Var.</th>
+				{#each extra as x (x.head)}<th>{x.head}</th>{/each}
 				<th class="per">Periodo</th>
 				{#if anyNext}<th class="nx">Próx.</th>{/if}
 				<th class="sp"><span class="sr">Evolución</span></th>
@@ -80,6 +93,7 @@
 					</td>
 					<td>{nf(last.v, d)}{row.series.unit === '%' ? ' %' : ''}</td>
 					<td><Change value={diff} digits={d} invert={row.inverse} /></td>
+					{#each extra as x (x.head)}<td><Change value={x.value(row.series)} digits={x.digits ?? d} unit={x.unit ?? ''} invert={row.inverse} /></td>{/each}
 					<td class="mut per">{period(last.t)}</td>
 					{#if anyNext}<td class="mut nx" title={nx?.title}>{nx ? shortDay(nx.date) : ''}</td>{/if}
 					<td class="sp"><Spark values={pts.slice(-spark).map((p) => p.v)} /></td>
