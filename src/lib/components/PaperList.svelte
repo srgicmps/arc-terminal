@@ -2,7 +2,13 @@
 <script lang="ts">
 	import type { Paper } from '#lib/types.ts';
 
-	let { items }: { items: Paper[] } = $props();
+	interface Props {
+		items: Paper[];
+		/** Aviso cuando la lista del día llega vacía (la fuente sí ha respondido). Sin él: «Sin papers todavía». */
+		empty?: string;
+	}
+
+	let { items, empty }: Props = $props();
 </script>
 
 {#if items.length}
@@ -23,7 +29,7 @@
 		{/each}
 	</ol>
 {:else}
-	<p class="empty">Sin papers todavía.</p>
+	<p class="empty">{empty ?? 'Sin papers todavía.'}</p>
 {/if}
 
 <style>
