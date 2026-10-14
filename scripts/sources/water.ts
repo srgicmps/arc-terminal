@@ -26,7 +26,9 @@ export const water: Source<WaterData> = {
 	// El MITECO lo actualiza una vez por semana (los martes): con mirar cada 12 horas sobra.
 	maxAgeMinutes: 715,
 	async fetch() {
+		const t0 = Date.now();
 		const zip = unzipSync(new Uint8Array(await (await request(ZIP)).arrayBuffer()));
+		const t1 = Date.now();
 		const mdbName = Object.keys(zip).find((n) => /\.mdb$/i.test(n));
 		if (!mdbName) throw new Error(`el ZIP no trae .mdb: ${Object.keys(zip).join(', ')}`);
 		const db = new MDBReader(Buffer.from(zip[mdbName]));
@@ -51,7 +53,9 @@ export const water: Source<WaterData> = {
 
 		// Suma de todos los embalses por semana (y por cuenca en la última semana).
 		const byDate = new Map<string, { now: number; total: number }>();
-		const rows = table.getData() as Row[];
+		// Solo las columnas que se usan: leer la tabla entera es lo que más tarda.
+		const rows = table.getData({ columns: [cDate, cNow, cTotal, ...(cBasin ? [cBasin] : [])] }) as Row[];
+		console.log(`  water · descarga ${Math.round((t1 - t0) / 1000)} s, lectura ${Math.round((Date.now() - t1) / 1000)} s, ${rows.length} filas`);
 		for (const r of rows) {
 			const date = day(r[cDate]);
 			const now = num(r[cNow]);

@@ -16,6 +16,7 @@ vi.mock('mdb-reader', () => ({
 }));
 
 const { water } = await import('../sources/water.ts');
+vi.spyOn(console, 'log').mockImplementation(() => {});
 
 const row = (ambito: string, fecha: string, total: number, actual: number) => ({
 	AMBITO_NOMBRE: ambito,

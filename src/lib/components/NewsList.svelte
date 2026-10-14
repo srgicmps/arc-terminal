@@ -1,4 +1,7 @@
-<!-- Lista de titulares: hora, titular enlazado al medio original, medio y resumen opcional. -->
+<!--
+	Lista de titulares: hora, titular enlazado al medio original, medio y resumen opcional.
+	Si otros medios dan la misma noticia (scripts/cluster.ts), «+3 medios» los despliega.
+-->
 <script lang="ts">
 	import { clock } from '#lib/clock.svelte.ts';
 	import { when } from '#lib/format.ts';
@@ -22,10 +25,18 @@
 				<time datetime={item.time ?? undefined}>{when(item.time, clock.now)}</time>
 				<div>
 					<a class="h" href={item.url} target="_blank" rel="noopener">{item.title}</a>
-					<p class="m">
+					<div class="m">
 						{#if tag?.(item)}<span class="tag">{tag(item)}</span>{/if}
 						<span>{item.source}</span>
-					</p>
+						{#if item.also?.length}
+							<details class="also">
+								<summary>+{item.also.length} {item.also.length === 1 ? 'medio' : 'medios'}</summary>
+								{#each item.also as other, j (other.url)}
+									{j ? ' · ' : ' '}<a href={other.url} target="_blank" rel="noopener">{other.source}</a>
+								{/each}
+							</details>
+						{/if}
+					</div>
 					{#if summaries && item.summary && item.summary !== item.title}
 						<p class="s">{item.summary}</p>
 					{/if}
@@ -63,6 +74,12 @@
 			content: '';
 			position: absolute;
 			inset: 0;
+		}
+
+		/* «+3 medios» y sus enlaces quedan por encima de esa capa para poder tocarlos. */
+		.also {
+			position: relative;
+			z-index: 1;
 		}
 	}
 
@@ -103,6 +120,39 @@
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-s);
+	}
+
+	/* «+3 medios»: al abrirlo, ocupa su propia línea con los enlaces a los demás medios. */
+	.also summary {
+		color: var(--faint);
+		cursor: pointer;
+		list-style: none;
+	}
+
+	.also summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.also summary:hover,
+	.also[open] summary {
+		color: var(--muted);
+	}
+
+	.also[open] {
+		flex-basis: 100%;
+	}
+
+	.also summary {
+		display: inline;
+	}
+
+	.also a {
+		color: var(--muted);
+		text-decoration: none;
+	}
+
+	.also a:hover {
+		color: var(--amber);
 	}
 
 	.tag {

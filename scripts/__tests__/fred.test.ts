@@ -86,6 +86,33 @@ describe('fred', () => {
 		expect(series[0].points).toEqual([{ t: '2026-10-12', v: 4.33 }]);
 	});
 
+	it('descarta las observaciones sin fecha o con fecha no válida sin tumbar la serie', async () => {
+		vi.spyOn(console, 'log').mockImplementation(() => {});
+		mockFetch((url) => {
+			switch (seriesOf(url)) {
+				case 'DFF':
+					return {
+						observations: [
+							{ value: '4.10' },
+							{ date: null, value: '4.20' },
+							{ date: 'ayer', value: '4.30' },
+							{ date: '2026-13-45', value: '4.40' },
+							{ date: '2026-10-12', value: '4.33' }
+						]
+					};
+				case 'PCEPILFE':
+					return { observations: [{ date: 20260801, value: '2.9' }, { date: '2026-07-01', value: '2.8' }] };
+				default:
+					return obs([]);
+			}
+		});
+		const { series } = await fred.fetch(undefined);
+		const byId = Object.fromEntries(series.map((s) => [s.id, s]));
+		expect(series.map((s) => s.id)).toEqual(['fedfunds-us', 'core-pce-us']);
+		expect(byId['fedfunds-us'].points).toEqual([{ t: '2026-10-12', v: 4.33 }]);
+		expect(byId['core-pce-us'].points).toEqual([{ t: '2026-07', v: 2.8 }]);
+	});
+
 	it('lanza un error si ninguna serie trae datos', async () => {
 		vi.spyOn(console, 'log').mockImplementation(() => {});
 		mockFetch(() => obs([]));
