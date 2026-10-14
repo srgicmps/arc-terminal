@@ -12,7 +12,7 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import WorldMap from '#lib/components/WorldMap.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
-	import { LAYERS, crisisPoints, eventPoints, quakePoints, sanctionPoints, stormPoints, straitPoints, type LayerId, type MapPoint } from '#lib/geo/layers.ts';
+	import { LAYERS, type LayerId } from '#lib/geo/layers.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -21,15 +21,8 @@
 	const quakes = $derived(data.quakes?.data ?? []);
 	// Los más fuertes de la semana primero, y como mucho 20.
 	const strongest = $derived([...quakes].sort((a, b) => b.mag - a.mag).slice(0, 20));
-	// Capas del mapa: todas las que tienen datos, encendidas al principio.
-	const layerPoints = $derived<Record<LayerId, MapPoint[]>>({
-		quakes: quakePoints(quakes),
-		storms: stormPoints(data.hazards?.data.storms ?? []),
-		events: eventPoints(data.hazards?.data.events ?? []),
-		straits: straitPoints(data.portwatch?.data ?? []),
-		sanctions: sanctionPoints(data.sanctions?.data ?? []),
-		crises: crisisPoints(data.reliefweb?.data ?? [])
-	});
+	// Capas del mapa (calculadas en +page.server.ts): todas las que tienen datos, encendidas al principio.
+	const layerPoints = $derived(data.layers);
 	const available = $derived(LAYERS.filter((l) => layerPoints[l.value].length));
 	let on = $state<LayerId[]>(LAYERS.map((l) => l.value));
 	const points = $derived(available.filter((l) => on.includes(l.value)).flatMap((l) => layerPoints[l.value]));
