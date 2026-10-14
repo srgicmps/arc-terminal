@@ -76,12 +76,3 @@ https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next 
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
 # GEO/PAIS: gasto militar del SIPRI (Milex), enlace al Excel
 https://www.sipri.org/databases/milex ~ [^"' <>]{0,200}\.xlsx[^"' <>]{0,40}
-# WS (lote 21): VIX y su curva. Cboe publica el histórico diario de cada índice de volatilidad en CSV
-https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv ~ ^.{0,120}|.{0,200}$
-https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX9D_History.csv ~ .{0,120}$
-https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX3M_History.csv ~ .{0,120}$
-https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX6M_History.csv ~ .{0,120}$
-https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX1Y_History.csv ~ .{0,120}$
-# Futuros del VIX: cotizaciones diferidas de la curva (JSON) y liquidaciones diarias de CFE (CSV)
-https://cdn.cboe.com/api/global/delayed_quotes/futures/VX.json ~ .{0,1500}
-https://www.cboe.com/us/futures/market_statistics/settlement/csv?dt=2026-10-13 ~ ^.{0,200}|VX[^\n]{0,120}
