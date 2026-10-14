@@ -2,6 +2,7 @@
 // una agenda falla, ese líder sale sin agenda (solo con lo último que ha hecho) y los demás siguen.
 // - Sánchez: la agenda del presidente en lamoncloa.gob.es es una página HTML por día, sin RSS.
 // - Trump: Roll Call Factba.se publica la agenda de la Casa Blanca en JSON, con la hora de Washington.
+// - Lagarde: el calendario semanal de actos públicos del Comité Ejecutivo del BCE (HTML, hora de Fráncfort).
 import type { AgendaEvent, LeaderAgenda } from '../../src/lib/types.ts';
 import { getJson, getText, list, madridDate, plain, type Source } from '../lib.ts';
 
@@ -94,6 +95,46 @@ export function parseFactbase(body: unknown, now = Date.now()): AgendaEvent[] {
 		.sort((a, b) => a.date.localeCompare(b.date) || (a.start ?? '').localeCompare(b.start ?? ''));
 }
 
+// ---------- Lagarde (BCE) ----------
+
+export const ECB_WEEKLY = 'https://www.ecb.europa.eu/press/calendars/weekly/html/index.en.html';
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const ECB_DATE = new RegExp(`(\\d{1,2}) (${MONTHS.join('|')}) (\\d{4})`, 'g');
+
+/**
+ * Lee el calendario semanal del BCE y se queda con los actos de Lagarde. Cada acto es un bloque que
+ * termina en «Last modified: …»: «Tuesday, 13 October 2026 [Board member: …] Event: Participation by
+ * Ms Lagarde in … Time: 09:15 CET Venue: … Contact number: …». La hora es la de Fráncfort (el BCE pone
+ * «CET» también en verano).
+ */
+export function parseEcbWeekly(html: string, who = /\bLagarde\b/): AgendaEvent[] {
+	const text = plain(html, 2_000_000);
+	const start = text.indexOf('Weekly schedule of public speaking');
+	if (start < 0) throw new Error('el calendario del BCE no tiene el formato esperado');
+	const blocks = text.slice(start).split(/Last modified:.*?(?:CET|CEST)/);
+	const events: AgendaEvent[] = [];
+	for (const block of blocks) {
+		const at = block.indexOf('Event:');
+		if (at < 0) continue;
+		// La fecha del acto es la última antes de «Event:» (la primera del todo es el rango de la semana).
+		const d = [...block.slice(0, at).matchAll(ECB_DATE)].at(-1);
+		if (!d) continue;
+		const title = block.slice(at + 6).split(/\s(?:Time|Venue|Contact number|Text|E-mail address):/)[0].trim();
+		if (!who.test(title)) continue;
+		const date = `${d[3]}-${String(MONTHS.indexOf(d[2]) + 1).padStart(2, '0')}-${d[1].padStart(2, '0')}`;
+		const time = block.match(/Time:\s*(\d{1,2}:\d{2})/)?.[1];
+		const place = block.match(/Venue:\s*(.+?)\s(?:Contact number|Text|E-mail address):/)?.[1] ?? '';
+		events.push({
+			start: time ? zoned(date, time.padStart(5, '0'), 'Europe/Berlin') : null,
+			date,
+			title: plain(title, 240),
+			place: plain(place, 80)
+		});
+	}
+	return events;
+}
+
 // ---------- Todos ----------
 
 interface Reader {
@@ -112,12 +153,17 @@ const READERS: Reader[] = [
 		id: 'trump',
 		source: { name: 'Roll Call Factba.se', url: 'https://rollcall.com/factbase/trump/topic/calendar/' },
 		read: async () => parseFactbase(await getJson(FACTBASE))
+	},
+	{
+		id: 'lagarde',
+		source: { name: 'BCE', url: ECB_WEEKLY },
+		read: async () => parseEcbWeekly(await getText(ECB_WEEKLY))
 	}
 ];
 
 export const leaders: Source<LeaderAgenda[]> = {
 	name: 'leaders',
-	label: 'Agenda de los líderes · La Moncloa y Roll Call Factba.se',
+	label: 'Agenda de los líderes · La Moncloa, Roll Call Factba.se y BCE',
 	maxAgeMinutes: 30,
 	async fetch(previous) {
 		const out = await Promise.all(

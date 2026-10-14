@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { leaders, parseFactbase, parseMoncloa, zoned } from '../sources/leaders.ts';
+import { leaders, parseEcbWeekly, parseFactbase, parseMoncloa, zoned } from '../sources/leaders.ts';
 import { mockFetch } from './mock.ts';
 
 // Trozo con la forma real de la página de La Moncloa (texto tras quitar etiquetas).
@@ -54,8 +54,32 @@ describe('leaders', () => {
 		const data = await leaders.fetch(undefined);
 		expect(data.map((l) => [l.id, l.events === null])).toEqual([
 			['sanchez', true],
-			['trump', false]
+			['trump', false],
+			['lagarde', true]
 		]);
 		expect(data[0].error).toContain('404');
+	});
+
+	it('lee el calendario semanal del BCE y se queda con los actos de Lagarde', () => {
+		// Texto real del calendario (14 de octubre de 2026), en HTML simplificado.
+		const html = `<html><body><h1>Weekly schedule of public speaking engagements and other activities</h1>
+		<p>Friday, 09 October 2026 - Sunday, 18 October 2026</p>
+		<div><h3>Friday, 9 October 2026</h3><dl><dt>Event:</dt><dd>Participation by Ms Lagarde in Ecofin meeting in Luxembourg</dd>
+		<dt>Contact number:</dt><dd>ECB Newsroom</dd></dl><p>Last modified: 14 October 2026, 12:45 CET</p></div>
+		<div><h3>Friday, 9 October 2026</h3><dl><dt>Board member:</dt><dd>Isabel Schnabel</dd><dt>Event:</dt><dd>Presentation by Ms Schnabel at Symposium</dd>
+		<dt>Time:</dt><dd>15:30 CET</dd></dl><p>Last modified: 14 October 2026, 12:45 CET</p></div>
+		<div><h3>Tuesday, 13 October 2026</h3><dl><dt>Event:</dt><dd>Participation by Ms Lagarde and Mr Vuj&#269;i&#263; in IMF/World Bank annual meetings in Bangkok, Thailand</dd>
+		<dt>Time:</dt><dd>9:15 CET</dd><dt>Venue:</dt><dd>Bangkok, Thailand</dd><dt>Contact number:</dt><dd>Philippe Rispal</dd></dl>
+		<p>Last modified: 14 October 2026, 12:45 CET</p></div></body></html>`;
+		expect(parseEcbWeekly(html)).toEqual([
+			{ start: null, date: '2026-10-09', title: 'Participation by Ms Lagarde in Ecofin meeting in Luxembourg', place: '' },
+			{
+				start: '2026-10-13T07:15:00.000Z',
+				date: '2026-10-13',
+				title: 'Participation by Ms Lagarde and Mr Vujčić in IMF/World Bank annual meetings in Bangkok, Thailand',
+				place: 'Bangkok, Thailand'
+			}
+		]);
+		expect(() => parseEcbWeekly('<html>otra cosa</html>')).toThrow('formato');
 	});
 });

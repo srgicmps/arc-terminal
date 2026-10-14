@@ -25,8 +25,3 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG286?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG350?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
-# LIDER: Von der Leyen (Comisión Europea): sala de prensa en inglés y agenda semanal
-https://ec.europa.eu/commission/presscorner/api/rss?language=en
-https://ec.europa.eu/commission/presscorner/api/rss?language=en ~ .{0,160}(President|Leyen).{0,160}
-# LIDER: Lagarde (BCE): canal de discursos y calendario de actos públicos del Comité Ejecutivo
-https://www.ecb.europa.eu/press/calendars/weekly/html/index.en.html ~ Weekly schedule of public speaking.{0,2800}
