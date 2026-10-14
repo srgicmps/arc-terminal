@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ClimatePanel from '#lib/components/ClimatePanel.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import StormNotice from '#lib/components/StormNotice.svelte';
 	import SunArc from '#lib/components/SunArc.svelte';
 	import { clock } from '#lib/clock.svelte.ts';
 	import Updated from '#lib/components/Updated.svelte';
@@ -98,6 +99,8 @@
 <ViewHeader code="WX" title="El tiempo" sub="{here.name} y otras ciudades · Open-Meteo, CAMS y MeteoAlarm" />
 
 {#if localError}<p class="empty">{localError}</p>{/if}
+
+<StormNotice data={data.swpc?.data} />
 
 <div class="grid grid-2e">
 	<div class="col">
