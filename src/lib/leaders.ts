@@ -1,12 +1,16 @@
 // LIDER: qué hacen ahora los líderes que se siguen. Para añadir uno (Von der Leyen, Lagarde…), una
 // entrada aquí y, si tiene agenda pública, su lector en scripts/sources/leaders.ts.
+import { norm } from './cmdline.ts';
 import { madridNow } from './power.ts';
 import type { AgendaEvent, FedRegDoc, NewsItem } from './types.ts';
 
 export interface Leader {
+	/** Va en la URL: /lider?id=lagarde. */
 	id: string;
 	name: string;
 	role: string;
+	/** Otras formas de buscarlo en la barra («LIDER Lagarde», «LIDER BCE»). Sin tildes ni mayúsculas. */
+	aliases: string[];
 	/**
 	 * Titulares que cuentan como «lo último»: de qué sección (news-gov, news-eco…), de qué medio y, si
 	 * hace falta, qué texto tienen que llevar.
@@ -23,6 +27,7 @@ export const LEADERS: Leader[] = [
 		id: 'sanchez',
 		name: 'Pedro Sánchez',
 		role: 'Presidente del Gobierno · España',
+		aliases: ['sánchez', 'pedro sánchez', 'moncloa'],
 		news: [{ section: 'gov', source: 'La Moncloa', match: /\b(presidente del gobierno|s[aá]nchez)\b/i }],
 		recentLabel: 'Comunicados de La Moncloa'
 	},
@@ -30,6 +35,7 @@ export const LEADERS: Leader[] = [
 		id: 'trump',
 		name: 'Donald Trump',
 		role: 'Presidente · Estados Unidos',
+		aliases: ['trump', 'donald trump', 'casa blanca'],
 		news: [{ section: 'gov', source: 'Casa Blanca' }],
 		fedreg: true,
 		recentLabel: 'Casa Blanca y Federal Register'
@@ -38,10 +44,39 @@ export const LEADERS: Leader[] = [
 		id: 'lagarde',
 		name: 'Christine Lagarde',
 		role: 'Presidenta · Banco Central Europeo',
+		aliases: ['lagarde', 'christine lagarde', 'bce'],
 		news: [{ section: 'eco', source: 'BCE', match: /\bLagarde\b/i }],
 		recentLabel: 'Discursos y entrevistas del BCE'
+	},
+	{
+		id: 'powell',
+		name: 'Jerome Powell',
+		// Su mandato de presidente acababa en mayo de 2026; sigue en la Junta de Gobernadores (hasta 2028).
+		role: 'Reserva Federal · Estados Unidos',
+		aliases: ['powell', 'jerome powell', 'fed', 'reserva federal'],
+		news: [{ section: 'gov', source: 'Reserva Federal', match: /\bPowell\b/i }],
+		recentLabel: 'Comunicados de la Reserva Federal'
+	},
+	{
+		id: 'vonderleyen',
+		name: 'Ursula von der Leyen',
+		role: 'Presidenta · Comisión Europea',
+		aliases: ['von der leyen', 'ursula von der leyen', 'comisión europea'],
+		news: [{ section: 'gov', source: 'Comisión Europea', match: /\bvon der Leyen\b/i }],
+		recentLabel: 'Comunicados de la Comisión Europea'
 	}
 ];
+
+/** El líder de un texto: su id, su nombre, un alias o el principio del nombre («lag»). */
+export function findLeader(text: string | null | undefined): Leader | undefined {
+	const q = norm(text ?? '').trim();
+	if (!q) return undefined;
+	const names = (l: Leader) => [l.id, l.name, ...l.aliases].map(norm);
+	return (
+		LEADERS.find((l) => names(l).includes(q)) ??
+		(q.length >= 3 ? LEADERS.find((l) => names(l).some((n) => n.startsWith(q) || n.split(' ').some((w) => w.startsWith(q)))) : undefined)
+	);
+}
 
 /** Día de Madrid (AAAA-MM-DD) de un instante. */
 const madridDay = (t: number) => madridNow(t).day;

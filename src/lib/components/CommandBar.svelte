@@ -22,12 +22,13 @@
 		type Option
 	} from '#lib/cmdline.ts';
 	import type { Dataset } from '#lib/data.ts';
-	import { prepare, searchOptions, type Indexed } from '#lib/search.ts';
+	import { leaderEntries, prepare, searchOptions, type Indexed } from '#lib/search.ts';
 	import type { SearchEntry } from '#lib/types.ts';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
 
-	// Tus valores primero; después, las funciones y los valores populares.
+	const LEADER_OPTIONS = leaderEntries();
+	// Tus valores primero; después, las funciones, los líderes y los valores populares.
 	const ALL: Option[] = $derived([
 		...watchlist.codes.map((code) => ({
 			code,
@@ -35,6 +36,7 @@
 			kind: 'Mi lista'
 		})),
 		...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función', aliases: c.aliases })),
+		...LEADER_OPTIONS,
 		...TICKERS.filter((t) => !watchlist.codes.includes(t.code)).map((t) => ({
 			code: t.code,
 			desc: t.name,

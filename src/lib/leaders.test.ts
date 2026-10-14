@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LEADERS, nowNext, recent, today } from './leaders.ts';
+import { findLeader, LEADERS, nowNext, recent, today } from './leaders.ts';
 
 const ev = (start: string | null, date: string, title = 'x') => ({ start, date, title, place: '' });
 const NOW = Date.parse('2026-10-14T10:00:00Z'); // 12:00 en Madrid
@@ -32,5 +32,15 @@ describe('leaders', () => {
 		expect(recent(sanchez, { gov }, fedreg).map((i) => i.url)).toEqual(['u1']);
 		expect(recent(trump, { gov }, fedreg).map((i) => i.url)).toEqual(['u4', 'u3']);
 		expect(recent(lagarde, { gov, eco }).map((i) => i.url)).toEqual(['u5']);
+	});
+
+	it('findLeader: id, nombre, alias sin tildes y principio de palabra', () => {
+		expect(findLeader('lagarde')?.id).toBe('lagarde');
+		expect(findLeader('SANCHEZ')?.id).toBe('sanchez');
+		expect(findLeader('Von der Leyen')?.id).toBe('vonderleyen');
+		expect(findLeader('pow')?.id).toBe('powell');
+		expect(findLeader('reserva federal')?.id).toBe('powell');
+		expect(findLeader('xx')).toBeUndefined();
+		expect(new Set(LEADERS.map((l) => l.id)).size).toBe(LEADERS.length);
 	});
 });

@@ -1,4 +1,7 @@
-<!-- LIDER: qué hacen ahora los líderes. Agenda de hoy en hora de Madrid y lo último que han hecho. -->
+<!--
+	LIDER: qué hacen ahora los líderes. Agenda de hoy en hora de Madrid y lo último que han hecho.
+	Con ?id=lagarde (o «LIDER Lagarde» en la barra) sale solo la ficha de ese líder.
+-->
 <script lang="ts">
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
@@ -6,7 +9,9 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { clock } from '#lib/clock.svelte.ts';
 	import { hm } from '#lib/format.ts';
-	import { LEADERS, nowNext, recent, today } from '#lib/leaders.ts';
+	import Seg from '#lib/components/ui/Seg.svelte';
+	import { findLeader, LEADERS, nowNext, recent, today } from '#lib/leaders.ts';
+	import { urlState } from '#lib/urlstate.svelte.ts';
 	import type { AgendaEvent } from '#lib/types.ts';
 	import type { PageProps } from './$types';
 
@@ -15,8 +20,17 @@
 	// Al construir la web, clock.now vale 0: se usa la hora de la descarga hasta que arranca el navegador.
 	const now = $derived(clock.now || Date.parse(data.leaders?.fetchedAt ?? '') || 0);
 
+	// El líder elegido: vale el id o lo que se escriba en la barra («Lagarde»), que se cambia por el id.
+	const pick = urlState<string>('id', 'todos', (v) => v === 'todos' || !!findLeader(v));
+	$effect(() => {
+		const id = pick.value === 'todos' ? 'todos' : findLeader(pick.value)?.id;
+		if (id && id !== pick.value) pick.value = id;
+	});
+	const OPTIONS = [{ value: 'todos', label: 'Todos' }, ...LEADERS.map((l) => ({ value: l.id, label: l.name.split(' ').slice(1).join(' ') }))];
+	const shown = $derived(LEADERS.filter((l) => pick.value === 'todos' || l.id === pick.value));
+
 	const columns = $derived(
-		LEADERS.map((leader) => {
+		shown.map((leader) => {
 			const agenda = data.leaders?.data.find((a) => a.id === leader.id);
 			const events = agenda?.events ?? null;
 			const day = events ? today(events, now) : [];
@@ -40,9 +54,11 @@
 
 <ViewHeader code="LIDER" title="Líderes" sub="Qué hacen ahora: agenda de hoy en hora de Madrid y lo último que han hecho" />
 
+<div class="pick"><Seg label="Líder" options={OPTIONS} bind:value={pick.value} /></div>
+
 <div class="grid grid-2e">
 	{#each columns as c (c.leader.id)}
-		<div class="col">
+		<div class="col" class:solo={columns.length === 1}>
 			<Panel title={c.leader.name} meta={c.leader.role}>
 				{#if c.agenda?.events}
 					{#if c.day.length || c.later}
@@ -87,6 +103,15 @@
 </div>
 
 <style>
+	/* Un solo líder: agenda y «Lo último», uno al lado del otro. */
+	.solo {
+		display: contents;
+	}
+
+	.pick {
+		margin-bottom: var(--sp-8);
+	}
+
 	/* Ahora y siguiente: ámbar tenue, sin más. */
 	.hit {
 		background: var(--amber-soft);
