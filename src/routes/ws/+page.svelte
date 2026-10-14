@@ -83,10 +83,8 @@
 		};
 	});
 
-	const heatmap = {
-		dataSource: 'SPX500',
-		grouping: 'sector',
-		blockSize: 'market_cap_basic',
+	// Mapas de calor de TradingView: acciones de un índice (widget «stock-heatmap») o cripto («crypto-coins-heatmap»).
+	const common = {
 		blockColor: 'change',
 		hasTopBar: false,
 		isDataSetEnabled: false,
@@ -94,14 +92,44 @@
 		hasSymbolTooltip: true,
 		isMonoSize: false
 	};
+	const stocks = (dataSource: string) => ({ ...common, dataSource, grouping: 'sector', blockSize: 'market_cap_basic' });
+	const MAPS = [
+		{ key: 'spx', label: 'S&P 500', widget: 'stock-heatmap', config: stocks('SPX500') },
+		{ key: 'ndx', label: 'Nasdaq 100', widget: 'stock-heatmap', config: stocks('NASDAQ100') },
+		{ key: 'dax', label: 'DAX', widget: 'stock-heatmap', config: stocks('DAX') },
+		{ key: 'ibex', label: 'IBEX 35', widget: 'stock-heatmap', config: stocks('IBEX35') },
+		{ key: 'crypto', label: 'Cripto', widget: 'crypto-coins-heatmap', config: { ...common, dataSource: 'Crypto', blockSize: 'market_cap_calc' } }
+	];
+
+	// El mapa elegido se recuerda en este navegador (si no deja guardar, se queda en memoria).
+	const MAP_KEY = 'arc-ws-heatmap';
+	let mapKey = $state('spx');
+	$effect(() => {
+		try {
+			const saved = localStorage.getItem(MAP_KEY);
+			if (MAPS.some((m) => m.key === saved)) mapKey = saved!;
+		} catch {}
+	});
+	function chooseMap(key: string) {
+		mapKey = key;
+		try {
+			localStorage.setItem(MAP_KEY, key);
+		} catch {}
+	}
+	const map = $derived(MAPS.find((m) => m.key === mapKey) ?? MAPS[0]);
 </script>
 
 <ViewHeader code="WS" title="Wall Street e inversión" sub="TradingView, Tesoro de EE. UU., BCE, CoinGecko y titulares de mercados" />
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Mapa de calor" meta="S&P 500 · variación del día">
-			<TvWidget widget="stock-heatmap" config={heatmap} height={520} />
+		<Panel title="Mapa de calor" meta="{map.label} · variación del día">
+			<div class="ph maps" role="group" aria-label="Mapa de calor">
+				{#each MAPS as m (m.key)}
+					<button type="button" aria-pressed={m.key === mapKey} onclick={() => chooseMap(m.key)}>{m.label}</button>
+				{/each}
+			</div>
+			<TvWidget widget={map.widget} config={map.config} height={520} />
 		</Panel>
 	</div>
 	<div class="col">
@@ -132,3 +160,28 @@
 		</Panel>
 	</div>
 </div>
+
+<style>
+	/* Selector de mapa: fila con el mismo espaciado que la cabecera del panel (.ph) y botones de texto. */
+	.maps {
+		justify-content: flex-start;
+	}
+
+	.maps button {
+		background: none;
+		border: 0;
+		padding: 0;
+		color: var(--muted);
+		font-size: var(--fs-xs);
+		letter-spacing: 0.06em;
+		cursor: pointer;
+	}
+
+	.maps button:hover {
+		color: var(--fg);
+	}
+
+	.maps button[aria-pressed='true'] {
+		color: var(--amber);
+	}
+</style>
