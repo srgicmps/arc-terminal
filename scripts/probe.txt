@@ -27,7 +27,3 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
-# Alertas: GDACS (GeoJSON con naranjas y rojas, la lista de la app y el RSS)
-https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=EQ;TC;FL;VO;DR;WF&alertlevel=Orange;Red&fromdate=2026-09-14&todate=2026-10-15
-https://www.gdacs.org/gdacsapi/api/events/geteventlist/EVENTS4APP
-https://www.gdacs.org/xml/rss.xml

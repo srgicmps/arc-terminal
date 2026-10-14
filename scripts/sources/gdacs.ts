@@ -88,10 +88,10 @@ export function parseGdacs(body: Raw, now = Date.now()): GdacsEvent[] {
 				score: num(p.alertscore),
 				lat: num(lat),
 				lon: num(lon),
-				url: String(
-					p.url?.report ||
-						`https://www.gdacs.org/report.aspx?eventtype=${type}&eventid=${encodeURIComponent(p.eventid)}`
-				)
+				// A veces el enlace viene como «no reportlink found».
+				url: /^https?:\/\//.test(String(p.url?.report))
+					? String(p.url.report)
+					: `https://www.gdacs.org/report.aspx?eventtype=${type}&eventid=${encodeURIComponent(p.eventid)}`
 			};
 		})
 		.filter((e): e is GdacsEvent => e !== null)

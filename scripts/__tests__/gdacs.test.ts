@@ -48,7 +48,8 @@ const body = {
 				affectedcountries: [{ countryname: 'Japan' }],
 				fromdate: '2026-10-11T03:00:00Z',
 				todate: '2026-10-11T03:00:00Z',
-				severitydata: { severitytext: 'Magnitude 7.4M, Depth:10km' }
+				severitydata: { severitytext: 'Magnitude 7.4M, Depth:10km' },
+				url: { report: 'no reportlink found' }
 			},
 			[142, 38]
 		),
