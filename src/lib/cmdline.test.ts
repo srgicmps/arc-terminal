@@ -16,7 +16,8 @@ import {
 	writeHistory,
 	type Option
 } from './cmdline.ts';
-import { COMMANDS, parseSymbols, TICKERS } from './commands.ts';
+import { parseSymbols, PERF_PERIODS } from './cmp.ts';
+import { COMMANDS, TICKERS } from './commands.ts';
 
 const ALL: Option[] = [
 	...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función', aliases: c.aliases })),
@@ -199,5 +200,14 @@ describe('CMP', () => {
 		expect(parseSymbols('A B C D E F')).toEqual(['A', 'B', 'C', 'D', 'E']);
 		expect(parseSymbols('BME:SAN <script>')).toEqual(['BME:SAN']);
 		expect(parseSymbols(null)).toEqual([]);
+	});
+});
+
+describe('CMP: plazos de la tabla', () => {
+	// Las claves que llegaron de verdad en perf.json (registro de la Action del #128, 14-10-2026).
+	const REAL = ['13Week', '26Week', '52Week', '5Day', 'monthToDate', 'yearToDate'];
+
+	it('cada columna de la tabla es una clave que Finnhub da de verdad', () => {
+		for (const [key] of PERF_PERIODS) expect(REAL).toContain(key);
 	});
 });

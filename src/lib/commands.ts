@@ -151,15 +151,6 @@ export const TICKERS: Ticker[] = [
 	{ code: 'IDR', name: 'Indra', tv: 'BME:IDR' }
 ];
 
-/** «NVDA, amd  AVGO» → ['NVDA', 'AMD', 'AVGO']: sin repetidos y como mucho `max` (los demás se ignoran). */
-export function parseSymbols(raw: string | null | undefined, max = 5): string[] {
-	const codes = (raw ?? '')
-		.toUpperCase()
-		.split(/[\s,;]+/)
-		.filter((c) => /^[A-Z0-9.:!-]{1,20}$/.test(c));
-	return [...new Set(codes)].slice(0, max);
-}
-
 /** Símbolo de TradingView para lo que escriba Sergi: un valor conocido o el texto tal cual. */
 export function tvSymbol(code: string): string {
 	const upper = code.trim().toUpperCase();
