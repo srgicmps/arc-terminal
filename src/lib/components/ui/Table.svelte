@@ -150,8 +150,10 @@
 		.t a.name:hover {
 			color: var(--amber);
 		}
-		/* Columna del minigráfico (<Spark>): ancho fijo y sin margen vertical. */
-		.t .spark {
+		/* Columna del minigráfico: ancho fijo y sin margen vertical. Solo las celdas: el <svg> de Spark también se
+		   llama .spark y no debe heredar esto. */
+		.t th.spark,
+		.t td.spark {
 			width: 80px;
 			padding-block: 0;
 		}
@@ -165,7 +167,8 @@
 	}
 
 	@container (max-width: 300px) {
-		:global(.t .spark) {
+		:global(.t th.spark),
+		:global(.t td.spark) {
 			display: none;
 		}
 	}
