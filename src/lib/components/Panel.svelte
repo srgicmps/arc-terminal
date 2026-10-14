@@ -1,27 +1,32 @@
 <!-- Panel de la maqueta: cabecera ámbar con título, dato a la derecha y enlace opcional a otra vista. -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import type { ShareSource } from '#lib/share.ts';
 	import Note from './ui/Note.svelte';
+	import Share from './ui/Share.svelte';
 
 	interface Props {
 		title: string;
 		meta?: string;
 		/** Enlace «CÓDIGO ›» a la vista completa. */
 		jump?: { code: string; href: string };
+		/** Botón «Compartir»: los datos, o una función que los da al pulsar. Sin `url`, la página actual. */
+		share?: ShareSource;
 		children: Snippet;
 		/** Pie del panel (fuente, notas). */
 		note?: Snippet;
 	}
 
-	let { title, meta, jump, children, note }: Props = $props();
+	let { title, meta, jump, share, children, note }: Props = $props();
 </script>
 
 <section class="panel">
 	<header class="ph">
 		<h2>{title}</h2>
-		{#if meta || jump}
+		{#if meta || jump || share}
 			<div class="ph-r">
 				{#if meta}<span>{meta}</span>{/if}
+				{#if share}<Share source={share} />{/if}
 				{#if jump}<a class="jump" href={jump.href}>{jump.code} ›</a>{/if}
 			</div>
 		{/if}

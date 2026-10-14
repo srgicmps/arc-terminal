@@ -1,0 +1,60 @@
+import { describe, expect, it } from 'vitest';
+import { aggregate, topImportant } from './imp.ts';
+import type { ImpData, ImpEntry } from './types.ts';
+
+const e = (k: string, score: number, sources = ['A'], title = k.toUpperCase()): ImpEntry => ({ k, title, url: `https://x.example/${k}`, sources, score });
+
+const data: ImpData = {
+	date: '2026-10-14',
+	current: [{ ...e('now', 3), sections: ['es'], first: '2026-10-14T10:00:00Z', time: null }],
+	days: [
+		{ date: '2025-10-01', items: [e('viejo', 50)] },
+		{ date: '2026-09-20', items: [e('a', 4), e('mes', 9)] },
+		{ date: '2026-10-12', items: [e('a', 6, ['A', 'B'], 'Titular mejor'), e('b', 8)] },
+		{ date: '2026-10-13', items: [e('a', 5, ['C'])] },
+		{ date: '2026-10-14', items: [e('hoy1', 7), e('hoy2', 6), e('a', 2)] }
+	],
+	seen: []
+};
+
+describe('topImportant', () => {
+	it('da el top del día de los datos', () => {
+		expect(topImportant(data, 2).map((i) => i.k)).toEqual(['hoy1', 'hoy2']);
+	});
+
+	it('sin histórico de hoy, el top de ahora; sin datos, nada', () => {
+		expect(topImportant({ ...data, date: '2026-10-15' }).map((i) => i.k)).toEqual(['now']);
+		expect(topImportant(null)).toEqual([]);
+	});
+});
+
+describe('aggregate', () => {
+	it('semana: un tema de varios días suma, se desduplica y se queda con el mejor titular', () => {
+		const week = aggregate(data.days, '2026-10-14', 7);
+		expect(week.map((t) => [t.k, t.score, t.days])).toEqual([
+			['a', 13, 3],
+			['b', 8, 1],
+			['hoy1', 7, 1],
+			['hoy2', 6, 1]
+		]);
+		expect(week[0]).toMatchObject({ title: 'Titular mejor', url: 'https://x.example/a', sources: ['A', 'B', 'C'], last: '2026-10-14' });
+	});
+
+	it('mes y año incluyen días más antiguos', () => {
+		const month = aggregate(data.days, '2026-10-14', 30);
+		expect(month[0]).toMatchObject({ k: 'a', score: 17, days: 4 });
+		expect(month.map((t) => t.k)).toContain('mes');
+		expect(month.map((t) => t.k)).not.toContain('viejo');
+		expect(aggregate(data.days, '2026-10-14', 365).map((t) => t.k)).not.toContain('viejo');
+		expect(aggregate(data.days, '2026-10-14', 400)[0].k).toBe('viejo');
+	});
+
+	it('a igual puntuación, más días primero; y respeta el límite', () => {
+		const days = [
+			{ date: '2026-10-13', items: [e('x', 3)] },
+			{ date: '2026-10-14', items: [e('x', 3), e('y', 6)] }
+		];
+		expect(aggregate(days, '2026-10-14', 7).map((t) => t.k)).toEqual(['x', 'y']);
+		expect(aggregate(days, '2026-10-14', 7, 1)).toHaveLength(1);
+	});
+});

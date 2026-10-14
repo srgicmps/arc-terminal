@@ -90,6 +90,23 @@ describe('parseFeed', () => {
 		]);
 	});
 
+	it('no confunde <media:title> ni <itunes:summary> con el título y el resumen (Expansión, El Mundo)', () => {
+		const body = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+<channel><title><![CDATA[Economía // expansion]]></title><atom:link href="https://example.org/rss.xml" rel="self" type="application/rss+xml" />
+	<item><title><![CDATA[La inflación repunta al 3,7 %]]></title><description><![CDATA[Los carburantes tiran de los precios.&nbsp;<a href="https://example.org/a">Leer</a>]]></description><dc:creator><![CDATA[Redacción]]></dc:creator><link>https://example.org/a</link><media:description type="html"><![CDATA[Otro resumen]]></media:description><media:title type="html"><![CDATA[ECONOMIA]]></media:title><itunes:summary>Resumen de iTunes</itunes:summary><atom:link href="https://example.org/a" rel="self" /><guid>https://example.org/a</guid><pubDate>Wed, 14 Oct 2026 14:49:59 +0200</pubDate></item>
+</channel></rss>`;
+		expect(parseFeed(body, 'Expansión')).toEqual([
+			{
+				title: 'La inflación repunta al 3,7 %',
+				url: 'https://example.org/a',
+				source: 'Expansión',
+				time: '2026-10-14T12:49:59.000Z',
+				summary: 'Los carburantes tiran de los precios. Leer'
+			}
+		]);
+	});
+
 	it('devuelve una lista vacía si el documento no es un feed', () => {
 		expect(parseFeed('<html><body>Error</body></html>', 'X')).toEqual([]);
 	});
