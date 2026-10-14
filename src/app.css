@@ -28,9 +28,9 @@
 }
 
 /*
- * Tema de día. Se activa con el interruptor (<html data-theme="light">) o, en modo «auto», cuando el
- * sistema está en claro. Contraste comprobado (WCAG AA, 4,5:1) de --muted, --faint, ámbar, verde y
- * rojo sobre --bg, --panel y --raise.
+ * Tema de día: <html data-theme="light">. Lo pone src/lib/theme.svelte.ts con el interruptor o, en
+ * modo «auto», cuando el sistema está en claro. Solo redefine tokens de color.
+ * Contraste comprobado (WCAG AA, 4,5:1) de --muted, --faint, ámbar, verde y rojo sobre --bg, --panel y --raise.
  */
 :root[data-theme='light'] {
 	color-scheme: light;
@@ -48,26 +48,6 @@
 	--up: #147345;
 	--down: #c3303c;
 	--neutral: #b9b4a8;
-}
-
-@media (prefers-color-scheme: light) {
-	:root:not([data-theme='dark']) {
-		color-scheme: light;
-		--bg: #f5f4f0;
-		--panel: #ffffff;
-		--raise: #eeece6;
-		--line: #dcd8cf;
-		--fg: #16191d;
-		--muted: #5b636e;
-		--faint: #636a74;
-		--amber: #9a5a00;
-		--amber-soft: rgba(154, 90, 0, 0.1);
-		--amber-edge: rgba(154, 90, 0, 0.4);
-		--on-amber: #ffffff;
-		--up: #147345;
-		--down: #c3303c;
-		--neutral: #b9b4a8;
-	}
 }
 
 *,

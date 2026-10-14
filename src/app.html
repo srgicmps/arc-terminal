@@ -20,13 +20,14 @@
 			href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap"
 		/>
 		<script>
-			// Tema guardado (día / noche / auto), aplicado antes de pintar para que no parpadee.
+			// Tema que se ve (día o noche), puesto antes de pintar para que no parpadee. El modo guardado
+			// manda; si no hay o es «auto», el del sistema. Lo mantiene al día src/lib/theme.svelte.ts.
+			var t;
 			try {
-				var t = localStorage.getItem('arc-theme');
-				if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
-				var light = t === 'light' || (t !== 'dark' && matchMedia('(prefers-color-scheme: light)').matches);
-				if (light) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f5f4f0');
+				t = localStorage.getItem('arc-theme');
 			} catch (e) {}
+			if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+			document.documentElement.dataset.theme = t;
 		</script>
 		%sveltekit.head%
 	</head>

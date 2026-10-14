@@ -173,6 +173,20 @@
 		border-color: var(--amber-edge);
 	}
 
+	/* En pantallas táctiles se ve igual (28 px), pero la zona pulsable llega a 44 × 44 px. */
+	@media (pointer: coarse) {
+		.theme {
+			position: relative;
+			min-height: 28px;
+		}
+
+		.theme::after {
+			content: '';
+			position: absolute;
+			inset: -8px;
+		}
+	}
+
 	.brand-sub {
 		color: var(--muted);
 		font-weight: 400;
