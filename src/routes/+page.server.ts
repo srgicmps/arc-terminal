@@ -2,11 +2,13 @@
 // (unos pocos titulares, las series de las tablas…), no los JSON enteros de cada sección.
 import { dataset } from '#lib/data.ts';
 import type { FuelData } from '#lib/fuel.ts';
+import { topImportant } from '#lib/imp.ts';
 import { pickSeries, trim } from '#lib/trim.ts';
 import type {
 	BoeData,
 	CryptoData,
 	HnItem,
+	ImpData,
 	NewsData,
 	PowerData,
 	PredictionsData,
@@ -21,7 +23,7 @@ const SECTIONS = ['es', 'eco', 'geo', 'ws', 'tech', 'ai'] as const;
 const TAIL = 40;
 
 export const load: PageServerLoad = async () => {
-	const [news, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn, predictions] = await Promise.all([
+	const [news, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn, predictions, imp] = await Promise.all([
 		Promise.all(SECTIONS.map((s) => dataset<NewsData>(`news-${s}`))),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('eurostat'),
@@ -33,7 +35,8 @@ export const load: PageServerLoad = async () => {
 		dataset<BoeData>('boe'),
 		dataset<Quake[]>('quakes'),
 		dataset<HnItem[]>('hn'),
-		dataset<PredictionsData>('predictions')
+		dataset<PredictionsData>('predictions'),
+		dataset<ImpData>('imp')
 	]);
 
 	// Titulares de portada: los 3 más recientes de cada sección, mezclados por hora (sin el resumen, que no se pinta).
@@ -71,6 +74,8 @@ export const load: PageServerLoad = async () => {
 				.slice(0, 4)
 		),
 		hn: trim(hn, (d) => d.slice(0, 5)),
-		predictions: trim(predictions, (d) => ({ geopolitics: d.geopolitics.slice(0, 4), economy: [] }))
+		predictions: trim(predictions, (d) => ({ geopolitics: d.geopolitics.slice(0, 4), economy: [] })),
+		// «Lo importante»: los 3 temas de más peso de hoy, ya elegidos (sin el histórico ni la memoria).
+		important: topImportant(imp?.data, 3).map(({ k, title, url, sources }) => ({ k, title, url, sources }))
 	};
 };
