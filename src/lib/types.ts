@@ -29,6 +29,11 @@ export interface SeriesData {
 	series: Series[];
 }
 
+/** Inflación del G20 (scripts/sources/oecd.ts): series de la OCDE y de dónde salieron en esta descarga. */
+export interface G20Data extends SeriesData {
+	via: 'oecd' | 'dbnomics';
+}
+
 // ---------- Previsiones del FMI (World Economic Outlook) ----------
 
 export interface ImfRow {
@@ -105,6 +110,10 @@ export interface NewsItem {
 	/** ISO 8601, o null si el feed no trae fecha. */
 	time: string | null;
 	summary: string;
+	/** 'en' si el medio publica en inglés (scripts/sources/news.ts). */
+	lang?: 'en';
+	/** El titular traducido al español (scripts/translate.ts), si lo hay. */
+	titleEs?: string;
 	/** La misma noticia en otros medios (scripts/cluster.ts), sin el de `source`. */
 	also?: { source: string; url: string }[];
 }
@@ -153,6 +162,23 @@ export interface Paper {
 	summary: string;
 }
 
+// ---------- Modelos en tendencia (Hugging Face) ----------
+
+export interface HfModel {
+	/** «autor/modelo», como en la URL de Hugging Face. */
+	id: string;
+	author: string;
+	name: string;
+	/** Tarea en inglés, tal como la da Hugging Face («text-generation»…): la vista la traduce. */
+	task: string;
+	likes: number;
+	/** Descargas del último mes. */
+	downloads: number;
+	url: string;
+	/** Cuándo se creó (ISO 8601), o vacío. */
+	created: string;
+}
+
 // ---------- Terremotos (USGS) ----------
 
 export interface Quake {
@@ -194,6 +220,29 @@ export interface PowerData {
 	history?: PowerDay[];
 }
 
+// ---------- Precio de la luz en Europa (Energy-Charts y REE) ----------
+
+/** Media diaria del mercado mayorista en una zona de precio («DE-LU»), en €/MWh. */
+export interface EuPowerZone {
+	/** Zona de precio del mercado europeo: «DE-LU», «FR», «IT-North»… */
+	zone: string;
+	/** País (ISO2) al que corresponde, para enlazar con PAIS. */
+	country: string;
+	/** Nombre en español: «Alemania y Luxemburgo», «Italia (norte)». */
+	name: string;
+	/** Media de hoy y de mañana (día de Madrid); null si aún no se conoce o el día está incompleto. */
+	today: number | null;
+	tomorrow: number | null;
+	/** Quién lo publica: «Energy-Charts / SMARD» o «REE» (España). */
+	source: string;
+}
+
+export interface EuPowerData {
+	/** Día de «hoy» (Madrid): «2026-10-14». */
+	date: string;
+	zones: EuPowerZone[];
+}
+
 // ---------- Tiempo (Open-Meteo) ----------
 
 export interface WeatherDay {
@@ -230,11 +279,15 @@ export interface Coin {
 	usd: number;
 	eur: number;
 	change24h: number | null;
+	/** Variación en 7 días (%). Opcional: las copias antiguas no la traen. */
+	change7d?: number | null;
 	marketCap: number | null;
 }
 
 export interface CryptoData {
 	coins: Coin[];
+	/** Cierre diario de bitcoin en dólares (hora de Madrid), hasta 400 días. Para el termómetro de riesgo. */
+	btcHistory?: { date: string; usd: number }[];
 }
 
 // ---------- Curva de tipos del Tesoro de EE. UU. ----------
@@ -243,6 +296,34 @@ export interface YieldCurveData {
 	tenors: string[];
 	/** Una fila por día, del más antiguo al más reciente. */
 	days: { date: string; values: (number | null)[] }[];
+}
+
+// ---------- Subastas de deuda de EE. UU. (Fiscal Data) ----------
+
+export interface Auction {
+	/** Día de la subasta (AAAA-MM-DD). */
+	date: string;
+	/** Plazo: «10-Year», «29-Year 10-Month» (reaperturas)… */
+	term: string;
+	/** «Note», «Bond» o «FRN» (tipo flotante). */
+	kind: string;
+	reopening: boolean;
+	/** Importe ofrecido, en dólares. */
+	offering: number | null;
+	/** Rentabilidad máxima adjudicada (%). Null si aún no se ha hecho. */
+	highYield: number | null;
+	bidToCover: number | null;
+	/** Parte adjudicada a postores indirectos (bancos centrales y fondos extranjeros, sobre todo), en %. */
+	indirectPct: number | null;
+	/** Media del bid-to-cover de las 6 subastas anteriores del mismo plazo y tipo. */
+	avgBidToCover?: number | null;
+}
+
+export interface AuctionsData {
+	/** Anunciadas y pendientes, de la más cercana a la más lejana. */
+	upcoming: Auction[];
+	/** Las últimas 10 hechas, de la más reciente a la más antigua. */
+	recent: Auction[];
 }
 
 // ---------- Wikipedia: lo más leído y efemérides ----------
@@ -254,12 +335,20 @@ export interface WikiPage {
 	views?: number;
 }
 
-export interface WikiData {
-	date: string;
+/** Lo del día en una Wikipedia (español o inglés). */
+export interface WikiEdition {
 	/** Artículo destacado del día, si lo hay. */
 	featured: WikiPage | null;
 	mostRead: WikiPage[];
 	onThisDay: { year: number; text: string; url: string }[];
+	/** «In the news» (solo la Wikipedia en inglés lo tiene en el feed). */
+	news?: { text: string; url: string }[];
+}
+
+/** Arriba, la Wikipedia en español; en `en`, la inglesa (si respondió). */
+export interface WikiData extends WikiEdition {
+	date: string;
+	en?: WikiEdition;
 }
 
 // ---------- Riesgos naturales: huracanes (NOAA) y eventos (NASA EONET) ----------
@@ -373,6 +462,69 @@ export interface SecData {
 	companies: Record<string, SecCompany>;
 }
 
+// ---------- Carteras 13F de grandes fondos (SEC) ----------
+
+/** Una posición de la cartera, sumadas todas sus líneas del 13F (por CUSIP). */
+export interface FundPosition {
+	cusip: string;
+	/** Emisor, como lo escribe el fondo («Apple Inc»). */
+	name: string;
+	/** Valor declarado, en dólares. */
+	value: number;
+	/** Acciones (o nominal, en los bonos). */
+	shares: number;
+	/** Peso en la cartera declarada (0–1). */
+	weight: number;
+	/** Opciones: el valor es el del subyacente. */
+	putCall?: 'Put' | 'Call';
+}
+
+/** Compra o venta frente al trimestre anterior. */
+export interface FundMove {
+	cusip: string;
+	name: string;
+	putCall?: 'Put' | 'Call';
+	/** Cambio en acciones (negativo si vende). */
+	shares: number;
+	/** Ese cambio valorado al precio del trimestre, en dólares (negativo si vende). */
+	value: number;
+	/** Cambio relativo de acciones (0,25 = +25 %); null si la posición es nueva. */
+	pct: number | null;
+	/** new: posición nueva · exit: la vende entera · add: compra más · trim: vende parte. */
+	status: 'new' | 'exit' | 'add' | 'trim';
+}
+
+export interface Fund {
+	/** Clave corta: «BRK», «ARK»… */
+	key: string;
+	name: string;
+	manager: string;
+	cik: string;
+	/** Nombre oficial en la SEC. */
+	filer: string;
+	/** Fin del trimestre declarado: «2026-06-30». */
+	period: string;
+	/** Fecha de presentación. */
+	filed: string;
+	/** Índice del expediente en sec.gov. */
+	url: string;
+	/** Valor total declarado, en dólares. */
+	total: number;
+	/** Número de posiciones. */
+	count: number;
+	/** Las 10 mayores. */
+	top: FundPosition[];
+	/** Trimestre anterior, si se ha podido leer. Sin él, bought y sold van vacíos. */
+	prev?: { period: string; total: number };
+	/** Las 5 mayores compras y ventas por valor. */
+	bought: FundMove[];
+	sold: FundMove[];
+}
+
+export interface FundsData {
+	funds: Fund[];
+}
+
 /** Un grupo de tecnologías del mix eléctrico (Eólica, Solar…). */
 export interface MixGroup {
 	key: 'wind' | 'solar' | 'hydro' | 'nuclear' | 'gas' | 'other';
@@ -398,6 +550,30 @@ export interface PowerMix {
 }
 export interface PowerMixData {
 	systems: PowerMix[];
+}
+
+/** Reserva de agua de los embalses de España en una semana. */
+export interface WaterBasin {
+	name: string;
+	hm3: number;
+	capacity: number;
+	pct: number;
+}
+export interface WaterData {
+	/** Semana del dato: «2026-10-13». */
+	date: string;
+	/** Agua embalsada y capacidad total, en hm³. */
+	hm3: number;
+	capacity: number;
+	/** % de llenado. */
+	pct: number;
+	/** % de la misma semana hace un año y media de esa semana en los 10 años anteriores. */
+	yearAgo: number;
+	avg10: number;
+	/** % semanal de los últimos 10 años. */
+	history: Point[];
+	/** Cuencas (ámbitos) en la última semana, de menos a más llena. */
+	basins: WaterBasin[];
 }
 
 /** Un festivo: nacional (ES) o de Baleares (IB). */
@@ -428,16 +604,27 @@ export interface Release {
 
 // ---------- Lo más importante (IMP, scripts/sources/imp.ts) ----------
 
+/** El titular de un medio dentro de un tema. */
+export interface ImpLink {
+	source: string;
+	url: string;
+}
+
 /** Un tema importante, tal como se guarda en el histórico diario: lo mínimo para listarlo. */
 export interface ImpEntry {
 	/** Clave estable del tema entre pasadas y días (para desduplicar). */
 	k: string;
 	title: string;
+	/** 'en' si el titular está en inglés, y su traducción (scripts/translate.ts). */
+	lang?: 'en';
+	titleEs?: string;
 	url: string;
 	/** Medios distintos que lo dan. */
 	sources: string[];
 	/** Puntuación (ver scripts/sources/imp.ts). */
 	score: number;
+	/** El enlace de cada medio. Solo en el top de ahora y en el día de hoy (no en días anteriores). */
+	links?: ImpLink[];
 }
 
 /** Un tema del top actual, con el detalle de la puntuación. */
@@ -521,6 +708,29 @@ export interface Chokepoint {
 	change: number | null;
 	/** Media móvil de 7 días de los últimos 90 días, para el minigráfico. */
 	spark: number[];
+}
+
+// ---------- Próximas elecciones (Wikidata) ----------
+
+/** general: generales o legislativas · presidential: presidenciales · referendum: referéndum. */
+export type ElectionKind = 'general' | 'presidential' | 'referendum';
+
+export interface Election {
+	/** Día de la votación (AAAA-MM-DD). */
+	date: string;
+	/** Nombre del país, en español (o en inglés si Wikidata no lo tiene en español). */
+	country: string;
+	/** Código ISO 3166-1 alfa-2 del país («ES»), si Wikidata lo tiene. */
+	iso: string | null;
+	kind: ElectionKind;
+	/** Nombre de la elección, en español o inglés. */
+	name: string;
+	/** Ficha en Wikidata. */
+	url: string;
+}
+
+export interface ElectionsData {
+	items: Election[];
 }
 
 // ---------- Barcos en los puertos (AIS, aisstream.io) ----------
@@ -624,4 +834,83 @@ export interface SwpcData {
 	/** La escala G más alta prevista para los próximos días, y para qué día (AAAA-MM-DD). */
 	gForecast: number | null;
 	gForecastDate: string | null;
+}
+
+// ---------- Diario Oficial de la UE, serie L (scripts/sources/eurlex.ts) ----------
+
+export type EuLexType = 'Reglamento' | 'Directiva' | 'Decisión' | 'Otro';
+
+/** Un acto de la serie L del Diario Oficial de la UE. */
+export interface EuLexDoc {
+	/** Número CELEX: «32026R1753». */
+	id: string;
+	/** Título oficial, en inglés. */
+	title: string;
+	type: EuLexType;
+	/** Temas (Sanciones, Aranceles, Energía…), por palabras del título. */
+	tags: string[];
+	/** Día de publicación: «2026-10-14». */
+	date: string;
+	/** Ficha en EUR-Lex, en español. */
+	url: string;
+}
+
+// ---------- Archivo de titulares (scripts/sources/archive.ts) ----------
+
+/** Un titular archivado. Claves cortas: un mes son miles. */
+export interface ArchiveEntry {
+	/** Titular. */
+	t: string;
+	/** Medio. */
+	s: string;
+	/** Hora UTC al minuto: «2026-10-14T14:05Z». */
+	d: string;
+	/** Enlace. */
+	u: string;
+}
+
+/** Índice del archivo (news-archive.json). Cada mes está en news-archive/AAAA-MM.json. */
+export interface NewsArchive {
+	/** Del más reciente al más antiguo. */
+	months: { month: string; count: number; bytes: number }[];
+}
+
+// ---------- Avisos de viaje (Departamento de Estado de EE. UU.) ----------
+
+/** El aviso de viaje de un país: nivel 1 (precauciones normales) a 4 (no viajar). */
+export interface TravelAdvisory {
+	/** Nombre del país en inglés, tal como lo da el título («Ukraine»). Se cruza con PAIS por nombre. */
+	name: string;
+	level: 1 | 2 | 3 | 4;
+	/** Título completo: «Ukraine - Level 4: Do Not Travel». */
+	title: string;
+	url: string;
+	/** Última actualización del aviso (ISO 8601). */
+	updated: string;
+	/** Si el nivel ha cambiado desde que la terminal lo sigue: el anterior y cuándo se vio el cambio. */
+	prevLevel?: 1 | 2 | 3 | 4;
+	changedAt?: string;
+}
+
+export interface AdvisoriesData {
+	items: TravelAdvisory[];
+}
+
+// ---------- Calendarios de publicación: próximo dato (Eurostat, BLS, INE) ----------
+
+export interface ReleaseEvent {
+	/** Inicio en ISO UTC. */
+	date: string;
+	/** Si el organismo no da la hora. */
+	allDay: boolean;
+	title: string;
+	source: 'Eurostat' | 'BLS' | 'INE';
+	/** Tema (src/lib/nextrelease.ts) si es uno de los datos que enseña la terminal, o null. */
+	topic: string | null;
+	url?: string;
+}
+
+export interface ReleaseCalData {
+	/** Próximas publicaciones de los datos que enseña la terminal (con tema), por fecha. */
+	events: ReleaseEvent[];
 }
