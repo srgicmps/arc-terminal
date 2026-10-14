@@ -39,7 +39,7 @@
 
 	const country = $derived(findCountry(query));
 	// La ficha viene calculada del servidor; un país sin ningún dato tiene la ficha vacía (solo titulares).
-	const EMPTY: CountryProfile = { kpis: [], policy: null, bond: null, premium: null, fx: [], imf: null };
+	const EMPTY: CountryProfile = { kpis: [], policy: null, bond: null, premium: null, fx: [], imf: null, fiscal: null };
 	const profile = $derived(country && (data.profiles[country.code] ?? EMPTY));
 	const news = $derived(country ? (data.news[country.code] ?? []) : []);
 	const travel = $derived(country ? data.travel[country.code] : undefined);
@@ -51,7 +51,7 @@
 	const military = $derived(country ? (data.military[country.code] ?? null) : null);
 	const jobs = $derived(country ? data.jobs[country.code] : undefined);
 	const empty = $derived(
-		profile && !profile.kpis.length && !rates.length && !profile.fx.length && !profile.imf && !military && !jobs && !news.length
+		profile && !profile.kpis.length && !rates.length && !profile.fx.length && !profile.imf && !profile.fiscal && !military && !jobs && !news.length
 	);
 
 	// Para la lista y el desplegable, por orden alfabético.
@@ -224,6 +224,23 @@
 						</tbody>
 					</Table>
 					{#snippet note()}World Economic Outlook: crecimiento del PIB real e inflación media del año.{/snippet}
+				</Panel>
+			{/if}
+
+			{#if profile.fiscal}
+				{@const f = profile.fiscal}
+				<Panel title="Deuda y déficit" meta="FMI · {f.year}">
+					<Tiles>
+						<Tile label="Deuda pública" value={f.debt === null ? '—' : `${nf(f.debt, 1)} %`} tone={f.debt === null ? 'mut' : undefined} sub="del PIB" />
+						<Tile
+							label={f.balance !== null && f.balance < 0 ? 'Déficit público' : 'Saldo público'}
+							value={f.balance === null ? '—' : `${nf(Math.abs(f.balance), 1)} %`}
+							tone={f.balance === null ? 'mut' : undefined}
+							sub="del PIB"
+						/>
+						<Tile label="Deuda frente al G20" value={f.debtRank === null ? '—' : `${f.debtRank}.º`} tone={f.debtRank === null ? 'mut' : undefined} sub="de {f.of}, de más a menos deuda" />
+					</Tiles>
+					{#snippet note()}World Economic Outlook del FMI: deuda bruta y saldo de las administraciones públicas, previsión del año.{/snippet}
 				</Panel>
 			{/if}
 

@@ -9,6 +9,13 @@ export const ACCENTS: { value: Accent; label: string }[] = [
 	{ value: 'blue', label: 'Azul' }
 ];
 
+/** Densidad: la compacta de siempre o una más aireada (tokens.css, :root[data-density='comoda']). */
+export type Density = 'compacta' | 'comoda';
+export const DENSITIES: { value: Density; label: string }[] = [
+	{ value: 'compacta', label: 'Compacta' },
+	{ value: 'comoda', label: 'Cómoda' }
+];
+
 /** Lo que trae la web: la fila de arriba con los comandos fijados y cuatro abajo. */
 export const DEFAULT_TOP = COMMANDS.filter((c) => c.pinned).map((c) => c.code);
 export const DEFAULT_THUMB = ['TOP', 'ECO', 'WS', 'FUEL'];
