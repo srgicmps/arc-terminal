@@ -446,6 +446,8 @@ export interface Ship {
 export interface PortShips {
 	id: string;
 	name: string;
+	/** Barcos detectados; `ships` trae solo los más recientes. */
+	total: number;
 	ships: Ship[];
 }
 

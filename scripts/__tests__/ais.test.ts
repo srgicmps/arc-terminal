@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ais, collect, listen, shipType } from '../sources/ais.ts';
+import { PORTS, ais, collect, listen, shipType } from '../sources/ais.ts';
 
 const NOW = Date.parse('2026-10-14T12:00:30Z');
 const meta = (mmsi: number, name = '', lat = 39.88, lon = 4.27) => ({ MMSI: mmsi, ShipName: name, latitude: lat, longitude: lon, time_utc: '2026-10-14 12:00:05.123456 +0000 UTC' });
@@ -52,6 +52,7 @@ describe('ais', () => {
 		);
 		expect(data.ports[0]).toMatchObject({
 			id: 'mao',
+			total: 1,
 			ships: [{ mmsi: 1, name: 'CIUDAD DE MAHON', type: 'Pasaje', speed: 0, status: 'Amarrado', destination: 'BARCELONA', time: '2026-10-14T12:00:05.000Z' }]
 		});
 		expect(data.ports[1].ships).toMatchObject([{ mmsi: 2, speed: 7.4, status: 'Navegando', type: '' }]);
@@ -73,7 +74,7 @@ describe('ais', () => {
 		expect(await listen('clave', 10)).toHaveLength(1);
 		const sub = JSON.parse(sent[0]);
 		expect(sub.APIKey).toBe('clave');
-		expect(sub.BoundingBoxes).toHaveLength(2);
+		expect(sub.BoundingBoxes).toHaveLength(PORTS.length);
 
 		vi.stubGlobal('WebSocket', fakeSocket([JSON.stringify({ error: 'Api Key Is Not Valid' })], []));
 		await expect(listen('mala', 10)).rejects.toThrow('Api Key Is Not Valid');

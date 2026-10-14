@@ -21,18 +21,21 @@ interface Port {
 	box: [[number, number], [number, number]];
 }
 
-/** Puertos vigilados. Para añadir uno, basta con otra línea. */
+/**
+ * Puertos y pasos vigilados. Para añadir uno, basta con otra línea. Maó y Ciutadella los pidió Sergi,
+ * pero allí casi no hay receptores AIS; los demás tienen buena cobertura y peso mundial.
+ */
 export const PORTS: Port[] = [
 	{ id: 'mao', name: 'Maó', box: [[39.84, 4.24], [39.91, 4.36]] },
-	{ id: 'ciutadella', name: 'Ciutadella', box: [[39.98, 3.79], [40.02, 3.86]] }
+	{ id: 'ciutadella', name: 'Ciutadella', box: [[39.98, 3.79], [40.02, 3.86]] },
+	{ id: 'gibraltar', name: 'Estrecho de Gibraltar', box: [[35.85, -5.75], [36.15, -5.25]] },
+	{ id: 'barcelona', name: 'Barcelona', box: [[41.3, 2.1], [41.4, 2.25]] },
+	{ id: 'rotterdam', name: 'Róterdam', box: [[51.88, 3.95], [52.0, 4.5]] },
+	{ id: 'singapur', name: 'Singapur', box: [[1.15, 103.6], [1.35, 104.1]] }
 ];
 
-/**
- * Solo en las Actions de los PR (SAMPLE=1): un recuadro muy transitado (el Estrecho de Gibraltar) para
- * comprobar en el registro que la suscripción funciona aunque en los puertos no haya nadie. Sus barcos
- * no se guardan: collect() solo se queda con los de PORTS.
- */
-const CHECK_BOX: Port['box'] = [[35.85, -5.75], [36.1, -5.3]];
+/** Como mucho, los barcos más recientes de cada puerto (en Singapur hay cientos). */
+const PER_PORT = 15;
 
 /** Tipo de barco según el código AIS (ITU-R M.1371). */
 export function shipType(code: number | null | undefined): string {
@@ -109,13 +112,12 @@ export function collect(messages: Raw[], previous: ShipsData | undefined, now = 
 		}
 	}
 
-	const ports: PortShips[] = PORTS.map((port) => ({
-		id: port.id,
-		name: port.name,
-		ships: [...ships.values()]
+	const ports: PortShips[] = PORTS.map((port) => {
+		const here = [...ships.values()]
 			.filter((s) => s.status && inBox(s.lat, s.lon, port.box) && now - Date.parse(s.time) < KEEP_MS)
-			.sort((a, b) => b.time.localeCompare(a.time))
-	}));
+			.sort((a, b) => b.time.localeCompare(a.time));
+		return { id: port.id, name: port.name, total: here.length, ships: here.slice(0, PER_PORT) };
+	});
 	return { ports, listened: LISTEN_MS / 1000 };
 }
 
@@ -132,7 +134,7 @@ export function listen(key: string, ms = LISTEN_MS): Promise<Raw[]> {
 			ws.send(
 				JSON.stringify({
 					APIKey: key,
-					BoundingBoxes: [...PORTS.map((p) => p.box), ...(process.env.SAMPLE ? [CHECK_BOX] : [])],
+					BoundingBoxes: PORTS.map((p) => p.box),
 					FilterMessageTypes: ['PositionReport', 'StandardClassBPositionReport', 'ShipStaticData']
 				})
 			);
@@ -157,7 +159,7 @@ export function listen(key: string, ms = LISTEN_MS): Promise<Raw[]> {
 
 export const ais: Source<ShipsData> = {
 	name: 'ais',
-	label: `Barcos en los puertos (${PORTS.map((p) => p.name).join(', ')}) · AIS de aisstream.io`,
+	label: `Barcos en puertos y estrechos (${PORTS.map((p) => p.name).join(', ')}) · AIS de aisstream.io`,
 	// Cada pasada ocupa 45 s de la Action: con una cada media hora basta.
 	maxAgeMinutes: 30,
 	requires: ENV,
