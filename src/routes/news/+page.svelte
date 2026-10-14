@@ -30,20 +30,22 @@
 		);
 	});
 
-	// Archivo de 3 meses (scripts/sources/archive.ts): cada mes es un JSON aparte que solo se pide al
-	// buscar algo de 3 letras o más, del mes más reciente al más antiguo. Se guarda ya normalizado.
+	// Archivo de 3 meses (scripts/sources/archive.ts): cada mes es un JSON aparte (de 1 a 2 MB, unos
+	// 700 KB con gzip) que solo se pide al buscar algo de 3 letras o más. Primero el mes en curso; los
+	// anteriores, de uno en uno con el botón. Se guarda ya normalizado.
 	const MIN = 3;
 	const words = $derived(norm(query).split(/\s+/).filter(Boolean));
 	const searching = $derived(words.join('').length >= MIN);
 	// $state.raw (como shallowRef en Vue): son miles de titulares y no hace falta que cada uno sea reactivo.
 	let archive = $state.raw<Record<string, { e: ArchiveEntry; key: string }[]>>({});
 	let failed = $state(false);
+	let wanted = $state(1);
 	let busy = false;
 
 	async function loadArchive() {
 		if (busy) return;
 		busy = true;
-		for (const { month } of data.months) {
+		for (const { month } of data.months.slice(0, wanted)) {
 			if (archive[month]) continue;
 			try {
 				const res = await fetch(asset(`data/news-archive/${month}.json` as Parameters<typeof asset>[0]));
@@ -59,8 +61,11 @@
 	}
 
 	$effect(() => {
-		if (searching) loadArchive();
+		if (searching && wanted) loadArchive();
 	});
+
+	const MONTH = new Intl.DateTimeFormat('es-ES', { month: 'long', timeZone: 'UTC' });
+	const monthName = (month: string) => MONTH.format(new Date(`${month}-15T12:00:00Z`));
 
 	const loaded = $derived(data.months.filter((m) => archive[m.month]).length);
 	// Lo del archivo que no está ya en los titulares de ahora, del más nuevo al más antiguo.
@@ -92,14 +97,15 @@
 		{#if searching && data.months.length}
 			<Panel
 				title="En el archivo"
-				meta={loaded < data.months.length && !failed
-					? `Cargando ${loaded + 1} de ${data.months.length} meses…`
-					: `${archived.length} titulares`}
+				meta={loaded < wanted && !failed ? 'Cargando…' : `${archived.length} ${archived.length === 1 ? 'titular' : 'titulares'}`}
 			>
 				<NewsList items={archived.slice(0, 150)} />
-				{#if !archived.length && loaded}<p class="empty">Nada más en los últimos {data.months.length} meses.</p>{/if}
+				{#if !archived.length && loaded >= wanted}<p class="empty">Nada más hasta {monthName(data.months[loaded - 1].month)}.</p>{/if}
+				{#if loaded >= wanted && wanted < data.months.length && !failed}
+					<button class="more" type="button" onclick={() => wanted++}>Buscar también en {monthName(data.months[wanted].month)}</button>
+				{/if}
 				{#snippet note()}
-					Los titulares de los últimos 3 meses (de todas las secciones; el filtro de sección no se aplica aquí){failed
+					Desde {monthName(data.months[Math.max(loaded, 1) - 1].month)} hasta hoy (de todas las secciones; el filtro de sección no se aplica aquí){failed
 						? ' · No se ha podido cargar todo el archivo'
 						: ''}.
 				{/snippet}
@@ -124,6 +130,24 @@
 		border: var(--border);
 		font-family: var(--sans);
 		font-size: var(--fs-l);
+	}
+
+	.more {
+		display: block;
+		width: 100%;
+		padding: var(--row-y) var(--pad-x);
+		border: 0;
+		border-top: var(--border);
+		background: none;
+		color: var(--amber);
+		font-family: var(--sans);
+		font-size: var(--fs-s);
+		text-align: left;
+		cursor: pointer;
+	}
+
+	.more:hover {
+		background: var(--amber-soft);
 	}
 
 	input:focus {
