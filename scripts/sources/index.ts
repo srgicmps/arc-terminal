@@ -16,6 +16,7 @@ import { hfpapers } from './hfpapers.ts';
 import { holidays } from './holidays.ts';
 import { ine } from './ine.ts';
 import { newsSources } from './news.ts';
+import { portwatch } from './portwatch.ts';
 import { predictions } from './predictions.ts';
 import { powerMix } from './ree-mix.ts';
 import { releases } from './releases.ts';
@@ -49,6 +50,7 @@ export const sources: Source<any>[] = [
 	quakes,
 	quakesEs,
 	hazards,
+	portwatch,
 	predictions,
 	weather,
 	air,

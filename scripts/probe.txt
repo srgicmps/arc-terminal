@@ -21,6 +21,5 @@ https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm ~ \d{4} FOMC Mee
 https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html ~ .{0,30}Monetary policy meeting.{0,40}
 # ECO: euríbor a 12 meses (media mensual) para la calculadora de hipoteca
 https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA?lastNObservations=14&format=csvdata&detail=dataonly
-# GEO: rutas marítimas (IMF PortWatch): nombres e id de los pasos, y la forma de un registro
-https://services9.arcgis.com/weJ1QsnbMYJlCHdG/ArcGIS/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query?where=1%3D1&outFields=portid,portname&returnDistinctValues=true&returnGeometry=false&f=json
-https://services9.arcgis.com/weJ1QsnbMYJlCHdG/ArcGIS/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query?where=1%3D1&outFields=*&orderByFields=date%20DESC&resultRecordCount=2&returnGeometry=false&f=json
+# GEO: PortWatch, forma de la fecha en la consulta real
+https://services9.arcgis.com/weJ1QsnbMYJlCHdG/ArcGIS/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query?where=portid+IN+%28%27chokepoint6%27%2C%27chokepoint1%27%2C%27chokepoint4%27%2C%27chokepoint2%27%2C%27chokepoint5%27%2C%27chokepoint3%27%29+AND+date+%3E%3D+DATE+%272026-10-05%27+AND+date+%3C%3D+DATE+%272026-10-14%27&outFields=date%2Cportid%2Cn_total&orderByFields=date&returnGeometry=false&resultOffset=0&resultRecordCount=2000&f=json

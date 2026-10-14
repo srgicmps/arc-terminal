@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ChokepointTable from '#lib/components/ChokepointTable.svelte';
 	import HazardList from '#lib/components/HazardList.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
@@ -40,6 +41,13 @@
 			<PredictionList items={data.predictions?.data.geopolitics.slice(0, 8) ?? []} />
 			{#snippet note()}
 				Precios de Polymarket: reflejan apuestas, no pronósticos oficiales · <Updated at={data.predictions?.fetchedAt} source="predictions" />
+			{/snippet}
+		</Panel>
+		<Panel title="Rutas marítimas clave" meta="Barcos al día (media de 7 días) y cambio en 1 año">
+			<ChokepointTable items={data.portwatch?.data ?? []} />
+			{#snippet note()}
+				Fuente: <a href="https://portwatch.imf.org" target="_blank" rel="noopener">IMF PortWatch</a> (FMI). Estimación a partir de AIS, unos 5 días de
+				retraso · <Updated at={data.portwatch?.fetchedAt} source="portwatch" />
 			{/snippet}
 		</Panel>
 		<Panel title="Gobiernos e instituciones" meta="Comunicados oficiales">
