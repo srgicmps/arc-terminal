@@ -1162,6 +1162,7 @@ export interface UnhcrData {
 	/** Año del dato (fin de año). */
 	year: number;
 	countries: UnhcrCountry[];
+}
 
 // ---------- Asteroides que pasan cerca de la Tierra (NASA JPL CNEOS, scripts/sources/neo.ts) ----------
 
