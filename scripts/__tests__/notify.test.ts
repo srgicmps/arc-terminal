@@ -46,7 +46,7 @@ const pick = (rules: Rule[], entries: LogEntry[] = [], now = NOW) =>
 const count = (alerts: { level: Level }[], level: Level) => alerts.filter((a) => a.level === level).length;
 
 describe('cupos y tope diario', () => {
-	it('P1 sin cupo propio, P2 hasta 25, P3 hasta 15, P4 hasta 2', () => {
+	it('P1 sin cupo propio, P2 hasta 25, P3 hasta 15, P4 hasta 3', () => {
 		const { send, skipped } = pick([fake('a', 1, 10), fake('b', 2, 30), fake('c', 3, 20), fake('d', 4, 3)]);
 		expect([1, 2, 3, 4].map((l) => count(send, l as Level))).toEqual([10, 25, 15, 0]);
 		// 10 + 25 + 15 = 50: el tope total deja fuera a P4 y lo que no cabía en su cupo.

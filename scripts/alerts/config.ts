@@ -8,7 +8,7 @@ export type Level = 1 | 2 | 3 | 4;
 export const DAILY_TOTAL = 50;
 
 /** Cupo diario de cada nivel. Si se llega al tope total, gana el nivel más alto (P1 antes que P2…). */
-export const QUOTAS: Record<Level, number> = { 1: Infinity, 2: 25, 3: 15, 4: 2 };
+export const QUOTAS: Record<Level, number> = { 1: Infinity, 2: 25, 3: 15, 4: 3 };
 
 /** Priority de ntfy para cada nivel (5 = máxima, suena aunque el móvil esté en silencio si se configura). */
 export const NTFY_PRIORITY: Record<Level, number> = { 1: 5, 2: 4, 3: 3, 4: 2 };
@@ -51,8 +51,12 @@ export const MACRO = [
 	{ id: 'inflation-ea', file: 'eurostat', name: 'IPC de la zona euro', unit: '%', source: 'Eurostat' },
 	{ id: 'ipc-es', file: 'ine', name: 'IPC de España', unit: '%', source: 'INE' },
 	{ id: 'gdp-us', file: 'fred', name: 'PIB de EE. UU. (anualizado)', unit: '%', source: 'BEA vía FRED' },
-	{ id: 'gdp-ea', file: 'eurostat', name: 'PIB de la zona euro (trimestral)', unit: '%', source: 'Eurostat' }
+	{ id: 'gdp-ea', file: 'eurostat', name: 'PIB de la zona euro (trimestral)', unit: '%', source: 'Eurostat' },
+	{ id: 'euribor-12m', file: 'ecb', name: 'Euríbor a 12 meses', unit: '%', source: 'BCE' }
 ] as const;
+
+/** Hipoteca tipo del aviso del euríbor: variable, sistema francés, euríbor + diferencial (puntos). */
+export const MORTGAGE = { capital: 150_000, years: 25, spread: 0.8 };
 
 /** Cómo se lee un activo de mercado de los JSON de esta pasada. */
 export type AssetSource =
@@ -121,6 +125,71 @@ export const MARKETS = {
 /** Federal Register: palabras de sanciones o aranceles amplios. Uno al día, el más relevante. */
 export const FEDREG = /\b(tariffs?|duties|sanctions?|export controls?|embargo|reciprocal trade)\b/i;
 
+/**
+ * Conflictos: un tema de IMP (current[]) cuyo título case con esto. P1 si cumple IMP_BIG; P2 con
+ * `media` medios o más. Un aviso por tema cada `waitHours` (salvo que suba de P2 a P1).
+ */
+export const CONFLICT = {
+	words:
+		/\b(ataque|bombardeo|invasi[óo]n|misil(es)?|ofensiva|alto el fuego|tregua|movilizaci[óo]n|art[íi]culo 5|OTAN|NATO|nuclear|escalada|guerra|attack|strike|invasion|missiles?|ceasefire|war)\b/i,
+	media: 5,
+	waitHours: 12
+};
+
+/**
+ * Elecciones (elections.json): solo del G20 y la UE. «Hoy vota…» desde `from` (hora de Madrid) del día de
+ * la votación; el resultado, con un tema de IMP de ese día o del siguiente con `media` medios o más.
+ * G20 y UE son los mismos que isMajor de src/lib/elections.ts (rama claude/elecciones): cuando se mezcle,
+ * mejor importarlos de allí.
+ */
+export const ELECTIONS = {
+	from: '08:00',
+	media: 5,
+	result: /\b(gana|victoria|resultados?|escrutinio|elecciones|wins?|election)\b/i,
+	g20: ['AR', 'AU', 'BR', 'CA', 'CN', 'DE', 'FR', 'GB', 'ID', 'IN', 'IT', 'JP', 'KR', 'MX', 'RU', 'SA', 'TR', 'US', 'ZA'],
+	eu: [
+		'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GR', 'HR', 'HU',
+		'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK'
+	]
+};
+
+/** IA (news-ai.json y news-tech.json): grupo de titulares de `media` medios o más que nombra a un laboratorio y un lanzamiento. */
+export const AI_NEWS = {
+	media: 3,
+	labs: /\b(OpenAI|GPT|Google|Gemini|DeepMind|Anthropic|Claude|Meta|Llama|xAI|Grok|Mistral|DeepSeek|Qwen)/i,
+	launch: /\b(lanza|presenta|anuncia|nuevo modelo|launch(es)?|releases?|unveils?|introduc(es|ing))\b/i,
+	/** Como mucho tantos al día. */
+	perDay: 3
+};
+
+/**
+ * Valores seguidos (alert-quotes.json, PR #132): variación del día. Un aviso por valor y día al pasar de
+ * `steps[0]` y otro al pasar de `steps[1]` (en %, en valor absoluto). Desde `group` a la vez, en uno solo.
+ * Nombres legibles de los símbolos de Finnhub (ALERT_TICKERS de scripts/sources/alert-quotes.ts).
+ */
+export const STOCKS = {
+	steps: [3, 6],
+	group: 3,
+	names: {
+		LMT: 'Lockheed Martin',
+		RTX: 'RTX',
+		NOC: 'Northrop Grumman',
+		GD: 'General Dynamics',
+		LHX: 'L3Harris',
+		BA: 'Boeing',
+		PLTR: 'Palantir',
+		'AIR.PA': 'Airbus',
+		'BA.L': 'BAE Systems',
+		'RHM.DE': 'Rheinmetall',
+		'LDO.MI': 'Leonardo',
+		'HO.PA': 'Thales',
+		'SAAB-B.ST': 'Saab',
+		'IDR.MC': 'Indra',
+		NVDA: 'NVIDIA',
+		AAPL: 'Apple'
+	} as Record<string, string>
+};
+
 /** Gas de la UE (GIE): bajada diaria mínima del llenado, en puntos, y umbrales que se vigilan al cruzarlos. */
 export const GAS = { drop: 1, levels: [90, 80, 50] };
 
@@ -152,6 +221,8 @@ export const POLYMARKET = { minVolume: 1_000_000, change: 0.15, maxTracked: 60 }
  */
 export const EARNINGS_WATCH = {
 	top10: ['NVDA', 'MSFT', 'AAPL', 'GOOGL', 'AMZN', 'META', 'AVGO', 'TSLA', 'BRK.B', 'TSM'],
+	/** Valores seguidos de EE. UU. (los de STOCKS; NVDA y AAPL ya están arriba). */
+	seguidos: ['LMT', 'RTX', 'NOC', 'GD', 'LHX', 'BA', 'PLTR'],
 	mis: [] as string[]
 };
 
@@ -174,10 +245,28 @@ export const TOMORROW = { from: '19:00', until: '23:59' };
 /** Cambio de hora: el viernes anterior, desde esta hora de Madrid. */
 export const DST = { from: '10:00', until: '23:59' };
 
+/**
+ * Lanzamientos (launches.json): Go y con el NET entre ahora + `fromMin` y ahora + `toMin` minutos. Solo
+ * tripulados (no hay campo: se reconoce por la misión), de estos cohetes o misiones, o de estas agencias.
+ */
+export const LAUNCHES = {
+	fromMin: 45,
+	toMin: 75,
+	crewed: /\b(crew|crewed|tripulad[ao]|shenzhou|soyuz ms|axiom|ax-\d|polaris|starliner|gaganyaan|artemis i{2,})/i,
+	types: /\b(starship|artemis|new glenn|ariane 6)/i,
+	agencies:
+		/\b(NASA|ESA|CNSA|ISRO|JAXA)\b|National Aeronautics|European Space Agency|China National Space|Indian Space Research|Japan Aerospace/
+};
+
 // ---------- P4 ----------
 
 /** Resúmenes: hora de Madrid desde la que sale y hasta la que aún tiene sentido mandarlo. */
 export const SUMMARIES = {
 	morning: { from: '08:05', until: '11:59' },
-	evening: { from: '22:15', until: '23:59' }
+	evening: { from: '22:15', until: '23:59' },
+	/** SEMANA: los domingos. */
+	week: { from: '19:00', until: '23:59' }
 };
+
+/** SEMANA: cuántos temas de IMP (los de más puntuación de los últimos 7 días). */
+export const WEEK = { top: 5 };
