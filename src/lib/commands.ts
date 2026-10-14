@@ -5,6 +5,7 @@ export interface Command {
 	/** Ruta de SvelteKit. */
 	route:
 		| '/'
+		| '/imp'
 		| '/eco'
 		| '/geo'
 		| '/es'
@@ -13,8 +14,10 @@ export interface Command {
 		| '/ai'
 		| '/boe'
 		| '/usgov'
+		| '/lider'
 		| '/luz'
 		| '/wx'
+		| '/port'
 		| '/fuel'
 		| '/cal'
 		| '/wiki'
@@ -41,6 +44,7 @@ export interface Command {
 
 export const COMMANDS: Command[] = [
 	{ code: 'TOP', route: '/', key: 'Portada', desc: 'Portada: lo más importante de cada sección', sources: 'Todas', pinned: true },
+	{ code: 'IMP', route: '/imp', key: 'Importante', desc: 'Lo más importante de hoy, la semana, el mes y el año (sin IA)', sources: 'Todos los titulares, BOE, Federal Register, Wikipedia', pinned: true, aliases: ['importante', 'destacado'] },
 	{ code: 'ECO', route: '/eco', key: 'Economía', desc: 'Economía y macro: paro, inflación, PIB, tipos', sources: 'Eurostat, BCE, BLS, Tesoro de EE. UU., El País, Expansión, FT', pinned: true },
 	{ code: 'GEO', route: '/geo', key: 'Geopolítica', desc: 'Geopolítica y terremotos', sources: 'BBC, Al Jazeera, DW, France 24, The Guardian, USGS', pinned: true },
 	{ code: 'ES', route: '/es', key: 'España', desc: 'España: actualidad, BOE y luz', sources: 'El País, RTVE, elDiario.es, El Mundo, Europa Press, BOE, REE', pinned: true, aliases: ['españa'] },
@@ -49,8 +53,10 @@ export const COMMANDS: Command[] = [
 	{ code: 'AI', route: '/ai', key: 'IA', desc: 'Inteligencia artificial', sources: 'MIT Technology Review, Hugging Face, OpenAI, Google, The Verge', pinned: true },
 	{ code: 'BOE', route: '/boe', key: 'BOE', desc: 'Sumario del Boletín Oficial del Estado de hoy', sources: 'API de datos abiertos del BOE', pinned: true, aliases: ['boletín'], arg: { param: 'q', label: 'Buscar en el BOE de hoy', example: 'BOE vivienda' } },
 	{ code: 'USGOV', route: '/usgov', key: 'Gob. EE. UU.', desc: 'Federal Register: decretos presidenciales y normas de EE. UU.', sources: 'Federal Register, Casa Blanca, Reserva Federal' },
+	{ code: 'LIDER', route: '/lider', key: 'Líderes', desc: 'Qué hacen ahora Sánchez, Trump y Lagarde: agenda de hoy y lo último', sources: 'La Moncloa, Roll Call Factba.se, Casa Blanca, Federal Register, BCE', aliases: ['líderes', 'sánchez', 'trump', 'lagarde'] },
 	{ code: 'LUZ', route: '/luz', key: 'Luz', desc: 'Precio de la luz hora a hora, hoy y mañana', sources: 'Red Eléctrica (REE)', pinned: true, aliases: ['electricidad', 'pvpc'] },
 	{ code: 'WX', route: '/wx', key: 'Tiempo', desc: 'Tiempo en Menorca y otras ciudades', sources: 'Open-Meteo', aliases: ['tiempo', 'clima'] },
+	{ code: 'PORT', route: '/port', key: 'Puertos', desc: 'Barcos en puertos y estrechos (Gibraltar, Róterdam, Singapur, Maó…) con AIS en directo', sources: 'aisstream.io', aliases: ['barcos', 'puertos', 'ais'] },
 	{ code: 'MIS', route: '/mis', key: 'Mis valores', desc: 'Tu lista de valores, con cotización en directo', sources: 'TradingView', pinned: true },
 	{ code: 'FUEL', route: '/fuel', key: 'Gasolina', desc: 'Gasolineras más baratas de Menorca', sources: 'Ministerio para la Transición Ecológica', pinned: true, aliases: ['gasolina', 'diésel', 'carburante'], arg: { param: 'zona', label: 'Provincia (nombre o número)', example: 'FUEL Madrid' } },
 	{ code: 'NEWS', route: '/news', key: 'Buscar', desc: 'Buscador en todos los titulares de todas las secciones', sources: 'Todos los medios', arg: { param: 'q', label: 'Buscar en los titulares', example: 'NEWS inflación' } },
@@ -72,40 +78,46 @@ export interface Ticker {
 	 * documentos en la SEC. Con él, scripts/sources/sec.ts descarga sus últimos documentos.
 	 */
 	cik?: string;
+	/**
+	 * Otros nombres con los que sale en las noticias («Zara» para Inditex). Junto con `name`, sirven para
+	 * encontrar los titulares que la nombran (src/lib/news.ts → mentions). Si empiezan por mayúscula,
+	 * la coincidencia también: así «Meta» no salta con «la meta de déficit».
+	 */
+	aliases?: string[];
 }
 
 /** Valores populares para sugerir en la barra (se abren con la ficha de TradingView). */
 export const TICKERS: Ticker[] = [
 	{ code: 'NVDA', name: 'NVIDIA', tv: 'NASDAQ:NVDA', cik: '0001045810' },
-	{ code: 'AAPL', name: 'Apple', tv: 'NASDAQ:AAPL', cik: '0000320193' },
+	{ code: 'AAPL', name: 'Apple', tv: 'NASDAQ:AAPL', cik: '0000320193', aliases: ['iPhone'] },
 	{ code: 'MSFT', name: 'Microsoft', tv: 'NASDAQ:MSFT', cik: '0000789019' },
-	{ code: 'GOOGL', name: 'Alphabet', tv: 'NASDAQ:GOOGL', cik: '0001652044' },
-	{ code: 'AMZN', name: 'Amazon', tv: 'NASDAQ:AMZN', cik: '0001018724' },
-	{ code: 'META', name: 'Meta', tv: 'NASDAQ:META', cik: '0001326801' },
+	{ code: 'GOOGL', name: 'Alphabet', tv: 'NASDAQ:GOOGL', cik: '0001652044', aliases: ['Google', 'YouTube', 'Gemini'] },
+	{ code: 'AMZN', name: 'Amazon', tv: 'NASDAQ:AMZN', cik: '0001018724', aliases: ['AWS'] },
+	{ code: 'META', name: 'Meta', tv: 'NASDAQ:META', cik: '0001326801', aliases: ['Facebook', 'Instagram', 'WhatsApp', 'Zuckerberg'] },
 	{ code: 'TSLA', name: 'Tesla', tv: 'NASDAQ:TSLA', cik: '0001318605' },
 	{ code: 'AVGO', name: 'Broadcom', tv: 'NASDAQ:AVGO', cik: '0001730168' },
 	// TSMC y ASML son extranjeras, pero cotizan en EE. UU. y presentan 6-K y 20-F en la SEC.
-	{ code: 'TSM', name: 'TSMC', tv: 'NYSE:TSM', cik: '0001046179' },
+	{ code: 'TSM', name: 'TSMC', tv: 'NYSE:TSM', cik: '0001046179', aliases: ['Taiwan Semiconductor'] },
 	{ code: 'ASML', name: 'ASML', tv: 'NASDAQ:ASML', cik: '0000937966' },
 	{ code: 'AMD', name: 'AMD', tv: 'NASDAQ:AMD', cik: '0000002488' },
 	{ code: 'NFLX', name: 'Netflix', tv: 'NASDAQ:NFLX', cik: '0001065280' },
-	{ code: 'BRK.B', name: 'Berkshire Hathaway', tv: 'NYSE:BRK.B', cik: '0001067983' },
-	{ code: 'JPM', name: 'JPMorgan', tv: 'NYSE:JPM', cik: '0000019617' },
+	{ code: 'BRK.B', name: 'Berkshire Hathaway', tv: 'NYSE:BRK.B', cik: '0001067983', aliases: ['Berkshire', 'Warren Buffett'] },
+	{ code: 'JPM', name: 'JPMorgan', tv: 'NYSE:JPM', cik: '0000019617', aliases: ['JP Morgan', 'J.P. Morgan', 'Jamie Dimon'] },
 	{ code: 'SPY', name: 'S&P 500 (ETF)', tv: 'AMEX:SPY' },
 	{ code: 'QQQ', name: 'Nasdaq 100 (ETF)', tv: 'NASDAQ:QQQ' },
-	{ code: 'SAN', name: 'Banco Santander', tv: 'BME:SAN' },
-	{ code: 'ITX', name: 'Inditex', tv: 'BME:ITX' },
+	{ code: 'SAN', name: 'Banco Santander', tv: 'BME:SAN', aliases: ['Santander'] },
+	{ code: 'ITX', name: 'Inditex', tv: 'BME:ITX', aliases: ['Zara', 'Amancio Ortega'] },
 	{ code: 'IBE', name: 'Iberdrola', tv: 'BME:IBE' },
 	{ code: 'BBVA', name: 'BBVA', tv: 'BME:BBVA' },
-	{ code: 'TEF', name: 'Telefónica', tv: 'BME:TEF' },
-	{ code: 'IBEX', name: 'IBEX 35', tv: 'BME:IBC' },
+	{ code: 'TEF', name: 'Telefónica', tv: 'BME:TEF', aliases: ['Movistar'] },
+	{ code: 'IBEX', name: 'IBEX 35', tv: 'BME:IBC', aliases: ['Ibex'] },
 	{ code: 'SPX', name: 'S&P 500', tv: 'SP:SPX' },
-	{ code: 'NDX', name: 'Nasdaq 100', tv: 'NASDAQ:NDX' },
+	{ code: 'NDX', name: 'Nasdaq 100', tv: 'NASDAQ:NDX', aliases: ['Nasdaq'] },
 	{ code: 'DAX', name: 'DAX', tv: 'XETR:DAX' },
 	{ code: 'BTC', name: 'Bitcoin', tv: 'BITSTAMP:BTCUSD' },
-	{ code: 'ETH', name: 'Ethereum', tv: 'BITSTAMP:ETHUSD' },
-	{ code: 'GOLD', name: 'Oro', tv: 'TVC:GOLD' },
-	{ code: 'BRENT', name: 'Petróleo Brent', tv: 'TVC:UKOIL' },
+	{ code: 'ETH', name: 'Ethereum', tv: 'BITSTAMP:ETHUSD', aliases: ['ether'] },
+	{ code: 'GOLD', name: 'Oro', tv: 'TVC:GOLD', aliases: ['oro', 'gold'] },
+	{ code: 'BRENT', name: 'Petróleo Brent', tv: 'TVC:UKOIL', aliases: ['Brent'] },
 	{ code: 'EURUSD', name: 'Euro / dólar', tv: 'FX:EURUSD' }
 ];
 
