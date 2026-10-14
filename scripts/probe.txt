@@ -13,3 +13,6 @@ https://marine-api.open-meteo.com/v1/marine?latitude=40.09%2C39.87&longitude=4.1
 https://marine-api.open-meteo.com/v1/marine?latitude=40.06%2C39.89&longitude=4.13%2C4.07&current=wave_height%2Cswell_wave_height
 # WX: avisos de MeteoAlarm para España (se filtra Menorca)
 https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-spain
+https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/EOH ~ zona|punto
+https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPV ~ comunidad|aut.nom
+https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/FREG350?nult=3
