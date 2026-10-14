@@ -6,7 +6,11 @@
 <script module lang="ts">
 	// Esta parte se ejecuta una sola vez y la comparten todos los <Updated> (como un composable de Vue
 	// con el estado fuera de la función): status.json se pide una vez, solo si alguien lo necesita.
-	import { dataset, type SourceStatus } from '#lib/data.ts';
+	// Va con su propio import.meta.glob (y no con dataset() de data.ts) para que la build del navegador
+	// solo lleve este JSON y no todos los de static/data.
+	import type { Dataset, SourceStatus } from '#lib/data.ts';
+
+	const loaders = import.meta.glob('/static/data/status.json', { import: 'default' });
 
 	const maxAge: Record<string, number> = $state({});
 	let requested = false;
@@ -14,7 +18,9 @@
 	function loadStatus() {
 		if (requested) return;
 		requested = true;
-		dataset<SourceStatus[]>('status').then((status) => {
+		const load = loaders['/static/data/status.json'];
+		if (!load) return;
+		(load() as Promise<Dataset<SourceStatus[]>>).then((status) => {
 			for (const s of status?.data ?? []) if (s.maxAgeMinutes) maxAge[s.name] = s.maxAgeMinutes;
 		});
 	}
