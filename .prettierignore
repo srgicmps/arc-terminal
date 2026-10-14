@@ -2,6 +2,7 @@
 build
 .svelte-kit
 static/data
+static/engine
 node_modules
 pnpm-lock.yaml
 

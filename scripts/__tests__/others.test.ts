@@ -187,7 +187,7 @@ describe('hazards (NOAA y NASA)', () => {
 
 describe('wiki', () => {
 	it('lee lo más leído (sin páginas especiales) y las efemérides, de la más reciente a la más antigua', async () => {
-		const fetch = mockFetch(() => ({
+		const fetch = mockFetch((url) => url.includes('/wikipedia/en/') ? undefined : ({
 			tfa: { normalizedtitle: 'Menorca', extract: '<b>Menorca</b> es una isla.', content_urls: { desktop: { page: 'https://es.wikipedia.org/wiki/Menorca' } } },
 			mostread: {
 				articles: [
@@ -203,7 +203,8 @@ describe('wiki', () => {
 			]
 		}));
 		const data = await wiki.fetch(undefined);
-		expect(String(fetch.mock.calls[0][0])).toMatch(/\/featured\/2026\/10\/14$/);
+		expect(String(fetch.mock.calls[0][0])).toMatch(/\/es\/featured\/2026\/10\/14$/);
+		expect(data).not.toHaveProperty('en');
 		expect(data.date).toBe('2026-10-14');
 		expect(data.featured).toEqual({ title: 'Menorca', url: 'https://es.wikipedia.org/wiki/Menorca', extract: 'Menorca es una isla.', views: undefined });
 		expect(data.mostRead).toEqual([{ title: 'Nvidia', url: 'https://es.wikipedia.org/wiki/Nvidia', extract: 'Empresa.', views: 5000 }]);
@@ -211,5 +212,21 @@ describe('wiki', () => {
 			{ year: 1947, text: 'Chuck Yeager rompe la barrera del sonido.', url: '' },
 			{ year: 1066, text: 'Batalla de Hastings.', url: 'https://es.wikipedia.org/wiki/Hastings' }
 		]);
+	});
+
+	it('añade la Wikipedia en inglés con «In the news»', async () => {
+		const enPage = (t: string) => ({ title: t, content_urls: { desktop: { page: `https://en.wikipedia.org/wiki/${t}` } } });
+		mockFetch((url) =>
+			url.includes('/wikipedia/en/')
+				? {
+						mostread: { articles: [{ ...enPage('Main_Page'), views: 9e6 }, { ...enPage('Nvidia'), views: 8000 }] },
+						news: [{ story: '<b>A ceasefire</b> is agreed.', links: [enPage('Ceasefire')] }, { story: '' }]
+					}
+				: { mostread: { articles: [{ ...enPage('Nvidia'), views: 10 }] } }
+		);
+		const data = await wiki.fetch(undefined);
+		expect(data.en?.mostRead.map((p) => p.title)).toEqual(['Nvidia']);
+		expect(data.en?.news).toEqual([{ text: 'A ceasefire is agreed.', url: 'https://en.wikipedia.org/wiki/Ceasefire' }]);
+		expect(data).not.toHaveProperty('news');
 	});
 });

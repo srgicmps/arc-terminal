@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
+	import ClimatePanel from '#lib/components/ClimatePanel.svelte';
 	import ChokepointTable from '#lib/components/ChokepointTable.svelte';
 	import DisasterList from '#lib/components/DisasterList.svelte';
 	import HazardList from '#lib/components/HazardList.svelte';
@@ -11,6 +13,8 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import WorldMap from '#lib/components/WorldMap.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
+	import { LAYERS, type LayerId } from '#lib/geo/layers.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -19,6 +23,12 @@
 	const quakes = $derived(data.quakes?.data ?? []);
 	// Los más fuertes de la semana primero, y como mucho 20.
 	const strongest = $derived([...quakes].sort((a, b) => b.mag - a.mag).slice(0, 20));
+	// Capas del mapa (calculadas en +page.server.ts): todas las que tienen datos, encendidas al principio.
+	const layerPoints = $derived(data.layers);
+	const available = $derived(LAYERS.filter((l) => layerPoints[l.value].length));
+	let on = $state<LayerId[]>(LAYERS.map((l) => l.value));
+	const points = $derived(available.filter((l) => on.includes(l.value)).flatMap((l) => layerPoints[l.value]));
+
 	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
 </script>
 
@@ -26,8 +36,11 @@
 
 <div class="grid">
 	<div class="col">
-		<Panel title="Mapa" meta="Últimos 7 días">
-			<WorldMap quakes={quakes} storms={data.hazards?.data.storms} events={data.hazards?.data.events} />
+		<Panel title="Mapa" meta="Toca un punto para ver su ficha">
+			{#if available.length > 1}
+				<div class="layers"><Seg label="Capas del mapa" options={available} bind:values={on} /></div>
+			{/if}
+			<WorldMap {points} legend={available} />
 		</Panel>
 	</div>
 </div>
@@ -38,6 +51,7 @@
 			<NewsList {items} summaries />
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-geo" />{/snippet}
 		</Panel>
+		<ClimatePanel climate={data.climate} />
 	</div>
 	<div class="col">
 		<Panel title="Mercados de predicción" meta="Probabilidad que da el mercado">
@@ -46,6 +60,7 @@
 				Precios de Polymarket: reflejan apuestas, no pronósticos oficiales · <Updated at={data.predictions?.fetchedAt} source="predictions" />
 			{/snippet}
 		</Panel>
+		<DefenseQuotes />
 		<Panel title="Rutas marítimas clave" meta="Barcos al día (media de 7 días) y cambio en 1 año">
 			<ChokepointTable items={data.portwatch?.data ?? []} />
 			{#snippet note()}
@@ -67,6 +82,10 @@
 			<TradeList items={data.sanctions?.data.slice(0, 8) ?? []} />
 			{#snippet note()}Fuente: Federal Register · <Updated at={data.sanctions?.fetchedAt} source="sanctions" />{/snippet}
 		</Panel>
+		<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">
+			<NewsList items={data.intl?.data.items.slice(0, 15) ?? []} />
+			{#snippet note()}<Updated at={data.intl?.fetchedAt} source="news-intl" />{/snippet}
+		</Panel>
 		<Panel title="Gobiernos e instituciones" meta="Comunicados oficiales">
 			<NewsList items={data.gov?.data.items.slice(0, 15) ?? []} />
 		</Panel>
@@ -87,3 +106,9 @@
 		</Panel>
 	</div>
 </div>
+
+<style>
+	.layers {
+		padding: var(--sp-8) var(--pad-x) 0;
+	}
+</style>

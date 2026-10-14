@@ -2,8 +2,9 @@
 	import { page } from '$app/state';
 	import Panel from '#lib/components/Panel.svelte';
 	import Updated from '#lib/components/Updated.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { longDay } from '#lib/format.ts';
+	import { dm, longDay } from '#lib/format.ts';
 	import type { BoeItem } from '#lib/types.ts';
 	import { addWatchword, highlight, initWatchwords, removeWatchword, watched, watchwords } from '#lib/watchwords.svelte.ts';
 	import { onMount } from 'svelte';
@@ -44,6 +45,15 @@
 
 	const shown = $derived(sections.reduce((n, s) => n + s.items.length, 0));
 	const total = $derived((boe?.sections ?? []).reduce((n, s) => n + s.total, 0));
+
+	// Diario Oficial de la UE (serie L): filtro por tema, solo con los temas que hay.
+	const eu = $derived(data.eurlex?.data ?? []);
+	let tag = $state('');
+	const tags = $derived([
+		{ value: '', label: 'Todo' },
+		...[...new Set(eu.flatMap((d) => d.tags))].sort().map((t) => ({ value: t, label: t }))
+	]);
+	const euShown = $derived((tag ? eu.filter((d) => d.tags.includes(tag)) : eu).slice(0, 40));
 
 	/** «JEFATURA DEL ESTADO» → «Jefatura del Estado» */
 	const dept = (s: string) =>
@@ -135,6 +145,35 @@
 	<p class="foot">Fuente: Agencia Estatal Boletín Oficial del Estado · <Updated at={data.boe?.fetchedAt} source="boe" /></p>
 {/if}
 
+{#if eu.length}
+	<div class="grid eu">
+		<div class="col">
+			<Panel title="Diario Oficial de la UE · serie L" meta="Reglamentos, directivas y decisiones">
+				{#if tags.length > 1}
+					<div class="tags"><Seg label="Tema" options={tags} bind:value={tag} /></div>
+				{/if}
+				<ol class="boe">
+					{#each euShown as d (d.id)}
+						<li>
+							<a class="title" href={d.url} target="_blank" rel="noopener">{d.title}</a>
+							<p class="m">
+								<span>{d.type}</span>
+								{#each d.tags as t (t)}<span class="tag">{t}</span>{/each}
+								<span>{dm(`${d.date}T12:00:00Z`)}</span>
+								<span class="id">{d.id}</span>
+							</p>
+						</li>
+					{/each}
+				</ol>
+				{#snippet note()}
+					Títulos oficiales en inglés; la ficha se abre en español. Fuente: EUR-Lex, © Unión Europea ·
+					<Updated at={data.eurlex?.fetchedAt} source="eurlex" />
+				{/snippet}
+			</Panel>
+		</div>
+	</div>
+{/if}
+
 <style>
 	.pdf {
 		color: var(--amber);
@@ -179,6 +218,21 @@
 
 	.col + .col {
 		border-top: var(--border);
+	}
+
+	.eu {
+		margin-top: var(--sp-16);
+	}
+
+	.tags {
+		padding: var(--sp-8) var(--pad-x);
+		border-bottom: var(--border);
+	}
+
+	.m .tag {
+		color: var(--amber);
+		font-family: var(--mono);
+		font-size: var(--fs-xs);
 	}
 
 	.boe {

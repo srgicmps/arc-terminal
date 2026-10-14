@@ -1,9 +1,11 @@
 <!--
 	Recuadro con una cifra grande: etiqueta en mayúsculas, la cifra y una línea de detalle. Va dentro de <Tiles>.
+	Si el glosario (src/lib/glossary.ts) conoce la etiqueta, lleva detrás un ⓘ con la definición.
 	El detalle es sub (texto) o, si hace falta marcado, lo que se ponga dentro: <Tile …><span class="lv">…</span></Tile>.
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import Term from './Term.svelte';
 
 	interface Props {
 		label: string;
@@ -18,7 +20,7 @@
 </script>
 
 <div class="tile">
-	<span class="lbl">{label}</span>
+	<span class="lbl">{label}<Term of={label} /></span>
 	<b class={tone}>{value}</b>
 	{#if children}<span class="sub">{@render children()}</span>{:else if sub !== undefined}<span class="sub">{sub}</span>{/if}
 </div>
