@@ -4,6 +4,7 @@
 	import { routeHref } from '#lib/routes.ts';
 	import '../app.css';
 	import { goto } from '$app/navigation';
+	import { neighbour, nudge, SWIPE, swipeDirection } from '#lib/swipe.ts';
 	import { asset, resolve } from '$app/paths';
 	import { page, updated } from '$app/state';
 	import { startClock } from '#lib/clock.svelte.ts';
@@ -72,6 +73,53 @@
 		else return;
 		e.preventDefault();
 		e.stopImmediatePropagation();
+	}
+
+	// Deslizar entre vistas en el móvil (lote 22): a izquierda o derecha, a la vista de al lado de la fila de
+	// arriba. No cuenta si el dedo empieza en algo que ya se desliza en horizontal (tablas anchas, mapas,
+	// gráficos, widgets, campos) ni junto al borde, que en iOS es «atrás».
+	let swipe: { x: number; y: number; t: number } | null = null;
+	let shift = $state(0);
+	const NO_SWIPE = 'input, textarea, select, iframe, canvas, svg, .map, .chart, .tv, .board, [data-noswipe]';
+
+	function scrollsX(el: Element | null): boolean {
+		for (let e = el; e && e !== document.body; e = e.parentElement) {
+			if (e.matches(NO_SWIPE)) return true;
+			const o = getComputedStyle(e).overflowX;
+			if ((o === 'auto' || o === 'scroll') && e.scrollWidth > e.clientWidth) return true;
+		}
+		return false;
+	}
+
+	function onSwipeStart(e: TouchEvent) {
+		swipe = null;
+		const t = e.touches[0];
+		if (e.touches.length !== 1 || tv.on || !matchMedia('(max-width: 720px) and (pointer: coarse)').matches) return;
+		if (t.clientX < SWIPE.edge || t.clientX > innerWidth - SWIPE.edge || scrollsX(e.target as Element)) return;
+		swipe = { x: t.clientX, y: t.clientY, t: Date.now() };
+	}
+
+	function onSwipeMove(e: TouchEvent) {
+		if (!swipe) return;
+		const dx = e.touches[0].clientX - swipe.x;
+		const dy = e.touches[0].clientY - swipe.y;
+		// En cuanto el gesto es más vertical que horizontal, es scroll: se olvida.
+		if (Math.abs(dy) > Math.abs(dx)) {
+			swipe = null;
+			shift = 0;
+		} else shift = nudge(dx);
+	}
+
+	function onSwipeEnd(e: TouchEvent) {
+		const s = swipe;
+		swipe = null;
+		shift = 0;
+		if (!s) return;
+		const t = e.changedTouches[0];
+		const dir = swipeDirection(t.clientX - s.x, t.clientY - s.y, Date.now() - s.t);
+		if (!dir) return;
+		const next = neighbour(keys, keys.findIndex((k) => k.route === page.route.id), dir);
+		if (next) goto(routeHref(next.route));
 	}
 
 	/** En modo TV, tocar la pantalla pausa o sigue (menos en los botones del aviso de pausa). */
@@ -193,7 +241,14 @@
 		</button>
 	{/if}
 
-	<main>
+	<main
+		class:nudged={shift !== 0}
+		style:translate={shift ? `${shift}px 0` : undefined}
+		ontouchstart={onSwipeStart}
+		ontouchmove={onSwipeMove}
+		ontouchend={onSwipeEnd}
+		ontouchcancel={() => ((swipe = null), (shift = 0))}
+	>
 		{@render children()}
 	</main>
 
@@ -349,6 +404,12 @@
 
 	main {
 		padding-bottom: var(--sp-16);
+		/* Al soltar el dedo, la pista de «deslizar» vuelve a su sitio sin salto; mientras se desliza, va con él. */
+		transition: translate var(--dur-fast) ease-out;
+	}
+
+	main.nudged {
+		transition: none;
 	}
 
 	.fresh {
