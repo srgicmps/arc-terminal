@@ -75,5 +75,5 @@ https://stats.bis.org/api/v1/data/WS_SPP/Q.US+ES+KR.N+R.771/all?lastNObservation
 https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next release)[^<]{0,80}
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
 # LIDER: quién preside ahora la Fed y quién forma el Comité Ejecutivo del BCE
-https://www.federalreserve.gov/aboutthefed/bios/board/default.htm ~ Chair|Powell
-https://www.ecb.europa.eu/ecb/decision-making/ecb/html/index.en.html ~ President|Vice-President|Member of the Executive Board
+https://www.federalreserve.gov/aboutthefed/bios/board/default.htm ~ .{0,120}(Chair|Powell).{0,60}
+https://www.ecb.europa.eu/ecb/orga/decisions/eb/html/index.en.html ~ .{0,100}(Vice-President|Member of the Executive Board).{0,20}
