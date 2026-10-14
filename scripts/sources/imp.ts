@@ -218,13 +218,24 @@ export function mergeDay(day: ImpEntry[], now: ImpEntry[], n = TOP): ImpEntry[] 
 	const best = new Map<string, ImpEntry>();
 	for (const e of [...day, ...now]) {
 		const prev = best.get(e.k);
-		if (!prev || e.score > prev.score) best.set(e.k, { ...e, sources: [...new Set([...(prev?.sources ?? []), ...e.sources])] });
+		// La traducción (scripts/translate.ts) llega después de IMP: se conserva la del día si el titular no cambia.
+		const kept = prev?.title === e.title && !e.titleEs ? { lang: prev.lang, titleEs: prev.titleEs } : {};
+		if (!prev || e.score > prev.score)
+			best.set(e.k, { ...e, ...kept, sources: [...new Set([...(prev?.sources ?? []), ...e.sources])] });
 		else prev.sources = [...new Set([...prev.sources, ...e.sources])];
 	}
 	return [...best.values()].sort((a, b) => b.score - a.score).slice(0, n);
 }
 
-const entry = ({ k, title, url, sources, score }: ImpEntry): ImpEntry => ({ k, title, url, sources, score });
+const entry = ({ k, title, lang, titleEs, url, sources, score }: ImpEntry): ImpEntry => ({
+	k,
+	title,
+	...(lang && { lang }),
+	...(titleEs && { titleEs }),
+	url,
+	sources,
+	score
+});
 
 /** Textos oficiales de esta pasada: medios oficiales de las secciones, BOE y Federal Register. */
 export function officialDocs(

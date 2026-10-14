@@ -27,3 +27,6 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
+# Traducción de titulares: MyMemory sin correo (comprueba la forma de la respuesta) y sus límites de uso
+https://api.mymemory.translated.net/get?q=Oil%20prices%20rise%20as%20Middle%20East%20tensions%20grow&langpair=en%7Ces
+https://mymemory.translated.net/doc/usagelimits.php ~ .{0,250}(chars|characters|words)/?\s*(per\s*)?day.{0,250}

@@ -46,7 +46,7 @@ export function aggregate(days: ImpData['days'], end: string, span: number, n = 
 			t.days++;
 			if (day.date > t.last) t.last = day.date;
 			for (const s of e.sources) if (!t.sources.includes(s)) t.sources.push(s);
-			if (e.score > t.best) Object.assign(t, { title: e.title, url: e.url, best: e.score });
+			if (e.score > t.best) Object.assign(t, { title: e.title, lang: e.lang, titleEs: e.titleEs, url: e.url, best: e.score });
 		}
 	}
 	return [...totals.values()]
