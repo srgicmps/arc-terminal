@@ -32,14 +32,14 @@
 	<div class="col">
 		<Panel title="Titulares" meta="{items.length} noticias">
 			<NewsList {items} summaries />
-			{#snippet note()}<Updated at={data.news?.fetchedAt} />{/snippet}
+			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-geo" />{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
 		<Panel title="Mercados de predicción" meta="Probabilidad que da el mercado">
 			<PredictionList items={data.predictions?.data.geopolitics.slice(0, 8) ?? []} />
 			{#snippet note()}
-				Precios de Polymarket: reflejan apuestas, no pronósticos oficiales · <Updated at={data.predictions?.fetchedAt} />
+				Precios de Polymarket: reflejan apuestas, no pronósticos oficiales · <Updated at={data.predictions?.fetchedAt} source="predictions" />
 			{/snippet}
 		</Panel>
 		<Panel title="Gobiernos e instituciones" meta="Comunicados oficiales">
@@ -47,15 +47,15 @@
 		</Panel>
 		<Panel title="Terremotos en el mundo" meta="M4,5+ · últimos 7 días">
 			<QuakeTable quakes={strongest} />
-			{#snippet note()}Fuente: USGS · <Updated at={data.quakes?.fetchedAt} />{/snippet}
+			{#snippet note()}Fuente: USGS · <Updated at={data.quakes?.fetchedAt} source="quakes" />{/snippet}
 		</Panel>
 		<Panel title="Terremotos en España" meta="Últimos 10 días · los 15 más fuertes">
 			<QuakeTable quakes={[...(data.quakesEs?.data ?? [])].sort((a, b) => b.mag - a.mag).slice(0, 15)} />
-			{#snippet note()}Fuente: Instituto Geográfico Nacional · <Updated at={data.quakesEs?.fetchedAt} />{/snippet}
+			{#snippet note()}Fuente: Instituto Geográfico Nacional · <Updated at={data.quakesEs?.fetchedAt} source="quakes-es" />{/snippet}
 		</Panel>
 		<Panel title="Huracanes, incendios y volcanes" meta="Activos ahora">
 			{#if data.hazards}<HazardList hazards={data.hazards.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
-			{#snippet note()}Fuentes: NOAA (Centro Nacional de Huracanes) y NASA EONET · <Updated at={data.hazards?.fetchedAt} />{/snippet}
+			{#snippet note()}Fuentes: NOAA (Centro Nacional de Huracanes) y NASA EONET · <Updated at={data.hazards?.fetchedAt} source="hazards" />{/snippet}
 		</Panel>
 	</div>
 </div>

@@ -64,7 +64,7 @@
 			{/if}
 			{#snippet note()}
 				BPA: beneficio por acción, en $. Pre: antes de la apertura · Post: tras el cierre. Fuente: Finnhub
-				{#if data.finnhub}· <Updated at={data.finnhub.fetchedAt} />{/if}
+				{#if data.finnhub}· <Updated at={data.finnhub.fetchedAt} source="finnhub" />{/if}
 			{/snippet}
 		</Panel>
 	</div>

@@ -254,8 +254,8 @@
 	Fuentes: Open-Meteo (CC BY 4.0) · Calidad del aire, UV y polen: contiene información modificada del Servicio de
 	Vigilancia Atmosférica de Copernicus (CAMS), vía Open-Meteo · Avisos: EUMETNET-MeteoAlarm con datos de AEMET; el
 	aviso oficial es el de <a href="https://www.aemet.es/es/eltiempo/prediccion/avisos" target="_blank" rel="noopener">AEMET</a>
-	· Tiempo <Updated at={data.weather?.fetchedAt} /> · Aire <Updated at={data.air?.fetchedAt} /> · Avisos
-	<Updated at={data.alerts?.fetchedAt} />
+	· Tiempo <Updated at={data.weather?.fetchedAt} source="weather" /> · Aire <Updated at={data.air?.fetchedAt} source="air" /> · Avisos
+	<Updated at={data.alerts?.fetchedAt} source="alerts" />
 </p>
 
 <style>

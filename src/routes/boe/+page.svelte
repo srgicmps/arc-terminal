@@ -84,7 +84,7 @@
 			{/if}
 		{/each}
 	</div>
-	<p class="foot">Fuente: Agencia Estatal Boletín Oficial del Estado · <Updated at={data.boe?.fetchedAt} /></p>
+	<p class="foot">Fuente: Agencia Estatal Boletín Oficial del Estado · <Updated at={data.boe?.fetchedAt} source="boe" /></p>
 {/if}
 
 <style>

@@ -108,6 +108,24 @@ export interface HnItem {
 	time: string;
 }
 
+// ---------- Papers del día (Hugging Face) ----------
+
+export interface Paper {
+	/** Identificador de arXiv, p. ej. «2510.01234». */
+	id: string;
+	title: string;
+	/** Primeros autores, ya abreviados («A. Pérez, B. Li et al.»). */
+	authors: string;
+	upvotes: number;
+	comments: number;
+	/** Página del paper en Hugging Face. */
+	url: string;
+	arxiv: string;
+	/** Cuándo salió en la lista diaria (ISO 8601). */
+	time: string;
+	summary: string;
+}
+
 // ---------- Terremotos (USGS) ----------
 
 export interface Quake {
@@ -298,6 +316,32 @@ export interface Prediction {
 export interface PredictionsData {
 	geopolitics: Prediction[];
 	economy: Prediction[];
+}
+
+// ---------- Documentos presentados en la SEC (EDGAR) ----------
+
+export interface SecFiling {
+	/** Formulario: «8-K», «10-Q», «10-K», «4», «6-K», «20-F» (o su enmienda «/A»). */
+	form: string;
+	/** Fecha de presentación: «2026-10-14». */
+	date: string;
+	/** Qué es, en castellano (en los 8-K, los apartados que comunica). */
+	desc: string;
+	/** Documento principal en sec.gov/Archives. */
+	url: string;
+}
+
+export interface SecCompany {
+	cik: string;
+	/** Nombre oficial en la SEC. */
+	name: string;
+	/** Del más reciente al más antiguo. */
+	filings: SecFiling[];
+}
+
+/** Por símbolo de la terminal: «NVDA», «BRK.B»… */
+export interface SecData {
+	companies: Record<string, SecCompany>;
 }
 
 /** Un grupo de tecnologías del mix eléctrico (Eólica, Solar…). */
