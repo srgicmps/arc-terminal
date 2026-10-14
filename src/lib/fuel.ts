@@ -75,3 +75,19 @@ export function distanceKm(a: { lat: number; lon: number }, b: { lat: number; lo
 	const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
 	return 2 * 6371 * Math.asin(Math.sqrt(h));
 }
+
+/**
+ * La zona que pide la barra con «FUEL Madrid» o «FUEL 28»: Menorca, el número de la provincia
+ * o su nombre (sin tildes; exacto, por el principio o contenido). null si no la encuentra.
+ */
+export function findProvince(raw: string | null, provinces: Pick<FuelProvince, 'id' | 'name'>[]): string | null {
+	const clean = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+	const q = clean(raw ?? '');
+	if (!q) return null;
+	if (q === 'menorca') return 'menorca';
+	if (/^\d{1,2}$/.test(q)) return provinces.find((p) => p.id === q.padStart(2, '0'))?.id ?? null;
+	const named = provinces.map((p) => ({ id: p.id, name: clean(p.name) }));
+	const hit =
+		named.find((p) => p.name === q) ?? named.find((p) => p.name.startsWith(q)) ?? named.find((p) => p.name.includes(q));
+	return hit?.id ?? null;
+}

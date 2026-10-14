@@ -39,6 +39,19 @@
 				<li><span class="l"><kbd>Esc</kbd></span><b>Volver a la portada</b></li>
 			</ul>
 		</Panel>
+		<Panel title="Con texto detrás" meta="Comando, espacio y lo que buscas">
+			<ul class="mini">
+				{#each COMMANDS.filter((c) => c.arg) as c (c.code)}
+					{@const text = c.arg!.example.slice(c.code.length + 1)}
+					<li>
+						<a class="l" href="{resolve(c.route)}?{c.arg!.param}={encodeURIComponent(text)}">
+							<b class="code">{c.arg!.example}</b>
+						</a>
+						<b>{c.arg!.label}</b>
+					</li>
+				{/each}
+			</ul>
+		</Panel>
 		<Panel title="Valores" meta="Escribe el código: abre su ficha">
 			<ul class="tickers">
 				{#each TICKERS as t (t.code)}

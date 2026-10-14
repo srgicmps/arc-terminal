@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { asset } from '$app/paths';
+	import { page } from '$app/state';
 	import LineChart from '#lib/components/LineChart.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { nf, signed, trend } from '#lib/format.ts';
-	import { distanceKm, FUELS, type FuelKey, type FuelStation } from '#lib/fuel.ts';
+	import { distanceKm, findProvince, FUELS, type FuelKey, type FuelStation } from '#lib/fuel.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -51,10 +52,18 @@
 
 	// Al abrir la vista en el navegador, recupera la última zona elegida (igual que onMounted en Vue).
 	onMount(() => {
+		if (page.url.searchParams.has('zona')) return; // la elige el $effect de abajo
 		try {
 			const saved = localStorage.getItem('fuel-zone');
 			if (saved && saved !== MENORCA && provinces.some((p) => p.id === saved)) choose(saved);
 		} catch {}
+	});
+
+	// «FUEL Madrid» o «FUEL 28» en la barra abre /fuel?zona=…. Solo en el navegador (los efectos no
+	// se ejecutan al prerenderizar); untrack evita que se repita al cargar la provincia.
+	$effect(() => {
+		const id = findProvince(page.url.searchParams.get('zona'), provinces);
+		if (id) untrack(() => choose(id));
 	});
 
 	/** «Cerca de mí»: pide la ubicación al navegador y abre la provincia más cercana. */

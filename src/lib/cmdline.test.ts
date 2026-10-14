@@ -1,6 +1,7 @@
 // Barra de comandos: sugerencias y qué se abre al pulsar Intro.
 import { describe, expect, it } from 'vitest';
 import {
+	canonical,
 	findCommand,
 	HISTORY_KEY,
 	historyOptions,
@@ -9,7 +10,9 @@ import {
 	pushHistory,
 	readHistory,
 	resolveInput,
+	splitInput,
 	suggest,
+	targetPath,
 	writeHistory,
 	type Option
 } from './cmdline.ts';
@@ -20,10 +23,13 @@ const ALL: Option[] = [
 	...TICKERS.map((t) => ({ code: t.code, desc: t.name, kind: 'Valor' }))
 ];
 
-/** Lo que abriría la barra con ese texto, en forma corta: «/fuel» o «sym:NVDA». */
+/** Lo que abriría la barra con ese texto, en forma corta: «/fuel», «/news?q=paro» o «sym:NVDA». */
 const open = (raw: string) => {
 	const t = resolveInput(raw, suggest(raw, ALL));
-	return t === null ? null : t.kind === 'command' ? t.command.route : `sym:${t.sym}`;
+	if (t === null) return null;
+	if (t.kind === 'symbol') return `sym:${t.sym}`;
+	const { route, search } = targetPath(t);
+	return route + search;
 };
 
 describe('norm e isTickerLike', () => {
@@ -97,6 +103,43 @@ describe('resolveInput', () => {
 
 	it('vacío no abre nada', () => {
 		expect(open('')).toBeNull();
+	});
+});
+
+describe('comandos con texto detrás', () => {
+	it('separa la primera palabra del resto', () => {
+		expect(splitInput('  NEWS   inflación subyacente ')).toEqual({ head: 'NEWS', arg: 'inflación subyacente' });
+		expect(splitInput('ECO')).toEqual({ head: 'ECO', arg: '' });
+	});
+
+	it('lleva el texto al parámetro de la vista', () => {
+		expect(open('NEWS inflación')).toBe(`/news?q=${encodeURIComponent('inflación')}`);
+		expect(open('boe vivienda')).toBe('/boe?q=vivienda');
+		expect(open('FUEL Madrid')).toBe('/fuel?zona=Madrid');
+		expect(open('fuel 28')).toBe('/fuel?zona=28');
+		expect(open('gasolina Palma')).toBe('/fuel?zona=Palma');
+	});
+
+	it('un comando sin argumento ignora el texto; un alias de dos palabras sigue siendo alias', () => {
+		expect(open('ECO paro')).toBe('/eco');
+		expect(open('wall street')).toBe('/ws');
+	});
+
+	it('sugiere ejecutar el comando con ese texto', () => {
+		expect(suggest('NEWS paro', ALL)).toEqual([
+			{ code: 'NEWS', desc: 'Buscar en los titulares: paro', kind: 'Función', run: 'NEWS paro' }
+		]);
+	});
+
+	it('el historial guarda el texto', () => {
+		const t = resolveInput('news Inflación', []);
+		expect(t && canonical(t)).toBe('NEWS Inflación');
+		expect(historyOptions(['NEWS Inflación'])[0]).toEqual({
+			code: 'NEWS',
+			desc: 'Buscar en los titulares: Inflación',
+			kind: 'Reciente',
+			run: 'NEWS Inflación'
+		});
 	});
 });
 

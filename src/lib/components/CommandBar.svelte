@@ -13,6 +13,7 @@
 		readHistory,
 		resolveInput,
 		suggest,
+		targetPath,
 		writeHistory,
 		type Option
 	} from '#lib/cmdline.ts';
@@ -63,8 +64,8 @@
 		if (!target) return;
 		recent = pushHistory(readHistory(), canonical(target));
 		writeHistory(recent);
-		if (target.kind === 'command') goto(resolve(target.command.route));
-		else goto(`${resolve('/s')}?sym=${encodeURIComponent(target.sym)}`);
+		const { route, search } = targetPath(target);
+		goto(resolve(route) + search);
 	}
 
 	function onkeydown(e: KeyboardEvent) {

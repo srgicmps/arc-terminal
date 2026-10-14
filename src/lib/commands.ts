@@ -31,6 +31,11 @@ export interface Command {
 	pinned?: boolean;
 	/** Otras formas de pedirlo, en español (se comparan sin tildes ni mayúsculas). */
 	aliases?: string[];
+	/**
+	 * Si acepta un texto detrás («NEWS inflación»): el parámetro de la URL que lo recibe
+	 * (/news?q=inflación), qué hace con él y un ejemplo para la ayuda.
+	 */
+	arg?: { param: string; label: string; example: string };
 }
 
 export const COMMANDS: Command[] = [
@@ -41,13 +46,13 @@ export const COMMANDS: Command[] = [
 	{ code: 'WS', route: '/ws', key: 'Wall Street', desc: 'Wall Street: mapa de calor, curva de tipos, divisas y cripto', sources: 'TradingView, Tesoro de EE. UU., BCE, CoinGecko, CNBC, WSJ', pinned: true, aliases: ['bolsa', 'wall street'] },
 	{ code: 'TECH', route: '/tech', key: 'Tecnología', desc: 'Tecnología y Hacker News', sources: 'Hacker News, TechCrunch, The Verge, Ars Technica, Xataka, Wired', pinned: true },
 	{ code: 'AI', route: '/ai', key: 'IA', desc: 'Inteligencia artificial', sources: 'MIT Technology Review, Hugging Face, OpenAI, Google, The Verge', pinned: true },
-	{ code: 'BOE', route: '/boe', key: 'BOE', desc: 'Sumario del Boletín Oficial del Estado de hoy', sources: 'API de datos abiertos del BOE', pinned: true, aliases: ['boletín'] },
+	{ code: 'BOE', route: '/boe', key: 'BOE', desc: 'Sumario del Boletín Oficial del Estado de hoy', sources: 'API de datos abiertos del BOE', pinned: true, aliases: ['boletín'], arg: { param: 'q', label: 'Buscar en el BOE de hoy', example: 'BOE vivienda' } },
 	{ code: 'USGOV', route: '/usgov', key: 'Gob. EE. UU.', desc: 'Federal Register: decretos presidenciales y normas de EE. UU.', sources: 'Federal Register, Casa Blanca, Reserva Federal' },
 	{ code: 'LUZ', route: '/luz', key: 'Luz', desc: 'Precio de la luz hora a hora, hoy y mañana', sources: 'Red Eléctrica (REE)', pinned: true, aliases: ['electricidad', 'pvpc'] },
 	{ code: 'WX', route: '/wx', key: 'Tiempo', desc: 'Tiempo en Menorca y otras ciudades', sources: 'Open-Meteo', aliases: ['tiempo', 'clima'] },
 	{ code: 'MIS', route: '/mis', key: 'Mis valores', desc: 'Tu lista de valores, con cotización en directo', sources: 'TradingView', pinned: true },
-	{ code: 'FUEL', route: '/fuel', key: 'Gasolina', desc: 'Gasolineras más baratas de Menorca', sources: 'Ministerio para la Transición Ecológica', pinned: true, aliases: ['gasolina', 'diésel', 'carburante'] },
-	{ code: 'NEWS', route: '/news', key: 'Buscar', desc: 'Buscador en todos los titulares de todas las secciones', sources: 'Todos los medios' },
+	{ code: 'FUEL', route: '/fuel', key: 'Gasolina', desc: 'Gasolineras más baratas de Menorca', sources: 'Ministerio para la Transición Ecológica', pinned: true, aliases: ['gasolina', 'diésel', 'carburante'], arg: { param: 'zona', label: 'Provincia (nombre o número)', example: 'FUEL Madrid' } },
+	{ code: 'NEWS', route: '/news', key: 'Buscar', desc: 'Buscador en todos los titulares de todas las secciones', sources: 'Todos los medios', arg: { param: 'q', label: 'Buscar en los titulares', example: 'NEWS inflación' } },
 	{ code: 'WIKI', route: '/wiki', key: 'Wikipedia', desc: 'Lo más leído en Wikipedia y efemérides del día', sources: 'Wikipedia en español' },
 	{ code: 'CAL', route: '/cal', key: 'Agenda', desc: 'Agenda económica de la semana', sources: 'TradingView' },
 	{ code: 'STATUS', route: '/status', key: 'Fuentes', desc: 'Estado de todas las fuentes de datos', sources: 'Arc Terminal' },
