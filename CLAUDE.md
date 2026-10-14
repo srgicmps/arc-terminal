@@ -113,7 +113,7 @@ La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`)
 | `BOE` / `USGOV` | Boletines oficiales | BOE, Federal Register |
 | `LUZ` | Precio de la luz y mix de generación | REE |
 | `WX` | Tiempo, mar, aire, avisos, sol y luna | Open-Meteo, MeteoAlarm |
-| `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica |
+| `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica, Comisión Europea (Weekly Oil Bulletin) |
 | `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
 | `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista, análisis y problema del día | Stockfish, chess.js, Lichess |
 | `TV` | Modo TV: las vistas rotan solas, encajadas y a pantalla completa | — |
