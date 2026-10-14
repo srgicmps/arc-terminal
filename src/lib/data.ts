@@ -21,6 +21,8 @@ export interface SourceStatus {
 	/** Cada cuánto se refresca como mucho (maxAgeMinutes de scripts/sources). Lo usa <Updated>. */
 	maxAgeMinutes?: number;
 	error?: string;
+	/** Clave de GitHub Secrets que necesita, si necesita alguna. */
+	requires?: string;
 }
 
 // Vite convierte cada JSON en un trozo aparte que solo se carga en la página que lo pide.

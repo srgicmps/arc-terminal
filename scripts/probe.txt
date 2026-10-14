@@ -5,5 +5,14 @@ https://apidatos.ree.es/es/datos/generacion/no-renovables-detalle-emisiones-CO2?
 https://stats.bis.org/api/v1/data/WS_CBPOL/D.US+XM+JP/all?lastNObservations=2&detail=dataonly&format=csv
 https://huggingface.co/api/daily_papers?limit=2
 https://data.sec.gov/submissions/CIK0001045810.json
+# WX: calidad del aire, UV y polen en Maó (CAMS vía Open-Meteo)
+https://air-quality-api.open-meteo.com/v1/air-quality?latitude=39.8885&longitude=4.2658&current=european_aqi%2Cpm2_5%2Cpm10%2Cozone%2Cnitrogen_dioxide%2Cuv_index%2Colive_pollen%2Cgrass_pollen%2Cbirch_pollen%2Calder_pollen%2Cmugwort_pollen%2Cragweed_pollen&hourly=european_aqi%2Cuv_index%2Colive_pollen%2Cgrass_pollen%2Cbirch_pollen%2Calder_pollen%2Cmugwort_pollen%2Cragweed_pollen&timezone=Europe%2FMadrid&forecast_days=4
+# WX: oleaje en Menorca, costa norte (Fornells) y sur (Son Bou), puntos un poco mar adentro
+https://marine-api.open-meteo.com/v1/marine?latitude=40.09%2C39.87&longitude=4.13%2C4.07&current=sea_surface_temperature%2Cwave_height%2Cwave_direction%2Cwave_period%2Cswell_wave_height%2Cswell_wave_direction%2Cswell_wave_period&daily=wave_height_max%2Cswell_wave_height_max%2Cwave_direction_dominant&timezone=Europe%2FMadrid&forecast_days=3
+# WX: lo mismo en los puntos de la costa, para ver si el modelo los toma por tierra (null)
+https://marine-api.open-meteo.com/v1/marine?latitude=40.06%2C39.89&longitude=4.13%2C4.07&current=wave_height%2Cswell_wave_height
+# WX: avisos de MeteoAlarm para España (se filtra Menorca)
+https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-spain
+# TECH: releases de GitHub
 https://github.com/sveltejs/kit/releases.atom
 https://github.com/nodejs/node/releases.atom
