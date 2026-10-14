@@ -243,3 +243,21 @@ export interface HazardsData {
 	storms: Storm[];
 	events: NaturalEvent[];
 }
+
+// ---------- Mercados de predicción (Polymarket) ----------
+
+export interface Prediction {
+	id: string;
+	title: string;
+	url: string;
+	/** Volumen negociado en 24 h, en dólares. */
+	volume24h: number;
+	endDate: string;
+	/** Opciones con su probabilidad implícita (0–1), de más a menos probable. */
+	outcomes: { label: string; p: number }[];
+}
+
+export interface PredictionsData {
+	geopolitics: Prediction[];
+	economy: Prediction[];
+}

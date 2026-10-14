@@ -1,33 +1,50 @@
 # Arc Terminal
 
 Terminal personal de mercados y actualidad, al estilo Bloomberg: economía, geopolítica, Wall Street,
-tecnología, IA y utilidades del día a día, como las gasolineras más baratas de Menorca.
+tecnología, IA y utilidades del día a día, como las gasolineras más baratas de donde elijas.
 Se maneja desde una barra de comandos: escribes `NVDA`, `ECO` o `FUEL` y se abre.
 
-> En construcción. La maqueta de diseño está en [`docs/maqueta.html`](docs/maqueta.html) (datos de ejemplo).
+La maqueta de diseño está en [`docs/maqueta.html`](docs/maqueta.html) (datos de ejemplo).
 
 ## Cómo funciona
 
 - **Web estática** en GitHub Pages, hecha con SvelteKit y TypeScript.
-- **GitHub Actions hace de servidor**: cada 15–30 minutos descarga noticias, cotizaciones, datos macro y
-  precios de la gasolina, los guarda como JSON y vuelve a publicar la web. Las claves de las APIs viven en
-  GitHub Secrets y nunca llegan al navegador.
-- **Cotizaciones y gráficos en directo** con los widgets de TradingView.
+- **GitHub Actions hace de servidor**: cada 30 minutos `pnpm data` descarga todas las fuentes, las guarda como
+  JSON en `static/data/` y vuelve a publicar la web. Si una fuente falla, se reutiliza su última copia
+  publicada. Las fuentes que cambian poco se reutilizan durante horas para no castigar sus APIs.
+- **Cotizaciones y gráficos en directo** con los widgets de TradingView, sin clave.
+- Hoy todas las fuentes son abiertas y **sin clave**. Si algún día hace falta una, irá en GitHub Secrets y
+  solo la usará la Action.
 
-## Comandos previstos
+## Comandos
 
 | Comando | Qué abre |
 |---|---|
 | `TOP` | Portada: lo más importante de cada sección |
-| `ECO` | Economía y macro |
-| `GEO` | Geopolítica |
-| `WS` | Wall Street e inversión |
-| `NVDA`, `AAPL`… | Ficha de una acción |
-| `TECH` | Tecnología |
-| `AI` | Inteligencia artificial |
-| `CAL` | Agenda económica y resultados de empresas |
-| `FUEL` | Gasolineras más baratas de España (donde eligas) |
+| `ECO` | Economía y macro: paro, inflación, PIB, deuda, tipos del BCE, euríbor, hipotecas, bonos y EE. UU. |
+| `GEO` | Geopolítica, terremotos (USGS e IGN), huracanes, incendios y volcanes |
+| `ES` | España: titulares, BOE del día y comunicados del Gobierno y de Europa |
+| `WS` | Wall Street: mapa de calor, curva de tipos de EE. UU., divisas y cripto |
+| `NVDA`, `SAN`… | Ficha de un valor (TradingView) |
+| `TECH` / `AI` | Tecnología, Hacker News e inteligencia artificial |
+| `BOE` | Sumario del Boletín Oficial del Estado, con buscador |
+| `USGOV` | Federal Register: decretos presidenciales y normas de EE. UU. |
+| `LUZ` | Precio de la luz hora a hora, hoy y mañana, y su evolución |
+| `FUEL` | Gasolineras más baratas de Menorca o de cualquier provincia, «cerca de mí» |
+| `WX` | El tiempo y la temperatura del mar |
+| `NEWS` | Buscador en todos los titulares |
+| `WIKI` | Lo más leído en Wikipedia y efemérides |
+| `CAL` | Agenda económica de la semana |
+| `STATUS` | Estado de todas las fuentes |
 | `HELP` | Comandos y atajos |
+
+## Fuentes
+
+**España:** BOE, Ministerio para la Transición Ecológica (carburantes), Red Eléctrica, Instituto Geográfico
+Nacional, La Moncloa, Banco de España. **Europa:** BCE, Eurostat, Comisión y Parlamento Europeo.
+**EE. UU.:** Federal Register, BLS, Tesoro, USGS, NOAA, NASA, Casa Blanca, Reserva Federal.
+**Mundo:** Open-Meteo, CoinGecko, Hacker News, Wikipedia y unos 40 canales RSS de medios. El estado y la
+procedencia de cada una se ven en `STATUS`.
 
 ## Desarrollo
 
@@ -35,7 +52,7 @@ Requisitos: Node 24 y pnpm.
 
 ```sh
 pnpm install
-pnpm fuel      # descarga los precios de las gasolineras en data/
+pnpm data      # descarga todas las fuentes en static/data/ (o: pnpm data boe fuel)
 pnpm dev       # http://localhost:5173/
 pnpm check     # comprueba tipos y componentes
 pnpm build     # genera la web estática en build/
