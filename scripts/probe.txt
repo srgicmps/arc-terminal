@@ -122,3 +122,5 @@ https://api.imf.org/external/sdmx/2.1/dataflow ~ id="[A-Z_]*(IRFCL|IFS|RES)[A-Z_
 https://api.github.com/repos/hiring-lab/job_postings_tracker/git/trees/master?recursive=1 ~ "path":\s*"[^"]+\.csv"
 # Lote 24.5, tercera ronda: dimensiones del IRFCL y el código del oro
 https://api.imf.org/external/sdmx/2.1/datastructure/IMF.STA/DSD_IRFCL_PUB?references=children ~ (Dimension id="[A-Z_]+"|id="[A-Z0-9_.]*GOLD[A-Z0-9_.]*"[^>]{0,40}>.{0,160})
+# Lote 24.5, cuarta ronda: el código del oro en la lista de indicadores del IRFCL (se busca por el nombre)
+https://api.imf.org/external/sdmx/2.1/datastructure/IMF.STA/DSD_IRFCL_PUB?references=children ~ Code id="[^"]+"[^>]{0,60}>\s*<[^>]+>[^<]{0,40}[Gg]old[^<]{0,160}
