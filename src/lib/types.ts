@@ -623,6 +623,8 @@ export interface ImpEntry {
 	sources: string[];
 	/** Puntuación (ver scripts/sources/imp.ts). */
 	score: number;
+	/** Secciones de titulares donde aparece (claves de NEWS_SECTIONS). En el histórico, desde M9. */
+	sections?: string[];
 	/** El enlace de cada medio. Solo en el top de ahora y en el día de hoy (no en días anteriores). */
 	links?: ImpLink[];
 }

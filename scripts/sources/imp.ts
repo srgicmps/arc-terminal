@@ -248,16 +248,18 @@ export function mergeDay(day: ImpEntry[], now: ImpEntry[], n = TOP): ImpEntry[] 
 	return [...best.values()].sort((a, b) => b.score - a.score).slice(0, n);
 }
 
-/** Medios y enlaces de dos apariciones del mismo tema, sin repetir medio. */
-function joined(a: ImpEntry | undefined, b: ImpEntry): Pick<ImpEntry, 'sources' | 'links'> {
+/** Medios, secciones y enlaces de dos apariciones del mismo tema, sin repetir. */
+function joined(a: ImpEntry | undefined, b: ImpEntry): Pick<ImpEntry, 'sources' | 'sections' | 'links'> {
 	const sources = [...new Set([...(a?.sources ?? []), ...b.sources])];
-	if (!a?.links && !b.links) return { sources };
+	const sections = [...new Set([...(a?.sections ?? []), ...(b.sections ?? [])])];
+	const out: Pick<ImpEntry, 'sources' | 'sections' | 'links'> = sections.length ? { sources, sections } : { sources };
+	if (!a?.links && !b.links) return out;
 	const links = [...(a?.links ?? []), ...(b.links ?? [])].filter((l, i, all) => all.findIndex((m) => m.source === l.source) === i);
-	return { sources, links };
+	return { ...out, links };
 }
 
 /** Lo que se guarda de cada tema en el histórico. Los enlaces, solo el día de hoy (ver `fetch`). */
-const entry = ({ k, title, lang, titleEs, url, sources, score, links }: ImpEntry): ImpEntry => ({
+const entry = ({ k, title, lang, titleEs, url, sources, score, sections, links }: ImpEntry): ImpEntry => ({
 	k,
 	title,
 	...(lang && { lang }),
@@ -265,6 +267,7 @@ const entry = ({ k, title, lang, titleEs, url, sources, score, links }: ImpEntry
 	url,
 	sources,
 	score,
+	...(sections?.length && { sections }),
 	...(links && { links })
 });
 

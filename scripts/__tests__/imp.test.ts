@@ -246,7 +246,8 @@ describe('fuente imp', () => {
 			{ source: 'RTVE', url: 'https://rtve.es/h' },
 			{ source: 'Expansión', url: 'https://expansion.com/h' }
 		]);
-		expect(Object.keys(data.days[1].items[0])).toEqual(['k', 'title', 'url', 'sources', 'score', 'links']);
+		expect(Object.keys(data.days[1].items[0])).toEqual(['k', 'title', 'url', 'sources', 'score', 'sections', 'links']);
+		expect(data.days[1].items[0].sections).toEqual(['es', 'eco']);
 		expect(data.seen).toHaveLength(1);
 	});
 
