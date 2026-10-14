@@ -70,7 +70,7 @@
 					{ series: get('euribor-12m'), name: 'Euríbor 12 meses', decimals: 3 },
 					{ series: get('mortgage-es'), name: 'Hipotecas nuevas España', decimals: 2, inverse: true },
 					{ series: get('mortgage-ea'), name: 'Hipotecas nuevas zona euro', decimals: 2, inverse: true },
-					{ series: get('core-hicp-ea'), name: 'Inflación subyacente zona euro', decimals: 1, inverse: true }
+					{ series: get('hicp-ea'), name: 'Inflación zona euro', decimals: 1, inverse: true }
 				]}
 			/>
 		</Panel>
