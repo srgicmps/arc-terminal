@@ -13,6 +13,10 @@ export function stepRow(count: number, current: number, dir: 1 | -1): number {
 	return Math.min(count - 1, Math.max(0, current + dir));
 }
 
+/** ¿Se está escribiendo? En un campo (p. ej. la calculadora de hipoteca, dentro de una tabla), las teclas son suyas. */
+export const isTyping = (el: { tagName: string; isContentEditable?: boolean } | null) =>
+	!!el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || !!el.isContentEditable);
+
 const visible = (el: Element) => (el as HTMLElement).offsetParent !== null;
 
 /** Lo que recibe el foco en una fila: su primer enlace o botón; si no tiene, la fila misma. */
@@ -27,6 +31,7 @@ function focusRow(row: HTMLElement) {
 export function onRowKey(e: KeyboardEvent): boolean {
 	if (e.ctrlKey || e.metaKey || e.altKey) return false;
 	const active = document.activeElement as HTMLElement | null;
+	if (isTyping(active)) return false;
 	const row = active?.closest<HTMLElement>(ROW_SELECTOR);
 	if (!row) return false;
 	if (isShortcut(e, 'row-open-source')) {

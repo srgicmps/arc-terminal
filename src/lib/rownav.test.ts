@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { stepRow } from './rownav.ts';
+import { isTyping, stepRow } from './rownav.ts';
 
 describe('teclado en listas', () => {
 	it('pasa a la siguiente o la anterior sin salirse', () => {
@@ -12,5 +12,13 @@ describe('teclado en listas', () => {
 		expect(stepRow(5, -1, 1)).toBe(0);
 		expect(stepRow(5, -1, -1)).toBe(4);
 		expect(stepRow(0, -1, 1)).toBe(-1);
+	});
+
+	it('en un campo de texto o número, las teclas son del campo', () => {
+		expect(isTyping({ tagName: 'INPUT' })).toBe(true);
+		expect(isTyping({ tagName: 'SELECT' })).toBe(true);
+		expect(isTyping({ tagName: 'DIV', isContentEditable: true })).toBe(true);
+		expect(isTyping({ tagName: 'A' })).toBe(false);
+		expect(isTyping(null)).toBe(false);
 	});
 });
