@@ -86,7 +86,8 @@ export const uscurve: Source<YieldCurveData> = {
 
 // ---------- Subastas de deuda (Fiscal Data, auctions_query) ----------
 // Una fila por subasta. Las anunciadas que aún no se han hecho vienen con los resultados a «null».
-// Solo bonos y notas (los de 2 a 30 años), que son los que mira el mercado; las letras salen cada semana.
+// Resultados: solo bonos y notas (de 2 a 30 años), que son los que mira el mercado; las letras salen cada
+// semana. En las próximas, todas.
 
 const AUCTIONS_API = 'https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query';
 const AUCTION_FIELDS = [
@@ -160,9 +161,23 @@ export const auctions: Source<AuctionsData> = {
 			// ~2 años: de sobra para tener 6 subastas anteriores de cada plazo (el de 20 años sale cada mes).
 			'page[size]': '250'
 		});
-		const body = await getJson<{ data: RawAuction[] }>(`${AUCTIONS_API}?${params}`);
-		const all = (body.data ?? []).map(toAuction).filter((a): a is Auction => a !== null);
+		// Las próximas, de todos los tipos (letras incluidas): de bonos y notas a veces no hay ninguna anunciada.
+		const today = madridDay();
+		const soon = new URLSearchParams({
+			fields: AUCTION_FIELDS.join(','),
+			filter: `auction_date:gte:${today}`,
+			sort: 'auction_date',
+			'page[size]': '30'
+		});
+		const [body, next] = await Promise.all([
+			getJson<{ data: RawAuction[] }>(`${AUCTIONS_API}?${params}`),
+			getJson<{ data: RawAuction[] }>(`${AUCTIONS_API}?${soon}`)
+		]);
+		const read = (rows: RawAuction[] | undefined) => (rows ?? []).map(toAuction).filter((a): a is Auction => a !== null);
+		const all = read(body.data);
 		if (!all.length) throw new Error('sin subastas');
-		return splitAuctions(all, madridDay());
+		const { recent } = splitAuctions(all, today);
+		const upcoming = read(next.data).filter((a) => a.bidToCover === null);
+		return { upcoming: upcoming.slice(0, 12), recent };
 	}
 };

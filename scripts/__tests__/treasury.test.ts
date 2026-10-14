@@ -113,12 +113,15 @@ describe('auctions', () => {
 
 	it('separa las próximas, ordena las últimas y compara con la media de las 6 anteriores', async () => {
 		const tens = ['2.40', '2.50', '2.60', '2.70', '2.80', '2.90', '3.00'].map((b, i) => row(`2026-0${i + 1}-10`, '10-Year', b));
-		mockFetch(() => ({
-			data: [...tens, row('2026-08-12', '10-Year', '2.10'), row('2026-10-20', '20-Year', 'null'), row('2026-09-01', '30-Year', 'null')]
-		}));
+		const fetch = mockFetch((url) =>
+			url.includes('gte')
+				? { data: [row('2026-10-15', '8-Week', 'null', { security_type: 'Bill' }), row('2026-10-20', '20-Year', 'null')] }
+				: { data: [...tens, row('2026-08-12', '10-Year', '2.10'), row('2026-10-20', '20-Year', 'null')] }
+		);
 		const data = await auctions.fetch(undefined);
-		// La de septiembre sin resultado ya pasó: no es «próxima».
-		expect(data.upcoming.map((a) => a.date)).toEqual(['2026-10-20']);
+		// Las próximas se piden aparte, desde hoy y de todos los tipos (letras incluidas).
+		expect(decodeURIComponent(String(fetch.mock.calls[1][0]))).toContain('filter=auction_date:gte:2026-10-14');
+		expect(data.upcoming.map((a) => `${a.date} ${a.kind}`)).toEqual(['2026-10-15 Bill', '2026-10-20 Note']);
 		expect(data.recent[0]).toMatchObject({ date: '2026-08-12', bidToCover: 2.1, avgBidToCover: 2.75 });
 		// Con menos de 3 anteriores no hay media.
 		expect(data.recent.at(-1)).toMatchObject({ date: '2026-01-10', avgBidToCover: null });

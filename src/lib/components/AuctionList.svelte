@@ -10,9 +10,9 @@
 
 	let { data }: { data: AuctionsData } = $props();
 
-	/** «10-Year» → «10A», «29-Year 10-Month» → «29A 10M»; las de tipo flotante, con «FRN». */
+	/** «10-Year» → «10A», «29-Year 10-Month» → «29A 10M», «8-Week» → «8 sem.»; las de tipo flotante, con «FRN». */
 	function term(a: Auction): string {
-		const t = a.term.replace(/(\d+)-Year/g, '$1A').replace(/(\d+)-Month/g, '$1M');
+		const t = a.term.replace(/(\d+)-Year/g, '$1A').replace(/(\d+)-Month/g, '$1M').replace(/(\d+)-Week/g, '$1 sem.');
 		return a.kind === 'FRN' ? `${t} FRN` : t;
 	}
 
@@ -85,6 +85,7 @@
 
 	/* Bid-to-cover por debajo de su media: poca demanda. Discreto, sin ser una bajada (rojo). */
 	.weak {
-		color: var(--amber-dim);
+		/* --amber-dim lo crea #89; hasta que entre, el ámbar normal. */
+		color: var(--amber-dim, var(--amber));
 	}
 </style>
