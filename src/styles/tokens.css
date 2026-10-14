@@ -106,10 +106,12 @@
 	--col-min-wide: 420px; /* el mismo, en .grid-3 por debajo de 1100 px */
 	--z-popover: 50; /* burbujas del glosario (ⓘ): sobre la cabecera fija, bajo el panel maximizado */
 	--fit-panel-min: 280px; /* «encajar en pantalla»: alto mínimo de un panel (cabecera y unas 9 filas) */
+	--index-chip: 26px; /* chips del índice de paneles del móvil: fila fina */
 	--col-split: 400px; /* ancho mínimo de una subcolumna: una columna de más del doble se parte en dos */
 
 	/* ── Capas (z-index) y fondo atenuado ────────────────────────────────────────────────── */
 	--z-sticky: 1; /* cabeceras fijas dentro de un panel con scroll */
+	--z-bar: 20; /* índice de paneles del móvil, fijo arriba al hacer scroll */
 	--z-modal: 100; /* panel maximizado, por encima de todo */
 	--scrim: rgba(8, 10, 13, 0.72); /* fondo atenuado detrás del panel maximizado */
 	--dur-fast: 120ms; /* aparición breve (se quita con prefers-reduced-motion) */

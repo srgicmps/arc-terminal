@@ -20,6 +20,8 @@
 	import { followPlaceUrl, initPlace } from '#lib/place.svelte.ts';
 	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
 	import { initFolded } from '#lib/folded.svelte.ts';
+	import PanelIndex from '#lib/components/PanelIndex.svelte';
+	import { setPanelIndex } from '#lib/panelindex.svelte.ts';
 	import { tvSymbol } from '#lib/tickers.ts';
 	import { initTaste, taste } from '#lib/taste.svelte.ts';
 	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
@@ -36,6 +38,7 @@
 	// Umbrales cruzados (lote 25): un contador discreto en la barra, con sus nombres al pasar por encima.
 	const crossedRules = $derived(crossedNow());
 	$effect(initFolded);
+	setPanelIndex();
 	$effect(initTaste);
 	$effect(initPlace);
 	// «Tu sitio» por la URL al navegar: ?lugar=… o ?buscar=Tokio.
@@ -261,6 +264,8 @@
 			Hay datos nuevos · <b>Recargar</b>
 		</button>
 	{/if}
+
+	{#if !tv.on}<PanelIndex />{/if}
 
 	<main
 		class:nudged={shift !== 0}

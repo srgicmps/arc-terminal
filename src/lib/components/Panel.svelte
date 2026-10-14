@@ -12,6 +12,7 @@
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import type { Snippet } from 'svelte';
 	import { getModular, type Span } from '#lib/layout.svelte.ts';
+	import { getPanelIndex } from '#lib/panelindex.svelte.ts';
 	import type { ShareSource } from '#lib/share.ts';
 	import Note from './ui/Note.svelte';
 	import Share from './ui/Share.svelte';
@@ -38,6 +39,9 @@
 
 	// La vista modular, si este panel está en una (si no, undefined: el panel se ve como siempre).
 	const modular = getModular();
+	// Índice de paneles del móvil: el panel se apunta mientras está en la página.
+	const index = getPanelIndex();
+	$effect(() => index?.add(title, section));
 	const tools = $derived(modular && id ? modular : null);
 	/** Menú del asa: subir, bajar y ancho. */
 	let menu = $state(false);
@@ -187,6 +191,13 @@
 </section>
 
 <style>
+	/* Al saltar desde el índice de paneles del móvil, el panel queda justo debajo de él. */
+	@media (max-width: 720px) {
+		.panel {
+			scroll-margin-top: calc(var(--index-chip) + var(--sp-16));
+		}
+	}
+
 	/* container-type: lo de dentro se adapta al ancho del panel con @container, no al de la pantalla. */
 	.panel {
 		background: var(--panel);
