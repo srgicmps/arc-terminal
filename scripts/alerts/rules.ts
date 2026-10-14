@@ -5,6 +5,7 @@
 // Para añadir un tipo de aviso: escribir su función aquí y ponerla en RULES con su nivel (P1–P4). Si lee
 // un JSON nuevo, añadirlo a Inputs y a FILES. Si el JSON aún no existe, la regla no aplica (todo se lee
 // de forma tolerante: cualquier campo puede faltar).
+import { createHash } from 'node:crypto';
 import type { SourceHistory, SourceStatus } from '../../src/lib/data.ts';
 import type { FuelData, FuelSpainData, FuelStation } from '../../src/lib/fuel.ts';
 import { bmeHolidays, nyseHolidays } from '../../src/lib/markets.ts';
@@ -16,6 +17,7 @@ import type {
 	CryptoData,
 	Disaster,
 	FedRegData,
+	NewsData,
 	FinnhubData,
 	HolidaysData,
 	PowerData,
@@ -28,12 +30,15 @@ import type {
 import { minute } from '../history.ts';
 import { decide, downSpan, madridTime } from '../issues.ts';
 import {
+	AI_NEWS,
 	ASSETS,
+	CONFLICT,
 	CRISIS,
 	DIESEL,
 	DOWN,
 	DST,
 	EARNINGS_WATCH,
+	ELECTIONS,
 	FEDREG,
 	GAS,
 	IMP_BIG,
@@ -59,8 +64,24 @@ const DAY = 24 * HOUR;
 
 /** Lo que se lee de IMP (scripts/sources/imp.ts, PR #68). Solo lo que hace falta aquí. */
 export interface ImpLike {
-	current?: { k: string; title: string; sources?: string[]; sections?: string[]; score: number; official?: string }[];
-	days?: { date: string; items: { k: string; title: string; sources?: string[]; score: number }[] }[];
+	current?: {
+		k: string;
+		title: string;
+		url?: string;
+		sources?: string[];
+		sections?: string[];
+		score: number;
+		official?: string;
+	}[];
+	days?: { date: string; items: { k: string; title: string; url?: string; sources?: string[]; score: number }[] }[];
+}
+
+/**
+ * Lo que se lee de elections.json (rama claude/elecciones: Election y ElectionsData de src/lib/types.ts).
+ * Solo trae las de hoy en adelante.
+ */
+export interface ElectionsLike {
+	items?: { date: string; country: string; iso: string | null; kind: string; name: string; url?: string }[];
 }
 
 /** Lo que se espera de un futuro gie.json (llenado de los almacenes de gas de la UE, en %). */
@@ -105,6 +126,9 @@ export interface Inputs {
 	fuelEs?: FuelSpainData;
 	fuel?: FuelData;
 	power?: PowerData;
+	elections?: ElectionsLike;
+	newsAi?: NewsData;
+	newsTech?: NewsData;
 	/** No es un archivo: la pone notify.ts a partir del secreto. */
 	zone?: FuelZone;
 }
@@ -132,7 +156,10 @@ export const FILES: Record<Exclude<keyof Inputs, 'zone'>, string> = {
 	holidays: 'holidays',
 	fuelEs: 'fuel-es',
 	fuel: 'fuel',
-	power: 'power'
+	power: 'power',
+	elections: 'elections',
+	newsAi: 'news-ai',
+	newsTech: 'news-tech'
 };
 
 export interface LogEntry {
@@ -383,6 +410,8 @@ export function impRule(d: Inputs, { now }: RuleContext): Draft[] {
 		const media = list(t?.sources).length;
 		const sections = list(t?.sections).length;
 		if (!t?.k || media < IMP_BIG.media || sections < IMP_BIG.sections) return [];
+		// Los conflictos los avisa conflictRule (P1, «⚠ Escalada»): no se repiten aquí.
+		if (CONFLICT.words.test(t.title ?? '')) return [];
 		return [
 			{
 				id: `imp:${t.k}`,
@@ -423,6 +452,44 @@ export function straitRule(d: Inputs, { now, log, update }: RuleContext): Draft[
 				click: `${SITE}/geo`,
 				time: now,
 				commit: (l) => void (l.last[key] = 'low')
+			}
+		];
+	});
+}
+
+/** El tema de IMP es «grande»: IMP_BIG medios y secciones. */
+const impBig = (t: { sources?: string[]; sections?: string[] }) =>
+	list(t.sources).length >= IMP_BIG.media && list(t.sections).length >= IMP_BIG.sections;
+
+/**
+ * Conflictos (P1/P2): un tema de IMP cuyo título habla de ataques, guerra, OTAN… P1 si es «grande» (IMP_BIG;
+ * entonces impRule no lo repite) y P2 con 5 medios o más. Por tema (la k de IMP), un aviso cada 12 h, salvo
+ * que pase de P2 a P1. Id: conflict:<k>:<minuto>.
+ */
+export function conflictRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+	const t0 = minute(now);
+	return list(d.imp?.current).flatMap((t): Draft[] => {
+		if (!t?.k || !CONFLICT.words.test(t.title ?? '')) return [];
+		const media = list(t.sources).length;
+		const level: Level | null = impBig(t) ? 1 : media >= CONFLICT.media ? 2 : null;
+		if (!level) return [];
+		const key = `conflict:${t.k}`;
+		const [at, before] = (log.last[key] ?? '').split('|');
+		const recent = Boolean(at) && now - Date.parse(at) < CONFLICT.waitHours * HOUR;
+		if (recent && !(level === 1 && before === '2')) return [];
+		const sections = list(t.sections).map((x) => x.toUpperCase());
+		return [
+			{
+				id: `${key}:${t0}`,
+				level,
+				title: '⚠ Escalada',
+				body: [`${t.title} · ${media} medios${sections.length ? ` · ${sections.join('/')}` : ''}`, t.url]
+					.filter(Boolean)
+					.join('\n'),
+				tags: 'conflicto',
+				click: t.url || `${SITE}/geo`,
+				time: now,
+				commit: (l) => void (l.last[key] = `${t0}|${level}`)
 			}
 		];
 	});
@@ -595,6 +662,178 @@ export function gasRule(d: Inputs, { now }: RuleContext): Draft[] {
 			time: now
 		}
 	];
+}
+
+// ---------- Elecciones ----------
+
+/** Sin tildes y en minúsculas, para comparar nombres de países con titulares. */
+const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Elección del G20 o de la UE (los mismos países que isMajor de src/lib/elections.ts). */
+export const majorElection = (iso: string | null | undefined) =>
+	!!iso && (ELECTIONS.g20.includes(iso.toUpperCase()) || ELECTIONS.eu.includes(iso.toUpperCase()));
+
+const regionEs = new Intl.DisplayNames(['es'], { type: 'region' });
+const regionEn = new Intl.DisplayNames(['en'], { type: 'region' });
+
+/** Otros nombres con los que salen algunos países en los titulares. */
+const ALIASES: Record<string, string[]> = {
+	US: ['EE. UU.', 'EE.UU.', 'EEUU', 'Estados Unidos', 'US', 'U.S.', 'USA', 'America'],
+	GB: ['Reino Unido', 'UK', 'Britain', 'British'],
+	KR: ['Corea del Sur', 'South Korea'],
+	CZ: ['Chequia', 'República Checa', 'Czech'],
+	NL: ['Países Bajos', 'Holanda', 'Netherlands', 'Dutch']
+};
+
+/** ¿El titular nombra al país (en español o en inglés)? Las siglas cortas, con las mayúsculas exactas. */
+export function namesCountry(title: string, iso: string, country: string): boolean {
+	// Intl devuelve el propio código si no conoce el país: ese no vale como nombre.
+	const intl = [regionEs.of(iso), regionEn.of(iso)].filter((n) => n !== iso);
+	const names = [country, ...intl, ...(ALIASES[iso] ?? [])].filter((n): n is string => !!n);
+	const has = (text: string, name: string) =>
+		new RegExp(`(^|[^\\p{L}])${escapeRe(name)}($|[^\\p{L}])`, 'u').test(text);
+	return names.some((n) => (n.length <= 4 ? has(title, n) : has(fold(title), fold(n))));
+}
+
+const KIND_NAME: Record<string, string> = {
+	general: 'elecciones generales',
+	presidential: 'elecciones presidenciales',
+	referendum: 'referéndum'
+};
+
+/** «Elecciones federales de Alemania de 2025» → «elecciones federales». */
+export function electionName(e: { name: string; country: string; kind: string }): string {
+	let n = String(e.name ?? '')
+		.trim()
+		.replace(/\s+(de\s+)?\d{4}$/i, '');
+	n = n.replace(new RegExp(`\\s+(de|en)\\s+(la\\s+|el\\s+|los\\s+)?${escapeRe(e.country)}$`, 'i'), '');
+	if (!n || fold(n) === fold(e.country) || /\d{4}/.test(n)) return KIND_NAME[e.kind] ?? 'elecciones';
+	return n[0].toLowerCase() + n.slice(1);
+}
+
+/**
+ * Elecciones del G20 y la UE (elections.json, P2). El día de la votación, desde las 8:00 de Madrid: «🗳 Hoy
+ * vota Alemania: elecciones federales». Id: vote:<país>:<día>. Y el resultado: un tema de IMP de ese día o
+ * del siguiente que nombre al país y hable de ganar o de resultados, con 5 medios o más. Como elections.json
+ * solo trae las de hoy en adelante, la votación se apunta en el historial (vote:<país> = día) para
+ * reconocer el resultado al día siguiente. Id: vote-result:<país>:<día>.
+ */
+export function electionRule(d: Inputs, { now, today, log, update }: RuleContext): Draft[] {
+	const yesterday = addDays(today, -1);
+	const out: Draft[] = [];
+	// Votaciones de hoy o de ayer: las apuntadas y las de elections.json.
+	const votes = new Map<string, { iso: string; date: string; country: string }>();
+	for (const [k, date] of Object.entries(log.last)) {
+		const iso = /^vote:([A-Z]{2})$/.exec(k)?.[1];
+		if (!iso) continue;
+		if (date < yesterday) update((l) => void delete l.last[k]);
+		else votes.set(`${iso}|${date}`, { iso, date, country: regionEs.of(iso) ?? iso });
+	}
+	for (const e of list(d.elections?.items)) {
+		if (!e?.iso || !majorElection(e.iso) || (e.date !== today && e.date !== yesterday)) continue;
+		const iso = e.iso.toUpperCase();
+		votes.set(`${iso}|${e.date}`, { iso, date: e.date, country: e.country });
+		if (log.last[`vote:${iso}`] !== e.date) update((l) => void (l.last[`vote:${iso}`] = e.date));
+		if (e.date === today && madrid(now).hm >= ELECTIONS.from) {
+			out.push({
+				id: `vote:${iso}:${e.date}`,
+				title: `🗳 Hoy vota ${e.country}: ${electionName(e)}`,
+				body: `${e.name} (Wikidata).`,
+				tags: 'elecciones',
+				click: `${SITE}/geo`,
+				time: now
+			});
+		}
+	}
+	for (const v of votes.values()) {
+		const days = [v.date, addDays(v.date, 1)];
+		if (!days.includes(today)) continue;
+		const topics = [
+			...list(d.imp?.current),
+			...list(d.imp?.days)
+				.filter((x) => days.includes(x?.date))
+				.flatMap((x) => list(x.items))
+		];
+		const hit = topics.find(
+			(t) =>
+				t?.title &&
+				list(t.sources).length >= ELECTIONS.media &&
+				ELECTIONS.result.test(t.title) &&
+				namesCountry(t.title, v.iso, v.country)
+		);
+		if (!hit) continue;
+		out.push({
+			id: `vote-result:${v.iso}:${v.date}`,
+			title: `🗳 Resultados en ${v.country}`,
+			body: [`${hit.title} · ${list(hit.sources).length} medios`, hit.url].filter(Boolean).join('\n'),
+			tags: 'elecciones',
+			click: hit.url || `${SITE}/geo`,
+			time: now
+		});
+	}
+	return out;
+}
+
+// ---------- IA ----------
+
+/** Enlace comparable: sin protocolo, «www.», parámetros ni barra final. */
+const plainUrl = (u: string) =>
+	u
+		.trim()
+		.toLowerCase()
+		.replace(/^https?:\/\/(www\.)?/, '')
+		.replace(/[?#].*$/, '')
+		.replace(/\/+$/, '');
+const fingerprint = (s: string) => createHash('sha1').update(s).digest('base64url').slice(0, 10);
+
+/**
+ * IA (P2): un grupo de titulares de news-ai.json o news-tech.json (scripts/cluster.ts junta la misma noticia
+ * de varios medios en `also`: el «+N medios» de la web) con 3 medios o más, que nombra a un laboratorio
+ * (OpenAI, Google, Anthropic…) y un lanzamiento. Un aviso por grupo (se apuntan todos sus enlaces, así no
+ * se repite aunque cambie el titular principal) y como mucho 3 al día. Id: ai:<huella del enlace>.
+ */
+export function aiRule(d: Inputs, { now, today, log, update }: RuleContext): Draft[] {
+	// Enlaces ya avisados (ai:u:<huella> = día): se olvidan a los 3 días.
+	for (const [k, day] of Object.entries(log.last)) {
+		if (k.startsWith('ai:u:') && day < addDays(today, -3)) update((l) => void delete l.last[k]);
+	}
+	const usedToday = log.entries.filter(
+		(e) => e.k.startsWith('ai:') && e.s !== 'baseline' && madrid(Date.parse(e.t)).date === today
+	).length;
+	let room = AI_NEWS.perDay - usedToday;
+	const taken = new Set<string>();
+	const out: Draft[] = [];
+	const groups = [...list(d.newsAi?.items), ...list(d.newsTech?.items)]
+		.filter((it) => it?.title && it.url)
+		.map((it) => ({
+			it,
+			media: new Set([it.source, ...list(it.also).map((a) => a?.source)].filter(Boolean)).size
+		}))
+		.sort((a, b) => b.media - a.media);
+	for (const { it, media } of groups) {
+		if (room <= 0) break;
+		if (media < AI_NEWS.media || !AI_NEWS.labs.test(it.title) || !AI_NEWS.launch.test(it.title)) continue;
+		const urls = [it.url, ...list(it.also).map((a) => a?.url)]
+			.filter(Boolean)
+			.map((u) => fingerprint(plainUrl(u)));
+		// La misma noticia sale en IA y en Tecnología, o ya se avisó con otro titular principal.
+		if (urls.some((u) => taken.has(u) || log.last[`ai:u:${u}`])) continue;
+		for (const u of urls) taken.add(u);
+		room--;
+		out.push({
+			id: `ai:${urls[0]}`,
+			title: `IA: ${it.title}`,
+			body: `${it.source} y ${media - 1} medios más.\n${it.url}`,
+			tags: 'robot',
+			click: it.url,
+			time: Date.parse(it.time ?? '') || now,
+			commit: (l) => {
+				for (const u of urls) l.last[`ai:u:${u}`] = today;
+			}
+		});
+	}
+	return out;
 }
 
 // ---------- Diésel ----------
@@ -1149,6 +1388,8 @@ export const RULES: Rule[] = [
 	{ type: 'rate', level: 1, run: rateRule },
 	{ type: 'imp', level: 1, run: impRule },
 	{ type: 'strait', level: 1, run: straitRule },
+	// P1 o P2 según el tema (el nivel lo pone la regla).
+	{ type: 'conflict', level: 1, run: conflictRule },
 	{ type: 'macro', level: 2, run: macroRule },
 	{ type: 'market', level: 2, run: marketRule },
 	{ type: 'fedreg', level: 2, run: fedregRule },
@@ -1156,6 +1397,8 @@ export const RULES: Rule[] = [
 	{ type: 'diesel-trend', level: 2, run: dieselTrendRule },
 	{ type: 'diesel-extreme', level: 2, run: dieselExtremeRule },
 	{ type: 'diesel-gap', level: 2, run: dieselGapRule },
+	{ type: 'election', level: 2, run: electionRule },
+	{ type: 'ai', level: 2, run: aiRule },
 	{ type: 'poly', level: 3, run: polyRule },
 	{ type: 'earnings', level: 3, run: earningsRule },
 	{ type: 'crisis', level: 3, run: crisisRule },
