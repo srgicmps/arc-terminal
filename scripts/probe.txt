@@ -13,7 +13,12 @@ https://marine-api.open-meteo.com/v1/marine?latitude=40.09%2C39.87&longitude=4.1
 https://marine-api.open-meteo.com/v1/marine?latitude=40.06%2C39.89&longitude=4.13%2C4.07&current=wave_height%2Cswell_wave_height
 # WX: avisos de MeteoAlarm para España (se filtra Menorca)
 https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-spain
+# ECO: reuniones del BCE y de la Fed (calendarios oficiales y mercados de Polymarket)
+https://gamma-api.polymarket.com/events?active=true&closed=false&limit=6&order=volume24hr&ascending=false&tag_slug=fed-rates
+https://gamma-api.polymarket.com/events?active=true&closed=false&limit=20&order=volume24hr&ascending=false&tag_slug=economy ~ ecb|fed decision|fomc
+https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm ~ \d{4} FOMC Meetings.{0,400}
+https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html ~ .{0,30}Monetary policy meeting.{0,40}
 # AGUA: sequía en Europa (EDO, Copernicus) y reserva de los embalses de España
-https://drought.emergency.copernicus.eu/api/wms?SERVICE=WMS&REQUEST=GetCapabilities ~ <Name>cdi[^<]*</Name>|Combined Drought|<Dimension[^>]*>[^<]*
-https://drought.emergency.copernicus.eu/api/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=cdiad&STYLES=&SRS=EPSG:4326&BBOX=-25,34,45,72&WIDTH=600&HEIGHT=330&FORMAT=image/png&TRANSPARENT=true ~ PNG|ServiceException|<[^>]*>[^<]{0,200}
+https://drought.emergency.copernicus.eu/api/wms?SERVICE=WMS&REQUEST=GetCapabilities ~ \bcdi\w*\b.{0,160}|Combined Drought.{0,160}
+https://drought.emergency.copernicus.eu/api/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=cdiad&STYLES=&SRS=EPSG:4326&BBOX=-25,34,45,72&WIDTH=600&HEIGHT=330&FORMAT=image/png&TRANSPARENT=true ~ PNG|IHDR|ServiceException.{0,300}|msWMS.{0,300}
 https://www.miteco.gob.es/content/dam/miteco/es/agua/temas/evaluacion-de-los-recursos-hidricos/boletin-hidrologico/Historico-de-embalses/BD-Embalses.zip ~ [A-Za-z0-9_ .-]+\.(mdb|accdb|csv|xlsx?|txt|json)
