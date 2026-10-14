@@ -8,6 +8,7 @@ import type { Mention } from '#lib/news.ts';
 import type {
 	AdvisoriesData,
 	EuPowerData,
+	FoodInsecurity,
 	GdacsEvent,
 	ImfData,
 	IodaOutage,
@@ -22,7 +23,7 @@ import type { PageServerLoad } from './$types';
 // cifras que pinta cada una (último dato y anterior), no las series enteras. Los países sin ningún dato no
 // van; los titulares llegan ya repartidos por país (scripts/news-index.ts → news-countries.json).
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news, advisories, eupower, sipri, gdacs, ioda, who] = await Promise.all([
+	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news, advisories, eupower, sipri, gdacs, ioda, who, food] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -36,7 +37,8 @@ export const load: PageServerLoad = async () => {
 		dataset<MilexData>('sipri'),
 		dataset<GdacsEvent[]>('gdacs'),
 		dataset<IodaOutage[]>('ioda'),
-		dataset<OutbreakNews[]>('who-don')
+		dataset<OutbreakNews[]>('who-don'),
+		dataset<FoodInsecurity[]>('fewsnet')
 	]);
 	const sets = {
 		series: [eurostat, ecb, bls, fred, bis].flatMap((d) => d?.data.series ?? []),
@@ -65,6 +67,9 @@ export const load: PageServerLoad = async () => {
 		travelAt: advisories?.fetchedAt,
 		// Riesgo: catástrofes (GDACS), caída de internet (IODA) y brotes (OMS) de cada país, solo los que tienen algo.
 		risks: countryRisks({ gdacs: gdacs?.data, ioda: ioda?.data, who: who?.data }, Date.now()),
+		// Hambre aguda (FEWS NET): el dato de cada país que conoce la terminal.
+		food: Object.fromEntries((food?.data ?? []).filter((f) => COUNTRIES.some((c) => c.code === f.code)).map((f) => [f.code, f])),
+		foodAt: food?.fetchedAt ?? null,
 		riskAt: { gdacs: gdacs?.fetchedAt, ioda: ioda?.fetchedAt, who: who?.fetchedAt },
 		eupower: eupower?.data.zones ?? [],
 		eupowerAt: eupower?.fetchedAt,
