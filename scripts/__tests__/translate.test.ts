@@ -234,3 +234,11 @@ it('IMP marca en inglés los temas cuyo titular principal lo está', () => {
 	);
 	expect(groups[0].lang).toBe('en');
 });
+
+it('la fuente translations va en una oleada posterior a IMP', async () => {
+	const { waves } = await import('../lib.ts');
+	const { imp } = await import('../sources/imp.ts');
+	const { translations } = await import('../sources/translate.ts');
+	const order = waves([translations, imp]).map((w) => w.map((s) => s.name));
+	expect(order).toEqual([['imp'], ['translations']]);
+});
