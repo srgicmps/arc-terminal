@@ -6,6 +6,7 @@
 	Dentro de una <ModularGrid>, si tiene id, la cabecera lleva además el asa ⋮⋮ y el ✕.
 -->
 <script lang="ts">
+	import { isShortcut } from '#lib/shortcuts.ts';
 	import type { Snippet } from 'svelte';
 	import { getModular, type Span } from '#lib/layout.svelte.ts';
 	import type { ShareSource } from '#lib/share.ts';
@@ -53,7 +54,7 @@
 
 	/** M con el foco en el título: abre o cierra. No llega a la barra de comandos (que escribiría la m). */
 	function titleKeydown(e: KeyboardEvent) {
-		if ((e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+		if (isShortcut(e, 'panel') && !e.ctrlKey && !e.metaKey && !e.altKey) {
 			e.preventDefault();
 			e.stopPropagation();
 			if (max) close();

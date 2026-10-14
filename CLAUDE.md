@@ -34,6 +34,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   acumular historial (gasolina, luz). Los tipos compartidos están en `src/lib/types.ts` y `src/lib/fuel.ts`.
 - Cada vista lee sus datos en `+page.ts` con `dataset('nombre')` (`src/lib/data.ts`).
 - Componentes comunes en `src/lib/components/` (Panel, NewsList, SeriesTable, LineChart, TvWidget…).
+- Atajos de teclado: registro único en `src/lib/shortcuts.ts` (`SHORTCUTS` + `isShortcut`). De ahí salen HELP, el MANUAL y las teclas que escuchan la barra, los paneles y el modo TV.
 - `scripts/probe.ts` + `scripts/probe.txt`: en los PR que tocan `scripts/`, la Action consulta esas URL y deja la
   respuesta en el registro. Sirve para explorar APIs nuevas cuando el entorno de desarrollo no tiene red.
 - **Probar una fuente sin la pasada completa**: Actions → «Publicar en Pages» → Run workflow, con «fuentes»
