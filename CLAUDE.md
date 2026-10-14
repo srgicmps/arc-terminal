@@ -120,7 +120,8 @@ La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`)
 | `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
 
 \* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`):
-sin ella el panel no sale y no se rompe nada.
+sin ella el panel no sale y no se rompe nada. `MYMEMORY_EMAIL` (también opcional) traduce al español los
+titulares en inglés (`scripts/translate.ts`); sin él, siguen en inglés.
 
 ## Plan por fases
 1. ~~**Esqueleto publicado**: proyecto SvelteKit + GitHub Action que construye y publica en Pages.~~ Hecho.

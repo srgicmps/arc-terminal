@@ -64,3 +64,6 @@ https://www.bis.org/doclist/cbspeeches.rss
 # WS: subastas de deuda de EE. UU. (Fiscal Data)
 https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/upcoming_auctions?page[size]=3
 https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?sort=-auction_date&page[size]=2
+# Traducción de titulares: MyMemory sin correo (comprueba la forma de la respuesta) y sus límites de uso
+https://api.mymemory.translated.net/get?q=Oil%20prices%20rise%20as%20Middle%20East%20tensions%20grow&langpair=en%7Ces
+https://mymemory.translated.net/doc/usagelimits.php ~ .{0,250}(chars|characters|words)/?\s*(per\s*)?day.{0,250}

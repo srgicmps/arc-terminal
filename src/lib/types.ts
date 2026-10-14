@@ -105,6 +105,10 @@ export interface NewsItem {
 	/** ISO 8601, o null si el feed no trae fecha. */
 	time: string | null;
 	summary: string;
+	/** 'en' si el medio publica en inglés (scripts/sources/news.ts). */
+	lang?: 'en';
+	/** El titular traducido al español (scripts/translate.ts), si lo hay. */
+	titleEs?: string;
 	/** La misma noticia en otros medios (scripts/cluster.ts), sin el de `source`. */
 	also?: { source: string; url: string }[];
 }
@@ -482,6 +486,9 @@ export interface ImpEntry {
 	/** Clave estable del tema entre pasadas y días (para desduplicar). */
 	k: string;
 	title: string;
+	/** 'en' si el titular está en inglés, y su traducción (scripts/translate.ts). */
+	lang?: 'en';
+	titleEs?: string;
 	url: string;
 	/** Medios distintos que lo dan. */
 	sources: string[];
