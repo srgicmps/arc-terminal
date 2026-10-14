@@ -1,7 +1,7 @@
 // Gasolineras de Menorca: API abierta de precios de carburantes del Ministerio para la Transición
 // Ecológica (sin clave). Reutilización libre citando la fuente y la fecha de los datos.
 import type { FuelData, FuelKey, FuelStation } from '../../src/lib/fuel.ts';
-import { appendDaily, getJson, madridDay, num, type Source } from '../lib.ts';
+import { appendDaily, getJson, madridDay, num, tidy, type Source } from '../lib.ts';
 
 // Estaciones de la provincia 07 (Illes Balears). No necesita clave.
 const API_URL =
@@ -16,23 +16,6 @@ type RawStation = Record<string, string | undefined>;
 interface RawResponse {
 	Fecha: string;
 	ListaEESSPrecio: RawStation[];
-}
-
-const SMALL_WORDS = new Set(['de', 'del', 'la', 'las', 'el', 'los', 'y', 'a', 'en', 's/n']);
-
-/** La API escribe muchos textos en mayúsculas: «CARRETERA ME-1 KM 12» → «Carretera ME-1 Km 12». */
-function tidy(value: string | undefined, keepShort = false): string {
-	const text = (value ?? '').trim().replace(/\s+/g, ' ');
-	if (text !== text.toUpperCase()) return text;
-	return text
-		.toLowerCase()
-		.split(' ')
-		.map((word, i) => {
-			if (i > 0 && SMALL_WORDS.has(word)) return word;
-			if (/\d/.test(word) || (keepShort && word.length <= 3)) return word.toUpperCase();
-			return word.charAt(0).toUpperCase() + word.slice(1);
-		})
-		.join(' ');
 }
 
 /** «Mercadal (Es)» → «Es Mercadal». */

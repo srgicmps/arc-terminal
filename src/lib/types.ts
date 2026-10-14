@@ -211,3 +211,35 @@ export interface WikiData {
 	mostRead: WikiPage[];
 	onThisDay: { year: number; text: string; url: string }[];
 }
+
+// ---------- Riesgos naturales: huracanes (NOAA) y eventos (NASA EONET) ----------
+
+export interface Storm {
+	id: string;
+	name: string;
+	/** HU huracán, TS tormenta tropical, TD depresión… */
+	classification: string;
+	/** Viento máximo sostenido, en nudos. */
+	knots: number;
+	pressure: number;
+	lat: number;
+	lon: number;
+	updated: string;
+	url: string;
+}
+
+export interface NaturalEvent {
+	id: string;
+	title: string;
+	category: string;
+	date: string;
+	url: string;
+	lat: number;
+	lon: number;
+	magnitude: string;
+}
+
+export interface HazardsData {
+	storms: Storm[];
+	events: NaturalEvent[];
+}

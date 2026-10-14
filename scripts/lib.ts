@@ -133,3 +133,21 @@ export function appendDaily<P extends { date: string }>(history: P[] | undefined
 	const rest = (history ?? []).filter((p) => p.date !== point.date);
 	return [...rest, point].sort((a, b) => a.date.localeCompare(b.date)).slice(-keep);
 }
+
+const SMALL_WORDS = new Set(['de', 'del', 'la', 'las', 'el', 'los', 'y', 'a', 'en', 's/n']);
+
+/** La API escribe muchos textos en mayúsculas: «CARRETERA ME-1 KM 12» → «Carretera ME-1 Km 12». */
+export function tidy(value: string | undefined, keepShort = false): string {
+	const text = (value ?? '').trim().replace(/\s+/g, ' ');
+	if (text !== text.toUpperCase()) return text;
+	return text
+		.toLowerCase()
+		.split(' ')
+		.map((word, i) => {
+			if (i > 0 && SMALL_WORDS.has(word)) return word;
+			if (/^(n|s|e|w|o|ne|nw|se|sw|no|so|nne|nnw|sse|ssw|ene|ese|wnw|wsw)$/.test(word)) return word.toUpperCase();
+			if (/\d/.test(word) || (keepShort && word.length <= 3)) return word.toUpperCase();
+			return word.charAt(0).toUpperCase() + word.slice(1);
+		})
+		.join(' ');
+}

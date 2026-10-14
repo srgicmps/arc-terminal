@@ -1,4 +1,5 @@
 <script lang="ts">
+	import HazardList from '#lib/components/HazardList.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
@@ -28,9 +29,17 @@
 		<Panel title="Gobiernos e instituciones" meta="Comunicados oficiales">
 			<NewsList items={data.gov?.data.items.slice(0, 15) ?? []} />
 		</Panel>
-		<Panel title="Terremotos" meta="M4,5+ · últimos 7 días">
+		<Panel title="Terremotos en el mundo" meta="M4,5+ · últimos 7 días">
 			<QuakeTable quakes={strongest} />
 			{#snippet note()}Fuente: USGS · <Updated at={data.quakes?.fetchedAt} />{/snippet}
+		</Panel>
+		<Panel title="Terremotos en España" meta="Últimos 10 días · los 15 más fuertes">
+			<QuakeTable quakes={[...(data.quakesEs?.data ?? [])].sort((a, b) => b.mag - a.mag).slice(0, 15)} />
+			{#snippet note()}Fuente: Instituto Geográfico Nacional · <Updated at={data.quakesEs?.fetchedAt} />{/snippet}
+		</Panel>
+		<Panel title="Huracanes, incendios y volcanes" meta="Activos ahora">
+			{#if data.hazards}<HazardList hazards={data.hazards.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
+			{#snippet note()}Fuentes: NOAA (Centro Nacional de Huracanes) y NASA EONET · <Updated at={data.hazards?.fetchedAt} />{/snippet}
 		</Panel>
 	</div>
 </div>

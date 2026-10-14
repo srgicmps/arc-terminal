@@ -225,41 +225,6 @@
 		font-size: var(--fs-s);
 	}
 
-	.tiles {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 1px;
-		background: var(--line);
-		border-bottom: 1px solid var(--line);
-	}
-
-	.tile {
-		background: var(--panel);
-		padding: 12px;
-		display: flex;
-		flex-direction: column;
-		gap: 3px;
-		min-width: 0;
-	}
-
-	.tile .lbl {
-		color: var(--muted);
-		font-size: var(--fs-xs);
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-	}
-
-	.tile b {
-		font-size: var(--fs-xl);
-		font-weight: 500;
-	}
-
-	.tile .sub {
-		color: var(--muted);
-		font-family: var(--sans);
-		font-size: var(--fs-s);
-	}
-
 	a.name {
 		color: inherit;
 		text-decoration: none;
@@ -298,9 +263,4 @@
 		}
 	}
 
-	@media (max-width: 720px) {
-		.tiles {
-			grid-template-columns: minmax(0, 1fr);
-		}
-	}
 </style>

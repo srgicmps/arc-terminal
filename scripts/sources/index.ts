@@ -6,6 +6,7 @@ import { ecb } from './ecb.ts';
 import { eurostat } from './eurostat.ts';
 import { fedreg } from './fedreg.ts';
 import { fuel } from './fuel.ts';
+import { hazards, quakesEs } from './hazards.ts';
 import { newsSources } from './news.ts';
 import { uscurve, usdebt } from './treasury.ts';
 import { wiki } from './wiki.ts';
@@ -26,6 +27,8 @@ export const sources: Source<any>[] = [
 	uscurve,
 	// Mundo
 	quakes,
+	quakesEs,
+	hazards,
 	weather,
 	crypto,
 	hn,
