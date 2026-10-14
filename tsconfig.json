@@ -3,7 +3,7 @@
 	"compilerOptions": {
 		"strict": true
 	},
-	"include": ["src", "scripts", "vite.config.ts"],
+	"include": ["src", "scripts", "vite.config.ts", "vitest.config.ts"],
 	// El service worker tiene su propio tsconfig (otro entorno: WebWorker, sin DOM).
 	"exclude": ["src/service-worker"]
 }

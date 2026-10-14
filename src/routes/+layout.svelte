@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { asset, resolve } from '$app/paths';
-	import { page } from '$app/state';
+	import { page, updated } from '$app/state';
 	import { startClock } from '#lib/clock.svelte.ts';
 	import { COMMANDS } from '#lib/commands.ts';
 	import Clocks from '#lib/components/Clocks.svelte';
@@ -76,12 +76,19 @@
 		<TvWidget widget="ticker-tape" config={tape} height={44} credit={false} />
 	</div>
 
+	<!-- Aviso discreto cuando la Action ha publicado una versión nueva (datos o mejoras). -->
+	{#if updated.current}
+		<button class="fresh" type="button" onclick={() => location.reload()}>
+			Hay datos nuevos · <b>Recargar</b>
+		</button>
+	{/if}
+
 	<main>
 		{@render children()}
 	</main>
 
 	<footer class="status">
-		<span>Datos públicos actualizados cada 30 min con GitHub Actions · cotizaciones de TradingView</span>
+		<span>Datos públicos actualizados cada 15 min con GitHub Actions · cotizaciones de TradingView</span>
 		<a href={resolve('/status')}>Estado de las fuentes</a>
 		<span><kbd>/</kbd> comando · <kbd>Esc</kbd> portada</span>
 	</footer>
@@ -187,6 +194,24 @@
 
 	main {
 		padding-bottom: 16px;
+	}
+
+	.fresh {
+		position: fixed;
+		right: 16px;
+		bottom: 16px;
+		z-index: 30;
+		background: var(--raise);
+		border: 1px solid var(--amber-edge);
+		color: var(--muted);
+		padding: 7px 12px;
+		font-size: var(--fs-s);
+		cursor: pointer;
+	}
+
+	.fresh b {
+		color: var(--amber);
+		font-weight: 500;
 	}
 
 	.status {

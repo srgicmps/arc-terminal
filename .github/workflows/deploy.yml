@@ -6,11 +6,11 @@ on:
     branches: [main]
   # En los PR solo construye (con datos reales), sin publicar: sirve de prueba antes del merge.
   pull_request:
-  # Cada 30 minutos, para refrescar los datos. Minutos 7 y 37 para evitar las horas en punto,
-  # cuando GitHub va más cargado. Ojo: GitHub desactiva los cron de un repo público tras
+  # Cada 15 minutos, para refrescar los datos. Minutos 7, 22, 37 y 52 para evitar las horas en
+  # punto, cuando GitHub va más cargado. Ojo: GitHub desactiva los cron de un repo público tras
   # 60 días sin actividad.
   schedule:
-    - cron: '7,37 * * * *'
+    - cron: '7,22,37,52 * * * *'
   # Permite lanzarla a mano desde la pestaña Actions.
   workflow_dispatch:
 
@@ -49,6 +49,7 @@ jobs:
           SAMPLE: ${{ github.event_name == 'pull_request' && '1' || '' }}
 
       - run: pnpm check
+      - run: pnpm test
       - run: pnpm build --logLevel warn
 
       # Solo en los PR: explora las URL de scripts/probe.txt (herramienta de desarrollo).
