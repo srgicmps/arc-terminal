@@ -16,7 +16,8 @@
 	import { initMode, mode, toggleMode } from '#lib/layout.svelte.ts';
 	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
 	import { initPlace } from '#lib/place.svelte.ts';
-	import { initWatchlist } from '#lib/watchlist.svelte.ts';
+	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
+	import { tvSymbol } from '#lib/tickers.ts';
 	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
 	import { parseTv, routeOf } from '#lib/tv.ts';
 	import type { LayoutProps } from './$types';
@@ -95,6 +96,12 @@
 		showSymbolLogo: false,
 		displayMode: 'compact'
 	};
+	// Si en MIS has elegido llevar tu lista a la cinta (y tiene algo), la cinta enseña tus valores.
+	const tapeConfig = $derived(
+		watchlist.tape && watchlist.codes.length
+			? { ...tape, symbols: watchlist.codes.map((code) => ({ proName: tvSymbol(code), title: code })) }
+			: tape
+	);
 </script>
 
 <svelte:window bind:online onkeydowncapture={onTvKey} onpointerdown={onTvTap} />
@@ -166,7 +173,7 @@
 	</nav>
 
 	<div class="tape">
-		<TvWidget widget="ticker-tape" config={tape} height={44} credit={false} />
+		<TvWidget widget="ticker-tape" config={tapeConfig} height={44} credit={false} />
 	</div>
 
 	<!-- Aviso discreto cuando la Action ha publicado una versión nueva (datos o mejoras). -->
@@ -642,6 +649,19 @@
 
 		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:last-child:nth-child(odd)) {
 			grid-column: 1 / -1;
+		}
+	}
+
+	/* Informe impreso (TOP, IMP…): solo el contenido, sin cabecera, barras, cinta de cotizaciones ni pie. */
+	@media print {
+		.top,
+		.keys,
+		.tape,
+		.thumb,
+		.status,
+		.tv-progress,
+		.tv-chip {
+			display: none;
 		}
 	}
 </style>
