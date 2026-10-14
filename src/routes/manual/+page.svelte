@@ -8,6 +8,7 @@
 -->
 <script lang="ts">
 	import { onMount, type Snippet } from 'svelte';
+	import { asset } from '$app/paths';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
@@ -25,11 +26,16 @@
 		PLACE,
 		sectionText,
 		STOCK,
+		thumbSlug,
 		type GuideSection
 	} from '#lib/manual.ts';
 	import { PREFS } from '#lib/prefs.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import { keyJoin, SHORTCUTS, type ShortcutGroup } from '#lib/shortcuts.ts';
+
+	let { data } = $props();
+	/** Miniaturas que hay en static/manual/ (+page.server.ts): sin la suya, la ficha sale sin imagen. */
+	const thumbs = $derived(new Set(data.thumbs));
 
 	let query = $state('');
 	const searching = $derived(query.trim() !== '');
@@ -140,8 +146,20 @@
 
 {#snippet commandBlock(c: Command)}
 	{@const m = c.manual}
+	{@const thumb = thumbSlug(c.route)}
 	<div class="col" id="cmd-{c.code}">
 		<Panel title="{c.code} · {c.key}" meta={c.desc} jump={{ code: c.code, href: routeHref(c.route) }}>
+			{#if thumbs.has(thumb)}
+				<a class="thumb" href={routeHref(c.route)}>
+					<img
+						src={asset(`manual/${thumb}.jpg` as Parameters<typeof asset>[0])}
+						alt="Vista {c.code}"
+						loading="lazy"
+						width="480"
+						height="300"
+					/>
+				</a>
+			{/if}
 			{#if m}
 				<p class="what">{m.what}</p>
 				{#each m.args ?? [] as a (a.label)}
@@ -369,6 +387,26 @@
 		scroll-margin-top: var(--sp-16);
 	}
 
+	/* Miniatura de la vista (scripts/thumbs.ts): 1280×800 reducida a 480×300. En el móvil, todo el ancho. */
+	.thumb {
+		display: block;
+		padding: var(--row-y) var(--pad-x) 0;
+	}
+
+	.thumb img {
+		display: block;
+		width: 100%;
+		max-width: 240px;
+		height: auto;
+		aspect-ratio: 8 / 5;
+		border: var(--border);
+		background: var(--bg);
+	}
+
+	.thumb:hover img {
+		border-color: var(--amber);
+	}
+
 	.what {
 		margin: 0;
 		padding: var(--row-y) var(--pad-x) 0;
@@ -477,6 +515,10 @@
 
 	/* En el móvil, cada sección es un acordeón: un poco más de alto pulsable en el título. */
 	@media (max-width: 720px) {
+		.thumb img {
+			max-width: none;
+		}
+
 		.sec {
 			margin-bottom: 0;
 			border-bottom: var(--border);
