@@ -83,6 +83,36 @@
 		};
 	});
 
+	// Materias primas y bonos a 10 años del mundo (widget «market-quotes»). Símbolos de TradingView:
+	// futuros continuos («1!») donde no hay índice de contado.
+	const COMMODITIES = [
+		{ name: 'TVC:UKOIL', displayName: 'Brent' },
+		{ name: 'TVC:USOIL', displayName: 'WTI' },
+		{ name: 'ICEEUR:TFM1!', displayName: 'Gas TTF (Europa)' },
+		{ name: 'NYMEX:NG1!', displayName: 'Gas Henry Hub (EE. UU.)' },
+		{ name: 'TVC:GOLD', displayName: 'Oro' },
+		{ name: 'TVC:SILVER', displayName: 'Plata' },
+		{ name: 'COMEX:HG1!', displayName: 'Cobre' },
+		{ name: 'CBOT:ZW1!', displayName: 'Trigo' },
+		{ name: 'CBOT:ZC1!', displayName: 'Maíz' }
+	];
+	const BONDS = [
+		{ name: 'TVC:US10Y', displayName: 'EE. UU.' },
+		{ name: 'TVC:DE10Y', displayName: 'Alemania' },
+		{ name: 'TVC:GB10Y', displayName: 'Reino Unido' },
+		{ name: 'TVC:JP10Y', displayName: 'Japón' },
+		{ name: 'TVC:IT10Y', displayName: 'Italia' },
+		{ name: 'TVC:ES10Y', displayName: 'España' },
+		{ name: 'TVC:FR10Y', displayName: 'Francia' },
+		{ name: 'TVC:CN10Y', displayName: 'China' }
+	];
+	const quotes = (name: string, symbols: { name: string; displayName: string }[]) => ({
+		showSymbolLogo: false,
+		symbolsGroups: [{ name, symbols }]
+	});
+	/** Alto para que quepan todas las filas sin barra de desplazamiento (como en MIS). */
+	const quotesHeight = (n: number) => 90 + n * 46;
+
 	const heatmap = {
 		dataSource: 'SPX500',
 		grouping: 'sector',
@@ -107,6 +137,12 @@
 	<div class="col">
 		<Panel title="Mercados" meta="En directo">
 			<TvWidget widget="market-overview" config={overview} height={520} />
+		</Panel>
+		<Panel title="Materias primas" meta="Futuros y contado · en directo">
+			<TvWidget widget="market-quotes" config={quotes('Materias primas', COMMODITIES)} height={quotesHeight(COMMODITIES.length)} />
+		</Panel>
+		<Panel title="Bonos a 10 años" meta="Rentabilidad · en directo">
+			<TvWidget widget="market-quotes" config={quotes('Bonos a 10 años', BONDS)} height={quotesHeight(BONDS.length)} />
 		</Panel>
 	</div>
 </div>
