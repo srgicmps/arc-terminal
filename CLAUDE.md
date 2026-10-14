@@ -130,3 +130,4 @@ Cuando termine una fase, actualiza esta lista.
 - Festivos locales de Menorca: Sergi ha decidido no añadirlos.
 - Formato y lint en CI (Prettier + ESLint): un PR propio, cuando haya pocas ramas abiertas.
 - Descartadas: GDELT (429 desde Actions) y RSS de la CNMV (no responde).
+- ReliefWeb: falta el appname aprobado (RELIEFWEB_APPNAME); aparcado por Sergi.
