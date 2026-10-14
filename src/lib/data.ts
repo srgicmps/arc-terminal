@@ -21,8 +21,6 @@ export interface SourceStatus {
 	/** Cada cuánto se refresca como mucho (maxAgeMinutes de scripts/sources). Lo usa <Updated>. */
 	maxAgeMinutes?: number;
 	error?: string;
-	/** Minutos durante los que se reutiliza la copia publicada sin volver a descargar. */
-	maxAgeMinutes?: number;
 	/** Clave de GitHub Secrets que necesita, si necesita alguna. */
 	requires?: string;
 }
