@@ -71,6 +71,18 @@ festivos y cambio de hora). Tope: 50 al día, a cualquier hora. La zona va en Se
 6. **Stablecoins**: capitalización de USDT, USDC… con DefiLlama (sin clave).
 7. **Exportar a CSV** cualquier tabla.
 
+## 2b. Mejora continua 3, lote 2 (comandos): preparado, SIN aprobar todavía
+
+Todo pequeño y sin fuentes nuevas (commands.ts, cmdline.ts, CommandBar y tests). Orden de prioridad:
+- **C8** Mnemónicos de Bloomberg como alias: WEI → WS, FXC → WS (divisas), GC/YCRV → WS (curva), WIRP → ECO,
+  ECOW/EVTS → CAL, N/CN → NEWS, BI → AI. Y una columna «Equivalente Bloomberg» en HELP.
+- **C10** Calculadora y conversor en la barra: «=1250*1.21» y «100 USD EUR» (cambios del BCE de src/lib/fx.ts),
+  con un parser propio, sin eval.
+- **C9** Ir a un panel: «ECO TIPOS», «WS CURVA» → abre la vista con #ancla y resalta el panel.
+- **C11** Ayuda de un comando («ECO ?», «HELP FUEL»). Se junta con MANUAL: que sea la ficha de ese comando en el manual.
+- **C12** Fechas en los argumentos: «LUZ mañana», «CAL viernes», «WX sábado» (en hora de Madrid). «BOE ayer»,
+  cuando esté M17 (BOE de la semana).
+
 ## 3. Decisiones de Sergi que hay que respetar
 
 - Arc Terminal es **mundial**: nada nuevo centrado en Menorca, salvo los puertos AIS de Maó y Ciutadella.
