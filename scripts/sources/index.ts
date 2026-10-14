@@ -8,6 +8,7 @@ import { bis } from './bis.ts';
 import { boe } from './boe.ts';
 import { ecb } from './ecb.ts';
 import { eurostat } from './eurostat.ts';
+import { fao } from './fao.ts';
 import { fedreg } from './fedreg.ts';
 import { finnhub } from './finnhub.ts';
 import { fred } from './fred.ts';
@@ -46,6 +47,7 @@ export const sources: Source<any>[] = [
 	ecb,
 	bis,
 	eurostat,
+	fao,
 	// EE. UU.
 	fedreg,
 	sanctions,
