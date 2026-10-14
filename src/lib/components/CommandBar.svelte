@@ -1,5 +1,6 @@
 <!--
 	Barra de comandos: escribes ECO, FUEL o un valor (NVDA) y se abre. Sugerencias con ↑ ↓ e Intro.
+	También busca (como Ctrl+K) en titulares, BOE y valores: el índice se carga al enfocarla por primera vez.
 	Atajos globales: «/» o empezar a escribir enfoca la barra; Esc vuelve a la portada.
 -->
 <script lang="ts">
@@ -17,6 +18,9 @@
 		writeHistory,
 		type Option
 	} from '#lib/cmdline.ts';
+	import { dataset } from '#lib/data.ts';
+	import { prepare, searchOptions, type Indexed } from '#lib/search.ts';
+	import type { SearchEntry } from '#lib/types.ts';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
 
@@ -44,23 +48,41 @@
 	// Últimos comandos ejecutados: se leen de localStorage al enfocar la barra (nunca al prerenderizar).
 	let recent = $state<string[]>([]);
 
-	// Con la barra vacía, el historial; al escribir, las sugerencias.
-	const options = $derived(value.trim() ? suggest(value, ALL) : historyOptions(recent));
+	// Índice de búsqueda (static/data/search.json). null hasta que se enfoca la barra la primera vez:
+	// dataset() lo pide en ese momento (Vite lo deja en un trozo aparte), no al cargar la página.
+	let index = $state.raw<Indexed[] | null>(null);
+	let indexRequested = false;
+	function loadIndex() {
+		if (indexRequested) return;
+		indexRequested = true;
+		dataset<SearchEntry[]>('search')
+			.then((d) => (index = prepare(Array.isArray(d?.data) ? d.data : [])))
+			.catch(() => (index = []));
+	}
+
+	// Con la barra vacía, el historial; al escribir, las sugerencias y debajo los resultados de búsqueda.
+	const suggestions = $derived(value.trim() ? suggest(value, ALL) : historyOptions(recent));
+	const results = $derived(searchOptions(value, suggestions, index));
+	const options = $derived([...suggestions, ...results]);
 
 	// Al abrir la hoja desde la barra inferior del móvil, el cursor va directo a la barra.
 	$effect(() => {
 		if (ui.sheet) input.focus();
 	});
 
-	function run(raw: string) {
-		// Se calcula antes de vaciar la barra: las sugerencias dependen de lo escrito.
-		const target = resolveInput(raw, suggest(raw, ALL));
+	function close() {
 		ui.sheet = false;
 		value = '';
 		open = false;
 		selected = -1;
 		moved = false;
 		input.blur();
+	}
+
+	function run(raw: string) {
+		// Se calcula antes de vaciar la barra: las sugerencias dependen de lo escrito.
+		const target = resolveInput(raw, suggest(raw, ALL));
+		close();
 		if (!target) return;
 		recent = pushHistory(readHistory(), canonical(target));
 		writeHistory(recent);
@@ -97,9 +119,19 @@
 	/** Lo que se ejecuta al elegir una sugerencia: su código o, en el historial, la entrada guardada. */
 	const pick = (o: Option) => o.run ?? o.code;
 
+	/** Abre una opción: un titular o el BOE, en una pestaña nueva; lo demás, como un comando. */
+	function choose(o: Option) {
+		if (!o.url) return run(pick(o));
+		window.open(o.url, '_blank', 'noopener');
+		close();
+	}
+
 	function onsubmit(e: SubmitEvent) {
 		e.preventDefault();
-		run(open && moved && selected >= 0 && options[selected] ? pick(options[selected]) : value);
+		if (open && moved && selected >= 0 && options[selected]) choose(options[selected]);
+		// Sin sugerencias de comandos, Intro abre el primer resultado de búsqueda (si lo hay).
+		else if (!suggestions.length && results.length) choose(results[0]);
+		else run(value);
 	}
 
 	/** Atajos de teclado en toda la página (como un listener en window en Vue, pero declarativo). */
@@ -132,6 +164,7 @@
 		}}
 		{onkeydown}
 		onfocus={() => {
+			loadIndex();
 			recent = readHistory();
 			open = true;
 			moved = false;
@@ -156,20 +189,41 @@
 	<button class="go" type="submit">GO</button>
 	{#if open && options.length}
 		<ul class="suggest" id="suggest" role="listbox" aria-label="Sugerencias">
-			{#each options as o, i (pick(o) + o.kind)}
-				<li
-					role="option"
-					id="opt{i}"
-					aria-selected={i === selected}
-					onmousedown={(e) => {
-						e.preventDefault();
-						run(pick(o));
-					}}
-				>
-					<span class="code">{o.code}</span>
-					<span class="desc">{o.desc}</span>
-					<span class="kind">{o.kind}</span>
-				</li>
+			{#each options as o, i (o.url ?? pick(o) + o.kind)}
+				{#if o.url}
+					<!-- Titular o BOE: un enlace de verdad (pestaña nueva), para que también funcione la pulsación
+					     larga o el clic central. mousedown sin efecto: la barra no pierde el foco antes del clic. -->
+					<li
+						role="option"
+						id="opt{i}"
+						class="hit"
+						class:first={i === suggestions.length && i > 0}
+						aria-selected={i === selected}
+						onmousedown={(e) => e.preventDefault()}
+					>
+						<a href={o.url} target="_blank" rel="noopener" onclick={close}>
+							<span class="code">{o.code}</span>
+							<span class="desc">{o.desc}</span>
+							<span class="kind" aria-label="Se abre en otra pestaña">{o.kind}</span>
+						</a>
+					</li>
+				{:else}
+					<li
+						role="option"
+						id="opt{i}"
+						class:hit={i >= suggestions.length}
+						class:first={i === suggestions.length && i > 0}
+						aria-selected={i === selected}
+						onmousedown={(e) => {
+							e.preventDefault();
+							choose(o);
+						}}
+					>
+						<span class="code">{o.code}</span>
+						<span class="desc">{o.desc}</span>
+						<span class="kind">{o.kind}</span>
+					</li>
+				{/if}
 			{/each}
 		</ul>
 	{/if}
@@ -264,13 +318,31 @@
 		max-height: 50vh;
 	}
 
-	li {
+	li,
+	li a {
 		display: grid;
 		grid-template-columns: 7ch minmax(0, 1fr) auto;
 		gap: 12px;
 		padding: 6px 12px;
 		cursor: pointer;
 		align-items: baseline;
+	}
+
+	/* Dentro del enlace la rejilla es la del li: el li no añade relleno. */
+	li.hit:has(> a) {
+		display: block;
+		padding: 0;
+	}
+
+	li a {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	/* Separación fina entre las sugerencias de comandos y los resultados de búsqueda. */
+	li.first {
+		border-top: 1px solid var(--line);
+		margin-top: 4px;
 	}
 
 	li[aria-selected='true'] {
