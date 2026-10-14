@@ -19,7 +19,7 @@
 		writeHistory,
 		type Option
 	} from '#lib/cmdline.ts';
-	import { dataset } from '#lib/data.ts';
+	import type { Dataset } from '#lib/data.ts';
 	import { prepare, searchOptions, type Indexed } from '#lib/search.ts';
 	import type { SearchEntry } from '#lib/types.ts';
 	import { ui } from '#lib/ui.svelte.ts';
@@ -49,15 +49,25 @@
 	// Últimos comandos ejecutados: se leen de localStorage al enfocar la barra (nunca al prerenderizar).
 	let recent = $state<string[]>([]);
 
-	// Índice de búsqueda (static/data/search.json). null hasta que se enfoca la barra la primera vez:
-	// dataset() lo pide en ese momento (Vite lo deja en un trozo aparte), no al cargar la página.
+	// Índice de búsqueda (static/data/search.json). null hasta que se enfoca la barra la primera vez: se
+	// pide en ese momento (Vite lo deja en un trozo aparte), no al cargar la página. Va con su propio
+	// import.meta.glob, como <Updated>, y no con dataset() de data.ts: importar dataset() aquí metería
+	// todos los JSON de static/data en la build del navegador.
+	const searchLoader = import.meta.glob('/static/data/search.json', { import: 'default' })['/static/data/search.json'];
 	let index = $state.raw<Indexed[] | null>(null);
 	let indexRequested = false;
 	function loadIndex() {
 		if (indexRequested) return;
 		indexRequested = true;
-		dataset<SearchEntry[]>('search')
-			.then((d) => (index = prepare(Array.isArray(d?.data) ? d.data : [])))
+		if (!searchLoader) {
+			index = [];
+			return;
+		}
+		searchLoader()
+			.then((d) => {
+				const data = (d as Dataset<SearchEntry[]> | null)?.data;
+				index = prepare(Array.isArray(data) ? data : []);
+			})
 			.catch(() => (index = []));
 	}
 
@@ -88,7 +98,9 @@
 		recent = pushHistory(readHistory(), canonical(target));
 		writeHistory(recent);
 		const { route, search } = targetPath(target);
-		goto(resolve(route) + search);
+		// resolve() comprueba cada ruta por separado y, con más de 25 posibles, TypeScript ya no reparte la unión.
+		// Ninguna de estas rutas lleva parámetros, así que se puede tratar como una cualquiera.
+		goto(resolve(route as '/') + search);
 	}
 
 	function onkeydown(e: KeyboardEvent) {

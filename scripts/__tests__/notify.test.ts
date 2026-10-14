@@ -1,11 +1,21 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Quake } from '../../src/lib/types.ts';
 import type { Level } from '../alerts/config.ts';
 import { emptyLog, type Draft, type LogEntry, type NotifyLog, type Rule } from '../alerts/rules.ts';
-import { baselineLog, encodeHeader, headers, parseLog, pickAlerts, runNotify, trim, usedToday } from '../notify.ts';
+import {
+	baselineLog,
+	encodeHeader,
+	headers,
+	newestLog,
+	parseLog,
+	pickAlerts,
+	runNotify,
+	trim,
+	usedToday
+} from '../notify.ts';
 import { mockFetch } from './mock.ts';
 
 // 14 oct 2026, 12:00 en Madrid (CEST).
@@ -36,7 +46,7 @@ const pick = (rules: Rule[], entries: LogEntry[] = [], now = NOW) =>
 const count = (alerts: { level: Level }[], level: Level) => alerts.filter((a) => a.level === level).length;
 
 describe('cupos y tope diario', () => {
-	it('P1 sin cupo propio, P2 hasta 25, P3 hasta 15, P4 hasta 2', () => {
+	it('P1 sin cupo propio, P2 hasta 25, P3 hasta 15, P4 hasta 3', () => {
 		const { send, skipped } = pick([fake('a', 1, 10), fake('b', 2, 30), fake('c', 3, 20), fake('d', 4, 3)]);
 		expect([1, 2, 3, 4].map((l) => count(send, l as Level))).toEqual([10, 25, 15, 0]);
 		// 10 + 25 + 15 = 50: el tope total deja fuera a P4 y lo que no cabía en su cupo.
@@ -131,6 +141,19 @@ describe('historial', () => {
 		expect(log.entries).toEqual([{ k: 'quake:a', t: '2026-10-14T10:00Z', s: 'baseline', p: 1 }]);
 		expect(log.last['macro:ipc-es']).toBe('2026-09');
 		expect(pickAlerts(d, log, NOW).send).toEqual([]);
+	});
+
+	it('entre la caché y el publicado gana el que tiene el último intento; a igualdad, la caché', () => {
+		const at = (t: string, k = t): NotifyLog => ({ ...emptyLog(), entries: [{ k, t, s: 'sent' }] });
+		const cached = at('2026-10-14T10:00Z', 'cache');
+		const published = at('2026-10-14T09:45Z', 'web');
+		expect(newestLog(cached, published)).toBe(cached);
+		expect(newestLog(published, at('2026-10-14T10:15Z', 'web'))?.entries[0].k).toBe('web');
+		expect(newestLog(at('2026-10-14T10:00Z', 'cache'), at('2026-10-14T10:00Z', 'web'))?.entries[0].k).toBe('cache');
+		expect(newestLog(null, published)).toBe(published);
+		expect(newestLog(cached, null)).toBe(cached);
+		expect(newestLog(null, null)).toBeNull();
+		expect(newestLog(emptyLog(), published)).toBe(published);
 	});
 
 	it('parseLog tolera historiales viejos o rotos', () => {
@@ -250,6 +273,24 @@ describe('runNotify', () => {
 		for (const text of [...logged, await written()]) expect(text).not.toContain(TOPIC);
 	});
 
+	it('si la web no se publicó tras enviar, lee la caché y no repite; y la reescribe', async () => {
+		const cache = join(dir, 'cache', 'notify-log.json');
+		const route = (url: string) => {
+			// La web sigue con el historial de antes de enviar (el deploy falló).
+			if (url.endsWith('/data/notify-log.json')) return published(emptyLog());
+			if (url.startsWith('https://ntfy.sh/')) return new Response('', { status: 200 });
+		};
+		const fetch = mockFetch(route);
+		await runNotify({ topic: TOPIC, dir, cache, now: NOW });
+		const ntfy = () => fetch.mock.calls.filter(([u]) => String(u).includes('ntfy.sh')).length;
+		expect(ntfy()).toBe(2);
+		const saved = JSON.parse(await readFile(cache, 'utf8'));
+		expect(saved.data.entries.map((e: { k: string }) => e.k)).toEqual(['quake:b', 'quake:a']);
+		await runNotify({ topic: TOPIC, dir, cache, now: NOW + 15 * 60_000 });
+		expect(ntfy()).toBe(2);
+		expect(await readFile(cache, 'utf8')).not.toContain(TOPIC);
+	});
+
 	it('sin historial publicado solo envía el aviso de prueba y apunta lo de ahora como visto', async () => {
 		const fetch = mockFetch(() => undefined);
 		const lines = await runNotify({ topic: TOPIC, dir, now: NOW });
@@ -263,5 +304,69 @@ describe('runNotify', () => {
 			true
 		]);
 		for (const text of [...logged, ...lines, json]) expect(text).not.toContain(TOPIC);
+	});
+
+	it('la zona del diésel y el tema no salen en ningún registro ni JSON (publicado o en caché)', async () => {
+		const prices = (diesel: number) => ({ g95: 1.6, diesel, g98: 1.75, glp: 0.9 });
+		const history = Array.from({ length: 14 }, (_, i) => {
+			const date = new Date(Date.UTC(2026, 9, 1 + i)).toISOString().slice(0, 10);
+			return { date, es: i < 7 ? 1.4 : 1.44, zone: i < 7 ? 1.5 : 1.6 };
+		});
+		const fuelEs = {
+			sourceDate: '14/10/2026 12:30:05',
+			avg: prices(1.44),
+			provinces: [{ id: '50', name: 'Zaragoza', count: 300, lat: 41.6, lon: -0.9, avg: prices(1.6), min: prices(1.5) }],
+			history: history.map((h) => ({ date: h.date, avg: prices(h.es), provinces: { '50': prices(h.zone) } }))
+		};
+		const fuel = {
+			sourceDate: '14/10/2026 12:30:05',
+			stations: [],
+			history: history.map((h) => ({ date: h.date, avg: prices(h.zone), min: prices(h.zone) }))
+		};
+		const station = {
+			id: '1',
+			name: 'Gasolinera',
+			address: '',
+			town: 'Pueblo',
+			schedule: '',
+			lat: 0,
+			lon: 0,
+			prices: prices(1.55)
+		};
+		await writeFile(join(dir, 'fuel-es.json'), JSON.stringify({ name: 'fuel-es', fetchedAt: '', data: fuelEs }));
+		await writeFile(join(dir, 'fuel.json'), JSON.stringify({ name: 'fuel', fetchedAt: '', data: fuel }));
+		await mkdir(join(dir, 'fuel'));
+		await writeFile(join(dir, 'fuel', '50.json'), JSON.stringify([station]));
+		for (const zone of ['50', 'Zaragoza', 'menorca']) {
+			const bodies: string[] = [];
+			mockFetch((url, init) => {
+				if (url.endsWith('/data/notify-log.json')) return published(emptyLog());
+				if (url.startsWith('https://ntfy.sh/')) {
+					bodies.push(String(init?.body));
+					return new Response('', { status: 200 });
+				}
+			});
+			logged = [];
+			const cache = join(dir, `cache-${zone}`, 'notify-log.json');
+			const lines = await runNotify({ topic: TOPIC, zone, dir, cache, now: NOW });
+			// Los avisos sí llegan (con la zona en el texto, que solo va al móvil).
+			expect(lines.filter((l) => l.includes('diesel:'))).toEqual([
+				'ntfy · P2 diesel:trend:es:2026-10-14: enviado (200)',
+				'ntfy · P2 diesel:trend:zona:2026-10-14: enviado (200)',
+				'ntfy · P2 diesel:gap:2026-10-14: enviado (200)'
+			]);
+			expect(bodies.some((b) => b.includes('España'))).toBe(true);
+			const json = await written();
+			const cached = await readFile(cache, 'utf8');
+			for (const text of [...logged, ...lines, json, cached]) {
+				expect(text).not.toContain(TOPIC);
+				expect(text).not.toMatch(/zaragoza|menorca|"50"|:50\b/i);
+			}
+		}
+		// Una zona que no existe se avisa sin decir cuál.
+		mockFetch((url) => (url.endsWith('/data/notify-log.json') ? published(emptyLog()) : new Response('')));
+		const lines = await runNotify({ topic: TOPIC, zone: 'Atlántida', dir, now: NOW });
+		expect(lines).toContain('ntfy: ALERT_FUEL_ZONE no corresponde a ninguna zona; el diésel se vigila solo en España');
+		expect(lines.join('\n')).not.toContain('Atlántida');
 	});
 });

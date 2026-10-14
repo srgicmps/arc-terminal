@@ -56,7 +56,10 @@ export const perf: Source<PerfData> = {
 				if (previous?.symbols[s]) symbols[s] = previous.symbols[s];
 			}
 		}
-		if (!Object.keys(symbols).length) throw new Error('Finnhub no ha devuelto rentabilidades');
+		const count = Object.keys(symbols).length;
+		if (!count) throw new Error('Finnhub no ha devuelto rentabilidades');
+		// El resumen de update.ts solo cuenta listas: así se ve en el registro cuántos valores han llegado.
+		console.log(`  perf · ${count} de ${PERF_SYMBOLS.length} valores`);
 		return { symbols };
 	}
 };

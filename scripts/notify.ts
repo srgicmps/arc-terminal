@@ -5,24 +5,33 @@
 // Las reglas (qué se avisa) están en scripts/alerts/rules.ts y los umbrales y cupos, en
 // scripts/alerts/config.ts. Este archivo es la mecánica:
 // - Cada aviso tiene un id único y estable; un id ya apuntado en el historial no se repite nunca.
-// - Niveles P1–P4 con cupo diario (día de Madrid): P1 sin límite, P2 hasta 25, P3 hasta 15, P4 los dos
-//   resúmenes. Tope total de 50 al día, solo contra bucles. Si no caben todos, salen primero los de
+// - Niveles P1–P4 con cupo diario (día de Madrid): P1 sin límite, P2 hasta 25, P3 hasta 15, P4 hasta 3
+//   (los dos resúmenes y SEMANA). Tope total de 50 al día, solo contra bucles. Si no caben todos, salen primero los de
 //   nivel más alto y, a igual nivel, los más recientes. Lo que no cabe no se apunta: se vuelve a mirar
 //   en la pasada siguiente (y al día siguiente, si sigue siendo relevante).
 // - Se envía a cualquier hora (Sergi usa el «No molestar» del móvil).
 // - Si ntfy da 429 o falla, ese aviso se pierde (se apunta como «failed» y no se reintenta).
 //
-// El historial (static/data/notify-log.json) se publica con la web y se lee de la copia publicada, como
-// update.ts. Solo lleva ids, horas, niveles y los valores que se comparan entre pasadas: NUNCA el tema.
-// Si no se puede leer (primera vez, o se perdió), todo lo de ahora se apunta como ya visto («baseline»)
-// y no se envía nada: así nunca sale una ráfaga de avisos repetidos.
+// El historial (static/data/notify-log.json) se publica con la web y, además, se guarda en la caché de
+// Actions justo después de este paso (NOTIFY_CACHE, ver deploy.yml). Así, si algo falla después de enviar
+// (check, test, build o deploy) y la web no se publica, la pasada siguiente no repite los avisos: se usa el
+// más reciente de los dos (el que tenga el último intento). Solo lleva ids, horas, niveles y los valores
+// que se comparan entre pasadas: NUNCA el tema ni la zona del diésel.
+// Si no se puede leer ninguno (primera vez, o se perdieron), todo lo de ahora se apunta como ya visto
+// («baseline») y no se envía nada: así nunca sale una ráfaga de avisos repetidos.
 //
 // SECRETO: NTFY_TOPIC es la única protección del canal (quien lo sepa puede leer y escribir). No se
 // escribe en ningún registro, ni la URL completa, ni la respuesta de ntfy (que lo incluye), ni en el JSON.
 //
-// Uso: `NTFY_TOPIC=… node scripts/notify.ts`. Sin NTFY_TOPIC, sale sin hacer nada.
+// ZONA DEL DIÉSEL: ALERT_FUEL_ZONE (opcional) es la provincia («07», «28») o «menorca». Tampoco se escribe
+// en ningún registro ni en el JSON: los ids y las claves del historial dicen «zona», nunca cuál.
+//
+// Uso: `NTFY_TOPIC=… [NOTIFY_CACHE=.notify-cache/notify-log.json] node scripts/notify.ts`. Sin NTFY_TOPIC,
+// sale sin hacer nada.
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findProvince, type FuelStation } from '../src/lib/fuel.ts';
 import { DAILY_TOTAL, KEEP_DAYS, NTFY_PRIORITY, QUOTAS, type Level } from './alerts/config.ts';
 import {
 	emptyLog,
@@ -31,6 +40,7 @@ import {
 	RULES,
 	SITE,
 	type Alert,
+	type FuelZone,
 	type Inputs,
 	type LogEntry,
 	type NotifyLog,
@@ -56,7 +66,7 @@ export function candidates(
 	const updates: ((log: NotifyLog) => void)[] = [];
 	const ctx = { now, today: madrid(now).date, log, update: (fn: (log: NotifyLog) => void) => void updates.push(fn) };
 	const alerts = rules.flatMap((rule) =>
-		rule.run(d, ctx).map((a): Alert => ({ ...a, type: rule.type, level: rule.level }))
+		rule.run(d, ctx).map((a): Alert => ({ ...a, type: rule.type, level: a.level ?? rule.level }))
 	);
 	return { alerts, updates };
 }
@@ -200,6 +210,25 @@ async function readData(dir: string, name: string): Promise<unknown> {
 	}
 }
 
+/**
+ * La zona del diésel a partir del secreto: «menorca» (fuel.json) o una provincia de fuel-es.json, por su
+ * número o su nombre. Las gasolineras salen de fuel.json o de fuel/<id>.json. null si no se reconoce.
+ */
+export async function loadZone(raw: string | undefined, d: Inputs, dir: string): Promise<FuelZone | null> {
+	const provinces = Array.isArray(d.fuelEs?.provinces) ? d.fuelEs.provinces : [];
+	const id = findProvince(raw ?? null, provinces);
+	if (!id) return null;
+	if (id === 'menorca') return { id, name: 'Menorca', stations: d.fuel?.stations };
+	let stations: FuelStation[] | undefined;
+	try {
+		const body: unknown = JSON.parse(await readFile(`${dir}/fuel/${id}.json`, 'utf8'));
+		if (Array.isArray(body)) stations = body as FuelStation[];
+	} catch {
+		// Sin el archivo de la provincia no hay «la más barata»; lo demás sigue.
+	}
+	return { id, name: provinces.find((p) => p.id === id)?.name ?? id, stations };
+}
+
 /** Aviso de prueba de la primera pasada (sin historial publicado). */
 const HELLO = (now: number): Alert => ({
 	id: 'hello',
@@ -221,17 +250,46 @@ async function publishedLog(): Promise<NotifyLog | null> {
 	}
 }
 
+/** El historial guardado en la caché de Actions (un archivo local), o null si no está o está roto. */
+async function cachedLog(path: string | undefined): Promise<NotifyLog | null> {
+	if (!path) return null;
+	try {
+		return parseLog(JSON.parse(await readFile(path, 'utf8')));
+	} catch {
+		return null;
+	}
+}
+
+/** Hora (ms) del último intento apuntado en un historial; -Infinity si no tiene ninguno. */
+export const lastAttempt = (log: NotifyLog): number =>
+	log.entries.reduce((max, e) => Math.max(max, Date.parse(e.t)), -Infinity);
+
+/**
+ * El historial más reciente entre el de la caché y el publicado: el que tenga el último intento (`t`).
+ * A igualdad gana la caché, que se guarda justo después de enviar y nunca va por detrás de la web.
+ */
+export function newestLog(cached: NotifyLog | null, published: NotifyLog | null): NotifyLog | null {
+	if (!cached || !published) return cached ?? published;
+	return lastAttempt(published) > lastAttempt(cached) ? published : cached;
+}
+
 /**
  * Todo el proceso: lee los datos de `dir`, decide, envía y escribe `dir`/notify-log.json. Devuelve las
  * líneas que ha registrado (también van a console.log). No lanza: un fallo se registra saneado.
  */
 export async function runNotify({
 	topic,
+	zone,
 	dir = 'static/data',
+	cache,
 	now = Date.now()
 }: {
 	topic: string | undefined;
+	/** Zona del diésel (secreto ALERT_FUEL_ZONE). */
+	zone?: string;
 	dir?: string;
+	/** Archivo del historial en la caché de Actions (se lee y se reescribe). */
+	cache?: string;
 	now?: number;
 }): Promise<string[]> {
 	const lines: string[] = [];
@@ -250,11 +308,20 @@ export async function runNotify({
 		for (const [key, file] of Object.entries(FILES)) {
 			(inputs as Record<string, unknown>)[key] = await readData(dir, file);
 		}
-		const previous = await publishedLog();
+		if (zone?.trim()) {
+			const found = await loadZone(zone.trim(), inputs, dir);
+			if (found) {
+				inputs.zone = found;
+				say('ntfy: zona del diésel reconocida');
+			}
+			// Sin decir cuál: la zona no sale en el registro.
+			else say('ntfy: ALERT_FUEL_ZONE no corresponde a ninguna zona; el diésel se vigila solo en España');
+		}
+		const previous = newestLog(await cachedLog(cache), await publishedLog());
 		let log: NotifyLog;
 		if (!previous) {
 			log = baselineLog(inputs, now);
-			say(`ntfy: sin historial publicado; ${log.entries.length} avisos posibles se dan por vistos`);
+			say(`ntfy: sin historial (ni en caché ni publicado); ${log.entries.length} avisos posibles se dan por vistos`);
 			// Un único aviso de prueba, para confirmar que el tema y la app están bien configurados.
 			const { status } = await post(secret, HELLO(now));
 			const ok = status !== null && status >= 200 && status < 300;
@@ -277,9 +344,14 @@ export async function runNotify({
 			if (skipped.length) say(`ntfy: ${skipped.length} avisos no caben en los cupos de hoy`);
 			if (!send.length && !skipped.length) say('ntfy: nada que avisar');
 		}
+		const dataset = JSON.stringify({ name: 'notify-log', fetchedAt: new Date(now).toISOString(), data: log }) + '\n';
 		await mkdir(dir, { recursive: true });
-		const dataset = { name: 'notify-log', fetchedAt: new Date(now).toISOString(), data: log };
-		await writeFile(`${dir}/notify-log.json`, JSON.stringify(dataset) + '\n');
+		await writeFile(`${dir}/notify-log.json`, dataset);
+		// La misma copia, para la caché de Actions (no depende de que la web llegue a publicarse).
+		if (cache) {
+			await mkdir(dirname(cache), { recursive: true });
+			await writeFile(cache, dataset);
+		}
 	} catch (error) {
 		say(`::warning title=ntfy::${error instanceof Error ? error.message : String(error)}`);
 	}
@@ -287,4 +359,10 @@ export async function runNotify({
 }
 
 // Solo al ejecutarlo directamente (no al importarlo desde los tests).
-if (process.argv[1] === fileURLToPath(import.meta.url)) await runNotify({ topic: process.env.NTFY_TOPIC });
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+	await runNotify({
+		topic: process.env.NTFY_TOPIC,
+		zone: process.env.ALERT_FUEL_ZONE,
+		cache: process.env.NOTIFY_CACHE || undefined
+	});
+}
