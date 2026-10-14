@@ -6,7 +6,9 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
+	import { CAL_COUNTRIES, CAL_DEFAULT, CAL_IMPORTANCE, calConfig, parseCalFilters, type CalFilters } from '#lib/cal-filters.ts';
 	import { compact, dm, hm, nf, weekday } from '#lib/format.ts';
 	import { bmeHolidays, nyseHolidays } from '#lib/markets.ts';
 	import { CB, cbUpcoming } from '#lib/cb-calendar.ts';
@@ -15,10 +17,25 @@
 
 	let { data }: PageProps = $props();
 
-	const calendar = {
-		importanceFilter: '0,1',
-		countryFilter: 'us,eu,es,de,fr,it,gb,cn,jp'
-	};
+	// Filtros del calendario (países e importancia), guardados en este navegador (arc-cal). Si no deja
+	// guardar, se quedan en memoria.
+	const CAL_KEY = 'arc-cal';
+	let filters = $state<CalFilters>(CAL_DEFAULT);
+	let loaded = $state(false);
+	$effect(() => {
+		try {
+			filters = parseCalFilters(localStorage.getItem(CAL_KEY));
+		} catch {}
+		loaded = true;
+	});
+	$effect(() => {
+		const json = JSON.stringify(filters);
+		if (!loaded) return;
+		try {
+			localStorage.setItem(CAL_KEY, json);
+		} catch {}
+	});
+	const calendar = $derived(calConfig(filters));
 
 	const earnings = $derived(data.finnhub?.data.earnings ?? []);
 
@@ -77,7 +94,11 @@
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Calendario" meta="Importancia media y alta · hora local">
+		<Panel title="Calendario" meta="{CAL_IMPORTANCE.find((i) => i.value === filters.importance)?.label} · hora local">
+			<div class="filters">
+				<Seg label="Importancia" options={CAL_IMPORTANCE} bind:value={filters.importance} />
+				<Seg label="Países" options={CAL_COUNTRIES} bind:values={filters.countries} />
+			</div>
 			<TvWidget widget="events" config={calendar} height={720} />
 		</Panel>
 	</div>
@@ -248,6 +269,14 @@
 </div>
 
 <style>
+	.filters {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--sp-8);
+		padding: var(--sp-8) var(--pad-x);
+		border-bottom: var(--border);
+	}
+
 	/* Los nombres largos pasan a otra línea para que quepa la columna «Dónde» en el móvil. */
 	/* Los nombres de los festivos pueden ocupar varias líneas. */
 	.wrap {
