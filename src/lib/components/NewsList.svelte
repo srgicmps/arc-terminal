@@ -9,17 +9,9 @@
 	import { clock } from '#lib/clock.svelte.ts';
 	import { when } from '#lib/format.ts';
 	import type { NewsItem } from '#lib/types.ts';
-	import {
-		canTranslate,
-		initTitles,
-		longPress,
-		original,
-		shown,
-		spanish,
-		titles,
-		translateMissing
-	} from '#lib/titles.svelte.ts';
+	import { headlineList } from '#lib/titles.svelte.ts';
 	import { initVisit, isNew, visit } from '#lib/visit.svelte.ts';
+	import AutoTag from './AutoTag.svelte';
 	import TitleLang from './TitleLang.svelte';
 
 	interface Props {
@@ -34,31 +26,17 @@
 
 	// Como onMounted en Vue: solo en el navegador, después de hidratar.
 	$effect(initVisit);
-	$effect(initTitles);
-
-	// Lo que no trae traducción de la Action lo traduce el navegador, si sabe (Chrome de escritorio).
-	$effect(() => {
-		if (titles.lang === 'es') translateMissing(items);
-	});
-
-	// El botón ES / EN solo sale si hay algo que traducir y alguien que lo traduzca.
-	let browser = $state(false);
-	$effect(() => {
-		browser = canTranslate();
-	});
-	const toggle = $derived(items.some((i) => spanish(i)) || (browser && items.some((i) => i.lang === 'en')));
-
-	/** Fila con el original a la vista (pulsación larga en el móvil). */
-	let peek = $state<number | null>(null);
+	// Traducción de los titulares en inglés (ES / EN, titles.svelte.ts).
+	const list = headlineList<number>(() => items);
 </script>
 
 {#if items.length}
-	{#if toggle}
+	{#if list.toggle}
 		<div class="lang"><TitleLang /></div>
 	{/if}
 	<ul class="news">
 		{#each items as item, i (i)}
-			{@const t = peek === i ? { text: item.title, translated: false } : shown(item)}
+			{@const t = list.link(item, i)}
 			<li>
 				<time datetime={item.time ?? undefined}>
 					{#if isNew(item, visit.last)}<span class="new" title="Nuevo desde tu última visita"
@@ -68,18 +46,17 @@
 				<div>
 					<a
 						class="h"
-						class:es={t.translated || peek === i}
 						href={item.url}
 						target="_blank"
 						rel="noopener"
-						lang={t.translated ? 'es' : item.lang}
-						title={t.translated ? original(item) : undefined}
-						{@attach longPress((on) => (peek = on ? i : null))}>{t.text}</a
+						lang={t.lang}
+						title={t.title}
+						{@attach list.press(item, i)}>{t.text}</a
 					>
 					<div class="m">
 						{#if tag?.(item)}<span class="tag">{tag(item)}</span>{/if}
 						<span>{item.source}</span>
-						{#if t.translated}<span class="auto" title={original(item)}>trad. auto</span>{/if}
+						{#if t.translated}<AutoTag {item} />{/if}
 						{#if item.also?.length}
 							<details class="also">
 								<summary>+{item.also.length} {item.also.length === 1 ? 'medio' : 'medios'}</summary>
@@ -152,15 +129,6 @@
 		display: flex;
 		justify-content: flex-end;
 		padding: var(--sp-4) var(--pad-x) 0;
-	}
-
-	/* Una traducción: en el móvil, la pulsación larga enseña el original en lugar del menú del enlace. */
-	@media (pointer: coarse) {
-		.h.es {
-			-webkit-touch-callout: none;
-			-webkit-user-select: none;
-			user-select: none;
-		}
 	}
 
 	.news li:last-child {
@@ -255,14 +223,6 @@
 
 	.also a:hover {
 		color: var(--amber);
-	}
-
-	/* Marca de traducción automática: siempre visible, discreta. */
-	.auto {
-		color: var(--faint);
-		font-family: var(--mono);
-		font-size: var(--fs-xs);
-		letter-spacing: var(--track-tight);
 	}
 
 	.tag {

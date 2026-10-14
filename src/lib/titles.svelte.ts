@@ -144,8 +144,17 @@ async function pump(gesture: boolean) {
  * En el móvil, una pulsación larga sobre un titular traducido enseña el original mientras se mantiene
  * (y un momento después). En el escritorio basta con pasar el ratón: va en el atributo `title`.
  */
-export function longPress(peek: (on: boolean) => void): Attachment<HTMLElement> {
+export function longPress(peek: (on: boolean) => void, enabled: () => boolean = () => true): Attachment<HTMLElement> {
 	return (node) => {
+		// Solo en los titulares traducidos (se vuelve a ejecutar si cambia, como un watch de Vue).
+		if (!enabled()) return;
+		// En pantallas táctiles, que la pulsación larga no abra el menú del enlace ni seleccione el texto.
+		const touch = matchMedia('(pointer: coarse)').matches;
+		if (touch) {
+			node.style.setProperty('-webkit-touch-callout', 'none');
+			node.style.setProperty('-webkit-user-select', 'none');
+			node.style.setProperty('user-select', 'none');
+		}
 		let timer: ReturnType<typeof setTimeout> | undefined;
 		let hide: ReturnType<typeof setTimeout> | undefined;
 		let held = false;
@@ -177,6 +186,9 @@ export function longPress(peek: (on: boolean) => void): Attachment<HTMLElement> 
 		node.addEventListener('click', click);
 		node.addEventListener('contextmenu', menu);
 		return () => {
+			if (touch) {
+				for (const p of ['-webkit-touch-callout', '-webkit-user-select', 'user-select']) node.style.removeProperty(p);
+			}
 			clearTimeout(timer);
 			clearTimeout(hide);
 			node.removeEventListener('pointerdown', down);
@@ -185,5 +197,49 @@ export function longPress(peek: (on: boolean) => void): Attachment<HTMLElement> 
 			node.removeEventListener('click', click);
 			node.removeEventListener('contextmenu', menu);
 		};
+	};
+}
+
+// ---------- Lo común de una lista de titulares (NewsList, IMP) ----------
+
+/**
+ * Prepara una lista de titulares traducibles: lee la preferencia, pide al navegador lo que falte por
+ * traducir y lleva la cuenta de qué fila enseña el original (pulsación larga). Se llama al crear el
+ * componente, como un composable de Vue. `items` es una función para que siga los cambios de la lista.
+ */
+export function headlineList<K>(items: () => Headline[]) {
+	$effect(initTitles);
+	$effect(() => {
+		if (titles.lang === 'es') translateMissing(items());
+	});
+	let browser = $state(false);
+	$effect(() => {
+		browser = canTranslate();
+	});
+	let peek = $state<K | null>(null);
+
+	return {
+		/** El botón ES / EN solo sale si hay algo traducido o el navegador sabe traducir. */
+		get toggle() {
+			const list = items();
+			return list.some((i) => spanish(i)) || (browser && list.some((i) => i.lang === 'en'));
+		},
+		/** Lo que lleva el enlace de un titular: texto, idioma y, si es una traducción, el original. */
+		link(item: Headline, key: K) {
+			const t = peek === key ? { text: item.title, translated: false } : shown(item);
+			return {
+				text: t.text,
+				translated: t.translated,
+				lang: t.translated ? 'es' : item.lang,
+				title: t.translated ? original(item) : undefined
+			};
+		},
+		/** La pulsación larga de un titular (solo hace algo si está traducido). */
+		press(item: Headline, key: K) {
+			return longPress(
+				(on) => (peek = on ? key : null),
+				() => titles.lang === 'es' && !!spanish(item)
+			);
+		}
 	};
 }
