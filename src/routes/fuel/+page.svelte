@@ -17,6 +17,7 @@
 	import { nf } from '#lib/format.ts';
 	import { fuelShare, type ShareInfo } from '#lib/share.ts';
 	import { distanceKm, findProvince, FUELS, type FuelKey, type FuelProvinceDay, type FuelStation } from '#lib/fuel.ts';
+	import { urlState, writeParams } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -24,8 +25,10 @@
 	const MENORCA = 'menorca';
 	const SHOWN = 60;
 
-	// Estado de la vista (como ref() en Vue).
-	let fuel = $state<FuelKey>('g95');
+	// Estado de la vista (como ref() en Vue). El combustible y la zona van también en la URL
+	// (?combustible=diesel&zona=28): un enlace o un favorito abre lo mismo.
+	const fuelSel = urlState<FuelKey>('combustible', 'g95', (v) => FUELS.some((f) => f.key === v));
+	const fuel = $derived(fuelSel.value);
 	let zone = $state(MENORCA);
 	let town = $state('ALL');
 	let showAll = $state(false);
@@ -44,6 +47,7 @@
 		zone = id;
 		town = 'ALL';
 		showAll = false;
+		writeParams({ zona: id === MENORCA ? null : id });
 		try {
 			localStorage.setItem('fuel-zone', id);
 		} catch {}
@@ -209,7 +213,7 @@
 				<button class="near" type="button" onclick={locate} disabled={locating}>
 					{locating ? 'Buscando…' : here ? '◎ Actualizar ubicación' : '◎ Cerca de mí'}
 				</button>
-				<Seg label="Combustible" options={FUELS.map((f) => ({ value: f.key, label: f.label }))} bind:value={fuel} />
+				<Seg label="Combustible" options={FUELS.map((f) => ({ value: f.key, label: f.label }))} bind:value={fuelSel.value} />
 				<!-- bind:value es el v-model de Svelte -->
 				<Select label="Municipio" bind:value={town}>
 					<option value="ALL">Todos</option>
