@@ -31,6 +31,8 @@ import { sec } from './sec.ts';
 import { uscurve, usdebt } from './treasury.ts';
 import { wiki } from './wiki.ts';
 import { crypto, hn, power, quakes, weather } from './world.ts';
+// Provisional, hasta que el test del registro admita fuentes fuera de esta lista.
+import { climate } from './climate.ts';
 
 export const sources: Source<any>[] = [
 	// España
@@ -75,5 +77,6 @@ export const sources: Source<any>[] = [
 	...newsSources,
 	// Derivadas: se calculan después, con los datos de las anteriores.
 	imp,
-	search
+	search,
+	climate
 ];
