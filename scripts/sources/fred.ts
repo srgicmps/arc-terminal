@@ -1,6 +1,6 @@
 // FRED, Banco de la Reserva Federal de San Luis: series macro de EE. UU. https://fred.stlouisfed.org/docs/api/fred/
 // Necesita una clave gratuita (FRED_API_KEY, en GitHub Secrets). Sin ella, la fuente se salta.
-// Límite: unas 120 consultas por minuto por clave; aquí son 23 cada 3 horas.
+// Límite: unas 120 consultas por minuto por clave; aquí son 24 cada 3 horas.
 // Condiciones: hay que avisar de que se usa la API de FRED sin su respaldo, y algunas series son de
 // terceros con copyright (el VIX de Cboe, los diferenciales de ICE BofA): solo se guardan unos pocos puntos
 // con enlace a FRED y la fuente citada.
@@ -36,6 +36,8 @@ const WANTED: Wanted[] = [
 	{ code: 'T10Y2Y', id: 't10y2y-us', label: 'Diferencial 10 años − 2 años', unit: '%', freq: 'd', last: 260 },
 	{ code: 'PCEPILFE', id: 'core-pce-us', label: 'PCE subyacente, interanual', unit: '%', freq: 'm', units: 'pc1', last: 36 },
 	{ code: 'GDPC1', id: 'gdp-us', label: 'PIB real, tasa anualizada', unit: '%', freq: 'q', units: 'pca', last: 16 },
+	// GDPNow de la Fed de Atlanta: estimación en tiempo real del PIB del trimestre en curso (tasa anualizada); cambia varias veces al mes.
+	{ code: 'GDPNOW', id: 'gdpnow-us', label: 'GDPNow (PIB del trimestre en curso)', unit: '%', freq: 'q', last: 12 },
 	{ code: 'ICSA', id: 'claims-us', label: 'Solicitudes de paro (miles)', unit: 'miles', freq: 'w', last: 104, scale: 1 / 1000 },
 	{ code: 'M2SL', id: 'm2-us', label: 'M2, interanual', unit: '%', freq: 'm', units: 'pc1', last: 36 },
 	// Balance de la Fed: total del activo, semanal (miércoles), en millones de dólares.
