@@ -14,8 +14,11 @@ export interface Source<T = unknown> {
 	 * se salta sin llamar a nadie y aparece en STATUS como «Sin clave», sin contar como fallo.
 	 */
 	requires?: string;
-	/** Recibe los datos publicados la vez anterior (si los hay), para ir acumulando historial. */
-	fetch: (previous: T | undefined) => Promise<T>;
+	/**
+	 * Recibe los datos publicados la vez anterior (si los hay), para ir acumulando historial. Las fuentes
+	 * `after` reciben además `ctx`, con los datos que las demás fuentes acaban de dejar en esta pasada.
+	 */
+	fetch: (previous: T | undefined, ctx?: SourceContext) => Promise<T>;
 	/**
 	 * Si devuelve true, la copia publicada no sirve aunque sea reciente y se descarga de nuevo. Sirve
 	 * para cuando la fuente cambia de forma (por ejemplo, series nuevas que la copia aún no tiene).
@@ -34,6 +37,13 @@ export interface Source<T = unknown> {
 	/** Mínimo de elementos (ver countItems) para dar los datos por buenos. */
 	minItems?: number;
 	/**
+	 * Fuente derivada: no descarga (o casi) y se calcula con los datos de otras fuentes. update.ts la
+	 * ejecuta cuando las demás ya han terminado y le pasa sus datos en `ctx`.
+	 * `true` (o 1) va justo después de las normales; un número mayor, detrás de las de número menor
+	 * (p. ej. la traducción, `after: 2`, usa lo que deja IMP, que es `after: true`).
+	 */
+	after?: true | number;
+	/**
 	 * Plazo total de la descarga, en milisegundos (por defecto, DEFAULT_DEADLINE_MS). Solo para fuentes
 	 * lentas de verdad, como un ZIP grande; conviene acompañarlo de un maxAgeMinutes alto.
 	 */
@@ -46,6 +56,41 @@ export const DEFAULT_DEADLINE_MS = 90_000;
 /** Plazo de una fuente: el suyo, si lo define, o el de por defecto. */
 export function deadlineFor(source: Pick<Source, 'deadlineMs'>): number {
 	return source.deadlineMs ?? DEFAULT_DEADLINE_MS;
+}
+
+/** Lo que reciben las fuentes `after`: los datos de otra fuente en esta misma pasada. */
+export interface SourceContext {
+	get<D = unknown>(name: string): D | undefined;
+}
+
+/** Sin datos de otras fuentes (primera fase y tests). */
+export const NO_CONTEXT: SourceContext = { get: () => undefined };
+
+/** Nivel de una fuente: 0 las normales, 1 `after: true`, y el número que diga `after` si es mayor. */
+export const level = (s: Pick<Source, 'after'>) => (s.after === true ? 1 : Math.max(0, Math.floor(s.after ?? 0)));
+
+/**
+ * Oleadas de update.ts: primero las fuentes normales y luego cada nivel de derivadas, en orden. Las de
+ * una oleada van a la vez y ven los datos de las anteriores. Sin derivadas, una sola oleada.
+ */
+export function waves<S extends Pick<Source, 'after'>>(sources: S[]): S[][] {
+	const levels = [...new Set(sources.map(level))].sort((a, b) => a - b);
+	return levels.map((n) => sources.filter((s) => level(s) === n));
+}
+
+/** Separa las fuentes normales (primera fase) de todas las derivadas (`after`). */
+export function phases<S extends Pick<Source, 'after'>>(sources: S[]): [S[], S[]] {
+	return [sources.filter((s) => !level(s)), sources.filter((s) => level(s) > 0)];
+}
+
+/**
+ * Contexto de la segunda fase: primero lo que se ha guardado en esta pasada (`saved`) y, si esa fuente
+ * no se ha ejecutado (p. ej. `pnpm data imp`), lo que haya en disco (`fallback`).
+ */
+export function makeContext(saved: Map<string, unknown>, fallback: (name: string) => unknown = () => undefined): SourceContext {
+	return {
+		get: <D>(name: string) => (saved.has(name) ? saved.get(name) : fallback(name)) as D | undefined
+	};
 }
 
 /**

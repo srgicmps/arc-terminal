@@ -32,7 +32,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     # Red de seguridad: si algo se cuelga, la Action no se queda horas esperando.
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
 
@@ -60,6 +60,8 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           # ReliefWeb solo responde con un appname aprobado por ellos (no es una clave, pero es personal).
           RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
+          # aisstream.io (barcos en los puertos, AIS en directo).
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
 
       # Abre un issue si una fuente lleva 3 pasadas sin datos y lo cierra cuando vuelve. No en los PR.
       # Si falla, no frena la publicación. Las claves van para taparlas si salen en un error.
@@ -72,6 +74,16 @@ jobs:
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+
+      # Avisos al móvil con ntfy (scripts/notify.ts y scripts/alerts/): niveles P1–P4 con cupos y un tope
+      # de 50 al día. No en los PR. Si falla, no frena la publicación. Sin el secreto NTFY_TOPIC no hace
+      # nada. El tema es la única protección del canal: el script nunca lo registra.
+      - if: github.event_name != 'pull_request'
+        run: node scripts/notify.ts
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
 
       - run: pnpm check
       - run: pnpm test
@@ -97,7 +109,21 @@ jobs:
         continue-on-error: true
         with:
           name: tradingview
-          path: shots/
+          path: shots/*.png
+          if-no-files-found: ignore
+
+      # Solo en los PR: construye main con los mismos datos y compara cada vista a 390 px (filas de tabla y
+      # elementos de lista, por panel). La tabla sale en el resumen de la Action y las capturas de las dos
+      # versiones, en el artefacto «vistas» (scripts/compare-views.ts).
+      - if: github.event_name == 'pull_request'
+        run: node scripts/compare-views.ts
+        continue-on-error: true
+      - if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: vistas
+          path: shots/vistas/
           if-no-files-found: ignore
 
       # Empaqueta la carpeta build/ en el formato que espera Pages.
