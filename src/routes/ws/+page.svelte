@@ -18,6 +18,7 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import RiskGauge from '#lib/components/RiskGauge.svelte';
+	import VixCurve from '#lib/components/VixCurve.svelte';
 	import YieldCurve from '#lib/components/YieldCurve.svelte';
 	import { seriesMap } from '#lib/series.ts';
 	import { quotesHeight } from '#lib/tickers.ts';
@@ -195,6 +196,13 @@
 	</div>
 	<div class="col">
 		<RiskGauge risk={data.risk} />
+		<Panel title="VIX y su curva" meta="Volatilidad esperada del S&P 500 · por plazo">
+			<VixCurve curve={data.vix?.data} />
+			{#snippet note()}
+				Lo normal es que suba con el plazo; invertida (lo corto por encima del de 3 meses), el mercado teme algo inmediato.
+				Fuente: Cboe · <Updated at={data.vix?.fetchedAt} source="vix" />
+			{/snippet}
+		</Panel>
 		<Panel title="Curvas de tipos" meta="EE. UU., zona euro y Japón · hoy y hace un año">
 			<YieldCurve
 				curves={[

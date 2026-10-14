@@ -1,0 +1,39 @@
+// Fichas (M29): qué es lo que se busca en NEWS. «Lagarde», «BCE», «Japón» o «NVDA» tienen ficha propia,
+// que sale arriba con un resumen y el enlace a su vista; los titulares van debajo. Sin Svelte, para probarlo.
+import { BANKS, type Bank } from './meetings.ts';
+import { findCountry, type Country } from './countries.ts';
+import { LEADERS, type Leader } from './leaders.ts';
+import { fold } from './search.ts';
+import { TICKERS, type Ticker } from './tickers.ts';
+
+export type Entity =
+	| { kind: 'ticker'; ticker: Ticker }
+	| { kind: 'leader'; leader: Leader }
+	| { kind: 'bank'; bank: Bank }
+	| { kind: 'country'; country: Country };
+
+/** Otros nombres de cada banco central, además de los de BANKS. */
+const BANK_ALIASES: Record<Bank, string[]> = {
+	ecb: ['ECB', 'European Central Bank'],
+	fed: ['Federal Reserve', 'Reserva Federal de EE. UU.', 'FOMC']
+};
+
+/**
+ * La ficha de lo buscado, o null. Solo con el nombre entero (o el apellido de un líder, o el código de un
+ * valor): «Lagarde», «BCE», «Japón», «NVDA», «Zara». Así «inflación en Japón» no abre la ficha de Japón.
+ */
+export function findEntity(query: string | null | undefined): Entity | null {
+	const q = fold(query ?? '').trim().replace(/\s+/g, ' ');
+	if (q.length < 2) return null;
+	const is = (name: string) => fold(name) === q;
+	const ticker = TICKERS.find((t) => is(t.code) || is(t.name) || (t.aliases ?? []).some(is));
+	if (ticker) return { kind: 'ticker', ticker };
+	const leader = LEADERS.find((l) => is(l.name) || is(l.name.split(' ').at(-1) ?? ''));
+	if (leader) return { kind: 'leader', leader };
+	const bank = (Object.keys(BANKS) as Bank[]).find((b) => [BANKS[b].name, BANKS[b].long, ...BANK_ALIASES[b]].some(is));
+	if (bank) return { kind: 'bank', bank };
+	// findCountry también busca por el principio del nombre («reino» → Reino Unido): aquí solo si es entero.
+	const country = findCountry(q);
+	if (country && [country.code, country.iso3, country.name, ...(country.aliases ?? [])].some(is)) return { kind: 'country', country };
+	return null;
+}

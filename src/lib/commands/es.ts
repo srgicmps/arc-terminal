@@ -7,6 +7,7 @@ export default {
 		what: 'España: titulares, cifras clave del INE, turismo y vivienda, el BOE de hoy y comunicados del Gobierno y de Europa.',
 		panels: [
 			{ name: 'Titulares', what: 'Noticias de los medios españoles.' },
+			{ name: 'Terremotos en España', what: 'Los más fuertes de los últimos 10 días (IGN).' },
 			{ name: 'España en cifras', what: 'Último dato de paro, IPC y otros indicadores.' },
 			{ name: 'Turismo y vivienda', what: 'Datos del INE.' },
 			{ name: 'BOE de hoy', what: 'Disposiciones generales; «BOE ›» abre el sumario entero.' },

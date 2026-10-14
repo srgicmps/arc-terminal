@@ -582,4 +582,66 @@
 			height: auto;
 		}
 	}
+
+	/* Subcolumnas también al encajar: una columna con varios paneles que mide el doble de --col-split o más
+	   (rejillas de 2 columnas desde ~1680 px, de 3 desde ~2500 px) los reparte en dos, de izquierda a
+	   derecha, separados por 1 px. Cada fila parte de --fit-panel-min y se reparte el alto que sobra. Si
+	   el número de paneles es impar, el último ocupa las dos subcolumnas. */
+	@media (min-width: 1680px) {
+		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel)) {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			grid-auto-rows: auto;
+			gap: var(--hair);
+			background: var(--line);
+		}
+	}
+
+	@media (min-width: 2500px) {
+		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel)) {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			grid-auto-rows: auto;
+			gap: var(--hair);
+			background: var(--line);
+		}
+	}
+
+	@media (min-width: 1680px) {
+		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max)) {
+			height: auto;
+			max-height: none;
+			border-top: 0;
+		}
+
+		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con su
+		   fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. */
+		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max):not(:has(.chart, .map, .tv, .curve, .bars))) {
+			contain: size;
+			contain-intrinsic-block-size: var(--fit-panel-min);
+		}
+
+		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:last-child:nth-child(odd)) {
+			grid-column: 1 / -1;
+		}
+	}
+
+	@media (min-width: 2500px) {
+		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max)) {
+			height: auto;
+			max-height: none;
+			border-top: 0;
+		}
+
+		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con su
+		   fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. */
+		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max):not(:has(.chart, .map, .tv, .curve, .bars))) {
+			contain: size;
+			contain-intrinsic-block-size: var(--fit-panel-min);
+		}
+
+		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:last-child:nth-child(odd)) {
+			grid-column: 1 / -1;
+		}
+	}
 </style>

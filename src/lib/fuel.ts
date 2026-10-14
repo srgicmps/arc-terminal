@@ -139,6 +139,11 @@ export interface EuFuelData {
 	rows: EuFuelRow[];
 }
 
+/** Parte del precio que son impuestos (IVA e impuestos especiales), en %; null si falta alguno de los dos precios. */
+export function taxShare(p: TaxedPrice): number | null {
+	return p.tax && p.net !== null ? ((p.tax - p.net) / p.tax) * 100 : null;
+}
+
 /** El día de una celda de fecha (un Date o «2026-10-12»); si no lo es, null. */
 function dayOf(cell: unknown): string | null {
 	if (cell instanceof Date && !Number.isNaN(cell.getTime())) return cell.toISOString().slice(0, 10);
