@@ -10,11 +10,13 @@ export const DAYS = 90;
 /**
  * Clases de Wikidata y el tipo que les corresponde. Se busca «instancia de» la clase o de cualquier
  * subclase suya (P31/P279*): «elecciones presidenciales de Brasil» es subclase de «elección presidencial».
- * Q858439 elección presidencial · Q1076105 elecciones generales · Q43109 referéndum.
+ * Q858439 elección presidencial · Q1076105 elección general · Q2618461 elección legislativa (se muestra
+ * como «General») · Q43109 referéndum. Etiquetas comprobadas con wbgetentities en la Action del PR #89.
  */
 export const CLASSES: [qid: string, kind: ElectionKind][] = [
 	['Q858439', 'presidential'],
 	['Q1076105', 'general'],
+	['Q2618461', 'general'],
 	['Q43109', 'referendum']
 ];
 
