@@ -14,9 +14,11 @@
 	interface Props {
 		curve?: YieldCurveData;
 		curves?: { label: string; curve: YieldCurveData | undefined }[];
+		/** Con `curve`: valores en puntos (el VIX), no en %: sin «%», la variación en puntos y en rojo si sube. */
+		points?: boolean;
 	}
 
-	let { curve, curves }: Props = $props();
+	let { curve, curves, points = false }: Props = $props();
 
 	/** Plazos del gráfico comparado: los que publican las tres fuentes (Japón empieza en 1A). */
 	const AXIS = ['3M', '1A', '2A', '5A', '10A', '30A'];
@@ -82,9 +84,11 @@
 		for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(v);
 		return out;
 	});
-	const pct = (v: number | null) => (v === null ? '—' : `${nf(v, 2)} %`);
+	const pct = (v: number | null) => (v === null ? '—' : points ? nf(v, 2) : `${nf(v, 2)} %`);
+	/** Variación entre dos días: en pb para los tipos y en puntos (dos decimales) con `points`. */
+	const diff = (a: number | null, b: number | null) => (a === null || b === null ? null : points ? a - b : Math.round((a - b) * 100));
 	const aria = $derived(
-		curve ? `Curva de tipos del ${single?.today.date}` : `Curvas de tipos de ${compared.map((c) => c.label).join(', ')}`
+		curve ? `Curva ${points ? 'de volatilidad' : 'de tipos'} del ${single?.today.date}` : `Curvas de tipos de ${compared.map((c) => c.label).join(', ')}`
 	);
 </script>
 
@@ -114,7 +118,7 @@
 			<tr>
 				<th>Plazo</th>
 				<th>{period(single.today.date)}</th>
-				{#if single.before}<th>{period(single.before.date)}</th><th>Var. (pb)</th>{/if}
+				{#if single.before}<th>{period(single.before.date)}</th><th>{points ? 'Var.' : 'Var. (pb)'}</th>{/if}
 			</tr>
 		</thead>
 		<tbody>
@@ -126,7 +130,7 @@
 					<td>{pct(a)}</td>
 					{#if single.before}
 						<td class="mut">{pct(b)}</td>
-						<td><Change value={a !== null && b !== null ? Math.round((a - b) * 100) : null} digits={0} /></td>
+						<td><Change value={diff(a, b)} digits={points ? 2 : 0} invert={points} /></td>
 					{/if}
 				</tr>
 			{/each}
