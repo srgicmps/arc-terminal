@@ -9,6 +9,8 @@
 //   páginas. Esa caché tiene nombre fijo (sobrevive a las publicaciones) y un límite de entradas.
 // - Sin conexión: la vista abierta antes sale de esa caché; una que nunca se abrió cae en TOP.
 // - Fuentes de Google: primero la caché (no cambian nunca).
+// - Motor de ajedrez (static/engine/, unos 7 MB): no entra en la precaché, para no descargarlo a quien no
+//   juega. Se guarda la primera vez que se usa, en una caché propia que sobrevive a las publicaciones.
 // - Todo lo demás (widgets de TradingView incluidos) pasa directo a la red, sin guardar nada.
 import { self } from '$app/service-worker';
 import { immutable, assets, prerendered } from '$app/manifest';
@@ -20,6 +22,7 @@ const CACHE = `arc-${version}`;
 const PAGES = 'arc-pages';
 const PAGES_MAX = 40;
 const FONTS = 'arc-fonts';
+const ENGINE = 'arc-engine';
 
 // La web vive en /arc-terminal/; el scope del SW es esa carpeta. Las rutas del manifest
 // son relativas a ella.
@@ -34,6 +37,10 @@ const STATIC = assets
 	.map((f) => url(f.path))
 	.filter((href) => /\.(webmanifest|png|svg|ico)$/.test(href) && !DATA.test(new URL(href).pathname));
 const PRECACHE = [...IMMUTABLE, ...STATIC];
+/** Archivos del motor de ajedrez de esta publicación (static/engine/): lo demás de su caché sobra. */
+const ENGINE_FILES = assets
+	.map((f) => url(f.path))
+	.filter((href) => new URL(href).pathname.startsWith(`${scope.pathname}engine/`));
 /** La portada TOP y sus datos (si la build los genera): siempre disponibles sin conexión. */
 const TOP_DATA = url('__data.json');
 const TOP = [scope.href, ...(prerendered.some((f) => url(f.path) === TOP_DATA) ? [TOP_DATA] : [])];
@@ -68,10 +75,13 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
 	event.waitUntil(
 		(async () => {
-			// Se borran las cachés de publicaciones viejas, pero nunca la de páginas ni la de fuentes.
+			// Se borran las cachés de publicaciones viejas, pero nunca la de páginas, la de fuentes ni la del motor.
 			for (const key of await caches.keys()) {
-				if (key !== CACHE && key !== PAGES && key !== FONTS) await caches.delete(key);
+				if (key !== CACHE && key !== PAGES && key !== FONTS && key !== ENGINE) await caches.delete(key);
 			}
+			// Del motor, solo los archivos de esta publicación: si cambia de versión, el viejo (7 MB) se borra.
+			const engine = await caches.open(ENGINE);
+			for (const request of await engine.keys()) if (!ENGINE_FILES.includes(request.url)) await engine.delete(request);
 			await self.clients.claim();
 		})()
 	);
@@ -95,6 +105,15 @@ self.addEventListener('fetch', (event) => {
 		event.respondWith(page(request));
 		return;
 	}
+
+	// Los archivos del motor llevan la versión en el nombre: si cambia, es otro archivo.
+	if (target.pathname.startsWith(`${scope.pathname}engine/`)) {
+		event.respondWith(cacheFirst(request, ENGINE));
+		return;
+	}
+
+	// El archivo de titulares (NEWS) va directo a la red: cada mes pesa ~2 MB y ocuparía la caché de páginas.
+	if (target.pathname.includes('/data/news-archive/')) return;
 
 	if (DATA.test(target.pathname)) {
 		event.respondWith(networkFirst(request));

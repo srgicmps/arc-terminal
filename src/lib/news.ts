@@ -1,4 +1,4 @@
-import type { Ticker } from './commands.ts';
+import type { Ticker } from './tickers.ts';
 import type { NewsItem } from './types.ts';
 
 // Secciones de titulares (static/data/news-<clave>.json).
@@ -9,7 +9,8 @@ export const NEWS_SECTIONS = [
 	{ key: 'ws', label: 'Mercados' },
 	{ key: 'tech', label: 'Tecnología' },
 	{ key: 'ai', label: 'IA' },
-	{ key: 'gov', label: 'Gobiernos' }
+	{ key: 'gov', label: 'Gobiernos' },
+	{ key: 'intl', label: 'Organismos' }
 ] as const;
 
 /** «eco» → «Economía», para la etiqueta de cada titular. */
@@ -25,16 +26,20 @@ export interface Mention extends NewsItem {
 }
 
 /** Quita las tildes sin cambiar mayúsculas: «Telefónica» → «Telefonica». */
-const plain = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '');
+export const plain = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '');
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Expresión para un nombre: palabra entera y sin tildes. Las letras dan igual en mayúscula o minúscula,
  * salvo la primera si el nombre empieza por mayúscula («Meta» sí, «meta» no).
  */
-function namePattern(name: string): RegExp {
-	const chars = Array.from(plain(name.trim()));
-	const body = chars
+export function namePattern(name: string): RegExp {
+	return new RegExp(`(?<![\\p{L}\\p{N}])${nameBody(name)}(?![\\p{L}\\p{N}])`, 'u');
+}
+
+/** El cuerpo de namePattern, sin los bordes de palabra: para juntar varios nombres en una sola expresión. */
+export function nameBody(name: string): string {
+	return Array.from(plain(name.trim()))
 		.map((c, i) => {
 			if (/\s/.test(c)) return '\\s+';
 			const lo = c.toLowerCase();
@@ -45,7 +50,6 @@ function namePattern(name: string): RegExp {
 		})
 		.join('')
 		.replace(/(\\s\+)+/g, '\\s+');
-	return new RegExp(`(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])`, 'u');
 }
 
 /** Nombres con los que se busca un valor: el suyo (sin «(ETF)») y sus alias. */

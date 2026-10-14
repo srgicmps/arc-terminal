@@ -1,9 +1,10 @@
 // Fuentes nuevas de WX: calidad del aire (Open-Meteo/CAMS), avisos (MeteoAlarm), oleaje y sol.
 // Las respuestas de ejemplo copian la forma de las reales, recortadas.
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { parseAir } from '../sources/air.ts';
 import { parseAlerts } from '../sources/alerts.ts';
-import { parseCoasts, parseSun } from '../sources/world.ts';
+import { parseCoasts, parseSun, weather } from '../sources/world.ts';
+import { mockFetch } from './mock.ts';
 
 describe('air (Open-Meteo, calidad del aire)', () => {
 	// Cuatro días de horas en hora local, como con timezone=Europe/Madrid.
@@ -204,5 +205,55 @@ describe('oleaje y sol (Open-Meteo)', () => {
 		// Sin el día anterior no hay diferencia; sin datos, nada.
 		expect(parseSun(daily, 7200, 0)?.delta).toBeNull();
 		expect(parseSun({}, 0, 0)).toBeNull();
+	});
+});
+
+describe('weather (fuente completa)', () => {
+	afterEach(() => vi.unstubAllGlobals());
+
+	it('lee los cinco sitios, el agua de los que tienen costa y el oleaje de Menorca', async () => {
+		const days = ['2026-10-13', '2026-10-14', '2026-10-15'];
+		const forecast = (t: number) => ({
+			utc_offset_seconds: 7200,
+			current: { time: '2026-10-14T13:00', temperature_2m: t, relative_humidity_2m: 60, weather_code: 1, wind_speed_10m: 10, wind_direction_10m: 0 },
+			daily: {
+				time: days,
+				weather_code: [1, 2, 3],
+				temperature_2m_max: [20, 21, 22],
+				temperature_2m_min: [12, 13, 14],
+				precipitation_probability_max: [0, 10, 20],
+				wind_speed_10m_max: [10, 11, 12],
+				sunrise: days.map((d) => `${d}T08:00`),
+				sunset: days.map((d) => `${d}T19:00`),
+				daylight_duration: [40000, 39880, 39760]
+			}
+		});
+		const sea = (water: number, wave: number) => ({
+			current: { sea_surface_temperature: water, wave_height: wave },
+			daily: { time: days.slice(1), wave_height_max: [wave, wave], swell_wave_height_max: [0, 0], wave_direction_dominant: [0, 0] }
+		});
+		const fetch = mockFetch((url) =>
+			url.includes('marine-api')
+				? [sea(22, 0.2), sea(22.5, 0.2), sea(21, 0.3), sea(22, 1.1), sea(22.4, 0.4)]
+				: url.includes('api.open-meteo.com/v1/forecast')
+					? [forecast(20), forecast(19), forecast(17), forecast(21), forecast(15)]
+					: undefined
+		);
+		const { places, coasts } = await weather.fetch(undefined);
+		expect(fetch).toHaveBeenCalledTimes(2);
+		expect(places.map((p) => [p.name, p.current.temp, p.sea])).toEqual([
+			['Maó', 20, 22],
+			['Ciutadella', 19, 22.5],
+			['Madrid', 17, null],
+			['Barcelona', 21, 21],
+			['Nueva York', 15, null]
+		]);
+		// La tabla empieza hoy (no ayer) y el sol compara con el día anterior.
+		expect(places[0].daily.map((d) => d.date)).toEqual(['2026-10-14', '2026-10-15']);
+		expect(places[0].sun).toEqual({ sunrise: '2026-10-14T06:00:00.000Z', sunset: '2026-10-14T17:00:00.000Z', daylight: 39880, delta: -120 });
+		expect(coasts?.map((c) => [c.name, c.now.wave])).toEqual([
+			['Costa norte', 1.1],
+			['Costa sur', 0.4]
+		]);
 	});
 });

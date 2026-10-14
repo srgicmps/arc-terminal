@@ -151,16 +151,20 @@ describe('crypto (CoinGecko)', () => {
 		mockFetch((url) => {
 			if (url.includes('/coins/markets'))
 				return [
-					{ id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', current_price: 110000, price_change_percentage_24h: -1.25, market_cap: 2.2e12 },
+					{ id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', current_price: 110000, price_change_percentage_24h: -1.25, price_change_percentage_7d_in_currency: 4.5, market_cap: 2.2e12 },
 					{ id: 'raro', symbol: 'xyz', name: 'Raro', current_price: 1, price_change_percentage_24h: null, market_cap: null }
 				];
 			if (url.includes('/simple/price')) return { bitcoin: { eur: 95000 } };
 			return undefined;
 		});
-		const { coins } = await crypto.fetch(undefined);
-		expect(coins[0]).toEqual({ id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', usd: 110000, eur: 95000, change24h: -1.25, marketCap: 2.2e12 });
+		const { coins, btcHistory } = await crypto.fetch({ coins: [], btcHistory: [{ date: '2000-01-01', usd: 1000 }] });
+		expect(coins[0]).toEqual({ id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', usd: 110000, eur: 95000, change24h: -1.25, change7d: 4.5, marketCap: 2.2e12 });
 		expect(coins[1].eur).toBeNaN();
 		expect(coins[1].change24h).toBeNull();
+		expect(coins[1].change7d).toBeNull();
+		// El cierre de bitcoin se añade al historial de la copia anterior.
+		expect(btcHistory).toHaveLength(2);
+		expect(btcHistory?.at(-1)?.usd).toBe(110000);
 	});
 });
 

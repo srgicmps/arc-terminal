@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import type { Locator, Page } from 'playwright-core';
 import { launch, preview } from './browser.ts';
 
-const PAGES = ['/', '/ws', '/s?sym=NVDA', '/cal', '/mis'];
+const PAGES = ['/', '/ws', '/geo', '/s?sym=NVDA', '/cal', '/mis'];
 const THEMES = ['dark', 'light'] as const;
 
 /** Los 3 colores más repetidos de una captura (agrupados de 8 en 8 por canal), con su parte del total. */
@@ -74,15 +74,27 @@ try {
 			await page.waitForTimeout(6000);
 			console.log(`\nSHOTS ${theme} ${path} · --panel ${tokens.panel} · --line ${tokens.line}`);
 			// En WS, si hay selector de mapa de calor, una captura de cada mapa (comprueba que cargan).
-			const maps = page.locator('.maps button');
+			const maps = page.getByRole('group', { name: 'Mapa de calor' }).getByRole('button');
 			for (let m = 0; m < (await maps.count()); m++) {
 				await maps.nth(m).click();
 				await page.waitForTimeout(5000);
-				const el = page.locator('.tv[data-widget$="heatmap"]').first();
+				const el = page.locator('.tv[data-widget*="heat"]').first();
 				const png = await el.screenshot();
 				const label = (await maps.nth(m).textContent())?.trim() ?? String(m);
 				writeFileSync(`shots/${theme}-map-${label.replace(/\W+/g, '_')}.png`, png);
 				console.log(`  mapa ${label}: ${(await topColors(page, png)).join(' · ')}`);
+				if (theme === 'dark') console.log(`    texto: ${await frameText(el)}`);
+			}
+			// En WS, una captura de cada bolsa del panel «Los que más se mueven» (comprueba que el widget la admite).
+			const hots = page.locator('.hot button');
+			for (let h = 0; h < (await hots.count()); h++) {
+				await hots.nth(h).click();
+				await page.waitForTimeout(5000);
+				const el = page.locator('.tv[data-widget="hotlists"]').first();
+				const png = await el.screenshot();
+				const label = (await hots.nth(h).textContent())?.trim() ?? String(h);
+				writeFileSync(`shots/${theme}-hot-${label.replace(/\W+/g, '_')}.png`, png);
+				console.log(`  bolsa ${label}: ${(await topColors(page, png)).join(' · ')}`);
 				if (theme === 'dark') console.log(`    texto: ${await frameText(el)}`);
 			}
 			for (let i = 0; i < n; i++) {

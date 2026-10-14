@@ -1,7 +1,8 @@
 // Ayudantes pequeños de src/lib: series, tiempo y comandos.
 import { describe, expect, it } from 'vitest';
-import { COMMANDS, TICKERS, tvSymbol } from './commands.ts';
-import { at, change, last, seriesMap, spread } from './series.ts';
+import { COMMANDS } from './commands.ts';
+import { TICKERS, tvSymbol } from './tickers.ts';
+import { at, change, diffDays, last, pctDays, seriesMap, spread } from './series.ts';
 import type { Series } from './types.ts';
 import { compass, sky } from './weather.ts';
 
@@ -25,6 +26,17 @@ describe('series', () => {
 		expect(get('bond10-es')).toBe(es);
 		expect(get('bond10-de')).toBe(de);
 		expect(get('nada')).toBeUndefined();
+	});
+
+	it('pctDays: variación en % frente al día más cercano anterior', () => {
+		const fx = serie('eurusd', [['2025-10-14', 1.0], ['2026-10-05', 1.1], ['2026-10-10', 1.12], ['2026-10-14', 1.1]]);
+		// Hace 7 días es el 7 de octubre: no hay dato y se usa el del 5.
+		expect(pctDays(fx, 7)).toBeCloseTo(0, 6);
+		expect(pctDays(fx, 365)).toBeCloseTo(10, 6);
+		// Antes del primer dato: no se compara.
+		expect(pctDays(fx, 800)).toBeNull();
+		expect(pctDays(es, 7)).toBeNull();
+		expect(pctDays(undefined, 7)).toBeNull();
 	});
 
 	it('last y at', () => {
@@ -92,5 +104,30 @@ describe('commands', () => {
 		expect(tvSymbol('nvda')).toBe('NASDAQ:NVDA');
 		expect(tvSymbol(' ibex ')).toBe('BME:IBC');
 		expect(tvSymbol('nyse:ko')).toBe('NYSE:KO');
+	});
+});
+
+describe('diffDays', () => {
+	const s = {
+		id: 'gas-eu',
+		label: 'UE',
+		unit: '%',
+		source: 'GIE',
+		points: [
+			{ t: '2025-10-12', v: 80 },
+			{ t: '2026-10-05', v: 82.5 },
+			{ t: '2026-10-11', v: 83 },
+			{ t: '2026-10-12', v: 83.4 }
+		]
+	};
+
+	it('compara el último dato con el de hace N días (o el anterior más cercano)', () => {
+		expect(diffDays(s, 7)).toBeCloseTo(0.9);
+		expect(diffDays(s, 365)).toBeCloseTo(3.4);
+		// Sin dato tan antiguo: no se inventa la comparación.
+		expect(diffDays(s, 1000)).toBeNull();
+		expect(diffDays(undefined, 7)).toBeNull();
+		// Solo para series diarias.
+		expect(diffDays({ ...s, points: [{ t: '2026-09', v: 1 }] }, 7)).toBeNull();
 	});
 });

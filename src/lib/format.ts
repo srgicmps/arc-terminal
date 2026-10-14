@@ -51,6 +51,14 @@ const fmtWd = new Intl.DateTimeFormat('es-ES', { timeZone: 'UTC', weekday: 'shor
 
 /** «14:05» */
 export const hm = (iso: string) => fmtHm.format(new Date(iso));
+/** «14:05» en otra zona horaria (la de tu sitio); si la zona no vale, en hora de Madrid. */
+export function hmIn(iso: string, timeZone: string): string {
+	try {
+		return new Intl.DateTimeFormat('es-ES', { timeZone, hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+	} catch {
+		return hm(iso);
+	}
+}
 /** «14 oct» */
 export function dm(iso: string): string {
 	const parts = fmtDm.formatToParts(new Date(iso));
@@ -82,6 +90,8 @@ export function period(t: string): string {
 	if (m) return `${MONTHS[Number(m[2]) - 1]} ${m[1].slice(2)}`;
 	m = t.match(/^(\d{4})-Q(\d)$/);
 	if (m) return `T${m[2]} ${m[1].slice(2)}`;
+	m = t.match(/^(\d{4})-W(\d{2})$/);
+	if (m) return `sem ${Number(m[2])} ${m[1].slice(2)}`;
 	m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
 	if (m) return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]}`;
 	return t;

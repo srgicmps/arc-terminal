@@ -1,22 +1,58 @@
-import { dataset } from '#lib/data.ts';
+import { dataset, type SourceStatus } from '#lib/data.ts';
+import type { FaoData } from '#lib/fao.ts';
+import { missingNote } from '#lib/missing.ts';
 import { headlines, pickSeries } from '#lib/trim.ts';
-import type { ImfData, NewsData, PredictionsData, SeriesData } from '#lib/types.ts';
+import type { G20Data, ImfData, NewsData, PredictionsData, SeriesData, ReleaseCalData } from '#lib/types.ts';
+import { nextMap } from '#lib/nextrelease.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, usdebt, fred, bis, imf, news, predictions] = await Promise.all([
+	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal, fao] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
 		dataset<SeriesData>('usdebt'),
 		dataset<SeriesData>('fred'),
 		dataset<SeriesData>('bis'),
+		// Gas almacenado: la tabla compara con hace un año, así que necesita todo el historial.
+		dataset<SeriesData>('gie'),
+		dataset<SeriesData>('housing'),
 		dataset<ImfData>('imf'),
+		dataset<G20Data>('oecd'),
 		dataset<NewsData>('news-eco'),
-		dataset<PredictionsData>('predictions')
+		dataset<PredictionsData>('predictions'),
+		dataset<SourceStatus[]>('status'),
+		dataset<NewsData>('speeches'),
+		dataset<ReleaseCalData>('releases-cal'),
+		dataset<FaoData>('fao')
 	]);
 	// Del BCE, todo menos los tipos de cambio (están en WS); de los titulares, los 25 que se pintan.
-	const fx = (ecb?.data.series ?? []).filter((s) => s.id.startsWith('eur') && !s.id.startsWith('euribor')).map((s) => s.id);
+	const fx = (ecb?.data.series ?? [])
+		.filter((s) => s.id.startsWith('eur') && !s.id.startsWith('euribor'))
+		.map((s) => s.id);
 	const rest = (ecb?.data.series ?? []).map((s) => s.id).filter((id) => !fx.includes(id));
-	return { eurostat, ecb: pickSeries(ecb, rest), bls, usdebt, fred, bis, imf, news: headlines(news, 25), predictions };
+	// Si no hay datos de FRED, solo el motivo (sin clave, error de descarga…), no todo status.json.
+	const fredMissing = fred ? null : missingNote(status?.data, 'fred');
+	return {
+		eurostat,
+		ecb: pickSeries(ecb, rest),
+		bls,
+		usdebt,
+		fred,
+		fredMissing,
+		bis,
+		gie,
+		housing,
+		imf,
+		g20,
+		news: headlines(news, 25),
+		predictions,
+		speeches: headlines(speeches, 12),
+		fao,
+		// Próximo dato de cada serie, calculado aquí: al navegador solo le llega la fecha y el título.
+		next: nextMap(
+			[eurostat, bls, fred, usdebt, bis].flatMap((d) => d?.data.series.map((s) => s.id) ?? []),
+			cal?.data.events ?? []
+		)
+	};
 };

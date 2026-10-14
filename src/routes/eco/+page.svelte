@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import BalanceSheets from '#lib/components/BalanceSheets.svelte';
+	import HousingTable from '#lib/components/HousingTable.svelte';
 	import ImfTable from '#lib/components/ImfTable.svelte';
 	import MortgageCalc from '#lib/components/MortgageCalc.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
@@ -9,17 +11,32 @@
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { compact, period } from '#lib/format.ts';
-	import { last, seriesMap, spread } from '#lib/series.ts';
+	import { compact, dm, period } from '#lib/format.ts';
+	import { change, diffDays, last, seriesMap, spread } from '#lib/series.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	const get = $derived(seriesMap(data.eurostat, data.ecb, data.bls, data.usdebt, data.fred));
 	const geos = ['es', 'ea', 'de', 'fr', 'it', 'pt'];
-	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: id !== 'gdp' }));
+	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: !id.startsWith('gdp') }));
 
-	const premium = $derived(spread(get('bond10-es'), get('bond10-de'), 'premium-es', 'Prima de riesgo'));
+	// Primas de riesgo: diferencia con el bono alemán a 10 años, en puntos básicos.
+	const PREMIUMS = [
+		{ geo: 'es', name: 'España' },
+		{ geo: 'it', name: 'Italia' },
+		{ geo: 'fr', name: 'Francia' },
+		{ geo: 'pt', name: 'Portugal' },
+		{ geo: 'gr', name: 'Grecia' }
+	];
+	const premiums = $derived(
+		PREMIUMS.map((p) => ({
+			series: spread(get(`bond10-${p.geo}`), get('bond10-de'), `premium-${p.geo}`, `Prima de ${p.name}`),
+			name: p.name,
+			decimals: 0,
+			inverse: true
+		}))
+	);
 	const debtUs = $derived(last(get('debt-us')));
 </script>
 
@@ -28,21 +45,56 @@
 <div class="grid grid-2">
 	<div class="col">
 		<Panel title="Paro" meta="% de la población activa">
-			<SeriesTable head="País" rows={byGeo('unemployment')} />
+			<SeriesTable next={data.next} head="País" rows={byGeo('unemployment')} />
 		</Panel>
 		<Panel title="Inflación" meta="IPCA, variación anual">
-			<SeriesTable head="País" rows={byGeo('inflation')} />
+			<SeriesTable next={data.next} head="País" rows={byGeo('inflation')} />
 		</Panel>
+		{#if data.g20}
+			{@const g20 = data.g20}
+			<Panel title="Inflación del G20" meta="IPC, variación anual">
+				<SeriesTable
+					head="País"
+					rows={g20.data.series.map((series) => ({ series, name: series.label, decimals: 1, inverse: true }))}
+					spark={12}
+				/>
+				{#snippet note()}
+					Fuente: {g20.data.via === 'oecd' ? 'OCDE' : 'OCDE, vía DBnomics'} · <Updated at={g20.fetchedAt} source="oecd" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="PIB" meta="Variación trimestral">
-			<SeriesTable head="País" rows={byGeo('gdp')} />
+			<SeriesTable next={data.next} head="País" rows={byGeo('gdp')} />
 		</Panel>
+		{#if get('gdp-yoy-es')}
+			<Panel title="PIB interanual" meta="Frente al mismo trimestre del año anterior">
+				<SeriesTable head="País" rows={byGeo('gdp-yoy')} />
+			</Panel>
+		{/if}
 		<Panel title="Paro juvenil" meta="Menores de 25 años">
-			<SeriesTable head="País" rows={byGeo('youth-unemployment')} />
+			<SeriesTable next={data.next} head="País" rows={byGeo('youth-unemployment')} />
 		</Panel>
 		<Panel title="Deuda pública" meta="% del PIB">
-			<SeriesTable head="País" rows={byGeo('debt')} />
+			<SeriesTable next={data.next} head="País" rows={byGeo('debt')} />
 			{#snippet note()}Fuente: Eurostat · <Updated at={data.eurostat?.fetchedAt} source="eurostat" />{/snippet}
 		</Panel>
+		{#if data.fao?.data.series.length}
+			{@const fao = data.fao}
+			<Panel title="Precios de los alimentos" meta="Índice FAO · 2014–2016 = 100">
+				<SeriesTable
+					head="Índice"
+					rows={fao.data.series.map((series) => ({ series, name: series.label, inverse: true }))}
+					spark={36}
+					pct
+					extra={[{ head: 'Año', value: (s) => change(s, 12), unit: ' %', digits: 1 }]}
+				/>
+				{#snippet note()}
+					Fuente: <a href="https://www.fao.org/worldfoodsituation/foodpricesindex/en/" target="_blank" rel="noopener">FAO</a>, precios
+					internacionales en dólares · variación mensual y anual{fao.data.released ? ` · publicado el ${dm(fao.data.released)}` : ''} ·
+					<Updated at={fao.fetchedAt} source="fao" />
+				{/snippet}
+			</Panel>
+		{/if}
 	</div>
 	<div class="col">
 		<Panel title="Próximas reuniones" meta="Decisión de tipos · hora de España" jump={{ code: 'CAL', href: resolve('/cal') }}>
@@ -56,7 +108,7 @@
 			{#snippet note()}Calendarios oficiales del BCE y de la Fed. Probabilidades: Polymarket, apuestas y no pronósticos.{/snippet}
 		</Panel>
 		<Panel title="BCE" meta="Tipos y euríbor">
-			<SeriesTable
+			<SeriesTable next={data.next}
 				head="Tipo"
 				rows={[
 					{ series: get('ecb-dfr'), name: 'Facilidad de depósito', decimals: 2 },
@@ -69,6 +121,18 @@
 				]}
 			/>
 		</Panel>
+		{#if data.housing}
+			<Panel title="Vivienda en el mundo" meta="Precio, variación interanual">
+				<HousingTable series={data.housing.data.series} />
+				{#if get('mortgage30-us')}
+					<SeriesTable head="EE. UU." rows={[{ series: get('mortgage30-us'), name: 'Hipoteca fija a 30 años', decimals: 2, inverse: true }]} />
+				{/if}
+				{#snippet note()}
+					Real: descontada la inflación. Fuentes: BIS, precios de la vivienda; Freddie Mac vía FRED ·
+					<Updated at={data.housing?.fetchedAt} source="housing" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Tu hipoteca" meta="Variable · euríbor a 12 meses">
 			<MortgageCalc euribor={get('euribor-12m')} />
 			{#snippet note()}Cuota con el último euríbor mensual del BCE más tu diferencial. Se calcula y se guarda solo en este navegador.{/snippet}
@@ -83,28 +147,49 @@
 				{/snippet}
 			</Panel>
 		{/if}
+		<Panel title="Discursos de banqueros centrales" meta="Los más recientes">
+			<NewsList items={data.speeches?.data.items ?? []} />
+			{#snippet note()}Recopilados por el BIS · <Updated at={data.speeches?.fetchedAt} source="speeches" />{/snippet}
+		</Panel>
 		<Panel title="Bancos centrales" meta="Tipo oficial · último cambio">
-			<SeriesTable
+			<SeriesTable next={data.next}
 				head="Banco"
 				rows={(data.bis?.data.series ?? []).map((series) => ({ series, name: series.label, decimals: 2 }))}
 			/>
 			{#snippet note()}Fuente: BIS, tipos oficiales de los bancos centrales · <Updated at={data.bis?.fetchedAt} />{/snippet}
 		</Panel>
+		<Panel title="Balances de los bancos centrales" meta="Total del activo · semanal">
+			<BalanceSheets
+				rows={[
+					{ name: 'BCE (Eurosistema)', series: get('ecb-balance'), currency: '€' },
+					{ name: 'Reserva Federal', series: get('fed-balance'), currency: '$' }
+				]}
+			/>
+			{#snippet note()}
+				Sube cuando el banco central compra deuda (QE, expansión cuantitativa) y baja cuando la deja vencer o la vende (QT).
+				Fuentes: BCE · <Updated at={data.ecb?.fetchedAt} source="ecb" /> y FRED · <Updated at={data.fred?.fetchedAt} source="fred" />
+			{/snippet}
+		</Panel>
 		<Panel title="Bonos a 10 años" meta="Rentabilidad media mensual">
-			<SeriesTable
+			<SeriesTable next={data.next}
 				head="País"
 				rows={[
 					{ series: get('bond10-es'), decimals: 2 },
 					{ series: get('bond10-de'), decimals: 2 },
 					{ series: get('bond10-fr'), decimals: 2 },
 					{ series: get('bond10-it'), decimals: 2 },
-					{ series: premium, name: 'Prima España (pb)', decimals: 0, inverse: true }
+					{ series: get('bond10-pt'), decimals: 2 },
+					{ series: get('bond10-gr'), name: 'Grecia', decimals: 2 }
 				]}
 			/>
 			{#snippet note()}Fuente: BCE · <Updated at={data.ecb?.fetchedAt} source="ecb" />{/snippet}
 		</Panel>
+		<Panel title="Primas de riesgo" meta="Frente al bono alemán · pb">
+			<SeriesTable head="País" rows={premiums} spark={12} />
+			{#snippet note()}Diferencia de rentabilidad a 10 años con Alemania, media mensual. Fuente: BCE{/snippet}
+		</Panel>
 		<Panel title="EE. UU." meta="BLS y Tesoro">
-			<SeriesTable
+			<SeriesTable next={data.next}
 				head="Indicador"
 				rows={[
 					{ series: get('cpi-us'), name: 'Inflación (IPC)', inverse: true },
@@ -125,7 +210,7 @@
 		</Panel>
 		<Panel title="Fed y mercados" meta="EE. UU. · FRED">
 			{#if data.fred}
-				<SeriesTable
+				<SeriesTable next={data.next}
 					head="Indicador"
 					rows={[
 						{ series: get('fedfunds-us'), name: 'Fondos federales', decimals: 2 },
@@ -140,13 +225,27 @@
 					]}
 				/>
 			{:else}
-				<p class="empty">Falta la clave FRED_API_KEY en GitHub Secrets.</p>
+				<p class="empty">{data.fredMissing}</p>
 			{/if}
 			{#snippet note()}
 				Fuente: FRED, Fed de San Luis (usa su API sin estar respaldado por ella)
 				{#if data.fred}· <Updated at={data.fred.fetchedAt} source="fred" />{/if}
 			{/snippet}
 		</Panel>
+		{#if data.gie?.data.series.length}
+			<Panel title="Gas almacenado" meta="% de llenado · en puntos">
+				<SeriesTable
+					head="Zona"
+					spark={90}
+					rows={data.gie.data.series.map((series) => ({ series, name: series.label, decimals: 1 }))}
+					extra={[
+						{ head: '7 días', value: (s) => diffDays(s, 7) },
+						{ head: '1 año', value: (s) => diffDays(s, 365) }
+					]}
+				/>
+				{#snippet note()}Fuente: GIE AGSI+ · <Updated at={data.gie?.fetchedAt} source="gie" />{/snippet}
+			</Panel>
+		{/if}
 		{#if data.predictions?.data.economy.length}
 			<Panel title="Lo que descuenta el mercado" meta="Polymarket">
 				<PredictionList items={data.predictions.data.economy.slice(0, 6)} />
