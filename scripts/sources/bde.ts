@@ -1,5 +1,6 @@
 // Banco de España: indicadores financieros diarios (tabla 1.2 de la «Síntesis de indicadores»), sin clave.
 // https://www.bde.es/webbe/es/estadisticas/otras-clasificaciones/publicaciones/sintesis-indicadores/capitulo-1.html
+// Reutilización libre citando la fuente (aviso legal del BdE). No publican límite por IP: un CSV cada 3 h.
 // Un CSV en Latin-1 con una columna por serie (la fila «CÓDIGO DE LA SERIE» dice cuál es cuál) y una fila por
 // día hábil, con la fecha como «01 OCT 2026». Los huecos van como «_». De aquí sale la prima de riesgo diaria
 // de España; el BCE solo da la media mensual.
@@ -26,8 +27,8 @@ export function bdeDate(value: string): string | null {
 	return `${m[3]}-${String(month).padStart(2, '0')}-${m[1].padStart(2, '0')}`;
 }
 
-/** Cuántos días hábiles se guardan: algo más de un año. */
-const KEEP = 270;
+/** Cuántos días hábiles se guardan: unas seis semanas (ECO pinta el último y el de hace 7 días). */
+const KEEP = 30;
 
 /** Lee el CSV (ya pasado a texto): columnas por el código de la serie y una fila por día. */
 export function parseBde(text: string): Series[] {
