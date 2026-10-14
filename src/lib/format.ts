@@ -90,6 +90,7 @@ export function period(t: string): string {
 /** Nombres de países y zonas. */
 export const GEO: Record<string, string> = {
 	ES: 'España',
+	IB: 'Baleares',
 	EA: 'Zona euro',
 	EU: 'UE',
 	DE: 'Alemania',
