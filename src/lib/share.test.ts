@@ -56,13 +56,24 @@ describe('shareOrCopy', () => {
 		expect(await shareOrCopy(info, { clipboard: { writeText } }, legacy)).toBe('copied');
 		expect(legacy).toHaveBeenCalledWith(shareText(info));
 		expect(await shareOrCopy(info, { clipboard: { writeText } })).toBe('failed');
-		expect(await shareOrCopy(info, {}, () => { throw new Error('x'); })).toBe('failed');
+		expect(
+			await shareOrCopy(info, {}, () => {
+				throw new Error('x');
+			})
+		).toBe('failed');
 	});
 });
 
 describe('textos de las vistas', () => {
 	it('FUEL', () => {
-		const s = fuelShare({ fuel: 'Gasolina 95', place: 'Menorca', station: 'PETRO', town: 'Maó', price: 1.559, avg: 1.6123 });
+		const s = fuelShare({
+			fuel: 'Gasolina 95',
+			place: 'Menorca',
+			station: 'PETRO',
+			town: 'Maó',
+			price: 1.559,
+			avg: 1.6123
+		});
 		expect(s.text).toBe('Gasolina 95 más barata en Menorca: PETRO (Maó) 1,559 €/L. Media de la zona: 1,612 €/L.');
 		expect(fuelShare({ fuel: 'GLP', place: 'Madrid', station: 'A', town: 'B', price: 1 }).text).not.toContain('Media');
 	});
