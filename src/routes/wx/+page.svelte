@@ -2,16 +2,190 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { nf, weekday } from '#lib/format.ts';
-	import { compass, sky } from '#lib/weather.ts';
+	import { dm, hm, nf, weekday } from '#lib/format.ts';
+	import {
+		ALERT_NAMES,
+		POLLEN_KEYS,
+		POLLEN_NAMES,
+		aqiLevel,
+		compass,
+		pollenLevel,
+		seaLevel,
+		sky,
+		uvLevel
+	} from '#lib/weather.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	const places = $derived(data.weather?.data.places ?? []);
+	const coasts = $derived(data.weather?.data.coasts ?? []);
+	const air = $derived(data.air?.data ?? null);
+	const alerts = $derived(data.alerts?.data.alerts ?? null);
+
+	// Solo los pólenes que se notan algún día (fuera de temporada, CAMS los deja vacíos o a cero).
+	const pollens = $derived(
+		air ? POLLEN_KEYS.filter((k) => air.days.some((d) => (d.pollen[k] ?? 0) >= 1)) : []
+	);
+	const aqiNow = $derived(aqiLevel(air?.now.aqi));
+
+	/** Las fechas de los avisos, en hora de Madrid: «14 oct 12:00». */
+	const at = (iso: string) => (iso ? `${dm(iso)} ${hm(iso)}` : '');
+	/** «2026-10-14T13:00» (hora local de Open-Meteo) → «13:00». */
+	const hour = (t: string) => t.slice(11, 16);
+	const m = (v: number | null) => (v === null ? '—' : `${nf(v, 1)} m`);
 </script>
 
-<ViewHeader code="WX" title="El tiempo" sub="Menorca, Madrid, Barcelona y Nueva York · Open-Meteo" />
+<ViewHeader code="WX" title="El tiempo" sub="Menorca, Madrid, Barcelona y Nueva York · Open-Meteo, CAMS y MeteoAlarm" />
+
+<div class="grid grid-2e">
+	<div class="col">
+		<Panel title="Avisos · Menorca" meta="AEMET vía MeteoAlarm">
+			{#if alerts === null}
+				<p class="empty">Sin datos de avisos todavía.</p>
+			{:else if !alerts.length}
+				<p class="empty">Sin avisos.</p>
+			{:else}
+				<ul class="alerts">
+					{#each alerts as a (a.id)}
+						<li class="al al-{a.level}">
+							<a href={a.url} target="_blank" rel="noopener">
+								<span class="al-h"><b>{ALERT_NAMES[a.level]}</b> · {a.hazard}</span>
+								<span class="al-m">{a.area} · {at(a.onset)}{#if a.expires} → {at(a.expires)}{/if}</span>
+							</a>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</Panel>
+
+		<Panel title="Mar · Menorca" meta="Norte frente a sur">
+			{#if !coasts.length}
+				<p class="empty">Sin datos del mar todavía.</p>
+			{:else}
+				<div class="scroll">
+					<table class="t">
+						<thead>
+							<tr><th>Costa</th><th class="l">Estado</th><th>Ola</th><th>Fondo</th><th class="wide">Periodo</th><th>De</th></tr>
+						</thead>
+						<tbody>
+							{#each coasts as c (c.name)}
+								{@const lv = seaLevel(c.now.wave)}
+								<tr>
+									<td>{c.name}<span class="sub">{c.spot}</span></td>
+									<td class="l">{#if lv}<span class="lv lv-{lv.tone}">{lv.label}</span>{:else}—{/if}</td>
+									<td>{m(c.now.wave)}</td>
+									<td class="mut">{m(c.now.swell)}</td>
+									<td class="mut wide">{c.now.wavePeriod === null ? '—' : `${nf(c.now.wavePeriod, 0)} s`}</td>
+									<td class="mut">{c.now.waveDir === null ? '—' : compass(c.now.waveDir)}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+				<div class="scroll sep">
+					<table class="t">
+						<thead>
+							<tr>
+								<th>Ola máx.</th>
+								{#each coasts[0].daily as d (d.date)}<th>{weekday(d.date)}</th>{/each}
+							</tr>
+						</thead>
+						<tbody>
+							{#each coasts as c (c.name)}
+								<tr>
+									<td>{c.name}</td>
+									{#each c.daily as d (d.date)}
+										{@const lv = seaLevel(d.waveMax)}
+										<td class="lv-{lv?.tone ?? 'ok'}">{m(d.waveMax)}</td>
+									{/each}
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
+		</Panel>
+	</div>
+
+	<div class="col">
+		<Panel title="Aire · {air?.place ?? 'Maó'}" meta="Índice europeo">
+			{#if !air}
+				<p class="empty">Sin datos de calidad del aire todavía.</p>
+			{:else}
+				<div class="now">
+					<b>{nf(air.now.aqi, 0)}</b>
+					{#if aqiNow}<span class="lv lv-{aqiNow.tone}">{aqiNow.label}</span>{/if}
+					<ul>
+						<li>PM2,5 <span>{nf(air.now.pm25, 0)}</span></li>
+						<li>PM10 <span>{nf(air.now.pm10, 0)}</span></li>
+						<li>O₃ <span>{nf(air.now.o3, 0)}</span></li>
+						<li>NO₂ <span>{nf(air.now.no2, 0)}</span></li>
+					</ul>
+				</div>
+				<div class="scroll">
+					<table class="t">
+						<thead>
+							<tr><th>Hora</th>{#each air.hours as h (h.time)}<th>{hour(h.time)}</th>{/each}</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>Aire</td>
+								{#each air.hours as h (h.time)}<td class="lv-{aqiLevel(h.aqi)?.tone ?? 'ok'}">{nf(h.aqi, 0)}</td>{/each}
+							</tr>
+							<tr>
+								<td>UV</td>
+								{#each air.hours as h (h.time)}<td class="lv-{uvLevel(h.uv)?.tone ?? 'ok'}">{nf(h.uv, 0)}</td>{/each}
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			{/if}
+		</Panel>
+
+		{#if air}
+			{@const uvNow = uvLevel(air.now.uv)}
+			<Panel title="UV y polen" meta={uvNow ? `UV ahora ${nf(air.now.uv, 0)} · ${uvNow.label}` : undefined}>
+				<div class="scroll">
+					<table class="t">
+						<thead>
+							<tr>
+								<th>Máx.</th>
+								{#each air.days as d (d.date)}<th>{weekday(d.date)}</th>{/each}
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>Aire</td>
+								{#each air.days as d (d.date)}<td class="lv-{aqiLevel(d.aqi)?.tone ?? 'ok'}">{nf(d.aqi, 0)}</td>{/each}
+							</tr>
+							<tr>
+								<td>UV</td>
+								{#each air.days as d (d.date)}
+									{@const lv = uvLevel(d.uv)}
+									<td class="lv-{lv?.tone ?? 'ok'}">{nf(d.uv, 0)}<span class="sub">{lv?.label ?? ''}</span></td>
+								{/each}
+							</tr>
+							{#each pollens as k (k)}
+								<tr>
+									<td>{POLLEN_NAMES[k]}</td>
+									{#each air.days as d (d.date)}
+										{@const lv = pollenLevel(k, d.pollen[k])}
+										<td class="lv-{lv?.tone ?? 'ok'}">{lv?.label ?? '—'}</td>
+									{/each}
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+				{#if !pollens.length}<p class="empty">Polen: nulo o sin datos estos días.</p>{/if}
+				{#snippet note()}
+					Partículas y gases en µg/m³. Polen en granos/m³, con umbrales orientativos.
+				{/snippet}
+			</Panel>
+		{/if}
+	</div>
+</div>
 
 {#if !places.length}<p class="empty">Sin datos todavía.</p>{/if}
 
@@ -51,7 +225,13 @@
 		</div>
 	{/each}
 </div>
-<p class="foot">Fuente: Open-Meteo (CC BY 4.0) · <Updated at={data.weather?.fetchedAt} /></p>
+<p class="foot">
+	Fuentes: Open-Meteo (CC BY 4.0) · Calidad del aire, UV y polen: contiene información modificada del Servicio de
+	Vigilancia Atmosférica de Copernicus (CAMS), vía Open-Meteo · Avisos: EUMETNET-MeteoAlarm con datos de AEMET; el
+	aviso oficial es el de <a href="https://www.aemet.es/es/eltiempo/prediccion/avisos" target="_blank" rel="noopener">AEMET</a>
+	· Tiempo <Updated at={data.weather?.fetchedAt} /> · Aire <Updated at={data.air?.fetchedAt} /> · Avisos
+	<Updated at={data.alerts?.fetchedAt} />
+</p>
 
 <style>
 	.now {
@@ -94,9 +274,106 @@
 		color: var(--amber);
 	}
 
+	@container (max-width: 420px) {
+		.wide {
+			display: none;
+		}
+	}
+
+	.sep {
+		border-top: 1px solid var(--line);
+	}
+
+	/* Niveles: discreto, ámbar o rojo. El punto acompaña al texto, que es el que manda. */
+	.lv {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-family: var(--sans);
+		font-size: var(--fs-s);
+	}
+
+	.lv::before {
+		content: '';
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: currentColor;
+		opacity: 0.8;
+	}
+
+	.lv-ok {
+		color: var(--muted);
+	}
+
+	.lv-mid {
+		color: var(--amber);
+	}
+
+	.lv-bad {
+		color: var(--down);
+	}
+
+	/* Avisos: una línea fina del color del aviso a la izquierda. */
+	.alerts {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.al + .al {
+		border-top: 1px solid var(--line);
+	}
+
+	.al a {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		padding: 8px 12px 8px 10px;
+		border-left: 2px solid var(--c);
+		color: var(--fg);
+		text-decoration: none;
+	}
+
+	.al a:hover {
+		background: var(--raise);
+	}
+
+	.al-yellow {
+		--c: #d9c25b;
+	}
+
+	.al-orange {
+		--c: #ef8a3c;
+	}
+
+	.al-red {
+		--c: var(--down);
+	}
+
+	.al-h {
+		font-family: var(--sans);
+		font-size: var(--fs-m);
+	}
+
+	.al-h b {
+		color: var(--c);
+		font-weight: 500;
+	}
+
+	.al-m {
+		color: var(--muted);
+		font-size: var(--fs-xs);
+	}
+
 	.foot {
 		margin: 8px 0 0;
 		color: var(--faint);
 		font-size: var(--fs-xs);
+		line-height: 1.6;
+	}
+
+	.foot a {
+		color: var(--muted);
 	}
 </style>
