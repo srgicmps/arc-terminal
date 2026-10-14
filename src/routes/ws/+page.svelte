@@ -1,5 +1,6 @@
 <script lang="ts">
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
+	import FxConvert from '#lib/components/FxConvert.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
@@ -125,6 +126,10 @@
 		</Panel>
 		<Panel title="Divisas" meta="Cambio de referencia del BCE">
 			<SeriesTable head="Par" spark={60} rows={fx.map((id) => ({ series: get(id), name: get(id)?.label, decimals: 4 }))} />
+		</Panel>
+		<Panel title="Conversor" meta="Tipos de referencia del BCE">
+			<FxConvert series={fx.map(get)} />
+			{#snippet note()}Tipo de referencia del BCE, no de cambio en ventanilla · <Updated at={data.ecb?.fetchedAt} source="ecb" />{/snippet}
 		</Panel>
 		<Panel title="Cripto" meta="Por capitalización">
 			<CryptoTable coins={data.crypto?.data.coins ?? []} />

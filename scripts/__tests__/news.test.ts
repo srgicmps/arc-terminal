@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { newsSources, parseFeed } from '../sources/news.ts';
+import { feedError, newsSources, parseFeed } from '../sources/news.ts';
 import { mockFetch } from './mock.ts';
 
 const rss = (items: string) => `<?xml version="1.0" encoding="UTF-8"?>
@@ -131,12 +131,12 @@ describe('secciones de titulares', () => {
 			['Sin fecha', 'Financial Times']
 		]);
 		expect(data.feeds).toEqual([
-			{ name: 'El País', count: 2 },
-			{ name: 'Expansión', count: 2 },
-			{ name: 'El Confidencial', count: 0, error: expect.stringContaining('HTTP 404') },
-			{ name: 'Financial Times', count: 1 },
-			{ name: 'BCE', count: 0, error: expect.stringContaining('HTTP 404') },
-			{ name: 'The Economist', count: 0, error: expect.stringContaining('HTTP 404') }
+			{ name: 'El País', ok: true, items: 2 },
+			{ name: 'Expansión', ok: true, items: 2 },
+			{ name: 'El Confidencial', ok: false, items: 0, error: 'HTTP 404' },
+			{ name: 'Financial Times', ok: true, items: 1 },
+			{ name: 'BCE', ok: false, items: 0, error: 'HTTP 404' },
+			{ name: 'The Economist', ok: false, items: 0, error: 'HTTP 404' }
 		]);
 	});
 
@@ -146,12 +146,45 @@ describe('secciones de titulares', () => {
 		mockFetch((url) => (url.includes('elpais.com') ? rss(many) : undefined));
 		const data = await eco.fetch(undefined);
 		expect(data.items).toHaveLength(15);
-		expect(data.feeds[0]).toEqual({ name: 'El País', count: 15 });
+		expect(data.feeds[0]).toEqual({ name: 'El País', ok: true, items: 15 });
 	});
 
 	it('falla si no responde ningún medio', async () => {
 		vi.spyOn(console, 'log').mockImplementation(() => {});
 		mockFetch(() => undefined);
 		await expect(eco.fetch(undefined)).rejects.toThrow('ningún feed');
+	});
+});
+
+describe('salud de cada canal', () => {
+	const eco = newsSources.find((s) => s.name === 'news-eco')!;
+
+	it('apunta por canal si responde, cuántos titulares trae y un error corto sin URL', async () => {
+		vi.spyOn(console, 'log').mockImplementation(() => {});
+		mockFetch((url) => {
+			if (url.includes('elpais.com')) return rss(item('Uno', 'Tue, 14 Oct 2026 08:00:00 GMT') + item('Dos', 'Tue, 14 Oct 2026 07:00:00 GMT'));
+			if (url.includes('expansion')) return '<rss><channel><item><title>Roto</title></channel>';
+			if (url.includes('elconfidencial')) return '<html><body>Mantenimiento</body></html>';
+			return undefined;
+		});
+		const data = await eco.fetch(undefined);
+		expect(data.feeds.slice(0, 4)).toEqual([
+			{ name: 'El País', ok: true, items: 2 },
+			{ name: 'Expansión', ok: false, items: 0, error: 'XML no válido' },
+			{ name: 'El Confidencial', ok: false, items: 0, error: 'sin titulares' },
+			{ name: 'Financial Times', ok: false, items: 0, error: 'HTTP 404' }
+		]);
+		// El JSON es público: ningún error lleva la URL del canal (la del FT lleva «?format=rss»).
+		expect(JSON.stringify(data.feeds)).not.toMatch(/https?:|ft\.com/);
+	});
+
+	it('resume los errores en pocas palabras', () => {
+		expect(feedError(new Error('HTTP 503 en https://example.org/rss?token=x'))).toBe('HTTP 503');
+		expect(feedError(Object.assign(new Error('The operation was aborted due to timeout'), { name: 'TimeoutError' }))).toBe(
+			'tiempo agotado'
+		);
+		expect(feedError(new TypeError('fetch failed'))).toBe('sin conexión');
+		expect(feedError(new Error('XML no válido'))).toBe('XML no válido');
+		expect(feedError(new Error('algo raro en https://example.org/?a=1'))).toBe('error');
 	});
 });
