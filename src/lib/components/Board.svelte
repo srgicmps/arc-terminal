@@ -19,6 +19,8 @@
 		lastMove?: [Square, Square] | null;
 		/** Casilla del rey en jaque. */
 		check?: Square;
+		/** Coordenadas (a–h, 1–8). Se quitan en los tableros pequeños, donde no se leen. */
+		coords?: boolean;
 		/** Flecha de la pista: de dónde a dónde. */
 		arrow?: [Square, Square] | null;
 		onmove?: (from: Square, to: Square, promotion?: PieceSymbol) => void;
@@ -32,6 +34,7 @@
 		lastMove = null,
 		check,
 		arrow = null,
+		coords = true,
 		onmove
 	}: Props = $props();
 
@@ -223,12 +226,14 @@
 	{/if}
 
 	<!-- Coordenadas: números en la primera columna y letras en la última fila. -->
-	{#each { length: 8 }, i (i)}
-		{@const rank = orientation === 'w' ? 8 - i : i + 1}
-		{@const file = orientation === 'w' ? FILES[i] : FILES[7 - i]}
-		<text class="coord" x={2.5} y={i * S + 8.5}>{rank}</text>
-		<text class="coord" x={i * S + S - 2.5} y={SIZE - 2.5} text-anchor="end">{file}</text>
-	{/each}
+	{#if coords}
+		{#each { length: 8 }, i (i)}
+			{@const rank = orientation === 'w' ? 8 - i : i + 1}
+			{@const file = orientation === 'w' ? FILES[i] : FILES[7 - i]}
+			<text class="coord" x={2.5} y={i * S + 8.5}>{rank}</text>
+			<text class="coord" x={i * S + S - 2.5} y={SIZE - 2.5} text-anchor="end">{file}</text>
+		{/each}
+	{/if}
 
 	{#each pieces as p (p.square)}
 		{#if !(drag?.active && drag.from === p.square)}

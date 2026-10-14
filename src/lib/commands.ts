@@ -63,7 +63,7 @@ export const COMMANDS: Command[] = [
 	{ code: 'NEWS', route: '/news', key: 'Buscar', desc: 'Buscador en todos los titulares de todas las secciones', sources: 'Todos los medios', arg: { param: 'q', label: 'Buscar en los titulares', example: 'NEWS inflación' } },
 	{ code: 'WIKI', route: '/wiki', key: 'Wikipedia', desc: 'Lo más leído en Wikipedia y efemérides del día', sources: 'Wikipedia en español' },
 	{ code: 'CAL', route: '/cal', key: 'Agenda', desc: 'Agenda económica de la semana', sources: 'TradingView' },
-	{ code: 'CHESS', route: '/chess', key: 'Ajedrez', desc: 'Ajedrez contra Stockfish (5 niveles), con pista y evaluación', sources: 'Stockfish, chess.js', aliases: ['ajedrez'] },
+	{ code: 'CHESS', route: '/chess', key: 'Ajedrez', desc: 'Ajedrez contra Stockfish (5 niveles), análisis y problema del día', sources: 'Stockfish, chess.js, Lichess', aliases: ['ajedrez'] },
 	{ code: 'STATUS', route: '/status', key: 'Fuentes', desc: 'Estado de todas las fuentes de datos', sources: 'Arc Terminal' },
 	{ code: 'DOC', route: '/doc', key: 'Cómo funciona', desc: 'Cómo está hecho Arc Terminal: arquitectura, datos, fuentes y Svelte frente a Vue', sources: 'El propio código' },
 	{ code: 'HELP', route: '/help', key: 'Ayuda', desc: 'Comandos y atajos de teclado', sources: '', aliases: ['ayuda'] }
