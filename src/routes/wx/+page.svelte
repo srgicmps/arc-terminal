@@ -74,7 +74,7 @@
 				<div class="scroll">
 					<table class="t">
 						<thead>
-							<tr><th>Costa</th><th class="l">Estado</th><th>Ola</th><th>Fondo</th><th class="wide">Periodo</th><th>De</th></tr>
+							<tr><th>Costa</th><th class="l">Estado</th><th>Ola</th><th>Fondo</th><th class="wide">Periodo</th><th class="wide">De</th></tr>
 						</thead>
 						<tbody>
 							{#each coasts as c (c.name)}
@@ -85,7 +85,7 @@
 									<td>{m(c.now.wave)}</td>
 									<td class="mut">{m(c.now.swell)}</td>
 									<td class="mut wide">{c.now.wavePeriod === null ? '—' : `${nf(c.now.wavePeriod, 0)} s`}</td>
-									<td class="mut">{c.now.waveDir === null ? '—' : compass(c.now.waveDir)}</td>
+									<td class="mut wide">{c.now.waveDir === null ? '—' : compass(c.now.waveDir)}</td>
 								</tr>
 							{/each}
 						</tbody>
