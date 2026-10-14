@@ -89,7 +89,7 @@ export const fuelSpain: Source<FuelSpainData> = {
 	label: 'Gasolineras de toda España, por provincias · Ministerio para la Transición Ecológica',
 	maxAgeMinutes: 25,
 	files: (data) => data.provinces.map((p) => `fuel/${p.id}.json`),
-	async fetch() {
+	async fetch(previous) {
 		const body = await download();
 		const byProvince = new Map<string, { name: string; stations: FuelStation[] }>();
 		for (const raw of body.ListaEESSPrecio) {
@@ -115,6 +115,11 @@ export const fuelSpain: Source<FuelSpainData> = {
 		}
 		provinces.sort((a, b) => a.name.localeCompare(b.name, 'es'));
 		const all = [...byProvince.values()].flatMap((p) => p.stations);
-		return { sourceDate: body.Fecha, provinces, avg: stats(all).avg };
+		const avg = stats(all).avg;
+		// La API solo da el precio de hoy: el historial se va guardando día a día, con la media de España y
+		// la de cada provincia. Medio año basta y así el archivo no crece demasiado.
+		const byId = Object.fromEntries(provinces.map((p) => [p.id, p.avg]));
+		const history = appendDaily(previous?.history, { date: madridDay(), avg, provinces: byId }, 180);
+		return { sourceDate: body.Fecha, provinces, avg, history };
 	}
 };

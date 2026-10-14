@@ -1,5 +1,8 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+	import MortgageCalc from '#lib/components/MortgageCalc.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
+	import MeetingList from '#lib/components/MeetingList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
@@ -41,6 +44,16 @@
 		</Panel>
 	</div>
 	<div class="col">
+		<Panel title="Próximas reuniones" meta="Decisión de tipos · hora de España" jump={{ code: 'CAL', href: resolve('/cal') }}>
+			<MeetingList
+				markets={[
+					...(data.predictions?.data.rates ?? []),
+					...(data.predictions?.data.economy ?? []),
+					...(data.predictions?.data.geopolitics ?? [])
+				]}
+			/>
+			{#snippet note()}Calendarios oficiales del BCE y de la Fed. Probabilidades: Polymarket, apuestas y no pronósticos.{/snippet}
+		</Panel>
 		<Panel title="BCE" meta="Tipos y euríbor">
 			<SeriesTable
 				head="Tipo"
@@ -54,6 +67,10 @@
 					{ series: get('hicp-ea'), name: 'Inflación zona euro', decimals: 1, inverse: true }
 				]}
 			/>
+		</Panel>
+		<Panel title="Tu hipoteca" meta="Variable · euríbor a 12 meses">
+			<MortgageCalc euribor={get('euribor-12m')} />
+			{#snippet note()}Cuota con el último euríbor mensual del BCE más tu diferencial. Se calcula y se guarda solo en este navegador.{/snippet}
 		</Panel>
 		<Panel title="Bancos centrales" meta="Tipo oficial · último cambio">
 			<SeriesTable

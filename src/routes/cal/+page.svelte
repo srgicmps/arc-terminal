@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import MeetingList from '#lib/components/MeetingList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -27,6 +28,10 @@
 		</Panel>
 	</div>
 	<div class="col">
+		<Panel title="Bancos centrales" meta="Próximas reuniones · BCE y Fed">
+			<MeetingList mode="list" limit={6} />
+			{#snippet note()}Decisión de tipos, en hora de España. Fuentes: calendarios oficiales del BCE y de la Fed.{/snippet}
+		</Panel>
 		<Panel title="Resultados" meta="Grandes empresas de EE. UU. · próximas 2 semanas">
 			{#if !data.finnhub}
 				<p class="empty">Falta la clave FINNHUB_API_KEY en GitHub Secrets.</p>
