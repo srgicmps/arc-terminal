@@ -6,6 +6,7 @@ import { bls } from './bls.ts';
 import { bis } from './bis.ts';
 import { boe } from './boe.ts';
 import { ecb } from './ecb.ts';
+import { elections } from './elections.ts';
 import { eurostat } from './eurostat.ts';
 import { fedreg } from './fedreg.ts';
 import { finnhub } from './finnhub.ts';
@@ -54,6 +55,7 @@ export const sources: Source<any>[] = [
 	quakesEs,
 	hazards,
 	portwatch,
+	elections,
 	reliefweb,
 	predictions,
 	weather,
