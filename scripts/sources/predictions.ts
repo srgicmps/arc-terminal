@@ -65,7 +65,7 @@ async function events(tag: string, limit: number): Promise<Prediction[]> {
 export const predictions: Source<PredictionsData> = {
 	name: 'predictions',
 	label: 'Mercados de predicción · Polymarket',
-	maxAgeMinutes: 55,
+	maxAgeMinutes: 25,
 	async fetch() {
 		const [geopolitics, economy] = await Promise.all([
 			events('geopolitics', 12),

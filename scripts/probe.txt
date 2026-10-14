@@ -1,2 +1,3 @@
 # URL que la Action de los PR consulta para explorar APIs nuevas (ver scripts/probe.ts).
+# Formato: «URL» o «URL ~ patrón».
 https://huggingface.co/api/daily_papers?limit=2

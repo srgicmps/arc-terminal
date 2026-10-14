@@ -23,6 +23,13 @@
 	const today = $derived(pvpc.filter((p) => p.day === (now?.day ?? pvpc[0]?.day)));
 	const current = $derived(now ? today.find((p) => p.hour === now.hour) : undefined);
 	const cheapest = $derived([...today].sort((a, b) => a.kwh - b.kwh)[0]);
+	// El PVPC de mañana se publica hacia las 20:30: si ya está, su media.
+	const tomorrow = $derived.by(() => {
+		const day = today[0]?.day;
+		const next = pvpc.filter((p) => day && p.day > day);
+		return next.length >= 23 ? next.reduce((a, p) => a + p.kwh, 0) / next.length : null;
+	});
+	const todayAvg = $derived(today.length ? today.reduce((a, p) => a + p.kwh, 0) / today.length : null);
 
 	const mao = $derived(data.weather?.data.places.find((p) => p.name === 'Maó'));
 
@@ -120,6 +127,12 @@
 			<ul class="mini">
 				{#if current}<li><span class="l">Ahora</span><b>{nf(current.kwh, 3)}</b></li>{/if}
 				{#if cheapest}<li><span class="l">Más barata hoy</span><b class="up">{String(cheapest.hour).padStart(2, '0')}:00 · {nf(cheapest.kwh, 3)}</b></li>{/if}
+				{#if tomorrow !== null}
+					<li>
+						<span class="l">Mañana, media</span>
+						<b class={todayAvg !== null && tomorrow < todayAvg ? 'up' : 'down'}>{nf(tomorrow, 3)}</b>
+					</li>
+				{/if}
 				{#if !today.length}<li><span class="l">Sin datos todavía</span></li>{/if}
 			</ul>
 		</Panel>
@@ -147,10 +160,21 @@
 				{#each quakes as q (q.id)}
 					<li>
 						<a class="l" href={q.url} target="_blank" rel="noopener">{q.place}<small>{when(q.time, clock.now)}</small></a>
-						<b class:down={q.mag >= 6}>M{nf(q.mag, 1)}</b>
+						<b class:strong={q.mag >= 6}>M{nf(q.mag, 1)}</b>
 					</li>
 				{:else}
 					<li><span class="l">Ninguno de M4,5 o más.</span></li>
+				{/each}
+			</ul>
+		</Panel>
+		<Panel title="Mercados de predicción" meta="Polymarket" jump={{ code: 'GEO', href: resolve('/geo') }}>
+			<ul class="mini">
+				{#each (data.predictions?.data.geopolitics ?? []).slice(0, 4) as e (e.id)}
+					{@const top = e.outcomes[0]}
+					<li>
+						<a class="l" href={e.url} target="_blank" rel="noopener">{e.title}<small>{top.label}</small></a>
+						<b>{nf(top.p * 100, 0)} %</b>
+					</li>
 				{/each}
 			</ul>
 		</Panel>
@@ -168,6 +192,10 @@
 </div>
 
 <style>
+	.strong {
+		color: var(--amber);
+	}
+
 	em {
 		margin-left: 6px;
 		font-style: normal;
