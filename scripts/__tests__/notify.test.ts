@@ -9,6 +9,7 @@ import {
 	baselineLog,
 	encodeHeader,
 	headers,
+	LIMIT_PREFIX,
 	newestLog,
 	parseLog,
 	pickAlerts,
@@ -59,6 +60,23 @@ describe('cupos y tope diario', () => {
 		expect([count(send, 1), count(send, 2), count(send, 3)]).toEqual([45, 5, 0]);
 		const later = pick([fake('p1', 1, 5)], sent(50, 3, '2026-10-14T07:00Z'));
 		expect(later.send).toEqual([]);
+	});
+
+	it('el aviso que llega justo al tope lo dice en el título; sin llegar, nada', () => {
+		// 45 ya enviados hoy + 5 ahora = 50: el quinto (el último que sale) lleva el prefijo.
+		const full = pick([fake('p2', 2, 3), fake('p1', 1, 4)], sent(45, 3));
+		expect(full.send.map((a) => a.id)).toEqual(['p1:0', 'p1:1', 'p1:2', 'p1:3', 'p2:0']);
+		expect(full.send.map((a) => a.title)).toEqual(['p1', 'p1', 'p1', 'p1', '⚠ Límite diario alcanzado · p2']);
+		expect(full.skipped.map((a) => a.id)).toEqual(['p2:1', 'p2:2']);
+		expect(LIMIT_PREFIX).toBe('⚠ Límite diario alcanzado · ');
+		// Justo 50 sin que sobre nada, también; nunca pasa de 50.
+		const exact = pick([fake('p1', 1, 5)], sent(45, 3));
+		expect(exact.send).toHaveLength(5);
+		expect(exact.send.at(-1)!.title).toBe('⚠ Límite diario alcanzado · p1');
+		// Con 49 de 50, ninguno lo lleva; con el tope ya lleno, no sale nada.
+		const below = pick([fake('p1', 1, 4)], sent(45, 3));
+		expect(below.send.every((a) => !a.title.startsWith('⚠'))).toBe(true);
+		expect(pick([fake('p1', 1, 1)], sent(50, 3)).send).toEqual([]);
 	});
 
 	it('cuenta lo de hoy en Madrid: lo de ayer y lo visto sin enviar no cuentan', () => {
