@@ -76,9 +76,17 @@ https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next 
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
 # GEO/PAIS: gasto militar del SIPRI (Milex), enlace al Excel
 https://www.sipri.org/databases/milex ~ [^"' <>]{0,200}\.xlsx[^"' <>]{0,40}
+# M33: control de exportaciones de la BIS en el Federal Register
+https://www.federalregister.gov/api/v1/documents.json?per_page=3&order=newest&conditions%5Bagencies%5D%5B%5D=industry-and-security-bureau&fields%5B%5D=title&fields%5B%5D=publication_date
 # COT de la CFTC (Socrata, sin clave): informe «legacy» solo futuros, último informe de oro, WTI, euro, yen, bono a 10 años, S&P 500 (E-mini) y bitcoin
 https://publicreporting.cftc.gov/resource/6dca-aqww.json?$select=report_date_as_yyyy_mm_dd,market_and_exchange_names,cftc_contract_market_code,open_interest_all,noncomm_positions_long_all,noncomm_positions_short_all,change_in_noncomm_long_all,change_in_noncomm_short_all&$where=cftc_contract_market_code%20in('088691','067651','099741','097741','043602','13874A','133741')&$order=report_date_as_yyyy_mm_dd%20DESC&$limit=8
 https://publicreporting.cftc.gov/resource/6dca-aqww.json?$select=count(*)&$where=cftc_contract_market_code='088691'
 https://www.cftc.gov/MarketReports/CommitmentsofTraders/ReleaseSchedule/index.htm ~ .{0,80}2026.{0,200}
 # Lote 22: ACNUR, población por país de origen (para ver la forma de la respuesta)
 https://api.unhcr.org/population/v1/population/?limit=3&yearFrom=2025&yearTo=2025&coo_all=true
+# WX (2e.16): feeds de MeteoAlarm por país; solo el título del feed, para comprobar los nombres
+https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-portugal ~ <title>[^<]{0,80}
+https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-switzerland ~ <title>[^<]{0,80}
+https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-greece ~ <title>[^<]{0,80}
+# M40: ¿trae cada mercado de Polymarket su cambio en 24 h (oneDayPriceChange)?
+https://gamma-api.polymarket.com/events?active=true&closed=false&limit=2&order=volume24hr&ascending=false&tag_slug=geopolitics ~ oneDayPriceChange
