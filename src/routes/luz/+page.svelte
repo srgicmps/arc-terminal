@@ -7,7 +7,7 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { dm, longDay, nf } from '#lib/format.ts';
-	import { days, dayStats, hourly, madridNow } from '#lib/power.ts';
+	import { days, dayStats, hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
 	import { luzShare, relativeDay, type ShareInfo } from '#lib/share.ts';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
@@ -45,9 +45,8 @@
 		};
 	}
 
-	const hh = (h: number) => `${String(h).padStart(2, '0')}:00`;
 	const currentPrice = $derived(
-		now ? blocks.find((b) => b.day === now.day)?.prices.find((p) => p.hour === now.hour) : undefined
+		now ? blocks.find((b) => b.day === now.day)?.prices.find((p) => isHour(p, now)) : undefined
 	);
 </script>
 
@@ -68,15 +67,15 @@
 				{#if b.stats.min && b.stats.max}
 					<Tiles>
 						<Tile label="Media" value={nf(b.stats.avg, 3)} />
-						<Tile label="Mínimo" value={nf(b.stats.min.kwh, 3)} tone="up" sub="a las {hh(b.stats.min.hour)}" />
-						<Tile label="Máximo" value={nf(b.stats.max.kwh, 3)} tone="down" sub="a las {hh(b.stats.max.hour)}" />
+						<Tile label="Mínimo" value={nf(b.stats.min.kwh, 3)} tone="up" sub="a las {hourLabel(b.stats.min)}" />
+						<Tile label="Máximo" value={nf(b.stats.max.kwh, 3)} tone="down" sub="a las {hourLabel(b.stats.max)}" />
 					</Tiles>
 				{/if}
-				<PriceBars prices={b.prices} current={now?.day === b.day ? now.hour : -1} />
+				<PriceBars prices={b.prices} current={now} />
 				<ul class="mini">
 					<li>
 						<span class="l">Horas más baratas</span>
-						<b>{b.stats.cheap.map((p) => hh(p.hour)).join(' · ')}</b>
+						<b>{b.stats.cheap.map(hourLabel).join(' · ')}</b>
 					</li>
 				</ul>
 				{#snippet note()}
