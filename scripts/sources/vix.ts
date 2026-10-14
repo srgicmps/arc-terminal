@@ -39,14 +39,17 @@ export function parseCloses(csv: string): Map<string, number> {
 	return closes;
 }
 
-/** Junta los índices por fecha: solo los días en que hay VIX, y los últimos KEEP. */
+/**
+ * Junta los índices por fecha: los días en que hay VIX y al menos 3 plazos (en algunos festivos de EE. UU.,
+ * como el Labor Day, Cboe da el VIX y nada más), y los últimos KEEP.
+ */
 export function toCurve(byIndex: Map<string, number>[]): YieldCurveData {
 	const vix = byIndex[INDICES.findIndex(([i]) => i === 'VIX')];
-	const dates = [...(vix?.keys() ?? [])].sort().slice(-KEEP);
-	return {
-		tenors: INDICES.map(([, tenor]) => tenor),
-		days: dates.map((date) => ({ date, values: byIndex.map((m) => m.get(date) ?? null) }))
-	};
+	const days = [...(vix?.keys() ?? [])]
+		.sort()
+		.map((date) => ({ date, values: byIndex.map((m) => m.get(date) ?? null) }))
+		.filter((d) => d.values.filter((v) => v !== null).length >= 3);
+	return { tenors: INDICES.map(([, tenor]) => tenor), days: days.slice(-KEEP) };
 }
 
 export const vix: Source<YieldCurveData> = {

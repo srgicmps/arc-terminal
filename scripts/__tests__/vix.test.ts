@@ -20,16 +20,30 @@ describe('vix', () => {
 	});
 
 	it('junta los plazos por día del VIX, con huecos donde falta alguno, y guarda los últimos 30', () => {
-		const vixDays = new Map(Array.from({ length: 40 }, (_, i) => [`2026-08-${String(i + 1).padStart(2, '0')}`, 15 + i / 10]));
+		const dates = Array.from({ length: 40 }, (_, i) => `2026-08-${String(i + 1).padStart(2, '0')}`);
+		const full = (base: number) => new Map(dates.map((d, i) => [d, base + i / 10]));
 		const nine = new Map([['2026-08-40', 12]]);
-		const curve = toCurve([nine, vixDays, new Map(), new Map(), new Map()]);
+		const curve = toCurve([nine, full(15), full(18), full(20), new Map()]);
 		expect(curve.tenors).toEqual(['9D', '1M', '3M', '6M', '1A']);
 		expect(curve.days).toHaveLength(30);
-		expect(curve.days.at(-1)).toEqual({ date: '2026-08-40', values: [12, 18.9, null, null, null] });
+		expect(curve.days.at(-1)).toEqual({ date: '2026-08-40', values: [12, 18.9, 21.9, 23.9, null] });
+	});
+
+	it('descarta los días con menos de 3 plazos (festivos de EE. UU. en que solo sale el VIX)', () => {
+		const on = (pairs: [string, number][]) => new Map(pairs);
+		const curve = toCurve([
+			on([['2026-09-04', 12]]),
+			on([['2026-09-04', 15], ['2026-09-07', 15.3]]),
+			on([['2026-09-04', 18]]),
+			on([['2026-09-04', 20]]),
+			on([['2026-09-04', 21]])
+		]);
+		expect(curve.days.map((d) => d.date)).toEqual(['2026-09-04']);
 	});
 
 	it('si falla un plazo sigue sin él; si falla el VIX, falla la fuente', async () => {
 		mockFetch((url) => (url.includes('/VIX6M_') ? undefined : csv([['10/13/2026', url.includes('/VIX_') ? 15.27 : 20]])));
+		// Sin VIX6M quedan 4 plazos: el día vale.
 		const data = await vix.fetch(undefined);
 		expect(data.days).toEqual([{ date: '2026-10-13', values: [20, 15.27, 20, null, 20] }]);
 
