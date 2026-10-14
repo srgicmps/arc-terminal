@@ -78,11 +78,32 @@ jobs:
       # Avisos al móvil con ntfy (scripts/notify.ts y scripts/alerts/): niveles P1–P4 con cupos y un tope
       # de 50 al día. No en los PR. Si falla, no frena la publicación. Sin el secreto NTFY_TOPIC no hace
       # nada. El tema es la única protección del canal: el script nunca lo registra.
+      #
+      # El historial de avisos se guarda también en la caché de Actions, justo después de enviar: si luego
+      # falla el check, los tests, el build o el deploy, la web no se publica, pero la pasada siguiente lee
+      # la caché y no repite lo enviado. Una clave por pasada; restore-keys trae la más reciente. La caché
+      # solo lleva el historial (ids, horas y valores), nunca el tema ni la zona del diésel.
+      - if: github.event_name != 'pull_request'
+        uses: actions/cache/restore@v4
+        continue-on-error: true
+        with:
+          path: .notify-cache
+          key: notify-log-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: notify-log-
       - if: github.event_name != 'pull_request'
         run: node scripts/notify.ts
         continue-on-error: true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NOTIFY_CACHE: .notify-cache/notify-log.json
+          # Opcional: zona del diésel, «07» (provincia) o «menorca». Tampoco se registra ni se publica.
+          ALERT_FUEL_ZONE: ${{ secrets.ALERT_FUEL_ZONE }}
+      - if: github.event_name != 'pull_request' && hashFiles('.notify-cache/notify-log.json') != ''
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: .notify-cache
+          key: notify-log-${{ github.run_id }}-${{ github.run_attempt }}
 
       - run: pnpm check
       - run: pnpm test
