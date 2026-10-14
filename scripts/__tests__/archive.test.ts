@@ -42,15 +42,26 @@ describe('archivo de titulares', () => {
 	it('añade al mes publicado y escribe el índice', async () => {
 		vi.useFakeTimers({ toFake: ['Date'] });
 		vi.setSystemTime(new Date('2026-10-14T12:00:00Z'));
-		mockFetch((url) => (url.endsWith('news-archive/2026-10.json') ? [e('viejo', '2026-10-01T09:00Z')] : undefined));
 		const ctx = makeContext(new Map([['news-es', { items: [news('Nuevo', 'https://elpais.com/n', '2026-10-14T10:00:00Z')] }]]));
-		const previous = { months: [{ month: '2026-10', count: 1, bytes: 10 }, { month: '2026-05', count: 9, bytes: 99 }] };
+		const previous = {
+			months: [
+				{ month: '2026-10', count: 1, bytes: 10 },
+				{ month: '2026-09', count: 1, bytes: 10 },
+				{ month: '2026-05', count: 9, bytes: 99 }
+			]
+		};
+		const fetch = mockFetch((url) =>
+			url.endsWith('news-archive/2026-10.json') ? [e('viejo', '2026-10-01T09:00Z')] : url.endsWith('2026-09.json') ? [e('sep', '2026-09-20T09:00Z')] : undefined
+		);
 		const data = await archive.fetch(previous, ctx);
-		expect(data.months.map((m) => [m.month, m.count])).toEqual([['2026-10', 2]]);
+		// Septiembre no tiene nada nuevo, pero se vuelve a escribir; mayo ya no se guarda (ni se pide).
+		expect(data.months.map((m) => [m.month, m.count])).toEqual([['2026-10', 2], ['2026-09', 1]]);
+		expect(vi.mocked(writeExtra).mock.calls.map(([path]) => path)).toEqual(['news-archive/2026-10.json', 'news-archive/2026-09.json']);
+		expect(fetch.mock.calls.some(([url]) => String(url).includes('2026-05'))).toBe(false);
 		const [path, file] = vi.mocked(writeExtra).mock.calls[0] as [string, ArchiveEntry[]];
 		expect(path).toBe('news-archive/2026-10.json');
 		expect(file.map((x) => x.t)).toEqual(['Nuevo', 'viejo']);
-		expect(archive.files!(data)).toEqual(['news-archive/2026-10.json']);
+		expect(archive.files!(data)).toEqual(['news-archive/2026-10.json', 'news-archive/2026-09.json']);
 	});
 
 	it('falla si no puede leer un mes que ya existía (para no perderlo)', async () => {

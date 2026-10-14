@@ -2,10 +2,11 @@
 // (de 90 a 120 días), partido por meses para que la web solo descargue lo que busca.
 // Fuente derivada (`after`): no descarga titulares, usa los de esta pasada.
 //   - news-archive.json: índice pequeño (meses, cuántos titulares y cuánto pesa cada uno).
-//   - news-archive/AAAA-MM.json: los titulares del mes de Madrid (título, medio, hora y enlace), del más nuevo
-//     al más antiguo. Van en una subcarpeta para no entrar en la build (ver src/lib/data.ts).
-// Para añadir al mes en curso se lee su copia publicada. Si no se puede leer y el mes ya existía, la
-// pasada falla y update.ts se queda con la copia anterior: así nunca se pierde lo acumulado.
+//   - news-archive/AAAA-MM.json: los titulares del mes de Madrid (título, medio, hora y enlace), del más
+//     nuevo al más antiguo. Van en una subcarpeta para no entrar en la build (ver src/lib/data.ts).
+// La web se publica entera en cada pasada: por eso se leen las copias publicadas de todos los meses que
+// se guardan y se vuelven a escribir (con lo nuevo, si lo hay). Si alguna no se puede leer, la pasada
+// falla y update.ts se queda con la copia anterior y sus meses: así nunca se pierde lo acumulado.
 import { gzipSync } from 'node:zlib';
 import { NEWS_SECTIONS } from '../../src/lib/news.ts';
 import type { ArchiveEntry, NewsArchive, NewsData, NewsItem } from '../../src/lib/types.ts';
@@ -80,8 +81,11 @@ export const archive: Source<NewsArchive> = {
 			fresh.filter((e) => monthOf(e.d) >= oldest),
 			(e) => monthOf(e.d)
 		);
-		for (const [month, items] of byMonth) {
-			const merged = mergeMonth(await published(month, known.has(month)), items);
+		// Todos los meses que se guardan, tengan titulares nuevos o no: la web se publica entera en cada
+		// pasada, así que un mes que no se vuelva a escribir desaparecería de Pages.
+		const keep = [...new Set([...byMonth.keys(), ...known.keys()])].filter((m) => m >= oldest);
+		for (const month of keep) {
+			const merged = mergeMonth(await published(month, known.has(month)), byMonth.get(month) ?? []);
 			await writeExtra(monthFile(month), merged);
 			const bytes = Buffer.byteLength(JSON.stringify(merged));
 			known.set(month, { month, count: merged.length, bytes });
