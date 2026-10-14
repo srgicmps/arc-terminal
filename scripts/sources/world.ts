@@ -244,7 +244,8 @@ export function parseCoasts(raw: Raw[]): SeaState[] {
 				dir: num(d.wave_direction_dominant?.[j])
 			}))
 		};
-		// Si el modelo no da oleaje en ese punto (lo toma por tierra), mejor no enseñarlo.
+		// Open-Meteo mueve cada punto a la celda de mar más cercana (Fornells cae unos 13 km al norte), así que
+		// en la práctica no llega null; si alguna vez no hay oleaje, mejor no enseñarlo.
 		const empty = state.now.wave === null && !state.daily.some((x) => x.waveMax !== null);
 		return empty ? [] : [state];
 	});

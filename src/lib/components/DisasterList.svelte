@@ -1,6 +1,7 @@
 <!-- Crisis y desastres activos de ReliefWeb: nombre con enlace a la ficha, tipo, país y fecha de inicio. -->
 <script lang="ts">
 	import { dm } from '#lib/format.ts';
+	import { madridNow } from '#lib/power.ts';
 	import type { Disaster } from '#lib/types.ts';
 
 	let { items }: { items: Disaster[] } = $props();
@@ -29,10 +30,11 @@
 		'Technological Disaster': 'Desastre tecnológico',
 		Other: 'Otro'
 	};
-	/** Fecha con año si no es de este año: hay crisis abiertas desde hace mucho. */
+	/** Fecha con año si no es de este año (los dos, en hora de Madrid): hay crisis abiertas desde hace mucho. */
+	const year = (t: number) => madridNow(t).day.slice(0, 4);
 	const since = (iso: string) => {
-		const year = iso.slice(0, 4);
-		return year === new Date().toISOString().slice(0, 4) ? dm(iso) : `${dm(iso)} ${year}`;
+		const y = year(Date.parse(iso));
+		return y === year(Date.now()) ? dm(iso) : `${dm(iso)} ${y}`;
 	};
 </script>
 
