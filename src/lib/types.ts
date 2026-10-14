@@ -532,8 +532,11 @@ export interface Prediction {
 	/** Volumen negociado en 24 h, en dólares. */
 	volume24h: number;
 	endDate: string;
-	/** Opciones con su probabilidad implícita (0–1), de más a menos probable. */
-	outcomes: { label: string; p: number }[];
+	/**
+	 * Opciones con su probabilidad implícita (0–1), de más a menos probable, y `d`, cuánto ha cambiado en
+	 * 24 h (en tanto por uno: 0,05 = 5 puntos), si Polymarket lo da.
+	 */
+	outcomes: { label: string; p: number; d?: number }[];
 }
 
 export interface PredictionsData {

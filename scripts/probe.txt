@@ -76,3 +76,5 @@ https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next 
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
 # GEO/PAIS: gasto militar del SIPRI (Milex), enlace al Excel
 https://www.sipri.org/databases/milex ~ [^"' <>]{0,200}\.xlsx[^"' <>]{0,40}
+# M40: ¿trae cada mercado de Polymarket su cambio en 24 h (oneDayPriceChange)?
+https://gamma-api.polymarket.com/events?active=true&closed=false&limit=2&order=volume24hr&ascending=false&tag_slug=geopolitics ~ oneDayPriceChange
