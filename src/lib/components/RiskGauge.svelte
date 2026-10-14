@@ -1,7 +1,8 @@
 <!--
 	Termómetro de riesgo (WS, y módulo para TOP): una barra fina de risk-off a risk-on con una aguja y, al
 	tocarla, el desglose de cada indicador con su valor y su z-score. El cálculo está en src/lib/risk.ts.
-	Uso: <RiskGauge risk={computeRisk({ fred, ecb, crypto, predictions })} />
+	Uso: en el +page.server.ts, risk: computeRisk({ fred, ecb, crypto, predictions }) (así al navegador solo
+	llega el resultado), y en la vista <RiskGauge risk={data.risk} />.
 -->
 <script lang="ts">
 	import Panel from './Panel.svelte';
