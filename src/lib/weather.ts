@@ -23,7 +23,8 @@ const DIRS = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
 
 /** 340 → «N» (de dónde sopla el viento). */
 export function compass(deg: number): string {
-	return Number.isFinite(deg) ? DIRS[Math.round(deg / 45) % 8] : '';
+	// El resto de JS puede ser negativo (-90 % 360 = -90): se suma 8 para dejarlo entre 0 y 7.
+	return Number.isFinite(deg) ? DIRS[((Math.round(deg / 45) % 8) + 8) % 8] : '';
 }
 
 // ---------- Calidad del aire, UV y polen (CAMS vía Open-Meteo) ----------

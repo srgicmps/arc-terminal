@@ -8,6 +8,7 @@
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { TICKERS, tvSymbol } from '#lib/commands.ts';
+	import { inWatchlist, toggleWatch } from '#lib/watchlist.svelte.ts';
 
 	let code = $state('');
 
@@ -19,7 +20,15 @@
 	const name = $derived(TICKERS.find((t) => t.code === code)?.name ?? '');
 </script>
 
-<ViewHeader code={code || '…'} title={name || 'Ficha del valor'} sub="Cotización, gráfico y datos en directo · TradingView" />
+<ViewHeader code={code || '…'} title={name || 'Ficha del valor'} sub="Cotización, gráfico y datos en directo · TradingView">
+	{#snippet aside()}
+		{#if code}
+			<button class="star" type="button" aria-pressed={inWatchlist(code)} onclick={() => toggleWatch(code)}>
+				{inWatchlist(code) ? '★ En mi lista' : '☆ Añadir a MIS'}
+			</button>
+		{/if}
+	{/snippet}
+</ViewHeader>
 
 {#if code}
 	{#key symbol}
@@ -56,3 +65,19 @@
 		</div>
 	{/key}
 {/if}
+
+<style>
+	.star {
+		background: none;
+		border: 1px solid var(--line);
+		color: var(--muted);
+		padding: 5px 10px;
+		font-size: var(--fs-s);
+		cursor: pointer;
+	}
+
+	.star[aria-pressed='true'] {
+		color: var(--amber);
+		border-color: var(--amber-edge);
+	}
+</style>

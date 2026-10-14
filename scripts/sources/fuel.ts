@@ -71,7 +71,7 @@ function stats(stations: FuelStation[]): { avg: FuelPrices; min: FuelPrices } {
 export const fuel: Source<FuelData> = {
 	name: 'fuel',
 	label: 'Gasolineras de Menorca · Ministerio para la Transición Ecológica',
-	maxAgeMinutes: 25,
+	maxAgeMinutes: 12,
 	async fetch(previous) {
 		const body = await download('FiltroProvincia/07');
 		const stations = body.ListaEESSPrecio.filter((raw) => MENORCA_CP.test(raw['C.P.'] ?? ''))
@@ -87,7 +87,7 @@ export const fuel: Source<FuelData> = {
 export const fuelSpain: Source<FuelSpainData> = {
 	name: 'fuel-es',
 	label: 'Gasolineras de toda España, por provincias · Ministerio para la Transición Ecológica',
-	maxAgeMinutes: 55,
+	maxAgeMinutes: 25,
 	files: (data) => data.provinces.map((p) => `fuel/${p.id}.json`),
 	async fetch() {
 		const body = await download();

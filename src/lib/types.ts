@@ -249,6 +249,39 @@ export interface HazardsData {
 	events: NaturalEvent[];
 }
 
+// ---------- Finnhub: resultados, noticias y cotizaciones ----------
+
+export interface Earnings {
+	/** «2026-10-14» */
+	date: string;
+	symbol: string;
+	/** bmo: antes de la apertura · amc: tras el cierre · dmh: durante la sesión · vacío: sin hora. */
+	hour: string;
+	quarter: number | null;
+	year: number | null;
+	epsEstimate: number | null;
+	epsActual: number | null;
+	revenueEstimate: number | null;
+	revenueActual: number | null;
+}
+
+export interface Quote {
+	symbol: string;
+	price: number;
+	change: number | null;
+	/** Variación del día, en %. */
+	changePct: number | null;
+	prevClose: number | null;
+	/** ISO 8601 de la última cotización. */
+	time: string | null;
+}
+
+export interface FinnhubData {
+	earnings: Earnings[];
+	news: NewsItem[];
+	quotes: Quote[];
+}
+
 // ---------- Mercados de predicción (Polymarket) ----------
 
 export interface Prediction {
@@ -265,4 +298,31 @@ export interface Prediction {
 export interface PredictionsData {
 	geopolitics: Prediction[];
 	economy: Prediction[];
+}
+
+/** Un grupo de tecnologías del mix eléctrico (Eólica, Solar…). */
+export interface MixGroup {
+	key: 'wind' | 'solar' | 'hydro' | 'nuclear' | 'gas' | 'other';
+	label: string;
+	mwh: number;
+	/** Parte del total, de 0 a 1. */
+	share: number;
+	/** Tecnologías de REE que entran en el grupo. */
+	techs: string[];
+}
+/** De dónde sale la electricidad un día en un sistema eléctrico (España, Baleares). */
+export interface PowerMix {
+	id: string;
+	label: string;
+	/** Día del dato: «2026-10-14». */
+	date: string;
+	mwh: number;
+	/** Parte renovable, de 0 a 1. */
+	renewable: number;
+	/** Toneladas de CO₂ equivalente del día, si REE las publica. */
+	co2: number | null;
+	groups: MixGroup[];
+}
+export interface PowerMixData {
+	systems: PowerMix[];
 }

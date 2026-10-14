@@ -12,8 +12,11 @@ export interface Dataset<T> {
 export interface SourceStatus {
 	name: string;
 	label: string;
-	/** ok: recién descargada · cached: copia reciente reutilizada · stale: falló y se usa la anterior · error: sin datos */
-	state: 'ok' | 'cached' | 'stale' | 'error';
+	/**
+	 * ok: recién descargada · cached: copia reciente reutilizada · stale: falló y se usa la anterior ·
+	 * error: sin datos · off: necesita una clave que no está configurada
+	 */
+	state: 'ok' | 'cached' | 'stale' | 'error' | 'off';
 	fetchedAt: string | null;
 	error?: string;
 }

@@ -36,7 +36,10 @@ export function compact(n: number | null | undefined): string {
 }
 
 const fmtHm = new Intl.DateTimeFormat('es-ES', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
-const fmtDm = new Intl.DateTimeFormat('es-ES', { timeZone: TZ, day: 'numeric', month: 'short' });
+/** Abreviaturas propias: Intl da «sept» para septiembre y aquí se usa «sep» en todas partes. */
+const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+const fmtDm = new Intl.DateTimeFormat('es-ES', { timeZone: TZ, day: 'numeric', month: 'numeric' });
 const fmtDay = new Intl.DateTimeFormat('es-ES', {
 	timeZone: TZ,
 	weekday: 'long',
@@ -49,7 +52,11 @@ const fmtWd = new Intl.DateTimeFormat('es-ES', { timeZone: 'UTC', weekday: 'shor
 /** «14:05» */
 export const hm = (iso: string) => fmtHm.format(new Date(iso));
 /** «14 oct» */
-export const dm = (iso: string) => fmtDm.format(new Date(iso)).replace('.', '');
+export function dm(iso: string): string {
+	const parts = fmtDm.formatToParts(new Date(iso));
+	const part = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+	return `${part('day')} ${MONTHS[part('month') - 1]}`;
+}
 /** «martes, 14 de octubre de 2026» */
 export const longDay = (iso: string) => fmtDay.format(new Date(iso));
 /** «2026-10-14» → «mar 14» */
@@ -68,8 +75,6 @@ export function when(iso: string | null | undefined, now: number): string {
 	if (now && mins >= 60 && mins < 24 * 60) return `hace ${Math.floor(mins / 60)} h`;
 	return `${dm(iso)} ${hm(iso)}`;
 }
-
-const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 /** Periodos de las series: «2026-09» → «sep 26», «2026-Q2» → «T2 26», «2026-10-14» → «14 oct». */
 export function period(t: string): string {
