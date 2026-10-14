@@ -3,6 +3,9 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { longDay } from '#lib/format.ts';
+	import type { BoeItem } from '#lib/types.ts';
+	import { addWatchword, highlight, initWatchwords, removeWatchword, watched, watchwords } from '#lib/watchwords.svelte.ts';
+	import { onMount } from 'svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -22,6 +25,17 @@
 				: s.items
 		}));
 	});
+	onMount(initWatchwords);
+	let newWord = $state('');
+	// Las disposiciones que nombran alguna palabra vigilada salen arriba, en su propio panel.
+	const hits = $derived(watched(boe, watchwords.words));
+
+	function add(event: SubmitEvent) {
+		event.preventDefault();
+		addWatchword(newWord);
+		newWord = '';
+	}
+
 	const shown = $derived(sections.reduce((n, s) => n + s.items.length, 0));
 	const total = $derived((boe?.sections ?? []).reduce((n, s) => n + s.total, 0));
 
@@ -56,23 +70,51 @@
 		<span class="count">{shown} {shown === 1 ? 'resultado' : 'resultados'}</span>
 	</div>
 
+	{#snippet entry(item: BoeItem)}
+		<li>
+			<a class="title" href={item.html || item.pdf} target="_blank" rel="noopener">
+				{#each highlight(item.title, watchwords.words) as part, i (i)}{#if part.hit}<mark>{part.text}</mark>{:else}{part.text}{/if}{/each}
+			</a>
+			<p class="m">
+				<span>{dept(item.dept)}</span>
+				{#if item.epigraph}<span>{item.epigraph}</span>{/if}
+				<span class="id">{item.id}</span>
+				{#if item.pdf}<a href={item.pdf} target="_blank" rel="noopener">PDF</a>{/if}
+			</p>
+		</li>
+	{/snippet}
+
+	<div class="grid">
+		<div class="col">
+			<Panel title="Palabras vigiladas" meta={hits.length === 1 ? '1 coincidencia' : `${hits.length} coincidencias`}>
+				<form class="words" onsubmit={add}>
+					{#each watchwords.words as w (w)}
+						<button type="button" class="word" onclick={() => removeWatchword(w)} aria-label="Dejar de vigilar «{w}»">
+							{w} <span aria-hidden="true">×</span>
+						</button>
+					{/each}
+					<label>
+						<span class="sr">Añadir una palabra vigilada</span>
+						<input bind:value={newWord} placeholder="Añadir palabra…" enterkeyhint="done" />
+					</label>
+				</form>
+				{#if hits.length}
+					<ol class="boe">
+						{#each hits as item (item.id)}{@render entry(item)}{/each}
+					</ol>
+				{/if}
+				{#snippet note()}Sin tildes ni mayúsculas y por palabra entera. Se guardan solo en este navegador.{/snippet}
+			</Panel>
+		</div>
+	</div>
+
 	<div class="grid">
 		{#each sections as s (s.code)}
 			{#if s.items.length}
 				<div class="col">
 					<Panel title={s.name} meta={s.items.length < s.total ? `${s.items.length} de ${s.total}` : `${s.total}`}>
 						<ol class="boe">
-							{#each s.items as item (item.id)}
-								<li>
-									<a class="title" href={item.html || item.pdf} target="_blank" rel="noopener">{item.title}</a>
-									<p class="m">
-										<span>{dept(item.dept)}</span>
-										{#if item.epigraph}<span>{item.epigraph}</span>{/if}
-										<span class="id">{item.id}</span>
-										{#if item.pdf}<a href={item.pdf} target="_blank" rel="noopener">PDF</a>{/if}
-									</p>
-								</li>
-							{/each}
+							{#each s.items as item (item.id)}{@render entry(item)}{/each}
 						</ol>
 						{#snippet note()}
 							{#if s.items.length < s.total && !query}
@@ -182,6 +224,39 @@
 		font-family: var(--mono);
 		font-size: var(--fs-xs);
 		text-decoration: none;
+	}
+
+	.words {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5em;
+		padding: 0.75em 1em;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.words label {
+		flex: 1;
+		min-width: 10em;
+	}
+
+	.word {
+		font-family: var(--mono);
+		font-size: var(--fs-xs);
+		color: var(--amber);
+		background: var(--amber-soft);
+		border: 1px solid var(--amber-edge);
+		padding: 0.2em 0.6em;
+		cursor: pointer;
+	}
+
+	.word:hover {
+		border-color: var(--amber);
+	}
+
+	mark {
+		color: var(--amber);
+		background: var(--amber-soft);
 	}
 
 	.foot {
