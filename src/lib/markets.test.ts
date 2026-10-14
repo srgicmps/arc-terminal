@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bmeHolidays, CLOCK_MARKETS, clockState, easter, lseHolidays, madridDay, MARKETS, marketStatus, nyseHolidays, until, zoned } from './markets.ts';
+import { b3Holidays, bmeHolidays, CLOCK_MARKETS, clockState, easter, lseHolidays, madridDay, MARKETS, marketStatus, nyseHolidays, until, xetraHolidays, zoned } from './markets.ts';
 
 const dates = (list: { date: string }[]) => list.map((h) => h.date);
 
@@ -161,5 +161,24 @@ describe('sesiones de las bolsas', () => {
 		expect(until(45 * 60_000)).toBe('45 min');
 		expect(until(120 * 60_000)).toBe('2 h');
 		expect(until((2 * 1440 + 3 * 60 + 5) * 60_000)).toBe('2 d 3 h');
+	});
+});
+
+describe('festivos de Fráncfort y São Paulo', () => {
+	const mk = (code: string) => MARKETS.find((m) => m.code === code)!;
+	it('el 25 de diciembre no abren; Fráncfort vuelve el 28 y São Paulo el 28', () => {
+		const at = Date.parse('2026-12-25T10:00:00Z');
+		expect(marketStatus(mk('FRA'), at)).toMatchObject({ isOpen: false, holiday: 'Navidad' });
+		expect(new Date(marketStatus(mk('FRA'), at).next!).toISOString()).toBe('2026-12-28T08:00:00.000Z');
+		expect(marketStatus(mk('SAO'), Date.parse('2026-12-25T15:00:00Z'))).toMatchObject({ isOpen: false, holiday: 'Navidad' });
+	});
+
+	it('Xetra: Pascua y fin de año; B3: Carnaval y Corpus Christi', () => {
+		const xetra = xetraHolidays(2026).map((h) => h.date);
+		expect(xetra).toEqual(['2026-01-01', '2026-04-03', '2026-04-06', '2026-05-01', '2026-12-24', '2026-12-25', '2026-12-31']);
+		const b3 = b3Holidays(2026).map((h) => `${h.date} ${h.name}`);
+		expect(b3).toContain('2026-02-16 Carnaval');
+		expect(b3).toContain('2026-02-17 Carnaval');
+		expect(b3).toContain('2026-06-04 Corpus Christi');
 	});
 });

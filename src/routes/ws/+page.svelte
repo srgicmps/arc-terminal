@@ -104,7 +104,7 @@
 	<div class="col">
 		<Panel title="Sesiones de las bolsas" meta="24 h · hora de Madrid">
 			<MarketSessions />
-			{#snippet note()}Sesión continua de cada bolsa. Festivos: Nueva York, Londres y Madrid; en las demás, solo los fines de semana.{/snippet}
+			{#snippet note()}Sesión continua de cada bolsa. Festivos de Nueva York, Londres, Madrid, Fráncfort y São Paulo; en Asia, de momento, solo los fines de semana.{/snippet}
 		</Panel>
 	</div>
 </div>

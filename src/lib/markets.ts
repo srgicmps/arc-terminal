@@ -9,7 +9,7 @@
 export interface MarketHoliday {
 	/** «2026-12-25» */
 	date: string;
-	market: 'NYSE' | 'BME' | 'LSE';
+	market: 'NYSE' | 'BME' | 'LSE' | 'XETRA' | 'B3';
 	name: string;
 }
 
@@ -121,6 +121,62 @@ export function lseHolidays(y: number): MarketHoliday[] {
 	return list.map(([date, name]) => ({ date, market: 'LSE', name }));
 }
 
+/** Quita los que caen en fin de semana: ese día la bolsa ya está cerrada. */
+function weekdays(list: [string, string][], market: MarketHoliday['market']): MarketHoliday[] {
+	return list
+		.filter(([date]) => ![0, 6].includes(new Date(`${date}T12:00:00Z`).getUTCDay()))
+		.map(([date, name]) => ({ date, market, name }));
+}
+
+/**
+ * Xetra (Fráncfort), según su calendario de negociación: Año Nuevo, Viernes Santo, Lunes de Pascua,
+ * 1 de mayo, Nochebuena, Navidad, San Esteban y Nochevieja.
+ */
+export function xetraHolidays(y: number): MarketHoliday[] {
+	const e = easter(y);
+	return weekdays(
+		[
+			[iso(y, 1, 1), 'Año Nuevo'],
+			[shift(y, e.m, e.d, -2), 'Viernes Santo'],
+			[shift(y, e.m, e.d, 1), 'Lunes de Pascua'],
+			[iso(y, 5, 1), 'Día del Trabajo'],
+			[iso(y, 12, 24), 'Nochebuena'],
+			[iso(y, 12, 25), 'Navidad'],
+			[iso(y, 12, 26), 'San Esteban'],
+			[iso(y, 12, 31), 'Nochevieja']
+		],
+		'XETRA'
+	);
+}
+
+/**
+ * B3 (São Paulo): festivos nacionales de Brasil en los que no abre la bolsa, Carnaval y Corpus Christi
+ * (dependen de la Pascua), Nochebuena y Nochevieja.
+ */
+export function b3Holidays(y: number): MarketHoliday[] {
+	const e = easter(y);
+	return weekdays(
+		[
+			[iso(y, 1, 1), 'Año Nuevo'],
+			[shift(y, e.m, e.d, -48), 'Carnaval'],
+			[shift(y, e.m, e.d, -47), 'Carnaval'],
+			[shift(y, e.m, e.d, -2), 'Viernes Santo'],
+			[iso(y, 4, 21), 'Tiradentes'],
+			[iso(y, 5, 1), 'Día del Trabajo'],
+			[shift(y, e.m, e.d, 60), 'Corpus Christi'],
+			[iso(y, 9, 7), 'Independencia'],
+			[iso(y, 10, 12), 'Nuestra Señora Aparecida'],
+			[iso(y, 11, 2), 'Difuntos'],
+			[iso(y, 11, 15), 'Proclamación de la República'],
+			[iso(y, 11, 20), 'Conciencia Negra'],
+			[iso(y, 12, 24), 'Nochebuena'],
+			[iso(y, 12, 25), 'Navidad'],
+			[iso(y, 12, 31), 'Nochevieja']
+		],
+		'B3'
+	);
+}
+
 /** Una bolsa: zona horaria, horario normal en minutos locales y sus festivos. */
 export interface ClockMarket {
 	code: string;
@@ -137,20 +193,20 @@ export interface ClockMarket {
 
 /**
  * Las bolsas principales, de este a oeste. Horario de la sesión continua de cada una (sin subastas):
- * TSE, HKEX, SSE, NSE, Xetra, LSE, BME, NYSE y B3. Los festivos solo están para NYSE, LSE y BME; en las
- * demás se tienen en cuenta los fines de semana.
+ * TSE, HKEX, SSE, NSE, Xetra, LSE, BME, NYSE y B3. Los festivos están para Xetra, LSE, BME, NYSE y B3; en las
+ * bolsas de Asia, de momento, solo los fines de semana.
  */
 export const MARKETS: ClockMarket[] = [
 	{ code: 'TYO', name: 'Tokio', short: 'Tokio', tz: 'Asia/Tokyo', open: [540, 930], lunch: [690, 750] },
 	{ code: 'HKG', name: 'Hong Kong', short: 'Hong Kong', tz: 'Asia/Hong_Kong', open: [570, 960], lunch: [720, 780] },
 	{ code: 'SHA', name: 'Shanghái', short: 'Shanghái', tz: 'Asia/Shanghai', open: [570, 900], lunch: [690, 780] },
 	{ code: 'BOM', name: 'Bombay', short: 'Bombay', tz: 'Asia/Kolkata', open: [555, 930] },
-	{ code: 'FRA', name: 'Fráncfort', short: 'Fráncfort', tz: 'Europe/Berlin', open: [540, 1050] },
+	{ code: 'FRA', name: 'Fráncfort', short: 'Fráncfort', tz: 'Europe/Berlin', open: [540, 1050], holidays: xetraHolidays },
 	{ code: 'LON', name: 'Londres', short: 'Londres', tz: 'Europe/London', open: [480, 990], holidays: lseHolidays },
 	{ code: 'MAD', name: 'Madrid', short: 'Madrid', tz: 'Europe/Madrid', open: [540, 1050], holidays: bmeHolidays },
 	{ code: 'NYC', name: 'Nueva York', short: 'NY', tz: 'America/New_York', open: [570, 960], holidays: nyseHolidays },
 	// B3 mueve su horario una hora cuando EE. UU. cambia la hora; aquí, el de 10:00 a 17:00.
-	{ code: 'SAO', name: 'São Paulo', short: 'São Paulo', tz: 'America/Sao_Paulo', open: [600, 1020] }
+	{ code: 'SAO', name: 'São Paulo', short: 'São Paulo', tz: 'America/Sao_Paulo', open: [600, 1020], holidays: b3Holidays }
 ];
 
 const market = (code: string) => MARKETS.find((m) => m.code === code)!;

@@ -48,8 +48,8 @@
 		{/if}
 	</p>
 
-	<div class="board">
-		<div class="row ticks" aria-hidden="true">
+	<div class="board" style:--rows={rows.length + 1}>
+		<div class="row ticks" aria-hidden="true" style:--r={1}>
 			<span></span>
 			<div class="scale">
 				{#each [0, 6, 12, 18, 24] as h (h)}<span style:left={pct(h / 24)}>{h}</span>{/each}
@@ -57,13 +57,15 @@
 			<span></span>
 		</div>
 
-		{#each rows as r (r.mk.code)}
-			<div class="row" class:open={r.status?.isOpen}>
+		{#each rows as r, i (r.mk.code)}
+			<div class="row" class:open={r.status?.isOpen} style:--r={i + 2}>
 				<span class="name">{r.mk.name}</span>
 				<div class="track">
 					{#each r.spans as [a, b], i (i)}
 						<i class="span" style:left={pct(a)} style:width={pct(b - a)}></i>
 					{/each}
+					<!-- En el móvil, la línea de «ahora» va dentro de cada pista para no cruzar los textos. -->
+					{#if nowFrac !== null}<i class="now now-in" style:left={pct(nowFrac)}></i>{/if}
 				</div>
 				<span class="st">{label(r)}</span>
 			</div>
@@ -77,8 +79,6 @@
 
 <style>
 	.sessions {
-		--name-w: 84px;
-		--st-w: 150px;
 		padding: var(--sp-8) var(--pad-x) var(--sp-10);
 		font-size: var(--fs-s);
 	}
@@ -93,24 +93,46 @@
 		font-weight: var(--fw-medium);
 	}
 
+	/*
+	 * Una rejilla para todas las filas: nombre y estado miden lo que su texto más largo y la pista ocupa el
+	 * resto. Así la línea de «ahora» puede ir en la columna de las pistas, de arriba abajo, sin medidas fijas.
+	 */
 	.board {
 		position: relative;
+		display: grid;
+		grid-template-columns: max-content minmax(0, 1fr) max-content;
+		align-items: center;
+		gap: var(--sp-6) var(--sp-10);
 	}
 
+	/* Cada celda va en su fila y columna: la capa de «ahora» ocupa la columna de las pistas y, sin esto, la
+	   colocación automática las empujaría. */
 	.row {
-		display: grid;
-		grid-template-columns: var(--name-w) minmax(0, 1fr) var(--st-w);
-		align-items: center;
-		gap: var(--sp-10);
-		padding-block: var(--sp-3);
+		display: contents;
+	}
+
+	@media (min-width: 721px) {
+		.row > :global(*) {
+			grid-row: var(--r);
+		}
+
+		.row > :global(:nth-child(1)) {
+			grid-column: 1;
+		}
+
+		.row > :global(:nth-child(2)) {
+			grid-column: 2;
+		}
+
+		.row > :global(:nth-child(3)) {
+			grid-column: 3;
+		}
 	}
 
 	.name {
 		font-family: var(--sans);
 		font-size: var(--fs-m);
 		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 
 	.st {
@@ -125,7 +147,7 @@
 
 	.track {
 		position: relative;
-		height: 10px;
+		height: var(--bar-h);
 		background: var(--raise);
 	}
 
@@ -138,10 +160,6 @@
 
 	.open .span {
 		background: var(--amber-edge);
-	}
-
-	.ticks {
-		padding-block: 0;
 	}
 
 	.scale {
@@ -164,13 +182,11 @@
 		transform: translateX(-100%);
 	}
 
-	/* La línea de «ahora» cruza todas las filas: va en una capa con la misma rejilla que la pista. */
 	.now-lane {
-		position: absolute;
-		top: 0;
-		bottom: 0;
-		left: calc(var(--name-w) + var(--sp-10));
-		right: calc(var(--st-w) + var(--sp-10));
+		position: relative;
+		grid-column: 2;
+		grid-row: 1 / span var(--rows);
+		align-self: stretch;
 		pointer-events: none;
 	}
 
@@ -182,11 +198,21 @@
 		background: var(--amber);
 	}
 
-	/* En el móvil: nombre y estado en una línea y la barra debajo, a todo el ancho. */
+	.now-in {
+		display: none;
+	}
+
+	/* En el móvil: nombre y estado en una línea y la pista debajo, a todo el ancho. */
 	@media (max-width: 720px) {
+		.board {
+			display: block;
+		}
+
 		.row {
+			display: grid;
 			grid-template-columns: minmax(0, 1fr) auto;
 			grid-template-areas: 'name st' 'track track';
+			align-items: center;
 			gap: var(--sp-3) var(--sp-8);
 			padding-block: var(--sp-4);
 		}
@@ -197,6 +223,7 @@
 
 		.st {
 			grid-area: st;
+			font-size: var(--fs-xs);
 		}
 
 		.track {
@@ -216,8 +243,11 @@
 		}
 
 		.now-lane {
-			left: 0;
-			right: 0;
+			display: none;
+		}
+
+		.now-in {
+			display: block;
 		}
 	}
 </style>
