@@ -9,6 +9,7 @@
 // - si una descarga falla, se reutiliza la copia publicada, aunque sea antigua, y se avisa.
 import { mkdir, writeFile } from 'node:fs/promises';
 import type { Dataset, SourceStatus } from '../src/lib/data.ts';
+import { withHistory } from './history.ts';
 import { checkShrink, withDeadline, writeExtra, type Source } from './lib.ts';
 import { sources } from './sources/index.ts';
 
@@ -108,7 +109,11 @@ await mkdir(OUT_DIR, { recursive: true });
 const statuses = await Promise.all(selected.map(run));
 
 if (!wanted.length) {
-	await save({ name: 'status', fetchedAt: new Date().toISOString(), data: statuses });
+	// El status publicado trae el historial de las pasadas anteriores: se le añade la de ahora.
+	const before = await published('status');
+	const now = Date.now();
+	const data = withHistory(statuses, before?.data as SourceStatus[] | undefined, now);
+	await save({ name: 'status', fetchedAt: new Date(now).toISOString(), data });
 }
 
 const failed = statuses.filter((s) => s.state === 'error' || s.state === 'stale');

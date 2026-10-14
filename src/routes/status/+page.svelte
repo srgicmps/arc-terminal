@@ -12,6 +12,10 @@
 	const ok = $derived(rows.filter((r) => r.state === 'ok' || r.state === 'cached').length);
 	// Las fuentes sin clave no son un fallo: no cuentan en el total.
 	const active = $derived(rows.filter((r) => r.state !== 'off').length);
+	// Tira con las últimas pasadas de cada fuente (status.json guarda 7 días).
+	const STRIP = 28;
+	const TONE = { ok: 'good', cached: 'good', stale: 'stale', error: 'bad', off: 'off' };
+	const hour = (t: string) => t.replace('T', ' ').replace('Z', ' UTC');
 </script>
 
 <ViewHeader code="STATUS" title="Estado de las fuentes" sub="Qué tal fue la última descarga de cada fuente de datos" />
@@ -28,7 +32,16 @@
 								<tr>
 									<td class="mut">{r.name}</td>
 									<td class="l wrap">{r.label}{#if r.error}<small class:off={r.state === 'off'}>{r.error}</small>{/if}</td>
-									<td class={r.state === 'ok' || r.state === 'cached' ? 'up' : r.state === 'off' ? 'mut' : 'down'}>{LABEL[r.state]}</td>
+									<td class={r.state === 'ok' || r.state === 'cached' ? 'up' : r.state === 'off' ? 'mut' : 'down'}>
+										{LABEL[r.state]}
+										{#if r.history?.length}
+											<span class="strip" aria-label="Últimas {Math.min(STRIP, r.history.length)} pasadas">
+												{#each r.history.slice(-STRIP) as p (p.t)}
+													<i class={TONE[p.state]} title="{hour(p.t)} · {LABEL[p.state]}"></i>
+												{/each}
+											</span>
+										{/if}
+									</td>
 									<td class="mut">{when(r.fetchedAt, clock.now)}</td>
 								</tr>
 							{/each}
@@ -62,5 +75,32 @@
 
 	small.off {
 		color: var(--muted);
+	}
+
+	/* Una raya de 1 px de alto por pasada, la más reciente a la derecha. */
+	.strip {
+		display: flex;
+		justify-content: flex-end;
+		gap: 1px;
+		margin-top: 4px;
+	}
+
+	.strip i {
+		width: 3px;
+		height: 1px;
+		background: var(--line);
+	}
+
+	.strip .good {
+		background: var(--up);
+		opacity: 0.45;
+	}
+
+	.strip .stale {
+		background: var(--amber);
+	}
+
+	.strip .bad {
+		background: var(--down);
 	}
 </style>

@@ -21,6 +21,15 @@ export interface SourceStatus {
 	/** Cada cuánto se refresca como mucho (maxAgeMinutes de scripts/sources). Lo usa <Updated>. */
 	maxAgeMinutes?: number;
 	error?: string;
+	/** Estado de cada pasada de los últimos 7 días, de la más antigua a la más reciente. */
+	history?: StatePoint[];
+}
+
+/** Un punto del historial de una fuente: cuándo se ejecutó la pasada y cómo fue. */
+export interface StatePoint {
+	/** Hora de la pasada (ISO 8601, al minuto: «2026-10-14T12:07Z»). */
+	t: string;
+	state: SourceStatus['state'];
 }
 
 // Vite convierte cada JSON en un trozo aparte que solo se carga en la página que lo pide.
