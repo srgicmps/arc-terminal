@@ -22,6 +22,5 @@ https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html ~ .{0,30}Mone
 # ECO: euríbor a 12 meses (media mensual) para la calculadora de hipoteca
 https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA?lastNObservations=14&format=csvdata&detail=dataonly
 # WS: valores de dataSource de los mapas de calor de TradingView (índices y cripto)
-https://www.tradingview.com/widget-docs/widgets/heatmaps/stock-heatmap/ ~ .{0,60}dataSource.{0,200}
-https://www.tradingview.com/widget-docs/widgets/heatmaps/crypto-heatmap/ ~ .{0,60}dataSource.{0,200}
-https://www.tradingview.com/heatmap/stock/ ~ .{0,40}(IBEX|DAX|NASDAQ100|SPX500).{0,60}
+https://www.tradingview-widget.com/embed-widget/stock-heatmap/?locale=es ~ .{0,60}(NASDAQ100|IBEX35|"DAX"|SPX500).{0,60}
+https://www.tradingview.com/heatmap/stock/ ~ .{0,60}("NASDAQ100"|"IBEX35"|"DAX"|"SPX500").{0,60}
