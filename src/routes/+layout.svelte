@@ -19,6 +19,7 @@
 	import { initPlace } from '#lib/place.svelte.ts';
 	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
 	import { tvSymbol } from '#lib/tickers.ts';
+	import { initTaste, taste } from '#lib/taste.svelte.ts';
 	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
 	import { parseTv, routeOf } from '#lib/tv.ts';
 	import type { LayoutProps } from './$types';
@@ -28,6 +29,7 @@
 	// El reloj arranca en el navegador (como onMounted en Vue) y se para al salir.
 	$effect(startClock);
 	$effect(initWatchlist);
+	$effect(initTaste);
 	$effect(initPlace);
 	$effect(initTheme);
 	$effect(initFit);
@@ -80,9 +82,9 @@
 	const THEME_LABEL = { auto: 'Tema automático (sigue al sistema)', light: 'Tema de día', dark: 'Tema de noche' };
 	const THEME_ICON = { auto: '◐', light: '☀', dark: '☾' };
 
-	const keys = COMMANDS.filter((c) => c.pinned);
-	// Barra inferior del móvil: los accesos más usados, a mano del pulgar.
-	const thumb = ['TOP', 'ECO', 'WS', 'FUEL'].map((code) => COMMANDS.find((c) => c.code === code)!);
+	// Fila de arriba y barra inferior del móvil (a mano del pulgar): las de la web o las de «A tu gusto».
+	const keys = $derived(COMMANDS.filter((c) => taste.top.includes(c.code)));
+	const thumb = $derived(COMMANDS.filter((c) => taste.thumb.includes(c.code)));
 
 	// navigator.onLine, enlazado como en Vue con un ref que se actualiza solo.
 	let online = $state(true);
