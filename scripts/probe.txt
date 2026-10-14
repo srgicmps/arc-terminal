@@ -27,7 +27,3 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
-# Alertas: OMS, Disease Outbreak News (API OData y el RSS antiguo)
-https://www.who.int/api/emergencies/diseaseoutbreaknews?sf_culture=en&$orderby=PublicationDateAndTime%20desc&$top=3
-https://www.who.int/api/news/diseaseoutbreaknews?sf_culture=en&$orderby=PublicationDateAndTime%20desc&$top=3
-https://www.who.int/feeds/entity/csr/don/en/rss.xml

@@ -17,8 +17,10 @@ export interface OutbreakNews {
 	url: string;
 }
 
+// $select: sin él, cada parte trae todo el texto en HTML (epidemiología, respuesta, consejos…).
 export const WHO_URL =
-	'https://www.who.int/api/emergencies/diseaseoutbreaknews?sf_culture=en&$orderby=PublicationDateAndTime%20desc&$top=20';
+	'https://www.who.int/api/emergencies/diseaseoutbreaknews?sf_culture=en&$orderby=PublicationDateAndTime%20desc&$top=20' +
+	'&$select=Title,OverrideTitle,UrlName,DonId,PublicationDate,PublicationDateAndTime,Summary';
 
 /** Convierte la respuesta OData en nuestra lista, de más reciente a más antiguo. */
 export function parseWho(body: Raw): OutbreakNews[] {
