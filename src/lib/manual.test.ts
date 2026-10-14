@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { QUOTAS } from '../../scripts/alerts/config.ts';
 import { resolveInput } from './cmdline.ts';
 import { COMMANDS, MANUAL_SECTIONS } from './commands.ts';
-import { ALERT_LEVELS, commandText, FAQ, matches } from './manual.ts';
+import { ALERT_LEVELS, commandText, FAQ, matches, thumbSlug } from './manual.ts';
 import { isDocumented, PREFS } from './prefs.ts';
 import { SHORTCUTS } from './shortcuts.ts';
 
@@ -113,5 +113,18 @@ describe('buscador', () => {
 	it('las preguntas frecuentes tienen respuesta', () => {
 		expect(FAQ.length).toBeGreaterThanOrEqual(5);
 		for (const f of FAQ) expect(f.a.trim(), f.q).not.toBe('');
+	});
+});
+
+describe('miniaturas', () => {
+	it('la ruta sin barras; la portada, «top»', () => {
+		expect(thumbSlug('/')).toBe('top');
+		expect(thumbSlug('/eco')).toBe('eco');
+		expect(thumbSlug('/usgov')).toBe('usgov');
+	});
+
+	it('cada comando tiene un nombre distinto (no se pisan dos miniaturas)', () => {
+		const slugs = new Set(COMMANDS.map((c) => thumbSlug(c.route)));
+		expect(slugs.size).toBe(new Set(COMMANDS.map((c) => c.route)).size);
 	});
 });
