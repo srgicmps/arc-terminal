@@ -49,6 +49,7 @@ jobs:
           SAMPLE: ${{ github.event_name == 'pull_request' && '1' || '' }}
 
       - run: pnpm check
+      - run: pnpm test
       - run: pnpm build --logLevel warn
 
       # Solo en los PR: explora las URL de scripts/probe.txt (herramienta de desarrollo).
