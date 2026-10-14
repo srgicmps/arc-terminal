@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { eurostat } from '../sources/eurostat.ts';
 import { mockFetch } from './mock.ts';
+import type { Series } from '../../src/lib/types.ts';
 
 // JSON-stat con la forma de la API de Eurostat: dimensiones freq × unit × geo × time,
 // valores en un objeto disperso { posición plana: valor }.
@@ -73,5 +74,16 @@ describe('eurostat', () => {
 		vi.spyOn(console, 'log').mockImplementation(() => {});
 		mockFetch(() => undefined);
 		await expect(eurostat.fetch(undefined)).rejects.toThrow('ninguna serie de Eurostat');
+	});
+});
+
+describe('eurostat: copia incompleta', () => {
+	it('da por vieja la copia a la que le falta una serie (como gdp-yoy al añadirla)', () => {
+		const ids = ['unemployment', 'youth-unemployment', 'inflation', 'gdp', 'gdp-yoy', 'debt'];
+		const series = (list: string[]) => ({ series: list.map((id) => ({ id: `${id}-es` }) as Series) });
+		expect(eurostat.isStale?.(series(ids))).toBe(false);
+		// «gdp-yoy-es» no cuenta como «gdp»: si falta el trimestral, también es vieja.
+		expect(eurostat.isStale?.(series(ids.filter((i) => i !== 'gdp-yoy')))).toBe(true);
+		expect(eurostat.isStale?.(series(ids.filter((i) => i !== 'gdp')))).toBe(true);
 	});
 });
