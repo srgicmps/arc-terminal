@@ -8,7 +8,7 @@ import ts from 'typescript-eslint';
 
 export default defineConfig(
 	// Generado o descargado: no se revisa.
-	{ ignores: ['build/', '.svelte-kit/', 'static/data/', 'node_modules/'] },
+	{ ignores: ['build/', '.svelte-kit/', 'static/data/', 'static/engine/', 'node_modules/'] },
 
 	// Reglas recomendadas: JavaScript, TypeScript y Svelte 5.
 	js.configs.recommended,

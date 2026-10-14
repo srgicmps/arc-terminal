@@ -16,14 +16,15 @@ import {
 	deadlineFor,
 	makeContext,
 	NO_CONTEXT,
-	phases,
+	level,
+	waves,
 	withDeadline,
 	writeExtra,
 	type Source,
 	type SourceContext
 } from './lib.ts';
 import { buildNewsIndex } from './news-index.ts';
-import { sources } from './sources/index.ts';
+import { loadSources } from './registry.ts';
 
 const OUT_DIR = 'static/data';
 // En los PR, una muestra de cada fuente al final del registro, para revisar la forma real de los datos.
@@ -122,12 +123,12 @@ async function run(source: Source, ctx: SourceContext = NO_CONTEXT): Promise<Sou
 }
 
 const wanted = process.argv.slice(2);
+const sources = await loadSources();
 const selected = wanted.length ? sources.filter((s) => wanted.includes(s.name)) : sources;
 
 await mkdir(OUT_DIR, { recursive: true });
-// Primera fase: todas las fuentes normales a la vez. Segunda: las derivadas, con sus datos.
-const [first, second] = phases(selected);
-const statuses = await Promise.all(first.map((s) => run(s)));
+// Por oleadas: primero todas las fuentes normales a la vez; luego las derivadas, nivel a nivel
+// (`after: true`, después `after: 2`…), cada una con los datos de las anteriores.
 const ctx = makeContext(saved, (name) => {
 	try {
 		return (JSON.parse(readFileSync(`${OUT_DIR}/${name}.json`, 'utf8')) as Dataset<unknown>).data;
@@ -135,7 +136,11 @@ const ctx = makeContext(saved, (name) => {
 		return undefined;
 	}
 });
-statuses.push(...(await Promise.all(second.map((s) => run(s, ctx)))));
+const statuses: SourceStatus[] = [];
+for (const wave of waves(selected)) {
+	const derived = wave.some((s) => level(s) > 0);
+	statuses.push(...(await Promise.all(wave.map((s) => (derived ? run(s, ctx) : run(s))))));
+}
 
 if (!wanted.length) {
 	const now = Date.now();
@@ -146,11 +151,12 @@ if (!wanted.length) {
 	await save({ name: 'status-history', fetchedAt: new Date(now).toISOString(), data: history });
 }
 
-// «En las noticias» de cada valor, con los titulares que acaban de guardarse.
+// «En las noticias» de cada valor y de cada país, con los titulares que acaban de guardarse.
 if (selected.some((s) => s.name.startsWith('news-'))) {
-	const index = await buildNewsIndex(OUT_DIR);
+	const [index, countries] = await buildNewsIndex(OUT_DIR);
 	await save(index);
-	console.log(`✓ news-index: ${Object.keys(index.data).length} valores con titulares`);
+	await save(countries);
+	console.log(`✓ news-index: ${Object.keys(index.data).length} valores y ${Object.keys(countries.data).length} países con titulares`);
 }
 
 const failed = statuses.filter((s) => s.state === 'error' || s.state === 'stale');

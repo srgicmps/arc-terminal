@@ -25,3 +25,6 @@ vite.config.ts.timestamp-*
 # Datos descargados por scripts/update.ts (se generan en cada build)
 /static/data
 shots/
+
+# Historial de avisos para la caché de Actions (scripts/notify.ts)
+/.notify-cache

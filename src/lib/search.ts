@@ -70,8 +70,24 @@ const TICKER_MAX = 5;
  * fila es la ficha de ese valor: así Intro hace lo mismo que antes de existir la búsqueda.
  */
 export function searchOptions(raw: string, suggestions: Option[], index: Indexed[] | null, limit = 5): Option[] {
-	if (!index?.length || !raw.trim()) return [];
+	if (!raw.trim()) return [];
 	if (findCommand(raw) || commandWithArg(raw) || findCommand(splitInput(raw).head)) return [];
+	const hits = indexHits(raw, suggestions, index ?? [], limit);
+	const text = raw.trim();
+	if (norm(text).length < MIN_QUERY) return hits;
+	// Un código corto sin nada más (AMZN): Intro sigue abriendo su ficha, no el archivo.
+	const q = norm(raw);
+	if (!hits.length && !suggestions.length && isTickerLike(q) && q.length <= TICKER_MAX) {
+		hits.push({ code: q, desc: 'Ficha del valor', kind: 'Valor', run: q });
+	}
+	// Al final, buscar en el archivo de 3 meses (NEWS lo carga en diferido): la barra sigue ligera.
+	hits.push({ code: 'NEWS', desc: `Buscar «${text}» en el archivo de 3 meses`, kind: 'Archivo', run: `NEWS ${text}` });
+	return hits;
+}
+
+/** Titulares, BOE y valores del índice ligero que encajan con lo escrito. */
+function indexHits(raw: string, suggestions: Option[], index: Indexed[], limit: number): Option[] {
+	if (!index.length) return [];
 	const listed = new Set(suggestions.map((o) => o.code));
 	const hits: Option[] = [];
 	for (const e of searchIndex(raw, index, limit + listed.size)) {

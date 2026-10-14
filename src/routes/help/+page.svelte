@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { routeHref } from '#lib/routes.ts';
 	import { resolve } from '$app/paths';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -16,7 +17,7 @@
 				<tbody>
 					{#each COMMANDS as c (c.code)}
 						<tr>
-							<td><a class="code" href={resolve(c.route)}>{c.code}</a></td>
+							<td><a class="code" href={routeHref(c.route)}>{c.code}</a></td>
 							<td class="l wrap">
 								{c.desc}
 								{#if c.aliases}<small class="mut">También: {c.aliases.join(', ')}</small>{/if}
@@ -36,6 +37,9 @@
 				<li><span class="l"><kbd>↑</kbd> <kbd>↓</kbd></span><b>Moverte por las sugerencias</b></li>
 				<li><span class="l"><kbd>Intro</kbd></span><b>Abrir</b></li>
 				<li><span class="l"><kbd>Esc</kbd></span><b>Volver a la portada</b></li>
+				<li><span class="l">Pulsa el título de un panel, o <kbd>M</kbd> con el foco en él</span><b>Ampliar el panel</b></li>
+				<li><span class="l"><kbd>Esc</kbd> o <kbd>✕</kbd> con un panel ampliado</span><b>Cerrarlo</b></li>
+				<li><span class="l"><kbd>⇧</kbd> <kbd>F</kbd></span><b>Pantalla completa</b></li>
 			</ul>
 		</Panel>
 		<Panel title="Con texto detrás" meta="Comando, espacio y lo que buscas">
@@ -43,7 +47,7 @@
 				{#each COMMANDS.filter((c) => c.arg) as c (c.code)}
 					{@const text = c.arg!.example.slice(c.code.length + 1)}
 					<li>
-						<a class="l" href="{resolve(c.route)}?{c.arg!.param}={encodeURIComponent(text)}">
+						<a class="l" href="{routeHref(c.route)}?{c.arg!.param}={encodeURIComponent(text)}">
 							<b class="code">{c.arg!.example}</b>
 						</a>
 						<b>{c.arg!.label}</b>

@@ -10,8 +10,18 @@ import type {
 	WeatherData,
 	WeatherPlace
 } from '../../src/lib/types.ts';
-import type { SeaState, SunDay } from '../../src/lib/weather.ts';
-import { appendDaily, getJson, list, madridDate, num, plain, type Source } from '../lib.ts';
+import type { SeaState } from '../../src/lib/weather.ts';
+import {
+	FORECAST_URL,
+	MARINE_URL,
+	forecastParams,
+	marineParams,
+	parsePlace,
+	parseSea,
+	parseSun,
+	seaTemp
+} from '../../src/lib/openmeteo.ts';
+import { appendDaily, getJson, list, madridDate, madridDay, num, plain, type Source } from '../lib.ts';
 
 type Raw = Record<string, any>;
 
@@ -115,79 +125,28 @@ export const weather: Source<WeatherData> = {
 	label: 'Tiempo, temperatura del agua y oleaje · Open-Meteo',
 	maxAgeMinutes: 25,
 	async fetch() {
-		const params = new URLSearchParams({
-			latitude: PLACES.map((p) => p.lat).join(','),
-			longitude: PLACES.map((p) => p.lon).join(','),
-			current: 'temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m',
-			daily:
-				'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,' +
-				'sunrise,sunset,daylight_duration',
-			timezone: 'auto',
-			// Un día de atrás para comparar la duración del día con la de ayer; en la tabla no se enseña.
-			past_days: '1',
-			forecast_days: '7'
-		});
-		const forecasts = list(await getJson<Raw | Raw[]>(`https://api.open-meteo.com/v1/forecast?${params}`));
+		const forecasts = list(await getJson<Raw | Raw[]>(`${FORECAST_URL}?${forecastParams(PLACES)}`));
 
 		// Modelo marino en una sola petición: temperatura del agua en los sitios con costa y, detrás, el oleaje
 		// en las dos costas de Menorca (puntos un poco mar adentro para que el modelo no los tome por tierra).
 		const coastal = PLACES.filter((p) => p.sea);
 		const points = [...coastal, ...COASTS];
-		const sea = await getJson<Raw | Raw[]>(`https://marine-api.open-meteo.com/v1/marine?${marineParams(points)}`)
+		const sea = await getJson<Raw | Raw[]>(`${MARINE_URL}?${marineParams(points, 'Europe/Madrid')}`)
 			.then(list)
 			.catch(() => [] as Raw[]);
 		const seaFor = (name: string) => {
 			const i = coastal.findIndex((p) => p.name === name);
-			return i < 0 ? null : num(sea[i]?.current?.sea_surface_temperature);
+			return i < 0 ? null : seaTemp(sea[i]);
 		};
 
-		const places: WeatherPlace[] = PLACES.map((place, i) => {
-			const f = forecasts[i] ?? {};
-			const d = f.daily ?? {};
-			// La lista empieza ayer (past_days=1): la tabla arranca hoy, según la hora actual del sitio.
-			const first = Math.max(0, list<string>(d.time).indexOf(String(f.current?.time ?? '').slice(0, 10)));
-			return {
-				name: place.name,
-				current: {
-					time: String(f.current?.time ?? ''),
-					temp: Number(f.current?.temperature_2m),
-					code: Number(f.current?.weather_code),
-					wind: Number(f.current?.wind_speed_10m),
-					windDir: Number(f.current?.wind_direction_10m),
-					humidity: Number(f.current?.relative_humidity_2m)
-				},
-				daily: list<string>(d.time).map((date, j) => ({
-					date,
-					code: Number(d.weather_code?.[j]),
-					max: Number(d.temperature_2m_max?.[j]),
-					min: Number(d.temperature_2m_min?.[j]),
-					rain: Number(d.precipitation_probability_max?.[j] ?? 0),
-					wind: Number(d.wind_speed_10m_max?.[j])
-				})).slice(first),
-				sea: seaFor(place.name),
-				sun: parseSun(d, num(f.utc_offset_seconds) ?? 0, first)
-			};
-		});
+		// El lector de cada sitio está en src/lib/openmeteo.ts: lo comparte con el tiempo del sitio elegido.
+		const places: WeatherPlace[] = PLACES.map((p, i) => parsePlace(forecasts[i] ?? {}, p.name, seaFor(p.name)));
 		if (!places.some((p) => Number.isFinite(p.current.temp))) throw new Error('sin datos de tiempo');
 		return { places, coasts: parseCoasts(sea.slice(coastal.length)) };
 	}
 };
 
-/** «2026-10-14T07:52» en hora local + desfase en segundos → ISO en UTC. */
-function localToIso(local: unknown, offset: number): string | null {
-	const t = Date.parse(`${String(local ?? '')}Z`);
-	return Number.isFinite(t) ? new Date(t - offset * 1000).toISOString() : null;
-}
-
-/** Sol del día `i` de la lista diaria (hoy) y diferencia de luz con el día anterior, si lo hay. */
-export function parseSun(d: Raw, offset: number, i: number): SunDay | null {
-	const sunrise = localToIso(d.sunrise?.[i], offset);
-	const sunset = localToIso(d.sunset?.[i], offset);
-	const daylight = num(d.daylight_duration?.[i]);
-	if (!sunrise || !sunset || daylight === null) return null;
-	const yesterday = i > 0 ? num(d.daylight_duration?.[i - 1]) : null;
-	return { sunrise, sunset, daylight, delta: yesterday === null ? null : daylight - yesterday };
-}
+export { parseSun };
 
 // Estado del mar en Menorca: costa norte (tramontana) frente a costa sur.
 const COASTS = [
@@ -195,60 +154,13 @@ const COASTS = [
 	{ name: 'Costa sur', spot: 'Son Bou', lat: 39.87, lon: 4.07 }
 ];
 
-const MARINE_NOW = [
-	'sea_surface_temperature',
-	'wave_height',
-	'wave_direction',
-	'wave_period',
-	'swell_wave_height',
-	'swell_wave_direction',
-	'swell_wave_period'
-];
-const MARINE_DAILY = ['wave_height_max', 'swell_wave_height_max', 'wave_direction_dominant'];
-
-function marineParams(points: { lat: number; lon: number }[]) {
-	return new URLSearchParams({
-		latitude: points.map((p) => p.lat).join(','),
-		longitude: points.map((p) => p.lon).join(','),
-		current: MARINE_NOW.join(','),
-		daily: MARINE_DAILY.join(','),
-		timezone: 'Europe/Madrid',
-		forecast_days: '3'
-	});
-}
-
 /** URL de ejemplo (solo las dos costas) para scripts/probe.txt. */
-export const COASTS_URL = `https://marine-api.open-meteo.com/v1/marine?${marineParams(COASTS)}`;
+export const COASTS_URL = `${MARINE_URL}?${marineParams(COASTS, 'Europe/Madrid')}`;
 
-/** Respuestas del modelo marino para las dos costas, en el orden de COASTS. */
+/** Respuestas del modelo marino para las dos costas, en el orden de COASTS. Open-Meteo mueve cada punto a
+ *  la celda de mar más cercana (Fornells cae unos 13 km al norte); si alguna vez no hay oleaje, no se enseña. */
 export function parseCoasts(raw: Raw[]): SeaState[] {
-	return COASTS.flatMap((coast, i) => {
-		const c = raw[i]?.current ?? {};
-		const d = raw[i]?.daily ?? {};
-		const state: SeaState = {
-			name: coast.name,
-			spot: coast.spot,
-			now: {
-				wave: num(c.wave_height),
-				waveDir: num(c.wave_direction),
-				wavePeriod: num(c.wave_period),
-				swell: num(c.swell_wave_height),
-				swellDir: num(c.swell_wave_direction),
-				swellPeriod: num(c.swell_wave_period),
-				water: num(c.sea_surface_temperature)
-			},
-			daily: list<string>(d.time).map((date, j) => ({
-				date,
-				waveMax: num(d.wave_height_max?.[j]),
-				swellMax: num(d.swell_wave_height_max?.[j]),
-				dir: num(d.wave_direction_dominant?.[j])
-			}))
-		};
-		// Open-Meteo mueve cada punto a la celda de mar más cercana (Fornells cae unos 13 km al norte), así que
-		// en la práctica no llega null; si alguna vez no hay oleaje, mejor no enseñarlo.
-		const empty = state.now.wave === null && !state.daily.some((x) => x.waveMax !== null);
-		return empty ? [] : [state];
-	});
+	return COASTS.flatMap((coast, i) => parseSea(raw[i], coast.name, coast.spot) ?? []);
 }
 
 // ---------- CoinGecko: criptomonedas principales. API pública, cita obligatoria. ----------
@@ -257,13 +169,14 @@ export const crypto: Source<CryptoData> = {
 	name: 'crypto',
 	label: 'Criptomonedas · CoinGecko',
 	maxAgeMinutes: 12,
-	async fetch() {
+	// Recibe la copia anterior para ir guardando el cierre diario de bitcoin (termómetro de riesgo de WS).
+	async fetch(previous) {
 		const params = new URLSearchParams({
 			vs_currency: 'usd',
 			order: 'market_cap_desc',
 			per_page: '15',
 			page: '1',
-			price_change_percentage: '24h'
+			price_change_percentage: '24h,7d'
 		});
 		const [usd, eur] = await Promise.all([
 			getJson<Raw[]>(`https://api.coingecko.com/api/v3/coins/markets?${params}`),
@@ -279,10 +192,16 @@ export const crypto: Source<CryptoData> = {
 			usd: Number(c.current_price),
 			eur: Number(eur[c.id]?.eur ?? NaN),
 			change24h: num(c.price_change_percentage_24h),
+			change7d: num(c.price_change_percentage_7d_in_currency),
 			marketCap: num(c.market_cap)
 		}));
 		if (!coins.length) throw new Error('sin monedas');
-		return { coins };
+		const btc = coins.find((c) => c.id === 'bitcoin');
+		const btcHistory =
+			btc && Number.isFinite(btc.usd)
+				? appendDaily(previous?.btcHistory, { date: madridDay(), usd: btc.usd }, 400)
+				: (previous?.btcHistory ?? []);
+		return { coins, btcHistory };
 	}
 };
 

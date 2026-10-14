@@ -68,6 +68,12 @@ export interface FuelSpainDay {
 	provinces?: Record<string, FuelPrices>;
 }
 
+/** Un día del historial de una provincia (static/data/fuel/history/<id>.json). */
+export interface FuelProvinceDay {
+	date: string;
+	avg: FuelPrices;
+}
+
 export interface FuelSpainData {
 	sourceDate: string;
 	provinces: FuelProvince[];
@@ -100,4 +106,85 @@ export function findProvince(raw: string | null, provinces: Pick<FuelProvince, '
 	const hit =
 		named.find((p) => p.name === q) ?? named.find((p) => p.name.startsWith(q)) ?? named.find((p) => p.name.includes(q));
 	return hit?.id ?? null;
+}
+
+// ---------- España frente a Europa (Weekly Oil Bulletin de la Comisión Europea) ----------
+
+/** Países que se comparan, en el orden de la tabla; EU es la media ponderada de la UE. */
+export const EU_COUNTRIES = [
+	{ code: 'ES', name: 'España' },
+	{ code: 'FR', name: 'Francia' },
+	{ code: 'DE', name: 'Alemania' },
+	{ code: 'IT', name: 'Italia' },
+	{ code: 'PT', name: 'Portugal' },
+	{ code: 'EU', name: 'Media UE' }
+] as const;
+
+/** Precio de un carburante en €/L, con y sin impuestos. */
+export interface TaxedPrice {
+	tax: number | null;
+	net: number | null;
+}
+
+export interface EuFuelRow {
+	code: string;
+	name: string;
+	g95: TaxedPrice;
+	diesel: TaxedPrice;
+}
+
+export interface EuFuelData {
+	/** Lunes al que se refieren los precios: «2026-10-12». */
+	date: string;
+	rows: EuFuelRow[];
+}
+
+/** El día de una celda de fecha (un Date o «2026-10-12»); si no lo es, null. */
+function dayOf(cell: unknown): string | null {
+	if (cell instanceof Date && !Number.isNaN(cell.getTime())) return cell.toISOString().slice(0, 10);
+	const s = String(cell ?? '').trim();
+	return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : null;
+}
+
+/**
+ * Lee las hojas del histórico del Oil Bulletin («Prices with taxes» y «Prices wo taxes»), ya convertidas
+ * en matrices de celdas. La primera fila nombra cada columna («ES_price_with_tax_euro95»,
+ * «EU_price_wo_tax_diesel»…) y las filas de datos empiezan por la fecha. Se queda con la semana más
+ * reciente que tenga precio de España. Los precios vienen en € por 1.000 L y se pasan a €/L.
+ */
+export function parseOilBulletin(sheets: unknown[][][]): EuFuelData | null {
+	type Key = `${string}_${'with' | 'wo'}_${'euro95' | 'diesel'}`;
+	const byDate = new Map<string, Map<Key, number>>();
+	for (const cells of sheets) {
+		const head = (cells[0] ?? []).map((c) => String(c ?? '').trim());
+		const cols = head.flatMap((h, i) => {
+			const m = /^([A-Z]{2})_price_(with|wo)_tax_(euro95|diesel)$/i.exec(h);
+			return m ? [{ i, key: `${m[1].toUpperCase()}_${m[2].toLowerCase()}_${m[3].toLowerCase()}` as Key }] : [];
+		});
+		if (!cols.length) continue;
+		for (const row of cells.slice(1)) {
+			const date = dayOf(row[0]);
+			if (!date) continue;
+			const values = byDate.get(date) ?? new Map<Key, number>();
+			for (const { i, key } of cols) {
+				const v = Number(row[i]);
+				if (row[i] !== null && row[i] !== '' && Number.isFinite(v) && v > 0) values.set(key, v);
+			}
+			byDate.set(date, values);
+		}
+	}
+	const date = [...byDate.keys()].sort().reverse().find((d) => byDate.get(d)?.has('ES_with_euro95'));
+	if (!date) return null;
+	const values = byDate.get(date)!;
+	const litre = (key: Key) => {
+		const v = values.get(key);
+		return v === undefined ? null : Math.round(v) / 1000;
+	};
+	const rows = EU_COUNTRIES.map(({ code, name }) => ({
+		code,
+		name,
+		g95: { tax: litre(`${code}_with_euro95`), net: litre(`${code}_wo_euro95`) },
+		diesel: { tax: litre(`${code}_with_diesel`), net: litre(`${code}_wo_diesel`) }
+	})).filter((r) => r.g95.tax !== null || r.diesel.tax !== null);
+	return { date, rows };
 }

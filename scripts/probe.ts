@@ -3,8 +3,45 @@
 // respuesta. Solo se ejecuta en los PR, para explorar APIs nuevas antes de convertirlas en fuentes.
 // Formato de cada línea: «URL» o «URL ~ patrón» (si la respuesta es una lista JSON, solo enseña los
 // elementos que contienen el patrón; si es un feed Atom, solo las <entry> que lo contienen; si es una
-// página web, solo los trozos de texto que encajan).
+// página web, solo los trozos de texto que encajan o, si no hay ninguno, los del HTML sin quitar etiquetas).
+// Si es un .xlsx, enseña las primeras filas de cada hoja (con patrón, solo las filas que lo contienen).
 import { readFile } from 'node:fs/promises';
+import ExcelJS from 'exceljs';
+
+/** Las primeras filas de cada hoja de un .xlsx, como texto: «[Hoja] fila 3: a | b | c». */
+async function sheets(data: ArrayBuffer, pattern?: string): Promise<string> {
+	const book = new ExcelJS.Workbook();
+	await book.xlsx.load(data);
+	const re = pattern ? new RegExp(pattern, 'i') : null;
+	const out: string[] = [];
+	for (const sheet of book.worksheets) {
+		out.push(`[${sheet.name}] ${sheet.rowCount} filas`);
+		let shown = 0;
+		sheet.eachRow((row, n) => {
+			const text = (row.values as ExcelJS.CellValue[])
+				.slice(1)
+				.map((v) => (v && typeof v === 'object' && !(v instanceof Date) && 'result' in v ? v.result : v))
+				.map((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v ?? '')))
+				.join(' | ');
+			if (shown < 15 && (!re || re.test(text))) {
+				out.push(`fila ${n}: ${text.slice(0, 600)}`);
+				shown++;
+			}
+		});
+	}
+	return out.join('\n');
+}
+
+/**
+ * La SEC responde 403 sin un User-Agent con nombre y correo: a sec.gov se le manda el del secreto
+ * SEC_USER_AGENT (la Action lo pasa a este paso), y a las demás webs, el genérico.
+ */
+function userAgent(url: string): string {
+	const secret = process.env.SEC_USER_AGENT;
+	const host = new URL(url).hostname;
+	if (secret && (host === 'sec.gov' || host.endsWith('.sec.gov'))) return secret;
+	return 'ArcTerminal/1.0 (+https://github.com/srgicmps/arc-terminal)';
+}
 
 const lines = (await readFile('scripts/probe.txt', 'utf8'))
 	.split('\n')
@@ -15,9 +52,13 @@ for (const line of lines) {
 	const [url, pattern] = line.split(/\s+~\s+/);
 	try {
 		const res = await fetch(url, {
-			headers: { 'User-Agent': 'ArcTerminal/1.0 (+https://github.com/srgicmps/arc-terminal)', Accept: '*/*' },
+			headers: { 'User-Agent': userAgent(url), Accept: '*/*' },
 			signal: AbortSignal.timeout(30_000)
 		});
+		if (/\.xlsx($|\?|&)/i.test(url) || (res.headers.get('content-type') ?? '').includes('spreadsheet')) {
+			console.log(`\nPROBE ${res.status} ${line}\n${(await sheets(await res.arrayBuffer(), pattern)).slice(0, 20000)}`);
+			continue;
+		}
 		let body = (await res.text()).replace(/\s+/g, ' ');
 		if (pattern) {
 			const re = new RegExp(pattern, 'i');
@@ -33,7 +74,10 @@ for (const line of lines) {
 				} else {
 					// Una página web: quita las etiquetas y enseña solo los trozos que encajan.
 					const text = body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-					body = [...text.matchAll(new RegExp(pattern, 'gi'))].map((m) => m[0]).join('\n');
+					// Si en el texto no sale nada, se busca en el HTML tal cual (enlaces, atributos…).
+					const find = (s: string) => [...s.matchAll(new RegExp(pattern, 'gi'))].map((m) => m[0]);
+					const hits = find(text);
+					body = (hits.length ? hits : find(body)).join('\n');
 				}
 			}
 		}

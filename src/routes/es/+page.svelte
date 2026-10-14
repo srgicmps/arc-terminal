@@ -42,7 +42,7 @@
 	</div>
 	<div class="col">
 		<Panel title="España en cifras" meta="Último dato">
-			<SeriesTable
+			<SeriesTable next={data.next}
 				head="Indicador"
 				rows={[
 					{ series: get('ipc-es'), name: 'IPC (INE)', inverse: true },
@@ -76,7 +76,7 @@
 		</Panel>
 		{#if get('turistas-es') || get('ipv-es')}
 			<Panel title="Turismo y vivienda" meta="INE · último dato">
-				<SeriesTable
+				<SeriesTable next={data.next}
 					head="Indicador"
 					rows={[
 						{ series: get('turistas-es'), name: 'Turistas internacionales (mill.)', decimals: 2 },

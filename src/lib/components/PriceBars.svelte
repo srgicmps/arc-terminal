@@ -1,15 +1,15 @@
 <!-- Barras del precio de la luz de un día: verde las horas baratas, rojo las caras. -->
 <script lang="ts">
 	import { nf } from '#lib/format.ts';
-	import type { HourPrice } from '#lib/power.ts';
+	import { hourLabel, isHour, madridNow, type HourPrice } from '#lib/power.ts';
 
 	interface Props {
 		prices: HourPrice[];
-		/** Hora a resaltar (la actual), o -1. */
-		current?: number;
+		/** Ahora (de madridNow): resalta su hora si es de este día. */
+		current?: ReturnType<typeof madridNow> | null;
 	}
 
-	let { prices, current = -1 }: Props = $props();
+	let { prices, current = null }: Props = $props();
 
 	const values = $derived(prices.map((p) => p.kwh));
 	const min = $derived(Math.min(...values));
@@ -22,10 +22,10 @@
 </script>
 
 <div class="bars" role="img" aria-label="Precio por horas: mínimo {nf(min, 3)} y máximo {nf(max, 3)} €/kWh">
-	{#each prices as p (p.hour)}
-		<div class="bar {level(p.kwh)}" class:now={p.hour === current} title="{String(p.hour).padStart(2, '0')}:00 · {nf(p.kwh, 3)} €/kWh">
+	{#each prices as p (`${p.hour}${p.repeat ? '²' : ''}`)}
+		<div class="bar {level(p.kwh)}" class:now={isHour(p, current)} title="{hourLabel(p)} · {nf(p.kwh, 3)} €/kWh">
 			<i style:height="{(8 + (92 * (p.kwh - min)) / (max - min || 1)).toFixed(0)}%"></i>
-			<span>{p.hour % 3 === 0 ? String(p.hour).padStart(2, '0') : ''}</span>
+			<span>{p.hour % 3 === 0 && !p.repeat ? String(p.hour).padStart(2, '0') : ''}</span>
 		</div>
 	{/each}
 </div>
@@ -33,7 +33,9 @@
 <style>
 	.bars {
 		display: grid;
-		grid-template-columns: repeat(24, minmax(0, 1fr));
+		/* Una columna por hora: 24, o 23 y 25 los días del cambio de hora. */
+		grid-auto-flow: column;
+		grid-auto-columns: minmax(0, 1fr);
 		gap: var(--sp-2);
 		height: 150px;
 		padding: var(--sp-12) var(--pad-x) var(--sp-4);
