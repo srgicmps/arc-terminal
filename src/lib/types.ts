@@ -1142,3 +1142,18 @@ export interface DemandData {
 	/** Las dos últimas horas, para ver si la caída es brusca o progresiva. */
 	recent: DemandPoint[];
 }
+
+// ---------- Asteroides que pasan cerca de la Tierra (NASA JPL CNEOS, scripts/sources/neo.ts) ----------
+
+export interface NeoPass {
+	/** Designación: «2026 TP6». */
+	des: string;
+	/** Momento de máximo acercamiento, en ISO (UTC). */
+	date: string;
+	/** Distancia mínima en distancias lunares (1 = 384 400 km). */
+	ld: number;
+	/** Velocidad relativa, en km/s. */
+	speed: number | null;
+	/** Tamaño en metros: el medido si lo hay; si no, la horquilla que sale de su brillo (albedo 0,25 a 0,05). */
+	size: { min: number; max: number; measured: boolean } | null;
+}
