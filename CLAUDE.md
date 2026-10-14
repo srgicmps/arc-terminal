@@ -78,10 +78,9 @@ Cuando termine una fase, actualiza esta lista.
 - El repo y la web son **públicos**: nada privado, ninguna clave, ninguna URL interna.
 - Comprueba cada fuente al usarla: si el RSS sigue vivo, límites del plan gratuito, términos de uso.
 - Los datos de ejemplo se marcan siempre como de ejemplo; nunca se presentan como reales.
-- GitHub desactiva los cron de un repo público tras 60 días sin actividad: tenerlo en cuenta en las Actions.
+- GitHub desactiva los cron de un repo público tras 60 días sin actividad: lo evita `.github/workflows/keepalive.yml`.
 
 ## Aparcado
-- Evitar que GitHub desactive el cron tras 60 días sin commits (aviso o «keepalive» en la Action).
 - INE: el IPC de las series probadas acaba en diciembre de 2025 (cambio de base); buscar las nuevas series
   para paro (EPA), IPC y turismo de Baleares.
 - AEMET (avisos y predicción oficial) y FRED necesitan clave gratuita: GitHub Secrets.
