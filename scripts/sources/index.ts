@@ -1,5 +1,6 @@
 // Lista de todas las fuentes que descarga `pnpm data`.
 import type { Source } from '../lib.ts';
+import { ais } from './ais.ts';
 import { air } from './air.ts';
 import { alerts } from './alerts.ts';
 import { bls } from './bls.ts';
@@ -32,6 +33,7 @@ export const sources: Source<any>[] = [
 	// España
 	fuel,
 	fuelSpain,
+	ais,
 	boe,
 	power,
 	powerMix,
