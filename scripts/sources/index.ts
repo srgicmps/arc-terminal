@@ -28,7 +28,7 @@ import { releases } from './releases.ts';
 import { sanctions } from './sanctions.ts';
 import { search } from './search.ts';
 import { sec } from './sec.ts';
-import { auctions, uscurve, usdebt } from './treasury.ts';
+import { uscurve, usdebt } from './treasury.ts';
 import { wiki } from './wiki.ts';
 import { crypto, hn, power, quakes, weather } from './world.ts';
 
@@ -77,4 +77,3 @@ export const sources: Source<any>[] = [
 	imp,
 	search
 ];
-sources.push(auctions); // Subastas del Tesoro (Prog 8). Se quita cuando el registro deje de exigir esta lista.
