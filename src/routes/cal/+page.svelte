@@ -11,7 +11,6 @@
 	import { compact, dm, nf, weekday } from '#lib/format.ts';
 	import { bmeHolidays, nyseHolidays } from '#lib/markets.ts';
 	import { madridDate } from '#lib/meetings.ts';
-	import { missingNote } from '#lib/missing.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -97,7 +96,7 @@
 		</Panel>
 		<Panel title="Resultados" meta="Grandes empresas de EE. UU. · próximas 2 semanas">
 			{#if !data.finnhub}
-				<p class="empty">{missingNote(data.status?.data, 'finnhub')}</p>
+				<p class="empty">{data.finnhubMissing}</p>
 			{:else if earnings.length}
 				<Table>
 					<thead>
