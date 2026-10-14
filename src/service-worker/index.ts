@@ -3,7 +3,9 @@
 //
 // Estrategias:
 // - Archivos de la build, de static/ y páginas prerenderizadas: se guardan al instalar (precaché).
-// - Navegación y data/*.json: primero la red (datos frescos); si no hay red, la copia guardada.
+//   Menos los JSON de datos (data/…, __data.json): cambian en cada publicación (cada 15 min) y, guardados
+//   todos, serían varios MB por instalación en el móvil. Las páginas ya llevan dentro sus datos.
+// - Navegación, data/**.json y __data.json: primero la red (datos frescos); si no hay red, la copia guardada.
 // - Fuentes de Google: primero la caché (no cambian nunca).
 // - Todo lo demás (widgets de TradingView incluidos) pasa directo a la red, sin guardar nada.
 import { self } from '$app/service-worker';
@@ -20,7 +22,11 @@ const scope = new URL(self.registration.scope);
 const url = (path: string) => new URL(path.replace(/^\//, ''), scope).href;
 
 const IMMUTABLE = immutable.map((f) => url(f.path));
-const PRECACHE = [...IMMUTABLE, ...assets.map((f) => url(f.path)), ...prerendered.map((f) => url(f.path))];
+/** JSON de datos: data/fuel.json, data/fuel/07.json, eco/__data.json… */
+const DATA = /(\/data\/.+|__data)\.json$/;
+const PRECACHE = [...IMMUTABLE, ...assets.map((f) => url(f.path)), ...prerendered.map((f) => url(f.path))].filter(
+	(href) => !DATA.test(new URL(href).pathname)
+);
 
 self.addEventListener('install', (event) => {
 	event.waitUntil(
@@ -70,7 +76,7 @@ self.addEventListener('fetch', (event) => {
 		return;
 	}
 
-	if (/\/data\/[^/]+\.json$/.test(target.pathname)) {
+	if (DATA.test(target.pathname)) {
 		event.respondWith(networkFirst(request));
 		return;
 	}
