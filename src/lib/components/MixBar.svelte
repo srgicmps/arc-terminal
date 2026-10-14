@@ -107,7 +107,8 @@
 	}
 
 	.solar {
-		background: rgba(242, 168, 59, 0.7);
+		background: var(--amber);
+		opacity: 0.75;
 	}
 
 	.hydro {
@@ -123,6 +124,6 @@
 	}
 
 	.other {
-		background: #3a434e;
+		background: var(--neutral);
 	}
 </style>

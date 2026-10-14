@@ -8,6 +8,8 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import YieldCurve from '#lib/components/YieldCurve.svelte';
 	import { seriesMap } from '#lib/series.ts';
+	import { rgba, token } from '#lib/color.ts';
+	import { theme } from '#lib/theme.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -16,63 +18,70 @@
 	const fx = ['eurusd', 'eurgbp', 'eurjpy', 'eurchf', 'eurcny', 'eurmxn'];
 
 	// Resumen de mercados en directo (TradingView), con pestañas.
-	const overview = {
-		showChart: true,
-		showSymbolLogo: false,
-		showFloatingTooltip: true,
-		plotLineColorGrowing: 'rgba(76, 196, 138, 1)',
-		plotLineColorFalling: 'rgba(240, 100, 111, 1)',
-		belowLineFillColorGrowing: 'rgba(76, 196, 138, 0.08)',
-		belowLineFillColorFalling: 'rgba(240, 100, 111, 0.08)',
-		gridLineColor: 'rgba(29, 36, 45, 1)',
-		scaleFontColor: 'rgba(128, 138, 151, 1)',
-		symbolActiveColor: 'rgba(242, 168, 59, 0.13)',
-		tabs: [
-			{
-				title: 'Índices',
-				symbols: [
-					{ s: 'FOREXCOM:SPXUSD', d: 'S&P 500' },
-					{ s: 'FOREXCOM:NSXUSD', d: 'Nasdaq 100' },
-					{ s: 'FOREXCOM:DJI', d: 'Dow Jones' },
-					{ s: 'BME:IBC', d: 'IBEX 35' },
-					{ s: 'XETR:DAX', d: 'DAX' },
-					{ s: 'TVC:SX5E', d: 'Euro Stoxx 50' },
-					{ s: 'TVC:NI225', d: 'Nikkei 225' }
-				]
-			},
-			{
-				title: 'Materias primas',
-				symbols: [
-					{ s: 'TVC:UKOIL', d: 'Brent' },
-					{ s: 'TVC:USOIL', d: 'WTI' },
-					{ s: 'TVC:GOLD', d: 'Oro' },
-					{ s: 'TVC:SILVER', d: 'Plata' },
-					{ s: 'COMEX:HG1!', d: 'Cobre' },
-					{ s: 'NYMEX:NG1!', d: 'Gas natural' }
-				]
-			},
-			{
-				title: 'Bonos',
-				symbols: [
-					{ s: 'TVC:US10Y', d: 'EE. UU. 10 años' },
-					{ s: 'TVC:US02Y', d: 'EE. UU. 2 años' },
-					{ s: 'TVC:DE10Y', d: 'Alemania 10 años' },
-					{ s: 'TVC:ES10Y', d: 'España 10 años' },
-					{ s: 'TVC:IT10Y', d: 'Italia 10 años' }
-				]
-			},
-			{
-				title: 'Divisas',
-				symbols: [
-					{ s: 'FX:EURUSD', d: 'EUR/USD' },
-					{ s: 'FX:GBPUSD', d: 'GBP/USD' },
-					{ s: 'FX:USDJPY', d: 'USD/JPY' },
-					{ s: 'TVC:DXY', d: 'Índice dólar' },
-					{ s: 'BITSTAMP:BTCUSD', d: 'Bitcoin' }
-				]
-			}
-		]
-	};
+	// TradingView necesita los colores escritos (no entiende variables CSS): se leen de los tokens del
+	// tema activo y se recalculan al cambiar de tema.
+	const overview = $derived.by(() => {
+		void theme.resolved; // depende del tema: al cambiarlo se vuelve a calcular
+		const up = token('--up');
+		const down = token('--down');
+		return {
+			showChart: true,
+			showSymbolLogo: false,
+			showFloatingTooltip: true,
+			plotLineColorGrowing: rgba(up),
+			plotLineColorFalling: rgba(down),
+			belowLineFillColorGrowing: rgba(up, 0.08),
+			belowLineFillColorFalling: rgba(down, 0.08),
+			gridLineColor: rgba(token('--line')),
+			scaleFontColor: rgba(token('--muted')),
+			symbolActiveColor: rgba(token('--amber-soft')),
+			tabs: [
+				{
+					title: 'Índices',
+					symbols: [
+						{ s: 'FOREXCOM:SPXUSD', d: 'S&P 500' },
+						{ s: 'FOREXCOM:NSXUSD', d: 'Nasdaq 100' },
+						{ s: 'FOREXCOM:DJI', d: 'Dow Jones' },
+						{ s: 'BME:IBC', d: 'IBEX 35' },
+						{ s: 'XETR:DAX', d: 'DAX' },
+						{ s: 'TVC:SX5E', d: 'Euro Stoxx 50' },
+						{ s: 'TVC:NI225', d: 'Nikkei 225' }
+					]
+				},
+				{
+					title: 'Materias primas',
+					symbols: [
+						{ s: 'TVC:UKOIL', d: 'Brent' },
+						{ s: 'TVC:USOIL', d: 'WTI' },
+						{ s: 'TVC:GOLD', d: 'Oro' },
+						{ s: 'TVC:SILVER', d: 'Plata' },
+						{ s: 'COMEX:HG1!', d: 'Cobre' },
+						{ s: 'NYMEX:NG1!', d: 'Gas natural' }
+					]
+				},
+				{
+					title: 'Bonos',
+					symbols: [
+						{ s: 'TVC:US10Y', d: 'EE. UU. 10 años' },
+						{ s: 'TVC:US02Y', d: 'EE. UU. 2 años' },
+						{ s: 'TVC:DE10Y', d: 'Alemania 10 años' },
+						{ s: 'TVC:ES10Y', d: 'España 10 años' },
+						{ s: 'TVC:IT10Y', d: 'Italia 10 años' }
+					]
+				},
+				{
+					title: 'Divisas',
+					symbols: [
+						{ s: 'FX:EURUSD', d: 'EUR/USD' },
+						{ s: 'FX:GBPUSD', d: 'GBP/USD' },
+						{ s: 'FX:USDJPY', d: 'USD/JPY' },
+						{ s: 'TVC:DXY', d: 'Índice dólar' },
+						{ s: 'BITSTAMP:BTCUSD', d: 'Bitcoin' }
+					]
+				}
+			]
+		};
+	});
 
 	const heatmap = {
 		dataSource: 'SPX500',
