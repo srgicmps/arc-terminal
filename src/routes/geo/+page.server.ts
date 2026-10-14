@@ -5,6 +5,7 @@ import { advisoryCountry, levelCounts, recentChanges } from '#lib/advisories.ts'
 import type { MilexData } from '#lib/milex.ts';
 import { riskSignals } from '#lib/risk-signals.ts';
 import { mergeSanctions } from '#lib/sanctions.ts';
+import { top } from '#lib/unhcr.ts';
 import { headlines, trim } from '#lib/trim.ts';
 import type {
 	AdvisoriesData,
@@ -20,12 +21,13 @@ import type {
 	PredictionsData,
 	Quake,
 	SwpcData,
-	TradeDoc
+	TradeDoc,
+	UnhcrData
 } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, intl, quakes, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex] = await Promise.all([
+	const [news, intl, quakes, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex, unhcr] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-intl'),
 		dataset<Quake[]>('quakes'),
@@ -43,7 +45,8 @@ export const load: PageServerLoad = async () => {
 		dataset<IodaOutage[]>('ioda'),
 		dataset<OutbreakNews[]>('who-don'),
 		dataset<TradeDoc[]>('sanctions-uk'),
-		dataset<EuLexDoc[]>('eurlex')
+		dataset<EuLexDoc[]>('eurlex'),
+		dataset<UnhcrData>('unhcr')
 	]);
 	// Sanciones y aranceles: EE. UU. (Federal Register), Reino Unido (OFSI) y UE (actos de la serie L con el tema
 	// «Sanciones»), juntos y de lo más reciente a lo más antiguo (M41).
@@ -86,6 +89,13 @@ export const load: PageServerLoad = async () => {
 						fetchedAt: { gdacs: gdacs?.fetchedAt, ioda: ioda?.fetchedAt, who: who?.fetchedAt }
 					}
 				: null,
+		// Refugiados (ACNUR): los 8 países de los que más gente huye y los 8 que más acogen.
+		refugees: unhcr && {
+			fetchedAt: unhcr.fetchedAt,
+			year: unhcr.data.year,
+			from: top(unhcr.data, 'from', 8),
+			hosted: top(unhcr.data, 'hosted', 8)
+		},
 		// Gasto militar: los 15 países que más gastan.
 		sipri: trim(sipri, (d) => ({ ...d, rows: d.rows.slice(0, 15) }))
 	};

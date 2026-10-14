@@ -13,6 +13,7 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import TradeList from '#lib/components/TradeList.svelte';
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
+	import RefugeeTables from '#lib/components/RefugeeTables.svelte';
 	import RiskSignals from '#lib/components/RiskSignals.svelte';
 	import StormNotice from '#lib/components/StormNotice.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -74,6 +75,17 @@
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-geo" />{/snippet}
 		</Panel>
 		<ClimatePanel climate={data.climate} />
+		{#if data.refugees}
+			{@const r = data.refugees}
+			<Panel title="Refugiados" meta="ACNUR · fin de {r.year}">
+				<RefugeeTables from={r.from} hosted={r.hosted} />
+				{#snippet note()}
+					Refugiados y solicitantes de asilo. Fuente: <a href="https://www.unhcr.org/refugee-statistics/" target="_blank" rel="noopener"
+						>ACNUR, Refugee Data Finder</a
+					> · <Updated at={r.fetchedAt} source="unhcr" />
+				{/snippet}
+			</Panel>
+		{/if}
 		{#if data.sipri?.data.rows.length}
 			{@const sipri = data.sipri}
 			<Panel title="Gasto militar" meta="Los 15 que más gastan · {sipri.data.year}">
