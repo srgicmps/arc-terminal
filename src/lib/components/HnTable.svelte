@@ -36,9 +36,9 @@
 	li {
 		display: grid;
 		grid-template-columns: 40px minmax(0, 1fr);
-		gap: 10px;
-		padding: 8px 12px;
-		border-bottom: 1px solid var(--line);
+		gap: var(--sp-10);
+		padding: var(--row-y) var(--pad-x);
+		border-bottom: var(--border);
 	}
 
 	li:last-child {
@@ -49,7 +49,7 @@
 		color: var(--amber);
 		font-size: var(--fs-s);
 		text-align: right;
-		padding-top: 2px;
+		padding-top: var(--sp-2);
 	}
 
 	.h {
@@ -57,7 +57,7 @@
 		text-decoration: none;
 		font-family: var(--sans);
 		font-size: var(--fs-l);
-		line-height: 1.3;
+		line-height: var(--lh-tight);
 	}
 
 	.h:hover {
@@ -69,9 +69,9 @@
 	}
 
 	.m {
-		margin: 3px 0 0;
+		margin: var(--sp-3) 0 0;
 		display: flex;
-		gap: 10px;
+		gap: var(--sp-10);
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-s);

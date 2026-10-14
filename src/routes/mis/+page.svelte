@@ -1,15 +1,17 @@
 <!-- MIS: tu lista de valores, guardada en este navegador, con cotizaciones en directo de TradingView. -->
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
+	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { TICKERS, tvSymbol } from '#lib/commands.ts';
 	import { clock } from '#lib/clock.svelte.ts';
-	import Updated from '#lib/components/Updated.svelte';
 	import { madridDate } from '#lib/meetings.ts';
 	import { earningsLine, myEarnings } from '#lib/myearnings.ts';
 	import { moveWatch, toggleWatch, watchlist } from '#lib/watchlist.svelte.ts';
+	import type { Mention } from '#lib/news.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -30,6 +32,26 @@
 			}
 		]
 	});
+
+	// Titulares que nombran algún valor de la lista, sin repetir y de más reciente a más antiguo.
+	// `codes` guarda qué valores nombra cada uno, para la etiqueta.
+	const codes = $derived.by(() => {
+		const map = new Map<string, { item: Mention; codes: string[] }>();
+		for (const code of watchlist.codes) {
+			for (const item of data.news?.data[code] ?? []) {
+				const found = map.get(item.url);
+				if (found) found.codes.push(code);
+				else map.set(item.url, { item, codes: [code] });
+			}
+		}
+		return map;
+	});
+	const news = $derived(
+		[...codes.values()]
+			.map((v) => v.item)
+			.sort((a, b) => (b.time ?? '').localeCompare(a.time ?? ''))
+			.slice(0, 20)
+	);
 
 	function add(e: SubmitEvent) {
 		e.preventDefault();
@@ -53,6 +75,12 @@
 				</p>
 			{/if}
 		</Panel>
+		{#if news.length}
+			<Panel title="En las noticias" meta="Titulares que nombran tus valores">
+				<NewsList items={news} tag={(item) => codes.get(item.url)?.codes.join(' · ')} />
+				{#snippet note()}De todas las secciones de titulares · <Updated at={data.news?.fetchedAt} source="news-eco" />{/snippet}
+			</Panel>
+		{/if}
 	</div>
 	<div class="col">
 		{#if data.finnhub && watchlist.codes.length}
@@ -106,18 +134,18 @@
 <style>
 	.add {
 		display: flex;
-		gap: 8px;
-		padding: 10px 12px;
-		border-bottom: 1px solid var(--line);
+		gap: var(--sp-8);
+		padding: var(--sp-10) var(--pad-x);
+		border-bottom: var(--border);
 	}
 
 	.add input {
 		flex: 1;
 		min-width: 0;
-		height: 32px;
-		padding: 0 10px;
+		height: var(--control-h);
+		padding: 0 var(--sp-10);
 		background: var(--raise);
-		border: 1px solid var(--line);
+		border: var(--border);
 		text-transform: uppercase;
 	}
 
@@ -128,9 +156,9 @@
 
 	.add button {
 		background: none;
-		border: 1px solid var(--amber-edge);
+		border: var(--hair) solid var(--amber-edge);
 		color: var(--amber);
-		padding: 0 12px;
+		padding: 0 var(--pad-x);
 		font-size: var(--fs-s);
 		cursor: pointer;
 	}
@@ -138,19 +166,19 @@
 	.c {
 		color: var(--amber);
 		font-family: var(--mono);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 
 	.ops {
 		display: inline-flex;
-		gap: 4px;
+		gap: var(--sp-4);
 	}
 
 	.ops button {
-		width: 32px;
-		height: 32px;
+		width: var(--control-h);
+		height: var(--control-h);
 		background: none;
-		border: 1px solid var(--line);
+		border: var(--border);
 		color: var(--muted);
 		cursor: pointer;
 	}
@@ -167,17 +195,17 @@
 	.chips {
 		list-style: none;
 		margin: 0;
-		padding: 10px 12px;
+		padding: var(--sp-10) var(--pad-x);
 		display: flex;
 		flex-wrap: wrap;
-		gap: 6px;
+		gap: var(--sp-6);
 	}
 
 	.chips button {
 		background: none;
-		border: 1px solid var(--line);
+		border: var(--border);
 		color: var(--muted);
-		padding: 5px 9px;
+		padding: var(--sp-5) var(--sp-9);
 		font-size: var(--fs-s);
 		cursor: pointer;
 	}

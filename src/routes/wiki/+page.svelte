@@ -67,9 +67,9 @@
 	.wl li {
 		display: grid;
 		grid-template-columns: 24px minmax(0, 1fr) auto;
-		gap: 10px;
-		padding: 8px 12px;
-		border-bottom: 1px solid var(--line);
+		gap: var(--sp-10);
+		padding: var(--row-y) var(--pad-x);
+		border-bottom: var(--border);
 	}
 
 	.wl li:last-child,
@@ -80,7 +80,7 @@
 	.rk {
 		color: var(--faint);
 		font-size: var(--fs-xs);
-		padding-top: 3px;
+		padding-top: var(--sp-3);
 	}
 
 	.views {
@@ -101,29 +101,29 @@
 	}
 
 	p {
-		margin: 3px 0 0;
+		margin: var(--sp-3) 0 0;
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-m);
-		line-height: 1.4;
+		line-height: var(--lh-text);
 	}
 
 	.feat {
-		padding: 10px 12px;
+		padding: var(--sp-10) var(--pad-x);
 	}
 
 	.otd li {
 		display: grid;
 		grid-template-columns: 44px minmax(0, 1fr);
-		gap: 10px;
-		padding: 7px 12px;
-		border-bottom: 1px solid var(--line);
+		gap: var(--sp-10);
+		padding: var(--sp-7) var(--pad-x);
+		border-bottom: var(--border);
 	}
 
 	.otd a,
 	.otd span {
 		font-size: var(--fs-m);
-		line-height: 1.4;
+		line-height: var(--lh-text);
 	}
 
 	.year {

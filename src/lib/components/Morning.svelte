@@ -14,6 +14,7 @@
 	import type { Earnings, HolidaysData, PowerData, WeatherData } from '#lib/types.ts';
 	import { ALERT_NAMES, sky, type AlertsData } from '#lib/weather.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
+	import Tile from './ui/Tile.svelte';
 
 	interface Props {
 		weather?: WeatherData | null;
@@ -21,11 +22,11 @@
 		earnings?: Earnings[];
 		holidays?: HolidaysData | null;
 		alerts?: AlertsData | null;
-		/** Ciudad del tiempo (la de WX por defecto). */
+		/** Ciudad del tiempo: la de «Tu sitio», que pasa la portada. Sin ella, la primera de weather.json. */
 		city?: string;
 	}
 
-	let { weather = null, power = null, earnings = [], holidays = null, alerts = null, city = 'Maó' }: Props = $props();
+	let { weather = null, power = null, earnings = [], holidays = null, alerts = null, city }: Props = $props();
 
 	// Hasta que arranca el reloj en el navegador se usa la hora de construcción de la página.
 	const now = $derived(clock.now || Date.now());
@@ -90,7 +91,7 @@
 			cheap ? { label: 'Luz más barata', value: `${hh(cheap.start)}–${hh(cheap.end)}`, sub: `${nf(cheap.avg, 3)} €/kWh` } : null,
 			agenda.length ? { label: 'Hoy', value: agenda[0], sub: agenda.slice(1).join(' · ') } : null,
 			closed ? { label: 'Calendario', value: closed, sub: '' } : null,
-			warning ? { label: 'Aviso', value: warning, sub: '', warn: true } : null
+			warning ? { label: 'Aviso', value: warning, sub: '' } : null
 		].filter((i) => i !== null)
 	);
 </script>
@@ -104,10 +105,8 @@
 			</button>
 		{:else}
 			{#each items as item (item.label)}
-				<div class="cell" class:warn={'warn' in item && item.warn}>
-					<span class="lbl">{item.label}</span>
-					<b>{item.value}</b>
-					{#if item.sub}<span class="sub">{item.sub}</span>{/if}
+				<div class="cell">
+					<Tile label={item.label} value={item.value} sub={item.sub || undefined} />
 				</div>
 			{/each}
 			{#if hour >= 11}
@@ -121,41 +120,29 @@
 	.morning {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 1px;
+		gap: var(--hair);
 		background: var(--line);
-		border: 1px solid var(--line);
+		border: var(--border);
 	}
 
+	/* Cada recuadro es un <Tile>; aquí solo se reparte el ancho (caben de 1 a 5 por fila). */
 	.cell {
 		flex: 1 1 12em;
+		min-width: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.15em;
-		padding: 0.6em 0.9em;
 		background: var(--panel);
-		min-width: 0;
+	}
+
+	.cell > :global(*) {
+		flex: 1;
 	}
 
 	.lbl {
 		color: var(--muted);
 		font-size: var(--fs-xs);
-		letter-spacing: 0.08em;
+		letter-spacing: var(--track-label);
 		text-transform: uppercase;
-	}
-
-	.cell b {
-		font-weight: 500;
-		overflow-wrap: anywhere;
-	}
-
-	.sub {
-		color: var(--faint);
-		font-size: var(--fs-xs);
-		overflow-wrap: anywhere;
-	}
-
-	.warn b {
-		color: var(--amber);
 	}
 
 	.line,
@@ -170,9 +157,9 @@
 	.line {
 		flex: 1;
 		display: flex;
-		gap: 0.8em;
+		gap: var(--sp-12);
 		align-items: baseline;
-		padding: 0.45em 0.9em;
+		padding: var(--sp-6) var(--pad-x);
 		text-align: left;
 		white-space: nowrap;
 		overflow: hidden;
@@ -186,7 +173,7 @@
 	}
 
 	.close {
-		padding: 0 0.9em;
+		padding: 0 var(--pad-x);
 		color: var(--muted);
 	}
 </style>

@@ -6,7 +6,9 @@
 	En el HTML generado al construir queda el hueco con el aviso «Cargando TradingView…».
 -->
 <script lang="ts">
+	import { rgba, token } from '#lib/color.ts';
 	import { theme } from '#lib/theme.svelte.ts';
+	import Note from './ui/Note.svelte';
 
 	interface Props {
 		/** Nombre del widget: «stock-heatmap», «symbol-overview», «events»… */
@@ -54,9 +56,15 @@
 		const script = document.createElement('script');
 		script.src = `https://s3.tradingview.com/external-embedding/embed-widget-${widget}.js`;
 		script.async = true;
+		// Fondo y rejilla con los tokens del tema, en los widgets que los admiten (los demás ignoran las claves).
+		const panel = rgba(token('--panel'));
+		const line = rgba(token('--line'));
 		script.textContent = JSON.stringify({
 			colorTheme: theme.resolved,
 			isTransparent: true,
+			backgroundColor: panel,
+			gridColor: line,
+			gridLineColor: line,
 			locale: 'es',
 			width: '100%',
 			height: '100%',
@@ -73,16 +81,14 @@
 	});
 </script>
 
-<div class="tv" style:height="{height}px" bind:this={frame}>
+<div class="tv" data-widget={widget} style:height="{height}px" bind:this={frame}>
 	{#if !ready}
 		<span class="wait" aria-hidden="true">Cargando TradingView…</span>
 	{/if}
 	<div class="box tradingview-widget-container" bind:this={box}></div>
 </div>
 {#if credit}
-	<p class="pnote">
-		Datos y gráficos de <a href="https://es.tradingview.com/" target="_blank" rel="noopener">TradingView</a>.
-	</p>
+	<Note>Datos y gráficos de <a href="https://es.tradingview.com/" target="_blank" rel="noopener">TradingView</a>.</Note>
 {/if}
 
 <style>
@@ -90,10 +96,13 @@
 		position: relative;
 		width: 100%;
 	}
+	/* El iframe de TradingView declara un esquema de color claro. Si hereda el «dark» de la página, Chrome lo
+	   pinta con un fondo blanco opaco y deja de ser transparente: con «normal» los dos coinciden y se ve el panel. */
 	.box {
 		position: relative;
 		width: 100%;
 		height: 100%;
+		color-scheme: normal;
 	}
 	/* Aviso discreto mientras llega el widget: mismo fondo y borde de 1 px que el resto de paneles. */
 	.wait {
@@ -103,11 +112,11 @@
 		align-items: center;
 		justify-content: center;
 		background: var(--panel);
-		box-shadow: inset 0 0 0 1px var(--line);
+		box-shadow: inset 0 0 0 var(--hair) var(--line);
 		color: var(--faint);
 		font-family: var(--mono);
 		font-size: var(--fs-xs);
-		letter-spacing: 0.04em;
+		letter-spacing: var(--track-tight);
 		pointer-events: none;
 	}
 </style>

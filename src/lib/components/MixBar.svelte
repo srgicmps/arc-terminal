@@ -32,18 +32,18 @@
 
 <style>
 	.mix {
-		padding: 10px 12px;
+		padding: var(--sp-10) var(--pad-x);
 	}
 
 	.mix + .mix {
-		border-top: 1px solid var(--line);
+		border-top: var(--border);
 	}
 
 	.head {
 		display: flex;
 		justify-content: space-between;
 		align-items: baseline;
-		margin-bottom: 6px;
+		margin-bottom: var(--sp-6);
 	}
 
 	.name {
@@ -58,21 +58,21 @@
 
 	.ren b {
 		color: var(--amber);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 
 	.bar {
 		display: flex;
-		height: 6px;
-		gap: 1px;
+		height: var(--bar-h);
+		gap: var(--hair);
 		background: var(--line);
 	}
 
 	.legend {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px 14px;
-		margin: 8px 0 0;
+		gap: var(--sp-4) var(--sp-14);
+		margin: var(--sp-8) 0 0;
 		padding: 0;
 		list-style: none;
 		color: var(--muted);
@@ -82,21 +82,21 @@
 	.legend li {
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
+		gap: var(--sp-5);
 	}
 
 	.legend b {
 		color: var(--fg);
-		font-weight: 400;
+		font-weight: var(--fw-regular);
 	}
 
 	.legend i {
-		width: 8px;
-		height: 8px;
+		width: var(--swatch);
+		height: var(--swatch);
 	}
 
 	.sub {
-		margin: 6px 0 0;
+		margin: var(--sp-6) 0 0;
 		color: var(--faint);
 		font-size: var(--fs-xs);
 	}
