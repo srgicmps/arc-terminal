@@ -2,6 +2,7 @@
 //  - static/data/fuel.json: Menorca, con historial diario.
 //  - static/data/fuel-es.json: índice de provincias con precios medios.
 //  - static/data/fuel/<id de provincia>.json: gasolineras de cada provincia (se cargan al elegirla).
+import { inMenorca } from './place.ts';
 
 export type FuelKey = 'g95' | 'diesel' | 'g98' | 'glp';
 
@@ -117,7 +118,7 @@ export function zoneFor(
 	p: { name: string; cc: string; lat: number; lon: number; admin1?: string; admin2?: string },
 	provinces: Pick<FuelProvince, 'id' | 'name'>[]
 ): string | null {
-	if (p.lat > 39.78 && p.lat < 40.11 && p.lon > 3.78 && p.lon < 4.35) return 'menorca';
+	if (inMenorca(p)) return 'menorca';
 	if (p.cc !== 'ES') return null;
 	const names = [p.admin2, p.admin1, p.name].filter((n): n is string => !!n);
 	for (const n of names) {

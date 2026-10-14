@@ -45,8 +45,8 @@ describe('fred', () => {
 		});
 		const { series } = await fred.fetch(undefined);
 		const byId = Object.fromEntries(series.map((s) => [s.id, s]));
-		// 38 series de FRED y la liquidez neta, que se calcula con tres de ellas.
-		expect(series).toHaveLength(39);
+		// 41 series de FRED y la liquidez neta, que se calcula con tres de ellas.
+		expect(series).toHaveLength(42);
 
 		// El hueco «.» se descarta y los puntos quedan de más antiguo a más reciente.
 		expect(byId['fedfunds-us'].points).toEqual([
@@ -139,11 +139,11 @@ describe('fred', () => {
 		expect(error).toBeInstanceOf(Error);
 		expect((error as Error).message).not.toContain(KEY);
 		// Se ha llamado con la clave (3 intentos por serie)…
-		expect(fetch).toHaveBeenCalledTimes(38 * 3);
+		expect(fetch).toHaveBeenCalledTimes(41 * 3);
 		expect(String(fetch.mock.calls[0][0])).toContain(KEY);
 		// …pero el registro de cada serie (que acaba en status.json) no la lleva, ni tampoco la URL con parámetros.
 		const logged = log.mock.calls.map((c) => c.join(' '));
-		expect(logged).toHaveLength(38);
+		expect(logged).toHaveLength(41);
 		for (const line of logged) {
 			expect(line).not.toContain(KEY);
 			expect(line).not.toContain('api_key');

@@ -2,6 +2,7 @@
 // https://fiscaldata.treasury.gov/api-documentation/ · https://home.treasury.gov/treasury-daily-interest-rate-xml-feed
 // Dominio público.
 import { XMLParser } from 'fast-xml-parser';
+import { parseTic, type TicData } from '../../src/lib/tic.ts';
 import type { Auction, AuctionsData, SeriesData, YieldCurveData } from '../../src/lib/types.ts';
 import { getJson, getText, list, madridDay, num, type Source } from '../lib.ts';
 
@@ -178,5 +179,21 @@ export const auctions: Source<AuctionsData> = {
 		const { recent } = splitAuctions(all, today);
 		const upcoming = read(next.data).filter((a) => a.bidToCover === null);
 		return { upcoming: upcoming.slice(0, 12), recent };
+	}
+};
+
+// Quién tiene la deuda de EE. UU.: tabla 5 del TIC (unos 20 países y 13 meses). Sale a mediados de cada mes con
+// los datos de dos meses antes. El antiguo mfh.txt se quedó en enero de 2023.
+const TIC_TABLE5 = 'https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt';
+
+export const tic: Source<TicData> = {
+	name: 'tic',
+	label: 'Tenedores extranjeros de deuda de EE. UU. · Tesoro (TIC)',
+	// Sale una vez al mes: una vez al día sobra.
+	maxAgeMinutes: 1440,
+	async fetch() {
+		const data = parseTic(await getText(TIC_TABLE5));
+		if (!data || data.holders.length < 10) throw new Error(`la tabla 5 del TIC trae ${data?.holders.length ?? 0} países`);
+		return data;
 	}
 };

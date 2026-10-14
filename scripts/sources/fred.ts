@@ -1,6 +1,6 @@
 // FRED, Banco de la Reserva Federal de San Luis: series macro de EE. UU. https://fred.stlouisfed.org/docs/api/fred/
 // Necesita una clave gratuita (FRED_API_KEY, en GitHub Secrets). Sin ella, la fuente se salta.
-// Límite: unas 120 consultas por minuto por clave; aquí son 38 cada 3 horas.
+// Límite: unas 120 consultas por minuto por clave; aquí son 41 cada 3 horas.
 // Condiciones: hay que avisar de que se usa la API de FRED sin su respaldo, y algunas series son de
 // terceros con copyright (el VIX de Cboe, los diferenciales de ICE BofA): solo se guardan unos pocos puntos
 // con enlace a FRED y la fuente citada.
@@ -69,6 +69,12 @@ const WANTED: Wanted[] = [
 	// Índice de estrés financiero de la Fed de San Luis (semanal): 0 = lo normal; cada punto, una desviación típica
 	// por encima o por debajo. Para el panel provisional «Estrés financiero» de ECO (src/lib/stress.ts).
 	{ code: 'STLFSI4', id: 'stlfsi-us', label: 'Estrés financiero (Fed de San Luis)', unit: 'pts', freq: 'w', last: 104 },
+	// Crédito y morosidad en EE. UU. (panel provisional de ECO): crédito bancario (semanal) y al consumo (mensual) en
+	// variación interanual que calcula FRED (pc1: frente a la misma semana o mes de hace un año), y morosidad de
+	// las tarjetas de crédito (trimestral, % desestacionalizado).
+	{ code: 'TOTBKCR', id: 'bankcredit-us', label: 'Crédito bancario, interanual', unit: '%', freq: 'w', units: 'pc1', last: 104 },
+	{ code: 'TOTALSL', id: 'consumercredit-us', label: 'Crédito al consumo, interanual', unit: '%', freq: 'm', units: 'pc1', last: 36 },
+	{ code: 'DRCCLACBS', id: 'ccdelinq-us', label: 'Morosidad de tarjetas de crédito', unit: '%', freq: 'q', last: 16 },
 	// Proyecciones de la Fed (SEP, cuatro veces al año) para el panel provisional de ECO (src/lib/sep.ts): mediana
 	// de los participantes del FOMC y rango (el más bajo y el más alto). Anuales: la fecha es el año proyectado
 	// (2026-01-01 = proyección para 2026); las 4 últimas son el año en curso y los siguientes. Si un código falla,
