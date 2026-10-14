@@ -60,11 +60,19 @@ export interface FuelProvince {
 	min: FuelPrices;
 }
 
+/** Un día del historial de España: precio medio de todas las gasolineras. */
+export interface FuelSpainDay {
+	date: string;
+	avg: FuelPrices;
+}
+
 export interface FuelSpainData {
 	sourceDate: string;
 	provinces: FuelProvince[];
 	/** Media de toda España. */
 	avg: FuelPrices;
+	/** Historial diario de la media de España que va acumulando la propia web. */
+	history?: FuelSpainDay[];
 }
 
 /** Distancia en km entre dos puntos (fórmula del haversine). */

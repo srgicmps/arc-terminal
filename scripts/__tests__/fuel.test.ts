@@ -125,6 +125,12 @@ describe('fuel', () => {
 		expect(writeExtra).toHaveBeenCalledWith('fuel/07.json', expect.arrayContaining([expect.objectContaining({ id: 'm2' })]));
 		expect(fuelSpain.files?.(data)).toContain('fuel/07.json');
 		expect(data.avg.g95).toBeCloseTo((1.6 * 40 + 1.7) / 41, 3);
+		expect(data.history).toEqual([{ date: '2026-10-14', avg: data.avg }]);
+
+		// Al día siguiente se añade otro punto al historial publicado.
+		const old = { date: '2026-10-13', avg: { g95: 1.5, diesel: 1.4, g98: null, glp: null } };
+		const next = await fuelSpain.fetch({ ...data, history: [old] });
+		expect(next.history?.map((d) => d.date)).toEqual(['2026-10-13', '2026-10-14']);
 	});
 
 	it('fuelSpain falla si faltan provincias', async () => {

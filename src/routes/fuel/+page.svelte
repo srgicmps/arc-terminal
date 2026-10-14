@@ -111,14 +111,24 @@
 		return time ? `${day}, ${time.slice(0, 5)}` : day;
 	});
 
+	// Menorca frente a la media de España, con el combustible elegido. Los dos historiales los va guardando
+	// la propia web, día a día.
 	const history = $derived(data.fuel?.data.history ?? []);
-	const historyLines = $derived(
-		FUELS.slice(0, 2).map((f, i) => ({
-			label: `${f.label}, media`,
-			color: i ? '--muted' : '--amber',
-			points: history.flatMap((d) => (d.avg[f.key] == null ? [] : [{ t: d.date, v: d.avg[f.key]! }]))
-		}))
-	);
+	const spainHistory = $derived(data.spain?.data.history ?? []);
+	const menorcaToday = $derived(history.at(-1)?.avg[fuel] ?? null);
+	const gapCents = $derived(menorcaToday !== null && spainAvg !== null ? (menorcaToday - spainAvg) * 100 : null);
+	const historyLines = $derived([
+		{
+			label: 'Menorca',
+			color: '--amber',
+			points: history.flatMap((d) => (d.avg[fuel] == null ? [] : [{ t: d.date, v: d.avg[fuel]! }]))
+		},
+		{
+			label: 'España',
+			color: '--muted',
+			points: spainHistory.flatMap((d) => (d.avg[fuel] == null ? [] : [{ t: d.date, v: d.avg[fuel]! }]))
+		}
+	]);
 
 	// Provincias ordenadas por el precio medio del combustible elegido.
 	const ranking = $derived(
@@ -261,8 +271,20 @@
 
 <div class="grid grid-2e">
 	<div class="col">
-		<Panel title="Evolución en Menorca" meta="Precio medio diario · €/L">
+		<Panel title="Menorca frente a España" meta="{fuelLabel} · precio medio diario · €/L">
+			{#if gapCents !== null}
+				<div class="tiles">
+					<div class="tile">
+						<span class="lbl">Menorca, hoy</span>
+						<b>{nf(gapCents >= 0 ? gapCents : -gapCents, 1)} cts/L</b>
+						<span class="sub">{gapCents >= 0 ? 'más cara' : 'más barata'} que la media de España</span>
+					</div>
+				</div>
+			{/if}
 			<LineChart lines={historyLines} decimals={3} />
+			{#snippet note()}
+				El historial de la media de España empieza el 14 de octubre de 2026: la web lo guarda día a día.
+			{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
