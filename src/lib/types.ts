@@ -307,12 +307,20 @@ export interface WikiPage {
 	views?: number;
 }
 
-export interface WikiData {
-	date: string;
+/** Lo del día en una Wikipedia (español o inglés). */
+export interface WikiEdition {
 	/** Artículo destacado del día, si lo hay. */
 	featured: WikiPage | null;
 	mostRead: WikiPage[];
 	onThisDay: { year: number; text: string; url: string }[];
+	/** «In the news» (solo la Wikipedia en inglés lo tiene en el feed). */
+	news?: { text: string; url: string }[];
+}
+
+/** Arriba, la Wikipedia en español; en `en`, la inglesa (si respondió). */
+export interface WikiData extends WikiEdition {
+	date: string;
+	en?: WikiEdition;
 }
 
 // ---------- Riesgos naturales: huracanes (NOAA) y eventos (NASA EONET) ----------
