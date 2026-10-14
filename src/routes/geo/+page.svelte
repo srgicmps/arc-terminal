@@ -37,6 +37,7 @@
 	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
 	// Canales de diplomacia dentro de news-intl (scripts/sources/news.ts); el resto son organismos internacionales.
 	const DIPLO = new Set(['Exteriores británico', 'OIEA']);
+	const diplo = $derived((data.intl?.data.items ?? []).filter((i) => DIPLO.has(i.source)).slice(0, 15));
 </script>
 
 <ViewHeader code="GEO" title="Geopolítica" sub={sources} />
@@ -137,13 +138,15 @@
 			<NewsList items={(data.intl?.data.items ?? []).filter((i) => !DIPLO.has(i.source)).slice(0, 15)} />
 			{#snippet note()}<Updated at={data.intl?.fetchedAt} source="news-intl" />{/snippet}
 		</Panel>
-		<Panel title="Diplomacia" meta="Exteriores británico y OIEA · comunicados">
-			<NewsList items={(data.intl?.data.items ?? []).filter((i) => DIPLO.has(i.source)).slice(0, 15)} />
-			{#snippet note()}
-				Declaraciones en la ONU, la OSCE y otros foros, y el organismo atómico de la ONU ·
-				<Updated at={data.intl?.fetchedAt} source="news-intl" />
-			{/snippet}
-		</Panel>
+		{#if diplo.length}
+			<Panel title="Diplomacia" meta="Exteriores británico y OIEA · comunicados">
+				<NewsList items={diplo} />
+				{#snippet note()}
+					Declaraciones en la ONU, la OSCE y otros foros, y el organismo atómico de la ONU ·
+					<Updated at={data.intl?.fetchedAt} source="news-intl" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Terremotos en el mundo" meta="M4,5+ · últimos 7 días">
 			<QuakeTable quakes={strongest} empty={data.quakes ? 'Sin terremotos fuertes estos días.' : undefined} />
 			{#snippet note()}Fuente: USGS · <Updated at={data.quakes?.fetchedAt} source="quakes" />{/snippet}

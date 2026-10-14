@@ -270,5 +270,7 @@ export const newsSources: Source<NewsData>[] = Object.entries(FEEDS).map(([key, 
 	name: `news-${key}`,
 	label: `Titulares de ${LABELS[key]} · ${feeds.map((f) => f.name).join(', ')}`,
 	maxAgeMinutes: 12,
+	// Si se añade un canal, la copia guardada no lo tiene: se descarga de nuevo sin esperar.
+	isStale: (previous) => feeds.some((f) => !previous.feeds?.some((s) => s.name === f.name)),
 	fetch: () => section(feeds)
 }));
