@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { SourceHistory, SourceStatus } from '../../src/lib/data.ts';
 import type { FuelData, FuelPrices, FuelSpainData, FuelStation } from '../../src/lib/fuel.ts';
-import type { Chokepoint, Prediction, Quake, SeriesData } from '../../src/lib/types.ts';
+import type {
+	Chokepoint,
+	HolidaysData,
+	PowerData,
+	PowerDay,
+	Prediction,
+	PricePoint,
+	Quake,
+	SeriesData
+} from '../../src/lib/types.ts';
 import { appendSpan } from '../history.ts';
 import {
 	addDays,
@@ -11,6 +20,7 @@ import {
 	dieselGapRule,
 	dieselLines,
 	dieselTrendRule,
+	dstRule,
 	downRule,
 	earningsRule,
 	emptyLog,
@@ -18,6 +28,8 @@ import {
 	fedregRule,
 	gasRule,
 	impRule,
+	lastSunday,
+	luzRule,
 	macroRule,
 	madrid,
 	marketRule,
@@ -29,6 +41,7 @@ import {
 	readAsset,
 	RULES,
 	straitRule,
+	tomorrowRule,
 	type FuelZone,
 	type Inputs,
 	type NotifyLog,
@@ -88,6 +101,9 @@ describe('RULES', () => {
 			'3:earnings',
 			'3:crisis',
 			'3:down',
+			'3:luz',
+			'3:tomorrow',
+			'3:dst',
 			'4:morning',
 			'4:evening'
 		]);
@@ -626,6 +642,113 @@ describe('P3', () => {
 		const { alerts } = run(downRule, { status: [a.status, b.status], history: [a.history, b.history] });
 		expect(alerts.map((x) => x.id)).toEqual([`down:fred:${a.history.history[0].t}`]);
 		expect(alerts[0].body).not.toContain('HTTP 500');
+	});
+});
+
+// ---------- P3: vida diaria ----------
+
+/** 24 horas de PVPC de un día, con la forma de power.json (€/MWh, hora de Madrid). */
+const pvpcDay = (date: string, mwh: (hour: number) => number): PricePoint[] =>
+	Array.from({ length: 24 }, (_, h) => ({
+		t: `${date}T${String(h).padStart(2, '0')}:00:00.000+02:00`,
+		v: mwh(h)
+	}));
+
+/** Historial de power.json: `n` días seguidos hasta el 14 oct con la misma media (€/kWh). */
+const powerHistory = (n: number, avg: number): PowerDay[] =>
+	days(n, () => avg).map((p) => ({ date: p.date, avg, min: avg / 2, max: avg * 2 }));
+
+describe('P3: vida diaria', () => {
+	it('a) luz de mañana un 30 % o más por debajo de la media de 30 días, con la hora más barata', () => {
+		const power: PowerData = {
+			pvpc: [...pvpcDay('2026-10-14', () => 130), ...pvpcDay('2026-10-15', (h) => (h === 14 ? 40 : 80))],
+			spot: [],
+			history: powerHistory(30, 0.13)
+		};
+		const { alerts } = run(luzRule, { power });
+		expect(alerts.map((a) => a.id)).toEqual(['luz:2026-10-15']);
+		expect(alerts[0].title).toBe('Luz de mañana: −40 % (0,078 €/kWh)');
+		expect(alerts[0].body).toBe(
+			'Media del PVPC de mañana: 0,078 €/kWh, frente a 0,130 €/kWh de media de 30 días (Red Eléctrica). La hora más barata, las 14 h (0,040 €/kWh).'
+		);
+		// Mañana aún no publicada (antes de las 20:15): no aplica.
+		expect(run(luzRule, { power: { ...power, pvpc: pvpcDay('2026-10-14', () => 130) } }).ids).toEqual([]);
+	});
+
+	it('a) luz de mañana por encima, del historial; con menos de 30 días usa lo que haya (mínimo 3)', () => {
+		const tomorrow = { date: '2026-10-15', avg: 0.18, min: 0.1, max: 0.3 };
+		const power = (n: number, avg = 0.13): PowerData => ({
+			pvpc: [],
+			spot: [],
+			history: [...powerHistory(n, avg), tomorrow]
+		});
+		const five = run(luzRule, { power: power(5) });
+		expect(five.alerts[0].title).toBe('Luz de mañana: +38 % (0,180 €/kWh)');
+		expect(five.alerts[0].body).toContain('de media de los últimos 5 días');
+		expect(run(luzRule, { power: power(2) }).ids).toEqual([]);
+		expect(run(luzRule, { power: power(30, 0.15) }).ids).toEqual([]); // +20 %
+	});
+
+	it('b) mañana es festivo (holidays.json), desde las 19:00 de la víspera', () => {
+		const holidays: HolidaysData = { items: [{ date: '2026-10-12', name: 'Fiesta Nacional de España', scope: 'ES' }] };
+		const at = Date.parse('2026-10-11T17:00:00Z'); // domingo 11, 19:00 CEST
+		const { alerts } = run(tomorrowRule, { holidays }, emptyLog(), at);
+		expect(alerts.map((a) => a.id)).toEqual(['manana:2026-10-12']);
+		expect(alerts[0].title).toBe('Mañana es festivo: Fiesta Nacional de España');
+		expect(alerts[0].body).toBe('Lunes 12 de octubre. Festivo en España: Fiesta Nacional de España.');
+		expect(run(tomorrowRule, { holidays }, emptyLog(), at - 60_000).ids).toEqual([]);
+	});
+
+	it('b) mañana no abre NYSE o BME; con festivo y bolsas cerradas, todo en un aviso', () => {
+		const thanksgiving = run(tomorrowRule, {}, emptyLog(), Date.parse('2026-11-25T19:00:00Z'));
+		expect(thanksgiving.alerts[0].title).toBe('Mañana no abre la bolsa de Nueva York (NYSE)');
+		expect(thanksgiving.alerts[0].body).toBe(
+			'Jueves 26 de noviembre. Sin bolsa en Nueva York (NYSE): Acción de Gracias.'
+		);
+		const holidays: HolidaysData = { items: [{ date: '2026-12-25', name: 'Navidad', scope: 'ES' }] };
+		const xmas = run(tomorrowRule, { holidays }, emptyLog(), Date.parse('2026-12-24T19:00:00Z'));
+		expect(xmas.ids).toEqual(['manana:2026-12-25']);
+		expect(xmas.alerts[0].body).toBe(
+			'Viernes 25 de diciembre. Festivo en España: Navidad. Sin bolsa en Nueva York (NYSE): Navidad. Sin bolsa en Madrid (BME): Navidad.'
+		);
+		// Un sábado sin festivo no avisa (el fin de semana ya está cerrada).
+		expect(run(tomorrowRule, {}, emptyLog(), Date.parse('2026-10-16T19:00:00Z')).ids).toEqual([]);
+	});
+
+	it('c) cambio de hora: el viernes anterior al último domingo de marzo y de octubre', () => {
+		expect([lastSunday(2026, 3), lastSunday(2026, 10), lastSunday(2027, 3)]).toEqual([
+			'2026-03-29',
+			'2026-10-25',
+			'2027-03-28'
+		]);
+		const oct = run(dstRule, {}, emptyLog(), Date.parse('2026-10-23T08:00:00Z')); // viernes 23, 10:00 CEST
+		expect(oct.ids).toEqual(['dst:2026-10-25']);
+		expect(oct.alerts[0].title).toBe('Cambio de hora este domingo: se atrasa una hora');
+		expect(oct.alerts[0].body).toBe(
+			'La madrugada del domingo 25 de octubre, a las 3:00 serán las 2:00 (una hora más de sueño).'
+		);
+		const mar = run(dstRule, {}, emptyLog(), Date.parse('2027-03-26T12:00:00Z'));
+		expect(mar.alerts[0].title).toBe('Cambio de hora este domingo: se adelanta una hora');
+		expect(run(dstRule, {}, emptyLog(), Date.parse('2026-10-23T07:59:00Z')).ids).toEqual([]); // 9:59
+		expect(run(dstRule, {}, emptyLog(), Date.parse('2026-10-22T12:00:00Z')).ids).toEqual([]); // jueves
+		expect(run(dstRule, {}, emptyLog(), Date.parse('2026-10-16T12:00:00Z')).ids).toEqual([]); // otro viernes
+	});
+
+	it('los resúmenes de las 8:05 y las 22:15 llevan la línea de vida diaria: diésel, luz de hoy y festivo', () => {
+		const d: Inputs = {
+			fuelEs: fuelEs(days(14, (i) => (i === 13 ? 1.412 : 1.424))),
+			power: { pvpc: pvpcDay('2026-10-12', (h) => (h === 3 ? 50 : 100)), spot: [], history: [] },
+			holidays: { items: [{ date: '2026-10-12', name: 'Fiesta Nacional de España', scope: 'ES' }] }
+		};
+		const morning = run(morningRule, d, emptyLog(), Date.parse('2026-10-12T06:05:00Z')).alerts[0].body;
+		expect(morning).toContain('- Diésel: 1,412 €/L');
+		expect(morning).toContain('- Luz hoy: 0,098 €/kWh de media; la hora más barata, las 3 h (0,050 €/kWh)');
+		expect(morning).toContain('- Hoy es festivo en España: Fiesta Nacional de España');
+		expect(morning).not.toContain('- Festivo en España'); // no se repite en «Hoy»
+		const evening = run(eveningRule, d, emptyLog(), Date.parse('2026-10-12T20:15:00Z')).alerts[0].body;
+		expect(evening).toContain('**Vida diaria**');
+		expect(evening).toContain('- Luz hoy: 0,098 €/kWh');
+		expect(evening).toContain('- Hoy es festivo en España: Fiesta Nacional de España');
 	});
 });
 

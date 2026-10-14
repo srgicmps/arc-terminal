@@ -161,6 +161,19 @@ export const CRISIS = { levels: ['high', 'red'], hours: 48 };
 /** Fuente caída: pasadas seguidas en «error» (el mismo número que scripts/issues.ts). */
 export const DOWN = { days: 3 };
 
+/**
+ * Luz de mañana (PVPC): avisa si su media se separa al menos `change` % de la media de los `days` días
+ * anteriores. El historial de power.json lo acumula la web: mientras tenga menos de `days` días se usa lo
+ * que haya, con un mínimo de `minDays`.
+ */
+export const LUZ = { change: 30, days: 30, minDays: 3 };
+
+/** «Mañana es festivo / no abre la bolsa»: hora de Madrid desde la que sale la víspera. */
+export const TOMORROW = { from: '19:00', until: '23:59' };
+
+/** Cambio de hora: el viernes anterior, desde esta hora de Madrid. */
+export const DST = { from: '10:00', until: '23:59' };
+
 // ---------- P4 ----------
 
 /** Resúmenes: hora de Madrid desde la que sale y hasta la que aún tiene sentido mandarlo. */

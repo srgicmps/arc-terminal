@@ -7,7 +7,9 @@
 // de forma tolerante: cualquier campo puede faltar).
 import type { SourceHistory, SourceStatus } from '../../src/lib/data.ts';
 import type { FuelData, FuelSpainData, FuelStation } from '../../src/lib/fuel.ts';
+import { bmeHolidays, nyseHolidays } from '../../src/lib/markets.ts';
 import { BANKS, decisionTime, MEETINGS } from '../../src/lib/meetings.ts';
+import { hourly } from '../../src/lib/power.ts';
 import type {
 	Chokepoint,
 	CryptoData,
@@ -15,6 +17,7 @@ import type {
 	FedRegData,
 	FinnhubData,
 	HolidaysData,
+	PowerData,
 	PredictionsData,
 	Quake,
 	Series,
@@ -28,10 +31,12 @@ import {
 	CRISIS,
 	DIESEL,
 	DOWN,
+	DST,
 	EARNINGS_WATCH,
 	FEDREG,
 	GAS,
 	IMP_BIG,
+	LUZ,
 	MACRO,
 	MARKETS,
 	POLYMARKET,
@@ -39,6 +44,7 @@ import {
 	RATES,
 	STRAITS,
 	SUMMARIES,
+	TOMORROW,
 	type Asset,
 	type Level
 } from './config.ts';
@@ -96,6 +102,7 @@ export interface Inputs {
 	holidays?: HolidaysData;
 	fuelEs?: FuelSpainData;
 	fuel?: FuelData;
+	power?: PowerData;
 	/** No es un archivo: la pone notify.ts a partir del secreto. */
 	zone?: FuelZone;
 }
@@ -122,7 +129,8 @@ export const FILES: Record<Exclude<keyof Inputs, 'zone'>, string> = {
 	reliefweb: 'reliefweb',
 	holidays: 'holidays',
 	fuelEs: 'fuel-es',
-	fuel: 'fuel'
+	fuel: 'fuel',
+	power: 'power'
 };
 
 export interface LogEntry {
@@ -848,12 +856,151 @@ export function downRule(d: Inputs, { now }: RuleContext): Draft[] {
 	});
 }
 
+// ---------- P3: vida diaria ----------
+
+/** Precio de la luz de un día (€/kWh): media y hora más barata, del PVPC por horas o del historial. */
+export function powerDay(d: Inputs, date: string): { avg: number; cheap?: { hour: number; kwh: number } } | null {
+	const hours = hourly(list(d.power?.pvpc).filter((p) => typeof p?.t === 'string' && Number.isFinite(p.v))).filter(
+		(h) => h.day === date
+	);
+	if (hours.length >= 23) {
+		const cheap = [...hours].sort((a, b) => a.kwh - b.kwh)[0];
+		return { avg: mean(hours.map((h) => h.kwh)), cheap: { hour: cheap.hour, kwh: cheap.kwh } };
+	}
+	const day = list(d.power?.history).find((h) => h?.date === date);
+	return day && okPrice(day.avg) ? { avg: day.avg } : null;
+}
+
+/** 0,128 €/kWh */
+const euroKwh = (v: number) => `${num(v, 3)} €/kWh`;
+
+/**
+ * a) La luz de mañana (PVPC, power.json; REE la publica hacia las 20:15): su media, un 30 % o más por debajo
+ * o por encima de la media de los 30 días anteriores. El historial lo va guardando la propia web, así que
+ * al principio hay menos de 30 días: se usa lo que haya (al menos LUZ.minDays) y el aviso dice cuántos.
+ * Id: luz:<mañana>.
+ */
+export function luzRule(d: Inputs, { now, today }: RuleContext): Draft[] {
+	const tomorrow = addDays(today, 1);
+	const next = powerDay(d, tomorrow);
+	if (!next) return [];
+	const ref = list(d.power?.history).filter(
+		(h) => h?.date < tomorrow && h.date >= addDays(tomorrow, -LUZ.days) && okPrice(h.avg)
+	);
+	if (ref.length < LUZ.minDays) return [];
+	const base = mean(ref.map((h) => h.avg));
+	const pct = (next.avg / base - 1) * 100;
+	if (Math.abs(pct) < LUZ.change) return [];
+	const span = ref.length >= LUZ.days ? `${LUZ.days} días` : `los últimos ${ref.length} días`;
+	const cheap = next.cheap ? ` La hora más barata, las ${next.cheap.hour} h (${euroKwh(next.cheap.kwh)}).` : '';
+	return [
+		{
+			id: `luz:${tomorrow}`,
+			title: `Luz de mañana: ${signed(pct, 0)} % (${euroKwh(next.avg)})`,
+			body: `Media del PVPC de mañana: ${euroKwh(next.avg)}, frente a ${euroKwh(base)} de media de ${span} (Red Eléctrica).${cheap}`,
+			tags: 'bulb',
+			click: `${SITE}/luz`,
+			time: now
+		}
+	];
+}
+
+const dayOfWeek = (date: string) => new Date(`${date}T12:00:00Z`).getUTCDay();
+const WEEKDAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+/** «sábado 12 de octubre» */
+const dayName = (date: string) =>
+	`${WEEKDAYS[dayOfWeek(date)]} ${Number(date.slice(8, 10))} de ${MONTHS[Number(date.slice(5, 7)) - 1]}`;
+
+const holidayLine = (h: { name: string; scope: string }) => `${h.scope === 'IB' ? 'en Baleares' : 'en España'}: ${h.name}`;
+
+/**
+ * b) Mañana es festivo (holidays.json, de España o de Baleares) o no abre la bolsa de Nueva York o la de
+ * Madrid (festivos calculados en src/lib/markets.ts; los fines de semana no cuentan). A partir de las 19:00
+ * de la víspera, en un solo aviso. Id: manana:<mañana>.
+ */
+export function tomorrowRule(d: Inputs, { now, today }: RuleContext): Draft[] {
+	if (!inWindow(madrid(now).hm, TOMORROW)) return [];
+	const tomorrow = addDays(today, 1);
+	const year = Number(tomorrow.slice(0, 4));
+	const holidays = list(d.holidays?.items).filter((h) => h?.date === tomorrow);
+	const closed = [
+		...nyseHolidays(year).map((h) => ({ ...h, label: 'Nueva York (NYSE)' })),
+		...bmeHolidays(year).map((h) => ({ ...h, label: 'Madrid (BME)' }))
+	].filter((h) => h.date === tomorrow);
+	if (!holidays.length && !closed.length) return [];
+	const title = holidays.length
+		? `Mañana es festivo: ${holidays[0].name}`
+		: `Mañana no abre la bolsa de ${closed.map((c) => c.label).join(' ni la de ')}`;
+	const lines = [
+		...holidays.map((h) => `Festivo ${holidayLine(h)}.`),
+		...closed.map((c) => `Sin bolsa en ${c.label}: ${c.name}.`)
+	];
+	return [
+		{
+			id: `manana:${tomorrow}`,
+			title,
+			body: `${dayName(tomorrow)[0].toUpperCase()}${dayName(tomorrow).slice(1)}. ${lines.join(' ')}`,
+			tags: 'calendar',
+			click: `${SITE}/cal`,
+			time: now
+		}
+	];
+}
+
+/** Último domingo de un mes («2026-10-25»). */
+export function lastSunday(year: number, month: number): string {
+	const last = new Date(Date.UTC(year, month, 0));
+	last.setUTCDate(last.getUTCDate() - last.getUTCDay());
+	return last.toISOString().slice(0, 10);
+}
+
+/**
+ * c) Cambio de hora este fin de semana (último domingo de marzo y de octubre, a la 1:00 UTC), avisado el
+ * viernes anterior desde las 10:00. Id: dst:<domingo>.
+ */
+export function dstRule(_d: Inputs, { now, today }: RuleContext): Draft[] {
+	if (dayOfWeek(today) !== 5 || !inWindow(madrid(now).hm, DST)) return [];
+	const sunday = addDays(today, 2);
+	const year = Number(sunday.slice(0, 4));
+	const spring = sunday === lastSunday(year, 3);
+	if (!spring && sunday !== lastSunday(year, 10)) return [];
+	return [
+		{
+			id: `dst:${sunday}`,
+			title: `Cambio de hora este domingo: ${spring ? 'se adelanta' : 'se atrasa'} una hora`,
+			body: spring
+				? `La madrugada del ${dayName(sunday)}, a las 2:00 serán las 3:00 (se duerme una hora menos).`
+				: `La madrugada del ${dayName(sunday)}, a las 3:00 serán las 2:00 (una hora más de sueño).`,
+			tags: 'clock3',
+			click: `${SITE}/wx`,
+			time: now
+		}
+	];
+}
+
+/** Línea de vida diaria de los resúmenes: diésel, luz de hoy y festivo, si lo es. */
+export function dailyLife(d: Inputs, today: string, cheapest: boolean): string[] {
+	const luz = powerDay(d, today);
+	return [
+		...dieselLines(d, cheapest),
+		...(luz
+			? [
+					`Luz hoy: ${euroKwh(luz.avg)} de media${luz.cheap ? `; la hora más barata, las ${luz.cheap.hour} h (${euroKwh(luz.cheap.kwh)})` : ''}`
+				]
+			: []),
+		...list(d.holidays?.items)
+			.filter((h) => h?.date === today)
+			.map((h) => `Hoy es festivo ${holidayLine(h)}`)
+	];
+}
+
 // ---------- P4: resúmenes ----------
 
 const inWindow = (hm: string, w: { from: string; until: string }) => hm >= w.from && hm <= w.until;
 
-/** Agenda de un día: reuniones de bancos centrales, resultados vigilados y festivos. */
-function agenda(d: Inputs, date: string): string[] {
+/** Agenda de un día: reuniones de bancos centrales, resultados vigilados y, si se piden, festivos. */
+function agenda(d: Inputs, date: string, holidays = true): string[] {
 	const watch = new Set([...EARNINGS_WATCH.top10, ...EARNINGS_WATCH.mis]);
 	const hours: Record<string, string> = { bmo: 'antes de la apertura', amc: 'tras el cierre', dmh: 'en sesión' };
 	return [
@@ -863,7 +1010,7 @@ function agenda(d: Inputs, date: string): string[] {
 		...list(d.finnhub?.earnings)
 			.filter((e) => e?.date === date && watch.has(e.symbol))
 			.map((e) => `Resultados de ${e.symbol}${hours[e.hour] ? ` (${hours[e.hour]})` : ''}`),
-		...list(d.holidays?.items)
+		...list(holidays ? d.holidays?.items : [])
 			.filter((h) => h?.date === date)
 			.map((h) => `Festivo${h.scope === 'IB' ? ' en Baleares' : ' en España'}: ${h.name}`)
 	];
@@ -892,12 +1039,13 @@ export function morningRule(d: Inputs, { now, today }: RuleContext): Draft[] {
 		...section('Lo más importante', top),
 		...section(
 			'Hoy',
-			agenda(d, today).map((l) => `- ${l}`)
+			// El festivo de hoy va en «Vida diaria».
+			agenda(d, today, false).map((l) => `- ${l}`)
 		),
 		...section('Mercados', markets ? [markets] : []),
 		...section(
 			'Vida diaria',
-			dieselLines(d).map((l) => `- ${l}`)
+			dailyLife(d, today, true).map((l) => `- ${l}`)
 		)
 	];
 	return [
@@ -924,6 +1072,10 @@ export function eveningRule(d: Inputs, { now, today }: RuleContext): Draft[] {
 	const body = [
 		...section('Lo más importante del día', top),
 		...section('Cifras del día', markets ? [markets] : []),
+		...section(
+			'Vida diaria',
+			dailyLife(d, today, false).map((l) => `- ${l}`)
+		),
 		...section(
 			'Mañana',
 			agenda(d, addDays(today, 1)).map((l) => `- ${l}`)
@@ -961,6 +1113,9 @@ export const RULES: Rule[] = [
 	{ type: 'earnings', level: 3, run: earningsRule },
 	{ type: 'crisis', level: 3, run: crisisRule },
 	{ type: 'down', level: 3, run: downRule },
+	{ type: 'luz', level: 3, run: luzRule },
+	{ type: 'tomorrow', level: 3, run: tomorrowRule },
+	{ type: 'dst', level: 3, run: dstRule },
 	{ type: 'morning', level: 4, run: morningRule },
 	{ type: 'evening', level: 4, run: eveningRule }
 ];
