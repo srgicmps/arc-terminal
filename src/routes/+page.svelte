@@ -25,6 +25,7 @@
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
 	import type { BoeWeek } from '#lib/types.ts';
 	import { initWatchwords, matches, watchwords } from '#lib/watchwords.svelte.ts';
+	import { zoneFor } from '#lib/fuel.ts';
 	import { inMenorca, inSpain, place } from '#lib/place.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
 	import type { PageProps } from './$types';
@@ -86,7 +87,15 @@
 	});
 	const todayAvg = $derived(today.length ? today.reduce((a, p) => a + p.kwh, 0) / today.length : null);
 
-	const mao = $derived(data.weather?.data.places.find((p) => p.name === 'Maó'));
+	// El tiempo de «Tu sitio» si es una de las ciudades de weather.json; si no, Maó.
+	const mao = $derived(
+		data.weather?.data.places.find((p) => p.name === place.current.name) ?? data.weather?.data.places.find((p) => p.name === 'Maó')
+	);
+	// Gasolina: la provincia de «Tu sitio» si lo has elegido y está en España (fuera de Menorca); si no, Menorca.
+	const fuelProvince = $derived.by(() => {
+		const id = place.chosen ? zoneFor(place.current, data.fuelProvinces) : null;
+		return id && id !== 'menorca' ? (data.fuelProvinces.find((p) => p.id === id) ?? null) : null;
+	});
 
 	const g95 = $derived(
 		(data.fuel?.data.stations ?? [])
@@ -290,9 +299,9 @@
 {#snippet menorca()}
 	{#if mao}
 		{@const s = sky(mao.current.code)}
-		<Panel id="weather" title="Menorca" meta={s.label} jump={{ code: 'WX', href: resolve('/wx') }}>
+		<Panel id="weather" title={mao.name === 'Maó' ? 'Menorca' : mao.name} meta={s.label} jump={{ code: 'WX', href: resolve('/wx') }}>
 			<ul class="mini">
-				<li><span class="l">Maó ahora</span><b>{nf(mao.current.temp, 0)}° · {nf(mao.current.wind, 0)} km/h {compass(mao.current.windDir)}</b></li>
+				<li><span class="l">{mao.name === 'Maó' ? 'Maó ahora' : 'Ahora'}</span><b>{nf(mao.current.temp, 0)}° · {nf(mao.current.wind, 0)} km/h {compass(mao.current.windDir)}</b></li>
 				{#if mao.sea !== null}<li><span class="l">Agua del mar</span><b>{nf(mao.sea, 1)}°</b></li>{/if}
 				{#if mao.daily[1]}<li><span class="l">Mañana</span><b>{nf(mao.daily[1].min, 0)}° / {nf(mao.daily[1].max, 0)}° · {sky(mao.daily[1].code).label}</b></li>{/if}
 			</ul>
@@ -318,14 +327,19 @@
 {/snippet}
 
 {#snippet gasolina()}
-	<Panel id="fuel" title="Gasolina 95 · Menorca" meta="€/L" jump={{ code: 'FUEL', href: resolve('/fuel') }}>
+	<Panel id="fuel" title="Gasolina 95 · {fuelProvince?.name ?? 'Menorca'}" meta="€/L" jump={{ code: 'FUEL', href: resolve('/fuel') }}>
 		<ul class="mini">
-			{#each g95 as st, i (st.id)}
-				<li>
-					<span class="l">{st.name}<small>{st.town}</small></span>
-					<b class:up={i === 0}>{nf(st.prices.g95, 3)}</b>
-				</li>
-			{/each}
+			{#if fuelProvince}
+				<li><span class="l">Media de la provincia</span><b>{nf(fuelProvince.avg, 3)}</b></li>
+				<li><span class="l">La más barata</span><b class="up">{nf(fuelProvince.min, 3)}</b></li>
+			{:else}
+				{#each g95 as st, i (st.id)}
+					<li>
+						<span class="l">{st.name}<small>{st.town}</small></span>
+						<b class:up={i === 0}>{nf(st.prices.g95, 3)}</b>
+					</li>
+				{/each}
+			{/if}
 		</ul>
 	</Panel>
 {/snippet}
