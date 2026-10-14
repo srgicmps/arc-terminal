@@ -8,7 +8,10 @@
 	import MarketSessions from '#lib/components/MarketSessions.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import Change from '#lib/components/ui/Change.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
+	import Table from '#lib/components/ui/Table.svelte';
+	import { dm, nf } from '#lib/format.ts';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -220,6 +223,31 @@
 				Fuente: Tesoro de EE. UU. · <Updated at={data.auctions?.fetchedAt} source="auctions" />
 			{/snippet}
 		</Panel>
+		{#if data.cot}
+			{@const cot = data.cot}
+			<Panel title="Posicionamiento" meta="Especuladores en futuros · COT de la CFTC">
+				<Table>
+					<thead><tr><th class="l">Mercado</th><th>Neto</th><th>% abierto</th><th>Semana</th><th>Rango 1 año</th></tr></thead>
+					<tbody>
+						{#each cot.data.markets as m (m.code)}
+							<tr>
+								<td class="l name">{m.name}</td>
+								<td class={m.net >= 0 ? 'up' : 'down'}>{nf(m.net, 0)}</td>
+								<td class="mut">{nf(m.pctOi, 1)} %</td>
+								<td><Change value={m.change} digits={0} /></td>
+								<td class="mut">{m.range === null ? '—' : `${m.range} %`}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
+				{#snippet note()}
+					Contratos netos (largos − cortos) de los no comerciales. Rango: 0 % = la posición más corta del último año,
+					100 % = la más larga. Informe del {dm(`${cot.data.date}T12:00:00Z`)} (sale los viernes). Fuente:
+					<a href="https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm" target="_blank" rel="noopener">CFTC</a> ·
+					<Updated at={cot.fetchedAt} source="cot" />
+				{/snippet}
+			</Panel>
+		{/if}
 	</div>
 </div>
 
