@@ -216,15 +216,16 @@ export interface LogEntry {
 /** Historial publicado (static/data/notify-log.json). Nunca lleva el tema de ntfy. */
 export interface NotifyLog {
 	entries: LogEntry[];
-	/** Último valor visto de cada cosa que se compara entre pasadas: periodos macro, tipos, estrechos. */
+	/**
+	 * Último valor visto de cada cosa que se compara entre pasadas: periodos macro, tipos, estrechos y, para
+	 * mercados y valores seguidos, «día|cierre de referencia|precio del último aviso» (mkt:<activo>, stock:<símbolo>).
+	 */
 	last: Record<string, string>;
-	/** Último aviso de cada activo de mercado: cuándo, cuánto se movía y de qué dato (para la espera de 4 h). */
-	assets: Record<string, { t: string; move: number; obs?: string }>;
 	/** Fotos de las probabilidades de Polymarket (una cada 4 h, unas 30 h) para comparar con hace 24 h. */
 	poly: Record<string, { t: string; p: Record<string, number> }[]>;
 }
 
-export const emptyLog = (): NotifyLog => ({ entries: [], last: {}, assets: {}, poly: {} });
+export const emptyLog = (): NotifyLog => ({ entries: [], last: {}, poly: {} });
 
 export interface Alert {
 	/** Id único y estable. */
@@ -347,7 +348,13 @@ export interface Reading {
 	move: number;
 	/** Valor actual, para los resúmenes. */
 	value?: number;
-	/** De qué dato sale (un día, una hora): el mismo dato no se vuelve a avisar pasada la espera. */
+	/**
+	 * Nivel actual y cierre de referencia, en unidades que se pueden comparar con `unit`: el precio para los
+	 * activos en % y los puntos básicos para los de pb. Para los escalones (stepMove).
+	 */
+	level: number;
+	ref: number;
+	/** De qué dato sale (un día, una hora): marca el día del activo (al cambiar, los escalones se reinician). */
 	obs?: string;
 }
 
@@ -356,28 +363,35 @@ export function readAsset(asset: Asset, d: Inputs): Reading | null {
 	const src = asset.source;
 	if (src.kind === 'coin') {
 		const c = list(d.crypto?.coins).find((x) => x?.id === src.id);
-		return c && typeof c.change24h === 'number' ? { move: c.change24h, value: c.usd } : null;
+		return c && typeof c.change24h === 'number' && okPrice(c.usd)
+			? { move: c.change24h, value: c.usd, level: c.usd, ref: c.usd / (1 + c.change24h / 100) }
+			: null;
 	}
 	if (src.kind === 'quote') {
 		const q = list(d.finnhub?.quotes).find((x) => x?.symbol === src.symbol);
-		return q && typeof q.changePct === 'number'
-			? { move: q.changePct, value: q.price, obs: q.time ?? undefined }
+		return q && typeof q.changePct === 'number' && okPrice(q.price)
+			? {
+					move: q.changePct,
+					value: q.price,
+					level: q.price,
+					ref: okPrice(q.prevClose) ? q.prevClose : q.price / (1 + q.changePct / 100),
+					obs: q.time ?? undefined
+				}
 			: null;
 	}
 	if (src.kind === 'series') {
 		const [last, prev] = lastPoints(seriesOf(d[src.file as 'ecb' | 'fred'], src.id));
-		return last && prev && prev.v ? { move: (last.v / prev.v - 1) * 100, value: last.v, obs: last.t } : null;
+		return last && prev && prev.v
+			? { move: (last.v / prev.v - 1) * 100, value: last.v, level: last.v, ref: prev.v, obs: last.t }
+			: null;
 	}
 	if (src.kind === 'curve') {
 		const i = list(d.uscurve?.tenors).indexOf(src.tenor);
 		const days = list(d.uscurve?.days).filter((x) => typeof x?.values?.[i] === 'number');
 		const [last, prev] = [days.at(-1), days.at(-2)];
 		if (i < 0 || !last || !prev) return null;
-		return {
-			move: ((last.values[i] as number) - (prev.values[i] as number)) * 100,
-			value: last.values[i] as number,
-			obs: last.date
-		};
+		const [now, before] = [(last.values[i] as number) * 100, (prev.values[i] as number) * 100];
+		return { move: now - before, value: last.values[i] as number, level: now, ref: before, obs: last.date };
 	}
 	// Prima de riesgo: diferencia con el bono alemán, en los dos últimos periodos que tienen ambos.
 	const base = new Map(list(seriesOf(d.ecb, src.base)?.points).map((p) => [p.t, p.v]));
@@ -385,8 +399,46 @@ export function readAsset(asset: Asset, d: Inputs): Reading | null {
 	const [last, prev] = [both.at(-1), both.at(-2)];
 	if (!last || !prev) return null;
 	const spread = (p: { t: string; v: number }) => (p.v - base.get(p.t)!) * 100;
-	return { move: spread(last) - spread(prev), value: spread(last), obs: last.t };
+	return { move: spread(last) - spread(prev), value: spread(last), level: spread(last), ref: spread(prev), obs: last.t };
 }
+
+/** Movimiento entre dos niveles de un activo: en % (precios) o en pb (niveles ya en pb). */
+export const stepMove = (unit: '%' | 'pb', from: number, to: number) => (unit === '%' ? (to / from - 1) * 100 : to - from);
+
+/** Día de un dato de mercado: el de su fecha («2026-10-14», «2026-09») o su hora en Madrid; si no, hoy. */
+export function obsDay(obs: string | undefined, today: string): string {
+	if (!obs) return today;
+	if (/^\d{4}-\d{2}(-\d{2})?$/.test(obs)) return obs;
+	const t = Date.parse(obs);
+	return Number.isFinite(t) ? madrid(t).date : today;
+}
+
+/**
+ * Escalones de mercados y valores seguidos, sin espera. El primer aviso del día sale cuando el movimiento
+ * desde el cierre anterior (`move`) pasa el umbral; los siguientes, cuando el nivel se mueve otro umbral
+ * desde el del último aviso (guardado en log.last[key] como «día|referencia|nivel»), suba o baje. Al cambiar
+ * de día se reinicia. `since`: el movimiento desde el último aviso (null si es el primero del día).
+ */
+export function stepHit(
+	log: NotifyLog,
+	key: string,
+	day: string,
+	r: { move: number; level: number },
+	unit: '%' | 'pb',
+	threshold: number,
+	upOnly = false
+): { since: number | null } | null {
+	const [lastDay, , lastLevel] = (log.last[key] ?? '').split('|');
+	const prev = Number(lastLevel);
+	const known = lastDay === day && Boolean(lastLevel) && Number.isFinite(prev) && (unit === 'pb' || prev !== 0);
+	const since = known ? stepMove(unit, prev, r.level) : null;
+	const m = since ?? r.move;
+	if (!Number.isFinite(m)) return null;
+	return (upOnly ? m >= threshold : Math.abs(m) >= threshold) ? { since } : null;
+}
+
+/** Lo que se guarda tras un aviso de escalón. */
+export const stepState = (day: string, r: { ref: number; level: number }) => `${day}|${r.ref}|${r.level}`;
 
 // ---------- P1 ----------
 
@@ -610,34 +662,34 @@ export function euriborText(s: Series | undefined): string | null {
 }
 
 /**
- * Mercados con umbrales «B» (config ASSETS). Cada activo espera 4 h entre avisos (y con un dato nuevo),
- * salvo que el movimiento se duplique. Si saltan 3 o más a la vez, van juntos en un solo aviso.
- * Id: mkt:<activo>:<minuto> o mkt:grupo:<minuto>.
+ * Mercados con umbrales «B» (config ASSETS), por escalones y sin espera: el primer aviso del día de cada
+ * activo sale al pasar el umbral desde el cierre anterior; los siguientes, cada vez que se mueve otro umbral
+ * desde el último aviso, suba o baje (las primas, solo al subir). Si saltan 3 o más a la vez, van juntos en
+ * un solo aviso. Id: mkt:<activo>:<minuto> o mkt:grupo:<minuto>.
  */
-export function marketRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+export function marketRule(d: Inputs, { now, today, log }: RuleContext): Draft[] {
 	const hits = ASSETS.flatMap((asset) => {
 		const r = readAsset(asset, d);
 		if (!r || !Number.isFinite(r.move)) return [];
-		const big = asset.upOnly ? r.move >= asset.threshold : Math.abs(r.move) >= asset.threshold;
-		if (!big) return [];
-		const st = log.assets[asset.name];
-		const doubled = st && Math.abs(r.move) >= 2 * Math.abs(st.move);
-		const waited =
-			st && now - Date.parse(st.t) >= MARKETS.waitHours * HOUR && (r.obs === undefined || r.obs !== st.obs);
-		return !st || doubled || waited ? [{ asset, r }] : [];
+		const day = obsDay(r.obs, today);
+		const key = `mkt:${asset.name}`;
+		const hit = stepHit(log, key, day, r, asset.unit, asset.threshold, asset.upOnly);
+		return hit ? [{ asset, r, day, key, since: hit.since }] : [];
 	});
 	if (!hits.length) return [];
+	type Hit = (typeof hits)[number];
 	const t = minute(now);
-	const commitAll = (items: typeof hits) => (l: NotifyLog) => {
-		for (const { asset, r } of items) l.assets[asset.name] = { t, move: r.move, obs: r.obs };
+	const commitAll = (items: Hit[]) => (l: NotifyLog) => {
+		for (const h of items) l.last[h.key] = stepState(h.day, h.r);
 	};
-	const text = ({ asset, r }: (typeof hits)[number]) => `${asset.name} ${move(r.move, asset.unit)}`;
+	const text = ({ asset, r }: Hit) => `${asset.name} ${move(r.move, asset.unit)}`;
+	const since = (h: Hit) => (h.since === null ? '' : `${move(h.since, h.asset.unit)} desde el último aviso`);
 	if (hits.length >= MARKETS.group) {
 		return [
 			{
 				id: `mkt:grupo:${t}`,
 				title: 'Mercados',
-				body: hits.map(text).join(', '),
+				body: hits.map((h) => text(h) + (h.since === null ? '' : ` (${since(h)})`)).join(', '),
 				tags: 'chart_with_downwards_trend',
 				click: `${SITE}/ws`,
 				time: now,
@@ -645,15 +697,20 @@ export function marketRule(d: Inputs, { now, log }: RuleContext): Draft[] {
 			}
 		];
 	}
-	return hits.map((h) => ({
-		id: `mkt:${h.asset.name}:${t}`,
-		title: `Mercados: ${text(h)}`,
-		body: `Movimiento del día (umbral ${move(h.asset.threshold, h.asset.unit).replace('+', '±')}).`,
-		tags: h.r.move >= 0 ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
-		click: `${SITE}/ws`,
-		time: now,
-		commit: commitAll([h])
-	}));
+	return hits.map((h) => {
+		// El umbral tal cual está en config (1,25 %, 7,5 pb), sin redondear.
+		const value = h.asset.threshold.toLocaleString('es-ES', { maximumFractionDigits: 2 });
+		const step = `${h.asset.upOnly ? '+' : '±'}${value} ${h.asset.unit}`;
+		return {
+			id: `mkt:${h.asset.name}:${t}`,
+			title: `Mercados: ${text(h)}`,
+			body: `Movimiento del día${h.since === null ? '' : `; ${since(h)}`} (escalón ${step}).`,
+			tags: (h.since ?? h.r.move) >= 0 ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
+			click: `${SITE}/ws`,
+			time: now,
+			commit: commitAll([h])
+		};
+	});
 }
 
 /**
@@ -882,37 +939,37 @@ export function aiRule(d: Inputs, { now, today, log, update }: RuleContext): Dra
 export const stockName = (symbol: string) => STOCKS.names[symbol] ?? symbol;
 
 /**
- * Valores seguidos (alert-quotes.json, P2): variación del día de ±3 % o más, un aviso por valor y día, y
- * otro si pasa de ±6 %. El día es el de la cotización (así el viernes no se repite el sábado). Si 3 o más
- * se mueven a la vez, van juntos. Solo cuentan los símbolos que traiga el archivo (con el plan gratuito de
- * Finnhub, los europeos no vienen). Id: stock:<símbolo>:<día>:<3|6> o stock:grupo:<minuto>.
+ * Valores seguidos (alert-quotes.json, P2), por escalones como los mercados y sin espera: el primer aviso
+ * del día sale con una variación de ±3 % (STOCKS.threshold) o más desde el cierre anterior; los siguientes,
+ * cada vez que el precio se mueve otro 3 % desde el último aviso, suba o baje. El día es el de la cotización
+ * (así el viernes no se repite el sábado). Si 3 o más se mueven a la vez, van juntos. Solo cuentan los
+ * símbolos que traiga el archivo (con el plan gratuito de Finnhub, los europeos no vienen).
+ * Id: stock:<símbolo>:<minuto> o stock:grupo:<minuto>.
  */
 export function stockRule(d: Inputs, { now, today, log }: RuleContext): Draft[] {
 	const hits = list(d.alertQuotes).flatMap((q) => {
 		const pct = q?.changePct;
-		if (!q?.symbol || typeof pct !== 'number' || !Number.isFinite(pct)) return [];
-		const step = [...STOCKS.steps].reverse().find((s) => Math.abs(pct) >= s);
-		if (step === undefined) return [];
-		const t = Date.parse(q.time ?? '');
-		const day = Number.isFinite(t) ? madrid(t).date : today;
+		if (!q?.symbol || typeof pct !== 'number' || !Number.isFinite(pct) || !okPrice(q.price)) return [];
+		const r = { move: pct, level: q.price, ref: okPrice(q.prevClose) ? q.prevClose : q.price / (1 + pct / 100) };
+		const day = obsDay(q.time ?? undefined, today);
 		const key = `stock:${q.symbol}`;
-		const [lastDay, lastStep] = (log.last[key] ?? '').split('|');
-		if (lastDay === day && Number(lastStep) >= step) return [];
-		return [{ q, pct, step, day, key }];
+		const hit = stepHit(log, key, day, r, '%', STOCKS.threshold);
+		return hit ? [{ q, pct, r, day, key, since: hit.since }] : [];
 	});
 	if (!hits.length) return [];
 	type Hit = (typeof hits)[number];
 	const commitAll = (items: Hit[]) => (l: NotifyLog) => {
-		for (const h of items) l.last[h.key] = `${h.day}|${h.step}`;
+		for (const h of items) l.last[h.key] = stepState(h.day, h.r);
 	};
 	const text = (h: Hit) => `${stockName(h.q.symbol)} ${signed(h.pct)} %`;
+	const since = (h: Hit) => (h.since === null ? '' : `${signed(h.since)} % desde el último aviso`);
 	const t0 = minute(now);
 	if (hits.length >= STOCKS.group) {
 		return [
 			{
 				id: `stock:grupo:${t0}`,
 				title: 'Valores seguidos',
-				body: hits.map(text).join(', '),
+				body: hits.map((h) => text(h) + (h.since === null ? '' : ` (${since(h)})`)).join(', '),
 				tags: hits.filter((h) => h.pct < 0).length > hits.length / 2 ? 'chart_with_downwards_trend' : 'chart_with_upwards_trend',
 				click: `${SITE}/ws`,
 				time: now,
@@ -921,12 +978,12 @@ export function stockRule(d: Inputs, { now, today, log }: RuleContext): Draft[] 
 		];
 	}
 	return hits.map((h) => ({
-		id: `stock:${h.q.symbol}:${h.day}:${h.step}`,
+		id: `stock:${h.q.symbol}:${t0}`,
 		title: text(h),
-		body: `Variación del día (aviso desde ±${h.step} %). Cotiza a ${num(h.q.price, 2)}${
+		body: `Variación del día${h.since === null ? '' : `; ${since(h)}`} (escalón ±${num(STOCKS.threshold, 0)} %). Cotiza a ${num(h.q.price, 2)}${
 			typeof h.q.prevClose === 'number' ? `; cierre anterior, ${num(h.q.prevClose, 2)}` : ''
 		}.`,
-		tags: h.pct >= 0 ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
+		tags: (h.since ?? h.pct) >= 0 ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
 		// La ficha de la web es de TradingView: los símbolos de EE. UU. de Finnhub valen tal cual.
 		click: h.q.symbol.includes('.') ? `${SITE}/ws` : `${SITE}/s?sym=${encodeURIComponent(h.q.symbol)}`,
 		time: now,
@@ -972,16 +1029,6 @@ export const euroL = (v: number) => `${num(v, 3)} €/L`;
 /** +3,4 cts (de una diferencia en €/L). */
 export const cts = (diffEuro: number) => `${signed(diffEuro * 100)} cts`;
 
-/** Medias de 7 días (la última semana con dato y la anterior), o null si alguna tiene pocos días. */
-export function weekMeans(s: DayValue[]): { now: number; before: number; date: string } | null {
-	const last = s.at(-1);
-	if (!last) return null;
-	const week = between(s, addDays(last.date, -6), last.date);
-	const prev = between(s, addDays(last.date, -13), addDays(last.date, -7));
-	if (week.length < DIESEL.minDays || prev.length < DIESEL.minDays) return null;
-	return { now: mean(week.map((p) => p.v)), before: mean(prev.map((p) => p.v)), date: last.date };
-}
-
 /** Diferencia con el dato de hace 7 días (o el más cercano de los 3 anteriores a ese), en €/L. */
 export function weekChange(s: DayValue[]): number | null {
 	const last = s.at(-1);
@@ -989,12 +1036,6 @@ export function weekChange(s: DayValue[]): number | null {
 	const ref = between(s, addDays(last.date, -10), addDays(last.date, -7)).at(-1);
 	return ref ? last.v - ref.v : null;
 }
-
-/** Ya se avisó de esto (clave del historial) hace menos de DIESEL.everyDays días. */
-const recently = (log: NotifyLog, key: string, date: string) => {
-	const before = log.last[key];
-	return before !== undefined && date < addDays(before, DIESEL.everyDays);
-};
 
 /** España y, si la hay, la zona, cada una con su historial. */
 const scopes = (d: Inputs) =>
@@ -1005,25 +1046,32 @@ const scopes = (d: Inputs) =>
 
 const FUEL_SOURCE = 'Ministerio para la Transición Ecológica';
 
+/** «14 de octubre» */
+const dayMonth = (date: string) => `${Number(date.slice(8, 10))} de ${MONTHS[Number(date.slice(5, 7)) - 1]}`;
+
 /**
- * a) Diésel: la media de 7 días cambia ±3 cts/L o más frente a la de los 7 días anteriores, en España y en
- * la zona. Como mucho una vez por semana cada una. Id: diesel:trend:<es|zona>:<día>.
+ * a) Diésel, cambio diario: en cuanto llega un dato nuevo, si el precio medio cambia frente al día anterior
+ * con dato (de cualquier cantidad; lo mínimo que se ve es 0,1 cts/L), en España y en la zona. Sin espera:
+ * el id lleva la fecha del dato, así que cada dato avisa una sola vez. Id: diesel:day:<es|zona>:<día>.
  */
-export function dieselTrendRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+export function dieselDayRule(d: Inputs, { now }: RuleContext): Draft[] {
 	return scopes(d).flatMap(({ scope, name, s }) => {
-		const w = weekMeans(s);
-		if (!w || Math.abs(w.now - w.before) * 100 < DIESEL.trendCts) return [];
-		const key = `diesel:trend:${scope}`;
-		if (recently(log, key, w.date)) return [];
+		const [prev, cur] = [s.at(-2), s.at(-1)];
+		if (!prev || !cur) return [];
+		const diff = cur.v - prev.v;
+		// Lo que no llega a 0,1 cts (la última cifra de 1,412 €/L) se ve como «sin cambios».
+		if (Math.round(diff * 1000) === 0) return [];
+		const vs = prev.date === addDays(cur.date, -1) ? 'frente a ayer' : `frente al ${dayMonth(prev.date)}`;
+		const week = weekChange(s);
+		const weekText = week === null ? '' : ` · ${signed(week * 100)} en 7 días`;
 		return [
 			{
-				id: `${key}:${w.date}`,
-				title: `Diésel en ${name}: ${cts(w.now - w.before)} en una semana`,
-				body: `Media de 7 días: ${euroL(w.now)}, frente a ${euroL(w.before)} la semana anterior (${FUEL_SOURCE}).`,
+				id: `diesel:day:${scope}:${cur.date}`,
+				title: `Diésel en ${name}: ${euroL(cur.v)} (${cts(diff)} ${vs}${weekText})`,
+				body: `Precio medio del ${dayMonth(cur.date)}; el anterior, ${euroL(prev.v)} (${FUEL_SOURCE}).`,
 				tags: 'fuelpump',
 				click: `${SITE}/fuel`,
-				time: now,
-				commit: (l) => void (l.last[key] = w.date)
+				time: now
 			}
 		];
 	});
@@ -1037,10 +1085,10 @@ function monthOf(date: string, ref: string): string {
 
 /**
  * b) Diésel en su mínimo o máximo de 90 días (con al menos 90 días de historial), en España y en la zona.
- * «Desde» es el mes de la última vez que estuvo así de bajo (o de alto). Como mucho una vez por semana cada
- * uno. Id: diesel:<low|high>:<es|zona>:<día>.
+ * «Desde» es el mes de la última vez que estuvo así de bajo (o de alto). Sin espera: avisa con cada dato
+ * nuevo que lo cumpla (el id lleva la fecha del dato). Id: diesel:<low|high>:<es|zona>:<día>.
  */
-export function dieselExtremeRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+export function dieselExtremeRule(d: Inputs, { now }: RuleContext): Draft[] {
 	return scopes(d).flatMap(({ scope, name, s }) => {
 		const cur = s.at(-1);
 		if (!cur) return [];
@@ -1050,31 +1098,28 @@ export function dieselExtremeRule(d: Inputs, { now, log }: RuleContext): Draft[]
 		if (!window.length) return [];
 		const kind = cur.v < Math.min(...window) ? 'low' : cur.v > Math.max(...window) ? 'high' : null;
 		if (!kind) return [];
-		const key = `diesel:${kind}:${scope}`;
-		if (recently(log, key, cur.date)) return [];
 		const low = kind === 'low';
 		const since = s.filter((p) => p.date < from && (low ? p.v <= cur.v : p.v >= cur.v)).at(-1);
 		const span = Math.round((Date.parse(cur.date) - Date.parse(s[0].date)) / DAY) + 1;
 		const when = since ? `desde ${monthOf(since.date, cur.date)}` : `de los últimos ${span} días`;
 		return [
 			{
-				id: `${key}:${cur.date}`,
+				id: `diesel:${kind}:${scope}:${cur.date}`,
 				title: `Diésel en ${name}, en su ${low ? 'mínimo' : 'máximo'} ${when}: ${euroL(cur.v)}`,
-				body: `Precio medio del ${Number(cur.date.slice(8, 10))} de ${MONTHS[Number(cur.date.slice(5, 7)) - 1]} (${FUEL_SOURCE}).`,
+				body: `Precio medio del ${dayMonth(cur.date)} (${FUEL_SOURCE}).`,
 				tags: 'fuelpump',
 				click: `${SITE}/fuel`,
-				time: now,
-				commit: (l) => void (l.last[key] = cur.date)
+				time: now
 			}
 		];
 	});
 }
 
 /**
- * c) La zona se separa ±5 cts/L o más de la media de España (el último día que tienen las dos). Como mucho
- * una vez por semana. Id: diesel:gap:<día>.
+ * c) La zona se separa ±5 cts/L o más de la media de España (el último día que tienen las dos). Sin espera:
+ * avisa con cada dato nuevo que lo cumpla (el id lleva la fecha del dato). Id: diesel:gap:<día>.
  */
-export function dieselGapRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+export function dieselGapRule(d: Inputs, { now }: RuleContext): Draft[] {
 	if (!d.zone) return [];
 	const es = new Map(dieselSeries(d, 'es').map((p) => [p.date, p.v]));
 	const cur = dieselSeries(d, 'zona')
@@ -1084,17 +1129,14 @@ export function dieselGapRule(d: Inputs, { now, log }: RuleContext): Draft[] {
 	const spain = es.get(cur.date)!;
 	const gap = cur.v - spain;
 	if (Math.abs(gap) * 100 < DIESEL.gapCts) return [];
-	const key = 'diesel:gap';
-	if (recently(log, key, cur.date)) return [];
 	return [
 		{
-			id: `${key}:${cur.date}`,
+			id: `diesel:gap:${cur.date}`,
 			title: `Diésel en ${d.zone.name}: ${cts(gap)} ${gap > 0 ? 'por encima' : 'por debajo'} de España`,
 			body: `${euroL(cur.v)} frente a ${euroL(spain)} de media en España (${FUEL_SOURCE}).`,
 			tags: 'fuelpump',
 			click: `${SITE}/fuel`,
-			time: now,
-			commit: (l) => void (l.last[key] = cur.date)
+			time: now
 		}
 	];
 }
@@ -1621,7 +1663,7 @@ export const RULES: Rule[] = [
 	{ type: 'market', level: 2, run: marketRule },
 	{ type: 'fedreg', level: 2, run: fedregRule },
 	{ type: 'gas', level: 2, run: gasRule },
-	{ type: 'diesel-trend', level: 2, run: dieselTrendRule },
+	{ type: 'diesel-day', level: 2, run: dieselDayRule },
 	{ type: 'diesel-extreme', level: 2, run: dieselExtremeRule },
 	{ type: 'diesel-gap', level: 2, run: dieselGapRule },
 	{ type: 'election', level: 2, run: electionRule },
