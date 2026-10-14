@@ -8,6 +8,8 @@ import { minus, topImportant } from '#lib/imp.ts';
 import type { AlertsData } from '#lib/weather.ts';
 import { madridDate } from '#lib/meetings.ts';
 import { computeRisk } from '#lib/risk.ts';
+import { seriesMap } from '#lib/series.ts';
+import { dailySeries, weekSummary } from '#lib/week.ts';
 import { pickSeries, trim } from '#lib/trim.ts';
 import type {
 	BoeData,
@@ -108,6 +110,21 @@ export const load: PageServerLoad = async () => {
 		// Solo en la portada modular: el termómetro de riesgo de WS (ya calculado, con la historia entera) y
 		// el problema de ajedrez del día (unos cientos de bytes).
 		risk: computeRisk({ fred: fred?.data, ecb: ecb?.data, crypto: crypto?.data, predictions: predictions?.data }),
-		puzzle: lichess?.data ?? null
+		puzzle: lichess?.data ?? null,
+		// «Tu semana en 2 minutos» (los lunes, y en la portada modular): los 3 temas de la semana en IMP y 3
+		// mercados con su variación en 7 días. Lo completo está en SEMANA.
+		week: (() => {
+			const get = seriesMap(ecb, fred);
+			const w = weekSummary({
+				imp: imp?.data,
+				releases: null,
+				markets: [
+					{ label: 'EUR/USD', series: get('eurusd'), kind: 'pct', decimals: 4 },
+					{ label: 'Petróleo WTI ($)', series: get('wti'), kind: 'pct' },
+					{ label: 'Bitcoin ($)', kind: 'pct', decimals: 0, series: dailySeries('btc', 'Bitcoin', '$', 'CoinGecko', (crypto?.data.btcHistory ?? []).map((d) => ({ date: d.date, v: d.usd }))) }
+				]
+			});
+			return { top: w.top.slice(0, 3).map(({ k, title, url, days }) => ({ k, title, url, days })), markets: w.markets };
+		})()
 	};
 };

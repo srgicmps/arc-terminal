@@ -116,6 +116,7 @@ vista `HELP`. Resumen:
 |---|---|---|
 | `TOP` | Portada | Resumen de todas |
 | `IMP` | Lo más importante de hoy, la semana, el mes y el año (puntuación propia, sin IA) | Todos los titulares, BOE, Federal Register, Wikipedia |
+| `SEMANA` | Resumen de la semana: top de IMP en 7 días, mercados, datos publicados y agenda | IMP, FRED*, BCE, Tesoro de EE. UU., CoinGecko, calendarios de publicaciones |
 | `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FAO, FRED*, RSS |
 | `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5), Wikidata, SIPRI |
 | `ES` | España en cifras, BOE, luz | INE, BOE, REE, RSS |
