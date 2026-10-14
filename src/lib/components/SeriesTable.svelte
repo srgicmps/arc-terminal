@@ -2,10 +2,12 @@
 	Tabla de series: último dato, variación frente al anterior, periodo, próximo dato y minigráfico.
 	El próximo dato llega en la prop `next` (lo calcula el +page.server.ts con nextMap() de nextrelease.ts);
 	la columna solo aparece si alguna serie tiene fecha. Con `extra`, columnas de variación propias
-	(por ejemplo, frente a hace 7 días y a hace un año, con `diffDays` de series.ts).
+	(por ejemplo, frente a hace 7 días y a hace un año, con `diffDays` de series.ts). Con `pct`, la variación
+	frente al dato anterior va en % y no en unidades (índices de precios).
 -->
 <script lang="ts">
 	import { GEO, nf, period } from '#lib/format.ts';
+	import { change } from '#lib/series.ts';
 	import { lookup } from '#lib/glossary.ts';
 	import Change from './ui/Change.svelte';
 	import Table from './ui/Table.svelte';
@@ -41,9 +43,11 @@
 		/** Próxima publicación de cada serie (por id), de los calendarios oficiales. */
 		next?: NextMap;
 		extra?: Extra[];
+		/** Variación frente al dato anterior en % (índices de precios), en lugar de en unidades. */
+		pct?: boolean;
 	}
 
-	let { rows, head = 'Indicador', spark = 24, next, extra = [] }: Props = $props();
+	let { rows, head = 'Indicador', spark = 24, next, extra = [], pct = false }: Props = $props();
 
 	const visible = $derived(rows.filter((r): r is Row & { series: Series } => Boolean(r.series?.points.length)));
 
@@ -82,7 +86,7 @@
 				{@const last = pts[pts.length - 1]}
 				{@const prev = pts[pts.length - 2]}
 				{@const d = row.decimals ?? 1}
-				{@const diff = prev ? last.v - prev.v : null}
+				{@const diff = pct ? change(row.series) : prev ? last.v - prev.v : null}
 				{@const nx = next?.[row.series.id]}
 				<tr>
 					<td>
@@ -92,7 +96,7 @@
 						{#if nx}<small class="nx-sub" title={nx.title}>próx. {shortDay(nx.date)}</small>{/if}
 					</td>
 					<td>{nf(last.v, d)}{row.series.unit === '%' ? ' %' : ''}</td>
-					<td><Change value={diff} digits={d} invert={row.inverse} /></td>
+					<td><Change value={diff} digits={pct ? 1 : d} unit={pct ? ' %' : ''} invert={row.inverse} /></td>
 					{#each extra as x (x.head)}<td><Change value={x.value(row.series)} digits={x.digits ?? d} unit={x.unit ?? ''} invert={row.inverse} /></td>{/each}
 					<td class="mut per">{period(last.t)}</td>
 					{#if anyNext}<td class="mut nx" title={nx?.title}>{nx ? shortDay(nx.date) : ''}</td>{/if}
@@ -106,6 +110,11 @@
 {/if}
 
 <style>
+	/* El nombre puede partirse en dos líneas para que la tabla quepa en el móvil; los números, nunca. */
+	td:first-child {
+		white-space: normal;
+	}
+
 	a.name {
 		color: inherit;
 		text-decoration: none;

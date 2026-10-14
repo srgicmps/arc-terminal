@@ -43,6 +43,14 @@ const WANTED: Wanted[] = [
 		params: { unit: 'CLV_PCH_PRE', s_adj: 'SCA', na_item: 'B1GQ', lastTimePeriod: '12' }
 	},
 	{
+		dataset: 'namq_10_gdp',
+		id: 'gdp-yoy',
+		label: 'PIB, interanual',
+		unit: '%',
+		// Frente al mismo trimestre del año anterior.
+		params: { unit: 'CLV_PCH_SM', s_adj: 'SCA', na_item: 'B1GQ', lastTimePeriod: '12' }
+	},
+	{
 		dataset: 'gov_10q_ggdebt',
 		id: 'debt',
 		label: 'Deuda pública',
@@ -114,6 +122,9 @@ export const eurostat: Source<SeriesData> = {
 	name: 'eurostat',
 	label: 'Paro, inflación, PIB y deuda · Eurostat',
 	maxAgeMinutes: 355,
+	// Si a la copia le falta alguna serie (p. ej., una recién añadida), se descarga de nuevo sin esperar.
+	isStale: (previous) =>
+		WANTED.some((w) => !previous.series?.some((s) => new RegExp(`^${w.id}-[a-z0-9_]+$`).test(s.id))),
 	async fetch() {
 		const groups = await settle('eurostat', WANTED, (w) => `${w.dataset} (${w.id})`, fetchDataset);
 		const series = groups.flat();
