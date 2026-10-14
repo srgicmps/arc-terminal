@@ -29,6 +29,7 @@ export const SHORTCUTS = [
 	{ id: 'panel-close', group: 'Paneles', keys: ['Esc', '✕'], how: 'con un panel ampliado', action: 'Cerrarlo' },
 	{ id: 'options', group: 'Paneles', keys: ['←', '→'], how: 'en un grupo de opciones', action: 'Cambiar de opción' },
 	{ id: 'clear', group: 'Paneles', keys: ['Esc'], how: 'en un buscador', action: 'Vaciarlo' },
+	{ id: 'swipe', group: 'Pantalla', keys: [], how: 'En el móvil, desliza a izquierda o derecha', action: 'Vista de al lado de la fila de arriba' },
 	{ id: 'row-next', group: 'Listas', keys: ['J', '↓'], how: 'con el foco en un titular o una fila (entra con Tab)', action: 'Siguiente', match: { key: 'j' } },
 	{ id: 'row-prev', group: 'Listas', keys: ['K', '↑'], how: 'con el foco en un titular o una fila', action: 'Anterior', match: { key: 'k' } },
 	{ id: 'row-open', group: 'Listas', keys: ['Intro'], how: 'con el foco en un titular o una fila', action: 'Abrir' },

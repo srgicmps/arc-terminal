@@ -17,8 +17,9 @@
 			symbols: g.tickers.map((t) => ({ name: t.tv, displayName: t.name }))
 		}))
 	};
-	// Alto para la pestaña más larga, sin barra de desplazamiento (como en MIS).
-	const height = quotesHeight(Math.max(...groups.map((g) => g.tickers.length)));
+	// El widget pone los grupos uno debajo de otro, cada uno con su título: el alto cuenta todos los valores y
+	// un título por grupo (como una fila más), para que no salga barra de desplazamiento.
+	const height = quotesHeight(groups.reduce((n, g) => n + g.tickers.length + 1, 0));
 </script>
 
 <Panel title="Defensa" meta="EE. UU. y Europa · en directo">

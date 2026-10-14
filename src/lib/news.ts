@@ -12,6 +12,7 @@ export const NEWS_SECTIONS = [
 	{ key: 'gov', label: 'Gobiernos' },
 	{ key: 'intl', label: 'Organismos' },
 	{ key: 'analysis', label: 'Análisis' },
+	{ key: 'world', label: 'Mundo' },
 	{ key: 'reg', label: 'Regulación' }
 ] as const;
 
