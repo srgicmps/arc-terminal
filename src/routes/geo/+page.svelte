@@ -169,6 +169,12 @@
 				{/snippet}
 			</Panel>
 		{/if}
+		{#if data.analysis?.data.items.length}
+			<Panel title="Análisis" meta="Crisis Group y Foreign Affairs">
+				<NewsList items={data.analysis.data.items} />
+				{#snippet note()}Informes y artículos de fondo sobre conflictos · <Updated at={data.analysis?.fetchedAt} source="news-analysis" />{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">
 			<NewsList items={(data.intl?.data.items ?? []).filter((i) => !DIPLO.has(i.source)).slice(0, 15)} />
 			{#snippet note()}<Updated at={data.intl?.fetchedAt} source="news-intl" />{/snippet}
