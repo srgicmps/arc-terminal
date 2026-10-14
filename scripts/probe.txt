@@ -76,3 +76,7 @@ https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next 
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
 # GEO/PAIS: gasto militar del SIPRI (Milex), enlace al Excel
 https://www.sipri.org/databases/milex ~ [^"' <>]{0,200}\.xlsx[^"' <>]{0,40}
+# WX (2e.16): feeds de MeteoAlarm por país; solo el título del feed, para comprobar los nombres
+https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-portugal ~ <title>[^<]{0,80}
+https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-switzerland ~ <title>[^<]{0,80}
+https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-greece ~ <title>[^<]{0,80}

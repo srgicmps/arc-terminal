@@ -38,6 +38,20 @@
 	// (Menorca y unas pocas ciudades fijas) quedan como reserva y como comparación.
 	const here = $derived(place.current);
 	const menorca = $derived(inMenorca(here));
+
+	// Avisos en Europa (alerts-eu): todos los países, del que más avisos graves tiene al que menos, y las zonas
+	// en naranja o rojo del país de tu sitio (España si no es uno de los que se siguen). Tu provincia, primero.
+	const euName = (code: string) => new Intl.DisplayNames('es', { type: 'region' }).of(code) ?? code;
+	const euRows = $derived(
+		[...(data.alertsEu?.data.countries ?? [])].sort(
+			(a, b) => b.counts.red - a.counts.red || b.counts.orange - a.counts.orange || b.counts.yellow - a.counts.yellow
+		)
+	);
+	const euHere = $derived(euRows.find((c) => c.code === here.cc) ?? euRows.find((c) => c.code === 'ES'));
+	const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+	const isMine = (area: string) =>
+		[here.admin2, here.admin1].some((n) => !!n && euHere?.code === here.cc && fold(area).includes(fold(n)));
+	const euZones = $derived([...(euHere?.zones ?? [])].sort((a, b) => Number(isMine(b.area)) - Number(isMine(a.area))));
 	let local = $state<LocalWeather | null>(null);
 	let localError = $state('');
 
@@ -123,6 +137,44 @@
 					{/each}
 				</ul>
 			{/if}
+		</Panel>
+		{/if}
+
+		{#if euRows.length}
+		<Panel title="Avisos en Europa" meta="En vigor y próximos · por país">
+			<Table>
+				<thead><tr><th class="l">País</th><th>Rojos</th><th>Naranjas</th><th>Amarillos</th></tr></thead>
+				<tbody>
+					{#each euRows as c (c.code)}
+						<tr>
+							<td class="l name">{euName(c.code)}</td>
+							<td class:mut={!c.counts.red}>{c.counts.red}</td>
+							<td class:mut={!c.counts.orange}>{c.counts.orange}</td>
+							<td class="mut">{c.counts.yellow}</td>
+						</tr>
+					{/each}
+				</tbody>
+			</Table>
+			{#if euHere}
+				{#if euZones.length}
+					<ul class="mini">
+						{#each euZones as z (z.area)}
+							<li class="al al-{z.level}">
+								<a class="l" href={z.url} target="_blank" rel="noopener">
+									{z.area}{#if isMine(z.area)}<small>Tu provincia · {z.hazards.join(', ')}</small>{:else}<small>{z.hazards.join(', ')}</small>{/if}
+								</a>
+								<b>{ALERT_NAMES[z.level]}</b>
+							</li>
+						{/each}
+					</ul>
+				{:else}
+					<p class="empty">Ninguna zona de {euName(euHere.code)} en naranja o rojo.</p>
+				{/if}
+			{/if}
+			{#snippet note()}
+				Zonas en naranja o rojo{#if euHere}&nbsp;de {euName(euHere.code)}{/if}. Fuente: EUMETNET-MeteoAlarm, con los avisos de cada
+				servicio meteorológico nacional (el oficial es el suyo) · <Updated at={data.alertsEu?.fetchedAt} source="alerts-eu" />
+			{/snippet}
 		</Panel>
 		{/if}
 
