@@ -71,14 +71,7 @@ https://mymemory.translated.net/doc/usagelimits.php ~ .{0,250}(chars|characters|
 https://api.db.nomics.world/v22/series/OECD/DSD_G20_PRICES@DF_G20_PRICES?dimensions=%7B%22FREQ%22%3A%5B%22M%22%5D%2C%22TRANSFORMATION%22%3A%5B%22GY%22%5D%7D&observations=1&metadata=false&limit=50 ~ "series_code":"[^"]+"|.{0,24}\],"period_start_day"
 # ECO: precio de la vivienda del BIS (WS_SPP), variación interanual nominal (N) y real (R): forma de la clave
 https://stats.bis.org/api/v1/data/WS_SPP/Q.US+ES+KR.N+R.771/all?lastNObservations=2&detail=dataonly&format=csv
-# ECO (M5): EE. UU., Reino Unido, Japón y China en paro, IPC y PIB. Copias de la OCDE en DBnomics: fecha de la copia, dimensiones y último dato
-https://api.db.nomics.world/v22/datasets/OECD/DSD_LFS@DF_IALFS_UNE_M ~ "dimensions_codes_order":\[[^\]]+\]|"indexed_at":"[^"]+"|"converted_at":"[^"]+"|"nb_series":\d+
-https://api.db.nomics.world/v22/series/OECD/DSD_LFS@DF_IALFS_UNE_M?dimensions=%7B%22REF_AREA%22%3A%5B%22USA%22%2C%22GBR%22%2C%22JPN%22%2C%22CHN%22%5D%7D&observations=1&metadata=false&limit=40 ~ "series_code":"[^"]+"|.{0,30}\],"period_start_day"
-https://api.db.nomics.world/v22/datasets/OECD/DSD_LFS@DF_IALFS_INDIC ~ "dimensions_codes_order":\[[^\]]+\]|"indexed_at":"[^"]+"|"converted_at":"[^"]+"|"nb_series":\d+
-https://api.db.nomics.world/v22/series/OECD/DSD_LFS@DF_IALFS_INDIC?dimensions=%7B%22REF_AREA%22%3A%5B%22USA%22%2C%22GBR%22%2C%22JPN%22%2C%22CHN%22%5D%7D&observations=1&metadata=false&limit=40 ~ "series_code":"[^"]+"|.{0,30}\],"period_start_day"
-https://api.db.nomics.world/v22/datasets/OECD/DSD_PRICES@DF_PRICES_ALL ~ "dimensions_codes_order":\[[^\]]+\]|"indexed_at":"[^"]+"|"converted_at":"[^"]+"|"nb_series":\d+
-https://api.db.nomics.world/v22/series/OECD/DSD_PRICES@DF_PRICES_ALL?dimensions=%7B%22REF_AREA%22%3A%5B%22USA%22%2C%22GBR%22%2C%22JPN%22%2C%22CHN%22%5D%7D&observations=1&metadata=false&limit=40 ~ "series_code":"[^"]+"|.{0,30}\],"period_start_day"
-https://api.db.nomics.world/v22/datasets/OECD/DSD_NAMAIN1@DF_QNA_EXPENDITURE_GROWTH_OECD ~ "dimensions_codes_order":\[[^\]]+\]|"indexed_at":"[^"]+"|"converted_at":"[^"]+"|"nb_series":\d+
-https://api.db.nomics.world/v22/series/OECD/DSD_NAMAIN1@DF_QNA_EXPENDITURE_GROWTH_OECD?dimensions=%7B%22REF_AREA%22%3A%5B%22USA%22%2C%22GBR%22%2C%22JPN%22%2C%22CHN%22%5D%7D&observations=1&metadata=false&limit=40 ~ "series_code":"[^"]+"|.{0,30}\],"period_start_day"
-https://api.db.nomics.world/v22/datasets/OECD/DSD_NAMAIN1@DF_QNA_EXPENDITURE_GROWTH_G20 ~ "dimensions_codes_order":\[[^\]]+\]|"indexed_at":"[^"]+"|"converted_at":"[^"]+"|"nb_series":\d+
-https://api.db.nomics.world/v22/series/OECD/DSD_NAMAIN1@DF_QNA_EXPENDITURE_GROWTH_G20?dimensions=%7B%22REF_AREA%22%3A%5B%22USA%22%2C%22GBR%22%2C%22JPN%22%2C%22CHN%22%5D%7D&observations=1&metadata=false&limit=40 ~ "series_code":"[^"]+"|.{0,30}\],"period_start_day"
+# ECO (M5), 2.ª vuelta: último dato de cada país con el código exacto de la serie (paro mensual, IPC mensual y PIB trimestral)
+https://api.db.nomics.world/v22/series/OECD/DSD_LFS@DF_IALFS_UNE_M/USA+GBR+JPN+CHN.UNE_LF_M.PT_LF_SUB._Z.Y._T.Y_GE15._Z.M?observations=1&metadata=false ~ "series_code":"[^"]+"|.{0,40}\],"period_start_day"
+https://api.db.nomics.world/v22/series/OECD/DSD_PRICES@DF_PRICES_ALL/USA+GBR+JPN+CHN.M.N.CPI.PA._T.N.GY?observations=1&metadata=false ~ "series_code":"[^"]+"|.{0,40}\],"period_start_day"
+https://api.db.nomics.world/v22/series/OECD/DSD_NAMAIN1@DF_QNA_EXPENDITURE_GROWTH_G20/Q.Y.USA+GBR+JPN+CHN.S1.S1.B1GQ._Z._Z._Z.PC.L.G1.T0102?observations=1&metadata=false ~ "series_code":"[^"]+"|.{0,40}\],"period_start_day"
