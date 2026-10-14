@@ -2,7 +2,9 @@
 // de la cabecera). Se guarda en este navegador junto con hasta 5 favoritos, y también puede llegar por la URL
 // (?lugar=35.69,139.69,Tokio) para compartir un enlace. Es como un store de Pinia con persistencia: si el
 // navegador no deja guardar (modo privado…), sigue en memoria. Las piezas sin estado están en place.ts.
-import { DEFAULT_PLACE, parsePlaceParam, samePlace, toPlace, type Place } from './place.ts';
+import { DEFAULT_PLACE, parsePlaceParam, samePlace, searchPlaces, toPlace, type Place } from './place.ts';
+import { untrack } from 'svelte';
+import { writeParams } from './urlstate.svelte.ts';
 
 export * from './place.ts';
 
@@ -41,6 +43,30 @@ export function initPlace() {
 	const shared = parsePlaceParam(new URLSearchParams(location.search).get('lugar'));
 	if (shared) setPlace(shared);
 	place.ready = true;
+}
+
+let lastSearch = '';
+
+/**
+ * Sigue a la URL al navegar (lo llama el layout): ?lugar=35.69,139.69,Tokio pone ese sitio, y ?buscar=Tokio busca
+ * la ciudad por su nombre, pone la primera que encuentra y quita el parámetro (como escribir en el buscador).
+ */
+export function followPlaceUrl(params: { get(name: string): string | null }) {
+	const lugar = params.get('lugar');
+	const q = params.get('buscar')?.trim() ?? '';
+	if (!place.ready) return;
+	// Solo cuenta la URL: si luego eliges otro sitio con el enlace aún abierto, no se vuelve al del enlace.
+	const shared = parsePlaceParam(lugar);
+	if (shared && !untrack(() => samePlace(shared, place.current))) setPlace(shared);
+	if (!q || q === lastSearch) return;
+	lastSearch = q;
+	searchPlaces(q)
+		.then((found) => {
+			if (found[0]) setPlace(found[0]);
+			writeParams({ buscar: null });
+		})
+		.catch(() => {})
+		.finally(() => (lastSearch = ''));
 }
 
 /** Cambia de sitio y lo guarda. */
