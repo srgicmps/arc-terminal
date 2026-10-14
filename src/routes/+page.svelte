@@ -188,7 +188,7 @@
 {/snippet}
 
 {#snippet titulares()}
-	<Panel id="news" title="Titulares" meta="Todas las secciones">
+	<Panel id="news" title="Titulares" meta="{data.headlines.length} de {data.headlinesTotal}" jump={{ code: 'NEWS', href: resolve('/news') }}>
 		<NewsList items={data.headlines} tag={(i) => tags.get(i.url)} />
 	</Panel>
 {/snippet}
@@ -247,7 +247,7 @@
 				</li>
 			{/if}
 			{#each (boeGeneral?.items ?? []).slice(0, 4) as item (item.id)}
-				<li><a class="l" href={item.html} target="_blank" rel="noopener">{item.title}</a></li>
+				<li><a class="l" href={item.html || item.pdf} target="_blank" rel="noopener">{item.title}</a></li>
 			{:else}
 				<li><span class="l">Hoy no hay disposiciones generales.</span></li>
 			{/each}

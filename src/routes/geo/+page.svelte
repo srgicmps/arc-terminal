@@ -53,7 +53,7 @@
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Titulares" meta="{items.length} noticias">
+		<Panel title="Titulares" meta="{items.length} noticias" jump={{ code: 'NEWS', href: `${resolve('/news')}?s=geo` }}>
 			<NewsList {items} summaries />
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-geo" />{/snippet}
 		</Panel>
