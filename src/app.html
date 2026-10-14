@@ -32,6 +32,8 @@
 			try {
 				var a = localStorage.getItem('arc-accent');
 				if (a === 'cyan' || a === 'blue') document.documentElement.dataset.accent = a;
+				// Y la densidad (compacta, si no hay nada).
+				if (localStorage.getItem('arc-density') === 'comoda') document.documentElement.dataset.density = 'comoda';
 			} catch (e) {}
 		</script>
 		%sveltekit.head%

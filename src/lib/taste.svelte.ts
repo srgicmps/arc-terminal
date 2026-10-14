@@ -2,14 +2,15 @@
 // inferior del móvil. Se guarda en este navegador; sin nada guardado, todo queda como siempre.
 // El acento va en <html data-accent> (lo pone ya src/app.html antes de pintar, para que no parpadee) y
 // tokens.css redefine --amber y compañía: ningún componente sabe de qué color es el acento.
-import { ACCENTS, cleanCodes, DEFAULT_THUMB, DEFAULT_TOP, THUMB_MAX, type Accent } from './taste.ts';
+import { ACCENTS, cleanCodes, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, THUMB_MAX, type Accent, type Density } from './taste.ts';
 
-export { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, THUMB_MAX, type Accent };
+export { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, THUMB_MAX, type Accent, type Density };
 
-const KEYS = { accent: 'arc-accent', top: 'arc-keys', thumb: 'arc-thumb' };
+const KEYS = { accent: 'arc-accent', density: 'arc-density', top: 'arc-keys', thumb: 'arc-thumb' };
 
 export const taste = $state({
 	accent: 'amber' as Accent,
+	density: 'compacta' as Density,
 	top: [...DEFAULT_TOP],
 	thumb: [...DEFAULT_THUMB]
 });
@@ -41,6 +42,7 @@ function json(key: string): unknown {
 export function initTaste() {
 	const accent = read(KEYS.accent);
 	if (accent === 'cyan' || accent === 'blue') taste.accent = accent;
+	if (read(KEYS.density) === 'comoda') taste.density = 'comoda';
 	taste.top = cleanCodes(json(KEYS.top)) ?? [...DEFAULT_TOP];
 	taste.thumb = cleanCodes(json(KEYS.thumb), THUMB_MAX) ?? [...DEFAULT_THUMB];
 }
@@ -50,6 +52,14 @@ export function setAccent(accent: Accent) {
 	if (accent === 'amber') delete document.documentElement.dataset.accent;
 	else document.documentElement.dataset.accent = accent;
 	write(KEYS.accent, accent === 'amber' ? null : accent);
+}
+
+/** Densidad: como el acento, en <html data-density> (también lo pone src/app.html antes de pintar). */
+export function setDensity(density: Density) {
+	taste.density = density;
+	if (density === 'compacta') delete document.documentElement.dataset.density;
+	else document.documentElement.dataset.density = density;
+	write(KEYS.density, density === 'compacta' ? null : density);
 }
 
 export function setTop(codes: string[]) {
@@ -69,6 +79,7 @@ export function setThumb(codes: string[]) {
 /** Vuelve a lo de la web. */
 export function resetTaste() {
 	setAccent('amber');
+	setDensity('compacta');
 	taste.top = [...DEFAULT_TOP];
 	taste.thumb = [...DEFAULT_THUMB];
 	write(KEYS.top, null);

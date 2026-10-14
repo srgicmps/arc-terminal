@@ -166,6 +166,26 @@
 	--scrim: rgba(22, 25, 29, 0.42);
 }
 
+/* ── Densidad «Cómoda» («A tu gusto», src/lib/taste.svelte.ts) ──────────────────────────────
+ * Sin data-density, la compacta de arriba. La cómoda da más aire a filas y paneles y sube la letra 1 px; no toca
+ * --control-h (el alto de los controles es el mismo en las dos). Va en su propio bloque: no pisa el acento. */
+:root[data-density='comoda'] {
+	--pad-x: var(--sp-14);
+	--row-y: var(--sp-8);
+	--head-y: var(--sp-6);
+	--gutter: var(--sp-12);
+	--gutter-touch: var(--sp-16);
+	--fs-xxs: 11px;
+	--fs-xs: 12px;
+	--fs-s: 13px;
+	--fs-m: 14px;
+	--fs-l: 15.5px;
+	--fs-xl: 21px;
+	--fs-big: 27px;
+	--fs-xxl: 29px;
+	--fit-panel-min: 320px;
+}
+
 /* ── Acento elegido («A tu gusto», src/lib/taste.svelte.ts) ─────────────────────────────────
  * Sin data-accent, el ámbar de arriba. Mismo contraste que el ámbar o más (WCAG AA sobre --panel). Cian y no verde: el verde es solo para las subidas. Los
  * nombres siguen siendo --amber*: son «el acento», sea del color que sea. Con el azul, la segunda serie de
