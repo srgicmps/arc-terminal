@@ -26,6 +26,7 @@
 
 	let max = $state(false);
 	let titleButton: HTMLButtonElement;
+	let section: HTMLElement;
 	let closeButton = $state<HTMLButtonElement>();
 
 	function open() {
@@ -47,11 +48,30 @@
 		}
 	}
 
+	const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, iframe, [tabindex]:not([tabindex="-1"])';
+
+	/** Tab y ⇧Tab dan la vuelta dentro del panel: el foco no se escapa detrás del fondo atenuado. */
+	function trapTab(e: KeyboardEvent) {
+		const items = [...section.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => el.offsetParent !== null);
+		if (!items.length) return;
+		const first = items[0];
+		const last = items.at(-1)!;
+		const inside = section.contains(document.activeElement);
+		if (e.shiftKey && (document.activeElement === first || !inside)) {
+			e.preventDefault();
+			last.focus();
+		} else if (!e.shiftKey && (document.activeElement === last || !inside)) {
+			e.preventDefault();
+			first.focus();
+		}
+	}
+
 	// Mientras está maximizado: Esc cierra (en captura, antes que el Esc global de la barra, que llevaría
-	// a la portada), la página de detrás no se desplaza y el foco va al ✕.
+	// a la portada), Tab no sale del panel, la página de detrás no se desplaza y el foco va al ✕.
 	$effect(() => {
 		if (!max) return;
 		const onKey = (e: KeyboardEvent) => {
+			if (e.key === 'Tab') return trapTab(e);
 			if (e.key !== 'Escape') return;
 			e.preventDefault();
 			e.stopImmediatePropagation();
@@ -74,7 +94,7 @@
 	<div class="scrim" aria-hidden="true" onclick={close}></div>
 {/if}
 
-<section class="panel" class:max role={max ? 'dialog' : undefined} aria-modal={max ? 'true' : undefined} aria-label={max ? title : undefined}>
+<section bind:this={section} class="panel" class:max role={max ? 'dialog' : undefined} aria-modal={max ? 'true' : undefined} aria-label={max ? title : undefined}>
 	<header class="ph">
 		<h2>
 			<button
@@ -214,6 +234,9 @@
 		position: fixed;
 		inset: var(--gutter);
 		z-index: var(--z-modal);
+		/* Mide lo que la ventana y desplaza su contenido, aunque una regla de la vista le dé otro alto. */
+		height: auto;
+		max-height: calc(100dvh - 2 * var(--gutter));
 		display: flex;
 		flex-direction: column;
 		overflow: auto;
@@ -256,6 +279,7 @@
 	@media (max-width: 720px) {
 		.max {
 			inset: 0;
+			max-height: 100dvh;
 			border: 0;
 		}
 	}
