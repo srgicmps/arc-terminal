@@ -8,6 +8,8 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { dm, longDay, nf } from '#lib/format.ts';
 	import { days, hourly, madridNow, type HourPrice } from '#lib/power.ts';
+	import Tile from '#lib/components/ui/Tile.svelte';
+	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -59,17 +61,11 @@
 		<div class="col">
 			<Panel title={longDay(`${b.day}T12:00:00Z`)} meta="{b.kind} · €/kWh">
 				{#if b.stats.min && b.stats.max}
-					<div class="tiles">
-						<div class="tile"><span class="lbl">Media</span><b>{nf(b.stats.avg, 3)}</b></div>
-						<div class="tile">
-							<span class="lbl">Mínimo</span><b class="up">{nf(b.stats.min.kwh, 3)}</b>
-							<span class="sub">a las {hh(b.stats.min.hour)}</span>
-						</div>
-						<div class="tile">
-							<span class="lbl">Máximo</span><b class="down">{nf(b.stats.max.kwh, 3)}</b>
-							<span class="sub">a las {hh(b.stats.max.hour)}</span>
-						</div>
-					</div>
+					<Tiles>
+						<Tile label="Media" value={nf(b.stats.avg, 3)} />
+						<Tile label="Mínimo" value={nf(b.stats.min.kwh, 3)} tone="up" sub="a las {hh(b.stats.min.hour)}" />
+						<Tile label="Máximo" value={nf(b.stats.max.kwh, 3)} tone="down" sub="a las {hh(b.stats.max.hour)}" />
+					</Tiles>
 				{/if}
 				<PriceBars prices={b.prices} current={now?.day === b.day ? now.hour : -1} />
 				<ul class="mini">
@@ -116,7 +112,7 @@
 <style>
 	.now {
 		color: var(--amber);
-		font-weight: 500;
+		font-weight: var(--fw-medium);
 	}
 
 </style>
