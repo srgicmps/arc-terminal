@@ -74,13 +74,13 @@ https://stats.bis.org/api/v1/data/WS_SPP/Q.US+ES+KR.N+R.771/all?lastNObservation
 # ECO: índice FAO de precios de los alimentos (CSV y fecha de publicación)
 https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next release)[^<]{0,80}
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
-# ES (M11): IPC adelantado del INE (tablas de la operación IPC cuyo nombre lo dice)
-https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPC ~ .{0,80}[Aa]delantad.{0,80}
-https://servicios.ine.es/wstempus/js/ES/OPERACIONES_DISPONIBLES ~ .{0,60}(IPC|[Aa]delantad|IPCA).{0,60}
-# ES (M11): afiliación a la Seguridad Social y paro registrado en datos.gob.es (catálogo de datos abiertos)
-https://datos.gob.es/apidata/catalog/dataset/title/afiliados?_pageSize=10 ~ "_about":"[^"]+"|"accessURL":"[^"]+"
-https://datos.gob.es/apidata/catalog/dataset/title/paro%20registrado?_pageSize=10 ~ "_about":"[^"]+"|"accessURL":"[^"]+"
-# ES (M11): CSV de datos abiertos del SEPE (paro registrado por municipios del año): cabecera y primeras filas
-https://sede.sepe.gob.es/es/portaltrabaja/resources/sede/datos_abiertos/datos/Paro_por_municipios_2026_csv.csv ~ ^.{0,200}
+# ES (M11): IPC adelantado del INE (nombres de las tablas de la operación IPC)
+https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPC ~ [Ii]ndicador|[Ee]stimaci|[Ff]lash|[Aa]delant
+# ES (M11): datos.gob.es en bruto (afiliación y paro registrado)
+https://datos.gob.es/apidata/catalog/dataset/title/afiliados?_pageSize=5 ~ ^.{0,800}
+https://datos.gob.es/apidata/catalog/dataset/title/paro?_pageSize=5 ~ ^.{0,800}
+# ES (M11): datos abiertos del SEPE (enlaces a los CSV; el CSV directo se colgó)
+https://www.sepe.es/HomeSepe/que-es-el-sepe/estadisticas/datos-avance/paro.html ~ [^"' <>]{0,160}\.(csv|xlsx?)
+https://sede.sepe.gob.es/es/portaltrabaja/resources/sede/datos_abiertos/datos/ ~ ^.{0,800}
 # ES (M11): afiliación media de la Seguridad Social (enlaces a sus hojas)
 https://www.seg-social.es/wps/portal/wss/internet/EstadisticasPresupuestosEstudios/Estadisticas/EST8 ~ [^"' <>]{0,160}\.(xlsx?|csv)
