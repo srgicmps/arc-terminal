@@ -15,6 +15,37 @@ describe('num', () => {
 		expect(num(-3.25)).toBe(-3.25);
 	});
 
+	it('entiende los formatos de todas las fuentes', () => {
+		expect(num('-4,265833')).toBe(-4.265833); // carburantes: longitud
+		expect(num('38123456789012.34')).toBe(38123456789012.34); // Tesoro de EE. UU.
+		expect(num('2.7')).toBe(2.7); // IGN
+		expect(num('-0.25')).toBe(-0.25);
+		expect(num('1.5E-3')).toBe(0.0015);
+		expect(num('.5')).toBe(0.5);
+	});
+
+	it('entiende miles con punto y decimales con coma', () => {
+		expect(num('1.599,50')).toBe(1599.5);
+		expect(num('-12.345.678,9')).toBe(-12345678.9);
+		expect(num('1.234.567')).toBe(1234567);
+		// Al revés, el formato inglés.
+		expect(num('1,599.50')).toBe(1599.5);
+	});
+
+	it('«1.599» con un solo punto es decimal, no miles (ambiguo: se mantiene)', () => {
+		expect(num('1.599')).toBe(1.599);
+		expect(num('1,599')).toBe(1.599);
+	});
+
+	it('rechaza basura al final o en medio', () => {
+		expect(num('12abc')).toBeNull();
+		expect(num('1,2,3')).toBeNull();
+		expect(num('1.2.3')).toBeNull();
+		expect(num('1.599,50,1')).toBeNull();
+		expect(num('NaN')).toBeNull();
+		expect(num('-')).toBeNull();
+	});
+
 	it('devuelve null si no hay número', () => {
 		expect(num('')).toBeNull();
 		expect(num('   ')).toBeNull();

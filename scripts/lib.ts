@@ -73,11 +73,27 @@ export function list<T>(value: T | T[] | null | undefined): T[] {
 	return Array.isArray(value) ? value : [value];
 }
 
-/** «1,599» o «1.599» → 1.599; vacío o no numérico → null. */
+/**
+ * Lee un número escrito como texto; vacío, no numérico o con basura («12abc») → null.
+ * - «1,599» (carburantes) y «1.599» → 1.599. Con un solo separador, siempre es el decimal: «1.599»
+ *   podría ser «mil quinientos noventa y nueve», pero ninguna fuente lo escribe así y las que dan
+ *   decimales con punto (Tesoro, BCE, IGN…) dependen de leerlo como 1.599.
+ * - Con los dos separadores, el último es el decimal: «1.599,50» y «1,599.50» → 1599.5.
+ * - Varios puntos en grupos de tres son miles: «1.234.567» → 1234567.
+ */
 export function num(value: unknown): number | null {
 	if (typeof value === 'number') return Number.isFinite(value) ? value : null;
 	if (typeof value !== 'string') return null;
-	const n = Number.parseFloat(value.trim().replace(',', '.'));
+	let s = value.trim();
+	if (/^[+-]?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s) && /,|\..*\./.test(s)) {
+		s = s.replaceAll('.', '').replace(',', '.');
+	} else if (/^[+-]?\d{1,3}(,\d{3})+\.\d+$/.test(s)) {
+		s = s.replaceAll(',', '');
+	} else {
+		s = s.replace(/^([+-]?\d*),(\d+)$/, '$1.$2');
+	}
+	if (!/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(s)) return null;
+	const n = Number(s);
 	return Number.isFinite(n) ? n : null;
 }
 
