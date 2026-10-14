@@ -14,7 +14,10 @@ describe('guardado', () => {
 			orientation: 'b',
 			clock: { base: 1, inc: 0, w: 1, b: 1, since: null },
 			resigned: 'w',
-			flagged: null
+			flagged: null,
+			// Las partidas guardadas antes del motor eran entre dos personas.
+			rival: 'human',
+			human: 'w'
 		});
 	});
 
@@ -22,7 +25,7 @@ describe('guardado', () => {
 		expect(parseSaved(null)).toBeNull();
 		expect(parseSaved('{roto')).toBeNull();
 		expect(parseSaved('{"moves":3}')).toBeNull();
-		expect(parseSaved('{"moves":[],"orientation":"x","clock":{"base":"1"}}')).toEqual(emptyGame());
+		expect(parseSaved('{"moves":[],"orientation":"x","clock":{"base":"1"}}')).toEqual(emptyGame({ rival: 'human' }));
 	});
 
 	it('guarda y vuelve a leer', () => {
@@ -31,8 +34,8 @@ describe('guardado', () => {
 			getItem: (k: string) => store.get(k) ?? null,
 			setItem: (k: string, v: string) => store.set(k, v)
 		});
-		saveGame({ ...emptyGame('b'), moves: ['d2d4'] });
-		expect(loadGame()).toEqual({ ...emptyGame('b'), moves: ['d2d4'] });
+		saveGame({ ...emptyGame({ human: 'b', rival: 'max' }), moves: ['d2d4'] });
+		expect(loadGame()).toEqual({ ...emptyGame({ human: 'b', rival: 'max' }), moves: ['d2d4'] });
 	});
 
 	it('sin localStorage (modo privado) no rompe nada', () => {

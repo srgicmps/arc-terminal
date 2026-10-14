@@ -19,10 +19,21 @@
 		lastMove?: [Square, Square] | null;
 		/** Casilla del rey en jaque. */
 		check?: Square;
+		/** Flecha de la pista: de dónde a dónde. */
+		arrow?: [Square, Square] | null;
 		onmove?: (from: Square, to: Square, promotion?: PieceSymbol) => void;
 	}
 
-	let { fen, orientation = 'w', movable = null, dests = new Map(), lastMove = null, check, onmove }: Props = $props();
+	let {
+		fen,
+		orientation = 'w',
+		movable = null,
+		dests = new Map(),
+		lastMove = null,
+		check,
+		arrow = null,
+		onmove
+	}: Props = $props();
 
 	const S = 45;
 	const SIZE = S * 8;
@@ -139,6 +150,30 @@
 		}
 	}
 
+	/** Flecha como un polígono: cuerpo fino y punta, del centro de una casilla al de la otra. */
+	const arrowPoints = $derived.by(() => {
+		if (!arrow) return '';
+		const [x1, y1] = xy(arrow[0]).map((v) => v + S / 2);
+		const [x2, y2] = xy(arrow[1]).map((v) => v + S / 2);
+		const len = Math.hypot(x2 - x1, y2 - y1);
+		const [ux, uy] = [(x2 - x1) / len, (y2 - y1) / len];
+		const [nx, ny] = [-uy, ux];
+		const w = 2.2;
+		const head = 11;
+		const tip = len - 6;
+		const p = (along: number, side: number) =>
+			`${(x1 + ux * along + nx * side).toFixed(1)},${(y1 + uy * along + ny * side).toFixed(1)}`;
+		return [
+			p(8, w),
+			p(tip - head, w),
+			p(tip - head, w * 3.2),
+			p(tip, 0),
+			p(tip - head, -w * 3.2),
+			p(tip - head, -w),
+			p(8, -w)
+		].join(' ');
+	});
+
 	/** Casillas del selector de coronación: desde la de destino hacia el centro del tablero. */
 	const promoSquares = $derived.by(() => {
 		if (!promo) return [];
@@ -213,6 +248,8 @@
 			<circle class="dot" cx={x + S / 2} cy={y + S / 2} r={5} />
 		{/if}
 	{/each}
+
+	{#if arrow}<polygon class="arrow" points={arrowPoints} />{/if}
 
 	{#if drag?.active}
 		{@const p = at.get(drag.from)}
@@ -337,6 +374,12 @@
 		fill: none;
 		stroke: var(--amber-edge);
 		stroke-width: 2;
+		pointer-events: none;
+	}
+
+	.arrow {
+		fill: var(--amber);
+		opacity: 0.75;
 		pointer-events: none;
 	}
 

@@ -5,6 +5,8 @@
 // - Archivos de la build, de static/ y páginas prerenderizadas: se guardan al instalar (precaché).
 // - Navegación y data/*.json: primero la red (datos frescos); si no hay red, la copia guardada.
 // - Fuentes de Google: primero la caché (no cambian nunca).
+// - Motor de ajedrez (static/engine/, unos 7 MB): fuera de la precaché, para no descargarlo a quien no
+//   juega. Se guarda la primera vez que se usa, en una caché propia que sobrevive a las publicaciones.
 // - Todo lo demás (widgets de TradingView incluidos) pasa directo a la red, sin guardar nada.
 import { self } from '$app/service-worker';
 import { immutable, assets, prerendered } from '$app/manifest';
@@ -13,6 +15,7 @@ import { version } from '$app/env';
 // Una caché por publicación: al publicar, `version` cambia y la anterior se borra.
 const CACHE = `arc-${version}`;
 const FONTS = 'arc-fonts';
+const ENGINE = 'arc-engine';
 
 // La web vive en /arc-terminal/; el scope del SW es esa carpeta. Las rutas del manifest
 // son relativas a ella.
@@ -20,7 +23,12 @@ const scope = new URL(self.registration.scope);
 const url = (path: string) => new URL(path.replace(/^\//, ''), scope).href;
 
 const IMMUTABLE = immutable.map((f) => url(f.path));
-const PRECACHE = [...IMMUTABLE, ...assets.map((f) => url(f.path)), ...prerendered.map((f) => url(f.path))];
+const isEngine = (path: string) => /(^|\/)engine\//.test(path);
+const PRECACHE = [
+	...IMMUTABLE,
+	...assets.filter((f) => !isEngine(f.path)).map((f) => url(f.path)),
+	...prerendered.map((f) => url(f.path))
+];
 
 self.addEventListener('install', (event) => {
 	event.waitUntil(
@@ -44,7 +52,7 @@ self.addEventListener('activate', (event) => {
 	event.waitUntil(
 		(async () => {
 			for (const key of await caches.keys()) {
-				if (key !== CACHE && key !== FONTS) await caches.delete(key);
+				if (key !== CACHE && key !== FONTS && key !== ENGINE) await caches.delete(key);
 			}
 			await self.clients.claim();
 		})()
@@ -67,6 +75,12 @@ self.addEventListener('fetch', (event) => {
 
 	if (request.mode === 'navigate') {
 		event.respondWith(page(request));
+		return;
+	}
+
+	// Los archivos del motor llevan la versión en el nombre: si cambia, es otro archivo.
+	if (isEngine(target.pathname)) {
+		event.respondWith(cacheFirst(request, ENGINE));
 		return;
 	}
 

@@ -14,15 +14,24 @@ export interface SavedGame {
 	/** Bando que ha abandonado, o que se ha quedado sin tiempo. */
 	resigned: Color | null;
 	flagged: Color | null;
+	/** Rival: un nivel del motor (LEVELS) o «human», dos personas en el mismo dispositivo. */
+	rival: string;
+	/** Bando del jugador cuando el rival es el motor. */
+	human: Color;
 }
 
-export const emptyGame = (orientation: Color = 'w', clock: Clock | null = null): SavedGame => ({
-	moves: [],
-	orientation,
-	clock,
-	resigned: null,
-	flagged: null
-});
+export const emptyGame = (opts: Partial<Pick<SavedGame, 'clock' | 'rival' | 'human'>> = {}): SavedGame => {
+	const human = opts.human ?? 'w';
+	return {
+		moves: [],
+		orientation: human,
+		clock: opts.clock ?? null,
+		resigned: null,
+		flagged: null,
+		rival: opts.rival ?? 'club',
+		human
+	};
+};
 
 const isColor = (c: unknown): c is Color => c === 'w' || c === 'b';
 const isNum = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
@@ -46,7 +55,9 @@ export function parseSaved(raw: string | null): SavedGame | null {
 			orientation: isColor(o.orientation) ? o.orientation : 'w',
 			clock: parseClock(o.clock),
 			resigned: isColor(o.resigned) ? o.resigned : null,
-			flagged: isColor(o.flagged) ? o.flagged : null
+			flagged: isColor(o.flagged) ? o.flagged : null,
+			rival: typeof o.rival === 'string' ? o.rival : 'human',
+			human: isColor(o.human) ? o.human : 'w'
 		};
 	} catch {
 		return null;
