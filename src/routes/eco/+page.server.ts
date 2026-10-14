@@ -6,7 +6,7 @@ import { nextMap } from '#lib/nextrelease.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, usdebt, fred, bis, gie, imf, g20, news, predictions, status, speeches, cal] = await Promise.all([
+	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -15,6 +15,7 @@ export const load: PageServerLoad = async () => {
 		dataset<SeriesData>('bis'),
 		// Gas almacenado: la tabla compara con hace un año, así que necesita todo el historial.
 		dataset<SeriesData>('gie'),
+		dataset<SeriesData>('housing'),
 		dataset<ImfData>('imf'),
 		dataset<G20Data>('oecd'),
 		dataset<NewsData>('news-eco'),
@@ -39,6 +40,7 @@ export const load: PageServerLoad = async () => {
 		fredMissing,
 		bis,
 		gie,
+		housing,
 		imf,
 		g20,
 		news: headlines(news, 25),

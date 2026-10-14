@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import BalanceSheets from '#lib/components/BalanceSheets.svelte';
+	import HousingTable from '#lib/components/HousingTable.svelte';
 	import ImfTable from '#lib/components/ImfTable.svelte';
 	import MortgageCalc from '#lib/components/MortgageCalc.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
@@ -98,6 +99,18 @@
 				]}
 			/>
 		</Panel>
+		{#if data.housing}
+			<Panel title="Vivienda en el mundo" meta="Precio, variación interanual">
+				<HousingTable series={data.housing.data.series} />
+				{#if get('mortgage30-us')}
+					<SeriesTable head="EE. UU." rows={[{ series: get('mortgage30-us'), name: 'Hipoteca fija a 30 años', decimals: 2, inverse: true }]} />
+				{/if}
+				{#snippet note()}
+					Real: descontada la inflación. Fuentes: BIS, precios de la vivienda; Freddie Mac vía FRED ·
+					<Updated at={data.housing?.fetchedAt} source="housing" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Tu hipoteca" meta="Variable · euríbor a 12 meses">
 			<MortgageCalc euribor={get('euribor-12m')} />
 			{#snippet note()}Cuota con el último euríbor mensual del BCE más tu diferencial. Se calcula y se guarda solo en este navegador.{/snippet}
