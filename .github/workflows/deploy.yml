@@ -77,6 +77,15 @@ jobs:
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
           MYMEMORY_EMAIL: ${{ secrets.MYMEMORY_EMAIL }}
 
+      # Avisos al móvil con ntfy (scripts/notify.ts y scripts/alerts/): niveles P1–P4 con cupos y un tope
+      # de 50 al día. No en los PR. Si falla, no frena la publicación. Sin el secreto NTFY_TOPIC no hace
+      # nada. El tema es la única protección del canal: el script nunca lo registra.
+      - if: github.event_name != 'pull_request'
+        run: node scripts/notify.ts
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+
       - run: pnpm check
       - run: pnpm test
       - run: pnpm build --logLevel warn
