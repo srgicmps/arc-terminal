@@ -13,7 +13,7 @@
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { TICKERS, tvSymbol } from '#lib/commands.ts';
+	import { TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import { sectionLabel } from '#lib/news.ts';
 	import { stockShare, type ShareInfo } from '#lib/share.ts';
 	import { inWatchlist, toggleWatch } from '#lib/watchlist.svelte.ts';
@@ -124,7 +124,8 @@
 		background: none;
 		border: var(--border);
 		color: var(--muted);
-		padding: var(--sp-5) var(--sp-10);
+		min-height: var(--control-h);
+		padding: 0 var(--sp-10);
 		font-size: var(--fs-s);
 		cursor: pointer;
 	}

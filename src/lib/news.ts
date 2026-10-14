@@ -1,4 +1,4 @@
-import type { Ticker } from './commands.ts';
+import type { Ticker } from './tickers.ts';
 import type { NewsItem } from './types.ts';
 
 // Secciones de titulares (static/data/news-<clave>.json).

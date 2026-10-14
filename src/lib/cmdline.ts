@@ -1,8 +1,9 @@
 // Lógica de la barra de comandos, sin Svelte: qué sugerir y qué abrir con lo que escribe Sergi.
 // Va aparte del componente para poder probarla con Vitest.
 
-import { COMMANDS, TICKERS, type Command } from './commands.ts';
+import { COMMANDS, type Command } from './commands.ts';
 import { FUNCTIONS, findFunction } from './functions.ts';
+import { TICKERS } from './tickers.ts';
 
 /** Una sugerencia de la barra. */
 export interface Option {

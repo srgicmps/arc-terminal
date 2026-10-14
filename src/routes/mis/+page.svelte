@@ -6,7 +6,7 @@
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { TICKERS, tvSymbol } from '#lib/commands.ts';
+	import { TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import { madridDate } from '#lib/meetings.ts';
 	import { earningsLine, myEarnings } from '#lib/myearnings.ts';
@@ -205,7 +205,8 @@
 		background: none;
 		border: var(--border);
 		color: var(--muted);
-		padding: var(--sp-5) var(--sp-9);
+		min-height: var(--control-h);
+		padding: 0 var(--sp-9);
 		font-size: var(--fs-s);
 		cursor: pointer;
 	}
