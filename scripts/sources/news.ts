@@ -72,6 +72,12 @@ const FEEDS: Record<string, Feed[]> = {
 		{ name: 'ONU', url: 'https://press.un.org/en/rss.xml' },
 		{ name: 'Noticias ONU', url: 'https://news.un.org/feed/subscribe/en/news/topic/peace-and-security/feed/rss.xml' },
 		{ name: 'OMC', url: 'https://www.wto.org/library/rss/latest_news_e.xml' }
+	],
+	// Análisis de conflictos (M35, comprobados con probe el 14-10-2026). Descartados: Real Instituto Elcano (403 desde
+	// Actions), Chatham House, ECFR e IISS (403 de Cloudflare) y CFR (sin RSS en la ruta habitual).
+	analysis: [
+		{ name: 'Crisis Group', url: 'https://www.crisisgroup.org/rss.xml' },
+		{ name: 'Foreign Affairs', url: 'https://www.foreignaffairs.com/rss.xml' }
 	]
 };
 
@@ -100,7 +106,9 @@ export const ENGLISH = new Set([
 	'Google',
 	'Simon Willison',
 	'Casa Blanca',
-	'Reserva Federal'
+	'Reserva Federal',
+	'Crisis Group',
+	'Foreign Affairs'
 ]);
 
 /** Marca los titulares de un medio en inglés. */
@@ -249,7 +257,8 @@ const LABELS: Record<string, string> = {
 	tech: 'Tecnología',
 	ai: 'Inteligencia artificial',
 	gov: 'Gobiernos e instituciones',
-	intl: 'Organismos internacionales'
+	intl: 'Organismos internacionales',
+	analysis: 'Análisis de conflictos'
 };
 
 export const newsSources: Source<NewsData>[] = Object.entries(FEEDS).map(([key, feeds]) => ({
