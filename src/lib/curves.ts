@@ -49,3 +49,16 @@ export function curveRow(curve: YieldCurveData): CurveRow | null {
 	const y10 = tenor(curve, today, '10A');
 	return { date: today.date, y2, y10, slope: bp(y10, y2), week10: bp(y10, tenor(curve, week, '10A')) };
 }
+
+/**
+ * Solo los días que pinta WS: los últimos `recent` (hoy y hace una semana) y los de alrededor de hace un año.
+ * El resto de la historia (más de 250 días por curva) no llega al navegador.
+ */
+export function trimCurve(curve: YieldCurveData, recent = 10): YieldCurveData {
+	const today = curve.days.at(-1);
+	if (!today) return curve;
+	const year = daysBefore(today.date, 365);
+	const from = daysBefore(year, 10);
+	const keep = curve.days.filter((d, i) => i >= curve.days.length - recent || (d.date >= from && d.date <= year));
+	return { tenors: curve.tenors, days: keep };
+}
