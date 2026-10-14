@@ -27,6 +27,3 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
-# TECH: lanzamientos (Launch Library 2, 15 peticiones/h por IP). En mode=normal los enlaces no vienen;
-# aquí, que mode=detailed sí trae vid_urls e info_urls del lanzamiento y con qué forma.
-https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=3&mode=detailed ~ "(response_mode|vid_urls|info_urls)":.{0,160}
