@@ -585,3 +585,22 @@ export interface LeaderAgenda {
 	source: { name: string; url: string };
 	error?: string;
 }
+
+// ---------- Diario Oficial de la UE, serie L (scripts/sources/eurlex.ts) ----------
+
+export type EuLexType = 'Reglamento' | 'Directiva' | 'Decisión' | 'Otro';
+
+/** Un acto de la serie L del Diario Oficial de la UE. */
+export interface EuLexDoc {
+	/** Número CELEX: «32026R1753». */
+	id: string;
+	/** Título oficial, en inglés. */
+	title: string;
+	type: EuLexType;
+	/** Temas (Sanciones, Aranceles, Energía…), por palabras del título. */
+	tags: string[];
+	/** Día de publicación: «2026-10-14». */
+	date: string;
+	/** Ficha en EUR-Lex, en español. */
+	url: string;
+}
