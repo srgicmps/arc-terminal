@@ -28,6 +28,7 @@ import { releases } from './releases.ts';
 import { sanctions } from './sanctions.ts';
 import { search } from './search.ts';
 import { sec } from './sec.ts';
+import { speeches } from './speeches.ts';
 import { uscurve, usdebt } from './treasury.ts';
 import { wiki } from './wiki.ts';
 import { crypto, hn, power, quakes, weather } from './world.ts';
@@ -77,3 +78,4 @@ export const sources: Source<any>[] = [
 	imp,
 	search
 ];
+sources.push(speeches); // Discursos de banqueros centrales, ECO (Prog 8). Se quita cuando el registro deje de exigir esta lista.

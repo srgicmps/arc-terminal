@@ -83,6 +83,10 @@
 				{/snippet}
 			</Panel>
 		{/if}
+		<Panel title="Discursos de banqueros centrales" meta="Los más recientes">
+			<NewsList items={data.speeches?.data.items ?? []} />
+			{#snippet note()}Recopilados por el BIS · <Updated at={data.speeches?.fetchedAt} source="speeches" />{/snippet}
+		</Panel>
 		<Panel title="Bancos centrales" meta="Tipo oficial · último cambio">
 			<SeriesTable
 				head="Banco"
