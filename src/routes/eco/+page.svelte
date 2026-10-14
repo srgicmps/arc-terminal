@@ -10,7 +10,7 @@
 
 	let { data }: PageProps = $props();
 
-	const get = $derived(seriesMap(data.eurostat, data.ecb, data.bls, data.usdebt));
+	const get = $derived(seriesMap(data.eurostat, data.ecb, data.bls, data.usdebt, data.fred));
 	const geos = ['es', 'ea', 'de', 'fr', 'it', 'pt'];
 	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: id !== 'gdp' }));
 
@@ -18,7 +18,7 @@
 	const debtUs = $derived(last(get('debt-us')));
 </script>
 
-<ViewHeader code="ECO" title="Economía y macro" sub="Eurostat, Banco Central Europeo, BLS y Tesoro de EE. UU." />
+<ViewHeader code="ECO" title="Economía y macro" sub="Eurostat, Banco Central Europeo, BLS, Tesoro de EE. UU. y FRED" />
 
 <div class="grid grid-2">
 	<div class="col">
@@ -86,6 +86,30 @@
 				</ul>
 			{/if}
 			{#snippet note()}Fuentes: BLS y Tesoro de EE. UU. · <Updated at={data.bls?.fetchedAt} />{/snippet}
+		</Panel>
+		<Panel title="Fed y mercados" meta="EE. UU. · FRED">
+			{#if data.fred}
+				<SeriesTable
+					head="Indicador"
+					rows={[
+						{ series: get('fedfunds-us'), name: 'Fondos federales', decimals: 2 },
+						{ series: get('t10y2y-us'), name: 'Diferencial 10 a − 2 a', decimals: 2 },
+						{ series: get('core-pce-us'), name: 'PCE subyacente, interanual', inverse: true },
+						{ series: get('gdp-us'), name: 'PIB real, anualizado' },
+						{ series: get('claims-us'), name: 'Peticiones de paro (miles)', decimals: 0, inverse: true },
+						{ series: get('m2-us'), name: 'M2, interanual' },
+						{ series: get('vix'), name: 'VIX', decimals: 1, inverse: true },
+						{ series: get('wti'), name: 'Petróleo WTI ($)', decimals: 2 },
+						{ series: get('dollar-broad'), name: 'Dólar, índice amplio', decimals: 1 }
+					]}
+				/>
+			{:else}
+				<p class="empty">Falta la clave FRED_API_KEY en GitHub Secrets.</p>
+			{/if}
+			{#snippet note()}
+				Fuente: FRED, Fed de San Luis (usa su API sin estar respaldado por ella)
+				{#if data.fred}· <Updated at={data.fred.fetchedAt} />{/if}
+			{/snippet}
 		</Panel>
 		<Panel title="Titulares" meta="Economía">
 			<NewsList items={data.news?.data.items.slice(0, 25) ?? []} />
