@@ -56,23 +56,9 @@ const WANTED: Wanted[] = [
 	// Turistas internacionales que llegan cada mes (FRONTUR), en millones.
 	{ id: 'turistas-es', label: 'Turistas internacionales', geo: 'ES', code: 'FREG286', unit: 'mill.', scale: 1e6, last: 25 },
 	{ id: 'turistas-ib', label: 'Turistas internacionales', geo: 'IB', code: 'FREG350', unit: 'mill.', scale: 1e6, last: 25 },
-	// Índice de Precios de Vivienda, trimestral: variación anual del índice general.
-	{
-		id: 'ipv-es',
-		label: 'Precio de la vivienda (IPV)',
-		geo: 'ES',
-		table: 79563,
-		match: /^(?=.*Nacional)(?=.*General)(?=.*Variación anual)/i,
-		last: 9
-	},
-	{
-		id: 'ipv-ib',
-		label: 'Precio de la vivienda (IPV)',
-		geo: 'IB',
-		table: 79563,
-		match: /^(?=.*Balears)(?=.*General)(?=.*Variación anual)/i,
-		last: 9
-	}
+	// Índice de Precios de Vivienda, trimestral: variación anual del índice general (tabla 79563).
+	{ id: 'ipv-es', label: 'Precio de la vivienda (IPV)', geo: 'ES', code: 'IPV1376', last: 9 },
+	{ id: 'ipv-ib', label: 'Precio de la vivienda (IPV)', geo: 'IB', code: 'IPV1670', last: 9 }
 ];
 
 async function fetchSeries(w: Wanted): Promise<Series | null> {

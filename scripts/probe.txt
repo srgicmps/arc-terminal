@@ -18,4 +18,3 @@ https://gamma-api.polymarket.com/events?active=true&closed=false&limit=6&order=v
 https://gamma-api.polymarket.com/events?active=true&closed=false&limit=20&order=volume24hr&ascending=false&tag_slug=economy ~ ecb|fed decision|fomc
 https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm ~ \d{4} FOMC Meetings.{0,400}
 https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html ~ .{0,30}Monetary policy meeting.{0,40}
-https://servicios.ine.es/wstempus/js/ES/SERIES_TABLA/79563?det=0 ~ ^(?=.*(Nacional|Balears))(?=.*General)(?=.*Variación anual)
