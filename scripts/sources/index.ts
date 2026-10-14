@@ -19,6 +19,7 @@ import { imf } from './imf.ts';
 import { imp } from './imp.ts';
 import { ine } from './ine.ts';
 import { newsSources } from './news.ts';
+import { oecd } from './oecd.ts';
 import { portwatch } from './portwatch.ts';
 import { predictions } from './predictions.ts';
 import { powerMix } from './ree-mix.ts';
@@ -54,6 +55,7 @@ export const sources: Source<any>[] = [
 	sec,
 	// Mundo
 	imf,
+	oecd,
 	quakes,
 	quakesEs,
 	hazards,
