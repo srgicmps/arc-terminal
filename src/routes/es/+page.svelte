@@ -74,21 +74,23 @@
 			</ul>
 			{#snippet note()}Fuentes: INE, Eurostat, BCE, Ministerio para la Transición Ecológica, REE e IGN{/snippet}
 		</Panel>
-		<Panel title="Turismo y vivienda" meta="INE · último dato">
-			<SeriesTable
-				head="Indicador"
-				rows={[
-					{ series: get('turistas-es'), name: 'Turistas internacionales (mill.)', decimals: 2 },
-					{ series: get('turistas-ib'), name: 'Turistas en Baleares (mill.)', decimals: 2 },
-					{ series: get('ipv-es'), name: 'Precio de la vivienda, var. anual' },
-					{ series: get('ipv-ib'), name: 'Vivienda Baleares, var. anual' }
-				]}
-			/>
-			{#snippet note()}
-				Turistas que llegan en el mes (FRONTUR) e Índice de Precios de Vivienda, trimestral. Fuente: INE ·
-				<Updated at={data.ine?.fetchedAt} source="ine" />
-			{/snippet}
-		</Panel>
+		{#if get('turistas-es') || get('ipv-es')}
+			<Panel title="Turismo y vivienda" meta="INE · último dato">
+				<SeriesTable
+					head="Indicador"
+					rows={[
+						{ series: get('turistas-es'), name: 'Turistas internacionales (mill.)', decimals: 2 },
+						{ series: get('turistas-ib'), name: 'Turistas en Baleares (mill.)', decimals: 2 },
+						{ series: get('ipv-es'), name: 'Precio de la vivienda, var. anual' },
+						{ series: get('ipv-ib'), name: 'Vivienda Baleares, var. anual' }
+					]}
+				/>
+				{#snippet note()}
+					Turistas que llegan en el mes (FRONTUR) e Índice de Precios de Vivienda, trimestral. Fuente: INE ·
+					<Updated at={data.ine?.fetchedAt} source="ine" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="BOE de hoy" meta="Disposiciones generales" jump={{ code: 'BOE', href: resolve('/boe') }}>
 			{#if general.length}
 				<ul class="mini">

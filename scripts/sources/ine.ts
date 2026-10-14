@@ -90,6 +90,8 @@ export const ine: Source<SeriesData> = {
 	name: 'ine',
 	label: 'IPC, paro (EPA), turistas (FRONTUR) y precio de la vivienda (IPV) de España y Baleares · INE',
 	maxAgeMinutes: 355,
+	// Si se añaden series a WANTED, la copia publicada no las tiene: se descarga de nuevo sin esperar.
+	isStale: (previous) => WANTED.some((w) => !previous.series?.some((s) => s.id === w.id)),
 	async fetch() {
 		const series = await settle('ine', WANTED, (w) => w.id, fetchSeries);
 		if (!series.length) throw new Error('ninguna serie del INE');
