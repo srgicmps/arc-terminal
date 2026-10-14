@@ -121,9 +121,14 @@ describe('fuel', () => {
 			avg: { g95: 1.7, diesel: 1.5, g98: null, glp: null },
 			min: { g95: 1.7, diesel: 1.5, g98: null, glp: null }
 		});
-		expect(writeExtra).toHaveBeenCalledTimes(41);
+		// Por provincia: sus gasolineras y su historial.
+		expect(writeExtra).toHaveBeenCalledTimes(82);
 		expect(writeExtra).toHaveBeenCalledWith('fuel/07.json', expect.arrayContaining([expect.objectContaining({ id: 'm2' })]));
+		expect(writeExtra).toHaveBeenCalledWith('fuel/history/07.json', [
+			{ date: '2026-10-14', avg: { g95: 1.7, diesel: 1.5, g98: null, glp: null } }
+		]);
 		expect(fuelSpain.files?.(data)).toContain('fuel/07.json');
+		expect(fuelSpain.files?.(data)).toContain('fuel/history/07.json');
 		expect(data.avg.g95).toBeCloseTo((1.6 * 40 + 1.7) / 41, 3);
 		expect(data.history).toHaveLength(1);
 		expect(data.history![0]).toMatchObject({ date: '2026-10-14', avg: data.avg });
