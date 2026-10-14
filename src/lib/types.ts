@@ -715,6 +715,7 @@ export interface ArchiveEntry {
 export interface NewsArchive {
 	/** Del más reciente al más antiguo. */
 	months: { month: string; count: number; bytes: number }[];
+}
 
 // ---------- Avisos de viaje (Departamento de Estado de EE. UU.) ----------
 
