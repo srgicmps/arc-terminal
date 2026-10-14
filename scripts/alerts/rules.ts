@@ -6,7 +6,10 @@
 // un JSON nuevo, añadirlo a Inputs y a FILES. Si el JSON aún no existe, la regla no aplica (todo se lee
 // de forma tolerante: cualquier campo puede faltar).
 import type { SourceHistory, SourceStatus } from '../../src/lib/data.ts';
+import type { FuelData, FuelSpainData, FuelStation } from '../../src/lib/fuel.ts';
+import { bmeHolidays, nyseHolidays } from '../../src/lib/markets.ts';
 import { BANKS, decisionTime, MEETINGS } from '../../src/lib/meetings.ts';
+import { hourly } from '../../src/lib/power.ts';
 import type {
 	Chokepoint,
 	CryptoData,
@@ -14,6 +17,7 @@ import type {
 	FedRegData,
 	FinnhubData,
 	HolidaysData,
+	PowerData,
 	PredictionsData,
 	Quake,
 	Series,
@@ -25,11 +29,14 @@ import { decide, downSpan, madridTime } from '../issues.ts';
 import {
 	ASSETS,
 	CRISIS,
+	DIESEL,
 	DOWN,
+	DST,
 	EARNINGS_WATCH,
 	FEDREG,
 	GAS,
 	IMP_BIG,
+	LUZ,
 	MACRO,
 	MARKETS,
 	POLYMARKET,
@@ -37,6 +44,7 @@ import {
 	RATES,
 	STRAITS,
 	SUMMARIES,
+	TOMORROW,
 	type Asset,
 	type Level
 } from './config.ts';
@@ -57,6 +65,18 @@ export interface ImpLike {
 export interface GieLike {
 	days?: { date: string; full: number }[];
 	eu?: { days?: { date: string; full: number }[] };
+}
+
+/**
+ * La zona del diésel de Sergi (secreto ALERT_FUEL_ZONE), ya resuelta: un id de provincia («07») o
+ * «menorca». Va solo en el texto de los avisos (que llegan a su móvil): nunca en un id, en una clave del
+ * historial ni en el registro.
+ */
+export interface FuelZone {
+	id: string;
+	name: string;
+	/** Gasolineras de la zona (fuel/<id>.json o, en Menorca, fuel.json), para la más barata. */
+	stations?: FuelStation[];
 }
 
 /** Los datos de esta pasada (static/data/<archivo>.json); cualquiera puede faltar. */
@@ -80,10 +100,15 @@ export interface Inputs {
 	predictions?: PredictionsData;
 	reliefweb?: (Disaster & { level?: string })[];
 	holidays?: HolidaysData;
+	fuelEs?: FuelSpainData;
+	fuel?: FuelData;
+	power?: PowerData;
+	/** No es un archivo: la pone notify.ts a partir del secreto. */
+	zone?: FuelZone;
 }
 
 /** Archivo de static/data de cada entrada de Inputs. */
-export const FILES: Record<keyof Inputs, string> = {
+export const FILES: Record<Exclude<keyof Inputs, 'zone'>, string> = {
 	imp: 'imp',
 	ine: 'ine',
 	bls: 'bls',
@@ -102,7 +127,10 @@ export const FILES: Record<keyof Inputs, string> = {
 	gie: 'gie',
 	predictions: 'predictions',
 	reliefweb: 'reliefweb',
-	holidays: 'holidays'
+	holidays: 'holidays',
+	fuelEs: 'fuel-es',
+	fuel: 'fuel',
+	power: 'power'
 };
 
 export interface LogEntry {
@@ -522,6 +550,191 @@ export function gasRule(d: Inputs, { now }: RuleContext): Draft[] {
 	];
 }
 
+// ---------- Diésel ----------
+
+/** Un día de precio medio del diésel (€/L). */
+export interface DayValue {
+	date: string;
+	v: number;
+}
+
+const okPrice = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0;
+
+/**
+ * Historial diario del diésel: «es» es la media de España (fuel-es.json); «zona», la de la zona de Sergi
+ * (su provincia en fuel-es.json o, si es Menorca, fuel.json). En orden de fecha.
+ */
+export function dieselSeries(d: Inputs, scope: 'es' | 'zona'): DayValue[] {
+	let points: { date: unknown; v: unknown }[] = [];
+	if (scope === 'es') {
+		points = list(d.fuelEs?.history).map((h) => ({ date: h?.date, v: h?.avg?.diesel }));
+	} else if (d.zone?.id === 'menorca') {
+		points = list(d.fuel?.history).map((h) => ({ date: h?.date, v: h?.avg?.diesel }));
+	} else if (d.zone) {
+		const id = d.zone.id;
+		points = list(d.fuelEs?.history).map((h) => ({ date: h?.date, v: h?.provinces?.[id]?.diesel }));
+	}
+	return points
+		.filter((p): p is DayValue => typeof p.date === 'string' && okPrice(p.v))
+		.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+const mean = (v: number[]) => v.reduce((a, b) => a + b, 0) / v.length;
+const between = <T extends { date: string }>(s: T[], from: string, to: string) =>
+	s.filter((p) => p.date >= from && p.date <= to);
+
+/** 1,412 €/L */
+export const euroL = (v: number) => `${num(v, 3)} €/L`;
+/** +3,4 cts (de una diferencia en €/L). */
+export const cts = (diffEuro: number) => `${signed(diffEuro * 100)} cts`;
+
+/** Medias de 7 días (la última semana con dato y la anterior), o null si alguna tiene pocos días. */
+export function weekMeans(s: DayValue[]): { now: number; before: number; date: string } | null {
+	const last = s.at(-1);
+	if (!last) return null;
+	const week = between(s, addDays(last.date, -6), last.date);
+	const prev = between(s, addDays(last.date, -13), addDays(last.date, -7));
+	if (week.length < DIESEL.minDays || prev.length < DIESEL.minDays) return null;
+	return { now: mean(week.map((p) => p.v)), before: mean(prev.map((p) => p.v)), date: last.date };
+}
+
+/** Diferencia con el dato de hace 7 días (o el más cercano de los 3 anteriores a ese), en €/L. */
+export function weekChange(s: DayValue[]): number | null {
+	const last = s.at(-1);
+	if (!last) return null;
+	const ref = between(s, addDays(last.date, -10), addDays(last.date, -7)).at(-1);
+	return ref ? last.v - ref.v : null;
+}
+
+/** Ya se avisó de esto (clave del historial) hace menos de DIESEL.everyDays días. */
+const recently = (log: NotifyLog, key: string, date: string) => {
+	const before = log.last[key];
+	return before !== undefined && date < addDays(before, DIESEL.everyDays);
+};
+
+/** España y, si la hay, la zona, cada una con su historial. */
+const scopes = (d: Inputs) =>
+	[
+		{ scope: 'es' as const, name: 'España' },
+		...(d.zone ? [{ scope: 'zona' as const, name: d.zone.name }] : [])
+	].map((x) => ({ ...x, s: dieselSeries(d, x.scope) }));
+
+const FUEL_SOURCE = 'Ministerio para la Transición Ecológica';
+
+/**
+ * a) Diésel: la media de 7 días cambia ±3 cts/L o más frente a la de los 7 días anteriores, en España y en
+ * la zona. Como mucho una vez por semana cada una. Id: diesel:trend:<es|zona>:<día>.
+ */
+export function dieselTrendRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+	return scopes(d).flatMap(({ scope, name, s }) => {
+		const w = weekMeans(s);
+		if (!w || Math.abs(w.now - w.before) * 100 < DIESEL.trendCts) return [];
+		const key = `diesel:trend:${scope}`;
+		if (recently(log, key, w.date)) return [];
+		return [
+			{
+				id: `${key}:${w.date}`,
+				title: `Diésel en ${name}: ${cts(w.now - w.before)} en una semana`,
+				body: `Media de 7 días: ${euroL(w.now)}, frente a ${euroL(w.before)} la semana anterior (${FUEL_SOURCE}).`,
+				tags: 'fuelpump',
+				click: `${SITE}/fuel`,
+				time: now,
+				commit: (l) => void (l.last[key] = w.date)
+			}
+		];
+	});
+}
+
+/** «julio» o, si es de otro año, «julio de 2025». */
+function monthOf(date: string, ref: string): string {
+	const name = MONTHS[Number(date.slice(5, 7)) - 1];
+	return date.slice(0, 4) === ref.slice(0, 4) ? name : `${name} de ${date.slice(0, 4)}`;
+}
+
+/**
+ * b) Diésel en su mínimo o máximo de 90 días (con al menos 90 días de historial), en España y en la zona.
+ * «Desde» es el mes de la última vez que estuvo así de bajo (o de alto). Como mucho una vez por semana cada
+ * uno. Id: diesel:<low|high>:<es|zona>:<día>.
+ */
+export function dieselExtremeRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+	return scopes(d).flatMap(({ scope, name, s }) => {
+		const cur = s.at(-1);
+		if (!cur) return [];
+		const from = addDays(cur.date, -(DIESEL.extremeDays - 1));
+		if (s[0].date > from) return [];
+		const window = s.filter((p) => p.date >= from && p.date < cur.date).map((p) => p.v);
+		if (!window.length) return [];
+		const kind = cur.v < Math.min(...window) ? 'low' : cur.v > Math.max(...window) ? 'high' : null;
+		if (!kind) return [];
+		const key = `diesel:${kind}:${scope}`;
+		if (recently(log, key, cur.date)) return [];
+		const low = kind === 'low';
+		const since = s.filter((p) => p.date < from && (low ? p.v <= cur.v : p.v >= cur.v)).at(-1);
+		const span = Math.round((Date.parse(cur.date) - Date.parse(s[0].date)) / DAY) + 1;
+		const when = since ? `desde ${monthOf(since.date, cur.date)}` : `de los últimos ${span} días`;
+		return [
+			{
+				id: `${key}:${cur.date}`,
+				title: `Diésel en ${name}, en su ${low ? 'mínimo' : 'máximo'} ${when}: ${euroL(cur.v)}`,
+				body: `Precio medio del ${Number(cur.date.slice(8, 10))} de ${MONTHS[Number(cur.date.slice(5, 7)) - 1]} (${FUEL_SOURCE}).`,
+				tags: 'fuelpump',
+				click: `${SITE}/fuel`,
+				time: now,
+				commit: (l) => void (l.last[key] = cur.date)
+			}
+		];
+	});
+}
+
+/**
+ * c) La zona se separa ±5 cts/L o más de la media de España (el último día que tienen las dos). Como mucho
+ * una vez por semana. Id: diesel:gap:<día>.
+ */
+export function dieselGapRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+	if (!d.zone) return [];
+	const es = new Map(dieselSeries(d, 'es').map((p) => [p.date, p.v]));
+	const cur = dieselSeries(d, 'zona')
+		.filter((p) => es.has(p.date))
+		.at(-1);
+	if (!cur) return [];
+	const spain = es.get(cur.date)!;
+	const gap = cur.v - spain;
+	if (Math.abs(gap) * 100 < DIESEL.gapCts) return [];
+	const key = 'diesel:gap';
+	if (recently(log, key, cur.date)) return [];
+	return [
+		{
+			id: `${key}:${cur.date}`,
+			title: `Diésel en ${d.zone.name}: ${cts(gap)} ${gap > 0 ? 'por encima' : 'por debajo'} de España`,
+			body: `${euroL(cur.v)} frente a ${euroL(spain)} de media en España (${FUEL_SOURCE}).`,
+			tags: 'fuelpump',
+			click: `${SITE}/fuel`,
+			time: now,
+			commit: (l) => void (l.last[key] = cur.date)
+		}
+	];
+}
+
+/** La gasolinera con el diésel más barato de la zona, si hay datos. */
+export function cheapestDiesel(zone: FuelZone | undefined): FuelStation | null {
+	const withPrice = list(zone?.stations).filter((st) => okPrice(st?.prices?.diesel));
+	return withPrice.sort((a, b) => a.prices.diesel! - b.prices.diesel!)[0] ?? null;
+}
+
+/** Líneas del diésel para los resúmenes: España, la zona (si la hay) y, si se pide, su gasolinera más barata. */
+export function dieselLines(d: Inputs, cheapest = true): string[] {
+	const lines = scopes(d).flatMap(({ scope, name, s }) => {
+		const cur = s.at(-1);
+		if (!cur) return [];
+		const change = weekChange(s);
+		const label = scope === 'es' ? 'Diésel' : `Diésel en ${name}`;
+		return [`${label}: ${euroL(cur.v)}${change === null ? '' : ` (${cts(change)} en 7 días)`}`];
+	});
+	const best = cheapest ? cheapestDiesel(d.zone) : null;
+	if (best) lines.push(`Más barato en ${d.zone!.name}: ${best.name} (${best.town}), ${euroL(best.prices.diesel!)}`);
+	return lines;
+}
+
 // ---------- P3 ----------
 
 /**
@@ -643,12 +856,151 @@ export function downRule(d: Inputs, { now }: RuleContext): Draft[] {
 	});
 }
 
+// ---------- P3: vida diaria ----------
+
+/** Precio de la luz de un día (€/kWh): media y hora más barata, del PVPC por horas o del historial. */
+export function powerDay(d: Inputs, date: string): { avg: number; cheap?: { hour: number; kwh: number } } | null {
+	const hours = hourly(list(d.power?.pvpc).filter((p) => typeof p?.t === 'string' && Number.isFinite(p.v))).filter(
+		(h) => h.day === date
+	);
+	if (hours.length >= 23) {
+		const cheap = [...hours].sort((a, b) => a.kwh - b.kwh)[0];
+		return { avg: mean(hours.map((h) => h.kwh)), cheap: { hour: cheap.hour, kwh: cheap.kwh } };
+	}
+	const day = list(d.power?.history).find((h) => h?.date === date);
+	return day && okPrice(day.avg) ? { avg: day.avg } : null;
+}
+
+/** 0,128 €/kWh */
+const euroKwh = (v: number) => `${num(v, 3)} €/kWh`;
+
+/**
+ * a) La luz de mañana (PVPC, power.json; REE la publica hacia las 20:15): su media, un 30 % o más por debajo
+ * o por encima de la media de los 30 días anteriores. El historial lo va guardando la propia web, así que
+ * al principio hay menos de 30 días: se usa lo que haya (al menos LUZ.minDays) y el aviso dice cuántos.
+ * Id: luz:<mañana>.
+ */
+export function luzRule(d: Inputs, { now, today }: RuleContext): Draft[] {
+	const tomorrow = addDays(today, 1);
+	const next = powerDay(d, tomorrow);
+	if (!next) return [];
+	const ref = list(d.power?.history).filter(
+		(h) => h?.date < tomorrow && h.date >= addDays(tomorrow, -LUZ.days) && okPrice(h.avg)
+	);
+	if (ref.length < LUZ.minDays) return [];
+	const base = mean(ref.map((h) => h.avg));
+	const pct = (next.avg / base - 1) * 100;
+	if (Math.abs(pct) < LUZ.change) return [];
+	const span = ref.length >= LUZ.days ? `${LUZ.days} días` : `los últimos ${ref.length} días`;
+	const cheap = next.cheap ? ` La hora más barata, las ${next.cheap.hour} h (${euroKwh(next.cheap.kwh)}).` : '';
+	return [
+		{
+			id: `luz:${tomorrow}`,
+			title: `Luz de mañana: ${signed(pct, 0)} % (${euroKwh(next.avg)})`,
+			body: `Media del PVPC de mañana: ${euroKwh(next.avg)}, frente a ${euroKwh(base)} de media de ${span} (Red Eléctrica).${cheap}`,
+			tags: 'bulb',
+			click: `${SITE}/luz`,
+			time: now
+		}
+	];
+}
+
+const dayOfWeek = (date: string) => new Date(`${date}T12:00:00Z`).getUTCDay();
+const WEEKDAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+/** «sábado 12 de octubre» */
+const dayName = (date: string) =>
+	`${WEEKDAYS[dayOfWeek(date)]} ${Number(date.slice(8, 10))} de ${MONTHS[Number(date.slice(5, 7)) - 1]}`;
+
+const holidayLine = (h: { name: string; scope: string }) => `${h.scope === 'IB' ? 'en Baleares' : 'en España'}: ${h.name}`;
+
+/**
+ * b) Mañana es festivo (holidays.json, de España o de Baleares) o no abre la bolsa de Nueva York o la de
+ * Madrid (festivos calculados en src/lib/markets.ts; los fines de semana no cuentan). A partir de las 19:00
+ * de la víspera, en un solo aviso. Id: manana:<mañana>.
+ */
+export function tomorrowRule(d: Inputs, { now, today }: RuleContext): Draft[] {
+	if (!inWindow(madrid(now).hm, TOMORROW)) return [];
+	const tomorrow = addDays(today, 1);
+	const year = Number(tomorrow.slice(0, 4));
+	const holidays = list(d.holidays?.items).filter((h) => h?.date === tomorrow);
+	const closed = [
+		...nyseHolidays(year).map((h) => ({ ...h, label: 'Nueva York (NYSE)' })),
+		...bmeHolidays(year).map((h) => ({ ...h, label: 'Madrid (BME)' }))
+	].filter((h) => h.date === tomorrow);
+	if (!holidays.length && !closed.length) return [];
+	const title = holidays.length
+		? `Mañana es festivo: ${holidays[0].name}`
+		: `Mañana no abre la bolsa de ${closed.map((c) => c.label).join(' ni la de ')}`;
+	const lines = [
+		...holidays.map((h) => `Festivo ${holidayLine(h)}.`),
+		...closed.map((c) => `Sin bolsa en ${c.label}: ${c.name}.`)
+	];
+	return [
+		{
+			id: `manana:${tomorrow}`,
+			title,
+			body: `${dayName(tomorrow)[0].toUpperCase()}${dayName(tomorrow).slice(1)}. ${lines.join(' ')}`,
+			tags: 'calendar',
+			click: `${SITE}/cal`,
+			time: now
+		}
+	];
+}
+
+/** Último domingo de un mes («2026-10-25»). */
+export function lastSunday(year: number, month: number): string {
+	const last = new Date(Date.UTC(year, month, 0));
+	last.setUTCDate(last.getUTCDate() - last.getUTCDay());
+	return last.toISOString().slice(0, 10);
+}
+
+/**
+ * c) Cambio de hora este fin de semana (último domingo de marzo y de octubre, a la 1:00 UTC), avisado el
+ * viernes anterior desde las 10:00. Id: dst:<domingo>.
+ */
+export function dstRule(_d: Inputs, { now, today }: RuleContext): Draft[] {
+	if (dayOfWeek(today) !== 5 || !inWindow(madrid(now).hm, DST)) return [];
+	const sunday = addDays(today, 2);
+	const year = Number(sunday.slice(0, 4));
+	const spring = sunday === lastSunday(year, 3);
+	if (!spring && sunday !== lastSunday(year, 10)) return [];
+	return [
+		{
+			id: `dst:${sunday}`,
+			title: `Cambio de hora este domingo: ${spring ? 'se adelanta' : 'se atrasa'} una hora`,
+			body: spring
+				? `La madrugada del ${dayName(sunday)}, a las 2:00 serán las 3:00 (se duerme una hora menos).`
+				: `La madrugada del ${dayName(sunday)}, a las 3:00 serán las 2:00 (una hora más de sueño).`,
+			tags: 'clock3',
+			click: `${SITE}/wx`,
+			time: now
+		}
+	];
+}
+
+/** Línea de vida diaria de los resúmenes: diésel, luz de hoy y festivo, si lo es. */
+export function dailyLife(d: Inputs, today: string, cheapest: boolean): string[] {
+	const luz = powerDay(d, today);
+	return [
+		...dieselLines(d, cheapest),
+		...(luz
+			? [
+					`Luz hoy: ${euroKwh(luz.avg)} de media${luz.cheap ? `; la hora más barata, las ${luz.cheap.hour} h (${euroKwh(luz.cheap.kwh)})` : ''}`
+				]
+			: []),
+		...list(d.holidays?.items)
+			.filter((h) => h?.date === today)
+			.map((h) => `Hoy es festivo ${holidayLine(h)}`)
+	];
+}
+
 // ---------- P4: resúmenes ----------
 
 const inWindow = (hm: string, w: { from: string; until: string }) => hm >= w.from && hm <= w.until;
 
-/** Agenda de un día: reuniones de bancos centrales, resultados vigilados y festivos. */
-function agenda(d: Inputs, date: string): string[] {
+/** Agenda de un día: reuniones de bancos centrales, resultados vigilados y, si se piden, festivos. */
+function agenda(d: Inputs, date: string, holidays = true): string[] {
 	const watch = new Set([...EARNINGS_WATCH.top10, ...EARNINGS_WATCH.mis]);
 	const hours: Record<string, string> = { bmo: 'antes de la apertura', amc: 'tras el cierre', dmh: 'en sesión' };
 	return [
@@ -658,7 +1010,7 @@ function agenda(d: Inputs, date: string): string[] {
 		...list(d.finnhub?.earnings)
 			.filter((e) => e?.date === date && watch.has(e.symbol))
 			.map((e) => `Resultados de ${e.symbol}${hours[e.hour] ? ` (${hours[e.hour]})` : ''}`),
-		...list(d.holidays?.items)
+		...list(holidays ? d.holidays?.items : [])
 			.filter((h) => h?.date === date)
 			.map((h) => `Festivo${h.scope === 'IB' ? ' en Baleares' : ' en España'}: ${h.name}`)
 	];
@@ -687,9 +1039,14 @@ export function morningRule(d: Inputs, { now, today }: RuleContext): Draft[] {
 		...section('Lo más importante', top),
 		...section(
 			'Hoy',
-			agenda(d, today).map((l) => `- ${l}`)
+			// El festivo de hoy va en «Vida diaria».
+			agenda(d, today, false).map((l) => `- ${l}`)
 		),
-		...section('Mercados', markets ? [markets] : [])
+		...section('Mercados', markets ? [markets] : []),
+		...section(
+			'Vida diaria',
+			dailyLife(d, today, true).map((l) => `- ${l}`)
+		)
 	];
 	return [
 		{
@@ -715,6 +1072,10 @@ export function eveningRule(d: Inputs, { now, today }: RuleContext): Draft[] {
 	const body = [
 		...section('Lo más importante del día', top),
 		...section('Cifras del día', markets ? [markets] : []),
+		...section(
+			'Vida diaria',
+			dailyLife(d, today, false).map((l) => `- ${l}`)
+		),
 		...section(
 			'Mañana',
 			agenda(d, addDays(today, 1)).map((l) => `- ${l}`)
@@ -745,10 +1106,16 @@ export const RULES: Rule[] = [
 	{ type: 'market', level: 2, run: marketRule },
 	{ type: 'fedreg', level: 2, run: fedregRule },
 	{ type: 'gas', level: 2, run: gasRule },
+	{ type: 'diesel-trend', level: 2, run: dieselTrendRule },
+	{ type: 'diesel-extreme', level: 2, run: dieselExtremeRule },
+	{ type: 'diesel-gap', level: 2, run: dieselGapRule },
 	{ type: 'poly', level: 3, run: polyRule },
 	{ type: 'earnings', level: 3, run: earningsRule },
 	{ type: 'crisis', level: 3, run: crisisRule },
 	{ type: 'down', level: 3, run: downRule },
+	{ type: 'luz', level: 3, run: luzRule },
+	{ type: 'tomorrow', level: 3, run: tomorrowRule },
+	{ type: 'dst', level: 3, run: dstRule },
 	{ type: 'morning', level: 4, run: morningRule },
 	{ type: 'evening', level: 4, run: eveningRule }
 ];

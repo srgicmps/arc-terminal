@@ -19,7 +19,22 @@
 	const geos = ['es', 'ea', 'de', 'fr', 'it', 'pt'];
 	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: id !== 'gdp' }));
 
-	const premium = $derived(spread(get('bond10-es'), get('bond10-de'), 'premium-es', 'Prima de riesgo'));
+	// Primas de riesgo: diferencia con el bono alemán a 10 años, en puntos básicos.
+	const PREMIUMS = [
+		{ geo: 'es', name: 'España' },
+		{ geo: 'it', name: 'Italia' },
+		{ geo: 'fr', name: 'Francia' },
+		{ geo: 'pt', name: 'Portugal' },
+		{ geo: 'gr', name: 'Grecia' }
+	];
+	const premiums = $derived(
+		PREMIUMS.map((p) => ({
+			series: spread(get(`bond10-${p.geo}`), get('bond10-de'), `premium-${p.geo}`, `Prima de ${p.name}`),
+			name: p.name,
+			decimals: 0,
+			inverse: true
+		}))
+	);
 	const debtUs = $derived(last(get('debt-us')));
 </script>
 
@@ -98,10 +113,15 @@
 					{ series: get('bond10-de'), decimals: 2 },
 					{ series: get('bond10-fr'), decimals: 2 },
 					{ series: get('bond10-it'), decimals: 2 },
-					{ series: premium, name: 'Prima España (pb)', decimals: 0, inverse: true }
+					{ series: get('bond10-pt'), decimals: 2 },
+					{ series: get('bond10-gr'), name: 'Grecia', decimals: 2 }
 				]}
 			/>
 			{#snippet note()}Fuente: BCE · <Updated at={data.ecb?.fetchedAt} source="ecb" />{/snippet}
+		</Panel>
+		<Panel title="Primas de riesgo" meta="Frente al bono alemán · pb">
+			<SeriesTable head="País" rows={premiums} spark={12} />
+			{#snippet note()}Diferencia de rentabilidad a 10 años con Alemania, media mensual. Fuente: BCE{/snippet}
 		</Panel>
 		<Panel title="EE. UU." meta="BLS y Tesoro">
 			<SeriesTable
@@ -140,7 +160,7 @@
 					]}
 				/>
 			{:else}
-				<p class="empty">Falta la clave FRED_API_KEY en GitHub Secrets.</p>
+				<p class="empty">{data.fredMissing}</p>
 			{/if}
 			{#snippet note()}
 				Fuente: FRED, Fed de San Luis (usa su API sin estar respaldado por ella)
