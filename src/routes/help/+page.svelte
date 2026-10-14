@@ -9,6 +9,23 @@
 	import Table from '#lib/components/ui/Table.svelte';
 	import { keyJoin, SHORTCUTS } from '#lib/shortcuts.ts';
 	import { FUNCTIONS } from '#lib/functions.ts';
+	import Select from '#lib/components/ui/Select.svelte';
+	import { HOME_KEY, homeChoices, isHomeCode } from '#lib/home.ts';
+
+	// Vista de inicio (home.ts): la que se abre al entrar, guardada en este navegador.
+	let home = $state('TOP');
+	$effect(() => {
+		try {
+			const saved = localStorage.getItem(HOME_KEY);
+			if (saved && isHomeCode(saved)) home = saved;
+		} catch {}
+	});
+	function setHome(code: string) {
+		home = code;
+		try {
+			localStorage.setItem(HOME_KEY, code);
+		} catch {}
+	}
 </script>
 
 <ViewHeader code="HELP" title="Comandos y atajos" sub="Escribe un comando o un valor en la barra de arriba y pulsa Intro" />
@@ -34,6 +51,14 @@
 		</Panel>
 	</div>
 	<div class="col">
+		<Panel title="Vista de inicio" meta="Al abrir Arc Terminal">
+			<div class="home">
+				<Select label="Vista de inicio" bind:value={() => home, setHome}>
+					{#each homeChoices() as c (c.code)}<option value={c.code}>{c.code} · {c.key}</option>{/each}
+				</Select>
+			</div>
+			{#snippet note()}Se abre una vez al entrar; después, TOP y Esc siguen llevando a la portada.{/snippet}
+		</Panel>
 		<Panel title="Atajos de teclado">
 			<ul class="mini">
 				{#each SHORTCUTS as s (s.id)}
@@ -133,5 +158,9 @@
 			min-height: var(--touch);
 			margin-block: 0;
 		}
+	}
+
+	.home {
+		padding: var(--sp-8) var(--pad-x);
 	}
 </style>
