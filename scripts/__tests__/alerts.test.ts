@@ -1,0 +1,465 @@
+import { describe, expect, it } from 'vitest';
+import type { SourceHistory, SourceStatus } from '../../src/lib/data.ts';
+import type { Chokepoint, Prediction, Quake, SeriesData } from '../../src/lib/types.ts';
+import { appendSpan } from '../history.ts';
+import {
+	crisisRule,
+	downRule,
+	earningsRule,
+	emptyLog,
+	eveningRule,
+	fedregRule,
+	gasRule,
+	impRule,
+	macroRule,
+	madrid,
+	marketRule,
+	morningRule,
+	periodName,
+	polyRule,
+	quakeRule,
+	rateRule,
+	readAsset,
+	RULES,
+	straitRule,
+	type Inputs,
+	type NotifyLog,
+	type Rule,
+	type RuleContext
+} from '../alerts/rules.ts';
+import { ASSETS } from '../alerts/config.ts';
+
+// 14 oct 2026, 12:00 en Madrid (CEST).
+const NOW = Date.parse('2026-10-14T10:00:00Z');
+const HOUR = 3_600_000;
+
+/** Ejecuta una regla y devuelve sus avisos y el historial con los cambios «siempre» ya aplicados. */
+function run(rule: Rule['run'], d: Inputs, log: NotifyLog = emptyLog(), now = NOW) {
+	const updates: ((l: NotifyLog) => void)[] = [];
+	const ctx: RuleContext = { now, today: madrid(now).date, log, update: (fn) => void updates.push(fn) };
+	const alerts = rule(d, ctx);
+	const after = structuredClone(log);
+	for (const fn of updates) fn(after);
+	return { alerts, ids: alerts.map((a) => a.id), after };
+}
+
+const quake = (id: string, mag: number, hoursAgo = 1, tsunami = false): Quake => ({
+	id,
+	mag,
+	place: 'Lugar de prueba',
+	time: new Date(NOW - hoursAgo * HOUR).toISOString(),
+	url: '',
+	tsunami,
+	alert: null,
+	lat: 0,
+	lon: 0,
+	depth: 10
+});
+
+const series = (id: string, points: [string, number][]): SeriesData => ({
+	series: [{ id, label: id, unit: '%', points: points.map(([t, v]) => ({ t, v })), source: 'X' }]
+});
+
+const withLast = (last: Record<string, string>): NotifyLog => ({ ...emptyLog(), last });
+
+describe('RULES', () => {
+	it('niveles: P1 terremoto, tipos, IMP y estrechos; P2 macro, mercados, Federal Register y gas; P3 y P4', () => {
+		expect(RULES.map((r) => `${r.level}:${r.type}`)).toEqual([
+			'1:quake',
+			'1:rate',
+			'1:imp',
+			'1:strait',
+			'2:macro',
+			'2:market',
+			'2:fedreg',
+			'2:gas',
+			'3:poly',
+			'3:earnings',
+			'3:crisis',
+			'3:down',
+			'4:morning',
+			'4:evening'
+		]);
+	});
+
+	it('sin ningún dato, ninguna regla falla ni avisa (los JSON que faltan no aplican)', () => {
+		for (const rule of RULES)
+			expect(run(rule.run, {}, emptyLog(), Date.parse('2026-10-14T03:00:00Z')).alerts).toEqual([]);
+	});
+});
+
+describe('P1', () => {
+	it('terremoto M7+ o M6+ con tsunami, de las últimas 24 h', () => {
+		const { ids, alerts } = run(quakeRule, {
+			quakes: [
+				quake('a', 7.1),
+				quake('b', 6.9),
+				quake('c', 6.2, 1, true),
+				quake('d', 5.9, 1, true),
+				quake('e', 7.5, 30)
+			]
+		});
+		expect(ids).toEqual(['quake:a', 'quake:c']);
+		expect(alerts[0].title).toBe('Terremoto M7,1 · Lugar de prueba');
+		expect(alerts[1].body).toContain('Aviso de tsunami');
+	});
+
+	it('tipos: la primera vez se apunta; si cambia, avisa con la diferencia en pb', () => {
+		const ecb = series('ecb-dfr', [
+			['2026-10-28', 2],
+			['2026-10-29', 1.75]
+		]);
+		const first = run(rateRule, { ecb });
+		expect(first.ids).toEqual([]);
+		expect(first.after.last['rate:ecb-dfr']).toBe('1.75');
+		const changed = run(rateRule, { ecb }, withLast({ 'rate:ecb-dfr': '2' }));
+		expect(changed.ids).toEqual(['rate:ecb-dfr:2026-10-29:1.75']);
+		expect(changed.alerts[0].title).toBe('BCE baja tipos: 1,75 %');
+		expect(changed.alerts[0].body).toContain('(−25 pb)');
+		const log = withLast({ 'rate:ecb-dfr': '2' });
+		changed.alerts[0].commit!(log);
+		expect(run(rateRule, { ecb }, log).ids).toEqual([]);
+	});
+
+	it('tipos de la Fed, el BoE y el BoJ salen del BIS', () => {
+		const bis: SeriesData = {
+			series: [
+				...series('policy-gb', [
+					['2026-08', 4],
+					['2026-10', 4.25]
+				]).series,
+				...series('policy-jp', [['2026-01', 0.75]]).series
+			]
+		};
+		const { alerts } = run(rateRule, { bis }, withLast({ 'rate:policy-gb': '4', 'rate:policy-jp': '0.75' }));
+		expect(alerts.map((a) => a.title)).toEqual(['BoE sube tipos: 4,25 %']);
+	});
+
+	it('IMP: 8 medios o más en 3 secciones o más', () => {
+		const t = (k: string, media: number, sections: number) => ({
+			k,
+			title: k,
+			score: 30,
+			sources: Array.from({ length: media }, (_, i) => `m${i}`),
+			sections: Array.from({ length: sections }, (_, i) => `s${i}`)
+		});
+		expect(run(impRule, { imp: { current: [t('a', 8, 3), t('b', 7, 4), t('c', 9, 2)] } }).ids).toEqual(['imp:a']);
+	});
+
+	it('estrecho: avisa al caer más de un 50 % frente a la semana anterior, y no repite hasta que se recupera', () => {
+		const point = (avg7: number, name = 'Ormuz'): Chokepoint => ({
+			id: 'chokepoint6',
+			name,
+			last: '2026-10-13',
+			avg7,
+			avg7PrevYear: null,
+			change: null,
+			spark: [...Array(10).fill(100), avg7]
+		});
+		const low = run(straitRule, { portwatch: [point(40)] });
+		expect(low.ids).toEqual(['strait:chokepoint6:2026-10-13']);
+		expect(low.alerts[0].title).toBe('Ormuz: tránsitos −60 %');
+		expect(run(straitRule, { portwatch: [point(60)] }).ids).toEqual([]);
+		expect(run(straitRule, { portwatch: [point(40, 'Malaca')] }).ids).toEqual([]);
+		const log = emptyLog();
+		low.alerts[0].commit!(log);
+		expect(run(straitRule, { portwatch: [point(30)] }, log).ids).toEqual([]);
+		const back = run(straitRule, { portwatch: [point(90)] }, log);
+		expect(back.after.last['strait:chokepoint6']).toBeUndefined();
+	});
+});
+
+describe('P2', () => {
+	it('macro: periodo nuevo con valor, el anterior y la diferencia; la primera vez solo se apunta', () => {
+		const d = {
+			ine: series('ipc-es', [
+				['2026-08', 2.7],
+				['2026-09', 2.9]
+			])
+		};
+		expect(run(macroRule, d).ids).toEqual([]);
+		expect(run(macroRule, d).after.last['macro:ipc-es']).toBe('2026-09');
+		const { alerts } = run(macroRule, d, withLast({ 'macro:ipc-es': '2026-08' }));
+		expect(alerts.map((a) => a.id)).toEqual(['macro:ipc-es:2026-09']);
+		expect(alerts[0].title).toBe('IPC de España: 2,9 %');
+		expect(alerts[0].body).toBe('septiembre de 2026 (INE). Anterior: 2,7 % (+20 pb).');
+		expect(run(macroRule, d, withLast({ 'macro:ipc-es': '2026-09' })).ids).toEqual([]);
+	});
+
+	it('macro: nóminas con signo y PIB trimestral', () => {
+		const bls = series('payrolls-us', [
+			['2026-08', 120],
+			['2026-09', -35]
+		]);
+		const fred = series('gdp-us', [
+			['2026-Q1', 1.2],
+			['2026-Q2', 2.4]
+		]);
+		const { alerts } = run(
+			macroRule,
+			{ bls, fred },
+			withLast({ 'macro:payrolls-us': '2026-08', 'macro:gdp-us': '2026-Q1' })
+		);
+		expect(alerts.map((a) => a.title)).toEqual([
+			'Nóminas de EE. UU.: −35 mil empleos',
+			'PIB de EE. UU. (anualizado): 2,4 %'
+		]);
+		expect(periodName('2026-Q2')).toBe('2.º trimestre de 2026');
+	});
+
+	const crypto = (btc: number, eth = 0) => ({
+		coins: [
+			{ id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', usd: 60000, eur: 0, change24h: btc, marketCap: 0 },
+			{ id: 'ethereum', symbol: 'ETH', name: 'Ether', usd: 3000, eur: 0, change24h: eth, marketCap: 0 }
+		]
+	});
+
+	it('mercados: umbrales «B» (BTC ±3,5 %)', () => {
+		expect(run(marketRule, { crypto: crypto(-3.4) }).ids).toEqual([]);
+		const { alerts } = run(marketRule, { crypto: crypto(-4.1) });
+		expect(alerts.map((a) => a.title)).toEqual(['Mercados: BTC −4,1 %']);
+	});
+
+	it('mercados: espera de 4 h por activo, salvo que el movimiento se duplique', () => {
+		const first = run(marketRule, { crypto: crypto(-4) });
+		const log = emptyLog();
+		first.alerts[0].commit!(log);
+		expect(run(marketRule, { crypto: crypto(-5) }, log, NOW + 2 * HOUR).ids).toEqual([]);
+		expect(run(marketRule, { crypto: crypto(-8) }, log, NOW + 2 * HOUR).alerts[0].title).toBe('Mercados: BTC −8,0 %');
+		expect(run(marketRule, { crypto: crypto(-5) }, log, NOW + 4 * HOUR).ids).toHaveLength(1);
+	});
+
+	it('mercados: con un dato diario, pasadas las 4 h tampoco repite si el dato es el mismo', () => {
+		const ecb = series('eurusd', [
+			['2026-10-13', 1.1],
+			['2026-10-14', 1.09]
+		]);
+		const first = run(marketRule, { ecb });
+		expect(first.alerts[0].title).toBe('Mercados: EUR/USD −0,9 %');
+		const log = emptyLog();
+		first.alerts[0].commit!(log);
+		expect(run(marketRule, { ecb }, log, NOW + 6 * HOUR).ids).toEqual([]);
+	});
+
+	it('mercados: 3 o más a la vez van juntos en un solo aviso', () => {
+		const d: Inputs = {
+			crypto: crypto(-4.1),
+			ecb: series('eurusd', [
+				['2026-10-13', 1.1],
+				['2026-10-14', 1.0923]
+			]),
+			uscurve: {
+				tenors: ['2A', '10A'],
+				days: [
+					{ date: '2026-10-13', values: [3.5, 4.0] },
+					{ date: '2026-10-14', values: [3.6, 4.09] }
+				]
+			}
+		};
+		const { alerts } = run(marketRule, d);
+		expect(alerts).toHaveLength(1);
+		expect(alerts[0].title).toBe('Mercados');
+		expect(alerts[0].body).toBe('BTC −4,1 %, EUR/USD −0,7 %, US10Y +9 pb');
+		const log = emptyLog();
+		alerts[0].commit!(log);
+		expect(Object.keys(log.assets)).toEqual(['BTC', 'EUR/USD', 'US10Y']);
+	});
+
+	it('mercados: las primas de riesgo solo cuentan al subir; sin datos, el activo no aplica', () => {
+		const ecb: SeriesData = {
+			series: [
+				...series('bond10-de', [
+					['2026-08', 2.5],
+					['2026-09', 2.5]
+				]).series,
+				...series('bond10-it', [
+					['2026-08', 3.5],
+					['2026-09', 3.62]
+				]).series,
+				...series('bond10-es', [
+					['2026-08', 3.3],
+					['2026-09', 3.1]
+				]).series
+			]
+		};
+		expect(run(marketRule, { ecb }).alerts.map((a) => a.title)).toEqual(['Mercados: Prima IT +12 pb']);
+		const dax = ASSETS.find((a) => a.name === 'DAX')!;
+		expect(readAsset(dax, {})).toBeNull();
+	});
+
+	it('Federal Register: sanciones o aranceles de hoy, uno al día y el más relevante', () => {
+		const doc = (id: string, title: string, date = '2026-10-14') => ({
+			id,
+			title,
+			type: '',
+			subtype: '',
+			abstract: '',
+			agencies: ['Executive Office of the President'],
+			date,
+			url: '',
+			pdf: ''
+		});
+		const fedreg = {
+			presidential: [
+				doc('p1', 'Adjusting Imports of Steel Into the United States'),
+				doc('p2', 'Imposing Reciprocal Tariffs on All Trading Partners')
+			],
+			rules: [doc('r1', 'Sanctions Regulations Amendment'), doc('r2', 'New Tariffs', '2026-10-13')]
+		};
+		const { alerts } = run(fedregRule, { fedreg });
+		expect(alerts.map((a) => a.id)).toEqual(['fedreg:2026-10-14']);
+		expect(alerts[0].body).toContain('Reciprocal Tariffs');
+	});
+
+	it('gas UE (cuando exista gie.json): baja 1 punto o más, o cruza el 90, 80 o 50 %', () => {
+		const gie = (a: number, b: number) => ({
+			days: [
+				{ date: '2026-10-13', full: a },
+				{ date: '2026-10-14', full: b }
+			]
+		});
+		expect(run(gasRule, { gie: gie(85, 84.5) }).ids).toEqual([]);
+		expect(run(gasRule, { gie: gie(85, 83.9) }).ids).toEqual(['gas:2026-10-14']);
+		expect(run(gasRule, { gie: gie(89.8, 90.2) }).alerts[0].body).toContain('cruza el 90 %');
+		expect(run(gasRule, { gie: { eu: gie(80.4, 79.9) } }).ids).toEqual(['gas:2026-10-14']);
+	});
+});
+
+describe('P3', () => {
+	const market = (p: number, volume = 2e6): Prediction => ({
+		id: 'm1',
+		title: '¿Alto el fuego?',
+		url: '',
+		volume24h: volume,
+		endDate: '',
+		outcomes: [
+			{ label: 'Sí', p },
+			{ label: 'No', p: 1 - p }
+		]
+	});
+
+	it('Polymarket: guarda una foto cada 4 h y avisa si cambia 15 puntos o más frente a hace ~24 h', () => {
+		const first = run(polyRule, { predictions: { geopolitics: [market(0.3)], economy: [] } });
+		expect(first.ids).toEqual([]);
+		expect(first.after.poly.m1).toHaveLength(1);
+		const later = run(
+			polyRule,
+			{ predictions: { geopolitics: [market(0.31)], economy: [] } },
+			first.after,
+			NOW + 2 * HOUR
+		);
+		expect(later.after.poly.m1).toHaveLength(1);
+		const next = run(
+			polyRule,
+			{ predictions: { geopolitics: [market(0.5)], economy: [] } },
+			first.after,
+			NOW + 24 * HOUR
+		);
+		expect(next.ids).toEqual(['poly:m1:2026-10-15']);
+		expect(next.alerts[0].title).toBe('Polymarket: +20 puntos');
+		expect(
+			run(polyRule, { predictions: { geopolitics: [market(0.42)], economy: [] } }, first.after, NOW + 24 * HOUR).ids
+		).toEqual([]);
+		expect(
+			run(polyRule, { predictions: { geopolitics: [market(0.6, 1000)], economy: [] } }, first.after, NOW + 24 * HOUR)
+				.ids
+		).toEqual([]);
+	});
+
+	it('resultados de las grandes el día que presentan, cuando ya hay BPA', () => {
+		const e = (symbol: string, epsActual: number | null, date = '2026-10-14') => ({
+			date,
+			symbol,
+			hour: 'amc',
+			quarter: 3,
+			year: 2026,
+			epsEstimate: 1,
+			epsActual,
+			revenueEstimate: 5e10,
+			revenueActual: epsActual ? 5.2e10 : null
+		});
+		const finnhub = {
+			earnings: [e('NVDA', 1.1), e('MSFT', null), e('JPM', 4), e('AAPL', 2, '2026-10-13')],
+			news: [],
+			quotes: []
+		};
+		const { alerts } = run(earningsRule, { finnhub });
+		expect(alerts.map((a) => a.id)).toEqual(['earn:NVDA:2026-10-14']);
+		expect(alerts[0].body).toBe('BPA 1,10 $ (previsto 1,00) · ingresos 52,0 mil M$ (previstos 50,0).');
+	});
+
+	it('crisis de ReliefWeb: solo si trae nivel alto y es reciente (hoy la fuente no da nivel: no aplica)', () => {
+		const c = (id: string, level?: string, hoursAgo = 2) => ({
+			id,
+			name: `Crisis ${id}`,
+			country: '',
+			type: '',
+			date: new Date(NOW - hoursAgo * HOUR).toISOString(),
+			url: '',
+			glide: '',
+			level
+		});
+		expect(run(crisisRule, { reliefweb: [c('a', 'High'), c('b'), c('c', 'high', 72)] }).ids).toEqual(['crisis:a']);
+	});
+
+	it('fuente caída: cuando issues.ts abriría el issue (3 pasadas en error)', () => {
+		const down = (name: string, runs: number): { status: SourceStatus; history: SourceHistory } => {
+			let spans = appendSpan(undefined, 'error', NOW - runs * 15 * 60_000);
+			for (let i = 1; i < runs; i++) spans = appendSpan(spans, 'error', NOW - (runs - i) * 15 * 60_000);
+			return {
+				status: { name, label: `Etiqueta ${name}`, state: 'error', fetchedAt: null, error: 'HTTP 500' },
+				history: { name, lastRun: '', history: spans }
+			};
+		};
+		const a = down('fred', 3);
+		const b = down('bls', 2);
+		const { alerts } = run(downRule, { status: [a.status, b.status], history: [a.history, b.history] });
+		expect(alerts.map((x) => x.id)).toEqual([`down:fred:${a.history.history[0].t}`]);
+		expect(alerts[0].body).not.toContain('HTTP 500');
+	});
+});
+
+describe('P4: resúmenes', () => {
+	const d: Inputs = {
+		imp: {
+			current: [
+				{ k: 'a', title: 'Tema A', sources: ['x', 'y'], score: 9 },
+				{ k: 'b', title: 'Tema B', sources: ['x'], score: 5 }
+			],
+			days: [{ date: '2026-10-28', items: [{ k: 'c', title: 'Tema del día', sources: ['x', 'y', 'z'], score: 12 }] }]
+		},
+		holidays: { items: [{ date: '2026-10-29', name: 'Prueba', scope: 'ES' }] },
+		crypto: { coins: [{ id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', usd: 1, eur: 1, change24h: 1.2, marketCap: 0 }] }
+	};
+
+	it('«Buenos días» desde las 8:05 de Madrid, con IMP, la agenda de hoy y mercados, en Markdown', () => {
+		const at = Date.parse('2026-10-28T07:05:00Z'); // 08:05 CET: el día de la Fed
+		const { alerts } = run(morningRule, d, emptyLog(), at);
+		expect(alerts.map((a) => a.id)).toEqual(['morning:2026-10-28']);
+		expect(alerts[0].markdown).toBe(true);
+		expect(alerts[0].body).toContain('1. Tema A (2 medios)');
+		expect(alerts[0].body).toContain('- Fed: decisión de tipos a las 19:00');
+		expect(alerts[0].body).toContain('BTC +1,2 %');
+		expect(run(morningRule, d, emptyLog(), at - 60_000).ids).toEqual([]);
+	});
+
+	it('«Cierre» desde las 22:15 de Madrid, con lo del día y la agenda de mañana', () => {
+		const at = Date.parse('2026-10-28T21:15:00Z'); // 22:15 CET
+		const { alerts } = run(eveningRule, d, emptyLog(), at);
+		expect(alerts.map((a) => a.id)).toEqual(['evening:2026-10-28']);
+		expect(alerts[0].body).toContain('1. Tema del día (3 medios)');
+		expect(alerts[0].body).toContain('- BCE: decisión de tipos a las 14:15');
+		expect(alerts[0].body).toContain('- Festivo en España: Prueba');
+		expect(run(eveningRule, d, emptyLog(), at - 60_000).ids).toEqual([]);
+	});
+
+	it('cambio de hora del 25 oct 2026: las 8:05 y las 22:15 de Madrid son otra hora UTC', () => {
+		// Sábado 24 (CEST, UTC+2) y domingo 25 (CET, UTC+1).
+		expect(run(morningRule, {}, emptyLog(), Date.parse('2026-10-24T06:05:00Z')).ids).toEqual(['morning:2026-10-24']);
+		expect(run(morningRule, {}, emptyLog(), Date.parse('2026-10-25T06:05:00Z')).ids).toEqual([]); // 07:05 CET
+		expect(run(morningRule, {}, emptyLog(), Date.parse('2026-10-25T07:05:00Z')).ids).toEqual(['morning:2026-10-25']);
+		expect(run(eveningRule, {}, emptyLog(), Date.parse('2026-10-24T20:15:00Z')).ids).toEqual(['evening:2026-10-24']);
+		expect(run(eveningRule, {}, emptyLog(), Date.parse('2026-10-25T20:15:00Z')).ids).toEqual([]); // 21:15 CET
+		expect(run(eveningRule, {}, emptyLog(), Date.parse('2026-10-25T21:15:00Z')).ids).toEqual(['evening:2026-10-25']);
+	});
+});
