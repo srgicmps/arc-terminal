@@ -99,7 +99,8 @@ export const load: PageServerLoad = async () => {
 		hn: trim(hn, (d) => d.slice(0, 5)),
 		predictions: trim(predictions, (d) => ({ geopolitics: d.geopolitics.slice(0, 4), economy: [] })),
 		// «Lo importante»: los 3 temas de más peso de hoy, ya elegidos (sin el histórico ni la memoria).
-		important: topImportant(imp?.data, 3).map(({ k, title, url, sources }) => ({ k, title, url, sources })),
+		// Los 3 de «Lo importante» y 2 más para «Escuchar», que lee 5 (con su traducción, si la hay).
+		important: topImportant(imp?.data, 5).map(({ k, title, url, sources, lang, titleEs }) => ({ k, title, url, sources, lang, titleEs })),
 		// «Hoy en la agenda»: resultados y festivos de hoy y mañana (la web se vuelve a construir cada
 		// 15 min; mañana cubre la medianoche hasta la siguiente publicación).
 		earnings: (finnhub?.data.earnings ?? []).filter((e) => e.date === today || e.date === tomorrow),

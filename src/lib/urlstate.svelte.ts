@@ -7,6 +7,7 @@
 //       period.value = 'month';  →  /imp?periodo=month
 import { goto } from '$app/navigation';
 import { page } from '$app/state';
+import { readSaved, save } from './persisted.svelte.ts';
 import { withParam } from './urlstate.ts';
 
 export { withParam };
@@ -22,14 +23,18 @@ export function writeParams(values: Record<string, string | null>, fallbacks: Re
 	write().catch(() => setTimeout(() => write().catch(() => {}), 0));
 }
 
-export function urlState<T extends string>(name: string, fallback: T, isValid: (v: string) => boolean) {
+/**
+ * Con `remember` (una clave de prefs.ts), además se recuerda en el navegador: si la URL no trae el parámetro,
+ * vale lo guardado; la URL manda (un enlace compartido abre lo que dice).
+ */
+export function urlState<T extends string>(name: string, fallback: T, isValid: (v: string) => boolean, remember?: string) {
 	let value = $state<T>(fallback);
 	// En el navegador (al prerenderizar no hay URL con parámetros), cada vez que cambia la URL: su valor si
 	// vale; si falta o no vale, el de por defecto. Un valor que no vale (?periodo=xx) se quita de la URL.
 	$effect(() => {
 		const fromUrl = page.url.searchParams.get(name);
 		const ok = fromUrl !== null && isValid(fromUrl);
-		value = ok ? (fromUrl as T) : fallback;
+		value = ok ? (fromUrl as T) : ((remember && readSaved<T>(remember, isValid)) || fallback);
 		if (fromUrl !== null && !ok) writeParams({ [name]: null });
 	});
 	return {
@@ -38,6 +43,7 @@ export function urlState<T extends string>(name: string, fallback: T, isValid: (
 		},
 		set value(next: T) {
 			value = next;
+			if (remember) save(remember, next);
 			writeParams({ [name]: next }, { [name]: fallback });
 		}
 	};
