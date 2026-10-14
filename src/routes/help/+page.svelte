@@ -82,8 +82,8 @@
 				{@const n = Object.keys(incoming).length}
 				<div class="incoming" role="status">
 					<p>Este enlace trae {n} {n === 1 ? 'ajuste' : 'ajustes'} de otro dispositivo. {n === 1 ? 'Sustituye al' : 'Sustituyen a los'} de aquí.</p>
-					<button type="button" class="yes" onclick={bring}>Traerlos</button>
-					<button type="button" onclick={forget}>No</button>
+					<button type="button" class="go" onclick={bring}>Traerlos</button>
+					<button type="button" class="no" onclick={forget}>No</button>
 				</div>
 			{/if}
 			<dl class="taste">
@@ -97,7 +97,8 @@
 				<dd class="send"><Share source={transferLink} /> Enlace con todo lo tuyo: estos ajustes, MIS, palabras vigiladas, tu sitio…</dd>
 			</dl>
 			{#snippet note()}
-				En la barra del móvil caben {THUMB_MAX}: al elegir otra, sale la primera de la lista.
+				En la barra del móvil caben {THUMB_MAX}: al elegir otra, sale la primera de la lista. El enlace de
+				«Otro dispositivo» lleva tu sitio y tus favoritos: es para ti, no lo compartas en público.
 				{#if custom}<button class="reset" type="button" onclick={resetTaste}>Volver a lo de siempre</button>{/if}
 			{/snippet}
 		</Panel>
@@ -196,7 +197,7 @@
 		font-size: var(--fs-s);
 	}
 
-	.incoming button {
+	.incoming .no {
 		height: var(--control-h);
 		padding: 0 var(--pad-x);
 		border: var(--hair) solid var(--amber-edge);
@@ -204,11 +205,6 @@
 		color: var(--amber);
 		font-size: var(--fs-s);
 		cursor: pointer;
-	}
-
-	.incoming .yes {
-		background: var(--amber);
-		color: var(--on-amber);
 	}
 
 	.reset {
