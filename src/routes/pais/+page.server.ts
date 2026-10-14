@@ -2,14 +2,14 @@ import { COUNTRIES } from '#lib/countries.ts';
 import { countryProfile, type CountryProfile } from '#lib/country.ts';
 import { dataset } from '#lib/data.ts';
 import type { Mention } from '#lib/news.ts';
-import type { ImfData, SeriesData, YieldCurveData } from '#lib/types.ts';
+import type { EuPowerData, ImfData, SeriesData, YieldCurveData } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
 // El país se elige en el navegador (?c=DE), así que aquí se calcula la ficha de todos: solo viajan las
 // cifras que pinta cada una (último dato y anterior), no las series enteras. Los países sin ningún dato no
 // van; los titulares llegan ya repartidos por país (scripts/news-index.ts → news-countries.json).
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news] = await Promise.all([
+	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news, eupower] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -17,7 +17,8 @@ export const load: PageServerLoad = async () => {
 		dataset<SeriesData>('bis'),
 		dataset<YieldCurveData>('uscurve'),
 		dataset<ImfData>('imf'),
-		dataset<Record<string, Mention[]>>('news-countries')
+		dataset<Record<string, Mention[]>>('news-countries'),
+		dataset<EuPowerData>('energycharts')
 	]);
 	const sets = {
 		series: [eurostat, ecb, bls, fred, bis].flatMap((d) => d?.data.series ?? []),
@@ -29,5 +30,6 @@ export const load: PageServerLoad = async () => {
 		const p = countryProfile(c, sets);
 		if (p.kpis.length || p.policy || p.bond || p.premium || p.fx.length || p.imf) profiles[c.code] = p;
 	}
-	return { profiles, news: news?.data ?? {} };
+	// Luz en Europa: todas las zonas (son pocas); la ficha enseña las del país frente a la media de todas.
+	return { profiles, news: news?.data ?? {}, eupower: eupower?.data.zones ?? [], eupowerAt: eupower?.fetchedAt };
 };

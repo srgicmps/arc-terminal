@@ -4,11 +4,13 @@
 	su bloque no se pinta. El país se lee de la URL al arrancar en el navegador, como el valor en /s.
 -->
 <script lang="ts">
+	import EuPowerTable from '#lib/components/EuPowerTable.svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
@@ -33,6 +35,7 @@
 	const EMPTY: CountryProfile = { kpis: [], policy: null, bond: null, premium: null, fx: [], imf: null };
 	const profile = $derived(country && (data.profiles[country.code] ?? EMPTY));
 	const news = $derived(country ? (data.news[country.code] ?? []) : []);
+	const hasPower = $derived(!!country && data.eupower.some((z) => z.country === country.code));
 	const rates = $derived(profile ? [profile.policy, profile.bond, profile.premium].filter((r): r is Rate => r !== null) : []);
 	const empty = $derived(profile && !profile.kpis.length && !rates.length && !profile.fx.length && !profile.imf && !news.length);
 
@@ -119,6 +122,17 @@
 					{#snippet note()}{#if profile.policy}Tipo oficial: BIS, con el mes del último cambio.{/if}
 						{#if profile.bond}Bono: {profile.bond.source === 'BCE' ? 'BCE, media mensual' : 'Tesoro de EE. UU., diario'}.{/if}
 						Var.: frente al dato anterior, en puntos básicos.{/snippet}
+				</Panel>
+			{/if}
+
+			{#if hasPower}
+				<Panel title="Luz" meta="Mercado mayorista · €/MWh">
+					<EuPowerTable zones={data.eupower} country={country.code} />
+					{#snippet note()}
+						Media del día, frente a la media de las zonas europeas que sigue la terminal. Fuente:
+						{country.code === 'ES' ? 'Red Eléctrica' : 'Energy-Charts / SMARD (Bundesnetzagentur), CC BY 4.0'} ·
+						<Updated at={data.eupowerAt} source="energycharts" />
+					{/snippet}
 				</Panel>
 			{/if}
 

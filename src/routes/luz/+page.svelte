@@ -1,4 +1,6 @@
 <script lang="ts">
+	import EuPowerTable from '#lib/components/EuPowerTable.svelte';
+	import { vsAverage } from '#lib/eupower.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import LineChart from '#lib/components/LineChart.svelte';
 	import MixBar from '#lib/components/MixBar.svelte';
@@ -100,6 +102,24 @@
 					<MixBar {mix} />
 				{/each}
 				{#snippet note()}Fuente: Red Eléctrica · <Updated at={data.mix?.fetchedAt} source="power-mix" />{/snippet}
+			</Panel>
+		</div>
+	</div>
+{/if}
+
+{#if data.eupower?.data.zones.length}
+	{@const es = vsAverage(data.eupower.data.zones, 'ES', 'today')}
+	<div class="grid">
+		<div class="col">
+			<Panel
+				title="Luz en Europa"
+				meta={es ? `España, ${nf(Math.abs(es.pct), 0)} % ${es.pct < 0 ? 'más barata' : 'más cara'} que la media` : 'Mercado mayorista · €/MWh'}
+			>
+				<EuPowerTable zones={data.eupower.data.zones} />
+				{#snippet note()}
+					Media diaria del mercado mayorista, en €/MWh (sin peajes ni impuestos). Fuentes: Energy-Charts / SMARD
+					(Bundesnetzagentur), CC BY 4.0; España, Red Eléctrica · <Updated at={data.eupower?.fetchedAt} source="energycharts" />
+				{/snippet}
 			</Panel>
 		</div>
 	</div>
