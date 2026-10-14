@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { clock } from '#lib/clock.svelte.ts';
 	import HnTable from '#lib/components/HnTable.svelte';
+	import InternetStatusPanel from '#lib/components/InternetStatusPanel.svelte';
 	import KevTable from '#lib/components/KevTable.svelte';
 	import LaunchesPanel from '#lib/components/LaunchesPanel.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
@@ -38,6 +39,7 @@
 		<Panel title="Tecnológicas en bolsa" meta="TradingView · toca un código para su ficha">
 			<QuoteBoard name="Tecnológicas" codes={BIG_TECH} />
 		</Panel>
+		<InternetStatusPanel />
 		<LaunchesPanel />
 		<Panel title="Hacker News" meta="Portada, por puntos">
 			<HnTable items={data.hn?.data ?? []} />
