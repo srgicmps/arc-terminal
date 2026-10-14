@@ -84,7 +84,8 @@ export function parseAlerts(body: string, now = Date.now()): AlertsData {
 		if (seen.has(key)) continue;
 		seen.add(key);
 
-		// El enlace del feed apunta al XML del aviso (CAP); si es así, mejor la página de avisos de AEMET.
+		// Cada entrada trae la página de la zona en MeteoAlarm (?geocode=…) y el XML del aviso (CAP, /api/):
+		// nos quedamos con la página; si no la hay, la de avisos de AEMET.
 		const link = list<Raw>(e.link).find((l) => l?.['@href'] && !/\/api\//.test(l['@href']));
 		alerts.push({
 			id: text(e.identifier) || text(e.id) || key,

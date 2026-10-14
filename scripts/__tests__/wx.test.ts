@@ -123,6 +123,35 @@ describe('alerts (MeteoAlarm, Atom con CAP)', () => {
 		]);
 	});
 
+	it('lee una entrada real del feed (registro de la Action, 14-10-2026, con la zona cambiada a Menorca)', () => {
+		const real =
+			'<entry> <cap:geocode> <valueName>EMMA_ID</valueName> <value>ES852</value> </cap:geocode> ' +
+			'<link title="Costa - Menorca" href="https://meteoalarm.org?geocode=EMMA_ID:ES852" hreflang="en"/> ' +
+			'<cap:areaDesc>Costa - Menorca</cap:areaDesc> <cap:event>Moderate coastalevent warning</cap:event> ' +
+			'<cap:sent>2026-10-14T09:28:08+00:00</cap:sent> <cap:expires>2026-10-15T12:59:59+00:00</cap:expires> ' +
+			'<cap:effective>2026-10-14T09:25:31+00:00</cap:effective> <cap:onset>2026-10-14T22:00:00+00:00</cap:onset> ' +
+			'<cap:certainty>Likely</cap:certainty> <cap:severity>Moderate</cap:severity> <cap:urgency>Future</cap:urgency> ' +
+			'<cap:scope>Public</cap:scope> <cap:message_type>Update</cap:message_type> <cap:status>Actual</cap:status> ' +
+			'<cap:identifier>2.49.0.0.724.0.ES.261014092808.611103COCO151370088</cap:identifier> ' +
+			'<link type="application/cap+xml" href="https://feeds.meteoalarm.org/api/v1/warnings/feeds-spain/fdce347e-d6e3-4ae6-b97f-bd0c929ada54"/> ' +
+			'<link title="Spain" rel="related" href="https://meteoalarm.org?region=ES" hreflang="en"/> ' +
+			'<author> <name>meteoalarm.org</name> <uri>https://meteoalarm.org</uri> </author> ' +
+			'<published>2026-10-14T09:28:08Z</published> ' +
+			'<id>https://feeds.meteoalarm.org/api/v1/warnings/feeds-spain/fdce347e-d6e3-4ae6-b97f-bd0c929ada54?index_info=1&amp;index_area=0&amp;index_geocode=0</id> ' +
+			'<title>Yellow Coastalevent Warning issued for Spain - Costa - Menorca</title> <updated>2026-10-14T09:28:08Z</updated> </entry>';
+		expect(parseAlerts(feed(real), now).alerts).toEqual([
+			{
+				id: '2.49.0.0.724.0.ES.261014092808.611103COCO151370088',
+				level: 'yellow',
+				hazard: 'Costeros',
+				area: 'Costa - Menorca',
+				onset: '2026-10-14T22:00:00.000Z',
+				expires: '2026-10-15T12:59:59.000Z',
+				url: 'https://meteoalarm.org?geocode=EMMA_ID:ES852'
+			}
+		]);
+	});
+
 	it('un feed sin avisos es una lista vacía; algo que no es Atom, un error', () => {
 		expect(parseAlerts(feed(), now).alerts).toEqual([]);
 		expect(() => parseAlerts('<html>no</html>', now)).toThrow('formato de MeteoAlarm');
