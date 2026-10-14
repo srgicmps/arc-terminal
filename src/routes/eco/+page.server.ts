@@ -5,6 +5,7 @@ import { missingNote } from '#lib/missing.ts';
 import { headlines, pickSeries } from '#lib/trim.ts';
 import type { EuPowerData, G20Data, ImfData, NewsData, PredictionsData, SeriesData, ReleaseCalData } from '#lib/types.ts';
 import { nextMap } from '#lib/nextrelease.ts';
+import { SEP_IDS } from '#lib/sep.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
@@ -54,6 +55,8 @@ export const load: PageServerLoad = async () => {
 		recession: pickSeries(fred, ['sahm-us', 'recprob-us', 't10y3m-us'], 60),
 		// Panel provisional «Estrés financiero»: CISS (~6 meses de días hábiles) y STLFSI4 (un año de semanas).
 		stress: { ecb: pickSeries(ecb, ['ciss-ea'], 120), fred: pickSeries(fred, ['stlfsi-us'], 52) },
+		// Panel provisional «Proyecciones de la Fed» (SEP): solo sus series.
+		sep: pickSeries(fred, SEP_IDS),
 		bis,
 		gie,
 		housing,

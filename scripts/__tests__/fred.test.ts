@@ -37,14 +37,16 @@ describe('fred', () => {
 					return obs([['2026-04-01', '3.1'], ['2026-01-01', '-0.5']]);
 				case 'ICSA':
 					return obs([['2026-10-04', '224000'], ['2026-09-27', '219500']]);
+				case 'FEDTARMD':
+					return obs([['2028-01-01', '3.1'], ['2027-01-01', '3.4'], ['2026-01-01', '3.6']]);
 				default:
 					return obs([['2026-10-13', '1']]);
 			}
 		});
 		const { series } = await fred.fetch(undefined);
 		const byId = Object.fromEntries(series.map((s) => [s.id, s]));
-		// 28 series de FRED y la liquidez neta, que se calcula con tres de ellas.
-		expect(series).toHaveLength(29);
+		// 38 series de FRED y la liquidez neta, que se calcula con tres de ellas.
+		expect(series).toHaveLength(39);
 
 		// El hueco «.» se descarta y los puntos quedan de más antiguo a más reciente.
 		expect(byId['fedfunds-us'].points).toEqual([
@@ -57,6 +59,12 @@ describe('fred', () => {
 		expect(byId['gdp-us'].points).toEqual([
 			{ t: '2026-Q1', v: -0.5 },
 			{ t: '2026-Q2', v: 3.1 }
+		]);
+		// Anual (proyecciones de la Fed): el periodo es el año.
+		expect(byId['sep-rate-md'].points).toEqual([
+			{ t: '2026', v: 3.6 },
+			{ t: '2027', v: 3.4 },
+			{ t: '2028', v: 3.1 }
 		]);
 		// Personas → miles, con un decimal.
 		expect(byId['claims-us'].points.map((p) => p.v)).toEqual([219.5, 224]);
@@ -131,11 +139,11 @@ describe('fred', () => {
 		expect(error).toBeInstanceOf(Error);
 		expect((error as Error).message).not.toContain(KEY);
 		// Se ha llamado con la clave (3 intentos por serie)…
-		expect(fetch).toHaveBeenCalledTimes(28 * 3);
+		expect(fetch).toHaveBeenCalledTimes(38 * 3);
 		expect(String(fetch.mock.calls[0][0])).toContain(KEY);
 		// …pero el registro de cada serie (que acaba en status.json) no la lleva, ni tampoco la URL con parámetros.
 		const logged = log.mock.calls.map((c) => c.join(' '));
-		expect(logged).toHaveLength(28);
+		expect(logged).toHaveLength(38);
 		for (const line of logged) {
 			expect(line).not.toContain(KEY);
 			expect(line).not.toContain('api_key');
