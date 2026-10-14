@@ -24,6 +24,23 @@
 	const geos = ['es', 'ea', 'de', 'fr', 'it', 'pt'];
 	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: !id.startsWith('gdp') }));
 
+	// EE. UU., Reino Unido, Japón y China, detrás de los europeos. EE. UU. sale de BLS (va al día); los demás, de
+	// la OCDE vía DBnomics (oecd-g4) o de la inflación del G20, que van unos meses por detrás. Aparte de `get`
+	// porque FRED ya tiene otro «gdp-us» (anualizado).
+	const g4 = $derived(seriesMap(data.g4));
+	const g20 = (code: string) => data.g20?.data.series.find((s) => s.id === `g20cpi-${code}`);
+	const MAJORS = [
+		{ geo: 'us', iso: 'usa', name: 'EE. UU.' },
+		{ geo: 'gb', iso: 'gbr', name: 'Reino Unido' },
+		{ geo: 'jp', iso: 'jpn', name: 'Japón' },
+		{ geo: 'cn', iso: 'chn', name: 'China' }
+	];
+	const majors = $derived({
+		unemployment: MAJORS.map((m) => ({ series: m.geo === 'us' ? get('unemployment-us') : g4(`unemployment-${m.geo}`), name: m.name, inverse: true })),
+		inflation: MAJORS.map((m) => ({ series: m.geo === 'us' ? get('cpi-us') : g20(m.iso), name: m.name, decimals: 1, inverse: true })),
+		gdp: MAJORS.map((m) => ({ series: g4(`gdp-${m.geo}`), name: m.name }))
+	});
+
 	// Primas de riesgo: diferencia con el bono alemán a 10 años, en puntos básicos.
 	const PREMIUMS = [
 		{ geo: 'es', name: 'España' },
@@ -53,10 +70,12 @@
 <div class="grid grid-2">
 	<div class="col">
 		<Panel title="Paro" meta="% de la población activa">
-			<SeriesTable next={data.next} head="País" rows={byGeo('unemployment')} />
+			<SeriesTable next={data.next} head="País" rows={[...byGeo('unemployment'), ...majors.unemployment]} />
+			{#snippet note()}EE. UU.: BLS. Reino Unido y Japón: OCDE, vía DBnomics, con unos meses de retraso. China no publica una tasa comparable.{/snippet}
 		</Panel>
 		<Panel title="Inflación" meta="IPCA, variación anual">
-			<SeriesTable next={data.next} head="País" rows={byGeo('inflation')} />
+			<SeriesTable next={data.next} head="País" rows={[...byGeo('inflation'), ...majors.inflation]} />
+			{#snippet note()}EE. UU., Reino Unido, Japón y China: IPC nacional, no IPCA (el índice armonizado de la UE). EE. UU.: BLS; los demás: OCDE, vía DBnomics, con unos meses de retraso.{/snippet}
 		</Panel>
 		{#if data.g20}
 			{@const g20 = data.g20}
@@ -72,7 +91,8 @@
 			</Panel>
 		{/if}
 		<Panel title="PIB" meta="Variación trimestral">
-			<SeriesTable next={data.next} head="País" rows={byGeo('gdp')} />
+			<SeriesTable next={data.next} head="País" rows={[...byGeo('gdp'), ...majors.gdp]} />
+			{#snippet note()}EE. UU., Reino Unido, Japón y China: OCDE, vía DBnomics, con un trimestre de retraso · <Updated at={data.g4?.fetchedAt} source="oecd-g4" />{/snippet}
 		</Panel>
 		{#if get('gdp-yoy-es')}
 			<Panel title="PIB interanual" meta="Frente al mismo trimestre del año anterior">

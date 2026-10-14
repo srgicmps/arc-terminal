@@ -7,7 +7,7 @@ import { nextMap } from '#lib/nextrelease.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal, fao, bde, eupower] = await Promise.all([
+	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal, fao, bde, eupower, g4] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -27,7 +27,9 @@ export const load: PageServerLoad = async () => {
 		dataset<FaoData>('fao'),
 		// Prima de riesgo diaria del Banco de España: solo se pinta el último dato y el de hace una semana.
 		dataset<SeriesData>('bde'),
-		dataset<EuPowerData>('energycharts')
+		dataset<EuPowerData>('energycharts'),
+		// Paro y PIB de EE. UU., Reino Unido, Japón y China (OCDE vía DBnomics), para las tablas por país.
+		dataset<SeriesData>('oecd-g4')
 	]);
 	// Del BCE, todo menos los tipos de cambio (están en WS); de los titulares, los 25 que se pintan.
 	const fx = (ecb?.data.series ?? [])
@@ -48,6 +50,7 @@ export const load: PageServerLoad = async () => {
 		housing,
 		imf,
 		g20,
+		g4,
 		// De la prima diaria basta con las dos últimas semanas.
 		bde: bde && { ...bde, data: { series: bde.data.series.map((x) => ({ ...x, points: x.points.slice(-10) })) } },
 		news: headlines(news, 25),
