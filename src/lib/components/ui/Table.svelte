@@ -90,6 +90,17 @@
 		overflow-y: auto;
 	}
 
+	/* Con alto máximo, la cabecera se queda fija arriba al hacer scroll. Con border-collapse el borde del th se
+	   iría con las filas, así que la línea de abajo es una sombra de --hair. */
+	.capped :global(.t thead th) {
+		position: sticky;
+		top: 0;
+		z-index: 1;
+		background: var(--panel);
+		border-bottom: 0;
+		box-shadow: inset 0 calc(-1 * var(--hair)) 0 var(--line);
+	}
+
 	:global {
 		.t {
 			width: 100%;
