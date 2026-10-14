@@ -1,6 +1,6 @@
 // FRED, Banco de la Reserva Federal de San Luis: series macro de EE. UU. https://fred.stlouisfed.org/docs/api/fred/
 // Necesita una clave gratuita (FRED_API_KEY, en GitHub Secrets). Sin ella, la fuente se salta.
-// Límite: unas 120 consultas por minuto por clave; aquí son 9 cada 3 horas.
+// Límite: unas 120 consultas por minuto por clave; aquí son 10 cada 3 horas.
 // Condiciones: hay que avisar de que se usa la API de FRED sin su respaldo, y algunas series son de
 // terceros con copyright (por ejemplo, el VIX de Cboe): solo se guardan unos pocos puntos con enlace a FRED.
 import type { Point, Series, SeriesData } from '../../src/lib/types.ts';
@@ -34,7 +34,9 @@ const WANTED: Wanted[] = [
 	{ code: 'M2SL', id: 'm2-us', label: 'M2, interanual', unit: '%', freq: 'm', units: 'pc1', last: 36 },
 	{ code: 'VIXCLS', id: 'vix', label: 'VIX', unit: 'pts', freq: 'd', last: 260 },
 	{ code: 'DCOILWTICO', id: 'wti', label: 'Petróleo WTI', unit: '$', freq: 'd', last: 260 },
-	{ code: 'DTWEXBGS', id: 'dollar-broad', label: 'Dólar, índice amplio', unit: 'pts', freq: 'd', last: 260 }
+	{ code: 'DTWEXBGS', id: 'dollar-broad', label: 'Dólar, índice amplio', unit: 'pts', freq: 'd', last: 260 },
+	// Hipoteca fija a 30 años (encuesta semanal de Freddie Mac): dos años de jueves.
+	{ code: 'MORTGAGE30US', id: 'mortgage30-us', label: 'Hipoteca fija a 30 años', unit: '%', freq: 'w', last: 104 }
 ];
 
 /** «2026-09-01» → «2026-09» (mensual) o «2026-Q3» (trimestral); diaria y semanal, tal cual. */
