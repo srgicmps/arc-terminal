@@ -50,9 +50,13 @@ export function parsePapers(body: unknown, max = 30): Paper[] {
 export const hfpapers: Source<Paper[]> = {
 	name: 'hfpapers',
 	label: 'Papers del día · Hugging Face',
-	// La lista cambia pocas veces al día y los votos, poco a poco.
-	maxAgeMinutes: 120,
+	// La lista cambia pocas veces al día y, sin token, Hugging Face limita las peticiones por IP:
+	// con refrescarla cada 6 h basta.
+	maxAgeMinutes: 360,
 	async fetch() {
-		return parsePapers(await getJson('https://huggingface.co/api/daily_papers?limit=50'));
+		// Token opcional (GitHub Secret HF_TOKEN): da más margen de peticiones, pero no es obligatorio.
+		const token = process.env.HF_TOKEN;
+		const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+		return parsePapers(await getJson('https://huggingface.co/api/daily_papers?limit=50', { headers }));
 	}
 };

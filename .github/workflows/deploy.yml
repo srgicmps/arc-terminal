@@ -47,6 +47,7 @@ jobs:
       - run: pnpm data
         env:
           SAMPLE: ${{ github.event_name == 'pull_request' && '1' || '' }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
 
       - run: pnpm check
       - run: pnpm build --logLevel warn
