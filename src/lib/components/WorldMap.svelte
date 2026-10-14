@@ -1,52 +1,83 @@
 <!--
-	Mapa del mundo con puntos: terremotos (rojo, tamaño según magnitud), huracanes (anillo) y otros eventos
-	naturales (ámbar). Proyección equirectangular: sencilla y suficiente para situar cada cosa.
+	Mapa del mundo con capas de puntos (src/lib/geo/layers.ts): terremotos, ciclones, incendios y volcanes,
+	estrechos, sanciones por país y crisis. Proyección equirectangular: sencilla y suficiente para situar
+	cada cosa. Al tocar un punto sale una ficha con el enlace a su fuente.
+	Colores: ámbar y grises del tema; rojo y verde quedan para subidas y bajadas.
 -->
 <script lang="ts">
-	import { nf } from '#lib/format.ts';
-	import type { NaturalEvent, Quake, Storm } from '#lib/types.ts';
+	import type { LayerId, MapPoint } from '#lib/geo/layers.ts';
 	import { LAND } from '#lib/world.ts';
 
 	interface Props {
-		quakes?: Quake[];
-		storms?: Storm[];
-		events?: NaturalEvent[];
+		points: MapPoint[];
+		/** Texto de la leyenda de cada capa que se ve. */
+		legend?: { value: LayerId; label: string }[];
 	}
 
-	let { quakes = [], storms = [], events = [] }: Props = $props();
+	let { points, legend = [] }: Props = $props();
+
+	let selected = $state<MapPoint | null>(null);
+
+	/** Radio mínimo de la zona de toque, en grados del mapa (unos 10 px en un móvil). */
+	const HIT = 5;
 
 	const x = (lon: number) => lon + 180;
 	const y = (lat: number) => 90 - lat;
-	const ok = (p: { lat: number; lon: number }) => Number.isFinite(p.lat) && Number.isFinite(p.lon);
+	// Si la capa del punto elegido se apaga, la ficha se cierra.
+	const shown = $derived(selected && points.some((p) => p.id === selected!.id) ? selected : null);
+	const present = $derived(legend.filter((l) => points.some((p) => p.layer === l.value)));
+
+	function pick(p: MapPoint, e?: KeyboardEvent) {
+		if (e && e.key !== 'Enter' && e.key !== ' ') return;
+		e?.preventDefault();
+		selected = shown?.id === p.id ? null : p;
+	}
 </script>
 
 <div class="map">
-	<svg viewBox="0 8 360 150" role="img" aria-label="Mapa: {quakes.length} terremotos, {storms.length} ciclones y {events.length} eventos naturales">
+	<svg viewBox="0 8 360 150" role="img" aria-label="Mapa del mundo con {points.length} puntos">
 		<path class="land" d={LAND} />
-		<!-- Cada punto enlaza a su fuente: en el móvil, se toca y se abre. -->
-		{#each events.filter(ok) as e (e.id)}
-			<a href={e.url} target="_blank" rel="noopener">
-				<circle class="ev" cx={x(e.lon)} cy={y(e.lat)} r="0.9"><title>{e.title}</title></circle>
-			</a>
-		{/each}
-		{#each quakes.filter(ok) as q (q.id)}
-			<a href={q.url} target="_blank" rel="noopener">
-				<circle class="eq" class:big={q.mag >= 6} cx={x(q.lon)} cy={y(q.lat)} r={Math.max(0.8, (q.mag - 4) * 1.1)}>
-					<title>M{nf(q.mag, 1)} · {q.place}</title>
-				</circle>
-			</a>
-		{/each}
-		{#each storms.filter(ok) as s (s.id)}
-			<a href={s.url} target="_blank" rel="noopener">
-				<circle class="st" cx={x(s.lon)} cy={y(s.lat)} r="2.6"><title>{s.name} · {s.classification}</title></circle>
-			</a>
+		{#each points as p (p.id)}
+			{@const cx = x(p.lon)}
+			{@const cy = y(p.lat)}
+			<g
+				class="pt {p.layer}"
+				class:strong={p.strong}
+				class:on={shown?.id === p.id}
+				role="button"
+				tabindex="0"
+				aria-label="{p.title}. {p.sub}"
+				onclick={() => pick(p)}
+				onkeydown={(e) => pick(p, e)}
+			>
+				<!-- Zona de toque invisible y más grande que el punto: en el móvil, los puntos miden pocos px. -->
+				<circle class="hit" {cx} {cy} r={Math.max(p.r, HIT)} />
+				{#if p.layer === 'sanctions'}
+					<rect x={cx - p.r} y={cy - p.r} width={p.r * 2} height={p.r * 2} transform="rotate(45 {cx} {cy})" />
+				{:else}
+					<circle {cx} {cy} r={p.r} />
+				{/if}
+				<title>{p.title} · {p.sub}</title>
+			</g>
 		{/each}
 	</svg>
-	<p class="legend">
-		<span><i class="eq"></i>Terremotos M4,5+</span>
-		<span><i class="st"></i>Ciclones tropicales</span>
-		<span><i class="ev"></i>Incendios, volcanes y tormentas</span>
-	</p>
+
+	{#if shown}
+		<div class="card">
+			<div class="txt">
+				<b>{shown.title}</b>
+				<span>{shown.sub}</span>
+			</div>
+			<a href={shown.url} target="_blank" rel="noopener">Abrir ›</a>
+			<button type="button" aria-label="Cerrar la ficha" onclick={() => (selected = null)}>×</button>
+		</div>
+	{/if}
+
+	{#if present.length}
+		<p class="legend">
+			{#each present as l (l.value)}<span><i class={l.value}></i>{l.label}</span>{/each}
+		</p>
+	{/if}
 </div>
 
 <style>
@@ -62,39 +93,117 @@
 
 	/* Trazos de 1 px, se vea el mapa al tamaño que se vea. */
 	.land,
-	circle {
+	circle,
+	rect {
 		vector-effect: non-scaling-stroke;
+		stroke-width: 1;
 	}
 
 	.land {
 		fill: var(--raise);
 		stroke: var(--line);
-		stroke-width: 1;
 	}
 
-	/* Rojo y verde quedan para subidas y bajadas: los terremotos van en ámbar. */
-	.eq {
+	.pt {
+		cursor: pointer;
+		outline: none;
+	}
+
+	.pt .hit {
+		fill: transparent;
+		stroke: none;
+		pointer-events: all;
+	}
+
+	.quakes circle {
 		fill: var(--amber-soft);
 		stroke: var(--amber);
-		stroke-width: 1;
 	}
 
-	.eq.big {
+	.strong circle,
+	.strong rect {
 		fill: var(--amber-edge);
 	}
 
-	.st {
+	.storms circle {
 		fill: none;
 		stroke: var(--fg);
-		stroke-width: 1;
 	}
 
-	.ev {
+	.events circle {
 		fill: var(--muted);
+		stroke: none;
 	}
 
-	a:hover circle {
+	.straits circle {
+		fill: none;
+		stroke: var(--amber);
+	}
+
+	.sanctions rect {
+		fill: var(--amber-soft);
+		stroke: var(--amber);
+	}
+
+	.crises circle {
+		fill: none;
+		stroke: var(--muted);
+	}
+
+	/* :not(.hit): la zona de toque invisible no se pinta al pasar el ratón ni al tocarla. */
+	.pt:hover circle:not(.hit),
+	.pt:hover rect,
+	.pt:focus-visible circle:not(.hit),
+	.pt:focus-visible rect,
+	.on circle:not(.hit),
+	.on rect {
 		stroke: var(--fg);
+	}
+
+	.card {
+		display: flex;
+		align-items: center;
+		gap: var(--sp-10);
+		margin-top: var(--sp-6);
+		padding: var(--sp-6) var(--sp-10);
+		border: var(--border);
+		background: var(--raise);
+		font-size: var(--fs-s);
+	}
+
+	.txt {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.txt b {
+		font-family: var(--sans);
+		font-weight: var(--fw-medium);
+	}
+
+	.txt span {
+		color: var(--muted);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.card a {
+		color: var(--amber);
+		text-decoration: none;
+		white-space: nowrap;
+	}
+
+	.card button {
+		background: none;
+		border: 0;
+		color: var(--muted);
+		cursor: pointer;
+		font-size: var(--fs-l);
+		min-width: var(--touch);
+		min-height: var(--touch);
 	}
 
 	.legend {
@@ -113,18 +222,29 @@
 		margin-right: var(--sp-6);
 		border-radius: 50%;
 		vertical-align: calc(-1 * var(--hair));
-	}
-
-	.legend i.eq {
-		background: var(--amber-soft);
 		border: var(--hair) solid var(--amber);
 	}
 
-	.legend i.st {
-		border: var(--hair) solid var(--fg);
+	.legend i.quakes {
+		background: var(--amber-soft);
 	}
 
-	.legend i.ev {
+	.legend i.storms {
+		border-color: var(--fg);
+	}
+
+	.legend i.events {
 		background: var(--muted);
+		border-color: var(--muted);
+	}
+
+	.legend i.sanctions {
+		border-radius: 0;
+		transform: rotate(45deg);
+		background: var(--amber-soft);
+	}
+
+	.legend i.crises {
+		border-color: var(--muted);
 	}
 </style>

@@ -27,3 +27,43 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
+# AI: modelos en tendencia de Hugging Face (M13)
+https://huggingface.co/api/models?sort=trendingScore&limit=3
+# FUEL: Weekly Oil Bulletin de la Comisión Europea (enlace al histórico .xlsx)
+https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en ~ [^"' <>]{0,200}Prices_History[^"' <>]{0,40}
+# WS: curva de la zona euro (BCE, YC), bonos de Japón (MOF, Shift-JIS)
+https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_3M+SR_1Y+SR_2Y+SR_5Y+SR_10Y+SR_30Y?lastNObservations=2&format=csvdata&detail=dataonly
+https://www.mof.go.jp/jgbs/reference/interest_rate/jgbcm.csv
+https://www.mof.go.jp/jgbs/reference/interest_rate/data/jgbcm_all.csv ~ R7\.10\.\d+[^R]{0,90}
+https://www.mof.go.jp/jgbs/reference/interest_rate/data/jgbcm_all.csv ~ R6\.10\.1\d[^R]{0,90}
+# WS: subastas del Tesoro: tipos de valor y campos de las notas ya subastadas
+https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?fields=auction_date,security_type,security_term,floating_rate,high_yield,bid_to_cover_ratio,indirect_bidder_accepted,comp_accepted,offering_amt&filter=security_type:in:(Note,Bond),auction_date:lt:2026-10-14&sort=-auction_date&page[size]=12
+https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?fields=security_type,security_term&filter=auction_date:gte:2026-07-01&page[size]=200 ~ TIPS|FRN|CMB
+# ECO: bono a 10 años de Portugal y Grecia (BCE), para las primas de riesgo
+https://data-api.ecb.europa.eu/service/data/IRS/M.PT+GR.L.L40.CI.0000.EUR.N.Z?lastNObservations=2&format=csvdata&detail=dataonly
+# GEO/WX: clima del planeta. Copernicus Climate Pulse (ERA5, temperatura media mundial diaria)
+https://sites.ecmwf.int/data/climatepulse/data/series/era5_daily_series_2t_global.csv
+# NOAA GML: CO₂ diario de Mauna Loa
+https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_daily_mlo.csv ~ 202[56],\s?(9|10|09),[^ ]{0,60}
+# GEO: comunicados de organismos internacionales (segunda ronda: OTAN, FMI, Banco Mundial y OPEP)
+https://www.nato.int/cps/en/natohq/news.htm?format=rss
+https://www.nato.int/en/news-and-events/rss
+https://www.nato.int/rss/news.xml
+https://www.imf.org/en/news/rss?language=eng
+https://www.imf.org/en/Publications/RSS?language=eng
+https://www.imf.org/external/rss/feeds.aspx?category=News
+https://www.worldbank.org/en/news/all?displayconttype_exact=Press%20Release&format=rss
+https://search.worldbank.org/api/v2/news?format=json&rows=3&lang_exact=English
+https://www.opec.org/rss.xml
+https://www.opec.org/press-releases.rss
+# CMP: precios diarios sin clave, para la variación a 1 mes, 1 año y en lo que va de año
+https://stooq.com/q/d/l/?s=nvda.us&i=d
+https://stooq.com/q/l/?s=nvda.us+amd.us&f=sd2t2ohlc&h&e=csv
+# ECO: discursos de los banqueros centrales (BIS)
+https://www.bis.org/doclist/cbspeeches.rss
+# WS: subastas de deuda de EE. UU. (Fiscal Data)
+https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/upcoming_auctions?page[size]=3
+https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?sort=-auction_date&page[size]=2
+# Traducción de titulares: MyMemory sin correo (comprueba la forma de la respuesta) y sus límites de uso
+https://api.mymemory.translated.net/get?q=Oil%20prices%20rise%20as%20Middle%20East%20tensions%20grow&langpair=en%7Ces
+https://mymemory.translated.net/doc/usagelimits.php ~ .{0,250}(chars|characters|words)/?\s*(per\s*)?day.{0,250}

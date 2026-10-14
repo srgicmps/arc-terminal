@@ -352,6 +352,11 @@
 		border: var(--border);
 	}
 
+	/* Lo de dentro mide lo que necesita (no se encoge para caber): el que desplaza es el panel. */
+	.max > :global(*) {
+		flex-shrink: 0;
+	}
+
 	/* Dentro, la cabecera se queda fija arriba, igual que en «encajar». */
 	.max .ph {
 		position: sticky;

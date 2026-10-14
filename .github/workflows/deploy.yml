@@ -82,6 +82,8 @@ jobs:
           RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
           # aisstream.io (barcos en los puertos, AIS en directo).
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          # MyMemory (titulares en inglés → español, scripts/translate.ts). Este job no corre en los PR.
+          MYMEMORY_EMAIL: ${{ secrets.MYMEMORY_EMAIL }}
 
       # Abre un issue si una fuente lleva 3 pasadas sin datos y lo cierra cuando vuelve.
       # Si falla, no frena la publicación. Las claves van para taparlas si salen en un error.
@@ -94,6 +96,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          MYMEMORY_EMAIL: ${{ secrets.MYMEMORY_EMAIL }}
 
       # Avisos al móvil con ntfy (scripts/notify.ts y scripts/alerts/): niveles P1–P4 con cupos y un tope
       # de 50 al día. Si falla, no frena la publicación. Sin el secreto NTFY_TOPIC no hace nada. El tema es

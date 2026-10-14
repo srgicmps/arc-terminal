@@ -2,9 +2,11 @@
 	import HnTable from '#lib/components/HnTable.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import QuoteBoard from '#lib/components/QuoteBoard.svelte';
 	import ReleaseList from '#lib/components/ReleaseList.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import { BIG_TECH } from '#lib/tickers/bigtech.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -22,6 +24,9 @@
 		</Panel>
 	</div>
 	<div class="col">
+		<Panel title="Tecnológicas en bolsa" meta="TradingView · toca un código para su ficha">
+			<QuoteBoard name="Tecnológicas" codes={BIG_TECH} />
+		</Panel>
 		<Panel title="Hacker News" meta="Portada, por puntos">
 			<HnTable items={data.hn?.data ?? []} />
 			{#snippet note()}Fuente: Hacker News (API de Algolia) · <Updated at={data.hn?.fetchedAt} source="hn" />{/snippet}

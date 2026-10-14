@@ -7,11 +7,18 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { TICKERS, tvSymbol } from '#lib/commands.ts';
+	import { clock } from '#lib/clock.svelte.ts';
+	import { madridDate } from '#lib/meetings.ts';
+	import { earningsLine, myEarnings } from '#lib/myearnings.ts';
 	import { moveWatch, toggleWatch, watchlist } from '#lib/watchlist.svelte.ts';
 	import type { Mention } from '#lib/news.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+
+	// Resultados de los próximos 14 días de los valores de tu lista (fecha de hoy en Madrid).
+	const today = $derived(madridDate(clock.now || Date.now()));
+	const upcoming = $derived(myEarnings(data.finnhub?.data.earnings ?? [], watchlist.codes, today));
 
 	let adding = $state('');
 
@@ -76,6 +83,24 @@
 		{/if}
 	</div>
 	<div class="col">
+		{#if data.finnhub && watchlist.codes.length}
+			<Panel title="Tus próximos resultados" meta="Próximas 2 semanas">
+				{#if upcoming.length}
+					<ul class="mini">
+						{#each upcoming as e (e.symbol + e.date)}
+							<li>
+								<a class="l" href="{resolve('/s')}?sym={encodeURIComponent(e.code)}">{earningsLine(e, today)}</a>
+							</li>
+						{/each}
+					</ul>
+				{:else}
+					<p class="empty">Ninguno de tus valores presenta resultados en las próximas 2 semanas.</p>
+				{/if}
+				{#snippet note()}
+					Grandes empresas de EE. UU. Fuente: Finnhub · <Updated at={data.finnhub?.fetchedAt} source="finnhub" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Editar la lista">
 			<form class="add" onsubmit={add}>
 				<input bind:value={adding} placeholder="Código: NVDA, SAN, BME:REP…" aria-label="Código del valor" autocapitalize="characters" spellcheck="false" />
