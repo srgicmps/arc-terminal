@@ -6,26 +6,39 @@
 	import { findEntity } from '#lib/entities.ts';
 	import { newsPrefs, setMuted, setOrigin, type NewsOrigin } from '#lib/newsprefs.svelte.ts';
 	import Panel from '#lib/components/Panel.svelte';
+	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { NEWS_SECTIONS as SECTIONS } from '#lib/news.ts';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Search from '#lib/components/ui/Search.svelte';
 	import { fold, hasWords, MIN_QUERY, queryWords } from '#lib/search.ts';
 	import type { ArchiveEntry, NewsItem } from '#lib/types.ts';
+	import { urlState, writeParams } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
+	// Lo buscado (?q=) y la sección (?s=, la que abre «Titulares › NEWS» de cada vista) van en la URL: se
+	// pueden compartir y sobreviven a recargar. «NEWS inflación» en la barra abre /news?q=inflación.
+	// El buscador es un $state local: copia la URL al abrir la vista o si cambia desde fuera (la barra), y la
+	// escribe con 300 ms de retraso, para no hacer una navegación por tecla ni perder letras o el foco.
 	let query = $state('');
-	let section = $state<string>('all');
-
-	// «NEWS inflación» en la barra abre /news?q=inflación y rellena el buscador (solo en el navegador).
+	let written = '';
 	$effect(() => {
-		query = page.url.searchParams.get('q') ?? '';
-		// «Titulares › NEWS» de cada vista abre /news?s=eco con esa sección elegida.
-		const s = page.url.searchParams.get('s');
-		section = SECTIONS.some((x) => x.key === s) ? s! : 'all';
+		const fromUrl = page.url.searchParams.get('q') ?? '';
+		if (fromUrl !== written) query = written = fromUrl;
 	});
+	$effect(() => {
+		const text = query;
+		if (text === written) return;
+		const t = setTimeout(() => {
+			written = text;
+			writeParams({ q: text || null });
+		}, 300);
+		return () => clearTimeout(t);
+	});
+	const sectionSel = urlState<string>('s', 'all', (v) => SECTIONS.some((x) => x.key === v));
+	const section = $derived(sectionSel.value);
 
 	const words = $derived(queryWords(query));
 	// Si lo buscado tiene ficha (valor, líder, banco central o país), sale arriba y los titulares debajo.
@@ -98,7 +111,7 @@
 
 <div class="controls">
 	<Search label="Buscar en los titulares" placeholder="Buscar: Lagarde, aranceles, Menorca, Nvidia…" bind:value={query} />
-	<Seg label="Sección" options={[{ value: 'all', label: 'Todas' }, ...SECTIONS.map((s) => ({ value: s.key, label: s.label }))]} bind:value={section} />
+	<Seg label="Sección" options={[{ value: 'all', label: 'Todas' }, ...SECTIONS.map((s) => ({ value: s.key, label: s.label }))]} bind:value={() => sectionSel.value, (v) => (sectionSel.value = v ?? 'all')} />
 </div>
 
 <div class="grid">
@@ -106,6 +119,7 @@
 		{#if entity}<EntityCard {entity} />{/if}
 		<Panel title="Resultados" meta={words.length ? `${filtered.length} de ${inSection.length}` : `${filtered.length} titulares`}>
 			<NewsList items={filtered.slice(0, 150)} summaries tag={(i) => label[sectionOf.get(i.url) ?? '']} />
+			{#snippet note()}{#if data.updated}<Updated at={data.updated.at} source={data.updated.source} />{/if}{/snippet}
 		</Panel>
 		{#if searching && data.months.length}
 			<Panel

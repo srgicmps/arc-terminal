@@ -4,6 +4,7 @@
 	import { routeHref } from '#lib/routes.ts';
 	import '../app.css';
 	import { goto } from '$app/navigation';
+	import { neighbour, nudge, SWIPE, swipeDirection } from '#lib/swipe.ts';
 	import { asset, resolve } from '$app/paths';
 	import { page, updated } from '$app/state';
 	import { startClock } from '#lib/clock.svelte.ts';
@@ -18,8 +19,11 @@
 	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
 	import { initPlace } from '#lib/place.svelte.ts';
 	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
+	import { initFolded } from '#lib/folded.svelte.ts';
 	import { tvSymbol } from '#lib/tickers.ts';
+	import { initTaste, taste } from '#lib/taste.svelte.ts';
 	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
+	import { crossedNow, initThresholds } from '#lib/thresholds.svelte.ts';
 	import { parseTv, routeOf } from '#lib/tv.ts';
 	import type { LayoutProps } from './$types';
 
@@ -28,6 +32,11 @@
 	// El reloj arranca en el navegador (como onMounted en Vue) y se para al salir.
 	$effect(startClock);
 	$effect(initWatchlist);
+	$effect(initThresholds);
+	// Umbrales cruzados (lote 25): un contador discreto en la barra, con sus nombres al pasar por encima.
+	const crossedRules = $derived(crossedNow());
+	$effect(initFolded);
+	$effect(initTaste);
 	$effect(initPlace);
 	$effect(initTheme);
 	$effect(initFit);
@@ -72,6 +81,60 @@
 		e.stopImmediatePropagation();
 	}
 
+	// En el móvil los accesos van en una fila con scroll: el de la vista actual, siempre a la vista.
+	$effect(() => {
+		void page.route.id;
+		if (!matchMedia('(max-width: 720px)').matches) return;
+		document.querySelector('.keys [aria-current="page"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+	});
+
+	// Deslizar entre vistas en el móvil (lote 22): a izquierda o derecha, a la vista de al lado de la fila de
+	// arriba. No cuenta si el dedo empieza en algo que ya se desliza en horizontal (tablas anchas, mapas,
+	// gráficos, widgets, campos) ni junto al borde, que en iOS es «atrás».
+	let swipe: { x: number; y: number; t: number } | null = null;
+	let shift = $state(0);
+	const NO_SWIPE = 'input, textarea, select, iframe, canvas, svg, .map, .chart, .tv, .board, [data-noswipe]';
+
+	function scrollsX(el: Element | null): boolean {
+		for (let e = el; e && e !== document.body; e = e.parentElement) {
+			if (e.matches(NO_SWIPE)) return true;
+			const o = getComputedStyle(e).overflowX;
+			if ((o === 'auto' || o === 'scroll') && e.scrollWidth > e.clientWidth) return true;
+		}
+		return false;
+	}
+
+	function onSwipeStart(e: TouchEvent) {
+		swipe = null;
+		const t = e.touches[0];
+		if (e.touches.length !== 1 || tv.on || !matchMedia('(max-width: 720px) and (pointer: coarse)').matches) return;
+		if (t.clientX < SWIPE.edge || t.clientX > innerWidth - SWIPE.edge || scrollsX(e.target as Element)) return;
+		swipe = { x: t.clientX, y: t.clientY, t: Date.now() };
+	}
+
+	function onSwipeMove(e: TouchEvent) {
+		if (!swipe) return;
+		const dx = e.touches[0].clientX - swipe.x;
+		const dy = e.touches[0].clientY - swipe.y;
+		// En cuanto el gesto es más vertical que horizontal, es scroll: se olvida.
+		if (Math.abs(dy) > Math.abs(dx)) {
+			swipe = null;
+			shift = 0;
+		} else shift = nudge(dx);
+	}
+
+	function onSwipeEnd(e: TouchEvent) {
+		const s = swipe;
+		swipe = null;
+		shift = 0;
+		if (!s) return;
+		const t = e.changedTouches[0];
+		const dir = swipeDirection(t.clientX - s.x, t.clientY - s.y, Date.now() - s.t);
+		if (!dir) return;
+		const next = neighbour(keys, keys.findIndex((k) => k.route === page.route.id), dir);
+		if (next) goto(routeHref(next.route));
+	}
+
 	/** En modo TV, tocar la pantalla pausa o sigue (menos en los botones del aviso de pausa). */
 	function onTvTap(e: PointerEvent) {
 		if (tv.on && !(e.target as Element | null)?.closest('.tv-chip')) togglePause();
@@ -80,9 +143,9 @@
 	const THEME_LABEL = { auto: 'Tema automático (sigue al sistema)', light: 'Tema de día', dark: 'Tema de noche' };
 	const THEME_ICON = { auto: '◐', light: '☀', dark: '☾' };
 
-	const keys = COMMANDS.filter((c) => c.pinned);
-	// Barra inferior del móvil: los accesos más usados, a mano del pulgar.
-	const thumb = ['TOP', 'ECO', 'WS', 'FUEL'].map((code) => COMMANDS.find((c) => c.code === code)!);
+	// Fila de arriba y barra inferior del móvil (a mano del pulgar): las de la web o las de «A tu gusto».
+	const keys = $derived(COMMANDS.filter((c) => taste.top.includes(c.code)));
+	const thumb = $derived(COMMANDS.filter((c) => taste.thumb.includes(c.code)));
 
 	// navigator.onLine, enlazado como en Vue con un ref que se actualiza solo.
 	let online = $state(true);
@@ -131,6 +194,12 @@
 		{#if !online}<span class="offline" title="Se muestra la última copia guardada">Sin conexión</span>{/if}
 		<PlacePicker />
 		<Clocks />
+		{#if crossedRules.length}
+			<span class="limits" role="status" title={crossedRules.map(([, r]) => `${r.name} ${r.op === '>' ? 'por encima de' : 'por debajo de'} ${r.v.toLocaleString('es-ES', { maximumFractionDigits: 3 })}`).join(' · ')}>
+				<span aria-hidden="true">⚑</span>
+				{crossedRules.length}<span class="sr"> {crossedRules.length === 1 ? 'umbral cruzado' : 'umbrales cruzados'}</span>
+			</span>
+		{/if}
 		{#if page.route.id === '/'}
 			<!-- General / Modular: de momento solo la portada se puede personalizar. -->
 			<button
@@ -191,7 +260,14 @@
 		</button>
 	{/if}
 
-	<main>
+	<main
+		class:nudged={shift !== 0}
+		style:translate={shift ? `${shift}px 0` : undefined}
+		ontouchstart={onSwipeStart}
+		ontouchmove={onSwipeMove}
+		ontouchend={onSwipeEnd}
+		ontouchcancel={() => ((swipe = null), (shift = 0))}
+	>
 		{@render children()}
 	</main>
 
@@ -297,6 +373,14 @@
 		padding: var(--sp-2) var(--sp-7);
 	}
 
+	/* Umbrales cruzados: cifra pequeña en ámbar, sin caja, para que no grite. */
+	.limits {
+		color: var(--amber);
+		font-family: var(--mono);
+		font-size: var(--fs-s);
+		cursor: default;
+	}
+
 	/* Teclas de función */
 	.keys {
 		display: flex;
@@ -347,6 +431,12 @@
 
 	main {
 		padding-bottom: var(--sp-16);
+		/* Al soltar el dedo, la pista de «deslizar» vuelve a su sitio sin salto; mientras se desliza, va con él. */
+		transition: translate var(--dur-fast) ease-out;
+	}
+
+	main.nudged {
+		transition: none;
 	}
 
 	.fresh {
@@ -501,6 +591,23 @@
 			display: none;
 		}
 
+		/* Accesos en una sola fila que se desliza en horizontal: la cabecera ocupa una línea menos. Un fundido
+		   muy leve a la derecha avisa de que hay más; el de la vista actual se trae a la vista al cambiar. */
+		.keys {
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			scrollbar-width: none;
+			mask-image: linear-gradient(to right, var(--bg) calc(100% - var(--sp-24)), transparent);
+		}
+
+		.keys::-webkit-scrollbar {
+			display: none;
+		}
+
+		.key {
+			flex: none;
+		}
+
 		.top :global(.cmd) {
 			order: 2;
 			flex-basis: 100%;
@@ -585,7 +692,7 @@
 		     menor: ninguno se queda en 2-3 filas;
 		   - el alto que sobra se reparte a partes iguales, sin que ningún panel pase de su contenido: lo
 		     que no usa una tabla corta se lo quedan las listas largas, que hacen scroll por dentro. */
-		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max)) {
+		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max, .folded)) {
 			flex: 1 0 auto;
 			height: var(--fit-panel-min);
 			max-height: fit-content;
@@ -593,7 +700,7 @@
 		}
 
 		/* Gráficos, mapas y widgets tienen un alto fijo: recortados no se leen, así que van enteros. */
-		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max):has(.chart, .map, .tv, .curve, .bars)) {
+		:global(html[data-fit] main > .grid:last-child > .col > .panel:not(.max, .folded):has(.chart, .map, .tv, .curve, .bars)) {
 			height: auto;
 		}
 	}
@@ -610,7 +717,7 @@
 			background: var(--line);
 		}
 
-		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max)) {
+		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max, .folded)) {
 			height: auto;
 			max-height: none;
 			border-top: 0;
@@ -619,7 +726,7 @@
 		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con
 		   su fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. Los gráficos,
 		   mapas y widgets van enteros, como en una columna. */
-		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max):not(:has(.chart, .map, .tv, .curve, .bars))) {
+		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max, .folded):not(:has(.chart, .map, .tv, .curve, .bars))) {
 			contain: size;
 			contain-intrinsic-block-size: var(--fit-panel-min);
 		}
@@ -638,7 +745,7 @@
 			background: var(--line);
 		}
 
-		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max)) {
+		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max, .folded)) {
 			height: auto;
 			max-height: none;
 			border-top: 0;
@@ -647,7 +754,7 @@
 		/* Cada panel cuenta como --fit-panel-min al medir las filas (contain: size) y luego se estira con
 		   su fila. Sin esto, la fila mediría el contenido entero y no se repartiría el alto. Los gráficos,
 		   mapas y widgets van enteros, como en una columna. */
-		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max):not(:has(.chart, .map, .tv, .curve, .bars))) {
+		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max, .folded):not(:has(.chart, .map, .tv, .curve, .bars))) {
 			contain: size;
 			contain-intrinsic-block-size: var(--fit-panel-min);
 		}

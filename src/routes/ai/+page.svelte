@@ -9,14 +9,25 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
 	import { compact } from '#lib/format.ts';
+	import { hnByTopic } from '#lib/hn.ts';
 	import { BIG_TECH } from '#lib/tickers/bigtech.ts';
+	import { AI_CHAIN } from '#lib/tickers/aichain.ts';
+	import { quotesHeight } from '#lib/tickers.ts';
+	import TvWidget from '#lib/components/TvWidget.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
+	// Cesta de la cadena de la IA: el widget pone los eslabones uno debajo de otro, cada uno con su título, así
+	// que el alto cuenta todos los valores y un título por eslabón (como una fila más).
+	const chain = {
+		showSymbolLogo: false,
+		symbolsGroups: AI_CHAIN.map((link) => ({ name: link.name, symbols: link.symbols.map((s) => ({ name: s.tv, displayName: s.name })) }))
+	};
+	const chainHeight = quotesHeight(AI_CHAIN.reduce((n, l) => n + l.symbols.length + 1, 0));
+
 	// De la portada de Hacker News, lo que habla de IA.
-	const AI = /\b(ai|a\.i\.|llms?|gpt|openai|anthropic|claude|gemini|llama|mistral|deepseek|transformer|neural|machine learning|agents?|diffusion|copilot|inference|model)\b/i;
-	const hnAi = $derived((data.hn?.data ?? []).filter((i) => AI.test(i.title)));
+	const hnAi = $derived(hnByTopic(data.hn?.data ?? [], 'ai'));
 	const papers = $derived(data.papers?.data ?? []);
 	const models = $derived(data.models?.data ?? []);
 
@@ -54,6 +65,9 @@
 	<div class="col">
 		<Panel title="Tecnológicas en bolsa" meta="TradingView · toca un código para su ficha">
 			<QuoteBoard name="Tecnológicas" codes={BIG_TECH} />
+		</Panel>
+		<Panel title="La cadena de la IA" meta="Chips, fabricación, memoria, servidores y energía · en directo">
+			<TvWidget widget="market-quotes" config={chain} height={chainHeight} />
 		</Panel>
 		<Panel title="IA en Hacker News" meta="{hnAi.length} en portada">
 			<HnTable items={hnAi} />

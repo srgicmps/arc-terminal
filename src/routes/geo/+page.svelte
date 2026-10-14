@@ -16,6 +16,7 @@
 	import { period } from '#lib/format.ts';
 	import TradeList from '#lib/components/TradeList.svelte';
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
+	import RefugeeTables from '#lib/components/RefugeeTables.svelte';
 	import RiskSignals from '#lib/components/RiskSignals.svelte';
 	import StormNotice from '#lib/components/StormNotice.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -77,6 +78,17 @@
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-geo" />{/snippet}
 		</Panel>
 		<ClimatePanel climate={data.climate} />
+		{#if data.refugees}
+			{@const r = data.refugees}
+			<Panel title="Refugiados" meta="ACNUR · fin de {r.year}">
+				<RefugeeTables from={r.from} hosted={r.hosted} />
+				{#snippet note()}
+					Refugiados y solicitantes de asilo. Fuente: <a href="https://www.unhcr.org/refugee-statistics/" target="_blank" rel="noopener"
+						>ACNUR, Refugee Data Finder</a
+					> · <Updated at={r.fetchedAt} source="unhcr" />
+				{/snippet}
+			</Panel>
+		{/if}
 		{#if data.food?.data.length}
 			{@const food = data.food}
 			<Panel title="Hambre aguda" meta="Personas en fase IPC 3 o peor · FEWS NET">
@@ -180,6 +192,18 @@
 						>Departamento de Estado de EE. UU.</a
 					>, para viajeros estadounidenses · <Updated at={data.advisories?.fetchedAt} source="advisories" />
 				{/snippet}
+			</Panel>
+		{/if}
+		{#if data.world?.data.items.length}
+			<Panel title="Desde Ucrania, China, Japón y África" meta="Medios de cada región">
+				<NewsList items={data.world.data.items} />
+				{#snippet note()}<Updated at={data.world?.fetchedAt} source="news-world" />{/snippet}
+			</Panel>
+		{/if}
+		{#if data.analysis?.data.items.length}
+			<Panel title="Análisis" meta="Crisis Group y Foreign Affairs">
+				<NewsList items={data.analysis.data.items} />
+				{#snippet note()}Informes y artículos de fondo sobre conflictos · <Updated at={data.analysis?.fetchedAt} source="news-analysis" />{/snippet}
 			</Panel>
 		{/if}
 		<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">

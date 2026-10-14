@@ -4,6 +4,7 @@ import { countryProfile, type CountryProfile } from '#lib/country.ts';
 import { dataset } from '#lib/data.ts';
 import type { MilexData, MilexRow } from '#lib/milex.ts';
 import { countryRisks } from '#lib/risk-signals.ts';
+import { byCountry } from '#lib/unhcr.ts';
 import type { Mention } from '#lib/news.ts';
 import type {
 	AdvisoriesData,
@@ -15,6 +16,7 @@ import type {
 	OutbreakNews,
 	SeriesData,
 	TravelAdvisory,
+	UnhcrData,
 	YieldCurveData
 } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
@@ -23,7 +25,7 @@ import type { PageServerLoad } from './$types';
 // cifras que pinta cada una (último dato y anterior), no las series enteras. Los países sin ningún dato no
 // van; los titulares llegan ya repartidos por país (scripts/news-index.ts → news-countries.json).
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news, advisories, eupower, sipri, gdacs, ioda, who, food] = await Promise.all([
+	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news, advisories, eupower, sipri, gdacs, ioda, who, unhcr, food] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -38,6 +40,7 @@ export const load: PageServerLoad = async () => {
 		dataset<GdacsEvent[]>('gdacs'),
 		dataset<IodaOutage[]>('ioda'),
 		dataset<OutbreakNews[]>('who-don'),
+		dataset<UnhcrData>('unhcr'),
 		dataset<FoodInsecurity[]>('fewsnet')
 	]);
 	const sets = {
@@ -67,6 +70,10 @@ export const load: PageServerLoad = async () => {
 		travelAt: advisories?.fetchedAt,
 		// Riesgo: catástrofes (GDACS), caída de internet (IODA) y brotes (OMS) de cada país, solo los que tienen algo.
 		risks: countryRisks({ gdacs: gdacs?.data, ioda: ioda?.data, who: who?.data }, Date.now()),
+		// Refugiados (ACNUR): las tres cifras de cada país que conoce la terminal.
+		refugees: byCountry(unhcr?.data),
+		refugeesYear: unhcr?.data.year ?? null,
+		refugeesAt: unhcr?.fetchedAt ?? null,
 		// Hambre aguda (FEWS NET): el dato de cada país que conoce la terminal.
 		food: Object.fromEntries((food?.data ?? []).filter((f) => COUNTRIES.some((c) => c.code === f.code)).map((f) => [f.code, f])),
 		foodAt: food?.fetchedAt ?? null,

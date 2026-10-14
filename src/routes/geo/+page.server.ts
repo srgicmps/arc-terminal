@@ -5,6 +5,7 @@ import { advisoryCountry, levelCounts, recentChanges } from '#lib/advisories.ts'
 import type { MilexData } from '#lib/milex.ts';
 import { riskSignals } from '#lib/risk-signals.ts';
 import { mergeSanctions } from '#lib/sanctions.ts';
+import { top } from '#lib/unhcr.ts';
 import { headlines, trim } from '#lib/trim.ts';
 import type {
 	AdvisoriesData,
@@ -21,14 +22,17 @@ import type {
 	PredictionsData,
 	Quake,
 	SwpcData,
-	TradeDoc
+	TradeDoc,
+	UnhcrData
 } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, intl, quakes, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex, food] = await Promise.all([
+	const [news, intl, analysis, world, quakes, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex, unhcr, food] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-intl'),
+		dataset<NewsData>('news-analysis'),
+		dataset<NewsData>('news-world'),
 		dataset<Quake[]>('quakes'),
 		dataset<HazardsData>('hazards'),
 		dataset<PredictionsData>('predictions'),
@@ -45,6 +49,7 @@ export const load: PageServerLoad = async () => {
 		dataset<OutbreakNews[]>('who-don'),
 		dataset<TradeDoc[]>('sanctions-uk'),
 		dataset<EuLexDoc[]>('eurlex'),
+		dataset<UnhcrData>('unhcr'),
 		dataset<FoodInsecurity[]>('fewsnet')
 	]);
 	// Sanciones y aranceles: EE. UU. (Federal Register), Reino Unido (OFSI) y UE (actos de la serie L con el tema
@@ -68,6 +73,8 @@ export const load: PageServerLoad = async () => {
 		news,
 		// Organismos y diplomacia salen del mismo canal: 40 titulares para que haya de los dos paneles.
 		intl: headlines(intl, 40),
+		analysis: headlines(analysis, 12),
+		world: headlines(world, 20),
 		quakes,
 		hazards,
 		predictions: trim(predictions, (d) => ({ geopolitics: d.geopolitics.slice(0, 8), economy: [] })),
@@ -88,6 +95,13 @@ export const load: PageServerLoad = async () => {
 						fetchedAt: { gdacs: gdacs?.fetchedAt, ioda: ioda?.fetchedAt, who: who?.fetchedAt }
 					}
 				: null,
+		// Refugiados (ACNUR): los 8 países de los que más gente huye y los 8 que más acogen.
+		refugees: unhcr && {
+			fetchedAt: unhcr.fetchedAt,
+			year: unhcr.data.year,
+			from: top(unhcr.data, 'from', 8),
+			hosted: top(unhcr.data, 'hosted', 8)
+		},
 		// Inseguridad alimentaria aguda (FEWS NET): los 10 países con más personas en fase IPC 3 o peor.
 		food: trim(food, (d) => d.slice(0, 10)),
 		// Gasto militar: los 15 países que más gastan.

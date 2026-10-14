@@ -13,14 +13,18 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
+	import { favCountries, initFavCountries, toggleFavCountry } from '#lib/favcountries.svelte.ts';
+	import { goTo } from '#lib/paisgoto.ts';
+	import { routeHref } from '#lib/routes.ts';
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import { LEVELS } from '#lib/advisories.ts';
 	import { COUNTRIES, findCountry } from '#lib/countries.ts';
 	import type { CountryProfile, Rate } from '#lib/country.ts';
-	import { dm, nf, period, signed } from '#lib/format.ts';
+	import { compact, dm, nf, period, signed } from '#lib/format.ts';
 	import { peopleRange, vsYearText } from '#lib/food.ts';
 	import { sectionLabel } from '#lib/news.ts';
 	import type { PageProps } from './$types';
@@ -39,6 +43,7 @@
 	const news = $derived(country ? (data.news[country.code] ?? []) : []);
 	const travel = $derived(country ? data.travel[country.code] : undefined);
 	const risk = $derived(country ? data.risks[country.code] : undefined);
+	const refugees = $derived(country ? data.refugees[country.code] : undefined);
 	const food = $derived(country ? data.food[country.code] : undefined);
 	const hasPower = $derived(!!country && data.eupower.some((z) => z.country === country.code));
 	const rates = $derived(profile ? [profile.policy, profile.bond, profile.premium].filter((r): r is Rate => r !== null) : []);
@@ -49,6 +54,13 @@
 
 	// Para la lista y el desplegable, por orden alfabético.
 	const sorted = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+	// Tus países (favcountries.svelte.ts): arriba del desplegable y de la lista; se marcan con ★.
+	$effect(initFavCountries);
+	const favs = $derived(favCountries.codes.map((code) => COUNTRIES.find((c) => c.code === code)).filter((c) => c !== undefined));
+	// Fila «Ir a» (paisgoto.ts): titulares del país, sus vistas y tus otros países.
+	const links = $derived(country ? goTo(country, favs) : []);
+	const followed = $derived(!!country && favCountries.codes.includes(country.code));
 
 	function choose(code: string) {
 		goto(resolve('/pais') + `?c=${code}`);
@@ -69,16 +81,47 @@
 		: 'Cifras, tipos, moneda, previsiones y titulares de cada país'}
 >
 	{#snippet aside()}
+		{#if country}
+			{@const code = country.code}
+			<Seg
+				label="Tus países"
+				options={[{ value: 'fav', label: followed ? '★ Siguiendo' : '☆ Seguir' }]}
+				bind:values={() => (followed ? ['fav'] : []), () => toggleFavCountry(code)}
+			/>
+		{/if}
 		<Select label="País" value={country?.code ?? ''} onchange={choose}>
 			{#if !country}<option value="" disabled>Elige…</option>{/if}
-			{#each sorted as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+			{#if favs.length}
+				<optgroup label="Tus países">
+					{#each favs as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+				</optgroup>
+			{/if}
+			<optgroup label="Todos">
+				{#each sorted as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+			</optgroup>
 		</Select>
 	{/snippet}
 </ViewHeader>
 
+{#if links.length}
+	<nav class="goto" aria-label="Ir a">
+		<span class="mut">Ir a</span>
+		{#each links as g (g.code)}<a href="{routeHref(g.route)}{g.query ? `?${g.query}` : ''}" title={g.what}>{g.code} ›</a>{/each}
+	</nav>
+{/if}
+
 {#if !country}
 	<div class="grid">
 		<div class="col">
+			{#if favs.length}
+				<Panel title="Tus países" meta="Los que sigues (★ en su ficha)">
+					<ul class="mini">
+						{#each favs as c (c.code)}
+							<li><a class="l" href="{resolve('/pais')}?c={c.code}">{c.name}</a><b class="mut">{c.code}</b></li>
+						{/each}
+					</ul>
+				</Panel>
+			{/if}
 			<Panel title="Países" meta="{COUNTRIES.length} países">
 				{#if query}<p class="empty">No conozco «{query}». Prueba con el nombre o el código: PAIS Alemania, PAIS DE.</p>{/if}
 				<Table>
@@ -266,6 +309,19 @@
 					{/snippet}
 				</Panel>
 			{/if}
+			{#if refugees}
+				<Panel title="Refugiados" meta="ACNUR · fin de {data.refugeesYear}">
+					<Tiles>
+						<Tile label="Han huido" value={compact(refugees.from)} sub="refugiados y solicitantes de asilo" />
+						<Tile label="Acogidos" value={compact(refugees.hosted)} sub="en {country.name}" />
+						<Tile label="Desplazados" value={compact(refugees.idps)} sub="dentro del país" />
+					</Tiles>
+					{#snippet note()}
+						Fuente: <a href="https://www.unhcr.org/refugee-statistics/" target="_blank" rel="noopener">ACNUR, Refugee Data Finder</a>{#if data.refugeesAt}&nbsp;·
+							<Updated at={data.refugeesAt} source="unhcr" />{/if}
+					{/snippet}
+				</Panel>
+			{/if}
 			<Panel title="En las noticias" meta="{news.length} {news.length === 1 ? 'titular' : 'titulares'}">
 				{#if news.length}
 					<NewsList items={news} tag={(item) => sectionLabel(item)} />
@@ -294,5 +350,35 @@
 
 	.own td {
 		color: var(--amber);
+	}
+
+	/* Fila «Ir a»: los mismos saltos que el «ECO ›» de los paneles, en una línea bajo la cabecera. */
+	.goto {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--sp-4) var(--sp-12);
+		margin-bottom: var(--sp-12);
+		font-family: var(--mono);
+		font-size: var(--fs-xs);
+		letter-spacing: var(--track-code);
+	}
+
+	.goto a {
+		color: var(--muted);
+		text-decoration: none;
+	}
+
+	.goto a:hover {
+		color: var(--amber);
+	}
+
+	/* En pantallas táctiles, cada salto con 44 px de alto pulsable. */
+	@media (pointer: coarse) {
+		.goto a {
+			display: inline-flex;
+			align-items: center;
+			min-height: var(--touch);
+		}
 	}
 </style>

@@ -124,7 +124,10 @@ describe('secciones de titulares', () => {
 			'news-tech',
 			'news-ai',
 			'news-gov',
-			'news-intl'
+			'news-intl',
+			'news-analysis',
+			'news-world',
+			'news-reg'
 		]);
 		expect(eco.label).toMatch(/^Titulares de Economía · El País, Expansión/);
 	});
