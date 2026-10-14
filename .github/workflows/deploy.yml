@@ -61,8 +61,6 @@ jobs:
           RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
           # aisstream.io (barcos en los puertos, AIS en directo).
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
-          # Valores para los avisos de ntfy (Finnhub), separados por comas. En un secreto para no tenerlos en el repo.
-          ALERT_TICKERS: ${{ secrets.ALERT_TICKERS }}
 
       # Abre un issue si una fuente lleva 3 pasadas sin datos y lo cierra cuando vuelve. No en los PR.
       # Si falla, no frena la publicación. Las claves van para taparlas si salen en un error.
