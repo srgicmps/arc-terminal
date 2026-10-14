@@ -1,5 +1,7 @@
 // Lista de todas las fuentes que descarga `pnpm data`.
 import type { Source } from '../lib.ts';
+import { air } from './air.ts';
+import { alerts } from './alerts.ts';
 import { bls } from './bls.ts';
 import { boe } from './boe.ts';
 import { ecb } from './ecb.ts';
@@ -33,6 +35,8 @@ export const sources: Source<any>[] = [
 	hazards,
 	predictions,
 	weather,
+	air,
+	alerts,
 	crypto,
 	hn,
 	wiki,
