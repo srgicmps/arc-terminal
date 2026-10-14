@@ -346,8 +346,8 @@
 
 	/* Separación fina entre las sugerencias de comandos y los resultados de búsqueda. */
 	li.first {
-		border-top: 1px solid var(--line);
-		margin-top: 4px;
+		border-top: var(--border);
+		margin-top: var(--sp-4);
 	}
 
 	li[aria-selected='true'] {
