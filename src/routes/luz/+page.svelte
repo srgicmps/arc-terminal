@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { clock } from '#lib/clock.svelte.ts';
 	import LineChart from '#lib/components/LineChart.svelte';
+	import MixBar from '#lib/components/MixBar.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import PriceBars from '#lib/components/PriceBars.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { longDay, nf } from '#lib/format.ts';
+	import { dm, longDay, nf } from '#lib/format.ts';
 	import { days, hourly, madridNow, type HourPrice } from '#lib/power.ts';
 	import type { PageProps } from './$types';
 
@@ -90,6 +91,19 @@
 		</div>
 	{/each}
 </div>
+
+{#if data.mix?.data.systems.length}
+	<div class="grid">
+		<div class="col">
+			<Panel title="De dónde sale la luz" meta="Mix de generación · {dm(`${data.mix.data.systems[0].date}T12:00:00Z`)}">
+				{#each data.mix.data.systems as mix (mix.id)}
+					<MixBar {mix} />
+				{/each}
+				{#snippet note()}Fuente: Red Eléctrica · <Updated at={data.mix?.fetchedAt} />{/snippet}
+			</Panel>
+		</div>
+	</div>
+{/if}
 
 <div class="grid">
 	<div class="col">
