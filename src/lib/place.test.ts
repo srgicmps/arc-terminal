@@ -27,8 +27,10 @@ describe('place', () => {
 	});
 
 	it('sabe si está en España (por país o por zona horaria) y en Menorca', () => {
+		const mao = { ...DEFAULT_PLACE, name: 'Maó', lat: 39.889, lon: 4.265 };
 		expect(inSpain(DEFAULT_PLACE)).toBe(true);
-		expect(inMenorca(DEFAULT_PLACE)).toBe(true);
+		expect(inMenorca(DEFAULT_PLACE)).toBe(false);
+		expect(inMenorca(mao)).toBe(true);
 		const gps = {
 			name: 'Mi ubicación',
 			country: '',
@@ -41,7 +43,7 @@ describe('place', () => {
 		expect(inMenorca(gps)).toBe(false);
 		expect(inSpain({ ...gps, cc: 'PT', tz: 'Europe/Lisbon' })).toBe(false);
 		// Mallorca no es Menorca.
-		expect(inMenorca({ ...DEFAULT_PLACE, lat: 39.57, lon: 2.65 })).toBe(false);
+		expect(inMenorca({ ...mao, lat: 39.57, lon: 2.65 })).toBe(false);
 	});
 
 	it('convierte los resultados del buscador', () => {
@@ -74,9 +76,9 @@ describe('place', () => {
 	});
 
 	it('el mar solo cuenta si la celda queda cerca', () => {
-		expect(nearSea({ latitude: 39.9, longitude: 4.3 }, DEFAULT_PLACE)).toBe(true);
+		expect(nearSea({ latitude: 39.9, longitude: 4.3 }, { ...DEFAULT_PLACE, lat: 39.889, lon: 4.265 })).toBe(true);
 		// Madrid: la celda de mar más cercana está a cientos de km.
-		expect(nearSea({ latitude: 39.5, longitude: -0.3 }, { ...DEFAULT_PLACE, lat: 40.42, lon: -3.7 })).toBe(false);
+		expect(nearSea({ latitude: 39.5, longitude: -0.3 }, DEFAULT_PLACE)).toBe(false);
 		expect(nearSea({}, DEFAULT_PLACE)).toBe(false);
 	});
 

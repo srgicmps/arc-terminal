@@ -1,5 +1,5 @@
 <!--
-	«Tu sitio»: chip discreto en la cabecera («📍 Maó ▾») que abre un buscador de ciudades (Open-Meteo, sin
+	«Tu sitio»: chip discreto en la cabecera («📍 Madrid · cambiar») que abre un buscador de ciudades (Open-Meteo, sin
 	clave), «Usar mi ubicación» y tus favoritos (hasta 5). El sitio elegido lo usan WX, la portada y el reloj.
 	Medidas y espaciados con los tokens de src/styles/tokens.css.
 -->
@@ -101,7 +101,7 @@
 	>
 		<span aria-hidden="true">📍</span>
 		<span class="name">{place.current.name}</span>
-		<span class="caret" aria-hidden="true">▾</span>
+		<span class="caret">· cambiar</span>
 	</button>
 
 	{#if open}
@@ -191,6 +191,7 @@
 	}
 
 	.caret {
+		color: var(--faint);
 		font-size: var(--fs-xs);
 	}
 

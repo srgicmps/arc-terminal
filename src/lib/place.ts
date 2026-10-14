@@ -16,15 +16,15 @@ export interface Place {
 	tz: string;
 }
 
-/** Sitio de partida: Maó, como hasta ahora. */
+/** Sitio de partida: Madrid (decisión de Sergi). */
 export const DEFAULT_PLACE: Place = {
-	name: 'Maó',
+	name: 'Madrid',
 	country: 'España',
 	cc: 'ES',
-	admin1: 'Islas Baleares',
-	admin2: 'Balears',
-	lat: 39.889,
-	lon: 4.265,
+	admin1: 'Comunidad de Madrid',
+	admin2: 'Madrid',
+	lat: 40.417,
+	lon: -3.704,
 	tz: 'Europe/Madrid'
 };
 
