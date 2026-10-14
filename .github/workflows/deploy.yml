@@ -2,7 +2,7 @@
 # - push a main, cron y lanzamiento a mano sin «fuentes»: pasada completa y publicación (job build + deploy).
 # - PR: comprobaciones en jobs separados que corren a la vez, para que el verde o el rojo llegue antes:
 #   checks (check, test, build, sin datos) · smoke (datos + prueba de humo) · probe (solo si el PR toca
-#   scripts/) · tv-shots (solo si el PR toca los widgets de TradingView).
+#   scripts/) · tv-shots (solo si toca los widgets de TradingView) · compare (solo si toca src/).
 # - A mano con «fuentes»: solo `pnpm data <fuentes>` y el sondeo, para probar una fuente sin la pasada completa.
 name: Publicar en Pages
 
@@ -85,6 +85,14 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
 
+      # Avisos al móvil con ntfy (scripts/notify.ts y scripts/alerts/): niveles P1–P4 con cupos y un tope
+      # de 50 al día. Si falla, no frena la publicación. Sin el secreto NTFY_TOPIC no hace nada. El tema es
+      # la única protección del canal: el script nunca lo registra.
+      - run: node scripts/notify.ts
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+
       - run: pnpm check
       - run: pnpm test
       - run: pnpm build --logLevel warn
@@ -153,6 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       scripts: ${{ steps.diff.outputs.scripts }}
+      src: ${{ steps.diff.outputs.src }}
       tv: ${{ steps.diff.outputs.tv }}
     steps:
       # La Action de un PR trabaja sobre el commit de merge: su primer padre es la base del PR.
@@ -164,6 +173,7 @@ jobs:
           files=$(git diff --name-only HEAD^1 HEAD)
           echo "$files"
           echo "scripts=$(grep -q '^scripts/' <<< "$files" && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "src=$(grep -q '^src/' <<< "$files" && echo true || echo false)" >> "$GITHUB_OUTPUT"
           # TradingView: el propio script de capturas, o un archivo de src/ que use TvWidget (la documentación,
           # que también lo nombra, no cuenta).
           tv=false
@@ -219,7 +229,40 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: tradingview
-          path: shots/
+          path: shots/*.png
+          if-no-files-found: ignore
+
+  # PR que toca src/: construye main con los mismos datos y compara cada vista a 390 px (filas de tabla y
+  # elementos de lista, por panel). La tabla sale en el resumen de la Action y las capturas de las dos
+  # versiones, en el artefacto «vistas» (scripts/compare-views.ts). Va aparte para no retrasar `smoke`.
+  compare:
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm data
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+      - run: pnpm build --logLevel warn
+      - run: node scripts/compare-views.ts
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vistas
+          path: shots/vistas/
           if-no-files-found: ignore
 
   # A mano con «fuentes»: descarga solo esas fuentes (sin usar la copia guardada) y lanza el sondeo.

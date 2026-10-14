@@ -39,7 +39,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - **Probar una fuente sin la pasada completa**: Actions → «Publicar en Pages» → Run workflow, con «fuentes»
   (p. ej. `fao climate`). Descarga solo esas fuentes, sin copia guardada, y lanza el sondeo, sin publicar.
 - En los PR, la Action va en jobs a la vez: `checks` (check, test, build: el verde o el rojo rápido), `smoke`
-  (datos reales y prueba de humo) y, solo si hacen falta, `probe` y `tv-shots`.
+  (datos reales y prueba de humo) y, solo si hacen falta, `probe`, `tv-shots` y `compare` (vistas del PR frente a main).
 
 ## Arquitectura
 - **GitHub Pages** sirve la web estática en https://srgicmps.github.io/arc-terminal/ (por eso hay que
@@ -49,6 +49,9 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - Las claves de las APIs van en **GitHub Secrets** y solo las usa el script de Actions. Nunca en el código
   que llega al navegador.
 - Cotizaciones y gráficos en directo: widgets de TradingView (sin clave).
+- **Avisos al móvil** con ntfy (`scripts/notify.ts`, tras `pnpm data`): reglas P1–P4 en la lista `RULES` de
+  `scripts/alerts/rules.ts`, umbrales y cupos en `scripts/alerts/config.ts`. El tema
+  va en el Secret `NTFY_TOPIC` y es la única protección: nunca en el repo, en registros ni en JSON.
 
 ## Stack
 - SvelteKit con `adapter-static` + TypeScript, Svelte 5 (runes).
