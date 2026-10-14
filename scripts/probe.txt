@@ -27,3 +27,10 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
+# M10 «Próximo dato»: calendarios oficiales en ICS (cabecera y un par de eventos de cada uno)
+https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_EN.ics ~ ^.{0,1200}
+https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_EN.ics ~ BEGIN:VEVENT.{0,700}?(inflation|unemployment|GDP).{0,300}?END:VEVENT
+https://www.bls.gov/schedule/news_release/bls.ics ~ ^.{0,1200}
+https://www.bls.gov/schedule/news_release/bls.ics ~ BEGIN:VEVENT.{0,500}?(Consumer Price Index|Employment Situation).{0,300}?END:VEVENT
+https://www.ine.es/dynt3/Calendario/calendario.ics ~ ^.{0,1200}
+https://www.ine.es/dynt3/Calendario/calendario.ics ~ BEGIN:VEVENT.{0,600}?(Precios de Consumo|Población Activa).{0,300}?END:VEVENT
