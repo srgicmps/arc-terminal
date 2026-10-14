@@ -1,0 +1,179 @@
+// Fuentes nuevas de WX: calidad del aire (Open-Meteo/CAMS), avisos (MeteoAlarm), oleaje y sol.
+// Las respuestas de ejemplo copian la forma de las reales, recortadas.
+import { describe, expect, it } from 'vitest';
+import { parseAir } from '../sources/air.ts';
+import { parseAlerts } from '../sources/alerts.ts';
+import { parseCoasts, parseSun } from '../sources/world.ts';
+
+describe('air (Open-Meteo, calidad del aire)', () => {
+	// Cuatro días de horas en hora local, como con timezone=Europe/Madrid.
+	const times = ['14', '15', '16', '17'].flatMap((d) =>
+		Array.from({ length: 24 }, (_, h) => `2026-10-${d}T${String(h).padStart(2, '0')}:00`)
+	);
+	const raw = {
+		latitude: 39.9,
+		longitude: 4.25,
+		utc_offset_seconds: 7200,
+		current: {
+			time: '2026-10-14T13:00',
+			interval: 3600,
+			european_aqi: 34,
+			pm2_5: 8.1,
+			pm10: 17.3,
+			ozone: 92,
+			nitrogen_dioxide: 3.4,
+			uv_index: 3.85,
+			olive_pollen: null,
+			grass_pollen: 0.3
+		},
+		hourly: {
+			time: times,
+			european_aqi: times.map((_, i) => 20 + (i % 24)),
+			uv_index: times.map((_, i) => Math.max(0, 5 - Math.abs((i % 24) - 13))),
+			olive_pollen: times.map(() => null),
+			grass_pollen: times.map((_, i) => (i < 72 ? i % 3 : null))
+		}
+	};
+
+	it('lee el dato actual, las próximas horas de 3 en 3 y el máximo de cada día', () => {
+		const air = parseAir(raw);
+		expect(air.place).toBe('Maó');
+		expect(air.now).toMatchObject({ time: '2026-10-14T13:00', aqi: 34, pm25: 8.1, pm10: 17.3, o3: 92, no2: 3.4, uv: 3.85 });
+		expect(air.now.pollen.olive).toBeNull();
+		expect(air.now.pollen.grass).toBe(0.3);
+		expect(air.hours.map((h) => h.time.slice(11, 16))).toEqual([
+			'13:00', '16:00', '19:00', '22:00', '01:00', '04:00', '07:00', '10:00'
+		]);
+		expect(air.days.map((d) => d.date)).toEqual(['2026-10-14', '2026-10-15', '2026-10-16', '2026-10-17']);
+		expect(air.days[0]).toMatchObject({ aqi: 43, uv: 5 });
+		expect(air.days[0].pollen).toMatchObject({ olive: null, grass: 2 });
+		// Sin polen en todo el día → null, no 0.
+		expect(air.days[3].pollen.grass).toBeNull();
+	});
+
+	it('falla si no llega ningún índice', () => {
+		expect(() => parseAir({ current: {}, hourly: {} })).toThrow('sin datos de calidad del aire');
+	});
+});
+
+describe('alerts (MeteoAlarm, Atom con CAP)', () => {
+	const entry = (fields: Record<string, string>, extra = '') =>
+		`<entry>${Object.entries(fields)
+			.map(([k, v]) => (k === 'title' ? `<title>${v}</title>` : `<cap:${k}>${v}</cap:${k}>`))
+			.join('')}${extra}</entry>`;
+	const feed = (...entries: string[]) =>
+		`<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom" ` +
+		`xmlns:cap="urn:oasis:names:tc:emergency:cap:1.2"><title>MeteoAlarm Spain</title>${entries.join('')}</feed>`;
+	const now = Date.parse('2026-10-14T12:00:00Z');
+
+	const xml = feed(
+		entry(
+			{
+				areaDesc: 'Menorca',
+				event: 'Aviso amarillo de tormentas',
+				onset: '2026-10-14T10:00:00+00:00',
+				expires: '2026-10-14T21:59:59+00:00',
+				severity: 'Moderate',
+				message_type: 'Alert',
+				status: 'Actual',
+				identifier: 'A1',
+				title: 'Yellow Thunderstorm Warning issued for Spain - Menorca'
+			},
+			'<link href="https://feeds.meteoalarm.org/api/v1/warnings/feeds-spain/abc"/>'
+		),
+		entry({
+			areaDesc: 'Costa de Menorca',
+			event: 'Moderate coastalevent warning',
+			onset: '2026-10-15T00:00:00+00:00',
+			expires: '2026-10-15T21:59:59+00:00',
+			severity: 'Severe',
+			status: 'Actual',
+			identifier: 'A2',
+			title: 'Orange Coastal Event Warning issued for Spain - Costa de Menorca'
+		}),
+		// Otra isla, uno caducado, uno verde y uno cancelado: ninguno cuenta.
+		entry({ areaDesc: 'Mallorca', severity: 'Extreme', event: 'Rain', expires: '2026-10-15T21:59:59+00:00' }),
+		entry({ areaDesc: 'Menorca', severity: 'Moderate', event: 'Wind', expires: '2026-10-13T21:59:59+00:00' }),
+		entry({ areaDesc: 'Menorca', severity: 'Minor', event: 'Wind', expires: '2026-10-16T21:59:59+00:00' }),
+		entry({ areaDesc: 'Menorca', severity: 'Moderate', message_type: 'Cancel', expires: '2026-10-16T21:59:59+00:00' })
+	);
+
+	it('se queda con los avisos de Menorca en vigor, del más grave al más leve', () => {
+		const { zone, alerts } = parseAlerts(xml, now);
+		expect(zone).toBe('Menorca');
+		expect(alerts).toEqual([
+			{
+				id: 'A2',
+				level: 'orange',
+				hazard: 'Costeros',
+				area: 'Costa de Menorca',
+				onset: '2026-10-15T00:00:00.000Z',
+				expires: '2026-10-15T21:59:59.000Z',
+				url: 'https://www.aemet.es/es/eltiempo/prediccion/avisos'
+			},
+			{
+				id: 'A1',
+				level: 'yellow',
+				hazard: 'Tormentas',
+				area: 'Menorca',
+				onset: '2026-10-14T10:00:00.000Z',
+				expires: '2026-10-14T21:59:59.000Z',
+				url: 'https://www.aemet.es/es/eltiempo/prediccion/avisos'
+			}
+		]);
+	});
+
+	it('un feed sin avisos es una lista vacía; algo que no es Atom, un error', () => {
+		expect(parseAlerts(feed(), now).alerts).toEqual([]);
+		expect(() => parseAlerts('<html>no</html>', now)).toThrow('formato de MeteoAlarm');
+	});
+});
+
+describe('oleaje y sol (Open-Meteo)', () => {
+	const point = (wave: number | null) => ({
+		current: {
+			time: '2026-10-14T13:00',
+			sea_surface_temperature: 22.4,
+			wave_height: wave,
+			wave_direction: 20,
+			wave_period: 6.1,
+			swell_wave_height: 1.1,
+			swell_wave_direction: 30,
+			swell_wave_period: 8.3
+		},
+		daily: {
+			time: ['2026-10-14', '2026-10-15', '2026-10-16'],
+			wave_height_max: [wave, wave, null],
+			swell_wave_height_max: [1.1, 1.4, 1],
+			wave_direction_dominant: [20, 20, 350]
+		}
+	});
+
+	it('lee las dos costas y descarta la que el modelo toma por tierra', () => {
+		const coasts = parseCoasts([point(1.6), point(0.3)]);
+		expect(coasts.map((c) => [c.name, c.spot, c.now.wave])).toEqual([
+			['Costa norte', 'Fornells', 1.6],
+			['Costa sur', 'Son Bou', 0.3]
+		]);
+		expect(coasts[0].now).toEqual({ wave: 1.6, waveDir: 20, wavePeriod: 6.1, swell: 1.1, swellDir: 30, swellPeriod: 8.3, water: 22.4 });
+		expect(coasts[1].daily[2]).toEqual({ date: '2026-10-16', waveMax: null, swellMax: 1, dir: 350 });
+		expect(parseCoasts([point(null), point(0.3)]).map((c) => c.spot)).toEqual(['Son Bou']);
+		expect(parseCoasts([])).toEqual([]);
+	});
+
+	it('pasa la salida y la puesta del sol a UTC y compara la luz con ayer', () => {
+		const daily = {
+			time: ['2026-10-13', '2026-10-14'],
+			sunrise: ['2026-10-13T07:51', '2026-10-14T07:52'],
+			sunset: ['2026-10-13T19:05', '2026-10-14T19:03'],
+			daylight_duration: [40440.5, 40310.2]
+		};
+		const sun = parseSun(daily, 7200, 1);
+		expect(sun?.sunrise).toBe('2026-10-14T05:52:00.000Z');
+		expect(sun?.sunset).toBe('2026-10-14T17:03:00.000Z');
+		expect(sun?.delta).toBeCloseTo(-130.3, 5);
+		// Sin el día anterior no hay diferencia; sin datos, nada.
+		expect(parseSun(daily, 7200, 0)?.delta).toBeNull();
+		expect(parseSun({}, 0, 0)).toBeNull();
+	});
+});
