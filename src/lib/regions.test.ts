@@ -18,4 +18,13 @@ describe('regions', () => {
 		expect(inRegion(items, 'america').map((i) => i.title)).toEqual(['Elecciones en Brasil']);
 		expect(inRegion(items, 'all')).toHaveLength(3);
 	});
+
+	it('mira también la traducción del titular', () => {
+		const items = [
+			{ title: 'Talks stall in Geneva', titleEs: 'Se estancan las conversaciones con Irán en Ginebra' },
+			{ title: 'Kenya and Ethiopia sign a deal' }
+		];
+		expect(inRegion(items, 'oriente').map((i) => i.title)).toEqual(['Talks stall in Geneva']);
+		expect(inRegion(items, 'europa')).toEqual([]);
+	});
 });

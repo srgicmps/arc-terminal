@@ -5,7 +5,7 @@ export default {
 	manual: {
 		section: 'Mundo',
 		what: 'Geopolítica: titulares internacionales, un mapa con terremotos, ciclones, incendios y crisis, elecciones, sanciones y mercados de predicción.',
-		tips: ['En el mapa puedes encender y apagar capas (terremotos, ciclones, incendios y volcanes, estrechos, sanciones, crisis); toca un punto para ver su ficha.'],
+		tips: ['En el mapa puedes encender y apagar capas (terremotos, ciclones, incendios y volcanes, estrechos, sanciones, crisis); toca un punto para ver su ficha.', 'En «Titulares», el selector de región deja solo las noticias de Europa, América, Asia y Pacífico, Oriente Próximo o África.'],
 		panels: [
 			{ name: 'Mapa', what: 'Lo que pasa ahora en el mundo, por capas.' },
 			{ name: 'Titulares', what: 'Noticias internacionales.' },
@@ -17,7 +17,6 @@ export default {
 			{ name: 'Organismos internacionales', what: 'Comunicados de la ONU y la OMC.' },
 			{ name: 'Gobiernos e instituciones', what: 'Comunicados oficiales.' },
 			{ name: 'Terremotos en el mundo', what: 'M4,5 o más de los últimos 7 días (USGS).' },
-			{ name: 'Terremotos en España', what: 'Los más fuertes de los últimos 10 días (IGN).' },
 			{ name: 'Huracanes, incendios y volcanes', what: 'Los activos ahora.' },
 			{ name: 'Gasto militar', what: 'Los 15 países que más gastan en defensa (SIPRI).' },
 			{ name: 'Avisos de viaje de EE. UU.', what: 'Nivel de riesgo del Departamento de Estado, de 1 a 4.' }

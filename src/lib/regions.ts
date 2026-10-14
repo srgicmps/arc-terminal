@@ -35,7 +35,10 @@ export function regionsOf(title: string): RegionId[] {
 	return [...new Set(findCountries(title).flatMap((c) => regionOf(c.code) ?? []))];
 }
 
-/** Los titulares de una región (o todos, con 'all'). */
-export function inRegion<T extends { title: string }>(items: T[], region: RegionId | 'all'): T[] {
-	return region === 'all' ? items : items.filter((i) => regionsOf(i.title).includes(region));
+/**
+ * Los titulares de una región (o todos, con 'all'). Mira el original y, si la hay, la traducción
+ * (`titleEs`): así el filtro da lo mismo se lean los titulares en español o en inglés.
+ */
+export function inRegion<T extends { title: string; titleEs?: string }>(items: T[], region: RegionId | 'all'): T[] {
+	return region === 'all' ? items : items.filter((i) => [i.title, i.titleEs].some((t) => t && regionsOf(t).includes(region)));
 }
