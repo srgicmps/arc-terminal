@@ -17,7 +17,7 @@
 	import { fit, initFit, toggleFit } from '#lib/fit.svelte.ts';
 	import { initMode, mode, toggleMode } from '#lib/layout.svelte.ts';
 	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
-	import { initPlace } from '#lib/place.svelte.ts';
+	import { followPlaceUrl, initPlace } from '#lib/place.svelte.ts';
 	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
 	import { initFolded } from '#lib/folded.svelte.ts';
 	import { tvSymbol } from '#lib/tickers.ts';
@@ -38,6 +38,8 @@
 	$effect(initFolded);
 	$effect(initTaste);
 	$effect(initPlace);
+	// «Tu sitio» por la URL al navegar: ?lugar=… o ?buscar=Tokio.
+	$effect(() => followPlaceUrl(page.url.searchParams));
 	$effect(initTheme);
 	$effect(initFit);
 	$effect(initMode);

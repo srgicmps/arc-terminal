@@ -5,12 +5,13 @@ import { pickSeries, trim } from '#lib/trim.ts';
 import { computeRisk } from '#lib/risk.ts';
 import type { CotData } from '#lib/cot.ts';
 import type { AuctionsData, BitcoinNet, CryptoData, NewsData, PredictionsData, SeriesData, VixData, YieldCurveData } from '#lib/types.ts';
+import type { PinkSheetData } from '#lib/pinksheet.ts';
 import type { StablecoinsData } from '#lib/stablecoins.ts';
 import type { TicData } from '#lib/tic.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, curve, eacurve, jgb, ecb, crypto, fred, predictions, auctions, stables, cot, vix, bitcoin, tic] = await Promise.all([
+	const [news, curve, eacurve, jgb, ecb, crypto, fred, predictions, auctions, stables, cot, vix, bitcoin, pinksheet, tic] = await Promise.all([
 		dataset<NewsData>('news-ws'),
 		dataset<YieldCurveData>('uscurve'),
 		dataset<YieldCurveData>('eacurve'),
@@ -25,6 +26,8 @@ export const load: PageServerLoad = async () => {
 		// VIX y su curva: 30 días de 5 plazos, pequeño.
 		dataset<VixData>('vix'),
 		dataset<BitcoinNet>('bitcoin'),
+		// Materias primas del Banco Mundial: 21 filas de 13 meses, pequeño.
+		dataset<PinkSheetData>('pinksheet'),
 		// Quién tiene la deuda de EE. UU.: unos 20 países y 13 meses, pequeño.
 		dataset<TicData>('tic')
 	]);
@@ -52,6 +55,7 @@ export const load: PageServerLoad = async () => {
 		stables,
 		cot,
 		vix,
+		pinksheet,
 		tic
 	};
 };

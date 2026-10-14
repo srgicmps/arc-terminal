@@ -1,7 +1,16 @@
-<!-- Hora en las bolsas principales y si están abiertas: horario normal, fines de semana y festivos de NYSE y BME. -->
+<!--
+	Hora en las bolsas principales y si están abiertas: horario normal, fines de semana y festivos de NYSE y BME.
+	Delante, la hora de «Tu sitio» si su zona horaria no es la de Madrid ni la de una de esas bolsas.
+-->
 <script lang="ts">
 	import { clock } from '#lib/clock.svelte.ts';
+	import { hmIn } from '#lib/format.ts';
 	import { CLOCK_MARKETS, clockState } from '#lib/markets.ts';
+	import { place } from '#lib/place.svelte.ts';
+
+	const siteTz = $derived(place.current.tz);
+	const showSite = $derived(!!siteTz && siteTz !== 'Europe/Madrid' && !CLOCK_MARKETS.some((mk) => mk.tz === siteTz));
+	const siteTime = $derived(clock.now ? hmIn(new Date(clock.now).toISOString(), siteTz) : '--:--');
 
 	const rows = $derived(
 		CLOCK_MARKETS.map((mk) =>
@@ -13,6 +22,9 @@
 </script>
 
 <div class="clocks" aria-label="Hora y estado de las bolsas">
+	{#if showSite}
+		<span class="clock site" title="Hora en {place.current.name}">{place.current.name} <b>{siteTime}</b></span>
+	{/if}
 	{#each rows as r (r.code)}
 		<span class="clock" title="Bolsa {label(r)}">
 			<i class="dot" class:on={r.isOpen} class:holiday={!!r.holiday}></i>{r.code} <b>{r.time}</b>
@@ -35,6 +47,12 @@
 		align-items: center;
 		gap: var(--sp-6);
 		white-space: nowrap;
+	}
+
+	.site {
+		max-width: 14ch;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	b {

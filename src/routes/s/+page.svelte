@@ -13,10 +13,12 @@
 	import AnalystPanel from '#lib/components/AnalystPanel.svelte';
 	import FilingList from '#lib/components/FilingList.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
+	import ShortVolume from '#lib/components/ShortVolume.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import { sectionLabel } from '#lib/news.ts';
+	import { shortStat } from '#lib/shortvol.ts';
 	import { stockShare, type ShareInfo } from '#lib/share.ts';
 	import { inWatchlist, toggleWatch } from '#lib/watchlist.svelte.ts';
 	import type { PageProps } from './$types';
@@ -101,6 +103,14 @@
 						{#snippet note()}Recomendaciones del último mes, BPA de los últimos trimestres y operaciones de directivos (formulario 4) ·
 							<Updated at={analysis.fetchedAt} source="analysts" />{/snippet}
 					</Panel>
+				</div>
+			</div>
+		{/if}
+		{#if shortStat(data.finra?.data, code)}
+			<!-- Volumen en corto (FINRA): solo valores de EE. UU. -->
+			<div class="grid">
+				<div class="col">
+					<ShortVolume data={data.finra} {code} />
 				</div>
 			</div>
 		{/if}

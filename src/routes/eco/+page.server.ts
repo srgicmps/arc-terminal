@@ -5,10 +5,11 @@ import { missingNote } from '#lib/missing.ts';
 import { headlines, pickSeries } from '#lib/trim.ts';
 import type { EuPowerData, G20Data, ImfData, NewsData, PredictionsData, SeriesData, ReleaseCalData } from '#lib/types.ts';
 import { nextMap } from '#lib/nextrelease.ts';
+import { SEP_IDS } from '#lib/sep.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal, fao, bde, eupower, uncertainty, g4] = await Promise.all([
+	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal, fao, bde, eupower, uncertainty, g4, indeed] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -31,7 +32,9 @@ export const load: PageServerLoad = async () => {
 		dataset<EuPowerData>('energycharts'),
 		dataset<UncertaintyData>('uncertainty'),
 		// Paro y PIB de EE. UU., Reino Unido, Japón y China (OCDE vía DBnomics), para las tablas por país.
-		dataset<SeriesData>('oecd-g4')
+		dataset<SeriesData>('oecd-g4'),
+		// Ofertas de empleo de Indeed (provisional): un punto por semana; con 60 llega para comparar con hace un año.
+		dataset<SeriesData>('indeed')
 	]);
 	// Del BCE, todo menos los tipos de cambio (están en WS); de los titulares, los 25 que se pintan.
 	const fx = (ecb?.data.series ?? [])
@@ -52,6 +55,8 @@ export const load: PageServerLoad = async () => {
 		recession: pickSeries(fred, ['sahm-us', 'recprob-us', 't10y3m-us'], 60),
 		// Panel provisional «Estrés financiero»: CISS (~6 meses de días hábiles) y STLFSI4 (un año de semanas).
 		stress: { ecb: pickSeries(ecb, ['ciss-ea'], 120), fred: pickSeries(fred, ['stlfsi-us'], 52) },
+		// Panel provisional «Proyecciones de la Fed» (SEP): solo sus series.
+		sep: pickSeries(fred, SEP_IDS),
 		bis,
 		gie,
 		housing,
@@ -65,6 +70,7 @@ export const load: PageServerLoad = async () => {
 		speeches: headlines(speeches, 12),
 		fao,
 		uncertainty,
+		indeed: pickSeries(indeed, null, 60),
 		eupower,
 		// Próximo dato de cada serie, calculado aquí: al navegador solo le llega la fecha y el título.
 		next: nextMap(
