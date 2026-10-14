@@ -3,7 +3,7 @@
 import type { FedRegData, FedRegDoc } from '../../src/lib/types.ts';
 import { getJson, plain, type Source } from '../lib.ts';
 
-const API = 'https://www.federalregister.gov/api/v1/documents.json';
+export const API = 'https://www.federalregister.gov/api/v1/documents.json';
 const FIELDS = [
 	'document_number',
 	'title',
@@ -18,9 +18,13 @@ const FIELDS = [
 
 type Raw = Record<string, any>;
 
-async function documents(type: string, count: number): Promise<FedRegDoc[]> {
+/**
+ * Los documentos más recientes que cumplen `conditions` (p. ej. [['conditions[type][]', 'RULE']]).
+ * También la usa sanctions.ts.
+ */
+export async function search(conditions: [string, string][], count: number): Promise<FedRegDoc[]> {
 	const params = new URLSearchParams({ per_page: String(count), order: 'newest' });
-	params.append('conditions[type][]', type);
+	for (const [key, value] of conditions) params.append(key, value);
 	for (const field of FIELDS) params.append('fields[]', field);
 	const body = await getJson<{ results?: Raw[] }>(`${API}?${params}`);
 	return (body.results ?? []).map((raw) => ({
@@ -35,6 +39,8 @@ async function documents(type: string, count: number): Promise<FedRegDoc[]> {
 		pdf: String(raw.pdf_url ?? '')
 	}));
 }
+
+const documents = (type: string, count: number) => search([['conditions[type][]', type]], count);
 
 export const fedreg: Source<FedRegData> = {
 	name: 'fedreg',
