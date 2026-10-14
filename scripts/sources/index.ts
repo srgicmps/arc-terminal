@@ -5,7 +5,6 @@ import { air } from './air.ts';
 import { alerts } from './alerts.ts';
 import { bls } from './bls.ts';
 import { bis } from './bis.ts';
-import { cisaKev } from './cisa-kev.ts';
 import { boe } from './boe.ts';
 import { ecb } from './ecb.ts';
 import { eurostat } from './eurostat.ts';
@@ -28,7 +27,6 @@ import { reliefweb } from './reliefweb.ts';
 import { releases } from './releases.ts';
 import { sanctions } from './sanctions.ts';
 import { search } from './search.ts';
-import { swpc } from './swpc.ts';
 import { sec } from './sec.ts';
 import { uscurve, usdebt } from './treasury.ts';
 import { wiki } from './wiki.ts';
@@ -77,8 +75,5 @@ export const sources: Source<any>[] = [
 	...newsSources,
 	// Derivadas: se calculan después, con los datos de las anteriores.
 	imp,
-	search,
-	// Fuentes nuevas: una línea cada una, al final, para no chocar con otras ramas.
-	cisaKev,
-	swpc
+	search
 ];
