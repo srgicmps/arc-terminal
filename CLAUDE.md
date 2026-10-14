@@ -54,8 +54,8 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 | `FUEL` | Gasolineras más baratas de Menorca | API abierta de precios de carburantes del Ministerio |
 
 ## Plan por fases
-1. **Esqueleto publicado**: proyecto SvelteKit + GitHub Action que construye y publica en Pages. ← siguiente
-2. **Primer dato real de punta a punta**: `FUEL` (una fuente, sin clave).
+1. ~~**Esqueleto publicado**: proyecto SvelteKit + GitHub Action que construye y publica en Pages.~~ Hecho.
+2. **Primer dato real de punta a punta**: `FUEL` (una fuente, sin clave). ← siguiente
 3. **Estilo de la maqueta y barra de comandos** con sugerencias y atajos de teclado.
 4. **Noticias por RSS**: `ECO`, `GEO`, `TECH`, `AI`.
 5. **Mercados**: TradingView + Finnhub (primera clave en GitHub Secrets).

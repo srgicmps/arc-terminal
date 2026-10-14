@@ -28,3 +28,17 @@ Se maneja desde una barra de comandos: escribes `NVDA`, `ECO` o `FUEL` y se abre
 | `CAL` | Agenda económica y resultados de empresas |
 | `FUEL` | Gasolineras más baratas de Menorca |
 | `HELP` | Comandos y atajos |
+
+## Desarrollo
+
+Requisitos: Node 24 y pnpm.
+
+```sh
+pnpm install
+pnpm dev       # http://localhost:5173/
+pnpm check     # comprueba tipos y componentes
+pnpm build     # genera la web estática en build/
+pnpm preview   # sirve build/ en http://localhost:4173/arc-terminal/
+```
+
+Cada push a `main` construye y publica la web en GitHub Pages (`.github/workflows/deploy.yml`).
