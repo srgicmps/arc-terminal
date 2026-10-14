@@ -42,4 +42,15 @@
 	.jump:hover {
 		color: var(--amber);
 	}
+
+	/* En pantallas táctiles el enlace gana 44 px de alto pulsable; el margen negativo evita que la cabecera crezca. */
+	@media (pointer: coarse) {
+		.jump {
+			display: inline-flex;
+			align-items: center;
+			min-height: 44px;
+			padding-inline: 12px;
+			margin: -14px -12px;
+		}
+	}
 </style>
