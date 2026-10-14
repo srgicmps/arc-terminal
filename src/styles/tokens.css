@@ -73,9 +73,11 @@
 	--sp-20: 20px;
 	--sp-24: 24px;
 	/* Con nombre propio: el ritmo principal. */
-	--pad-x: var(--sp-12); /* sangría horizontal de paneles, filas y tablas */
-	--row-y: var(--sp-8); /* margen vertical de una fila de lista */
-	--gutter: var(--sp-16); /* margen lateral de la página */
+	/* Densidad «Compacta» (la de por defecto, al estilo Bloomberg). La «Cómoda» solo redefine estos tokens. */
+	--pad-x: var(--sp-10); /* sangría horizontal de paneles, filas y tablas */
+	--row-y: var(--sp-6); /* margen vertical de una fila de lista */
+	--gutter: var(--sp-8); /* margen lateral de la página (escritorio) */
+	--gutter-touch: var(--sp-12); /* el mismo en el móvil, por debajo de 720 px */
 
 	/* ── Líneas y medidas ────────────────────────────────────────────────────────────────── */
 	--hair: 1px; /* grosor de todas las líneas */
@@ -96,6 +98,8 @@
 	--col-min: 340px; /* ancho mínimo de una columna de paneles */
 	--col-min-wide: 420px; /* el mismo, en .grid-3 por debajo de 1100 px */
 	--z-popover: 50; /* burbujas del glosario (ⓘ): sobre la cabecera fija, bajo el panel maximizado */
+	--fit-panel-min: 280px; /* «encajar en pantalla»: alto mínimo de un panel (cabecera y unas 9 filas) */
+	--col-split: 400px; /* ancho mínimo de una subcolumna: una columna de más del doble se parte en dos o más */
 
 	/*
 	 * Puntos de corte (las @media no aceptan variables, así que se documentan aquí):

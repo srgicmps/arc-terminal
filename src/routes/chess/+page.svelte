@@ -5,11 +5,14 @@
 	ella, como un computed de Vue. Se guarda en este navegador después de cada jugada.
 -->
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
-	import { asset } from '$app/paths';
+	import { onDestroy, onMount, untrack } from 'svelte';
+	import { replaceState } from '$app/navigation';
+	import { asset, resolve } from '$app/paths';
 	import Board from '#lib/components/Board.svelte';
+	import ChessPuzzle from '#lib/components/ChessPuzzle.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import ButtonRow from '#lib/components/ui/ButtonRow.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
@@ -37,12 +40,23 @@
 		type Color,
 		type PieceSymbol,
 		type Square,
+		playUci,
 		type Uci
 	} from '#lib/chess/game.ts';
+	import { MARK_NAME, MARK_SIGN, annotate, finalScore, summary, type MoveNote } from '#lib/chess/analysis.ts';
 	import { emptyGame, loadGame, saveGame, type SavedGame } from '#lib/chess/save.ts';
-	import { HINT, LEVELS, formatScore, scoreToBar, type Score } from '#lib/chess/uci.ts';
+	import { HINT, LEVELS, formatScore, scoreToBar, type Level, type Score } from '#lib/chess/uci.ts';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
 
 	const HUMAN = 'human';
+	/** Análisis al acabar: a toda fuerza y deprisa, un cuarto de segundo por posición. */
+	const ANALYSIS: Level = { value: 'analysis', label: 'Análisis', elo: null, movetime: 250 };
+
+	/** Partida o problema del día (?modo=problema, para enlazarlo desde TOP). */
+	let mode = $state<'game' | 'puzzle'>('game');
+	const puzzle = $derived(data.lichess?.data ?? null);
 
 	let game = $state<SavedGame>(emptyGame());
 	let ready = $state(false);
@@ -54,6 +68,11 @@
 	let confirming = $state<'new' | 'resign' | null>(null);
 	let copied = $state(false);
 	let moveList = $state<HTMLDivElement>();
+	/** Análisis de la partida acabada: valoración y mejor jugada de cada posición. */
+	let analysis = $state<{ key: string; evals: Score[]; bests: (Uci | null)[]; notes: MoveNote[] | null } | null>(null);
+	let analyzing = $state(false);
+	/** Posición que se está mirando (número de medias jugadas), o null para la partida en vivo. */
+	let view = $state<number | null>(null);
 
 	// Motor: se crea al entrar en la vista y se cierra al salir.
 	let engine: Engine | null = null;
@@ -82,6 +101,7 @@
 			preset = presetOf(saved);
 			side = saved.human;
 		}
+		if (new URLSearchParams(location.search).get('modo') === 'problema' && puzzle) mode = 'puzzle';
 		ready = true;
 		engine = new Engine(() => new Worker(asset(ENGINE_FILE as Parameters<typeof asset>[0])) as unknown as EngineWorker);
 		engine.init().then(
@@ -95,6 +115,25 @@
 	// Guardar después de cada cambio (snapshot: una copia plana, sin el proxy de $state).
 	$effect(() => {
 		if (ready) saveGame($state.snapshot(game));
+	});
+
+	// El modo va en la URL, para que el enlace de TOP abra el problema y recargar no lo pierda.
+	$effect(() => {
+		if (!ready) return;
+		const search = mode === 'puzzle' ? '?modo=problema' : '';
+		// La regla no ve el resolve() cuando lleva la query detrás.
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		if (location.search !== search) replaceState(resolve('/chess') + search, {});
+	});
+
+	// Si cambian las jugadas, se vuelve a la partida en vivo y el análisis anterior ya no vale.
+	const movesKey = $derived(game.moves.join(' '));
+	$effect(() => {
+		const key = movesKey;
+		untrack(() => {
+			view = null;
+			if (analysis && analysis.key !== key) analysis = null;
+		});
 	});
 
 	// Turno del motor: busca y juega. Si la partida cambia mientras piensa (deshacer, nueva…), el $effect
@@ -245,6 +284,43 @@
 		hinting = false;
 	}
 
+	/** Valora cada posición de la partida y marca las jugadas malas. Se para si la partida cambia. */
+	async function analyze() {
+		if (!engine || analyzing) return;
+		const moves = [...game.moves];
+		const key = moves.join(' ');
+		const run = { key, evals: [] as Score[], bests: [] as (Uci | null)[], notes: null as MoveNote[] | null };
+		analysis = run;
+		analyzing = true;
+		try {
+			for (let i = 0; i <= moves.length; i++) {
+				if (!analysis || analysis.key !== key) break;
+				const position = replay(moves.slice(0, i));
+				const final = finalScore(position);
+				if (final) {
+					analysis.evals.push(final);
+					analysis.bests.push(null);
+					continue;
+				}
+				const r = await engine.search(moves.slice(0, i), position.turn(), ANALYSIS);
+				if (!r || !analysis || analysis.key !== key) break;
+				analysis.evals.push(r.info?.score ?? { cp: 0 });
+				analysis.bests.push(r.best);
+			}
+			if (analysis?.key === key && analysis.evals.length === moves.length + 1)
+				analysis.notes = annotate(analysis.evals, analysis.bests);
+		} catch {
+			engineState = 'error';
+		}
+		analyzing = false;
+	}
+
+	/** La mejor jugada que había antes de la jugada número `ply` (1 = la primera), en notación algebraica. */
+	function betterSan(ply: number, best: Uci): string {
+		const c = replay(game.moves.slice(0, ply - 1));
+		return playUci(c, best) ?? best;
+	}
+
 	async function copyPgn() {
 		chess.setHeader('Event', 'Arc Terminal');
 		// Fecha de hoy en Madrid («2026.10.14», el formato del PGN); en UTC, de 0 a 2 h saldría el día anterior.
@@ -270,15 +346,34 @@
 		if (!level) return colorName(c);
 		return c === game.human ? `Tú · ${colorName(c)}` : `Stockfish · ${level.label}`;
 	}
-	const bar = $derived(evalScore ? scoreToBar(evalScore) : 0.5);
-	const showEval = $derived(!!level || !!evalScore);
+	/** Lo que enseña el tablero: la partida en vivo o la posición que se está repasando. */
+	const shown = $derived(view === null ? chess : replay(game.moves.slice(0, view)));
+	const shownLast = $derived(view === null ? last : view > 0 ? history[view - 1] : undefined);
+	const notes = $derived(analysis?.notes ?? null);
+	const viewNote = $derived(view && notes ? notes[view - 1] : null);
+	const shownEval = $derived(view !== null && analysis ? (analysis.evals[view] ?? null) : evalScore);
+	const bar = $derived(shownEval ? scoreToBar(shownEval) : 0.5);
+	const showEval = $derived(!!level || !!shownEval);
 </script>
 
 <ViewHeader
 	code="CHESS"
 	title="Ajedrez"
 	sub="Contra Stockfish o a dos en este dispositivo · la partida se guarda en el navegador"
-/>
+>
+	{#snippet aside()}
+		{#if puzzle}
+			<Seg
+				label="Modo"
+				options={[
+					{ value: 'game', label: 'Partida' },
+					{ value: 'puzzle', label: 'Problema del día' }
+				]}
+				bind:value={mode}
+			/>
+		{/if}
+	{/snippet}
+</ViewHeader>
 
 <!-- Barra de un jugador, encima o debajo del tablero: bando, si el motor piensa, y reloj. -->
 {#snippet player(c: Color)}
@@ -296,115 +391,170 @@
 {/snippet}
 
 <div class="grid chess">
-	<div class="col">
-		<Panel title="Partida" meta={status}>
-			{@render player(other(game.orientation))}
-			<div class="board">
-				<Board
-					fen={chess.fen()}
-					orientation={game.orientation}
-					{movable}
-					dests={destinations(chess)}
-					lastMove={last ? [last.from, last.to] : null}
-					check={checkSquare(chess)}
-					arrow={hint}
-					{onmove}
-				/>
-				{#if showEval}
-					<!-- Barra de evaluación: la parte de las blancas crece desde su lado del tablero. -->
-					<div
-						class="eval"
-						class:flip={game.orientation === 'b'}
-						title={evalScore ? `Evaluación: ${formatScore(evalScore)}` : 'Evaluación'}
-						aria-hidden="true"
-					>
-						<i style:height="{(bar * 100).toFixed(1)}%"></i>
-					</div>
-				{/if}
-			</div>
-			{@render player(game.orientation)}
-		</Panel>
-	</div>
-	<div class="col">
-		<Panel title="Controles" meta={evalScore ? `Eval. ${formatScore(evalScore)}` : undefined}>
-			<div class="ops">
-				<button type="button" onclick={undo} disabled={!canUndo}>Deshacer</button>
-				<button type="button" onclick={askHint} disabled={!!end || engineTurn || hinting || engineState !== 'ready'}>
-					{hinting ? 'Pensando…' : 'Pista'}
-				</button>
-				<button type="button" onclick={flip}>Girar</button>
-				<button type="button" class:warn={confirming === 'new'} onclick={() => confirm('new', newGame)}>
-					{confirming === 'new' ? '¿Seguro?' : 'Nueva'}
-				</button>
-				<button
-					type="button"
-					class:warn={confirming === 'resign'}
-					onclick={() => confirm('resign', resign)}
-					disabled={!!end || !game.moves.length}
-				>
-					{confirming === 'resign' ? '¿Seguro?' : 'Abandonar'}
-				</button>
-			</div>
-			<div class="opts">
-				<Select label="Rival" value={game.rival} onchange={changeRival}>
-					{#each LEVELS as l (l.value)}<option value={l.value}>{l.label}</option>{/each}
-					<option value={HUMAN}>Persona</option>
-				</Select>
-				{#if level}<Seg
-						label="Juegas con"
-						options={[
-							{ value: 'w', label: 'Blancas' },
-							{ value: 'b', label: 'Negras' }
-						]}
-						bind:value={side}
-					/>{/if}
-				<Select label="Reloj" value={preset} onchange={changePreset}>
-					{#each PRESETS as p (p.value)}<option value={p.value}>{p.label}</option>{/each}
-				</Select>
-				<button type="button" class="link" onclick={copyPgn} disabled={!game.moves.length}
-					>{copied ? 'PGN copiado' : 'Copiar PGN'}</button
-				>
-			</div>
-			{#snippet note()}
-				{#if game.moves.length && (preset !== presetOf(game) || (level && side !== game.human))}Los cambios de reloj y
-					de bando valen desde la próxima partida.
-				{/if}Motor: <a href={ENGINE_SOURCE} target="_blank" rel="noopener">Stockfish 17.1</a> en WebAssembly (versión
-				ligera), un programa aparte con licencia
-				<a href={asset('engine/license.txt' as Parameters<typeof asset>[0])} target="_blank" rel="noopener">GPL-3.0</a>;
-				se descarga la primera vez (unos 7 MB). Reglas:
-				<a href="https://github.com/jhlywa/chess.js" target="_blank" rel="noopener">chess.js</a> (BSD-2).
-			{/snippet}
-		</Panel>
-		<Panel
-			title="Jugadas"
-			meta={end ? resultTag(end) : `${history.length} ${history.length === 1 ? 'media jugada' : 'medias jugadas'}`}
-		>
-			{#if pairs.length}
-				<div class="moves" bind:this={moveList}>
-					<Table maxHeight="420px">
-						<thead><tr><th>Nº</th><th class="l">Blancas</th><th class="l">Negras</th></tr></thead>
-						<tbody>
-							{#each pairs as p, i (p.n)}
-								{@const lastRow = i === pairs.length - 1}
-								<tr>
-									<td class="mut">{p.n}.</td>
-									<td class="l" class:cur={lastRow && !p.b}>{p.w}</td>
-									<td class="l" class:cur={lastRow && !!p.b}>{p.b ?? ''}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</Table>
+	{#if mode === 'puzzle' && puzzle}
+		<ChessPuzzle {puzzle} />
+	{:else}
+		<div class="col">
+			<Panel
+				title="Partida"
+				meta={view !== null ? `Repaso · ${view ? `jugada ${Math.ceil(view / 2)}` : 'inicio'}` : status}
+			>
+				{@render player(other(game.orientation))}
+				<div class="board">
+					<Board
+						fen={shown.fen()}
+						orientation={game.orientation}
+						movable={view === null ? movable : null}
+						dests={destinations(shown)}
+						lastMove={shownLast ? [shownLast.from, shownLast.to] : null}
+						check={checkSquare(shown)}
+						arrow={view === null ? hint : null}
+						{onmove}
+					/>
+					{#if showEval}
+						<!-- Barra de evaluación: la parte de las blancas crece desde su lado del tablero. -->
+						<div
+							class="eval"
+							class:flip={game.orientation === 'b'}
+							title={shownEval ? `Evaluación: ${formatScore(shownEval)}` : 'Evaluación'}
+							aria-hidden="true"
+						>
+							<i style:height="{(bar * 100).toFixed(1)}%"></i>
+						</div>
+					{/if}
 				</div>
-			{:else}
-				<p class="empty">
-					{level && game.human === 'b'
-						? 'Empieza Stockfish con blancas.'
-						: 'Aún no hay jugadas. Mueven las blancas: toca una pieza y luego la casilla.'}
-				</p>
-			{/if}
-		</Panel>
-	</div>
+				{@render player(game.orientation)}
+			</Panel>
+		</div>
+		<div class="col">
+			<Panel title="Controles" meta={shownEval ? `Eval. ${formatScore(shownEval)}` : undefined}>
+				<ButtonRow>
+					<button type="button" onclick={undo} disabled={!canUndo}>Deshacer</button>
+					<button type="button" onclick={askHint} disabled={!!end || engineTurn || hinting || engineState !== 'ready'}>
+						{hinting ? 'Pensando…' : 'Pista'}
+					</button>
+					<button type="button" onclick={flip}>Girar</button>
+					<button type="button" class:warn={confirming === 'new'} onclick={() => confirm('new', newGame)}>
+						{confirming === 'new' ? '¿Seguro?' : 'Nueva'}
+					</button>
+					{#if end}
+						<!-- Al acabar, «Abandonar» deja su sitio a «Analizar». -->
+						<button type="button" onclick={analyze} disabled={analyzing || !!notes || engineState !== 'ready'}>
+							{analyzing ? `${analysis?.evals.length ?? 0}/${game.moves.length + 1}` : 'Analizar'}
+						</button>
+					{:else}
+						<button
+							type="button"
+							class:warn={confirming === 'resign'}
+							onclick={() => confirm('resign', resign)}
+							disabled={!game.moves.length}
+						>
+							{confirming === 'resign' ? '¿Seguro?' : 'Abandonar'}
+						</button>
+					{/if}
+				</ButtonRow>
+				<div class="opts">
+					<Select label="Rival" value={game.rival} onchange={changeRival}>
+						{#each LEVELS as l (l.value)}<option value={l.value}>{l.label}</option>{/each}
+						<option value={HUMAN}>Persona</option>
+					</Select>
+					{#if level}<Seg
+							label="Juegas con"
+							options={[
+								{ value: 'w', label: 'Blancas' },
+								{ value: 'b', label: 'Negras' }
+							]}
+							bind:value={side}
+						/>{/if}
+					<Select label="Reloj" value={preset} onchange={changePreset}>
+						{#each PRESETS as p (p.value)}<option value={p.value}>{p.label}</option>{/each}
+					</Select>
+					<button type="button" class="link" onclick={copyPgn} disabled={!game.moves.length}
+						>{copied ? 'PGN copiado' : 'Copiar PGN'}</button
+					>
+				</div>
+				{#snippet note()}
+					{#if game.moves.length && (preset !== presetOf(game) || (level && side !== game.human))}Los cambios de reloj y
+						de bando valen desde la próxima partida.
+					{/if}Motor: <a href={ENGINE_SOURCE} target="_blank" rel="noopener">Stockfish 17.1</a> en WebAssembly (versión
+					ligera), un programa aparte con licencia
+					<a href={asset('engine/license.txt' as Parameters<typeof asset>[0])} target="_blank" rel="noopener">GPL-3.0</a
+					>; se descarga la primera vez (unos 7 MB). Reglas:
+					<a href="https://github.com/jhlywa/chess.js" target="_blank" rel="noopener">chess.js</a> (BSD-2).
+				{/snippet}
+			</Panel>
+			<Panel
+				title="Jugadas"
+				meta={end ? resultTag(end) : `${history.length} ${history.length === 1 ? 'media jugada' : 'medias jugadas'}`}
+			>
+				{#if view !== null || notes}
+					<ButtonRow>
+						<button
+							type="button"
+							onclick={() => (view = Math.max(0, (view ?? history.length) - 1))}
+							disabled={view === 0}>‹ Anterior</button
+						>
+						<button
+							type="button"
+							onclick={() => (view = view === null || view + 1 >= history.length ? null : view + 1)}
+							disabled={view === null}>Siguiente ›</button
+						>
+						<button type="button" onclick={() => (view = null)} disabled={view === null}>Final</button>
+					</ButtonRow>
+				{/if}
+				{#if viewNote?.mark && viewNote.best && view}
+					<p class="better">
+						<span class="sign {viewNote.mark}">{MARK_SIGN[viewNote.mark]}</span>
+						{MARK_NAME[viewNote.mark][0]}. Era mejor <b>{betterSan(view, viewNote.best)}</b>.
+					</p>
+				{/if}
+				{#if pairs.length}
+					<div class="moves" bind:this={moveList}>
+						<Table maxHeight="420px">
+							<thead><tr><th>Nº</th><th class="l">Blancas</th><th class="l">Negras</th></tr></thead>
+							<tbody>
+								{#each pairs as p (p.n)}
+									<tr>
+										<td class="mut">{p.n}.</td>
+										{@render move(p.n * 2 - 1, p.w)}
+										{@render move(p.n * 2, p.b)}
+									</tr>
+								{/each}
+							</tbody>
+						</Table>
+					</div>
+					{#if notes}
+						<p class="summary">
+							Blancas: {summary(notes, 'w')} · Negras: {summary(notes, 'b')}. Toca una jugada para verla.
+						</p>
+					{/if}
+				{:else}
+					<p class="empty">
+						{level && game.human === 'b'
+							? 'Empieza Stockfish con blancas.'
+							: 'Aún no hay jugadas. Mueven las blancas: toca una pieza y luego la casilla.'}
+					</p>
+				{/if}
+			</Panel>
+		</div>
+	{/if}
 </div>
+
+<!-- Una jugada del historial: se puede tocar para ver la posición; con el análisis, lleva su marca. -->
+{#snippet move(ply: number, san: string | undefined)}
+	{@const note = notes?.[ply - 1]}
+	<td class="l">
+		{#if san}
+			<button
+				type="button"
+				class="mv"
+				class:cur={view === null ? ply === history.length : ply === view}
+				onclick={() => (view = ply === history.length ? null : ply)}
+				>{san}{#if note?.mark}<span class="sign {note.mark}">{MARK_SIGN[note.mark]}</span>{/if}</button
+			>
+		{/if}
+	</td>
+{/snippet}
 
 <style>
 	/* Tablero a la izquierda, tan grande como deje la altura de la ventana; panel a la derecha. En el móvil,
@@ -507,39 +657,6 @@
 		color: var(--amber);
 	}
 
-	.ops {
-		display: grid;
-		grid-template-columns: repeat(5, minmax(0, 1fr));
-		gap: var(--hair);
-		background: var(--line);
-		border-bottom: var(--border);
-	}
-
-	.ops button {
-		background: var(--panel);
-		border: 0;
-		min-height: var(--control-h);
-		padding: var(--sp-6) var(--sp-4);
-		font-size: var(--fs-s);
-		color: var(--fg);
-		cursor: pointer;
-	}
-
-	.ops button:hover:not(:disabled) {
-		background: var(--raise);
-		color: var(--amber);
-	}
-
-	.ops button:disabled {
-		color: var(--faint);
-		cursor: default;
-	}
-
-	.ops button.warn {
-		background: var(--amber-soft);
-		color: var(--amber);
-	}
-
 	.opts {
 		display: flex;
 		flex-wrap: wrap;
@@ -567,13 +684,54 @@
 		cursor: default;
 	}
 
-	.moves :global(td.cur) {
+	.mv {
+		background: none;
+		border: 0;
+		padding: 0;
+		color: inherit;
+		cursor: pointer;
+	}
+
+	.mv:hover,
+	.mv.cur {
 		color: var(--amber);
 	}
 
-	@media (pointer: coarse) {
-		.ops button {
-			min-height: var(--touch);
-		}
+	/* Marcas del análisis: el error grave en ámbar; el resto, más discreto. */
+	.sign {
+		margin-left: var(--sp-2);
+		color: var(--muted);
+	}
+
+	.sign.blunder {
+		color: var(--amber);
+		font-weight: var(--fw-bold);
+	}
+
+	.sign.inaccuracy {
+		color: var(--faint);
+	}
+
+	.better,
+	.summary {
+		margin: 0;
+		padding: var(--sp-8) var(--pad-x);
+		font-family: var(--sans);
+		font-size: var(--fs-s);
+		color: var(--muted);
+	}
+
+	.better {
+		border-bottom: var(--border);
+	}
+
+	.better b {
+		color: var(--fg);
+		font-family: var(--mono);
+		font-weight: var(--fw-medium);
+	}
+
+	.summary {
+		border-top: var(--border);
 	}
 </style>

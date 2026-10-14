@@ -29,3 +29,5 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
 # AI: modelos en tendencia de Hugging Face (M13)
 https://huggingface.co/api/models?sort=trendingScore&limit=3
+# FUEL: Weekly Oil Bulletin de la Comisión Europea (enlace al histórico .xlsx)
+https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en ~ [^"' <>]{0,200}Prices_History[^"' <>]{0,40}
