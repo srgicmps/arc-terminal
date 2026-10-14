@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import type { Locator, Page } from 'playwright-core';
 import { launch, preview } from './browser.ts';
 
-const PAGES = ['/', '/ws', '/s?sym=NVDA', '/cal', '/mis'];
+const PAGES = ['/', '/ws', '/geo', '/s?sym=NVDA', '/cal', '/mis'];
 const THEMES = ['dark', 'light'] as const;
 
 /** Los 3 colores más repetidos de una captura (agrupados de 8 en 8 por canal), con su parte del total. */
@@ -40,7 +40,7 @@ async function frameText(el: Locator): Promise<string> {
 	try {
 		const frame = await (await el.locator('iframe').first().elementHandle())?.contentFrame();
 		const text = (await frame?.locator('body').innerText({ timeout: 3000 })) ?? '';
-		return text.replace(/\s+/g, ' ').trim().slice(0, 400);
+		return text.replace(/\s+/g, ' ').trim().slice(0, 2500);
 	} catch {
 		return '(sin texto)';
 	}

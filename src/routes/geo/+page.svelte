@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
 	import ChokepointTable from '#lib/components/ChokepointTable.svelte';
 	import DisasterList from '#lib/components/DisasterList.svelte';
 	import HazardList from '#lib/components/HazardList.svelte';
@@ -44,6 +45,7 @@
 				Precios de Polymarket: reflejan apuestas, no pronósticos oficiales · <Updated at={data.predictions?.fetchedAt} source="predictions" />
 			{/snippet}
 		</Panel>
+		<DefenseQuotes />
 		<Panel title="Rutas marítimas clave" meta="Barcos al día (media de 7 días) y cambio en 1 año">
 			<ChokepointTable items={data.portwatch?.data ?? []} />
 			{#snippet note()}

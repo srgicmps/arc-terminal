@@ -1,5 +1,6 @@
 <script lang="ts">
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
+	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
 	import FxConvert from '#lib/components/FxConvert.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
@@ -109,6 +110,7 @@
 		<Panel title="Mercados" meta="En directo">
 			<TvWidget widget="market-overview" config={overview} height={520} />
 		</Panel>
+		<DefenseQuotes />
 	</div>
 </div>
 
