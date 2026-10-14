@@ -3,7 +3,8 @@
 	El próximo dato llega en la prop `next` (lo calcula el +page.server.ts con nextMap() de nextrelease.ts);
 	la columna solo aparece si alguna serie tiene fecha. Con `extra`, columnas de variación propias
 	(por ejemplo, frente a hace 7 días y a hace un año, con `diffDays` de series.ts). Con `pct`, la variación
-	frente al dato anterior va en % y no en unidades (índices de precios).
+	frente al dato anterior va en % y no en unidades (índices de precios). Con `alt` en una fila, una segunda
+	serie del mismo indicador (otra fuente o frecuencia) sale en pequeño bajo el nombre: último dato y periodo.
 -->
 <script lang="ts">
 	import { GEO, nf, period } from '#lib/format.ts';
@@ -25,6 +26,8 @@
 		decimals?: number;
 		/** Si subir es malo (paro, inflación…), la variación se pinta al revés. */
 		inverse?: boolean;
+		/** Otra serie del mismo indicador (IPCA junto al IPC, paro mensual junto a la EPA). */
+		alt?: { series: Series | undefined; label: string; decimals?: number };
 	}
 
 	interface Extra {
@@ -122,6 +125,10 @@
 						<a class="name" href={row.series.url} target="_blank" rel="noopener">
 							{nameOf(row)}
 						</a>{#if withTerm.has(row.series.id)}<Term of={nameOf(row)} />{/if}
+						{#if row.alt?.series?.points.length}
+							{@const a = row.alt.series.points[row.alt.series.points.length - 1]}
+							<small class="alt">{row.alt.label} {nf(a.v, row.alt.decimals ?? d)}{row.alt.series.unit === '%' ? ' %' : ''} · {period(a.t)}</small>
+						{/if}
 						{#if nx}<small class="nx-sub" title={nx.title}>próx. {shortDay(nx.date)}</small>{/if}
 					</td>
 					<td>
@@ -237,6 +244,12 @@
 	.sp {
 		width: 80px;
 		padding-block: 0;
+	}
+
+	.alt {
+		display: block;
+		color: var(--faint);
+		font-size: var(--fs-xs);
 	}
 
 	/* El próximo dato va en su columna; en paneles estrechos, debajo del nombre. */

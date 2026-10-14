@@ -8,7 +8,7 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
-	import { compact } from '#lib/format.ts';
+	import { compact, dm, nf } from '#lib/format.ts';
 	import { hnByTopic } from '#lib/hn.ts';
 	import { BIG_TECH } from '#lib/tickers/bigtech.ts';
 	import { AI_CHAIN } from '#lib/tickers/aichain.ts';
@@ -72,6 +72,31 @@
 		<Panel title="IA en Hacker News" meta="{hnAi.length} en portada">
 			<HnTable items={hnAi} />
 		</Panel>
+		{#if data.newModels?.data.length}
+			{@const fresh = data.newModels.data}
+			<Panel title="Modelos nuevos del mes" meta="Precio en $ por millón de tokens · OpenRouter">
+				<Table>
+					<thead><tr><th>Modelo</th><th>Día</th><th>Contexto</th><th>Entrada</th><th>Salida</th></tr></thead>
+					<tbody>
+						{#each fresh as m (m.id)}
+							<tr>
+								<td class="name mname" title={m.id}
+									><a class="model" href={m.url} target="_blank" rel="noopener">{m.name}</a><span class="sub">{m.lab}</span></td
+								>
+								<td class="mut">{dm(`${m.date}T12:00:00Z`)}</td>
+								<td class="mut">{m.context ? compact(m.context) : '—'}</td>
+								<td>{m.input === null ? '—' : m.input === 0 ? 'Gratis' : nf(m.input, 2)}</td>
+								<td>{m.output === null ? '—' : m.output === 0 ? 'Gratis' : nf(m.output, 2)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
+				{#snippet note()}
+					Modelos que han entrado en OpenRouter en los últimos 31 días, con su precio en esa plataforma ·
+					<Updated at={data.newModels?.fetchedAt} source="aimodels" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Modelos en tendencia · Hugging Face" meta={models.length ? `${models.length} modelos` : undefined}>
 			{#if models.length}
 				<Table>
