@@ -19,6 +19,7 @@
 	import { initPlace } from '#lib/place.svelte.ts';
 	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
 	import { tvSymbol } from '#lib/tickers.ts';
+	import { initTaste, taste } from '#lib/taste.svelte.ts';
 	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
 	import { crossedNow, initThresholds } from '#lib/thresholds.svelte.ts';
 	import { parseTv, routeOf } from '#lib/tv.ts';
@@ -32,6 +33,7 @@
 	$effect(initThresholds);
 	// Umbrales cruzados (lote 25): un contador discreto en la barra, con sus nombres al pasar por encima.
 	const crossedRules = $derived(crossedNow());
+	$effect(initTaste);
 	$effect(initPlace);
 	$effect(initTheme);
 	$effect(initFit);
@@ -84,9 +86,9 @@
 	const THEME_LABEL = { auto: 'Tema automático (sigue al sistema)', light: 'Tema de día', dark: 'Tema de noche' };
 	const THEME_ICON = { auto: '◐', light: '☀', dark: '☾' };
 
-	const keys = COMMANDS.filter((c) => c.pinned);
-	// Barra inferior del móvil: los accesos más usados, a mano del pulgar.
-	const thumb = ['TOP', 'ECO', 'WS', 'FUEL'].map((code) => COMMANDS.find((c) => c.code === code)!);
+	// Fila de arriba y barra inferior del móvil (a mano del pulgar): las de la web o las de «A tu gusto».
+	const keys = $derived(COMMANDS.filter((c) => taste.top.includes(c.code)));
+	const thumb = $derived(COMMANDS.filter((c) => taste.thumb.includes(c.code)));
 
 	// navigator.onLine, enlazado como en Vue con un ref que se actualiza solo.
 	let online = $state(true);
@@ -136,7 +138,7 @@
 		<PlacePicker />
 		<Clocks />
 		{#if crossedRules.length}
-			<span class="limits" role="status" title={crossedRules.map(([, r]) => `${r.name} ${r.op === '>' ? 'por encima de' : 'por debajo de'} ${r.v}`).join(' · ')}>
+			<span class="limits" role="status" title={crossedRules.map(([, r]) => `${r.name} ${r.op === '>' ? 'por encima de' : 'por debajo de'} ${r.v.toLocaleString('es-ES', { maximumFractionDigits: 3 })}`).join(' · ')}>
 				<span aria-hidden="true">⚑</span>
 				{crossedRules.length}<span class="sr"> {crossedRules.length === 1 ? 'umbral cruzado' : 'umbrales cruzados'}</span>
 			</span>
