@@ -15,7 +15,7 @@
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import StablecoinTable from '#lib/components/StablecoinTable.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
-	import { compact, dm, nf, period } from '#lib/format.ts';
+	import { compact, dm, nf, period, signed } from '#lib/format.ts';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
@@ -161,19 +161,19 @@
 		tone={us10 === null ? 'mut' : undefined}
 		sub={us10 === null
 			? ''
-			: `${us10prev === null ? '' : `${us10 >= us10prev ? '+' : '−'}${nf(Math.abs(us10 - us10prev) * 100, 0)} pb hoy`}${us2 === null ? '' : ` · 2 años ${nf(us2, 2)} % (${nf((us10 - us2) * 100, 0)} pb)`}`}
+			: `${us10prev === null ? '' : `${signed(Math.round((us10 - us10prev) * 100), 0)} pb hoy`}${us2 === null ? '' : ` · 2 años ${nf(us2, 2)} % (${nf((us10 - us2) * 100, 0)} pb)`}`}
 	/>
 	<Tile
 		label="EUR/USD"
 		value={eurusd.length ? nf(eurusd.at(-1)!.v, 4) : '—'}
 		tone={tone(fxPct)}
-		sub={fxPct === null ? '' : `${fxPct >= 0 ? '+' : '−'}${nf(Math.abs(fxPct), 2)} % · BCE, ${dm(`${eurusd.at(-1)!.t}T12:00:00Z`)}`}
+		sub={fxPct === null ? '' : `${signed(fxPct, 2)} % · BCE, ${dm(`${eurusd.at(-1)!.t}T12:00:00Z`)}`}
 	/>
 	<Tile
 		label="Bitcoin"
 		value={btc ? `${compact(btc.usd)} $` : '—'}
 		tone={tone(btc?.change24h)}
-		sub={btc?.change24h == null ? '' : `${btc.change24h >= 0 ? '+' : '−'}${nf(Math.abs(btc.change24h), 1)} % en 24 h`}
+		sub={btc?.change24h == null ? '' : `${signed(btc.change24h, 1)} % en 24 h`}
 	/>
 </Tiles>
 
