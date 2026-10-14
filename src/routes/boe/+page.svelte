@@ -238,7 +238,7 @@
 		align-items: center;
 		gap: 0.5em;
 		padding: 0.75em 1em;
-		border-bottom: 1px solid var(--line);
+		border-bottom: var(--border);
 	}
 
 	.words label {
@@ -251,7 +251,7 @@
 		font-size: var(--fs-xs);
 		color: var(--amber);
 		background: var(--amber-soft);
-		border: 1px solid var(--amber-edge);
+		border: var(--hair) solid var(--amber-edge);
 		padding: 0.2em 0.6em;
 		cursor: pointer;
 	}

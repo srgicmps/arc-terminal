@@ -72,22 +72,20 @@
 				</ul>
 			{/if}
 			{#if days.length}
-				<div class="scroll">
-					<table class="t fest">
-						<thead>
-							<tr><th>Día</th><th class="l">Festivo</th><th class="l">Dónde</th></tr>
-						</thead>
-						<tbody>
-							{#each days as d (d.date)}
-								<tr>
-									<td class="mut">{weekday(d.date)} {dm(`${d.date}T12:00:00Z`).split(' ')[1]}</td>
-									<td class="l name">{d.names.join(' · ')}</td>
-									<td class="l mut">{d.tags.join(' ')}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+				<Table>
+					<thead>
+						<tr><th>Día</th><th class="l">Festivo</th><th class="l">Dónde</th></tr>
+					</thead>
+					<tbody>
+						{#each days as d (d.date)}
+							<tr>
+								<td class="mut">{weekday(d.date)} {dm(`${d.date}T12:00:00Z`).split(' ')[1]}</td>
+								<td class="l name wrap">{d.names.join(' · ')}</td>
+								<td class="l mut">{d.tags.join(' ')}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
 			{/if}
 			{#snippet note()}
 				ES: festivo en toda España · IB: en Baleares · NYSE y BME: sin bolsa en Nueva York o en Madrid.
@@ -139,7 +137,8 @@
 
 <style>
 	/* Los nombres largos pasan a otra línea para que quepa la columna «Dónde» en el móvil. */
-	.fest .name {
+	/* Los nombres de los festivos pueden ocupar varias líneas. */
+	.wrap {
 		white-space: normal;
 	}
 
