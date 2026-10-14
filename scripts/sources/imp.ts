@@ -25,6 +25,8 @@ const KEEP_DAYS = 366;
 /** Un tema: un grupo de titulares (de una o varias secciones) que cuentan lo mismo. */
 export interface Group {
 	title: string;
+	/** 'en' si el titular principal está en inglés (para traducirlo, scripts/translate.ts). */
+	lang?: 'en';
 	url: string;
 	time: string | null;
 	words: Set<string>;
@@ -100,7 +102,7 @@ export function mergeSections(sections: Record<string, NewsItem[]>, now: number)
 				(Math.abs(Date.parse(g.time!) - time) <= 12 * HOUR && sameStory(g.words, words))
 		);
 		if (!group) {
-			groups.push({ title: item.title, url: item.url, time: item.time, words, sources: [...new Set(sources)], sections: [section], urls: [...new Set(urls)] });
+			groups.push({ title: item.title, ...(item.lang && { lang: item.lang }), url: item.url, time: item.time, words, sources: [...new Set(sources)], sections: [section], urls: [...new Set(urls)] });
 			continue;
 		}
 		for (const s of sources) if (!group.sources.includes(s)) group.sources.push(s);
@@ -203,6 +205,7 @@ export function scoreGroups(groups: Tracked[], { now, official, itn }: ScoreInpu
 				first: g.first,
 				time: g.time
 			};
+			if (g.lang) item.lang = g.lang;
 			if (official) item.official = official;
 			if (wiki) item.wiki = true;
 			return item;

@@ -1,6 +1,6 @@
 /// <reference types="node" />
 // Titulares en inglés traducidos al español con MyMemory (api.mymemory.translated.net/get), sin tarjeta
-// ni clave. Lo ejecuta update.ts al final, cuando ya están guardados los titulares y IMP.
+// ni clave. Lo usa la fuente derivada `translations` (scripts/sources/translate.ts), que va detrás de IMP.
 //
 // - Solo se traducen los titulares que se ven en TOP, IMP, GEO y ECO (ver pickTitles).
 // - Cada traducción se guarda en static/data/translations.json, por el hash del titular, y se publica
@@ -210,13 +210,6 @@ export function prune(cache: TranslationCache, now: number): TranslationCache {
 	return { ...cache, entries };
 }
 
-/** IMP no sabe el idioma de sus titulares: lo toma de los titulares de las secciones. */
-export function markImp(imp: ImpData, english: Set<string>): void {
-	for (const e of [...imp.current, ...imp.days.flatMap((d) => d.items)]) {
-		if (english.has(e.title)) e.lang = 'en';
-	}
-}
-
 /**
  * Los titulares en inglés que se ven en TOP, IMP, GEO y ECO, del más importante al menos: IMP de hoy,
  * los 3 primeros de cada sección (TOP) y luego los de GEO (con «Gobiernos») y ECO.
@@ -255,8 +248,9 @@ interface Options {
 }
 
 /**
- * El paso de update.ts: lee los titulares guardados, traduce los nuevos, les pone `titleEs` y guarda
- * la caché en translations.json. Nunca lanza, y el correo nunca llega al registro ni a los archivos.
+ * Lo que hace la fuente `translations` (scripts/sources/translate.ts): lee los titulares e IMP ya
+ * guardados, traduce los nuevos, les pone `titleEs` y devuelve la caché, que update.ts guarda en
+ * translations.json. Nunca lanza, y el correo nunca llega al registro ni a los archivos.
  */
 export async function translateHeadlines({
 	dir,
@@ -265,8 +259,13 @@ export async function translateHeadlines({
 	fetchFn = fetch,
 	now = Date.now(),
 	log = console.log
-}: Options) {
+}: Options): Promise<TranslationCache> {
 	const say = (line: string) => log(redact(line, email));
+	const before = loadCache(previous, now);
+	if (!email) {
+		say('- translations: sin MYMEMORY_EMAIL, los titulares se quedan en inglés');
+		return before;
+	}
 	try {
 		const sections = [...new Set([...TOP_SECTIONS, ...Object.keys(SHOWN)])];
 		const files = new Map<string, { data: NewsData }>();
@@ -278,41 +277,28 @@ export async function translateHeadlines({
 		const imp = impFile?.data?.current && impFile.data.days ? impFile.data : undefined;
 		const news = Object.fromEntries([...files].map(([s, d]) => [s, d.data.items]));
 
-		const english = new Set(
-			Object.values(news).flatMap((items) => items.filter((i) => i.lang === 'en').map((i) => i.title))
-		);
-		if (imp) markImp(imp, english);
-
-		if (!email) {
-			if (imp) await write(`${dir}/imp.json`, impFile);
-			say('- translate: sin MYMEMORY_EMAIL, los titulares se quedan en inglés');
-			return;
-		}
-
-		const result = await translateTitles(pickTitles(news, imp), loadCache(previous, now), { email, fetchFn, now });
+		const result = await translateTitles(pickTitles(news, imp), before, { email, fetchFn, now });
 		const day = utcDay(now);
 		for (const items of Object.values(news)) applyCache(items, result.cache, day);
-		if (imp) for (const e of [...imp.current, ...imp.days.flatMap((d) => d.items)]) applyCache([e], result.cache, day);
+		if (imp) applyCache([...imp.current, ...imp.days.flatMap((d) => d.items)], result.cache, day);
 		const cache = prune(result.cache, now);
 
 		for (const [s, dataset] of files) await write(`${dir}/news-${s}.json`, dataset);
 		if (imp) await write(`${dir}/imp.json`, impFile);
-		await write(`${dir}/translations.json`, {
-			name: 'translations',
-			fetchedAt: new Date(now).toISOString(),
-			data: cache
-		});
 
-		const total = `hoy ${cache.chars} de ${LIMITS.dailyChars} caracteres`;
-		say(`✓ translate: ${result.done} titulares nuevos (${result.sent} caracteres; ${total})`);
+		say(
+			`  translations: ${result.done} titulares nuevos (${result.sent} caracteres; hoy ${cache.chars} de ${LIMITS.dailyChars})`
+		);
 		// Que MyMemory no responda es un aviso; quedarse sin cupo o sin tiempo es lo normal algún día.
-		if (result.stopped)
-			say(
-				`${result.stopped.startsWith('MyMemory') ? '::warning title=translate::' : '- translate: '}${result.stopped}; el resto sigue en inglés`
-			);
+		if (result.stopped) {
+			const prefix = result.stopped.startsWith('MyMemory') ? '::warning title=translations::' : '  translations: ';
+			say(`${prefix}${result.stopped}; el resto sigue en inglés`);
+		}
+		return cache;
 	} catch (error) {
 		say(
-			`::warning title=translate::${error instanceof Error ? error.message : String(error)}; los titulares siguen en inglés`
+			`::warning title=translations::${error instanceof Error ? error.message : String(error)}; los titulares siguen en inglés`
 		);
+		return before;
 	}
 }

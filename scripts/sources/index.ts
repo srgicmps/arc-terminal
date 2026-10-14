@@ -28,6 +28,7 @@ import { releases } from './releases.ts';
 import { sanctions } from './sanctions.ts';
 import { search } from './search.ts';
 import { sec } from './sec.ts';
+import { translations } from './translate.ts';
 import { uscurve, usdebt } from './treasury.ts';
 import { wiki } from './wiki.ts';
 import { crypto, hn, power, quakes, weather } from './world.ts';
@@ -75,5 +76,7 @@ export const sources: Source<any>[] = [
 	...newsSources,
 	// Derivadas: se calculan después, con los datos de las anteriores.
 	imp,
-	search
+	search,
+	// Detrás de IMP: traduce también sus titulares.
+	translations
 ];
