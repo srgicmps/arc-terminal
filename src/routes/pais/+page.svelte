@@ -4,20 +4,23 @@
 	su bloque no se pinta. El país se lee de la URL al arrancar en el navegador, como el valor en /s.
 -->
 <script lang="ts">
+	import EuPowerTable from '#lib/components/EuPowerTable.svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
+	import { LEVELS } from '#lib/advisories.ts';
 	import { COUNTRIES, findCountry } from '#lib/countries.ts';
 	import type { CountryProfile, Rate } from '#lib/country.ts';
-	import { nf, period, signed } from '#lib/format.ts';
+	import { dm, nf, period, signed } from '#lib/format.ts';
 	import { sectionLabel } from '#lib/news.ts';
 	import type { PageProps } from './$types';
 
@@ -33,8 +36,13 @@
 	const EMPTY: CountryProfile = { kpis: [], policy: null, bond: null, premium: null, fx: [], imf: null };
 	const profile = $derived(country && (data.profiles[country.code] ?? EMPTY));
 	const news = $derived(country ? (data.news[country.code] ?? []) : []);
+	const travel = $derived(country ? data.travel[country.code] : undefined);
+	const hasPower = $derived(!!country && data.eupower.some((z) => z.country === country.code));
 	const rates = $derived(profile ? [profile.policy, profile.bond, profile.premium].filter((r): r is Rate => r !== null) : []);
-	const empty = $derived(profile && !profile.kpis.length && !rates.length && !profile.fx.length && !profile.imf && !news.length);
+	const military = $derived(country ? (data.military[country.code] ?? null) : null);
+	const empty = $derived(
+		profile && !profile.kpis.length && !rates.length && !profile.fx.length && !profile.imf && !military && !news.length
+	);
 
 	// Para la lista y el desplegable, por orden alfabético.
 	const sorted = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, 'es'));
@@ -122,6 +130,17 @@
 				</Panel>
 			{/if}
 
+			{#if hasPower}
+				<Panel title="Luz" meta="Mercado mayorista · €/MWh">
+					<EuPowerTable zones={data.eupower} country={country.code} />
+					{#snippet note()}
+						Media del día, frente a la media de las zonas europeas que sigue la terminal. Fuente:
+						{country.code === 'ES' ? 'Red Eléctrica' : 'Energy-Charts / SMARD (Bundesnetzagentur), CC BY 4.0'} ·
+						<Updated at={data.eupowerAt} source="energycharts" />
+					{/snippet}
+				</Panel>
+			{/if}
+
 			{#if profile.fx.length}
 				<Panel title="Moneda" meta={country.currency}>
 					<Table>
@@ -160,6 +179,20 @@
 				</Panel>
 			{/if}
 
+			{#if military}
+				<Panel title="Gasto militar" meta={data.militaryYear ? String(data.militaryYear) : undefined}>
+					<Tiles>
+						<Tile label="Gasto" value="{nf(military.usd / 1000, 1)} mil M$" sub="{military.rank}.º del mundo" />
+						<Tile label="% del PIB" value={military.gdp === null ? '—' : `${nf(military.gdp, 1)} %`} />
+						<Tile label="Variación real" value={military.real === null ? '—' : `${signed(military.real, 1)} %`} sub="Frente al año anterior" />
+					</Tiles>
+					{#snippet note()}
+						Fuente: <a href="https://www.sipri.org/databases/milex" target="_blank" rel="noopener">SIPRI</a>, en dólares corrientes; la
+						variación, en dólares constantes · <Updated at={data.militaryAt} source="sipri" />
+					{/snippet}
+				</Panel>
+			{/if}
+
 			{#if empty}
 				<Panel title="Datos">
 					<p class="empty">Ninguna fuente de la terminal publica cifras de {country.name}: aquí solo saldrán sus titulares.</p>
@@ -168,6 +201,22 @@
 		</div>
 
 		<div class="col">
+			{#if travel}
+				<Panel title="Aviso de viaje de EE. UU." meta="Nivel {travel.level} de 4">
+					<ul class="mini">
+						<li>
+							<span class="l" class:grave={travel.level === 4}>{LEVELS[travel.level]}</span>
+							<span class="mut">
+								{#if travel.prevLevel && travel.changedAt}antes nivel {travel.prevLevel} · cambió el {dm(travel.changedAt)}{:else}actualizado el {dm(travel.updated)}{/if}
+							</span>
+						</li>
+					</ul>
+					{#snippet note()}
+						Fuente: <a href={travel.url} target="_blank" rel="noopener">Departamento de Estado de EE. UU.</a>, para viajeros
+						estadounidenses · <Updated at={data.travelAt} source="advisories" />
+					{/snippet}
+				</Panel>
+			{/if}
 			<Panel title="En las noticias" meta="{news.length} {news.length === 1 ? 'titular' : 'titulares'}">
 				{#if news.length}
 					<NewsList items={news} tag={(item) => sectionLabel(item)} />
@@ -181,6 +230,10 @@
 {/if}
 
 <style>
+	.grave {
+		color: var(--down);
+	}
+
 	.pick {
 		color: var(--fg);
 		text-decoration: none;

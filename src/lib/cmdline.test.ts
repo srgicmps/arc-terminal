@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	canonical,
+	exampleTarget,
 	findCommand,
 	HISTORY_KEY,
 	historyOptions,
@@ -16,6 +17,7 @@ import {
 	writeHistory,
 	type Option
 } from './cmdline.ts';
+import { parseSymbols, PERF_PERIODS } from './cmp.ts';
 import { COMMANDS } from './commands.ts';
 import { TICKERS } from './tickers.ts';
 
@@ -132,6 +134,16 @@ describe('comandos con texto detrás', () => {
 		]);
 	});
 
+	it('cada ejemplo de HELP enlaza a lo mismo que abre la barra (también WX, que empieza por «LUGAR»)', () => {
+		for (const c of COMMANDS.filter((c) => c.arg)) {
+			const { route, search } = exampleTarget(c);
+			expect(route + search, c.code).toBe(open(c.arg!.example));
+			expect(search, c.code).not.toBe('');
+		}
+		const wx = COMMANDS.find((c) => c.code === 'WX')!;
+		expect(exampleTarget(wx).search).toBe(`?${wx.arg!.param}=Tokio`);
+	});
+
 	it('el historial guarda el texto', () => {
 		const t = resolveInput('news Inflación', []);
 		expect(t && canonical(t)).toBe('NEWS Inflación');
@@ -185,5 +197,29 @@ describe('historial', () => {
 			{ code: 'NVDA', desc: 'NVIDIA', kind: 'Reciente', run: 'NVDA' },
 			{ code: 'BME:REP', desc: 'Valor', kind: 'Reciente', run: 'BME:REP' }
 		]);
+	});
+});
+
+describe('CMP', () => {
+	it('«CMP NVDA AMD AVGO» abre /cmp con los valores en ?s=', () => {
+		const target = resolveInput('CMP NVDA AMD AVGO', []);
+		expect(target).toMatchObject({ kind: 'command', arg: 'NVDA AMD AVGO' });
+		expect(target && targetPath(target)).toEqual({ route: '/cmp', search: '?s=NVDA%20AMD%20AVGO' });
+	});
+
+	it('lee los valores en mayúsculas, sin repetir y como mucho cinco', () => {
+		expect(parseSymbols('nvda, amd  AVGO;nvda')).toEqual(['NVDA', 'AMD', 'AVGO']);
+		expect(parseSymbols('A B C D E F')).toEqual(['A', 'B', 'C', 'D', 'E']);
+		expect(parseSymbols('BME:SAN <script>')).toEqual(['BME:SAN']);
+		expect(parseSymbols(null)).toEqual([]);
+	});
+});
+
+describe('CMP: plazos de la tabla', () => {
+	// Las claves que llegaron de verdad en perf.json (registro de la Action del #128, 14-10-2026).
+	const REAL = ['13Week', '26Week', '52Week', '5Day', 'monthToDate', 'yearToDate'];
+
+	it('cada columna de la tabla es una clave que Finnhub da de verdad', () => {
+		for (const [key] of PERF_PERIODS) expect(REAL).toContain(key);
 	});
 });

@@ -15,6 +15,7 @@
 	import RiskGauge from '#lib/components/RiskGauge.svelte';
 	import YieldCurve from '#lib/components/YieldCurve.svelte';
 	import { seriesMap } from '#lib/series.ts';
+	import { quotesHeight } from '#lib/tickers.ts';
 	import { rgba, token } from '#lib/color.ts';
 	import { theme } from '#lib/theme.svelte.ts';
 	import type { PageProps } from './$types';
@@ -98,8 +99,6 @@
 		showSymbolLogo: false,
 		symbolsGroups: [{ name, symbols }]
 	});
-	/** Alto para que quepan todas las filas sin barra de desplazamiento (como en MIS). */
-	const quotesHeight = (n: number) => 90 + n * 46;
 
 	// Mapas de calor de TradingView: acciones de un índice («stock-heatmap»), cripto («crypto-coins-heatmap»)
 	// o divisas («forex-heat-map»: cada casilla es la variación del día de un par).

@@ -64,7 +64,7 @@ describe('eurostat', () => {
 	it('acepta los valores como lista', async () => {
 		vi.spyOn(console, 'log').mockImplementation(() => {});
 		const list = { ...stat, value: Array.from({ length: 15 }, (_, i) => (i === 6 ? 9.9 : null)) };
-		mockFetch((url) => (url.includes('/prc_hicp_manr?') ? list : undefined));
+		mockFetch((url) => (url.includes('/prc_hicp_minr?') ? list : undefined));
 		const { series } = await eurostat.fetch(undefined);
 		expect(series).toHaveLength(1);
 		expect(series[0]).toMatchObject({ id: 'inflation-es', points: [{ t: '2026-07', v: 9.9 }] });
