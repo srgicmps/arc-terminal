@@ -19,7 +19,7 @@
 
 	const get = $derived(seriesMap(data.eurostat, data.ecb, data.bls, data.usdebt, data.fred));
 	const geos = ['es', 'ea', 'de', 'fr', 'it', 'pt'];
-	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: id !== 'gdp' }));
+	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: !id.startsWith('gdp') }));
 
 	// Primas de riesgo: diferencia con el bono alemán a 10 años, en puntos básicos.
 	const PREMIUMS = [
@@ -66,6 +66,11 @@
 		<Panel title="PIB" meta="Variación trimestral">
 			<SeriesTable next={data.next} head="País" rows={byGeo('gdp')} />
 		</Panel>
+		{#if get('gdp-yoy-es')}
+			<Panel title="PIB interanual" meta="Frente al mismo trimestre del año anterior">
+				<SeriesTable head="País" rows={byGeo('gdp-yoy')} />
+			</Panel>
+		{/if}
 		<Panel title="Paro juvenil" meta="Menores de 25 años">
 			<SeriesTable next={data.next} head="País" rows={byGeo('youth-unemployment')} />
 		</Panel>
