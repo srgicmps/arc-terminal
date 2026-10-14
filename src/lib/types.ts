@@ -561,6 +561,15 @@ export interface ShipsData {
 	listened: number;
 }
 
+// ---------- Sanciones y aranceles (Federal Register) ----------
+
+export interface TradeDoc extends FedRegDoc {
+	/** Organismo, abreviado: «OFAC», «USTR», «ITA». */
+	agency: string;
+	/** «Sanciones» o «Aranceles». */
+	topic: string;
+}
+
 // ---------- Líderes: agenda de hoy (LIDER) ----------
 
 export interface AgendaEvent {
