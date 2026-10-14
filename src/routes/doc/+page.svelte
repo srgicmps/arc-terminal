@@ -128,7 +128,7 @@
 					<b>1</b>
 				</li>
 				<li>
-					<span class="l">Todas las fuentes, en una lista.<small><code>scripts/sources/index.ts</code></small></span>
+					<span class="l">Todas las fuentes, sin lista a mano: se descubren los archivos de la carpeta.<small><code>scripts/registry.ts</code></small></span>
 					<b>2</b>
 				</li>
 				<li>
