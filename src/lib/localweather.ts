@@ -80,7 +80,7 @@ export async function fetchLocal(p: Place, signal?: AbortSignal): Promise<LocalW
 	const weather = parsePlace(forecast, p.name, null);
 	if (!Number.isFinite(weather.current.temp)) throw new Error('sin datos de tiempo');
 	// El modelo marino busca la celda de mar más cercana: si queda lejos, el sitio es de interior.
-	const sea = marine && nearSea(marine, p) ? parseSea(marine, p.name, p.name) : null;
+	const sea = marine && nearSea(marine, p) ? parseSea(marine, p.name, '') : null;
 	weather.sea = sea?.now.water ?? null;
 
 	let air: AirData | null = null;
