@@ -106,6 +106,11 @@
 {/if}
 
 <style>
+	/* El nombre puede partirse en dos líneas para que la tabla quepa en el móvil; los números, nunca. */
+	td:first-child {
+		white-space: normal;
+	}
+
 	a.name {
 		color: inherit;
 		text-decoration: none;
