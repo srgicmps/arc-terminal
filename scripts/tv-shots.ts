@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import type { Locator, Page } from 'playwright-core';
 import { launch, preview } from './browser.ts';
 
-const PAGES = ['/', '/ws', '/geo', '/s?sym=NVDA', '/cmp?s=NVDA+AMD+AVGO', '/cal', '/mis'];
+const PAGES = ['/', '/ws', '/geo', '/s?sym=NVDA', '/cmp?s=NVDA+AMD+AVGO', '/cal', '/mis', '/ai'];
 const THEMES = ['dark', 'light'] as const;
 
 /** Los 3 colores más repetidos de una captura (agrupados de 8 en 8 por canal), con su parte del total. */
