@@ -106,7 +106,7 @@ La lista completa y actual está en `src/lib/commands.ts` (y en la vista `HELP`)
 | `WX` | Tiempo, mar, aire, avisos, sol y luna | Open-Meteo, MeteoAlarm |
 | `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica |
 | `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
-| `CHESS` | Ajedrez: tablero, reglas y partida guardada en el navegador | chess.js |
+| `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista y evaluación | Stockfish, chess.js |
 | `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
 
 \* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`):
