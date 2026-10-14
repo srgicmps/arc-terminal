@@ -319,6 +319,34 @@
 			</Panel>
 		{/if}
 		<ClimatePanel climate={data.climate} />
+		{#if data.neo}
+			{@const neo = data.neo}
+			<Panel title="Asteroides cercanos" meta="Próximos 30 días · a menos de 10 distancias lunares">
+				{#if neo.data.length}
+					<Table>
+						<thead><tr><th class="l">Asteroide</th><th>Día</th><th>Distancia</th><th>Tamaño</th></tr></thead>
+						<tbody>
+							{#each neo.data as a (a.des + a.date)}
+								<tr>
+									<td class="l name">{a.des}</td>
+									<td class="mut">{dm(a.date)}</td>
+									<td>{nf(a.ld, a.ld < 1 ? 2 : 1)} DL</td>
+									<td class="mut"
+										>{a.size ? (a.size.measured ? `${nf(a.size.min, 0)} m` : `${nf(a.size.min, 0)}–${nf(a.size.max, 0)} m`) : '—'}</td
+									>
+								</tr>
+							{/each}
+						</tbody>
+					</Table>
+				{:else}
+					<p class="empty">Ningún asteroide conocido pasará a menos de 10 distancias lunares en los próximos 30 días.</p>
+				{/if}
+				{#snippet note()}
+					DL: distancia lunar (384 400 km). Tamaño medido o, si no, estimado por su brillo. Fuente:
+					<a href="https://cneos.jpl.nasa.gov/ca/" target="_blank" rel="noopener">NASA JPL, CNEOS</a> · <Updated at={neo.fetchedAt} source="neo" />
+				{/snippet}
+			</Panel>
+		{/if}
 	</div>
 </div>
 
