@@ -21,8 +21,3 @@ https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm ~ \d{4} FOMC Mee
 https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html ~ .{0,30}Monetary policy meeting.{0,40}
 # ECO: euríbor a 12 meses (media mensual) para la calculadora de hipoteca
 https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA?lastNObservations=14&format=csvdata&detail=dataonly
-# LIDER: texto de la agenda de La Moncloa (hoy y ayer), canales RSS y términos de Factba.se
-https://www.lamoncloa.gob.es/presidente/agenda/Paginas/agenda.aspx?d=20261014 ~ Agenda del Presidente.{0,2500}
-https://www.lamoncloa.gob.es/presidente/agenda/Paginas/agenda.aspx?d=20261013 ~ (\d{1,2}[:.]\d{2}).{0,300}
-https://www.lamoncloa.gob.es/Paginas/rss.aspx
-https://rollcall.com/factbase/terms-of-service/ ~ .{0,200}(automated|scrap|commercial|attribution|personal use).{0,200}

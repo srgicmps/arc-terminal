@@ -400,3 +400,24 @@ export interface Release {
 	/** Página de la release en GitHub, con las notas. */
 	url: string;
 }
+
+// ---------- Líderes: agenda de hoy (LIDER) ----------
+
+export interface AgendaEvent {
+	/** Cuándo empieza (ISO 8601, UTC), o null si la agenda no da hora. */
+	start: string | null;
+	/** Día de la agenda en la zona del propio líder (AAAA-MM-DD). */
+	date: string;
+	title: string;
+	place: string;
+}
+
+export interface LeaderAgenda {
+	/** «sanchez», «trump»… (ver src/lib/leaders.ts). */
+	id: string;
+	/** Actos de ayer a pasado mañana; null si la agenda no se ha podido leer. */
+	events: AgendaEvent[] | null;
+	/** De dónde sale la agenda. */
+	source: { name: string; url: string };
+	error?: string;
+}

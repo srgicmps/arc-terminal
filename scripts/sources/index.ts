@@ -15,6 +15,7 @@ import { hazards, quakesEs } from './hazards.ts';
 import { hfpapers } from './hfpapers.ts';
 import { holidays } from './holidays.ts';
 import { ine } from './ine.ts';
+import { leaders } from './leaders.ts';
 import { newsSources } from './news.ts';
 import { predictions } from './predictions.ts';
 import { powerMix } from './ree-mix.ts';
@@ -39,6 +40,7 @@ export const sources: Source<any>[] = [
 	eurostat,
 	// EE. UU.
 	fedreg,
+	leaders,
 	bls,
 	usdebt,
 	uscurve,
