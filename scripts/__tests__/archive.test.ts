@@ -1,17 +1,19 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { readFile, rm } from 'node:fs/promises';
 import { archive, entries, mergeMonth, minute, monthOf, monthsBefore } from '../sources/archive.ts';
-import { makeContext } from '../lib.ts';
+import { makeContext, writeExtra } from '../lib.ts';
 import type { ArchiveEntry, NewsItem } from '../../src/lib/types.ts';
 import { mockFetch } from './mock.ts';
 
 const news = (title: string, url: string, time: string | null, source = 'El País'): NewsItem => ({ title, url, source, time, summary: '' });
+// Sin escribir en static/data: en la Action los tests van después de `pnpm data` y borrarían el archivo.
+vi.mock('../lib.ts', async (importOriginal) => ({ ...(await importOriginal<typeof import('../lib.ts')>()), writeExtra: vi.fn() }));
+
 const e = (t: string, d: string, u = `https://x.example/${t}`): ArchiveEntry => ({ t, s: 'A', d, u });
 
-afterEach(async () => {
+afterEach(() => {
 	vi.useRealTimers();
 	vi.unstubAllGlobals();
-	await rm('static/data/news-archive', { recursive: true, force: true });
+	vi.mocked(writeExtra).mockClear();
 });
 
 describe('archivo de titulares', () => {
@@ -45,7 +47,8 @@ describe('archivo de titulares', () => {
 		const previous = { months: [{ month: '2026-10', count: 1, bytes: 10 }, { month: '2026-05', count: 9, bytes: 99 }] };
 		const data = await archive.fetch(previous, ctx);
 		expect(data.months.map((m) => [m.month, m.count])).toEqual([['2026-10', 2]]);
-		const file = JSON.parse(await readFile('static/data/news-archive/2026-10.json', 'utf8')) as ArchiveEntry[];
+		const [path, file] = vi.mocked(writeExtra).mock.calls[0] as [string, ArchiveEntry[]];
+		expect(path).toBe('news-archive/2026-10.json');
 		expect(file.map((x) => x.t)).toEqual(['Nuevo', 'viejo']);
 		expect(archive.files!(data)).toEqual(['news-archive/2026-10.json']);
 	});
