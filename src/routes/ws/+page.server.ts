@@ -1,6 +1,7 @@
 import { dataset } from '#lib/data.ts';
 import { trimCurve } from '#lib/curves.ts';
 import { pickSeries, trim } from '#lib/trim.ts';
+import { versusYear } from '#lib/credit.ts';
 import { computeRisk } from '#lib/risk.ts';
 import type { AuctionsData, CryptoData, NewsData, PredictionsData, SeriesData, YieldCurveData } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
@@ -31,6 +32,10 @@ export const load: PageServerLoad = async () => {
 		// El historial de bitcoin solo sirve para el termómetro.
 		crypto: crypto && { ...crypto, data: { coins: crypto.data.coins } },
 		risk,
-		auctions
+		auctions,
+		// Diferenciales de crédito: tres series de FRED (un año, para el minigráfico) y si el de alto rendimiento de
+		// EE. UU. está por encima de su media del año.
+		credit: pickSeries(fred, ['hy-us', 'ig-us', 'hy-eu'], 261),
+		hyVsYear: versusYear(fred?.data.series.find((x) => x.id === 'hy-us')?.points ?? [])
 	};
 };

@@ -116,7 +116,12 @@
 		{ key: 'ndx', label: 'Nasdaq 100', widget: 'stock-heatmap', config: stocks('NASDAQ100') },
 		{ key: 'dax', label: 'DAX', widget: 'stock-heatmap', config: stocks('DAX') },
 		{ key: 'ibex', label: 'IBEX 35', widget: 'stock-heatmap', config: stocks('IBEX35') },
-		{ key: 'crypto', label: 'Cripto', widget: 'crypto-coins-heatmap', config: { ...common, dataSource: 'Crypto', blockSize: 'market_cap_calc' } }
+		{
+			key: 'crypto',
+			label: 'Cripto',
+			widget: 'crypto-coins-heatmap',
+			config: { ...common, dataSource: 'Crypto', blockSize: 'market_cap_calc' }
+		}
 	] as const;
 
 	// El mapa elegido se recuerda en este navegador (si no deja guardar, se queda en memoria).
@@ -143,13 +148,18 @@
 	const map = $derived(MAPS.find((m) => m.key === mapKey) ?? MAPS[0]);
 </script>
 
-<ViewHeader code="WS" title="Wall Street e inversión" sub="TradingView, Tesoro de EE. UU., BCE, CoinGecko y titulares de mercados" />
+<ViewHeader
+	code="WS"
+	title="Wall Street e inversión"
+	sub="TradingView, Tesoro de EE. UU., BCE, CoinGecko y titulares de mercados"
+/>
 
 <div class="grid">
 	<div class="col">
 		<Panel title="Sesiones de las bolsas" meta="24 h · hora de Madrid">
 			<MarketSessions />
-			{#snippet note()}Sesión continua de cada bolsa. Festivos de Nueva York, Londres, Madrid, Fráncfort y São Paulo; en Asia, de momento, solo los fines de semana.{/snippet}
+			{#snippet note()}Sesión continua de cada bolsa. Festivos de Nueva York, Londres, Madrid, Fráncfort y São Paulo; en
+				Asia, de momento, solo los fines de semana.{/snippet}
 		</Panel>
 	</div>
 </div>
@@ -168,7 +178,11 @@
 			<TvWidget widget="market-overview" config={overview} height={520} />
 		</Panel>
 		<Panel title="Materias primas" meta="Precio en dólares · en directo">
-			<TvWidget widget="market-quotes" config={quotes('Materias primas', COMMODITIES)} height={quotesHeight(COMMODITIES.length)} />
+			<TvWidget
+				widget="market-quotes"
+				config={quotes('Materias primas', COMMODITIES)}
+				height={quotesHeight(COMMODITIES.length)}
+			/>
 		</Panel>
 		<DefenseQuotes />
 	</div>
@@ -186,6 +200,37 @@
 	</div>
 	<div class="col">
 		<RiskGauge risk={data.risk} />
+		{#if data.credit?.data.series.length}
+			{@const credit = seriesMap(data.credit)}
+			<Panel title="Diferenciales de crédito" meta="Sobre el Tesoro · ICE BofA">
+				<SeriesTable
+					head="Bonos de empresa"
+					spark={60}
+					rows={[
+						{
+							series: credit('hy-us'),
+							name: 'Alto rendimiento EE. UU.',
+							decimals: 2,
+							inverse: true,
+							highlight: data.hyVsYear?.above
+						},
+						{ series: credit('ig-us'), name: 'Grado de inversión EE. UU.', decimals: 2, inverse: true },
+						{ series: credit('hy-eu'), name: 'Alto rendimiento euro', decimals: 2, inverse: true }
+					]}
+				/>
+				{#snippet note()}
+					Diferencial ajustado por opciones (OAS), en puntos porcentuales: lo que pagan de más los bonos de empresa.
+					{#if data.hyVsYear}El de alto rendimiento de EE. UU. está {data.hyVsYear.above ? 'por encima' : 'por debajo'} de
+						su media del año ({data.hyVsYear.mean.toFixed(2).replace('.', ',')} %){data.hyVsYear.above
+							? ', resaltado en ámbar'
+							: ''}.{/if}
+					ICE solo deja publicar en FRED unos años de historia. Fuente: FRED (ICE Data Indices) · <Updated
+						at={data.credit?.fetchedAt}
+						source="fred"
+					/>
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Curvas de tipos" meta="EE. UU., zona euro y Japón · hoy y hace un año">
 			<YieldCurve
 				curves={[
@@ -201,11 +246,18 @@
 			{/snippet}
 		</Panel>
 		<Panel title="Divisas" meta="Cambio de referencia del BCE">
-			<SeriesTable head="Par" spark={60} rows={fx.map((id) => ({ series: get(id), name: get(id)?.label, decimals: 4 }))} />
+			<SeriesTable
+				head="Par"
+				spark={60}
+				rows={fx.map((id) => ({ series: get(id), name: get(id)?.label, decimals: 4 }))}
+			/>
 		</Panel>
 		<Panel title="Conversor" meta="Tipos de referencia del BCE">
 			<FxConvert series={fx.map(get)} />
-			{#snippet note()}Tipo de referencia del BCE, no de cambio en ventanilla · <Updated at={data.ecb?.fetchedAt} source="ecb" />{/snippet}
+			{#snippet note()}Tipo de referencia del BCE, no de cambio en ventanilla · <Updated
+					at={data.ecb?.fetchedAt}
+					source="ecb"
+				/>{/snippet}
 		</Panel>
 		<Panel title="Cripto" meta="Por capitalización">
 			<CryptoTable coins={data.crypto?.data.coins ?? []} />
@@ -214,8 +266,8 @@
 		<Panel title="Subastas del Tesoro" meta="Bonos y notas de EE. UU.">
 			{#if data.auctions}<AuctionList data={data.auctions.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
 			{#snippet note()}
-				B/C (bid-to-cover): demanda frente a lo adjudicado; en ámbar, por debajo de la media de sus 6 subastas anteriores ·
-				Fuente: Tesoro de EE. UU. · <Updated at={data.auctions?.fetchedAt} source="auctions" />
+				B/C (bid-to-cover): demanda frente a lo adjudicado; en ámbar, por debajo de la media de sus 6 subastas
+				anteriores · Fuente: Tesoro de EE. UU. · <Updated at={data.auctions?.fetchedAt} source="auctions" />
 			{/snippet}
 		</Panel>
 	</div>
