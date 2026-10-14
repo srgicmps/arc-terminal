@@ -11,6 +11,7 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { TICKERS, tvSymbol } from '#lib/commands.ts';
+	import { stockShare, type ShareInfo } from '#lib/share.ts';
 	import { inWatchlist, toggleWatch } from '#lib/watchlist.svelte.ts';
 	import type { PageProps } from './$types';
 
@@ -26,6 +27,13 @@
 	const name = $derived(TICKERS.find((t) => t.code === code)?.name ?? '');
 	// Solo hay documentos de la SEC para los valores con CIK (los que cotizan en EE. UU.).
 	const sec = $derived(data.sec?.data.companies[code]);
+
+	// «Compartir»: símbolo y nombre, con ?sym en el enlace (la ficha sin ?sym abre NVDA).
+	function share(): ShareInfo {
+		const url = new URL(location.href);
+		url.searchParams.set('sym', code);
+		return { ...stockShare(code, name), url: url.href };
+	}
 </script>
 
 <ViewHeader code={code || '…'} title={name || 'Ficha del valor'} sub="Cotización, gráfico y datos en directo · TradingView">
@@ -42,7 +50,7 @@
 	{#key symbol}
 		<div class="grid grid-2">
 			<div class="col">
-				<Panel title="Gráfico" meta={symbol}>
+				<Panel title="Gráfico" meta={symbol} {share}>
 					<TvWidget
 						widget="advanced-chart"
 						config={{ symbol, interval: 'D', timezone: 'Europe/Madrid', style: '1', allow_symbol_change: false, hide_side_toolbar: true }}

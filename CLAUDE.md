@@ -74,7 +74,8 @@ Un cambio de estética se hace en un solo sitio.
 - **Componentes base** en `src/lib/components/ui/`:
   `Seg` (botones de opción), `Select` (desplegable con etiqueta), `Tiles` + `Tile` (cifras grandes), `Table`
   (tabla densa: celdas `.l`, `.name`, `.sub`, `.mut`), `Bar` (barra de comparación), `Change` (variación
-  verde/roja con signo) y `Note` (nota al pie). Además, `Panel` y `ViewHeader` para paneles y cabeceras de vista.
+  verde/roja con signo), `Note` (nota al pie) y `Share` (botón «Compartir»; se usa con la prop `share` de `Panel`,
+  y su lógica está en `src/lib/share.ts`). Además, `Panel` y `ViewHeader` para paneles y cabeceras de vista.
   Antes de escribir CSS para algo que ya existe, se usa el componente.
 - **`app.css`** solo tiene el reset, la tipografía base y lo que comparten todas las vistas: rejillas (`.grid`,
   `.grid-2`, `.grid-2e`, `.grid-3`, `.col`), listas `.mini`, `.empty` y los colores `.up`, `.down`, `.mut`.
