@@ -12,7 +12,15 @@
 	const config = {
 		showSymbolLogo: false,
 		// PRUEBA TEMPORAL: un solo grupo para que tv-shots lea todos los símbolos (se quitará).
-		symbolsGroups: [{ name: 'Todos', symbols: groups.flatMap((g) => g.tickers.map((t) => ({ name: t.tv, displayName: t.name }))) }]
+		symbolsGroups: [
+			{
+				name: 'Todos',
+				symbols: [
+					...groups.flatMap((g) => g.tickers.map((t) => ({ name: t.tv, displayName: t.name }))),
+					...['LSE:BA', 'OTC:BAESY', 'FWB:BSP', 'XETR:BSP', 'TRADEGATE:BSP'].map((s) => ({ name: s, displayName: `PRUEBA ${s}` }))
+				]
+			}
+		]
 	};
 	// Alto para la pestaña más larga, sin barra de desplazamiento (como en MIS).
 	const height = 90 + Math.max(...groups.map((g) => g.tickers.length)) * 46;
