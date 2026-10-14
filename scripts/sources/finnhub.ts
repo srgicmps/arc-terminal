@@ -15,7 +15,7 @@ const QUOTES = ['SPY', 'QQQ', 'DIA', 'IWM', 'AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOO
  * El calendario trae miles de empresas. Se guardan las grandes: las de esta lista y las que esperan
  * facturar más de 2.000 M$ en el trimestre (si Finnhub da la previsión).
  */
-const WATCH = new Set([
+export const WATCH = new Set([
 	...QUOTES,
 	'ORCL', 'NFLX', 'AMD', 'INTC', 'CRM', 'ADBE', 'CSCO', 'QCOM', 'TXN', 'IBM', 'NOW', 'PLTR', 'MU', 'ASML', 'TSM', 'SAP',
 	'BAC', 'WFC', 'GS', 'MS', 'C', 'BLK', 'V', 'MA', 'AXP', 'PYPL',
