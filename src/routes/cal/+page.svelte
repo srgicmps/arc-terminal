@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { clock } from '#lib/clock.svelte.ts';
-	import MeetingList from '#lib/components/MeetingList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -10,6 +9,7 @@
 	import Table from '#lib/components/ui/Table.svelte';
 	import { compact, dm, hm, nf, weekday } from '#lib/format.ts';
 	import { bmeHolidays, nyseHolidays } from '#lib/markets.ts';
+	import { CB, cbUpcoming } from '#lib/cb-calendar.ts';
 	import { madridDate } from '#lib/meetings.ts';
 	import type { PageProps } from './$types';
 
@@ -22,12 +22,26 @@
 
 	const earnings = $derived(data.finnhub?.data.earnings ?? []);
 
+	// Salidas a bolsa desde hoy (las de los últimos días quedan en el JSON por si la web se construyó ayer).
+	const ipos = $derived((data.finnhub?.data.ipos ?? []).filter((i) => i.date >= today).slice(0, 20));
+	/** «18.00-20.00» → «18–20» · «12.50» → «12,50» */
+	const price = (p: string) =>
+		p
+			? p
+					.split('-')
+					.map((n) => nf(Number(n), Number(n) % 1 ? 2 : 0))
+					.join('–')
+			: '—';
+
 	const HOUR: Record<string, string> = { bmo: 'Pre', amc: 'Post', dmh: 'Sesión' };
 
 	// Festivos de los próximos 12 meses: España y Baleares (Nager.Date) y días sin bolsa (por reglas).
 	// Fecha de hoy en Madrid. Hasta que arranca el reloj en el navegador se usa la fecha en la que se
 	// construyó la página.
 	const today = $derived(madridDate(clock.now || Date.now()));
+
+	// Próximas decisiones de tipos de los grandes bancos centrales (src/lib/cb-calendar.ts).
+	const decisions = $derived(cbUpcoming(today).slice(0, 10));
 
 	// Próximos datos de los calendarios oficiales (con tema), desde hoy en hora de Madrid.
 	const releases = $derived(
@@ -58,7 +72,7 @@
 <ViewHeader
 	code="CAL"
 	title="Agenda económica"
-	sub="Datos macro de la semana (TradingView) y resultados empresariales (Finnhub)"
+	sub="Datos macro de la semana (TradingView), resultados empresariales y salidas a bolsa (Finnhub)"
 />
 
 <div class="grid grid-2">
@@ -68,9 +82,26 @@
 		</Panel>
 	</div>
 	<div class="col">
-		<Panel title="Bancos centrales" meta="Próximas reuniones · BCE y Fed">
-			<MeetingList mode="list" limit={6} />
-			{#snippet note()}Decisión de tipos, en hora de España. Fuentes: calendarios oficiales del BCE y de la Fed.{/snippet}
+		<Panel title="Bancos centrales" meta="Próximas decisiones de tipos · hora de España">
+			<Table>
+				<thead><tr><th>Día</th><th>Hora</th><th class="l">Banco</th><th class="l"></th></tr></thead>
+				<tbody>
+					{#each decisions as m (m.bank + m.date)}
+						<tr>
+							<td class="mut">{weekday(m.date)} {dm(`${m.date}T12:00:00Z`).split(' ')[1]}</td>
+							<td class="mut">{m.at ? hm(m.at) : '—'}</td>
+							<td class="l name"
+								><a href={CB[m.bank].url} target="_blank" rel="noopener" title={CB[m.bank].long}>{CB[m.bank].name}</a></td
+							>
+							<td class="l mut">{m.report ? (m.bank === 'fed' ? 'Proyecciones' : 'Informe') : ''}</td>
+						</tr>
+					{/each}
+				</tbody>
+			</Table>
+			{#snippet note()}
+				BCE, Fed, Inglaterra, Japón (sin hora fija), Suiza, Canadá, Australia y el LPR de China (día 20). Fuentes:
+				calendarios oficiales de cada banco.
+			{/snippet}
 		</Panel>
 		<Panel title="Próximos datos" meta="Calendarios oficiales · hora de España">
 			{#if releases.length}
@@ -176,6 +207,43 @@
 				{#if data.finnhub}· <Updated at={data.finnhub.fetchedAt} source="finnhub" />{/if}
 			{/snippet}
 		</Panel>
+		{#if data.finnhub}
+			<Panel title="Salidas a bolsa" meta="EE. UU. · próximas 4 semanas">
+				{#if ipos.length}
+					<Table>
+						<thead>
+							<tr>
+								<th>Día</th>
+								<th class="l">Empresa</th>
+								<th class="ex l">Bolsa</th>
+								<th>Precio</th>
+								<th>Importe</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each ipos as i, n (i.name + i.date)}
+								<tr>
+									<td class="mut">{n === 0 || ipos[n - 1].date !== i.date ? weekday(i.date) : ''}</td>
+									<td class="l name wrap"
+										>{i.name}{#if i.symbol}<span class="sub">{i.symbol}</span>{/if}</td
+									>
+									<td class="ex l mut">{i.exchange.replace(/ (Global|Capital)( Select)?( Market)?$/, '')}</td>
+									<td class:mut={i.status !== 'priced'}>{price(i.price)}</td>
+									<td class="mut">{i.value ? compact(i.value) : '—'}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</Table>
+				{:else}
+					<p class="empty">No hay salidas a bolsa de más de 50 M$ previstas en estas fechas.</p>
+				{/if}
+				{#snippet note()}
+					Precio por acción en $ (en gris, aún sin fijar: horquilla prevista) e importe de la colocación. Solo las de más de 50 M$.
+					Fuente: Finnhub
+					{#if data.finnhub}· <Updated at={data.finnhub.fetchedAt} source="finnhub" />{/if}
+				{/snippet}
+			</Panel>
+		{/if}
 	</div>
 </div>
 
@@ -196,7 +264,8 @@
 	}
 
 	@container (max-width: 440px) {
-		.rev {
+		.rev,
+		.ex {
 			display: none;
 		}
 	}

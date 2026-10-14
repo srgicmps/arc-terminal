@@ -1,6 +1,6 @@
 // FRED: series macro de EE. UU. La clave va en la URL, así que nunca debe salir en un error.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fred } from '../sources/fred.ts';
+import { fred, netLiquidity } from '../sources/fred.ts';
 import { mockFetch } from './mock.ts';
 
 const KEY = 'clave-de-prueba-123';
@@ -43,7 +43,8 @@ describe('fred', () => {
 		});
 		const { series } = await fred.fetch(undefined);
 		const byId = Object.fromEntries(series.map((s) => [s.id, s]));
-		expect(series).toHaveLength(15);
+		// 17 series de FRED y la liquidez neta, que se calcula con tres de ellas.
+		expect(series).toHaveLength(18);
 
 		// El hueco «.» se descarta y los puntos quedan de más antiguo a más reciente.
 		expect(byId['fedfunds-us'].points).toEqual([
@@ -130,11 +131,11 @@ describe('fred', () => {
 		expect(error).toBeInstanceOf(Error);
 		expect((error as Error).message).not.toContain(KEY);
 		// Se ha llamado con la clave (3 intentos por serie)…
-		expect(fetch).toHaveBeenCalledTimes(15 * 3);
+		expect(fetch).toHaveBeenCalledTimes(17 * 3);
 		expect(String(fetch.mock.calls[0][0])).toContain(KEY);
 		// …pero el registro de cada serie (que acaba en status.json) no la lleva, ni tampoco la URL con parámetros.
 		const logged = log.mock.calls.map((c) => c.join(' '));
-		expect(logged).toHaveLength(15);
+		expect(logged).toHaveLength(17);
 		for (const line of logged) {
 			expect(line).not.toContain(KEY);
 			expect(line).not.toContain('api_key');
@@ -153,5 +154,28 @@ describe('fred', () => {
 		await vi.runAllTimersAsync();
 		expect(((await result) as Error).message).not.toContain(KEY);
 		for (const c of log.mock.calls) expect(c.join(' ')).not.toContain(KEY);
+	});
+});
+
+describe('netLiquidity', () => {
+	const s = (id: string, points: [string, number][]) => ({ id, label: id, unit: 'M$', source: 'FRED', url: '', points: points.map(([t, v]) => ({ t, v })) });
+
+	it('resta TGA y RRP del balance cada miércoles, con el dato anterior más cercano', () => {
+		const walcl = s('fed-balance', [['2026-10-01', 6_600_000], ['2026-10-08', 6_590_000]]);
+		const tga = s('fed-tga', [['2026-10-01', 800_000], ['2026-10-08', 850_000]]);
+		// RRP es diaria: el 8 no hay dato y se usa el del 7.
+		const rrp = s('fed-rrp', [['2026-10-01', 200_000], ['2026-10-07', 150_000]]);
+		const net = netLiquidity(walcl, tga, rrp)!;
+		expect(net).toMatchObject({ id: 'fed-net-liquidity', unit: 'M$', geo: 'US' });
+		expect(net.points).toEqual([
+			{ t: '2026-10-01', v: 5_600_000 },
+			{ t: '2026-10-08', v: 5_590_000 }
+		]);
+	});
+
+	it('sin alguna de las tres, o sin fechas en común, no hay serie', () => {
+		const walcl = s('fed-balance', [['2026-10-01', 1]]);
+		expect(netLiquidity(walcl, undefined, walcl)).toBeNull();
+		expect(netLiquidity(walcl, s('fed-tga', [['2026-11-01', 1]]), s('fed-rrp', [['2026-09-01', 1]]))).toBeNull();
 	});
 });

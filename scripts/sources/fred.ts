@@ -1,9 +1,9 @@
 // FRED, Banco de la Reserva Federal de San Luis: series macro de EE. UU. https://fred.stlouisfed.org/docs/api/fred/
 // Necesita una clave gratuita (FRED_API_KEY, en GitHub Secrets). Sin ella, la fuente se salta.
-// Límite: unas 120 consultas por minuto por clave; aquí son 15 cada 3 horas.
+// Límite: unas 120 consultas por minuto por clave; aquí son 17 cada 3 horas.
 // Condiciones: hay que avisar de que se usa la API de FRED sin su respaldo, y algunas series son de
-// terceros con copyright (el VIX de Cboe): solo se guardan unos pocos puntos con
-// enlace a FRED.
+// terceros con copyright (el VIX de Cboe): solo se guardan unos pocos puntos con enlace a FRED.
+import { at } from '../../src/lib/series.ts';
 import type { Point, Series, SeriesData } from '../../src/lib/types.ts';
 import { getJson, num, settle, type Source } from '../lib.ts';
 
@@ -35,6 +35,10 @@ const WANTED: Wanted[] = [
 	{ code: 'M2SL', id: 'm2-us', label: 'M2, interanual', unit: '%', freq: 'm', units: 'pc1', last: 36 },
 	// Balance de la Fed: total del activo, semanal (miércoles), en millones de dólares.
 	{ code: 'WALCL', id: 'fed-balance', label: 'Balance de la Fed', unit: 'M$', freq: 'w', last: 160 },
+	// Para la liquidez neta (WALCL − TGA − RRP): cuenta del Tesoro en la Fed (semanal, miércoles, millones de $)
+	// y repos inversas a un día (diarias, en miles de millones de $: se pasan a millones).
+	{ code: 'WTREGEN', id: 'fed-tga', label: 'Cuenta del Tesoro en la Fed (TGA)', unit: 'M$', freq: 'w', last: 160 },
+	{ code: 'RRPONTSYD', id: 'fed-rrp', label: 'Repos inversas de la Fed (RRP)', unit: 'M$', freq: 'd', last: 800, scale: 1000 },
 	{ code: 'VIXCLS', id: 'vix', label: 'VIX', unit: 'pts', freq: 'd', last: 260 },
 	{ code: 'DCOILWTICO', id: 'wti', label: 'Petróleo WTI', unit: '$', freq: 'd', last: 260 },
 	{ code: 'DTWEXBGS', id: 'dollar-broad', label: 'Dólar, índice amplio', unit: 'pts', freq: 'd', last: 260 },
@@ -105,6 +109,31 @@ async function series(w: Wanted, key: string): Promise<Series | null> {
 	}
 }
 
+/**
+ * Liquidez neta de la Fed, cada miércoles del balance: activo total (WALCL) − cuenta del Tesoro (TGA) − repos
+ * inversas (RRP), en millones de $. Es lo que de verdad queda en el sistema: el dinero que el Tesoro guarda en
+ * la Fed o que los fondos aparcan en las repos inversas no circula. Para TGA y RRP se toma el dato de ese día
+ * o el anterior más cercano. Null si falta alguna de las tres.
+ */
+export function netLiquidity(walcl?: Series, tga?: Series, rrp?: Series): Series | null {
+	if (!walcl || !tga || !rrp) return null;
+	const points = walcl.points.flatMap((p) => {
+		const t = at(tga, p.t);
+		const r = at(rrp, p.t);
+		return t && r ? [{ t: p.t, v: Math.round(p.v - t.v - r.v) }] : [];
+	});
+	if (!points.length) return null;
+	return {
+		id: 'fed-net-liquidity',
+		label: 'Liquidez neta de la Fed',
+		unit: 'M$',
+		geo: 'US',
+		points,
+		source: 'FRED',
+		url: 'https://fred.stlouisfed.org/series/WALCL'
+	};
+}
+
 export const fred: Source<SeriesData> = {
 	name: 'fred',
 	label: 'Fed, balance de la Fed, curva, PCE, PIB, paro semanal, M2, VIX, petróleo y dólar · FRED (Fed de San Luis)',
@@ -116,6 +145,13 @@ export const fred: Source<SeriesData> = {
 		const key = process.env[ENV] ?? '';
 		const found = await settle('fred', WANTED, (w) => w.code, (w) => series(w, key));
 		if (!found.length) throw new Error('ninguna serie de FRED');
-		return { series: found };
+		const byId = (id: string) => found.find((s) => s.id === id);
+		const net = netLiquidity(byId('fed-balance'), byId('fed-tga'), byId('fed-rrp'));
+		if (net) {
+			// Para comprobar en el registro el orden de magnitud (todo en millones de $).
+			const last = (s?: Series) => s?.points.at(-1)?.v;
+			console.log(`  fred · liquidez neta ${last(net)} = ${last(byId('fed-balance'))} − TGA ${last(byId('fed-tga'))} − RRP ${last(byId('fed-rrp'))}`);
+		}
+		return { series: net ? [...found, net] : found };
 	}
 };

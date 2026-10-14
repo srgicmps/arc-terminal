@@ -204,7 +204,7 @@
 	}
 
 	.accent {
-		color: var(--amber);
+		color: var(--amber-dim);
 	}
 
 	/* Controles de la vista modular: discretos, del color del texto terciario. */

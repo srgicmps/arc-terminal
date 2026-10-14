@@ -1,4 +1,5 @@
 <script lang="ts">
+	import EuPowerTable from '#lib/components/EuPowerTable.svelte';
 	import { resolve } from '$app/paths';
 	import BalanceSheets from '#lib/components/BalanceSheets.svelte';
 	import HousingTable from '#lib/components/HousingTable.svelte';
@@ -9,9 +10,11 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
+	import Tile from '#lib/components/ui/Tile.svelte';
+	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { compact, dm, period } from '#lib/format.ts';
+	import { compact, dm, nf, period, signed } from '#lib/format.ts';
 	import { change, diffDays, last, seriesMap, spread } from '#lib/series.ts';
 	import type { PageProps } from './$types';
 
@@ -38,6 +41,11 @@
 		}))
 	);
 	const debtUs = $derived(last(get('debt-us')));
+
+	// Prima de España a diario (Banco de España): último día hábil y cambio en una semana.
+	const daily = $derived(seriesMap(data.bde));
+	const premiumDay = $derived(last(daily('premium-es-d')));
+	const premiumWeek = $derived(diffDays(daily('premium-es-d'), 7));
 </script>
 
 <ViewHeader code="ECO" title="Economía y macro" sub="Eurostat, Banco Central Europeo, BLS, Tesoro de EE. UU. y FRED" />
@@ -116,8 +124,7 @@
 					{ series: get('estr'), name: '€STR', decimals: 3 },
 					{ series: get('euribor-12m'), name: 'Euríbor 12 meses', decimals: 3 },
 					{ series: get('mortgage-es'), name: 'Hipotecas nuevas España', decimals: 2, inverse: true },
-					{ series: get('mortgage-ea'), name: 'Hipotecas nuevas zona euro', decimals: 2, inverse: true },
-					{ series: get('hicp-ea'), name: 'Inflación zona euro', decimals: 1, inverse: true }
+					{ series: get('mortgage-ea'), name: 'Hipotecas nuevas zona euro', decimals: 2, inverse: true }
 				]}
 			/>
 		</Panel>
@@ -158,15 +165,17 @@
 			/>
 			{#snippet note()}Fuente: BIS, tipos oficiales de los bancos centrales · <Updated at={data.bis?.fetchedAt} />{/snippet}
 		</Panel>
-		<Panel title="Balances de los bancos centrales" meta="Total del activo · semanal">
+		<Panel title="Balances de los bancos centrales" meta="Total del activo y liquidez neta · semanal">
 			<BalanceSheets
 				rows={[
 					{ name: 'BCE (Eurosistema)', series: get('ecb-balance'), currency: '€' },
-					{ name: 'Reserva Federal', series: get('fed-balance'), currency: '$' }
+					{ name: 'Reserva Federal', series: get('fed-balance'), currency: '$' },
+					{ name: 'Fed: liquidez neta', series: get('fed-net-liquidity'), currency: '$' }
 				]}
 			/>
 			{#snippet note()}
 				Sube cuando el banco central compra deuda (QE, expansión cuantitativa) y baja cuando la deja vencer o la vende (QT).
+				Liquidez neta: balance de la Fed menos la cuenta del Tesoro (TGA) y las repos inversas (RRP), dinero que está en la Fed pero no circula.
 				Fuentes: BCE · <Updated at={data.ecb?.fetchedAt} source="ecb" /> y FRED · <Updated at={data.fred?.fetchedAt} source="fred" />
 			{/snippet}
 		</Panel>
@@ -185,8 +194,24 @@
 			{#snippet note()}Fuente: BCE · <Updated at={data.ecb?.fetchedAt} source="ecb" />{/snippet}
 		</Panel>
 		<Panel title="Primas de riesgo" meta="Frente al bono alemán · pb">
+			{#if premiumDay}
+				{@const es = last(daily('bond10-es-d'))}
+				{@const de = last(daily('bond10-de-d'))}
+				<Tiles cols={3}>
+					<Tile
+						label="Prima de España"
+						value="{nf(premiumDay.v, 0)} pb"
+						tone={premiumWeek === null || Math.round(premiumWeek) === 0 ? undefined : premiumWeek > 0 ? 'down' : 'up'}
+						sub="{period(premiumDay.t)}{premiumWeek === null ? '' : ` · ${signed(premiumWeek, 0)} pb en 7 días`}"
+					/>
+					<Tile label="Bono español 10A" value="{nf(es?.v, 2)} %" sub={es ? period(es.t) : ''} />
+					<Tile label="Bono alemán 10A" value="{nf(de?.v, 2)} %" sub={de ? period(de.t) : ''} />
+				</Tiles>
+			{/if}
 			<SeriesTable head="País" rows={premiums} spark={12} />
-			{#snippet note()}Diferencia de rentabilidad a 10 años con Alemania, media mensual. Fuente: BCE{/snippet}
+			{#snippet note()}
+				{#if premiumDay}Arriba, el último día hábil: Banco de España · <Updated at={data.bde?.fetchedAt} source="bde" />.{' '}{/if}La tabla, diferencia de rentabilidad a 10 años con Alemania en media mensual. Fuente: BCE
+			{/snippet}
 		</Panel>
 		<Panel title="EE. UU." meta="BLS y Tesoro">
 			<SeriesTable next={data.next}
@@ -263,6 +288,12 @@
 					]}
 				/>
 				{#snippet note()}Fuente: GIE AGSI+ · <Updated at={data.gie?.fetchedAt} source="gie" />{/snippet}
+			</Panel>
+		{/if}
+		{#if data.eupower?.data.zones.length}
+			<Panel title="Luz en Europa" meta="Mayorista · €/MWh · media del día" jump={{ code: 'LUZ', href: resolve('/luz') }}>
+				<EuPowerTable zones={data.eupower.data.zones} />
+				{#snippet note()}Fuentes: Energy-Charts / SMARD (Bundesnetzagentur), CC BY 4.0; España, Red Eléctrica · <Updated at={data.eupower?.fetchedAt} source="energycharts" />{/snippet}
 			</Panel>
 		{/if}
 		{#if data.predictions?.data.economy.length}

@@ -9,9 +9,11 @@
 import type { EuPowerData, EuPowerZone, PowerData } from '../../src/lib/types.ts';
 import { getJson, madridDate, type Source } from '../lib.ts';
 
-/** Zonas que se piden: código de Energy-Charts, país y nombre en español. */
+/**
+ * Zonas que se piden: código de Energy-Charts, país y nombre en español. Solo las que llegan con licencia
+ * CC BY: Portugal, Suecia (SE3) y Finlandia vienen «solo para uso privado» y no se piden.
+ */
 export const ZONES: { zone: string; country: string; name: string }[] = [
-	{ zone: 'PT', country: 'PT', name: 'Portugal' },
 	{ zone: 'FR', country: 'FR', name: 'Francia' },
 	{ zone: 'DE-LU', country: 'DE', name: 'Alemania y Luxemburgo' },
 	{ zone: 'IT-North', country: 'IT', name: 'Italia (norte)' },
@@ -21,9 +23,7 @@ export const ZONES: { zone: string; country: string; name: string }[] = [
 	{ zone: 'CH', country: 'CH', name: 'Suiza' },
 	{ zone: 'PL', country: 'PL', name: 'Polonia' },
 	{ zone: 'DK1', country: 'DK', name: 'Dinamarca (oeste)' },
-	{ zone: 'SE3', country: 'SE', name: 'Suecia (Estocolmo)' },
-	{ zone: 'NO2', country: 'NO', name: 'Noruega (sur)' },
-	{ zone: 'FI', country: 'FI', name: 'Finlandia' }
+	{ zone: 'NO2', country: 'NO', name: 'Noruega (sur)' }
 ];
 
 const API = 'https://api.energy-charts.info/price';
@@ -69,9 +69,10 @@ interface Raw {
 export const energycharts: Source<EuPowerData> = {
 	name: 'energycharts',
 	label: 'Precio de la luz en Europa · Energy-Charts / SMARD',
-	maxAgeMinutes: 55,
-	// Trece peticiones con pausa entre ellas, y reintentos si salta el 429.
-	deadlineMs: 150_000,
+	// Los precios de mañana salen una vez al día (hacia las 13:00): cada 3 horas sobra.
+	maxAgeMinutes: 180,
+	// Diez peticiones con pausa entre ellas, y reintentos si salta el 429 (en la Action llegó a 149 s).
+	deadlineMs: 180_000,
 	// Va en la segunda fase para tener el mayorista de España de REE (fuente «power»).
 	after: true,
 	async fetch(_previous, ctx) {
