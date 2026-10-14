@@ -78,10 +78,21 @@ try {
 			// Los widgets se cargan al acercarse a la vista: se recorren uno a uno.
 			for (let i = 0; i < n; i++) {
 				await widgets.nth(i).scrollIntoViewIfNeeded();
-				await page.waitForTimeout(2500);
+				await page.waitForTimeout(3000);
 			}
-			await page.waitForTimeout(4000);
+			await page.waitForTimeout(6000);
 			console.log(`\nSHOTS ${theme} ${path} · --panel ${tokens.panel} · --line ${tokens.line}`);
+			// En WS, si hay selector de mapa de calor, una captura de cada mapa (comprueba que cargan).
+			const maps = page.locator('.maps button');
+			for (let m = 0; m < (await maps.count()); m++) {
+				await maps.nth(m).click();
+				await page.waitForTimeout(5000);
+				const el = page.locator('.tv[data-widget$="heatmap"]').first();
+				const png = await el.screenshot();
+				const label = (await maps.nth(m).textContent())?.trim() ?? String(m);
+				writeFileSync(`shots/${theme}-map-${label.replace(/\W+/g, '_')}.png`, png);
+				console.log(`  mapa ${label}: ${(await topColors(page, png)).join(' · ')}`);
+			}
 			for (let i = 0; i < n; i++) {
 				const el = widgets.nth(i);
 				const name = (await el.getAttribute('data-widget')) ?? `widget${i}`;

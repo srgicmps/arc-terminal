@@ -6,6 +6,7 @@
 	En el HTML generado al construir queda el hueco con el aviso «Cargando TradingView…».
 -->
 <script lang="ts">
+	import { rgba, token } from '#lib/color.ts';
 	import { theme } from '#lib/theme.svelte.ts';
 
 	interface Props {
@@ -54,9 +55,15 @@
 		const script = document.createElement('script');
 		script.src = `https://s3.tradingview.com/external-embedding/embed-widget-${widget}.js`;
 		script.async = true;
+		// Fondo y rejilla con los tokens del tema, en los widgets que los admiten (los demás ignoran las claves).
+		const panel = rgba(token('--panel'));
+		const line = rgba(token('--line'));
 		script.textContent = JSON.stringify({
 			colorTheme: theme.resolved,
 			isTransparent: true,
+			backgroundColor: panel,
+			gridColor: line,
+			gridLineColor: line,
 			locale: 'es',
 			width: '100%',
 			height: '100%',
@@ -90,10 +97,13 @@
 		position: relative;
 		width: 100%;
 	}
+	/* El iframe de TradingView declara un esquema de color claro. Si hereda el «dark» de la página, Chrome lo
+	   pinta con un fondo blanco opaco y deja de ser transparente: con «normal» los dos coinciden y se ve el panel. */
 	.box {
 		position: relative;
 		width: 100%;
 		height: 100%;
+		color-scheme: normal;
 	}
 	/* Aviso discreto mientras llega el widget: mismo fondo y borde de 1 px que el resto de paneles. */
 	.wait {
