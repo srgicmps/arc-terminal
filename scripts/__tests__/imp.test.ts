@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { makeContext, phases } from '../lib.ts';
+import { level, makeContext, phases, waves } from '../lib.ts';
 import { confirms, imp, keywords, mergeDay, mergeSections, normUrl, scoreGroups, track, type Tracked } from '../sources/imp.ts';
 import type { ImpData, ImpSeen, NewsItem } from '../../src/lib/types.ts';
 import { mockFetch } from './mock.ts';
@@ -35,6 +35,14 @@ describe('fases de update.ts', () => {
 		const [first, second] = phases([{ name: 'a' }, { name: 'b', after: true as const }, { name: 'c' }]);
 		expect(first.map((s) => s.name)).toEqual(['a', 'c']);
 		expect(second.map((s) => s.name)).toEqual(['b']);
+	});
+
+	it('las derivadas van por niveles: after: 2 detrás de after: true', () => {
+		const list = [{ name: 'trad', after: 2 }, { name: 'a' }, { name: 'imp', after: true as const }, { name: 'b' }, { name: 'x', after: 1 }];
+		expect(waves(list).map((w) => w.map((s) => s.name))).toEqual([['a', 'b'], ['imp', 'x'], ['trad']]);
+		expect([level({}), level({ after: true }), level({ after: 3 })]).toEqual([0, 1, 3]);
+		const plain: { name: string; after?: number }[] = [{ name: 'a' }, { name: 'b' }];
+		expect(waves(plain).length).toBe(1);
 	});
 
 	it('el contexto da lo guardado en esta pasada y, si no, lo del disco', () => {
