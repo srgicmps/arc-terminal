@@ -102,6 +102,7 @@ describe('RULES', () => {
 			'2:diesel-gap',
 			'2:election',
 			'2:ai',
+			'2:stock',
 			'3:poly',
 			'3:earnings',
 			'3:crisis',
@@ -109,8 +110,10 @@ describe('RULES', () => {
 			'3:luz',
 			'3:tomorrow',
 			'3:dst',
+			'3:launch',
 			'4:morning',
-			'4:evening'
+			'4:evening',
+			'4:week'
 		]);
 	});
 

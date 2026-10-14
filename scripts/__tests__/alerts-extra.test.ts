@@ -3,13 +3,20 @@
 import { describe, expect, it } from 'vitest';
 import {
 	aiRule,
+	chessLine,
 	conflictRule,
+	earningsRule,
 	electionName,
 	electionRule,
 	emptyLog,
 	impRule,
+	launchName,
+	launchRule,
 	madrid,
+	morningRule,
 	namesCountry,
+	stockRule,
+	weekRule,
 	type Inputs,
 	type NotifyLog,
 	type Rule,
@@ -181,5 +188,202 @@ describe('IA', () => {
 			{ k: 'ai:z', t: '2026-10-13T08:00Z', s: 'sent', p: 2 }
 		);
 		expect(run(aiRule, { newsAi: many(5) }, log).ids).toHaveLength(1);
+	});
+});
+
+const earning = (symbol: string, date: string, epsActual: number | null = null) => ({
+	date,
+	symbol,
+	hour: 'amc',
+	quarter: 3,
+	year: 2026,
+	epsEstimate: 1,
+	epsActual,
+	revenueEstimate: null,
+	revenueActual: null
+});
+
+describe('Valores seguidos', () => {
+	// Forma de alert-quotes.json (PR #132): Quote[] de src/lib/types.ts. Con el plan gratuito de Finnhub
+	// solo vienen los de EE. UU.: los europeos faltan y no pasa nada.
+	const quote = (symbol: string, changePct: number | null, time = '2026-10-14T13:30:00.000Z') => ({
+		symbol,
+		price: 100,
+		change: changePct,
+		changePct,
+		prevClose: 101,
+		time
+	});
+
+	it('±3 % un aviso por valor y día; otro al pasar del 6 %', () => {
+		const first = run(stockRule, { alertQuotes: [quote('LMT', -4.2), quote('RTX', 1), quote('NVDA', null)] });
+		expect(first.ids).toEqual(['stock:LMT:2026-10-14:3']);
+		expect(first.alerts[0].title).toBe('Lockheed Martin −4,2 %');
+		expect(first.alerts[0].body).toBe('Variación del día (aviso desde ±3 %). Cotiza a 100,00; cierre anterior, 101,00.');
+		expect(first.alerts[0].click).toBe('https://srgicmps.github.io/arc-terminal/s?sym=LMT');
+		const log = emptyLog();
+		first.alerts[0].commit!(log);
+		expect(run(stockRule, { alertQuotes: [quote('LMT', -4.8)] }, log).ids).toEqual([]);
+		const six = run(stockRule, { alertQuotes: [quote('LMT', -6.3)] }, log);
+		expect(six.ids).toEqual(['stock:LMT:2026-10-14:6']);
+		six.alerts[0].commit!(log);
+		expect(run(stockRule, { alertQuotes: [quote('LMT', -7)] }, log).ids).toEqual([]);
+		// El sábado sigue la cotización del viernes: el día es el de la cotización, no se repite.
+		const saturday = Date.parse('2026-10-17T10:00:00Z');
+		const friday = [quote('LMT', -7, '2026-10-16T20:00:00.000Z')];
+		const fri = run(stockRule, { alertQuotes: friday }, emptyLog(), saturday);
+		expect(fri.ids).toEqual(['stock:LMT:2026-10-16:6']);
+	});
+
+	it('3 o más a la vez van en un solo aviso, solo con los que están', () => {
+		const d: Inputs = { alertQuotes: [quote('LMT', -3.5), quote('NOC', -4), quote('GD', -3.1), quote('BA', 0.5)] };
+		const { alerts } = run(stockRule, d);
+		expect(alerts.map((a) => a.id)).toEqual(['stock:grupo:2026-10-14T10:00Z']);
+		expect(alerts[0].body).toBe('Lockheed Martin −3,5 %, Northrop Grumman −4,0 %, General Dynamics −3,1 %');
+		const log = emptyLog();
+		alerts[0].commit!(log);
+		expect(run(stockRule, d, log, NOW + HOUR).ids).toEqual([]);
+	});
+
+	it('los de EE. UU. también vigilan sus resultados', () => {
+		const finnhub = { earnings: [earning('LMT', '2026-10-14', 6.8)], news: [], quotes: [] };
+		expect(run(earningsRule, { finnhub }).ids).toEqual(['earn:LMT:2026-10-14']);
+	});
+});
+
+describe('Lanzamientos', () => {
+	// Forma de launches.json (rama claude/lanzamientos): Launch de src/lib/launches.ts.
+	const launch = (id: string, rocket: string, mission: string, provider: string, minutes: number, status = 'Go') => ({
+		id,
+		mission,
+		rocket,
+		provider,
+		pad: 'Orbital Launch Mount A',
+		location: 'Starbase, TX, USA',
+		net: new Date(NOW + minutes * 60_000).toISOString(),
+		precise: true,
+		windowStart: null,
+		windowEnd: null,
+		status,
+		statusName: 'Go for Launch',
+		url: 'https://example.org/webcast',
+		webcast: true
+	});
+
+	it('Go, entre 45 y 75 min antes, y solo los vigilados', () => {
+		const d: Inputs = {
+			launches: {
+				launches: [
+					launch('a', 'Starship', 'Starship Flight 12', 'SpaceX', 60),
+					launch('b', 'Falcon 9', 'Starlink Group 10-5', 'SpaceX', 60),
+					launch('c', 'Falcon 9', 'Crew-12', 'SpaceX', 50),
+					launch('d', 'H3', 'HTV-X2', 'Japan Aerospace Exploration Agency', 70, 'TBC'),
+					launch('e', 'Ariane 62', 'Galileo L14', 'Arianespace', 30),
+					launch('f', 'Long March 5', 'Chang’e 7', 'China National Space Administration', 74)
+				]
+			}
+		};
+		const { alerts } = run(launchRule, d);
+		expect(alerts.map((a) => a.id)).toEqual([
+			`launch:a:${d.launches!.launches![0].net}`,
+			`launch:c:${d.launches!.launches![2].net}`,
+			`launch:f:${d.launches!.launches![5].net}`
+		]);
+		expect(alerts[0].title).toBe('🚀 En 1 h: Starship (vuelo 12) desde Starbase, 13:00 hora de Madrid');
+		expect(alerts[0].click).toBe('https://example.org/webcast');
+		expect(launchName({ rocket: 'Falcon 9', mission: 'Crew-12' })).toBe('Falcon 9 (Crew-12)');
+	});
+});
+
+describe('Ajedrez en «Buenos días»', () => {
+	// Forma de lichess.json (rama claude/chess-extras): Puzzle de src/lib/chess/puzzle.ts.
+	const lichess = {
+		id: 'Ab12C',
+		date: '2026-10-14',
+		rating: 1850,
+		themes: ['mateIn2', 'short'],
+		fen: '8/8/8/8/8/8/8/8 w - - 0 1',
+		lastMove: 'e2e4',
+		solution: ['d1h5'],
+		url: 'https://lichess.org/training/Ab12C'
+	};
+
+	it('una línea con el problema de hoy; el de ayer no sale', () => {
+		expect(chessLine({ lichess }, '2026-10-14')).toEqual([
+			'♟ Problema del día: mate en 2 · dificultad 1850 → https://lichess.org/training/Ab12C'
+		]);
+		expect(chessLine({ lichess }, '2026-10-15')).toEqual([]);
+		const at = Date.parse('2026-10-14T06:05:00Z'); // 08:05 CEST
+		expect(run(morningRule, { lichess }, emptyLog(), at).alerts[0].body).toContain('♟ Problema del día');
+	});
+});
+
+describe('SEMANA', () => {
+	// Domingo 18 de octubre de 2026, 19:00 CEST.
+	const SUNDAY = Date.parse('2026-10-18T17:00:00Z');
+	const entry = (k: string, score: number, media = 6) => ({
+		k,
+		title: `Tema ${k}`,
+		url: `https://example.org/${k}`,
+		sources: Array.from({ length: media }, (_, i) => `M${i}`),
+		score
+	});
+	const days = (pts: [string, number][]) => pts.map(([t, v]) => ({ t, v }));
+	const d: Inputs = {
+		imp: {
+			days: [
+				{ date: '2026-10-10', items: [entry('viejo', 99)] },
+				{ date: '2026-10-12', items: [entry('a', 30), entry('b', 12)] },
+				{ date: '2026-10-15', items: [entry('a', 35), entry('c', 20), entry('d', 18)] },
+				{ date: '2026-10-18', items: [entry('e', 16), entry('f', 15), entry('g', 2)] }
+			]
+		},
+		ecb: {
+			series: [
+				{
+					id: 'eurusd',
+					label: 'EUR/USD',
+					unit: '$',
+					source: 'BCE',
+					points: days([
+						['2026-10-09', 1.1],
+						['2026-10-16', 1.111]
+					])
+				}
+			]
+		},
+		uscurve: {
+			tenors: ['2A', '10A'],
+			days: [
+				{ date: '2026-10-09', values: [3.5, 4.1] },
+				{ date: '2026-10-16', values: [3.4, 4.22] }
+			]
+		},
+		crypto: { coins: [{ id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', usd: 1, eur: 1, change24h: 5, marketCap: 0 }] },
+		finnhub: { earnings: [earning('LMT', '2026-10-20')], news: [], quotes: [] }
+	};
+
+	it('domingo desde las 19:00 de Madrid: top 5 de IMP de 7 días, cambio semanal y la semana que viene', () => {
+		expect(run(weekRule, d, emptyLog(), SUNDAY - 60_000).ids).toEqual([]);
+		expect(run(weekRule, d, emptyLog(), SUNDAY - 86_400_000).ids).toEqual([]);
+		const { alerts } = run(weekRule, d, emptyLog(), SUNDAY);
+		expect(alerts.map((a) => a.id)).toEqual(['week:2026-10-18']);
+		expect(alerts[0].markdown).toBe(true);
+		expect(alerts[0].body).toBe(
+			[
+				'**Lo más importante de la semana**',
+				'1. Tema a (6 medios)',
+				'2. Tema c (6 medios)',
+				'3. Tema d (6 medios)',
+				'4. Tema e (6 medios)',
+				'5. Tema f (6 medios)',
+				'',
+				'**Mercados en la semana**',
+				'EUR/USD +1,0 % · US10Y +12 pb',
+				'',
+				'**La semana que viene**',
+				'- Martes 20 de octubre: Resultados de LMT (tras el cierre)'
+			].join('\n')
+		);
 	});
 });

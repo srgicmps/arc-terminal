@@ -23,6 +23,7 @@ import type {
 	PowerData,
 	PredictionsData,
 	Quake,
+	Quote,
 	Series,
 	SeriesData,
 	YieldCurveData
@@ -42,6 +43,7 @@ import {
 	FEDREG,
 	GAS,
 	IMP_BIG,
+	LAUNCHES,
 	LUZ,
 	MACRO,
 	MARKETS,
@@ -49,9 +51,11 @@ import {
 	POLYMARKET,
 	QUAKE,
 	RATES,
+	STOCKS,
 	STRAITS,
 	SUMMARIES,
 	TOMORROW,
+	WEEK,
 	type Asset,
 	type Level
 } from './config.ts';
@@ -82,6 +86,35 @@ export interface ImpLike {
  */
 export interface ElectionsLike {
 	items?: { date: string; country: string; iso: string | null; kind: string; name: string; url?: string }[];
+}
+
+/** Lo que se lee de launches.json (rama claude/lanzamientos: Launch y LaunchesData de src/lib/launches.ts). */
+export interface LaunchesLike {
+	launches?: {
+		id: string;
+		mission: string;
+		rocket: string;
+		provider: string;
+		pad: string;
+		location: string;
+		/** NET en UTC (ISO 8601). */
+		net: string;
+		/** false si la fecha es aproximada. */
+		precise?: boolean;
+		/** «Go», «TBD», «Hold»… */
+		status: string;
+		url?: string | null;
+	}[];
+}
+
+/** Lo que se lee de lichess.json (rama claude/chess-extras: Puzzle de src/lib/chess/puzzle.ts). */
+export interface PuzzleLike {
+	id: string;
+	/** Día de Madrid en que se descargó. */
+	date: string;
+	rating?: number;
+	themes?: string[];
+	url: string;
 }
 
 /** Lo que se espera de un futuro gie.json (llenado de los almacenes de gas de la UE, en %). */
@@ -129,6 +162,10 @@ export interface Inputs {
 	elections?: ElectionsLike;
 	newsAi?: NewsData;
 	newsTech?: NewsData;
+	launches?: LaunchesLike;
+	lichess?: PuzzleLike;
+	/** alert-quotes.json (PR #132): un Quote por símbolo de ALERT_TICKERS que tenga cotización. */
+	alertQuotes?: Quote[];
 	/** No es un archivo: la pone notify.ts a partir del secreto. */
 	zone?: FuelZone;
 }
@@ -159,7 +196,10 @@ export const FILES: Record<Exclude<keyof Inputs, 'zone'>, string> = {
 	power: 'power',
 	elections: 'elections',
 	newsAi: 'news-ai',
-	newsTech: 'news-tech'
+	newsTech: 'news-tech',
+	launches: 'launches',
+	lichess: 'lichess',
+	alertQuotes: 'alert-quotes'
 };
 
 export interface LogEntry {
@@ -836,6 +876,64 @@ export function aiRule(d: Inputs, { now, today, log, update }: RuleContext): Dra
 	return out;
 }
 
+// ---------- Valores seguidos ----------
+
+/** Nombre legible de un símbolo de Finnhub («LMT» → «Lockheed Martin»). */
+export const stockName = (symbol: string) => STOCKS.names[symbol] ?? symbol;
+
+/**
+ * Valores seguidos (alert-quotes.json, P2): variación del día de ±3 % o más, un aviso por valor y día, y
+ * otro si pasa de ±6 %. El día es el de la cotización (así el viernes no se repite el sábado). Si 3 o más
+ * se mueven a la vez, van juntos. Solo cuentan los símbolos que traiga el archivo (con el plan gratuito de
+ * Finnhub, los europeos no vienen). Id: stock:<símbolo>:<día>:<3|6> o stock:grupo:<minuto>.
+ */
+export function stockRule(d: Inputs, { now, today, log }: RuleContext): Draft[] {
+	const hits = list(d.alertQuotes).flatMap((q) => {
+		const pct = q?.changePct;
+		if (!q?.symbol || typeof pct !== 'number' || !Number.isFinite(pct)) return [];
+		const step = [...STOCKS.steps].reverse().find((s) => Math.abs(pct) >= s);
+		if (step === undefined) return [];
+		const t = Date.parse(q.time ?? '');
+		const day = Number.isFinite(t) ? madrid(t).date : today;
+		const key = `stock:${q.symbol}`;
+		const [lastDay, lastStep] = (log.last[key] ?? '').split('|');
+		if (lastDay === day && Number(lastStep) >= step) return [];
+		return [{ q, pct, step, day, key }];
+	});
+	if (!hits.length) return [];
+	type Hit = (typeof hits)[number];
+	const commitAll = (items: Hit[]) => (l: NotifyLog) => {
+		for (const h of items) l.last[h.key] = `${h.day}|${h.step}`;
+	};
+	const text = (h: Hit) => `${stockName(h.q.symbol)} ${signed(h.pct)} %`;
+	const t0 = minute(now);
+	if (hits.length >= STOCKS.group) {
+		return [
+			{
+				id: `stock:grupo:${t0}`,
+				title: 'Valores seguidos',
+				body: hits.map(text).join(', '),
+				tags: hits.filter((h) => h.pct < 0).length > hits.length / 2 ? 'chart_with_downwards_trend' : 'chart_with_upwards_trend',
+				click: `${SITE}/ws`,
+				time: now,
+				commit: commitAll(hits)
+			}
+		];
+	}
+	return hits.map((h) => ({
+		id: `stock:${h.q.symbol}:${h.day}:${h.step}`,
+		title: text(h),
+		body: `Variación del día (aviso desde ±${h.step} %). Cotiza a ${num(h.q.price, 2)}${
+			typeof h.q.prevClose === 'number' ? `; cierre anterior, ${num(h.q.prevClose, 2)}` : ''
+		}.`,
+		tags: h.pct >= 0 ? 'chart_with_upwards_trend' : 'chart_with_downwards_trend',
+		// La ficha de la web es de TradingView: los símbolos de EE. UU. de Finnhub valen tal cual.
+		click: h.q.symbol.includes('.') ? `${SITE}/ws` : `${SITE}/s?sym=${encodeURIComponent(h.q.symbol)}`,
+		time: now,
+		commit: commitAll([h])
+	}));
+}
+
 // ---------- Diésel ----------
 
 /** Un día de precio medio del diésel (€/L). */
@@ -1079,7 +1177,7 @@ export function polyRule(d: Inputs, { now, today, log, update }: RuleContext): D
  * Id: earn:<símbolo>:<día>.
  */
 export function earningsRule(d: Inputs, { now, today }: RuleContext): Draft[] {
-	const watch = new Set([...EARNINGS_WATCH.top10, ...EARNINGS_WATCH.mis]);
+	const watch = new Set(Object.values(EARNINGS_WATCH).flat());
 	return list(d.finnhub?.earnings).flatMap((e) => {
 		if (e?.date !== today || !watch.has(e.symbol) || typeof e.epsActual !== 'number') return [];
 		const est = typeof e.epsEstimate === 'number' ? ` (previsto ${num(e.epsEstimate, 2)})` : '';
@@ -1265,6 +1363,48 @@ export function dstRule(_d: Inputs, { now, today }: RuleContext): Draft[] {
 	];
 }
 
+type Launch = NonNullable<LaunchesLike['launches']>[number];
+
+/** «Starship (vuelo 12)», «Falcon 9 (Crew-12)». */
+export function launchName(l: Pick<Launch, 'mission' | 'rocket'>): string {
+	const rocket = (l.rocket ?? '').trim();
+	const mission = (l.mission ?? '').trim().replace(/\bFlight (\d+)\b/i, 'vuelo $1');
+	if (!rocket) return mission;
+	const rest = mission.toLowerCase().startsWith(rocket.toLowerCase()) ? mission.slice(rocket.length).trim() : mission;
+	return rest ? `${rocket} (${rest})` : rocket;
+}
+
+/**
+ * Lanzamientos (launches.json, P3): «Go», con hora exacta y el NET entre dentro de 45 y de 75 min (la Action
+ * pasa cada 15–30 min, así que sale una vez, hacia una hora antes). Solo tripulados (Launch Library no da
+ * el dato en lo que guarda launches.ts: se reconoce por la misión), Starship, Artemis, New Glenn o Ariane 6,
+ * o de NASA, ESA, CNSA, ISRO o JAXA. Id: launch:<id>:<NET> (si se retrasa, el NET nuevo es otro aviso).
+ */
+export function launchRule(d: Inputs, { now }: RuleContext): Draft[] {
+	return list(d.launches?.launches).flatMap((l) => {
+		const net = Date.parse(l?.net ?? '');
+		if (!l?.id || l.status !== 'Go' || l.precise === false || !Number.isFinite(net)) return [];
+		const mins = (net - now) / 60_000;
+		if (mins < LAUNCHES.fromMin || mins > LAUNCHES.toMin) return [];
+		const watched =
+			LAUNCHES.crewed.test(l.mission ?? '') ||
+			LAUNCHES.types.test(`${l.rocket ?? ''} ${l.mission ?? ''}`) ||
+			LAUNCHES.agencies.test(l.provider ?? '');
+		if (!watched) return [];
+		const place = (l.location ?? '').split(',')[0].trim() || l.pad;
+		return [
+			{
+				id: `launch:${l.id}:${l.net}`,
+				title: `🚀 En 1 h: ${launchName(l)}${place ? ` desde ${place}` : ''}, ${madrid(net).hm} hora de Madrid`,
+				body: [`${l.provider || 'Lanzamiento'} · Launch Library 2 (The Space Devs).`, l.url].filter(Boolean).join('\n'),
+				tags: 'lanzamiento',
+				click: l.url || `${SITE}/tech`,
+				time: now
+			}
+		];
+	});
+}
+
 /** Línea de vida diaria de los resúmenes: diésel, luz de hoy y festivo, si lo es. */
 export function dailyLife(d: Inputs, today: string, cheapest: boolean): string[] {
 	const luz = powerDay(d, today);
@@ -1287,7 +1427,7 @@ const inWindow = (hm: string, w: { from: string; until: string }) => hm >= w.fro
 
 /** Agenda de un día: reuniones de bancos centrales, resultados vigilados y, si se piden, festivos. */
 function agenda(d: Inputs, date: string, holidays = true): string[] {
-	const watch = new Set([...EARNINGS_WATCH.top10, ...EARNINGS_WATCH.mis]);
+	const watch = new Set(Object.values(EARNINGS_WATCH).flat());
 	const hours: Record<string, string> = { bmo: 'antes de la apertura', amc: 'tras el cierre', dmh: 'en sesión' };
 	return [
 		...MEETINGS.filter((m) => m.date === date).map(
@@ -1314,6 +1454,20 @@ function figures(d: Inputs, names: string[]): string {
 
 const section = (title: string, lines: string[]) => (lines.length ? [`**${title}**`, ...lines, ''] : []);
 
+/**
+ * Problema del día de Lichess (lichess.json) para «Buenos días», si es de hoy: «♟ Problema del día: mate en
+ * 2 · dificultad 1850 → enlace». No es un aviso propio.
+ */
+export function chessLine(d: Inputs, today: string): string[] {
+	const p = d.lichess;
+	if (!p?.url || p.date !== today) return [];
+	const mate = list(p.themes)
+		.map((t) => /^mateIn(\d)$/.exec(t)?.[1])
+		.find(Boolean);
+	const what = [mate ? `mate en ${mate}` : '', p.rating ? `dificultad ${p.rating}` : ''].filter(Boolean).join(' · ');
+	return [`♟ Problema del día${what ? `: ${what}` : ''} → ${p.url}`];
+}
+
 /** «Buenos días» a partir de las 8:05 (hora de Madrid), una vez al día. Id: morning:<día>. */
 export function morningRule(d: Inputs, { now, today }: RuleContext): Draft[] {
 	if (!inWindow(madrid(now).hm, SUMMARIES.morning)) return [];
@@ -1332,7 +1486,8 @@ export function morningRule(d: Inputs, { now, today }: RuleContext): Draft[] {
 		...section(
 			'Vida diaria',
 			dailyLife(d, today, true).map((l) => `- ${l}`)
-		)
+		),
+		...chessLine(d, today)
 	];
 	return [
 		{
@@ -1380,6 +1535,78 @@ export function eveningRule(d: Inputs, { now, today }: RuleContext): Draft[] {
 	];
 }
 
+/**
+ * Cambio en una semana de un activo con datos diarios (series del BCE o de FRED, curva del Tesoro): el
+ * último dato frente al último de hace 7 días o más. null si no se puede calcular (cripto y cotizaciones
+ * solo traen el día; las primas son mensuales).
+ */
+export function weekMove(asset: Asset, d: Inputs): number | null {
+	const src = asset.source;
+	const daily = /^\d{4}-\d{2}-\d{2}$/;
+	if (src.kind === 'series') {
+		const pts = list(seriesOf(d[src.file as 'ecb' | 'fred'], src.id)?.points).filter(
+			(p) => daily.test(p?.t) && Number.isFinite(p.v)
+		);
+		const last = pts.at(-1);
+		const ref = last && pts.filter((p) => p.t <= addDays(last.t, -7)).at(-1);
+		return last && ref && ref.v ? (last.v / ref.v - 1) * 100 : null;
+	}
+	if (src.kind === 'curve') {
+		const i = list(d.uscurve?.tenors).indexOf(src.tenor);
+		if (i < 0) return null;
+		const days = list(d.uscurve?.days).filter((x) => daily.test(x?.date) && typeof x.values?.[i] === 'number');
+		const last = days.at(-1);
+		const ref = last && days.filter((x) => x.date <= addDays(last.date, -7)).at(-1);
+		return last && ref ? ((last.values[i] as number) - (ref.values[i] as number)) * 100 : null;
+	}
+	return null;
+}
+
+/**
+ * SEMANA (P4), los domingos desde las 19:00 de Madrid: los 5 temas de IMP con más puntuación de los últimos
+ * 7 días, el cambio semanal de los activos que se pueden calcular y la agenda de la semana que viene. En
+ * Markdown. Id: week:<domingo>.
+ */
+export function weekRule(d: Inputs, { now, today }: RuleContext): Draft[] {
+	if (dayOfWeek(today) !== 0 || !inWindow(madrid(now).hm, SUMMARIES.week)) return [];
+	const from = addDays(today, -6);
+	const best = new Map<string, { title: string; sources?: string[]; score: number }>();
+	for (const day of list(d.imp?.days)) {
+		if (!(day?.date >= from && day.date <= today)) continue;
+		for (const t of list(day.items)) {
+			if (!t?.k || !Number.isFinite(t.score)) continue;
+			if (!best.has(t.k) || best.get(t.k)!.score < t.score) best.set(t.k, t);
+		}
+	}
+	const top = [...best.values()]
+		.sort((a, b) => b.score - a.score)
+		.slice(0, WEEK.top)
+		.map((t, i) => `${i + 1}. ${t.title} (${list(t.sources).length} medios)`);
+	const markets = ASSETS.flatMap((a) => {
+		const m = weekMove(a, d);
+		return m === null || !Number.isFinite(m) ? [] : [`${a.name} ${move(m, a.unit)}`];
+	}).join(' · ');
+	const next = Array.from({ length: 7 }, (_, i) => addDays(today, i + 1)).flatMap((date) =>
+		agenda(d, date).map((l) => `- ${dayName(date)[0].toUpperCase()}${dayName(date).slice(1)}: ${l}`)
+	);
+	const body = [
+		...section('Lo más importante de la semana', top),
+		...section('Mercados en la semana', markets ? [markets] : []),
+		...section('La semana que viene', next)
+	];
+	return [
+		{
+			id: `week:${today}`,
+			title: 'SEMANA',
+			body: body.join('\n').trim() || 'Sin novedades destacadas.',
+			tags: 'calendar',
+			click: `${SITE}/imp`,
+			time: now,
+			markdown: true
+		}
+	];
+}
+
 // ---------- Lista de reglas ----------
 
 /** Todas las reglas, con su nivel. Para añadir una, una entrada más. */
@@ -1399,6 +1626,7 @@ export const RULES: Rule[] = [
 	{ type: 'diesel-gap', level: 2, run: dieselGapRule },
 	{ type: 'election', level: 2, run: electionRule },
 	{ type: 'ai', level: 2, run: aiRule },
+	{ type: 'stock', level: 2, run: stockRule },
 	{ type: 'poly', level: 3, run: polyRule },
 	{ type: 'earnings', level: 3, run: earningsRule },
 	{ type: 'crisis', level: 3, run: crisisRule },
@@ -1406,6 +1634,8 @@ export const RULES: Rule[] = [
 	{ type: 'luz', level: 3, run: luzRule },
 	{ type: 'tomorrow', level: 3, run: tomorrowRule },
 	{ type: 'dst', level: 3, run: dstRule },
+	{ type: 'launch', level: 3, run: launchRule },
 	{ type: 'morning', level: 4, run: morningRule },
-	{ type: 'evening', level: 4, run: eveningRule }
+	{ type: 'evening', level: 4, run: eveningRule },
+	{ type: 'week', level: 4, run: weekRule }
 ];
