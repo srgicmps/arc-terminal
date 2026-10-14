@@ -121,9 +121,13 @@ export function lseHolidays(y: number): MarketHoliday[] {
 	return list.map(([date, name]) => ({ date, market: 'LSE', name }));
 }
 
-/** Bolsas del reloj de la barra: zona horaria, horario normal en minutos locales y sus festivos. */
+/** Una bolsa: zona horaria, horario normal en minutos locales y sus festivos. */
 export interface ClockMarket {
 	code: string;
+	/** Nombre corto en español, para la barra de sesiones: «Nueva York». */
+	name: string;
+	/** Nombre para la cuenta atrás: «NY abre en 2 h 10 min». */
+	short: string;
 	tz: string;
 	open: [number, number];
 	lunch?: [number, number];
@@ -131,12 +135,134 @@ export interface ClockMarket {
 	holidays?: (y: number) => MarketHoliday[];
 }
 
-export const CLOCK_MARKETS: ClockMarket[] = [
-	{ code: 'NYC', tz: 'America/New_York', open: [570, 960], holidays: nyseHolidays },
-	{ code: 'LON', tz: 'Europe/London', open: [480, 990], holidays: lseHolidays },
-	{ code: 'MAD', tz: 'Europe/Madrid', open: [540, 1050], holidays: bmeHolidays },
-	{ code: 'TYO', tz: 'Asia/Tokyo', open: [540, 930], lunch: [690, 750] }
+/**
+ * Las bolsas principales, de este a oeste. Horario de la sesión continua de cada una (sin subastas):
+ * TSE, HKEX, SSE, NSE, Xetra, LSE, BME, NYSE y B3. Los festivos solo están para NYSE, LSE y BME; en las
+ * demás se tienen en cuenta los fines de semana.
+ */
+export const MARKETS: ClockMarket[] = [
+	{ code: 'TYO', name: 'Tokio', short: 'Tokio', tz: 'Asia/Tokyo', open: [540, 930], lunch: [690, 750] },
+	{ code: 'HKG', name: 'Hong Kong', short: 'Hong Kong', tz: 'Asia/Hong_Kong', open: [570, 960], lunch: [720, 780] },
+	{ code: 'SHA', name: 'Shanghái', short: 'Shanghái', tz: 'Asia/Shanghai', open: [570, 900], lunch: [690, 780] },
+	{ code: 'BOM', name: 'Bombay', short: 'Bombay', tz: 'Asia/Kolkata', open: [555, 930] },
+	{ code: 'FRA', name: 'Fráncfort', short: 'Fráncfort', tz: 'Europe/Berlin', open: [540, 1050] },
+	{ code: 'LON', name: 'Londres', short: 'Londres', tz: 'Europe/London', open: [480, 990], holidays: lseHolidays },
+	{ code: 'MAD', name: 'Madrid', short: 'Madrid', tz: 'Europe/Madrid', open: [540, 1050], holidays: bmeHolidays },
+	{ code: 'NYC', name: 'Nueva York', short: 'NY', tz: 'America/New_York', open: [570, 960], holidays: nyseHolidays },
+	// B3 mueve su horario una hora cuando EE. UU. cambia la hora; aquí, el de 10:00 a 17:00.
+	{ code: 'SAO', name: 'São Paulo', short: 'São Paulo', tz: 'America/Sao_Paulo', open: [600, 1020] }
 ];
+
+const market = (code: string) => MARKETS.find((m) => m.code === code)!;
+
+/** Bolsas del reloj de la barra, en este orden. */
+export const CLOCK_MARKETS: ClockMarket[] = ['NYC', 'LON', 'MAD', 'TYO'].map(market);
+
+// ---------- Sesiones: cuándo abre y cierra cada bolsa ----------
+
+/** Fecha local («2026-10-14») de un instante en una zona horaria. */
+export function localDate(tz: string, ms: number): string {
+	return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+}
+
+/** Diferencia de la zona con UTC en un instante, en minutos (Madrid en verano: 120). */
+function offset(tz: string, ms: number): number {
+	const parts = new Intl.DateTimeFormat('en-US', {
+		timeZone: tz,
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit',
+		hourCycle: 'h23'
+	}).formatToParts(new Date(ms));
+	const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+	const asUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+	return Math.round((asUtc - Math.floor(ms / 1000) * 1000) / 60_000);
+}
+
+/** Instante (ms) en que son los `mins` minutos del día `date` en la zona `tz`. */
+export function zoned(date: string, mins: number, tz: string): number {
+	const [y, m, d] = date.split('-').map(Number);
+	const guess = Date.UTC(y, m - 1, d, 0, mins);
+	// Dos pasadas: la segunda corrige el día del cambio de hora.
+	const first = guess - offset(tz, guess) * 60_000;
+	return guess - offset(tz, first) * 60_000;
+}
+
+/** Fecha `days` días después: «2026-10-14» + 1 → «2026-10-15». */
+export function addDays(date: string, days: number): string {
+	const [y, m, d] = date.split('-').map(Number);
+	return shift(y, m, d, days);
+}
+
+/** Festivo de la bolsa ese día local, si lo hay. */
+export function holidayOn(mk: ClockMarket, date: string): string | null {
+	return mk.holidays?.(Number(date.slice(0, 4))).find((h) => h.date === date)?.name ?? null;
+}
+
+/** Tramos abiertos de una bolsa el día local `date`, en instantes [inicio, fin): vacío si no hay sesión. */
+export function sessionsOn(mk: ClockMarket, date: string): [number, number][] {
+	const [y, m, d] = date.split('-').map(Number);
+	const wd = dow(y, m, d);
+	if (wd === 0 || wd === 6 || holidayOn(mk, date)) return [];
+	const spans: [number, number][] = mk.lunch
+		? [
+				[mk.open[0], mk.lunch[0]],
+				[mk.lunch[1], mk.open[1]]
+			]
+		: [mk.open];
+	return spans.map(([a, b]) => [zoned(date, a, mk.tz), zoned(date, b, mk.tz)]);
+}
+
+export interface MarketStatus {
+	isOpen: boolean;
+	/** Cuándo cambia de estado: el cierre si está abierta (o la pausa de mediodía), la apertura si no. */
+	next: number | null;
+	/** Festivo de hoy (día local de la bolsa), si lo hay. */
+	holiday: string | null;
+}
+
+/** Si una bolsa está abierta ahora y cuándo cierra o vuelve a abrir (busca hasta dos semanas). */
+export function marketStatus(mk: ClockMarket, now: number): MarketStatus {
+	const today = localDate(mk.tz, now);
+	const holiday = holidayOn(mk, today);
+	for (let k = 0; k < 15; k++) {
+		for (const [a, b] of sessionsOn(mk, addDays(today, k))) {
+			if (now >= a && now < b) return { isOpen: true, next: b, holiday };
+			if (a > now) return { isOpen: false, next: a, holiday };
+		}
+	}
+	return { isOpen: false, next: null, holiday };
+}
+
+/**
+ * Tramos abiertos de una bolsa dentro del día de Madrid que contiene `now`, como fracciones del día
+ * (0 = medianoche, 1 = la siguiente). Para la barra de 24 h. También da dónde cae `now`.
+ */
+export function madridDay(mk: ClockMarket, now: number): { spans: [number, number][]; now: number } {
+	const date = localDate('Europe/Madrid', now);
+	const start = zoned(date, 0, 'Europe/Madrid');
+	const end = zoned(addDays(date, 1), 0, 'Europe/Madrid');
+	const len = end - start;
+	const spans = [-1, 0, 1]
+		.flatMap((k) => sessionsOn(mk, addDays(date, k)))
+		.filter(([a, b]) => b > start && a < end)
+		.map(([a, b]): [number, number] => [(Math.max(a, start) - start) / len, (Math.min(b, end) - start) / len]);
+	return { spans, now: (now - start) / len };
+}
+
+/** Tiempo hasta un instante: «2 h 10 min», «45 min», «2 d 3 h». */
+export function until(ms: number): string {
+	const mins = Math.max(0, Math.ceil(ms / 60_000));
+	const d = Math.floor(mins / 1440);
+	const h = Math.floor((mins % 1440) / 60);
+	const m = mins % 60;
+	if (d) return h ? `${d} d ${h} h` : `${d} d`;
+	if (h) return m ? `${h} h ${m} min` : `${h} h`;
+	return `${m} min`;
+}
 
 export interface ClockState {
 	/** «09:41», hora local de la bolsa. */

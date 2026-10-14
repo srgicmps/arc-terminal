@@ -1,6 +1,7 @@
 <script lang="ts">
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
 	import FxConvert from '#lib/components/FxConvert.svelte';
+	import MarketSessions from '#lib/components/MarketSessions.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
@@ -98,6 +99,15 @@
 </script>
 
 <ViewHeader code="WS" title="Wall Street e inversión" sub="TradingView, Tesoro de EE. UU., BCE, CoinGecko y titulares de mercados" />
+
+<div class="grid">
+	<div class="col">
+		<Panel title="Sesiones de las bolsas" meta="24 h · hora de Madrid">
+			<MarketSessions />
+			{#snippet note()}Sesión continua de cada bolsa. Festivos: Nueva York, Londres y Madrid; en las demás, solo los fines de semana.{/snippet}
+		</Panel>
+	</div>
+</div>
 
 <div class="grid grid-2">
 	<div class="col">
