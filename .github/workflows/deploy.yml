@@ -1,0 +1,53 @@
+# Construye la web y la publica en GitHub Pages.
+name: Publicar en Pages
+
+on:
+  push:
+    branches: [main]
+  # Permite lanzarla a mano desde la pestaña Actions.
+  workflow_dispatch:
+
+# Permisos mínimos que necesita el despliegue en Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un solo despliegue a la vez: si llega otro push, espera a que acabe el que está en marcha.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # Instala pnpm (la versión sale de "packageManager" en package.json).
+      - uses: pnpm/action-setup@v4
+
+      # Instala Node (la versión sale de .nvmrc) y guarda en caché las dependencias.
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm build
+
+      # Empaqueta la carpeta build/ en el formato que espera Pages.
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,60 @@
+/* Estilos globales de Arc Terminal. Tokens copiados de docs/maqueta.html (:root). */
+:root {
+	color-scheme: dark;
+	--bg: #080a0d;
+	--panel: #0d1116;
+	--raise: #151b23;
+	--line: #1d242d;
+	--fg: #dce1e7;
+	--muted: #808a97;
+	--faint: #56606c;
+	--amber: #f2a83b;
+	--amber-soft: rgba(242, 168, 59, 0.13);
+	--amber-edge: rgba(242, 168, 59, 0.42);
+	--on-amber: #120c02;
+	--up: #4cc48a;
+	--down: #f0646f;
+	--mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	--sans: 'IBM Plex Sans Condensed', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+	--fs-xs: 11px;
+	--fs-s: 12px;
+	--fs-m: 13px;
+	--fs-l: 14.5px;
+	--fs-xl: 20px;
+	--fs-xxl: 28px;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+}
+
+body {
+	font-family: var(--mono);
+	font-size: var(--fs-m);
+	line-height: 1.45;
+	font-variant-numeric: tabular-nums;
+	padding-left: max(16px, env(safe-area-inset-left, 0px));
+	padding-right: max(16px, env(safe-area-inset-right, 0px));
+	padding-block: 10px 0;
+}
+
+button,
+input,
+select {
+	font: inherit;
+	color: inherit;
+}
+
+:focus-visible {
+	outline: 1px solid var(--amber);
+	outline-offset: 2px;
+}
