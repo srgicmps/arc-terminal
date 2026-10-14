@@ -3,31 +3,12 @@
 // sus colores. Solo se ejecuta en los PR (la sesión de desarrollo no llega a tradingview.com). Guarda los
 // PNG en shots/ (la Action los sube como artefacto) y escribe en el registro los colores que más se
 // repiten en cada widget, junto a los tokens --panel y --line, para compararlos sin abrir las imágenes.
-import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { chromium, type Browser, type Locator, type Page } from 'playwright-core';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import type { Locator, Page } from 'playwright-core';
+import { launch, preview } from './browser.ts';
 
-const PORT = 4318;
-const ROOT = `http://localhost:${PORT}/arc-terminal`;
 const PAGES = ['/', '/ws', '/s?sym=NVDA', '/cal', '/mis'];
 const THEMES = ['dark', 'light'] as const;
-
-async function launch(): Promise<Browser> {
-	const local = '/opt/pw-browsers/chromium';
-	if (process.env.CHROMIUM_PATH) return chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
-	if (existsSync(local)) return chromium.launch({ executablePath: local });
-	return chromium.launch({ channel: 'chrome' });
-}
-
-async function waitForServer() {
-	for (let i = 0; i < 50; i++) {
-		try {
-			if ((await fetch(`${ROOT}/`)).ok) return;
-		} catch {}
-		await new Promise((r) => setTimeout(r, 200));
-	}
-	throw new Error(`vite preview no responde en el puerto ${PORT}`);
-}
 
 /** Los 3 colores más repetidos de una captura (agrupados de 8 en 8 por canal), con su parte del total. */
 function topColors(page: Page, png: Buffer): Promise<string[]> {
@@ -65,11 +46,10 @@ async function frameText(el: Locator): Promise<string> {
 	}
 }
 
-const server = spawn('pnpm', ['exec', 'vite', 'preview', '--port', String(PORT), '--strictPort'], { stdio: 'ignore' });
+const { server, root: ROOT } = await preview(4318);
 mkdirSync('shots', { recursive: true });
 
 try {
-	await waitForServer();
 	const browser = await launch();
 	for (const theme of THEMES) {
 		const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });

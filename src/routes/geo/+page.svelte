@@ -15,7 +15,7 @@
 	const quakes = $derived(data.quakes?.data ?? []);
 	// Los más fuertes de la semana primero, y como mucho 20.
 	const strongest = $derived([...quakes].sort((a, b) => b.mag - a.mag).slice(0, 20));
-	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.count).map((f) => f.name).join(', '));
+	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
 </script>
 
 <ViewHeader code="GEO" title="Geopolítica" sub={sources} />

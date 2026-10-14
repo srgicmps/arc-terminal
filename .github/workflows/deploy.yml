@@ -58,6 +58,11 @@ jobs:
       - run: pnpm test
       - run: pnpm build --logLevel warn
 
+      # Solo en los PR: abre todas las vistas a 390 y 1280 px con el Chrome del runner y falla si alguna
+      # da errores en la consola, tiene scroll horizontal en el móvil o se queda sin datos (scripts/smoke.ts).
+      - if: github.event_name == 'pull_request'
+        run: pnpm smoke
+
       # Solo en los PR: explora las URL de scripts/probe.txt (herramienta de desarrollo).
       - if: github.event_name == 'pull_request'
         run: node scripts/probe.ts

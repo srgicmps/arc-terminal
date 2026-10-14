@@ -24,7 +24,7 @@ importers:
         specifier: ^5.11.2
         version: 5.11.2
       playwright-core:
-        specifier: 1.64.1
+        specifier: ^1.64.1
         version: 1.64.1
       svelte:
         specifier: ^5.57.1
