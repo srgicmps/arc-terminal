@@ -12,7 +12,9 @@ import { toQuote } from './finnhub.ts';
  */
 export const ALERT_TICKERS = [
 	'PLTR', 'LMT', 'RTX', 'NOC', 'GD', 'LHX', 'BA',
-	'NVDA', 'AAPL'
+	'NVDA', 'AAPL',
+	// PRUEBA TEMPORAL (D25, no mezclar): ADR y acciones OTC de los 7 europeos.
+	'EADSY', 'EADSF', 'BAESY', 'BAESF', 'RNMBY', 'RNMBF', 'FINMY', 'FINMF', 'THLLY', 'THLEF', 'SAABY', 'SAABF', 'ISMAY', 'ISMAF'
 ];
 
 const KEY = 'FINNHUB_API_KEY';
@@ -32,8 +34,10 @@ export async function fetchQuotes(tickers: string[], key: string, gap = GAP_MS):
 			const q = toQuote(symbol, await getJson(url, { headers: { 'X-Finnhub-Token': key } }));
 			if (q) quotes.push(q);
 			else failed.push(symbol);
-		} catch {
+			console.log(`  PROBE-ADR ${symbol}: ${q ? `${q.price} · ${q.time} · ${q.changePct}%` : 'sin dato (todo 0)'}`);
+		} catch (e) {
 			failed.push(symbol);
+			console.log(`  PROBE-ADR ${symbol}: error ${e instanceof Error ? e.message.slice(0, 120) : ''}`);
 		}
 	}
 	return { quotes, failed };
