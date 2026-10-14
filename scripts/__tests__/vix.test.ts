@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cboeDate, parseCloses, toCurve, vix } from '../sources/vix.ts';
+import { cboeDate, lastTwo, parseCloses, toCurve, vix } from '../sources/vix.ts';
 import { mockFetch } from './mock.ts';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -16,7 +16,7 @@ describe('vix', () => {
 			['2026-10-12', 15.21],
 			['2026-10-13', 15.27]
 		]);
-		expect(parseCloses('FECHA,VALOR\n10/13/2026,1').size).toBe(0);
+		expect(parseCloses('DATE\n10/13/2026').size).toBe(0);
 	});
 
 	it('junta los plazos por día del VIX, con huecos donde falta alguno, y guarda los últimos 30', () => {
@@ -49,5 +49,22 @@ describe('vix', () => {
 
 		mockFetch((url) => (url.includes('/VIX_') ? undefined : csv([['10/13/2026', 20]])));
 		await expect(vix.fetch(undefined)).rejects.toThrow();
+	});
+
+	it('lee los CSV de una sola columna (VVIX, SKEW) y da el último cierre con el anterior', () => {
+		const closes = parseCloses('DATE,VVIX\n10/12/2026,92.5\n10/13/2026,95.1');
+		expect(lastTwo(closes)).toEqual({ date: '2026-10-13', value: 95.1, previous: 92.5 });
+		expect(lastTwo(new Map([['2026-10-13', 140]]))).toEqual({ date: '2026-10-13', value: 140, previous: null });
+		expect(lastTwo(new Map())).toBeNull();
+	});
+
+	it('añade VVIX y SKEW; si fallan, la curva sale igual sin ellos', async () => {
+		mockFetch((url) =>
+			url.includes('/SKEW_') ? undefined : url.includes('/VVIX_') ? 'DATE,VVIX\n10/13/2026,95.1' : csv([['10/13/2026', 20]])
+		);
+		const data = await vix.fetch(undefined);
+		expect(data.vvix).toEqual({ date: '2026-10-13', value: 95.1, previous: null });
+		expect(data.skew).toBeNull();
+		expect(data.days).toHaveLength(1);
 	});
 });

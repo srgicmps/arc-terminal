@@ -1,8 +1,9 @@
-// VIX y su curva: índices de volatilidad de Cboe sobre el S&P 500 a 9 días, 30 días (el VIX), 3, 6 y 12 meses.
+// VIX y su curva: índices de volatilidad de Cboe sobre el S&P 500 a 9 días, 30 días (el VIX), 3, 6 y 12 meses,
+// más el VVIX y el SKEW.
 // https://www.cboe.com/tradable_products/vix/ · CSV diarios públicos en cdn.cboe.com, sin clave; se cita a Cboe.
 // Sin límite publicado: cinco CSV pequeños cada 3 h. Cada CSV trae toda la historia (DATE,OPEN,HIGH,LOW,CLOSE,
 // fechas MM/DD/AAAA); se guarda el cierre de los últimos días, como una curva más (YieldCurveData).
-import type { YieldCurveData } from '../../src/lib/types.ts';
+import type { VixData, YieldCurveData } from '../../src/lib/types.ts';
 import { getText, num, type Source } from '../lib.ts';
 
 const BASE = 'https://cdn.cboe.com/api/global/us_indices/daily_prices';
@@ -25,10 +26,11 @@ export function cboeDate(value: string): string | null {
 	return m ? `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}` : null;
 }
 
-/** Cierre de cada día de un CSV de Cboe. */
+/** Cierre de cada día de un CSV de Cboe: la columna CLOSE o, si no la hay (VVIX y SKEW traen solo una), la última. */
 export function parseCloses(csv: string): Map<string, number> {
 	const lines = csv.trim().split(/\r?\n/).map((l) => l.split(','));
-	const col = lines[0]?.findIndex((h) => h.trim().toUpperCase() === 'CLOSE') ?? -1;
+	const head = (lines[0] ?? []).map((h) => h.trim().toUpperCase());
+	const col = head.includes('CLOSE') ? head.indexOf('CLOSE') : head.length > 1 ? head.length - 1 : -1;
 	const closes = new Map<string, number>();
 	if (col < 0) return closes;
 	for (const cells of lines.slice(1)) {
@@ -52,7 +54,14 @@ export function toCurve(byIndex: Map<string, number>[]): YieldCurveData {
 	return { tenors: INDICES.map(([, tenor]) => tenor), days: days.slice(-KEEP) };
 }
 
-export const vix: Source<YieldCurveData> = {
+/** Los dos últimos cierres de un índice (para el dato y su cambio del día); null si no hay. */
+export function lastTwo(closes: Map<string, number>): VixData['vvix'] {
+	const days = [...closes].sort((a, b) => a[0].localeCompare(b[0])).slice(-2);
+	const now = days.at(-1);
+	return now ? { date: now[0], value: now[1], previous: days.length > 1 ? days[0][1] : null } : null;
+}
+
+export const vix: Source<VixData> = {
 	name: 'vix',
 	label: 'VIX y su curva · Cboe',
 	maxAgeMinutes: 175,
@@ -68,6 +77,11 @@ export const vix: Source<YieldCurveData> = {
 		);
 		const curve = toCurve(byIndex);
 		if (!curve.days.length) throw new Error('Cboe no trae cierres del VIX');
-		return curve;
+		// VVIX (la volatilidad del propio VIX) y SKEW (el precio de la protección ante caídas fuertes): extras, si fallan
+		// la curva sale igual.
+		const [vvix, skew] = await Promise.all(
+			['VVIX', 'SKEW'].map((index) => getText(`${BASE}/${index}_History.csv`).then((csv) => lastTwo(parseCloses(csv)), () => null))
+		);
+		return { ...curve, vvix, skew };
 	}
 };

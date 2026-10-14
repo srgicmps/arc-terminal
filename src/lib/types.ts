@@ -319,6 +319,12 @@ export interface YieldCurveData {
 	days: { date: string; values: (number | null)[] }[];
 }
 
+/** VIX y su curva (scripts/sources/vix.ts), con el VVIX y el SKEW de Cboe: último cierre y el anterior. */
+export interface VixData extends YieldCurveData {
+	vvix?: { date: string; value: number; previous: number | null } | null;
+	skew?: { date: string; value: number; previous: number | null } | null;
+}
+
 // ---------- Subastas de deuda de EE. UU. (Fiscal Data) ----------
 
 export interface Auction {
