@@ -132,24 +132,8 @@
 	const MAP_KEY = 'arc-ws-heatmap';
 	type MapKey = (typeof MAPS)[number]['key'];
 	const isMap = (v: string) => MAPS.some((m) => m.key === v);
-	const mapSel = urlState<MapKey>('mapa', 'spx', isMap);
-	let loadedMap = $state(false);
-	// Una vez, al abrir: si la URL no dice qué mapa, el guardado.
-	$effect(() => {
-		try {
-			const saved = localStorage.getItem(MAP_KEY);
-			if (saved && isMap(saved) && !new URLSearchParams(location.search).has('mapa')) mapSel.value = saved as MapKey;
-		} catch {}
-		loadedMap = true;
-	});
-	// Guarda cada cambio, después de haber leído lo guardado (para no pisarlo al arrancar).
-	$effect(() => {
-		const key = mapSel.value;
-		if (!loadedMap) return;
-		try {
-			localStorage.setItem(MAP_KEY, key);
-		} catch {}
-	});
+	// En la URL (?mapa=ndx) y recordado en el navegador: sin ?mapa, el último elegido.
+	const mapSel = urlState<MapKey>('mapa', 'spx', isMap, MAP_KEY);
 	const map = $derived(MAPS.find((m) => m.key === mapSel.value) ?? MAPS[0]);
 </script>
 

@@ -89,6 +89,14 @@
 		text-align: right;
 	}
 
+	/* Paneles estrechos (móvil): la barra encoge para que la etiqueta de la opción no quede en nada. */
+	@container (max-width: 420px) {
+		.o {
+			grid-template-columns: minmax(0, 1fr) 48px 40px 40px;
+			gap: var(--sp-6);
+		}
+	}
+
 	.mv {
 		color: var(--faint);
 		text-align: right;
