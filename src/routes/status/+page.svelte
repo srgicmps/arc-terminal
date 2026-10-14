@@ -178,8 +178,8 @@
 	}
 
 	.strip i {
-		width: 3px;
-		height: 1px;
+		width: var(--sp-3);
+		height: var(--hair);
 		background: var(--line);
 	}
 

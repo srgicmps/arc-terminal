@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { asset, resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
+	import { HOME_DONE, HOME_KEY, startCommand } from '#lib/home.ts';
+	import { routeHref } from '#lib/routes.ts';
 	import { latestWatched } from '#lib/boe.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import NewsList from '#lib/components/NewsList.svelte';
@@ -16,6 +19,7 @@
 	import Agenda from '#lib/components/top/Agenda.svelte';
 	import Markets from '#lib/components/top/Markets.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
+	import Listen from '#lib/components/ui/Listen.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
 	import { initRefCountry, REF_COUNTRIES, refCountry, refName, setRefCountry } from '#lib/refcountry.svelte.ts';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
@@ -51,6 +55,15 @@
 	// Como onMounted en Vue: lo guardado en el navegador se lee al arrancar en él.
 	$effect(() => top.load());
 	$effect(initVisit);
+	// Vista de inicio (HELP): al abrir la web, una vez por pestaña, se va a la elegida en lugar de TOP.
+	$effect(() => {
+		let go: ReturnType<typeof startCommand> = null;
+		try {
+			go = startCommand(localStorage.getItem(HOME_KEY), sessionStorage.getItem(HOME_DONE) === '1', location.search);
+			sessionStorage.setItem(HOME_DONE, '1');
+		} catch {}
+		if (go) goto(routeHref(go.route), { replaceState: true });
+	});
 	$effect(initRefCountry);
 
 	const get = $derived(seriesMap(data.ecb, data.eurostat, data.bls));
@@ -82,7 +95,23 @@
 	);
 
 	// Los 3 temas de más peso de hoy (vista IMP); los elige +page.server.ts.
-	const important = $derived(data.important);
+	const important = $derived(data.important.slice(0, 3));
+
+	// «Escuchar» (lote 25): los 5 titulares más importantes de hoy y las cifras clave, en voz alta.
+	const spoken = () => {
+		const figure = (id: string, name: string, d = 1) => {
+			const v = get(id)?.points.at(-1)?.v;
+			return v === undefined ? [] : [{ text: `${name}: ${nf(v, d)} %.`, lang: 'es' as const }];
+		};
+		return [
+			{ text: 'Lo más importante de hoy.', lang: 'es' as const },
+			...data.important.map((e) => ({ text: `${e.titleEs ?? e.title}.`, lang: e.titleEs || e.lang !== 'en' ? ('es' as const) : ('en' as const) })),
+			{ text: 'Las cifras.', lang: 'es' as const },
+			...figure(`unemployment-${refCountry.code}`, `Paro en ${refName()}`),
+			...figure(`inflation-${refCountry.code}`, `Inflación en ${refName()}`),
+			...figure('euribor-12m', 'Euríbor a doce meses', 2)
+		];
+	};
 
 	const boeGeneral = $derived(data.boe?.data.sections.find((s) => s.code === '1'));
 	// Titulares de la portada que nombran alguna palabra vigilada (resaltadas en la lista).
@@ -194,6 +223,7 @@
 		{:else}
 			<p class="empty">Sin datos todavía</p>
 		{/if}
+		{#snippet note()}<Listen lines={spoken} label="Escuchar los 5 titulares y las cifras" />{/snippet}
 	</Panel>
 {/snippet}
 

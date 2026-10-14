@@ -12,6 +12,7 @@
 	import { untrack } from 'svelte';
 	import { dm, hm, hmIn, nf, weekday } from '#lib/format.ts';
 	import { fetchLocal, type LocalWeather } from '#lib/localweather.ts';
+	import { fold } from '#lib/search.ts';
 	import { inMenorca, learnTimezone, place, searchPlaces, setPlace } from '#lib/place.svelte.ts';
 	import {
 		ALERT_NAMES,
@@ -48,7 +49,6 @@
 		)
 	);
 	const euHere = $derived(euRows.find((c) => c.code === here.cc) ?? euRows.find((c) => c.code === 'ES'));
-	const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 	const isMine = (area: string) =>
 		[here.admin2, here.admin1].some((n) => !!n && euHere?.code === here.cc && fold(area).includes(fold(n)));
 	const euZones = $derived([...(euHere?.zones ?? [])].sort((a, b) => Number(isMine(b.area)) - Number(isMine(a.area))));

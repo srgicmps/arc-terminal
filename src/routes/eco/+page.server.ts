@@ -47,6 +47,8 @@ export const load: PageServerLoad = async () => {
 		usdebt,
 		fred,
 		fredMissing,
+		// Señales de recesión (provisional): solo sus tres series y los puntos del minigráfico.
+		recession: pickSeries(fred, ['sahm-us', 'recprob-us', 't10y3m-us'], 60),
 		bis,
 		gie,
 		housing,

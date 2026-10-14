@@ -5,6 +5,7 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import ChipInput from '#lib/components/ui/ChipInput.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
+	import Select from '#lib/components/ui/Select.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -12,11 +13,33 @@
 	import { clock } from '#lib/clock.svelte.ts';
 	import { madridDate } from '#lib/meetings.ts';
 	import { earningsLine, myEarnings } from '#lib/myearnings.ts';
-	import { moveWatch, setTape, toggleWatch, watchlist } from '#lib/watchlist.svelte.ts';
+	import { deleteList, moveWatch, newList, setTape, toggleWatch, useList, watchlist } from '#lib/watchlist.svelte.ts';
+	import { MAX_LISTS } from '#lib/watchlists.ts';
 	import type { Mention } from '#lib/news.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+
+	// Borrar una lista con valores pide un segundo toque («¿Seguro?»): en el móvil es fácil tocar sin querer.
+	// Se olvida si cambias de lista o a los 4 segundos.
+	let confirming = $state(false);
+	$effect(() => {
+		void watchlist.active;
+		confirming = false;
+	});
+	$effect(() => {
+		if (!confirming) return;
+		const t = setTimeout(() => (confirming = false), 4000);
+		return () => clearTimeout(t);
+	});
+	function onDelete() {
+		if (watchlist.codes.length && !confirming) {
+			confirming = true;
+			return;
+		}
+		confirming = false;
+		deleteList();
+	}
 
 	// Qué enseña la cinta de arriba: los índices de siempre o tu lista (como un v-model con get y set).
 	const tapeSel = {
@@ -72,7 +95,7 @@
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Cotizaciones" meta="{watchlist.codes.length} valores">
+		<Panel title="Cotizaciones" meta="{watchlist.lists[watchlist.active]?.name ?? 'Mi lista'} · {watchlist.codes.length} {watchlist.codes.length === 1 ? 'valor' : 'valores'}">
 			{#if watchlist.ready && watchlist.codes.length}
 				{#key watchlist.codes.join(',')}
 					<TvWidget widget="market-quotes" config={quotes} height={quotesHeight(watchlist.codes.length, 220)} />
@@ -110,6 +133,28 @@
 			</Panel>
 		{/if}
 		<Panel title="Editar la lista">
+			{#if watchlist.ready}
+				<div class="lists">
+					{#if watchlist.lists.length > 1}
+						<Select label="Lista" value={String(watchlist.active)} onchange={(v) => useList(Number(v))}>
+							{#each watchlist.lists as l, i (i)}
+								<option value={String(i)}>{l.name} · {l.codes.length}</option>
+							{/each}
+						</Select>
+						<button type="button" class="del" class:sure={confirming} onclick={onDelete}>
+							{#if confirming}
+								¿Seguro? Borrar «{watchlist.lists[watchlist.active].name}» y sus {watchlist.codes.length}
+								{watchlist.codes.length === 1 ? 'valor' : 'valores'}
+							{:else}
+								Borrar «{watchlist.lists[watchlist.active].name}»
+							{/if}
+						</button>
+					{/if}
+					{#if watchlist.lists.length < MAX_LISTS}
+						<ChipInput label="Lista nueva" placeholder="Nombre: IA, Dividendos, España…" onadd={newList} />
+					{/if}
+				</div>
+			{/if}
 			<ChipInput label="Código del valor" placeholder="Código: NVDA, SAN, BME:REP…" upper onadd={add} />
 			{#if watchlist.codes.length}
 				<ul class="mini">
@@ -150,6 +195,33 @@
 	.tape {
 		padding: var(--row-y) var(--pad-x);
 		border-top: var(--border);
+	}
+
+	.lists {
+		border-bottom: var(--border);
+	}
+
+	.lists :global(label) {
+		padding: var(--row-y) var(--pad-x) 0;
+	}
+
+	.del {
+		margin: var(--sp-4) var(--pad-x) 0;
+		padding: 0;
+		background: none;
+		border: 0;
+		color: var(--muted);
+		font: inherit;
+		font-size: var(--fs-xs);
+		cursor: pointer;
+	}
+
+	.del:hover {
+		text-decoration: underline;
+	}
+
+	.del.sure {
+		color: var(--amber);
 	}
 
 	.c {

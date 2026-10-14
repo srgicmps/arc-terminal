@@ -87,7 +87,7 @@ Un cambio de estética se hace en un solo sitio.
 - **Componentes base** en `src/lib/components/ui/`:
   `Seg` (botones de opción), `Select` (desplegable con etiqueta), `Tiles` + `Tile` (cifras grandes), `Table`
   (tabla densa: celdas `.l`, `.name`, `.sub`, `.mut`), `Bar` (barra de comparación), `Change` (variación
-  verde/roja con signo), `Note` (nota al pie), `ButtonRow` (fila de botones iguales), `Search` (buscador con ✕; filtra con `queryWords` + `hasWords` de `src/lib/search.ts`), `ChipInput` (campo + «Añadir» + chips «X ×»), `Disclosure` (plegable con ▸/▾) y `Share` (botón «Compartir»; se usa con la prop `share` de `Panel`,
+  verde/roja con signo), `Note` (nota al pie), `ButtonRow` (fila de botones iguales), `Search` (buscador con ✕; filtra con `queryWords` + `hasWords` de `src/lib/search.ts`), `ChipInput` (campo + «Añadir» + chips «X ×»), `Disclosure` (plegable con ▸/▾), `Listen` («Escuchar» con la voz del navegador) y `Share` (botón «Compartir»; se usa con la prop `share` de `Panel`,
   y su lógica está en `src/lib/share.ts`). Además, `Panel` y `ViewHeader` para paneles y cabeceras de vista.
   Antes de escribir CSS para algo que ya existe, se usa el componente.
 - **Controles**: todo botón, segmentado, desplegable o campo suelto mide `--control-h` de alto (28 px con ratón,
@@ -103,6 +103,8 @@ Un cambio de estética se hace en un solo sitio.
   El resto va en el `<style>` de su componente.
 - **Cambiar la estética**, por ejemplo el acento: `--amber` en `tokens.css` (y su versión de día, abajo en el
   mismo archivo). Para una web más densa o más aireada: `--pad-x` y `--row-y`, o la escala `--sp-*`.
+  Sergi también puede elegir cian o azul en HELP, «A tu gusto» (`src/lib/taste.svelte.ts`): son bloques
+  `[data-accent]` al final de `tokens.css` que redefinen `--amber*`; nada lleva el acento escrito a mano.
   Lo único fuera de los tokens son los iconos (`static/favicon.svg` y los PNG de la PWA): llevan el ámbar
   escrito y hay que rehacerlos si cambia el acento.
 
