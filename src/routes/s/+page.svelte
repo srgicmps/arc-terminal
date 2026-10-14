@@ -1,13 +1,19 @@
 <!--
-	Ficha de un valor: /s?sym=NVDA. Todo llega en directo de TradingView en el navegador.
+	Ficha de un valor: /s?sym=NVDA. Cotización y gráficos llegan en directo de TradingView;
+	los documentos de la SEC, de static/data/sec.json.
 	El símbolo se lee de la URL al arrancar en el navegador (al construir la web no hay URL con ?sym=).
 -->
 <script lang="ts">
 	import { page } from '$app/state';
 	import Panel from '#lib/components/Panel.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
+	import FilingList from '#lib/components/FilingList.svelte';
+	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { TICKERS, tvSymbol } from '#lib/commands.ts';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
 
 	let code = $state('');
 
@@ -17,6 +23,8 @@
 
 	const symbol = $derived(tvSymbol(code));
 	const name = $derived(TICKERS.find((t) => t.code === code)?.name ?? '');
+	// Solo hay documentos de la SEC para los valores con CIK (los que cotizan en EE. UU.).
+	const sec = $derived(data.sec?.data.companies[code]);
 </script>
 
 <ViewHeader code={code || '…'} title={name || 'Ficha del valor'} sub="Cotización, gráfico y datos en directo · TradingView" />
@@ -54,5 +62,15 @@
 				</Panel>
 			</div>
 		</div>
+		{#if sec?.filings.length}
+			<div class="grid">
+				<div class="col">
+					<Panel title="Documentos SEC" meta={sec.name}>
+						<FilingList items={sec.filings} strong={(form) => form.startsWith('8-K')} />
+						{#snippet note()}Fuente: SEC EDGAR · <Updated at={data.sec?.fetchedAt} />{/snippet}
+					</Panel>
+				</div>
+			</div>
+		{/if}
 	{/key}
 {/if}

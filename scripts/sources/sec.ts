@@ -21,7 +21,7 @@ const FORMS: Record<string, string> = {
 	'8-K': 'Hecho relevante',
 	'10-Q': 'Informe trimestral',
 	'10-K': 'Informe anual',
-	'4': 'Compraventa de acciones de un directivo o gran accionista',
+	'4': 'Compraventa de un directivo o gran accionista',
 	'6-K': 'Informe de emisor extranjero',
 	'20-F': 'Informe anual de emisor extranjero'
 };
@@ -89,7 +89,7 @@ export function parseSubmissions(body: any): Omit<SecCompany, 'cik'> {
 		const folder = `${ARCHIVES}/${cikInt}/${accession.replaceAll('-', '')}`;
 		const doc = String(recent.primaryDocument?.[i] ?? '');
 		filings.push({
-			form,
+			form: baseForm(form) === '4' ? `Form ${form}` : form,
 			date: String(recent.filingDate?.[i] ?? ''),
 			desc: describe(form, String(recent.items?.[i] ?? '')),
 			url: doc ? `${folder}/${doc}` : `${folder}/${accession}-index.htm`
