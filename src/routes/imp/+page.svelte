@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Panel from '#lib/components/Panel.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { IMP_PERIODS, aggregate, minus, topImportant, type ImpTotal } from '#lib/imp.ts';
@@ -23,6 +24,7 @@
 	// Días del periodo de los que hay histórico (al principio, menos que los del periodo).
 	const recorded = $derived(imp ? imp.days.filter((d) => d.date > minus(imp.date, span) && d.date <= imp.date).length : 0);
 
+	const periods = IMP_PERIODS.map((p) => ({ value: p.key, label: p.label }));
 	const fmt = (n: number) => n.toLocaleString('es-ES', { maximumFractionDigits: 1 });
 	const outlets = (s: string[]) => (s.length > 3 ? `${s.slice(0, 3).join(', ')} +${s.length - 3}` : s.join(', '));
 </script>
@@ -30,11 +32,7 @@
 <ViewHeader code="IMP" title="Lo más importante" sub="Lo que cuentan más medios, en más secciones y durante más tiempo; sin IA" />
 
 <div class="controls">
-	<div class="seg" role="group" aria-label="Periodo">
-		{#each IMP_PERIODS as p (p.key)}
-			<button type="button" aria-pressed={period === p.key} onclick={() => (period = p.key)}>{p.label}</button>
-		{/each}
-	</div>
+	<Seg label="Periodo" options={periods} bind:value={period} />
 </div>
 
 {#if !imp}
@@ -83,28 +81,7 @@
 
 <style>
 	.controls {
-		margin-bottom: 12px;
-	}
-
-	.seg {
-		display: inline-flex;
-		flex-wrap: wrap;
-		border: 1px solid var(--line);
-	}
-
-	.seg button {
-		background: none;
-		border: 0;
-		padding: 5px 10px;
-		cursor: pointer;
-		color: var(--muted);
-		font-size: var(--fs-s);
-	}
-
-	.seg button[aria-pressed='true'] {
-		background: var(--amber);
-		color: var(--on-amber);
-		font-weight: 500;
+		margin-bottom: var(--sp-12);
 	}
 
 	.imp {
@@ -116,10 +93,10 @@
 	.imp li {
 		display: grid;
 		grid-template-columns: 24px minmax(0, 1fr) auto;
-		gap: 10px;
+		gap: var(--sp-10);
 		align-items: start;
-		padding: 8px 12px;
-		border-bottom: 1px solid var(--line);
+		padding: var(--row-y) var(--pad-x);
+		border-bottom: var(--border);
 	}
 
 	.imp li:last-child {
@@ -127,7 +104,7 @@
 	}
 
 	.rk {
-		padding-top: 3px;
+		padding-top: var(--sp-3);
 		color: var(--faint);
 		font-size: var(--fs-xs);
 	}
@@ -138,7 +115,7 @@
 		text-decoration: none;
 		font-family: var(--sans);
 		font-size: var(--fs-l);
-		line-height: 1.3;
+		line-height: var(--lh-tight);
 		text-wrap: pretty;
 	}
 
@@ -151,10 +128,10 @@
 	}
 
 	.m {
-		margin: 3px 0 0;
+		margin: var(--sp-3) 0 0;
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px 8px;
+		gap: var(--sp-4) var(--sp-8);
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-s);
@@ -164,7 +141,7 @@
 		color: var(--amber);
 		font-family: var(--mono);
 		font-size: var(--fs-xs);
-		letter-spacing: 0.04em;
+		letter-spacing: var(--track-tight);
 	}
 
 	.ok {
@@ -172,11 +149,10 @@
 	}
 
 	.pts {
-		padding-top: 2px;
+		padding-top: var(--sp-2);
 		color: var(--amber);
 		font-family: var(--mono);
 		font-size: var(--fs-s);
-		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
 	}
 </style>
