@@ -310,7 +310,7 @@ describe('runNotify', () => {
 		const prices = (diesel: number) => ({ g95: 1.6, diesel, g98: 1.75, glp: 0.9 });
 		const history = Array.from({ length: 14 }, (_, i) => {
 			const date = new Date(Date.UTC(2026, 9, 1 + i)).toISOString().slice(0, 10);
-			return { date, es: i < 7 ? 1.4 : 1.44, zone: i < 7 ? 1.5 : 1.6 };
+			return { date, es: i < 13 ? 1.4 : 1.44, zone: i < 13 ? 1.5 : 1.6 };
 		});
 		const fuelEs = {
 			sourceDate: '14/10/2026 12:30:05',
@@ -351,8 +351,8 @@ describe('runNotify', () => {
 			const lines = await runNotify({ topic: TOPIC, zone, dir, cache, now: NOW });
 			// Los avisos sí llegan (con la zona en el texto, que solo va al móvil).
 			expect(lines.filter((l) => l.includes('diesel:'))).toEqual([
-				'ntfy · P2 diesel:trend:es:2026-10-14: enviado (200)',
-				'ntfy · P2 diesel:trend:zona:2026-10-14: enviado (200)',
+				'ntfy · P2 diesel:day:es:2026-10-14: enviado (200)',
+				'ntfy · P2 diesel:day:zona:2026-10-14: enviado (200)',
 				'ntfy · P2 diesel:gap:2026-10-14: enviado (200)'
 			]);
 			expect(bodies.some((b) => b.includes('España'))).toBe(true);
