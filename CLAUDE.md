@@ -88,6 +88,9 @@ Un cambio de estética se hace en un solo sitio.
   verde/roja con signo), `Note` (nota al pie), `ButtonRow` (fila de botones iguales) y `Share` (botón «Compartir»; se usa con la prop `share` de `Panel`,
   y su lógica está en `src/lib/share.ts`). Además, `Panel` y `ViewHeader` para paneles y cabeceras de vista.
   Antes de escribir CSS para algo que ya existe, se usa el componente.
+- **Controles**: todo botón, segmentado, desplegable o campo suelto mide `--control-h` de alto (28 px con ratón,
+  44 px en pantallas táctiles: el token cambia solo). `Seg` con una sola opción activa es un grupo de radios
+  (`role=radiogroup`, `aria-checked`, flechas); con varias, botones con `aria-pressed`.
 - **Modo «encajar en pantalla»** (≥1280 px): la última rejilla de la vista llena el alto; cada panel parte de
   `--fit-panel-min` (o de su contenido, si es menor), el alto que sobra se reparte sin pasar del contenido, y los
   gráficos, mapas y widgets van enteros. Si no cabe, hace scroll la vista, nunca se aplasta un panel. Las reglas
