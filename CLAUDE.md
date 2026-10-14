@@ -101,7 +101,9 @@ Un cambio de estética se hace en un solo sitio.
   escrito y hay que rehacerlos si cambia el acento.
 
 ## Comandos y fuentes
-La lista completa y actual está en `src/lib/commands.ts` (los valores, en `src/lib/tickers.ts`; y en la vista `HELP`). Resumen:
+Un archivo por comando en `src/lib/commands/` (`eco.ts`, `geo.ts`…); `src/lib/commands.ts` los junta solos y `order`
+decide su sitio. Un comando nuevo es un archivo nuevo. Los valores, en `src/lib/tickers.ts`, y todo junto, en la
+vista `HELP`. Resumen:
 | Comando | Qué abre | Fuentes |
 |---|---|---|
 | `TOP` | Portada | Resumen de todas |
