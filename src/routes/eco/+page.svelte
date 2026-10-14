@@ -1,6 +1,7 @@
 <script lang="ts">
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import PredictionList from '#lib/components/PredictionList.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -111,6 +112,12 @@
 				{#if data.fred}· <Updated at={data.fred.fetchedAt} />{/if}
 			{/snippet}
 		</Panel>
+		{#if data.predictions?.data.economy.length}
+			<Panel title="Lo que descuenta el mercado" meta="Polymarket">
+				<PredictionList items={data.predictions.data.economy.slice(0, 6)} />
+				{#snippet note()}Precios de mercados de predicción: reflejan apuestas, no pronósticos oficiales.{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Titulares" meta="Economía">
 			<NewsList items={data.news?.data.items.slice(0, 25) ?? []} />
 		</Panel>

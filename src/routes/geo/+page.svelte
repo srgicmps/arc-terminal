@@ -1,6 +1,7 @@
 <script lang="ts">
 	import HazardList from '#lib/components/HazardList.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
+	import PredictionList from '#lib/components/PredictionList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -26,6 +27,12 @@
 		</Panel>
 	</div>
 	<div class="col">
+		<Panel title="Mercados de predicción" meta="Probabilidad que da el mercado">
+			<PredictionList items={data.predictions?.data.geopolitics.slice(0, 8) ?? []} />
+			{#snippet note()}
+				Precios de Polymarket: reflejan apuestas, no pronósticos oficiales · <Updated at={data.predictions?.fetchedAt} />
+			{/snippet}
+		</Panel>
 		<Panel title="Gobiernos e instituciones" meta="Comunicados oficiales">
 			<NewsList items={data.gov?.data.items.slice(0, 15) ?? []} />
 		</Panel>

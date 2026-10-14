@@ -16,6 +16,19 @@ export interface Source<T = unknown> {
 	requires?: string;
 	/** Recibe los datos publicados la vez anterior (si los hay), para ir acumulando historial. */
 	fetch: (previous: T | undefined) => Promise<T>;
+	/**
+	 * Archivos extra que acompañan a los datos (rutas dentro de static/data). La fuente los escribe con
+	 * writeExtra() al descargar; si se reutiliza la copia publicada, update.ts los copia de la web.
+	 */
+	files?: (data: T) => string[];
+}
+
+/** Escribe un archivo extra de una fuente en static/data/<path>. */
+export async function writeExtra(path: string, content: unknown) {
+	const { mkdir, writeFile } = await import('node:fs/promises');
+	const full = `static/data/${path}`;
+	await mkdir(full.slice(0, full.lastIndexOf('/')), { recursive: true });
+	await writeFile(full, JSON.stringify(content) + '\n');
 }
 
 const USER_AGENT = 'ArcTerminal/1.0 (+https://github.com/srgicmps/arc-terminal)';

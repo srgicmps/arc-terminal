@@ -1,3 +1,1 @@
 # URL que la Action de los PR consulta para explorar APIs nuevas (ver scripts/probe.ts).
-https://servicios.ine.es/wstempus/js/ES/SERIES_OPERACION/IPC?page=1
-https://gamma-api.polymarket.com/events?active=true&closed=false&order=volume24hr&ascending=false&limit=3&tag_slug=geopolitics
