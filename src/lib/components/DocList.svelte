@@ -35,8 +35,8 @@
 	}
 
 	li {
-		padding: 9px 12px;
-		border-bottom: 1px solid var(--line);
+		padding: var(--sp-9) var(--pad-x);
+		border-bottom: var(--border);
 	}
 
 	li:last-child {
@@ -44,12 +44,12 @@
 	}
 
 	.k {
-		margin: 0 0 3px;
+		margin: 0 0 var(--sp-3);
 		display: flex;
 		justify-content: space-between;
-		gap: 10px;
+		gap: var(--sp-10);
 		font-size: var(--fs-xs);
-		letter-spacing: 0.06em;
+		letter-spacing: var(--track-code);
 		text-transform: uppercase;
 	}
 
@@ -67,7 +67,7 @@
 		text-decoration: none;
 		font-family: var(--sans);
 		font-size: var(--fs-l);
-		line-height: 1.35;
+		line-height: var(--lh-snug);
 	}
 
 	.title:hover {
@@ -75,18 +75,18 @@
 	}
 
 	.abs {
-		margin: 4px 0 0;
+		margin: var(--sp-4) 0 0;
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-m);
-		line-height: 1.4;
+		line-height: var(--lh-text);
 	}
 
 	.m {
-		margin: 4px 0 0;
+		margin: var(--sp-4) 0 0;
 		display: flex;
 		justify-content: space-between;
-		gap: 10px;
+		gap: var(--sp-10);
 		color: var(--faint);
 		font-family: var(--sans);
 		font-size: var(--fs-s);

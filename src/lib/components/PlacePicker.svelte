@@ -1,7 +1,7 @@
 <!--
 	«Tu sitio»: chip discreto en la cabecera («📍 Maó ▾») que abre un buscador de ciudades (Open-Meteo, sin
 	clave), «Usar mi ubicación» y tus favoritos (hasta 5). El sitio elegido lo usan WX, la portada y el reloj.
-	Los espaciados usan los tokens del sistema de diseño (#67) con su valor de ahora como reserva.
+	Medidas y espaciados con los tokens de src/styles/tokens.css.
 -->
 <script lang="ts">
 	import {
@@ -24,12 +24,13 @@
 	// Posición del desplegable, calculada desde el chip para que nunca se salga de la pantalla (en el móvil
 	// el chip queda a la izquierda; en el escritorio, a la derecha).
 	let pos = $state({ top: 0, left: 0 });
+	const POP_W = 320;
 
 	function toggle() {
 		open = !open;
 		if (!open) return;
 		const r = chip.getBoundingClientRect();
-		const width = Math.min(320, innerWidth - 24);
+		const width = Math.min(POP_W, innerWidth - 24);
 		pos = { top: r.bottom + 4, left: Math.max(12, Math.min(r.right - width, innerWidth - width - 12)) };
 	}
 	let input = $state<HTMLInputElement>();
@@ -142,8 +143,14 @@
 				{/if}
 			</ul>
 			{#if status}<p class="status" role="status">{status}</p>{/if}
-			<button type="button" class="fav" aria-pressed={isFavorite(place.current)} onclick={() => toggleFavorite(place.current)}>
-				{isFavorite(place.current) ? '★ Quitar' : '☆ Guardar'} {place.current.name} de favoritos
+			<button
+				type="button"
+				class="fav"
+				aria-pressed={isFavorite(place.current)}
+				onclick={() => toggleFavorite(place.current)}
+			>
+				{isFavorite(place.current) ? '★ Quitar' : '☆ Guardar'}
+				{place.current.name} de favoritos
 			</button>
 		</div>
 	{/if}
@@ -151,17 +158,19 @@
 
 <style>
 	.place {
+		/* Ancho del desplegable: el mismo valor que POP_W en el script. */
+		--pop-w: 320px;
 		position: relative;
 	}
 
 	.chip {
 		display: flex;
 		align-items: center;
-		gap: var(--sp-4, 4px);
-		height: var(--ctl-h, 28px);
-		padding-inline: var(--sp-8, 8px);
+		gap: var(--sp-4);
+		height: var(--btn-sm);
+		padding-inline: var(--sp-8);
 		background: none;
-		border: var(--border, 1px solid var(--line));
+		border: var(--border);
 		color: var(--muted);
 		font-size: var(--fs-s);
 		cursor: pointer;
@@ -188,17 +197,17 @@
 	.pop {
 		position: fixed;
 		z-index: 30;
-		width: min(320px, calc(100vw - 24px));
+		width: min(var(--pop-w), calc(100vw - 2 * var(--sp-12)));
 		background: var(--raise);
-		border: var(--hair, 1px) solid var(--amber);
+		border: var(--hair) solid var(--amber);
 	}
 
 	input {
 		width: 100%;
-		padding: var(--sp-8, 8px) var(--sp-10, 10px);
+		padding: var(--sp-8) var(--sp-10);
 		background: transparent;
 		border: 0;
-		border-bottom: var(--border, 1px solid var(--line));
+		border-bottom: var(--border);
 		outline: none;
 		font-size: var(--fs-m);
 	}
@@ -216,14 +225,14 @@
 	}
 
 	li + li {
-		border-top: var(--border, 1px solid var(--line));
+		border-top: var(--border);
 	}
 
 	.opt {
 		display: block;
 		width: 100%;
 		text-align: left;
-		padding: var(--sp-6, 6px) var(--sp-10, 10px);
+		padding: var(--sp-6) var(--sp-10);
 		background: none;
 		border: 0;
 		font-family: var(--sans);
@@ -244,17 +253,17 @@
 
 	.status {
 		margin: 0;
-		padding: var(--sp-6, 6px) var(--sp-10, 10px);
+		padding: var(--sp-6) var(--sp-10);
 		color: var(--muted);
 		font-size: var(--fs-s);
 	}
 
 	.fav {
 		width: 100%;
-		padding: var(--sp-6, 6px) var(--sp-10, 10px);
+		padding: var(--sp-6) var(--sp-10);
 		background: none;
 		border: 0;
-		border-top: var(--border, 1px solid var(--line));
+		border-top: var(--border);
 		color: var(--muted);
 		font-size: var(--fs-s);
 		text-align: left;

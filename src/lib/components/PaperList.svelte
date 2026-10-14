@@ -2,7 +2,13 @@
 <script lang="ts">
 	import type { Paper } from '#lib/types.ts';
 
-	let { items }: { items: Paper[] } = $props();
+	interface Props {
+		items: Paper[];
+		/** Aviso cuando la lista del día llega vacía (la fuente sí ha respondido). Sin él: «Sin papers todavía». */
+		empty?: string;
+	}
+
+	let { items, empty }: Props = $props();
 </script>
 
 {#if items.length}
@@ -23,7 +29,7 @@
 		{/each}
 	</ol>
 {:else}
-	<p class="empty">Sin papers todavía.</p>
+	<p class="empty">{empty ?? 'Sin papers todavía.'}</p>
 {/if}
 
 <style>
@@ -36,9 +42,9 @@
 	li {
 		display: grid;
 		grid-template-columns: 40px minmax(0, 1fr);
-		gap: 10px;
-		padding: 8px 12px;
-		border-bottom: 1px solid var(--line);
+		gap: var(--sp-10);
+		padding: var(--row-y) var(--pad-x);
+		border-bottom: var(--border);
 	}
 
 	li:last-child {
@@ -51,7 +57,7 @@
 		font-size: var(--fs-s);
 		font-variant-numeric: tabular-nums;
 		text-align: right;
-		padding-top: 2px;
+		padding-top: var(--sp-2);
 	}
 
 	.h {
@@ -60,7 +66,7 @@
 		text-decoration: none;
 		font-family: var(--sans);
 		font-size: var(--fs-l);
-		line-height: 1.3;
+		line-height: var(--lh-tight);
 		text-wrap: pretty;
 	}
 
@@ -73,10 +79,10 @@
 	}
 
 	.m {
-		margin: 3px 0 0;
+		margin: var(--sp-3) 0 0;
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px 10px;
+		gap: var(--sp-4) var(--sp-10);
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-s);
@@ -87,11 +93,11 @@
 	}
 
 	.s {
-		margin: 4px 0 0;
+		margin: var(--sp-4) 0 0;
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-m);
-		line-height: 1.4;
+		line-height: var(--lh-text);
 		/* Tres líneas como mucho: el panel sigue siendo denso. */
 		display: -webkit-box;
 		-webkit-box-orient: vertical;
