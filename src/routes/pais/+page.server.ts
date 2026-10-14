@@ -13,6 +13,7 @@ import type {
 	ImfData,
 	IodaOutage,
 	OutbreakNews,
+	Series,
 	SeriesData,
 	TravelAdvisory,
 	UnhcrData,
@@ -24,7 +25,7 @@ import type { PageServerLoad } from './$types';
 // cifras que pinta cada una (último dato y anterior), no las series enteras. Los países sin ningún dato no
 // van; los titulares llegan ya repartidos por país (scripts/news-index.ts → news-countries.json).
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news, advisories, eupower, sipri, gdacs, ioda, who, unhcr] = await Promise.all([
+	const [eurostat, ecb, bls, fred, bis, uscurve, imf, news, advisories, eupower, sipri, gdacs, ioda, who, unhcr, indeed] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
@@ -39,7 +40,8 @@ export const load: PageServerLoad = async () => {
 		dataset<GdacsEvent[]>('gdacs'),
 		dataset<IodaOutage[]>('ioda'),
 		dataset<OutbreakNews[]>('who-don'),
-		dataset<UnhcrData>('unhcr')
+		dataset<UnhcrData>('unhcr'),
+		dataset<SeriesData>('indeed')
 	]);
 	const sets = {
 		series: [eurostat, ecb, bls, fred, bis].flatMap((d) => d?.data.series ?? []),
@@ -61,8 +63,13 @@ export const load: PageServerLoad = async () => {
 	const military: Record<string, MilexRow> = {};
 	for (const r of sipri?.data.rows ?? []) if (r.code && COUNTRIES.some((c) => c.code === r.code)) military[r.code] = r;
 	// Luz en Europa: todas las zonas (son pocas); la ficha enseña las del país frente a la media de todas.
+	// Ofertas de empleo de Indeed (provisional): la serie de cada país, con 60 semanas (sin la zona euro).
+	const jobs: Record<string, Series> = {};
+	for (const s of indeed?.data.series ?? []) if (s.geo && s.geo !== 'EA') jobs[s.geo] = { ...s, points: s.points.slice(-60) };
 	return {
 		profiles,
+		jobs,
+		jobsAt: indeed?.fetchedAt ?? null,
 		news: news?.data ?? {},
 		travel,
 		travelAt: advisories?.fetchedAt,

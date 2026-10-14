@@ -13,6 +13,7 @@ export default {
 			{ name: 'PIB', what: 'Variación trimestral.' },
 			{ name: 'PIB interanual', what: 'Frente al mismo trimestre del año anterior.' },
 			{ name: 'Paro juvenil', what: 'Menores de 25 años.' },
+			{ name: 'Ofertas de empleo (Indeed)', what: 'Ofertas publicadas en Indeed por país (Indeed Hiring Lab), índice semanal.' },
 			{ name: 'Deuda pública', what: 'En % del PIB.' },
 			{ name: 'Precios de los alimentos', what: 'Índice de la FAO.' },
 			{ name: 'Próximas reuniones', what: 'Fechas de decisión de tipos, en hora de España.' },
