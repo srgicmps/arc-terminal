@@ -59,7 +59,7 @@ días, mínimos o máximos de 90 días, zona a ±5 cts de la media de España), 
 zona, y temas generales (apagón, GDACS, IODA, caídas de servicios, huelgas, ciberataques, OMS, luz de mañana,
 festivos y cambio de hora). Tope: 50 al día, a cualquier hora. La zona va en Secrets.
 
-## 2. Borrador del lote 18 (sin mandar a Sergi)
+## 2. Lote 18: APROBADO por Sergi (14/10, 20:12 hora de Madrid), con orden de empezar ya
 
 1. **NOVEDADES**: lo fusionado en la última semana (API de GitHub con GITHUB_TOKEN en la Action).
 2. **Incertidumbre y riesgo geopolítico**: EPU (policyuncertainty.com) y GPR (Caldara–Iacoviello). Sin clave;
