@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeContext } from '../lib.ts';
 import { boeEntries, buildIndex, clip, MAX_BYTES, MAX_TITLE, newsEntries, search, tickerEntries } from '../sources/search.ts';
-import { TICKERS } from '../../src/lib/commands.ts';
+import { TICKERS } from '../../src/lib/tickers.ts';
 import type { BoeData, NewsItem, SearchEntry } from '../../src/lib/types.ts';
 
 const NOW = Date.parse('2026-10-14T12:00:00Z');

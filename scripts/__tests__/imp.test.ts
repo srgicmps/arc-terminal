@@ -250,6 +250,19 @@ describe('fuente imp', () => {
 		expect(data.seen).toHaveLength(1);
 	});
 
+	it('toma «In the news» de lo que acaba de guardar wiki.ts, sin volver a pedirlo', async () => {
+		vi.useFakeTimers({ toFake: ['Date'] });
+		vi.setSystemTime(NOW);
+		const fetch = mockFetch(() => undefined);
+		const title = 'Huelga general convocada en toda España contra la reforma laboral';
+		const items = [news(title, 'El País', 'https://elpais.com/h', 1, [{ source: 'RTVE', url: 'https://rtve.es/h' }])];
+		const wiki = { en: { news: [{ text: 'Huelga general convocada en España contra la reforma laboral', url: '' }] } };
+		const ctx = makeContext(new Map<string, unknown>([['news-es', { items, feeds: [] }], ['wiki', wiki]]));
+		const data = await imp.fetch(undefined, ctx);
+		expect(data.current[0].wiki).toBe(true);
+		expect(fetch).not.toHaveBeenCalled();
+	});
+
 	it('falla si no hay titulares recientes', async () => {
 		await expect(imp.fetch(undefined, makeContext(new Map()))).rejects.toThrow();
 	});

@@ -12,6 +12,7 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import TradeList from '#lib/components/TradeList.svelte';
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
+	import StormNotice from '#lib/components/StormNotice.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import WorldMap from '#lib/components/WorldMap.svelte';
@@ -35,6 +36,8 @@
 </script>
 
 <ViewHeader code="GEO" title="Geopolítica" sub={sources} />
+
+<StormNotice data={data.swpc?.data} />
 
 <div class="grid">
 	<div class="col">

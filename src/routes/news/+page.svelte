@@ -99,7 +99,7 @@
 				title="En el archivo"
 				meta={loaded < wanted && !failed ? 'Cargando…' : `${archived.length} ${archived.length === 1 ? 'titular' : 'titulares'}`}
 			>
-				<NewsList items={archived.slice(0, 150)} />
+				{#if archived.length}<NewsList items={archived.slice(0, 150)} />{/if}
 				{#if !archived.length && loaded >= wanted}<p class="empty">Nada más hasta {monthName(data.months[loaded - 1].month)}.</p>{/if}
 				{#if loaded >= wanted && wanted < data.months.length && !failed}
 					<button class="more" type="button" onclick={() => wanted++}>Buscar también en {monthName(data.months[wanted].month)}</button>

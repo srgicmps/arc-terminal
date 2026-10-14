@@ -5,7 +5,7 @@
 // contacto («Nombre correo@ejemplo.com») y como mucho 10 peticiones por segundo. Con solo la URL del
 // repo la SEC responde 403, y como el repo es público el correo va en el secreto SEC_USER_AGENT:
 // sin él, la fuente se salta.
-import { TICKERS } from '../../src/lib/commands.ts';
+import { TICKERS } from '../../src/lib/tickers.ts';
 import type { SecCompany, SecData, SecFiling } from '../../src/lib/types.ts';
 import { getJson, type Source } from '../lib.ts';
 
