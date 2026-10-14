@@ -7,6 +7,7 @@
 //   con la web: la pasada siguiente la reutiliza y nunca se traduce dos veces lo mismo.
 // - MyMemory sube el límite diario si se le da un correo en `de=`. Va en el Secret MYMEMORY_EMAIL y no
 //   sale nunca en los registros ni en los JSON. Sin el Secret, no se llama a nadie: todo sigue en inglés.
+//   En los PR, deploy.yml no lo pasa: así no se gasta el cupo en traducciones que no se publican.
 // - Si MyMemory da 429, se acaba el cupo o falla, el titular se queda en inglés y no pasa nada.
 import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
