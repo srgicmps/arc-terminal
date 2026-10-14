@@ -6,7 +6,7 @@
 <script module lang="ts">
 	// Esta parte se ejecuta una sola vez y la comparten todos los <Updated> (como un composable de Vue
 	// con el estado fuera de la función): status.json se pide una vez, solo si alguien lo necesita.
-	import { dataset, type SourceStatus } from '#lib/data.ts';
+	import { dataset } from '#lib/data.ts';
 
 	const maxAge: Record<string, number> = $state({});
 	let requested = false;
@@ -14,7 +14,7 @@
 	function loadStatus() {
 		if (requested) return;
 		requested = true;
-		dataset<SourceStatus[]>('status').then((status) => {
+		dataset('status').then((status) => {
 			for (const s of status?.data ?? []) if (s.maxAgeMinutes) maxAge[s.name] = s.maxAgeMinutes;
 		});
 	}

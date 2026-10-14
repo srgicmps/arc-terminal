@@ -1,4 +1,26 @@
 // Lectura de los datos descargados por scripts/update.ts (static/data/<nombre>.json).
+import type { FuelData, FuelSpainData } from './fuel.ts';
+import type {
+	BoeData,
+	CryptoData,
+	FedRegData,
+	FinnhubData,
+	HazardsData,
+	HnItem,
+	NewsData,
+	Paper,
+	PowerData,
+	PowerMixData,
+	PredictionsData,
+	Quake,
+	Release,
+	SecData,
+	SeriesData,
+	WeatherData,
+	WikiData,
+	YieldCurveData
+} from './types.ts';
+import type { AirData, AlertsData } from './weather.ts';
 
 /** Lo que guarda cada archivo de static/data: los datos y cuándo se descargaron. */
 export interface Dataset<T> {
@@ -29,7 +51,46 @@ export interface SourceStatus {
 // Si un archivo no existe (en local, antes de `pnpm data`), simplemente no aparece aquí.
 const loaders = import.meta.glob('/static/data/*.json', { import: 'default' });
 
-export async function dataset<T>(name: string): Promise<Dataset<T> | null> {
+/**
+ * Qué tipo de datos guarda cada archivo de static/data, por su nombre (el `name` de cada fuente en
+ * scripts/sources). Así `dataset('ecb')` ya sabe que devuelve SeriesData y `pnpm check` avisa si una
+ * vista pide un archivo que no existe o lo usa con otro tipo.
+ */
+export interface DataMap {
+	air: AirData;
+	alerts: AlertsData;
+	bis: SeriesData;
+	bls: SeriesData;
+	boe: BoeData;
+	crypto: CryptoData;
+	ecb: SeriesData;
+	eurostat: SeriesData;
+	fedreg: FedRegData;
+	finnhub: FinnhubData;
+	fred: SeriesData;
+	fuel: FuelData;
+	'fuel-es': FuelSpainData;
+	hazards: HazardsData;
+	hfpapers: Paper[];
+	hn: HnItem[];
+	ine: SeriesData;
+	power: PowerData;
+	'power-mix': PowerMixData;
+	predictions: PredictionsData;
+	quakes: Quake[];
+	'quakes-es': Quake[];
+	releases: Release[];
+	sec: SecData;
+	status: SourceStatus[];
+	uscurve: YieldCurveData;
+	usdebt: SeriesData;
+	weather: WeatherData;
+	wiki: WikiData;
+	/** Titulares de cada sección: news-eco, news-geo, news-gov… */
+	[news: `news-${string}`]: NewsData;
+}
+
+export async function dataset<K extends keyof DataMap>(name: K): Promise<Dataset<DataMap[K]> | null> {
 	const load = loaders[`/static/data/${name}.json`];
-	return load ? ((await load()) as Dataset<T>) : null;
+	return load ? ((await load()) as Dataset<DataMap[K]>) : null;
 }

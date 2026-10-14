@@ -1,7 +1,7 @@
 // DOC lee archivos del propio repo para que lo que explica no se quede desfasado.
 // Es +page.server.ts (no +page.ts) porque solo se ejecuta al construir la web: el navegador
 // recibe el resultado ya preparado y no se descarga el código fuente entero.
-import { dataset, type SourceStatus } from '#lib/data.ts';
+import { dataset } from '#lib/data.ts';
 import deployYml from '../../../.github/workflows/deploy.yml?raw';
 import panelSrc from '#lib/components/Panel.svelte?raw';
 import fuelLoadSrc from '../fuel/+page.ts?raw';
@@ -26,7 +26,7 @@ function excerpt(file: string, src: string, marker: string, count = 1): Excerpt 
 }
 
 export const load: PageServerLoad = async () => {
-	const status = await dataset<SourceStatus[]>('status');
+	const status = await dataset('status');
 	return {
 		sources: (status?.data ?? []).map(({ name, label, maxAgeMinutes, requires }) => ({ name, label, maxAgeMinutes, requires })),
 		cron: [...deployYml.matchAll(/cron:\s*'([^']+)'/g)].map((m) => m[1]),
