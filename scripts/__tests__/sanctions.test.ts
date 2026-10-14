@@ -34,6 +34,23 @@ describe('sanctions', () => {
 		expect(ita?.get('conditions[term]')).toBe('"Section 232"');
 	});
 
+	it('BIS (M33): control de exportaciones, y «Chips» si habla de semiconductores o computación avanzada', async () => {
+		mockFetch((url) =>
+			new URL(url).searchParams.get('conditions[agencies][]') === 'industry-and-security-bureau'
+				? {
+						results: [
+							doc('2026-5', '2026-10-14', 'Additions to the Entity List'),
+							doc('2026-6', '2026-10-13', 'Export Controls on Advanced Computing Items and Semiconductor Manufacturing Items')
+						]
+					}
+				: { results: [] }
+		);
+		expect((await sanctions.fetch(undefined)).map((d) => [d.id, d.agency, d.topic])).toEqual([
+			['2026-5', 'BIS', 'Exportaciones'],
+			['2026-6', 'BIS', 'Chips']
+		]);
+	});
+
 	it('si una consulta falla, sigue con las demás; si fallan todas, error', async () => {
 		mockFetch((url) => (url.includes('trade-representative') ? { results: [doc('2026-2', '2026-10-14')] } : undefined));
 		expect((await sanctions.fetch(undefined)).map((d) => d.agency)).toEqual(['USTR']);
