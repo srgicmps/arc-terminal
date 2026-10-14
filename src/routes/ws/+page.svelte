@@ -1,5 +1,6 @@
 <script lang="ts">
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
+	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
 	import FxConvert from '#lib/components/FxConvert.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
@@ -156,6 +157,7 @@
 		<Panel title="Materias primas" meta="Precio en dólares · en directo">
 			<TvWidget widget="market-quotes" config={quotes('Materias primas', COMMODITIES)} height={quotesHeight(COMMODITIES.length)} />
 		</Panel>
+		<DefenseQuotes />
 	</div>
 </div>
 

@@ -120,7 +120,25 @@ export const TICKERS: Ticker[] = [
 	{ code: 'ETH', name: 'Ethereum', tv: 'BITSTAMP:ETHUSD', aliases: ['ether'] },
 	{ code: 'GOLD', name: 'Oro', tv: 'TVC:GOLD', aliases: ['oro', 'gold'] },
 	{ code: 'BRENT', name: 'Petróleo Brent', tv: 'TVC:UKOIL', aliases: ['Brent'] },
-	{ code: 'EURUSD', name: 'Euro / dólar', tv: 'FX:EURUSD' }
+	{ code: 'EURUSD', name: 'Euro / dólar', tv: 'FX:EURUSD' },
+	// Defensa y geopolítica (src/lib/defense.ts). BAE Systems va como BAES porque BA es Boeing.
+	// Todos los símbolos, comprobados con tv-shots en la Action.
+	{ code: 'PLTR', name: 'Palantir', tv: 'NASDAQ:PLTR', cik: '0001321655' },
+	{ code: 'LMT', name: 'Lockheed Martin', tv: 'NYSE:LMT', cik: '0000936468', aliases: ['Lockheed'] },
+	{ code: 'RTX', name: 'Raytheon (RTX)', tv: 'NYSE:RTX', cik: '0000101829' },
+	{ code: 'NOC', name: 'Northrop Grumman', tv: 'NYSE:NOC', cik: '0001133421', aliases: ['Northrop'] },
+	{ code: 'GD', name: 'General Dynamics', tv: 'NYSE:GD', cik: '0000040533' },
+	{ code: 'BA', name: 'Boeing', tv: 'NYSE:BA', cik: '0000012927' },
+	{ code: 'LHX', name: 'L3Harris', tv: 'NYSE:LHX', cik: '0000202058', aliases: ['L3Harris Technologies'] },
+	{ code: 'ITA', name: 'Aeroespacial y defensa EE. UU. (ETF)', tv: 'AMEX:ITA' },
+	{ code: 'AIR', name: 'Airbus', tv: 'EURONEXT:AIR' },
+	// La Bolsa de Londres sale vacía en los widgets (LSE:BA.): BAE Systems va con su cotización en Xetra, en euros.
+	{ code: 'BAES', name: 'BAE Systems', tv: 'XETR:BSP', aliases: ['BAE'] },
+	{ code: 'RHM', name: 'Rheinmetall', tv: 'XETR:RHM' },
+	{ code: 'LDO', name: 'Leonardo', tv: 'MIL:LDO', aliases: ['Leonardo SpA'] },
+	{ code: 'HO', name: 'Thales', tv: 'EURONEXT:HO' },
+	{ code: 'SAAB', name: 'Saab', tv: 'OMXSTO:SAAB_B' },
+	{ code: 'IDR', name: 'Indra', tv: 'BME:IDR' }
 ];
 
 /** Símbolo de TradingView para lo que escriba Sergi: un valor conocido o el texto tal cual. */
