@@ -90,6 +90,18 @@
 			position: relative;
 			z-index: 1;
 		}
+
+		/* «+3 medios» es una línea de texto pequeña: una capa invisible le da la altura de una zona táctil
+		   (--touch), centrada en el texto, sin mover nada. */
+		.also summary {
+			position: relative;
+		}
+
+		.also summary::after {
+			content: '';
+			position: absolute;
+			inset: calc((100% - var(--touch)) / 2) calc(-1 * var(--sp-8));
+		}
 	}
 
 	.news li:last-child {
