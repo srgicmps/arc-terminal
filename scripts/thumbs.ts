@@ -6,13 +6,15 @@
 // Nunca falla: si una vista o el navegador dan error, lo dice en el registro y sigue. Cada captura se
 // escribe primero en un .tmp y luego se renombra, así nunca queda un .jpg a medias.
 // Uso: node scripts/thumbs.ts [raíz de la web] (por defecto, la publicada; p. ej. la de `vite preview`).
-import { existsSync, mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from 'node:fs';
 import { launch } from './browser.ts';
 
 const ROOT = (process.argv[2] ?? 'https://srgicmps.github.io/arc-terminal').replace(/\/$/, '');
 const DIR = 'static/manual';
 /** 1280 px × 0,375 = 480 px de ancho. */
 const SCALE = 0.375;
+/** Por debajo, la captura está casi en blanco: una vista sin datos ya pesa unos 12 KB. */
+const MIN_BYTES = 5 * 1024;
 
 /** Copia de thumbSlug() de src/lib/manual.ts (Node no puede importar ese archivo): «/» → «top», «/eco» → «eco». */
 const thumbSlug = (route: string) => route.replace(/\//g, '') || 'top';
@@ -50,7 +52,12 @@ try {
 				await page.goto(ROOT + route, { waitUntil: 'load', timeout: 20_000 });
 				// Que terminen de llegar datos y widgets, sin esperar más de 10 s (TradingView no para nunca).
 				await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+				// Avisos (sin fallar) de una miniatura que puede salir vacía: paneles que aún esperan sus datos
+				// («… todavía», como en la prueba de humo) o una imagen tan ligera que estará casi en blanco.
+				const waiting = await page.locator('.empty', { hasText: 'todavía' }).count().catch(() => 0);
+				if (waiting) console.log(`::warning::Miniatura de ${route}: ${waiting} panel(es) sin datos todavía`);
 				await page.screenshot({ path: tmp, type: 'jpeg', quality: 70, timeout: 15_000 });
+				if (statSync(tmp).size < MIN_BYTES) console.log(`::warning::Miniatura de ${route}: pesa muy poco, puede estar en blanco`);
 				renameSync(tmp, `${DIR}/${slug}.jpg`);
 				done++;
 			} catch (e) {

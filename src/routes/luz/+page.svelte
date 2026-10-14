@@ -8,7 +8,7 @@
 	import PriceBars from '#lib/components/PriceBars.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { dm, hm, longDay, nf } from '#lib/format.ts';
+	import { dm, hm, longDay, nf, signed } from '#lib/format.ts';
 	import { cheapestWindow, days, dayStats, hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
 	import { luzShare, relativeDay, type ShareInfo } from '#lib/share.ts';
 	import Tile from '#lib/components/ui/Tile.svelte';
@@ -143,7 +143,7 @@
 					<Tile label="Prevista" value={d.forecast === null ? '—' : `${nf(d.forecast, 0)} MW`} tone={d.forecast === null ? 'mut' : undefined} />
 					<Tile
 						label="Desvío"
-						value={d.gap === null ? '—' : `${nf(-d.gap, 1)} %`}
+						value={d.gap === null ? '—' : `${signed(-d.gap, 1)} %`}
 						tone={d.gap === null ? 'mut' : undefined}
 						sub={d.gap === null ? undefined : d.gap > 0 ? 'por debajo de la prevista' : 'por encima de la prevista'}
 					/>
