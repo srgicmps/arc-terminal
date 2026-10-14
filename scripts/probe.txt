@@ -1,6 +1,6 @@
 # URL que la Action de los PR consulta para explorar APIs nuevas (ver scripts/probe.ts).
-https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPC ~ general|comunidad|2025
-https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/EPA ~ tasa de paro.*(comunidad|aut.nom)|tasas de paro
-https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/FRONTUR ~ comunidad
-https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/EGATUR ~ comunidad
-https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/EOH ~ comunidad
+https://servicios.ine.es/wstempus/js/ES/SERIES_TABLA/76136?det=0 ~ balears.*general|general.*balears
+https://servicios.ine.es/wstempus/js/ES/SERIES_TABLA/76134?det=0 ~ general
+https://servicios.ine.es/wstempus/js/ES/SERIES_TABLA/14506?det=0 ~ balears.*ambos sexos.*total|total nacional.*ambos sexos.*total
+https://servicios.ine.es/wstempus/js/ES/SERIES_TABLA/10823?det=0 ~ balears
+https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/EOH ~ comunidad|aut.nom
