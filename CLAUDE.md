@@ -34,8 +34,13 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   acumular historial (gasolina, luz). Los tipos compartidos están en `src/lib/types.ts` y `src/lib/fuel.ts`.
 - Cada vista lee sus datos en `+page.ts` con `dataset('nombre')` (`src/lib/data.ts`).
 - Componentes comunes en `src/lib/components/` (Panel, NewsList, SeriesTable, LineChart, TvWidget…).
-- `scripts/probe.ts` + `scripts/probe.txt`: en los PR la Action consulta esas URL y deja la respuesta en el
-  registro. Sirve para explorar APIs nuevas cuando el entorno de desarrollo no tiene red.
+- `scripts/probe.ts` + `scripts/probe.txt`: en los PR que tocan `scripts/`, la Action consulta esas URL y deja la
+  respuesta en el registro. Sirve para explorar APIs nuevas cuando el entorno de desarrollo no tiene red.
+- **Probar una fuente sin la pasada completa**: Actions → «Publicar en Pages» → Run workflow, con «fuentes»
+  (p. ej. `fao climate`). Descarga solo esas fuentes, sin copia guardada, y lanza el sondeo, sin publicar.
+- En los PR, la Action va en jobs a la vez: `checks` (check, test, build: el verde o el rojo rápido), `smoke`
+  (datos reales y prueba de humo) y `probe` solo si el PR toca `scripts/`. `compare` (vistas del PR frente a
+  main) y `tv-shots` se lanzan a mano: Run workflow sobre la rama, con «herramienta».
 
 ## Arquitectura
 - **GitHub Pages** sirve la web estática en https://srgicmps.github.io/arc-terminal/ (por eso hay que
