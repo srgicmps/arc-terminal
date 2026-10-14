@@ -45,7 +45,6 @@ export const sources: Source<any>[] = [
 	ine,
 	// Europa
 	ecb,
-	eacurve,
 	bis,
 	eurostat,
 	// EE. UU.
@@ -59,7 +58,6 @@ export const sources: Source<any>[] = [
 	finnhub,
 	sec,
 	// Mundo
-	jgb,
 	imf,
 	quakes,
 	quakesEs,
@@ -80,3 +78,4 @@ export const sources: Source<any>[] = [
 	imp,
 	search
 ];
+sources.push(eacurve, jgb); // Curvas de tipos de WS (Prog 8). Se quita cuando el registro deje de exigir esta lista.
