@@ -1,9 +1,10 @@
 import { dataset } from '#lib/data.ts';
 import type { FaoData } from '#lib/fao.ts';
+import { headlines, pickSeries } from '#lib/trim.ts';
 import type { ImfData, NewsData, PredictionsData, SeriesData } from '#lib/types.ts';
-import type { PageLoad } from './$types';
+import type { PageServerLoad } from './$types';
 
-export const load: PageLoad = async () => {
+export const load: PageServerLoad = async () => {
 	const [eurostat, ecb, bls, usdebt, fred, bis, imf, news, predictions, fao] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
@@ -16,5 +17,8 @@ export const load: PageLoad = async () => {
 		dataset<PredictionsData>('predictions'),
 		dataset<FaoData>('fao')
 	]);
-	return { eurostat, ecb, bls, usdebt, fred, bis, imf, news, predictions, fao };
+	// Del BCE, todo menos los tipos de cambio (están en WS); de los titulares, los 25 que se pintan.
+	const fx = (ecb?.data.series ?? []).filter((s) => s.id.startsWith('eur') && !s.id.startsWith('euribor')).map((s) => s.id);
+	const rest = (ecb?.data.series ?? []).map((s) => s.id).filter((id) => !fx.includes(id));
+	return { eurostat, ecb: pickSeries(ecb, rest), bls, usdebt, fred, bis, imf, news: headlines(news, 25), predictions, fao };
 };
