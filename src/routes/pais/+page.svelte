@@ -13,14 +13,16 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
+	import { favCountries, initFavCountries, toggleFavCountry } from '#lib/favcountries.svelte.ts';
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import { LEVELS } from '#lib/advisories.ts';
 	import { COUNTRIES, findCountry } from '#lib/countries.ts';
 	import type { CountryProfile, Rate } from '#lib/country.ts';
-	import { dm, nf, period, signed } from '#lib/format.ts';
+	import { compact, dm, nf, period, signed } from '#lib/format.ts';
 	import { sectionLabel } from '#lib/news.ts';
 	import type { PageProps } from './$types';
 
@@ -38,6 +40,7 @@
 	const news = $derived(country ? (data.news[country.code] ?? []) : []);
 	const travel = $derived(country ? data.travel[country.code] : undefined);
 	const risk = $derived(country ? data.risks[country.code] : undefined);
+	const refugees = $derived(country ? data.refugees[country.code] : undefined);
 	const hasPower = $derived(!!country && data.eupower.some((z) => z.country === country.code));
 	const rates = $derived(profile ? [profile.policy, profile.bond, profile.premium].filter((r): r is Rate => r !== null) : []);
 	const military = $derived(country ? (data.military[country.code] ?? null) : null);
@@ -47,6 +50,11 @@
 
 	// Para la lista y el desplegable, por orden alfabético.
 	const sorted = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+	// Tus países (favcountries.svelte.ts): arriba del desplegable y de la lista; se marcan con ★.
+	$effect(initFavCountries);
+	const favs = $derived(favCountries.codes.map((code) => COUNTRIES.find((c) => c.code === code)).filter((c) => c !== undefined));
+	const followed = $derived(!!country && favCountries.codes.includes(country.code));
 
 	function choose(code: string) {
 		goto(resolve('/pais') + `?c=${code}`);
@@ -67,9 +75,24 @@
 		: 'Cifras, tipos, moneda, previsiones y titulares de cada país'}
 >
 	{#snippet aside()}
+		{#if country}
+			{@const code = country.code}
+			<Seg
+				label="Tus países"
+				options={[{ value: 'fav', label: followed ? '★ Siguiendo' : '☆ Seguir' }]}
+				bind:values={() => (followed ? ['fav'] : []), () => toggleFavCountry(code)}
+			/>
+		{/if}
 		<Select label="País" value={country?.code ?? ''} onchange={choose}>
 			{#if !country}<option value="" disabled>Elige…</option>{/if}
-			{#each sorted as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+			{#if favs.length}
+				<optgroup label="Tus países">
+					{#each favs as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+				</optgroup>
+			{/if}
+			<optgroup label="Todos">
+				{#each sorted as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+			</optgroup>
 		</Select>
 	{/snippet}
 </ViewHeader>
@@ -77,6 +100,15 @@
 {#if !country}
 	<div class="grid">
 		<div class="col">
+			{#if favs.length}
+				<Panel title="Tus países" meta="Los que sigues (★ en su ficha)">
+					<ul class="mini">
+						{#each favs as c (c.code)}
+							<li><a class="l" href="{resolve('/pais')}?c={c.code}">{c.name}</a><b class="mut">{c.code}</b></li>
+						{/each}
+					</ul>
+				</Panel>
+			{/if}
 			<Panel title="Países" meta="{COUNTRIES.length} países">
 				{#if query}<p class="empty">No conozco «{query}». Prueba con el nombre o el código: PAIS Alemania, PAIS DE.</p>{/if}
 				<Table>
@@ -249,6 +281,19 @@
 									at={at.ioda}
 									source="ioda"
 								/>{/if}; brotes de los últimos 30 días de la OMS{#if at.who}&nbsp;· <Updated at={at.who} source="who-don" />{/if}.{/if}
+					{/snippet}
+				</Panel>
+			{/if}
+			{#if refugees}
+				<Panel title="Refugiados" meta="ACNUR · fin de {data.refugeesYear}">
+					<Tiles>
+						<Tile label="Han huido" value={compact(refugees.from)} sub="refugiados y solicitantes de asilo" />
+						<Tile label="Acogidos" value={compact(refugees.hosted)} sub="en {country.name}" />
+						<Tile label="Desplazados" value={compact(refugees.idps)} sub="dentro del país" />
+					</Tiles>
+					{#snippet note()}
+						Fuente: <a href="https://www.unhcr.org/refugee-statistics/" target="_blank" rel="noopener">ACNUR, Refugee Data Finder</a>{#if data.refugeesAt}&nbsp;·
+							<Updated at={data.refugeesAt} source="unhcr" />{/if}
 					{/snippet}
 				</Panel>
 			{/if}

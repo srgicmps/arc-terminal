@@ -1,6 +1,6 @@
 // FRED, Banco de la Reserva Federal de San Luis: series macro de EE. UU. https://fred.stlouisfed.org/docs/api/fred/
 // Necesita una clave gratuita (FRED_API_KEY, en GitHub Secrets). Sin ella, la fuente se salta.
-// Límite: unas 120 consultas por minuto por clave; aquí son 24 cada 3 horas.
+// Límite: unas 120 consultas por minuto por clave; aquí son 27 cada 3 horas.
 // Condiciones: hay que avisar de que se usa la API de FRED sin su respaldo, y algunas series son de
 // terceros con copyright (el VIX de Cboe, los diferenciales de ICE BofA): solo se guardan unos pocos puntos
 // con enlace a FRED y la fuente citada.
@@ -34,6 +34,11 @@ const WANTED: Wanted[] = [
 	{ code: 'IORB', id: 'iorb-us', label: 'Remuneración de las reservas (IORB)', unit: '%', freq: 'd', last: 260 },
 	{ code: 'DTB3', id: 'tbill3m-us', label: 'Letra del Tesoro a 3 meses', unit: '%', freq: 'd', last: 260 },
 	{ code: 'T10Y2Y', id: 't10y2y-us', label: 'Diferencial 10 años − 2 años', unit: '%', freq: 'd', last: 260 },
+	// Señales de recesión (ECO): regla de Sahm en tiempo real (puntos), probabilidad de recesión del modelo de
+	// Chauvet y Piger (suavizada, llega con 2–3 meses de retraso) y diferencial 10 años − 3 meses.
+	{ code: 'SAHMREALTIME', id: 'sahm-us', label: 'Regla de Sahm (tiempo real)', unit: '%', freq: 'm', last: 36 },
+	{ code: 'RECPROUSM156N', id: 'recprob-us', label: 'Probabilidad de recesión (modelo)', unit: '%', freq: 'm', last: 36 },
+	{ code: 'T10Y3M', id: 't10y3m-us', label: 'Diferencial 10 años − 3 meses', unit: '%', freq: 'd', last: 260 },
 	{ code: 'PCEPILFE', id: 'core-pce-us', label: 'PCE subyacente, interanual', unit: '%', freq: 'm', units: 'pc1', last: 36 },
 	{ code: 'GDPC1', id: 'gdp-us', label: 'PIB real, tasa anualizada', unit: '%', freq: 'q', units: 'pca', last: 16 },
 	// GDPNow de la Fed de Atlanta: estimación en tiempo real del PIB del trimestre en curso (tasa anualizada); cambia varias veces al mes.
