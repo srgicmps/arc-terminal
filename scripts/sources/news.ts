@@ -66,7 +66,8 @@ const FEEDS: Record<string, Feed[]> = {
 		{ name: 'Reserva Federal', url: 'https://www.federalreserve.gov/feeds/press_all.xml' }
 	],
 	// Organismos internacionales. Comprobados con probe (14-10-2026). Descartados: OTAN (sin RSS), FMI (429 desde
-	// Actions), Banco Mundial (sin RSS) y OPEP (403 de Cloudflare).
+	// Actions), Banco Mundial (sin RSS, y su API de
+	// noticias va dos meses atrasada) y OPEP (403 de Cloudflare).
 	intl: [
 		// Comunicados y crónicas de las reuniones: Consejo de Seguridad, Asamblea General…
 		{ name: 'ONU', url: 'https://press.un.org/en/rss.xml' },

@@ -27,7 +27,3 @@ https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1376?nult=2
 https://servicios.ine.es/wstempus/js/ES/DATOS_SERIE/IPV1670?nult=2
 # IMP: «In the news» de la Wikipedia en inglés (campo `news` del feed featured)
 https://api.wikimedia.org/feed/v1/wikipedia/en/featured/2026/10/14 ~ "news":\[.{0,600}
-# GEO: Banco Mundial, API de noticias (sin RSS): ¿se puede pedir por fecha?
-https://search.worldbank.org/api/v2/news?format=json&rows=5&lang_exact=English&displayconttype_exact=Press%20Release&strdate=2026-10-01&fl=title,lnchdt
-https://search.worldbank.org/api/v2/news?format=json&rows=5&lang_exact=English&displayconttype_exact=Press%20Release&lnchdt=2026-10*&fl=title,lnchdt
-https://search.worldbank.org/api/v2/news?format=json&rows=5&lang_exact=English&displayconttype_exact=Press%20Release&sort=lnchdt%20desc&fl=title,lnchdt
