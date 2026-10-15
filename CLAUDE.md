@@ -204,6 +204,7 @@ vista `HELP`. Resumen:
 | `RSS` | Mis RSS (como Feedly): tus feeds en tu cuenta, leídos por `/api/rss` (`cloud/rss.ts`, caché de 15 min y topes; solo con cuenta) | Tus feeds |
 | `ESTILO` | Estética: Terminal, Grafito, Cristal, Fósforo… (17), con vista previa | — |
 | `AVISOS` | Tus avisos al móvil: temas, nivel, tope, valores y silencio (solo con cuenta, en arcterminal.dev) | ntfy |
+| `BIENVENIDA` | La primera vez (y desde HELP): intereses o perfil, ciudad y modo → portada, inicio, MIS de ejemplo y propuesta de avisos; recorrido de 5 pasos, solo en BIENVENIDA y HELP (`src/lib/onboarding/`) | — |
 | `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
 
 \* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`, `CLOUDFLARE_RADAR_TOKEN`, `EIA_API_KEY`):

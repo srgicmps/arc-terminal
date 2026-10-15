@@ -26,6 +26,7 @@
 	} from '#lib/alertconfig.ts';
 	import { place } from '#lib/place.svelte.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
+	import { readWelcome, WELCOME_KEY, type AlertSuggestion } from '#lib/onboarding/plan.ts';
 
 	const url = asset('api/alerts' as Parameters<typeof asset>[0]);
 
@@ -82,6 +83,17 @@
 	const setBrief = (patch: Partial<Brief>) =>
 		set({ brief: { ...config.brief, ...(patch.on && !config.brief.place ? { place: here() } : {}), ...patch } });
 
+	// La propuesta de la bienvenida (BIENVENIDA): se ofrece mientras los avisos están apagados; nunca se pone sola.
+	let proposal = $state<AlertSuggestion | null>(null);
+	$effect(() => {
+		try {
+			const s = readWelcome(localStorage.getItem(WELCOME_KEY))?.alerts;
+			proposal = s?.groups.length ? s : null;
+		} catch {}
+	});
+	const useProposal = (p: AlertSuggestion) =>
+		set({ groups: p.groups, level: p.level, daily: p.daily, mis: [...new Set([...config.mis, ...p.mis])].slice(0, MIS_MAX) });
+
 	const LEVELS = [
 		{ value: '1', label: 'Urgentes' },
 		{ value: '2', label: '+ Importantes' },
@@ -119,6 +131,13 @@
 		<div class="col">
 			<Panel title="Qué te llega" meta={config.on ? 'Activados' : 'Apagados'} accent={config.on}>
 				<dl class="form">
+					{#if proposal && !config.on}
+						<dt>Propuesta</dt>
+						<dd class="proposal">
+							De tu bienvenida: {proposal.groups.map((id) => GROUPS.find((g) => g.id === id)?.label ?? id).join(' · ')}; hasta {LEVELS[proposal.level - 1].label.replace('+ ', '').toLowerCase()}, {proposal.daily} al día.
+							<button type="button" onclick={() => useProposal(proposal!)} disabled={saving}>Usar la propuesta</button>
+						</dd>
+					{/if}
 					<dt>Avisos</dt>
 					<dd>
 						<Seg
@@ -376,5 +395,21 @@
 		.form {
 			grid-template-columns: minmax(0, 1fr);
 		}
+	}
+	.proposal {
+		font-size: var(--fs-s);
+		line-height: var(--lh-text);
+		color: var(--muted);
+	}
+	.proposal button {
+		display: block;
+		height: var(--control-h);
+		margin-top: var(--sp-6);
+		padding: 0 var(--sp-12);
+		font: var(--fs-s) var(--mono);
+		color: var(--amber);
+		background: var(--raise);
+		border: var(--hair) solid var(--amber-edge);
+		cursor: pointer;
 	}
 </style>
