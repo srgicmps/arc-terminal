@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildNotices, markSeen, toastsFor, unread } from './notices.ts';
 import { byCategory, categoryOf, parseIds, pushRecent, searchApps, togglePin } from './start.ts';
-import { addWidget, defaultWidgets, nudge, parseWidgets, removeWidget, snap } from './widgets.ts';
+import { addWidget, defaultWidgets, nudge, parseWidgets, removeWidget, snap, statusSummary } from './widgets.ts';
 import { offsetFrom, openMarkets, timeIn } from './zones.ts';
 
 const wall = {
@@ -72,6 +72,7 @@ describe('widgets', () => {
 		expect(removeWidget(d, 'reloj').some((w) => w.kind === 'reloj')).toBe(false);
 		expect(parseWidgets('[{"kind":"reloj","x":1,"y":2},{"kind":"reloj","x":3,"y":4},{"kind":"otro","x":0,"y":0}]')).toEqual([{ kind: 'reloj', x: 1, y: 2 }]);
 		expect(parseWidgets('nada')).toBeNull();
+		expect(defaultWidgets(1280, 'dsm').map((w) => w.kind)).toEqual(['sistema', 'registro', 'datos']);
 	});
 });
 
@@ -86,5 +87,40 @@ describe('reloj', () => {
 	it('cuenta las bolsas abiertas', () => {
 		// Jueves a las 14:00 de Madrid: abiertas Londres, Madrid y Fráncfort (Bombay cerró a las 12:00).
 		expect(openMarkets(now)).toBe(3);
+	});
+});
+
+import { isSkin, isSpotlightKey, layoutOf, magnify } from './skins.ts';
+
+describe('estado de las fuentes', () => {
+	it('cuenta por estado y da la última descarga', () => {
+		const s = statusSummary([
+			{ name: 'a', label: 'A', state: 'ok', fetchedAt: '2026-10-15T10:00:00Z' },
+			{ name: 'b', label: 'B', state: 'stale', fetchedAt: '2026-10-15T11:00:00Z' },
+			{ name: 'c', label: 'C', state: 'off', fetchedAt: null }
+		]);
+		expect(s).toEqual({ total: 3, ok: 1, stale: 1, error: 0, off: 1, last: '2026-10-15T11:00:00Z', failing: ['B'] });
+	});
+});
+
+describe('aspectos', () => {
+	it('colocan cada pieza en su sitio', () => {
+		expect(layoutOf('windows', 'bottom')).toEqual({ top: null, bottom: 'taskbar' });
+		expect(layoutOf('windows', 'top')).toEqual({ top: 'taskbar', bottom: null });
+		expect(layoutOf('mac', 'top')).toEqual({ top: 'menubar', bottom: 'dock' });
+		expect(layoutOf('linux', 'bottom')).toEqual({ top: 'topbar', bottom: null });
+		expect(layoutOf('dsm', 'bottom')).toEqual({ top: 'dsmbar', bottom: null });
+		expect(isSkin('mac')).toBe(true);
+		expect(isSkin('beos')).toBe(false);
+	});
+	it('la lupa del dock crece cerca y se queda en 1 lejos', () => {
+		expect(magnify(0)).toBeCloseTo(1.6);
+		expect(magnify(200)).toBe(1);
+		expect(magnify(60)).toBeGreaterThan(1);
+		expect(magnify(60)).toBeLessThan(1.6);
+	});
+	it('Ctrl+Espacio abre el buscador', () => {
+		expect(isSpotlightKey({ code: 'Space', ctrlKey: true, metaKey: false, altKey: false })).toBe(true);
+		expect(isSpotlightKey({ code: 'Space', ctrlKey: false, metaKey: false, altKey: false })).toBe(false);
 	});
 });

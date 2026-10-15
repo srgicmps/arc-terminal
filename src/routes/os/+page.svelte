@@ -5,13 +5,18 @@
 -->
 <script lang="ts">
 	import WindowLayer from '#lib/components/os/WindowLayer.svelte';
-	import { APPS, openApp, openPath } from '#lib/os/os.svelte.ts';
+	import { apps, navigate, open } from '#lib/os/shell/bridge.ts';
 	import Desktop from '#lib/os/shell/Desktop.svelte';
-	import Taskbar from '#lib/os/shell/OsTaskbar.svelte';
+	import OsChrome from '#lib/os/shell/OsChrome.svelte';
 	import { loadShell, shell } from '#lib/os/shell/shell.svelte.ts';
+	import SystemLayer from '#lib/os/system/SystemLayer.svelte';
+	import MobileHome from '#lib/os/mobile/MobileHome.svelte';
+	import { MediaQuery } from 'svelte/reactivity';
 
-	// Escritorio de «OS 2» (fondo, iconos y widgets): los iconos son las apps ancladas en la barra.
-	const icons = APPS.map((a) => ({ id: a.id, title: a.name, code: a.code, icon: a.icon, desc: a.desc }));
+	// En el móvil (≤ 900 px), pantalla de inicio de teléfono (OS 3); sin el escritorio, así no carga sus iframes.
+	const phone = new MediaQuery('max-width: 900px', false);
+
+	// La shell de «OS 2» (aspecto, barras, escritorio con iconos y widgets) alrededor de las ventanas del núcleo.
 	$effect(() => loadShell(['top', 'imp', 'eco', 'ws', 'geo']));
 </script>
 
@@ -19,14 +24,22 @@
 	<title>Arc OS</title>
 </svelte:head>
 
-<div class="os" class:top={shell.bar === 'top'} data-ui="os" data-os-bar={shell.bar}>
-	<div class="desk">
-		<Desktop apps={icons} onopen={(id) => openApp(id)} onnavigate={openPath}>
-			<WindowLayer />
-		</Desktop>
+{#if phone.current}
+	<MobileHome />
+{:else}
+	<div class="os" data-ui="os" data-os-skin={shell.skin} data-os-bar={shell.skin === 'windows' ? shell.bar : 'top'}>
+		<div class="top"><OsChrome where="top" /></div>
+		<div class="desk">
+			<Desktop {apps} onopen={open} onnavigate={navigate}>
+				<WindowLayer />
+			</Desktop>
+		</div>
+		<div class="bottom"><OsChrome where="bottom" /></div>
+		<OsChrome where="over" />
 	</div>
-	<Taskbar />
-</div>
+{/if}
+<!-- Arranque, bloqueo y Alt+Tab de «OS 5», por encima de todo (también en el móvil). -->
+<SystemLayer />
 
 <style>
 	.os {
@@ -34,16 +47,29 @@
 		inset: 0;
 		z-index: var(--z-modal);
 		display: grid;
-		grid-template-rows: 1fr auto;
+		/* Barra de arriba (si la hay), escritorio y barra o dock de abajo (si lo hay). */
+		grid-template-rows: auto 1fr auto;
 		background: var(--os-desk);
 		background-image: var(--bg-image);
-	}
-
-	.os.top {
-		grid-template-rows: auto 1fr;
+		font-family: var(--os-font);
 	}
 
 	.desk {
 		min-height: 0;
+	}
+
+	/* Si un aspecto no tiene barra arriba o abajo, su hueco mide 0. */
+	.top,
+	.bottom {
+		min-width: 0;
+	}
+
+	/* Mac: el dock flota sobre el fondo, sin franja propia. */
+	[data-os-skin='mac'] .bottom {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		pointer-events: none;
 	}
 </style>
