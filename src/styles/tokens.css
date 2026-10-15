@@ -525,6 +525,14 @@
 	--cmd-ev-bancos: color-mix(in srgb, var(--cmd-cold) 55%, #5fe0e0);
 }
 
+/* Centro de mando: mapa (herramienta «Mapa operacional», src/lib/os/apps/mapa-op/). Sobre la paleta fija de
+   «Mando» (--cmd-slate, --cmd-cold, --cmd-grid… arriba); aquí solo lo propio del mapa. */
+[data-os-skin] {
+	--cmd-land: color-mix(in srgb, var(--raise), var(--cmd-cold) 10%); /* tierra */
+	--cmd-coast: color-mix(in srgb, var(--line), var(--cmd-cold) 28%); /* costas y bordes de 1 px */
+	--cmd-grid-step: 32px; /* paso de la rejilla del fondo */
+}
+
 /* Centro de mando: vigilancia (app Vigilancia de Arc OS). Pizarra fría sobre el panel, nivel de cada objetivo
    de frío a cálido. Sobre la paleta fija de «Mando» (--cmd-slate y --cmd-cold, arriba). */
 [data-os-skin] {
