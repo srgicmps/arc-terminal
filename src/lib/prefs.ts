@@ -28,7 +28,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-countries', storage: 'local', what: 'Tus países favoritos (hasta 8)', where: 'PAIS, botón ☆ Seguir', kind: 'dato' },
 	{ key: 'arc-home', storage: 'local', what: 'Vista que se abre al entrar', where: 'HELP, «Vista de inicio»', kind: 'ajuste' },
 	{ key: 'arc-welcome', storage: 'local', what: 'Lo que elegiste en la bienvenida (intereses, perfil) y la propuesta de avisos', where: 'BIENVENIDA (también desde HELP)', kind: 'ajuste' },
-	{ key: 'arc-simple', storage: 'local', what: 'Modo Sencillo o Terminal', where: 'BIENVENIDA', kind: 'ajuste' },
+	{ key: 'arc-modo', storage: 'local', what: 'Modo sencillo o terminal', where: 'BIENVENIDA', kind: 'ajuste' },
 	{ key: 'arc-home-done', storage: 'session', what: 'Esta pestaña ya ha abierto la vista de inicio (luego TOP es la portada)', where: 'Al entrar', kind: 'dato' },
 	{ key: 'arc-chart-period', storage: 'local', what: 'Último periodo elegido en los gráficos de línea', where: 'Botones 1M · 6M · 1A · 5A · Máx', kind: 'ajuste' },
 	{ key: 'arc-thresholds', storage: 'local', what: 'Umbrales «resáltame si pasa de X» de las tablas de series', where: 'Tocar la cifra «Último» de una serie', kind: 'ajuste' },

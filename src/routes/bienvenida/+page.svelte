@@ -49,7 +49,7 @@
 				profile = w.profile;
 				interests = [...w.interests];
 			}
-			if (localStorage.getItem(SIMPLE_KEY) === '0') simple = '0';
+			if (localStorage.getItem(SIMPLE_KEY) === 'terminal') simple = '0';
 		} catch {}
 	});
 

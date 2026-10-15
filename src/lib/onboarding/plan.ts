@@ -6,8 +6,8 @@ import { collect } from '../transfer.ts';
 import { readLists } from '../watchlists.ts';
 
 export const WELCOME_KEY = 'arc-welcome';
-/** Modo Sencillo ('1') o Terminal ('0'). Lo guarda la bienvenida; lo aplica el modo sencillo. */
-export const SIMPLE_KEY = 'arc-simple';
+/** Modo «sencillo» o «terminal». Lo guarda la bienvenida; lo aplica el modo sencillo (modo.svelte.ts). */
+export const SIMPLE_KEY = 'arc-modo';
 
 export type InterestId = 'bolsa' | 'eco' | 'mundo' | 'es' | 'tech' | 'hogar';
 
@@ -202,7 +202,7 @@ export function applyPlan(store: Store, plan: Plan, now = new Date()) {
 		store.setItem('arc-mode', 'modular');
 		store.setItem('arc-layout-top', JSON.stringify(plan.layout));
 	}
-	store.setItem(SIMPLE_KEY, plan.simple ? '1' : '0');
+	store.setItem(SIMPLE_KEY, plan.simple ? 'sencillo' : 'terminal');
 
 	let pins: { id: string; span: number }[] = [];
 	try {

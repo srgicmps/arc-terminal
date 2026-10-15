@@ -61,7 +61,7 @@ describe('bienvenida', () => {
 			{ id: 'pin:eco:bancos', span: 1 }
 		]);
 		expect(store.getItem('arc-mode')).toBe('modular');
-		expect(store.getItem('arc-simple')).toBe('0');
+		expect(store.getItem('arc-modo')).toBe('terminal');
 		expect(readWelcome(store.getItem(WELCOME_KEY))?.profile).toBe('inversor');
 	});
 
