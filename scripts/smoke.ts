@@ -20,7 +20,7 @@ const WIDTHS = [390, 1280];
 /** Los dos modos (src/lib/modo.ts): Sencillo enseña menos paneles y letra mayor; Terminal, todo. */
 const MODES = ['sencillo', 'terminal'] as const;
 /** Vistas de texto, sin paneles. */
-const NO_PANELS = new Set(['/help', '/doc']);
+const NO_PANELS = new Set(['/help', '/doc', '/bienvenida']);
 /** Peso máximo razonable de una vista en el móvil (4G), en bytes gzip. */
 const WEIGHT_LIMIT = 300 * 1024;
 /** Reglas de axe-core que se miran: contraste y que todo control, enlace e imagen tenga nombre o etiqueta. */
@@ -46,6 +46,14 @@ try {
 			// /api/* son Pages Functions: en vite preview no existen. Una respuesta vacía (sin JSON) es «sin cuenta».
 			const local = url.hostname === 'localhost' && !url.pathname.startsWith('/api/');
 			return local ? route.continue() : route.fulfill({ status: 200, body: '' });
+		});
+		// La primera vez, la portada lleva a la bienvenida: se comprueba aquí y luego se da por vista.
+		const fresh = await context.newPage();
+		await fresh.goto(ROOT + '/', { waitUntil: 'networkidle' });
+		await fresh.waitForURL(/\/bienvenida\?primera=1$/, { timeout: 5000 }).catch(() => failures.push(`/ a ${width} px: la primera vez no lleva a la bienvenida`));
+		await fresh.close();
+		await context.addInitScript(() => {
+			if (!localStorage.getItem('arc-welcome')) localStorage.setItem('arc-welcome', JSON.stringify({ v: 1, profile: null, interests: [], alerts: { groups: [], level: 2, daily: 10, mis: [] }, at: '' }));
 		});
 		for (const path of PATHS) {
 			const where = `${path} a ${width} px (${mode})`;

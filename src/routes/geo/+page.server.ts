@@ -1,5 +1,6 @@
 import { dataset } from '#lib/data.ts';
 import { mapLayers } from '#lib/geo/layers.ts';
+import type { CzibData } from '#lib/czib.ts';
 import type { ClimateData } from '#lib/climate.ts';
 import { advisoryCountry, levelCounts, recentChanges } from '#lib/advisories.ts';
 import type { MilexData } from '#lib/milex.ts';
@@ -28,7 +29,7 @@ import type {
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, intl, analysis, world, quakes, hazards, predictions, portwatch, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex, unhcr, food, radar] = await Promise.all([
+	const [news, intl, analysis, world, quakes, hazards, predictions, portwatch, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex, unhcr, food, radar, czib] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-intl'),
 		dataset<NewsData>('news-analysis'),
@@ -50,7 +51,9 @@ export const load: PageServerLoad = async () => {
 		dataset<EuLexDoc[]>('eurlex'),
 		dataset<UnhcrData>('unhcr'),
 		dataset<FoodInsecurity[]>('fewsnet'),
-		dataset<RadarData>('radar')
+		dataset<RadarData>('radar'),
+		// Espacio aéreo en conflicto (F22): una docena de boletines activos de la EASA.
+		dataset<CzibData>('czib')
 	]);
 	// Sanciones y aranceles: EE. UU. (Federal Register), Reino Unido (OFSI) y UE (actos de la serie L con el tema
 	// «Sanciones»), juntos y de lo más reciente a lo más antiguo (M41).
@@ -65,10 +68,12 @@ export const load: PageServerLoad = async () => {
 		storms: hazards?.data.storms,
 		events: hazards?.data.events,
 		straits: portwatch?.data,
-		sanctions: trade
+		sanctions: trade,
+		airspace: czib?.data.items
 	});
 	return {
 		layers,
+		czib,
 		news,
 		// Organismos y diplomacia salen del mismo canal: 40 titulares para que haya de los dos paneles.
 		intl: headlines(intl, 40),
