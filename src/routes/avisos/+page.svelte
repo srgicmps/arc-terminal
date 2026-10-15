@@ -6,6 +6,7 @@
 <script lang="ts">
 	import { asset } from '$app/paths';
 	import FamilyPanel from '#lib/components/FamilyPanel.svelte';
+	import HomeAlertsPanel from '#lib/components/HomeAlertsPanel.svelte';
 	import MyAlertsPanel from '#lib/components/MyAlertsPanel.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -221,6 +222,7 @@
 				{#snippet note()}Valores de EE. UU. (NVDA, AAPL…): aviso cuando se mueven fuerte en el día.{/snippet}
 			</Panel>
 			<MyAlertsPanel {config} {set} />
+			<HomeAlertsPanel {config} {set} />
 		</div>
 		<div class="col">
 			<Panel title="Tu mañana" meta={config.brief.on ? `A las ${config.brief.at}` : 'Apagado'} accent={config.brief.on}>
