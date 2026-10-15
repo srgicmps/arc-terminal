@@ -51,13 +51,13 @@ const topic = (k: string, title: string, media: number, sections: string[] = ['g
 });
 
 describe('Conflictos', () => {
-	it('P1 si cumple IMP_BIG, P2 con 5 medios o más; texto con medios, secciones y enlace', () => {
+	it('P1 si cumple IMP_BIG, P2 con 4 medios o más; texto con medios, secciones y enlace', () => {
 		const d: Inputs = {
 			imp: {
 				current: [
 					topic('a', 'Rusia lanza una ofensiva con misiles sobre Kiev', 11, ['geo', 'eco', 'ws']),
 					topic('b', 'Israel y Hamás acuerdan un alto el fuego', 5),
-					topic('c', 'Ceasefire talks stall', 4),
+					topic('c', 'Ceasefire talks stall', 3),
 					topic('d', 'El BCE baja los tipos', 12, ['eco', 'ws', 'es'])
 				]
 			}
@@ -76,13 +76,13 @@ describe('Conflictos', () => {
 		expect(run(impRule, d).ids).toEqual(['imp:d']);
 	});
 
-	it('12 h de espera por tema, salvo que pase de P2 a P1', () => {
+	it('6 h de espera por tema, salvo que pase de P2 a P1', () => {
 		const p2 = { imp: { current: [topic('b', 'Tregua en Gaza', 6)] } };
 		const first = run(conflictRule, p2);
 		const log = emptyLog();
 		first.alerts[0].commit!(log);
-		expect(run(conflictRule, p2, log, NOW + 11 * HOUR).ids).toEqual([]);
-		expect(run(conflictRule, p2, log, NOW + 12 * HOUR).ids).toHaveLength(1);
+		expect(run(conflictRule, p2, log, NOW + 5 * HOUR).ids).toEqual([]);
+		expect(run(conflictRule, p2, log, NOW + 6 * HOUR).ids).toHaveLength(1);
 		const p1 = { imp: { current: [topic('b', 'Tregua en Gaza', 9, ['geo', 'es', 'eco'])] } };
 		const up = run(conflictRule, p1, log, NOW + HOUR);
 		expect(up.alerts.map((a) => a.level)).toEqual([1]);
@@ -155,13 +155,13 @@ describe('IA', () => {
 	});
 	const news = (...items: ReturnType<typeof item>[]) => ({ items, feeds: [] });
 
-	it('grupo de 3 medios o más con un laboratorio y un lanzamiento; sin repetir entre IA y Tecnología', () => {
+	it('grupo de 2 medios o más con un laboratorio y un lanzamiento; sin repetir entre IA y Tecnología', () => {
 		const tech = item('OpenAI unveils GPT-6', 'https://b.com/x', ['Wired', 'Ars']);
 		tech.also[0].url = 'https://a.com/gpt6-1';
 		const d: Inputs = {
 			newsAi: news(
 				item('OpenAI launches GPT-6', 'https://a.com/gpt6', ['TechCrunch', 'Wired']),
-				item('Anthropic presenta Claude 6', 'https://a.com/claude', ['Xataka']),
+				item('Anthropic presenta Claude 6', 'https://a.com/claude', []),
 				item('Google Gemini, explicado', 'https://a.com/gemini', ['Wired', 'Xataka'])
 			),
 			newsTech: news(tech)
@@ -177,17 +177,17 @@ describe('IA', () => {
 		expect(run(aiRule, again, log).ids).toEqual([]);
 	});
 
-	it('como mucho 3 al día (cuenta lo intentado hoy en Madrid)', () => {
+	it('como mucho 6 al día (cuenta lo intentado hoy en Madrid)', () => {
 		const many = (n: number) =>
 			news(...Array.from({ length: n }, (_, i) => item(`Meta releases Llama ${i}`, `https://m.com/${i}`, ['A', 'B'])));
-		expect(run(aiRule, { newsAi: many(5) }).ids).toHaveLength(3);
+		expect(run(aiRule, { newsAi: many(8) }).ids).toHaveLength(6);
 		const log = emptyLog();
 		log.entries.push(
 			{ k: 'ai:x', t: '2026-10-14T07:00Z', s: 'sent', p: 2 },
 			{ k: 'ai:y', t: '2026-10-14T08:00Z', s: 'failed', p: 2 },
 			{ k: 'ai:z', t: '2026-10-13T08:00Z', s: 'sent', p: 2 }
 		);
-		expect(run(aiRule, { newsAi: many(5) }, log).ids).toHaveLength(1);
+		expect(run(aiRule, { newsAi: many(8) }, log).ids).toHaveLength(4);
 	});
 });
 
@@ -215,22 +215,22 @@ describe('Valores seguidos', () => {
 		time
 	});
 
-	it('±3 % el primero del día; después, otro cada 3 % desde el último aviso, suba o baje', () => {
+	it('±2 % el primero del día; después, otro cada 2 % desde el último aviso, suba o baje', () => {
 		const first = run(stockRule, { alertQuotes: [quote('LMT', -4.2), quote('RTX', 1), quote('NVDA', null)] });
 		expect(first.ids).toEqual(['stock:LMT:2026-10-14T10:00Z']);
 		expect(first.alerts[0].title).toBe('Lockheed Martin −4,2 %');
-		expect(first.alerts[0].body).toBe('Variación del día (escalón ±3 %). Cotiza a 100,00; cierre anterior, 101,00.');
+		expect(first.alerts[0].body).toBe('Variación del día (escalón ±2 %). Cotiza a 100,00; cierre anterior, 101,00.');
 		expect(first.alerts[0].click).toBe('https://srgicmps.github.io/arc-terminal/s?sym=LMT');
 		const log = emptyLog();
 		first.alerts[0].commit!(log);
 		expect(log.last['stock:LMT']).toBe('2026-10-14|101|100');
-		// 98 es un −2 % desde el último aviso (100): todavía no. 96,9, un −3,1 %: sí, sin esperar.
+		// 98,5 es un −1,5 % desde el último aviso (100): todavía no. 96,9, un −3,1 %: sí, sin esperar.
 		const later = NOW + 15 * 60_000;
-		expect(run(stockRule, { alertQuotes: [quote('LMT', -3, undefined, 98)] }, log, later).ids).toEqual([]);
+		expect(run(stockRule, { alertQuotes: [quote('LMT', -2.5, undefined, 98.5)] }, log, later).ids).toEqual([]);
 		const down = run(stockRule, { alertQuotes: [quote('LMT', -4.1, undefined, 96.9)] }, log, later);
 		expect(down.ids).toEqual(['stock:LMT:2026-10-14T10:15Z']);
 		expect(down.alerts[0].body).toBe(
-			'Variación del día; −3,1 % desde el último aviso (escalón ±3 %). Cotiza a 96,90; cierre anterior, 101,00.'
+			'Variación del día; −3,1 % desde el último aviso (escalón ±2 %). Cotiza a 96,90; cierre anterior, 101,00.'
 		);
 		down.alerts[0].commit!(log);
 		// Rebote de 96,9 a 100: +3,2 %, también avisa.
