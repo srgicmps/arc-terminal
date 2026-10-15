@@ -1,7 +1,7 @@
 import type { Command } from '../commands.ts';
 
 export default {
-	order: 220, code: 'CAL', route: '/cal', key: 'Agenda', desc: 'Agenda económica de la semana', sources: 'TradingView',
+	order: 220, code: 'CAL', route: '/cal', key: 'Agenda', desc: 'Agenda económica de la semana', sources: 'TradingView', aliases: ['puentes', 'puente', 'festivos'],
 	date: 'param',
 	bloomberg: [{ code: 'ECOW' }, { code: 'EVTS' }],
 	manual: {
@@ -13,6 +13,7 @@ export default {
 			{ name: 'Bancos centrales', what: 'Próximas reuniones del BCE y la Fed.' },
 			{ name: 'Próximos datos', what: 'De los calendarios oficiales, en hora de Madrid.' },
 			{ name: 'Festivos', what: 'España, Baleares y días sin bolsa de los próximos 12 meses.' },
+			{ name: 'Puentes', what: 'Próximos festivos entre semana de España (con tu comunidad) o de tu país, y qué días pedir para hacer puente.' },
 			{ name: 'Resultados', what: 'Grandes empresas de EE. UU., próximas 2 semanas.' }
 		]
 	}
