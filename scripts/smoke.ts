@@ -24,6 +24,8 @@ const MODES = ['sencillo', 'terminal'] as const;
 const NO_PANELS = new Set(['/help', '/doc', '/bienvenida', '/os']);
 /** Peso máximo razonable de una vista en el móvil (4G), en bytes gzip. */
 const WEIGHT_LIMIT = 300 * 1024;
+/** Sin aviso de peso: Arc OS no tiene tope (scripts/weight.ts → EXEMPT). */
+const NO_WEIGHT_LIMIT = new Set(['/os']);
 /** Reglas de axe-core que se miran: contraste y que todo control, enlace e imagen tenga nombre o etiqueta. */
 const AXE_RULES = ['color-contrast', 'label', 'select-name', 'button-name', 'link-name', 'image-alt', 'input-button-name', 'aria-input-field-name'];
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
@@ -107,7 +109,7 @@ try {
 				if (found.length) a11y.push(`${path}: ${found.join(', ')}`);
 			}
 			const weight = (await Promise.all(sizes)).reduce((a, b) => a + b, 0);
-			if (width < 600 && first && weight > WEIGHT_LIMIT) {
+			if (width < 600 && first && weight > WEIGHT_LIMIT && !NO_WEIGHT_LIMIT.has(path)) {
 				warnings.push(`${path} pesa ${Math.round(weight / 1024)} KB (gzip, sin terceros); el límite es ${WEIGHT_LIMIT / 1024} KB`);
 			}
 			await page.close();
