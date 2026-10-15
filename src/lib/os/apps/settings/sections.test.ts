@@ -27,4 +27,9 @@ describe('secciones de Ajustes', () => {
 		expect(tema.some((h) => h.section.id === 'apariencia' && h.item)).toBe(true);
 		expect(searchSettings('region')[0].section.id).toBe('region');
 	});
+
+	it('no ofrece elegir el aspecto del escritorio (Arc OS va siempre con «Mando»)', () => {
+		expect(SECTION_IDS).not.toContain('barra');
+		for (const q of ['aspecto', 'barra de tareas', 'skin']) expect(searchSettings(q), q).toEqual([]);
+	});
 });

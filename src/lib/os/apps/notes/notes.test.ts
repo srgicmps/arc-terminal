@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byRecent, isNote, plainText, snippetOf, titleOf, whenText, type Note } from './notes.ts';
+import { byRecent, isBlank, isNote, makeRoom, plainText, snippetOf, titleOf, whenText, type Note } from './notes.ts';
 
 const n = (html: string, updated = 0, pinned = false): Note => ({ id: 'a', html, updated, pinned });
 
@@ -29,5 +29,20 @@ describe('Notas', () => {
 		const now = new Date(2026, 9, 15, 12).getTime();
 		expect(whenText(new Date(2026, 9, 14, 9).getTime(), now)).toBe('ayer');
 		expect(whenText(new Date(2026, 9, 15, 9, 5).getTime(), now)).toBe('09:05');
+	});
+
+	it('sabe si una nota está vacía', () => {
+		expect(isBlank('')).toBe(true);
+		expect(isBlank('<p><br></p>')).toBe(true);
+		expect(isBlank('<p>&nbsp;</p>')).toBe(true);
+		expect(isBlank('<p>a</p>')).toBe(false);
+	});
+
+	it('hace sitio con la papelera cuando no caben más', () => {
+		const live = (id: string): Note => ({ id, html: 'x', updated: 0 });
+		const gone = (id: string, trashed: number): Note => ({ ...live(id), trashed });
+		expect(makeRoom([live('a')], 2)).toEqual({ ok: true });
+		expect(makeRoom([live('a'), live('b')], 2)).toEqual({ ok: false });
+		expect(makeRoom([live('a'), gone('b', 5), gone('c', 2)], 3)).toEqual({ ok: true, purge: 'c' });
 	});
 });

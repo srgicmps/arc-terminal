@@ -19,6 +19,7 @@
 		WIDGET_LABEL,
 		type WidgetKind
 	} from '../../shell/widgets.ts';
+	import OsIcon from '../../icons/OsIcon.svelte';
 	import Tool from '../kit/Tool.svelte';
 
 	let { win }: AppProps = $props();
@@ -29,6 +30,7 @@
 		id: string;
 		kind: Kind;
 		name: string;
+		/** id de OsIcon. */
 		icon: string;
 		desc: string;
 		code?: string;
@@ -41,16 +43,17 @@
 		widget: 'Widget'
 	};
 
+	/** Icono (OsIcon) de cada widget: el de la app que hace lo mismo. */
 	const WIDGET_ICON: Record<WidgetKind, string> = {
-		reloj: '◷',
-		cotizaciones: '＄',
-		tiempo: '☁',
-		titulares: '≡',
-		luz: 'ϟ',
-		manana: '☀',
-		sistema: '▥',
-		registro: '☰',
-		datos: '●'
+		reloj: 'reloj',
+		cotizaciones: 'mis',
+		tiempo: 'wx',
+		titulares: 'imp',
+		luz: 'luz',
+		manana: 'avisos',
+		sistema: 'monitor',
+		registro: 'registros',
+		datos: 'status'
 	};
 	const WIDGET_DESC: Record<WidgetKind, string> = {
 		reloj: 'La hora en varias ciudades del mundo',
@@ -70,7 +73,7 @@
 			id: a.id,
 			kind: a.kind,
 			name: a.name,
-			icon: a.icon,
+			icon: a.id,
 			desc: a.desc,
 			code: a.code
 		})),
@@ -167,7 +170,7 @@
 						>‹ {CATS.find((c) => c.id === cat)?.label}</button
 					>
 					<div class="detail">
-						<span class="icon big" aria-hidden="true">{detail.icon}</span>
+						<OsIcon id={detail.icon} size={64} />
 						<div class="info">
 							<h2>{detail.name}</h2>
 							<p class="mut">
@@ -202,7 +205,7 @@
 										onclick={() => (selected = it.key)}
 										aria-label="Ficha de {it.name}"
 									>
-										<span class="icon" aria-hidden="true">{it.icon}</span>
+										<OsIcon id={it.icon} size={40} />
 										<span class="txt">
 											<span class="name">{it.name}</span>
 											<span class="kind mut">{KIND_LABEL[it.kind]}</span>
@@ -260,9 +263,11 @@
 		cursor: pointer;
 	}
 
-	.side button:hover {
-		color: var(--fg);
-		background: var(--raise);
+	@media (hover: hover) {
+		.side button:hover {
+			color: var(--fg);
+			background: var(--raise);
+		}
 	}
 
 	.side button.on {
@@ -303,8 +308,10 @@
 		background: var(--bg);
 	}
 
-	.card:hover {
-		border-color: var(--amber-edge);
+	@media (hover: hover) {
+		.card:hover {
+			border-color: var(--amber-edge);
+		}
 	}
 
 	.open {
@@ -320,24 +327,6 @@
 		cursor: pointer;
 	}
 
-	.icon {
-		display: grid;
-		place-items: center;
-		flex: none;
-		width: var(--touch);
-		height: var(--touch);
-		font-size: var(--fs-xl);
-		color: var(--os-icon-fg);
-		background: var(--os-icon-bg);
-		border: var(--border);
-		border-radius: var(--os-icon-radius);
-	}
-
-	.icon.big {
-		width: calc(var(--touch) * 1.6);
-		height: calc(var(--touch) * 1.6);
-		font-size: var(--fs-xxl);
-	}
 
 	.txt {
 		display: flex;
@@ -394,9 +383,11 @@
 		border-color: var(--amber-edge);
 	}
 
-	.row button:hover,
-	.back:hover {
-		background: var(--amber-soft);
+	@media (hover: hover) {
+		.row button:hover,
+		.back:hover {
+			background: var(--amber-soft);
+		}
 	}
 
 	.tag {

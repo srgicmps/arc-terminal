@@ -25,7 +25,9 @@
 		...TICKERS.map((t) => ({ code: t.code, desc: t.name, kind: 'Valor' }))
 	];
 
-	let lines = $state<Line[]>([{ kind: 'dim', text: 'Arc Terminal · escribe «ayuda» o un comando (ECO, NVDA, =2*21…)' }]);
+	/** `tag`: las líneas de una respuesta que aún se está cargando (se cambian cuando llega el dato). */
+	type Shown = Line & { tag?: number };
+	let lines = $state<Shown[]>([{ kind: 'dim', text: 'Arc Terminal · escribe «ayuda» o un comando (ECO, NVDA, =2*21…)' }]);
 	let value = $state('');
 	let history = $state<string[]>([]);
 	let histIdx = $state(-1);
@@ -50,10 +52,34 @@
 		queueMicrotask(() => screen?.scrollTo({ top: screen.scrollHeight }));
 	}
 
+	const run = (raw: string) => execLine(raw, { answers: { get: (n) => barData[n], now: Date.now(), fuelZone }, all: ALL, fx: fxLive, history });
+
+	// «euribor», «100 usd eur»: si el dato aún no ha llegado, la respuesta se vuelve a pedir hasta que llegue (unos
+	// 15 s como mucho) y sus líneas se cambian en su sitio.
+	let seq = 0;
+	function retry(raw: string, tag: number, tries = 0) {
+		setTimeout(() => {
+			if (!lines.some((l) => l.tag === tag)) return;
+			const r = run(raw);
+			const i = lines.findIndex((l) => l.tag === tag);
+			const n = lines.filter((l) => l.tag === tag).length;
+			const fresh = r.lines.map((l) => ({ ...l, tag: r.pending ? tag : undefined }));
+			lines = [...lines.slice(0, i), ...fresh, ...lines.slice(i + n)];
+			if (r.pending && tries < 30) retry(raw, tag, tries + 1);
+		}, 500);
+	}
+
 	function submit(e: SubmitEvent) {
 		e.preventDefault();
-		const r = execLine(value, { answers: { get: (n) => barData[n], now: Date.now(), fuelZone }, all: ALL, fx: fxLive, history });
-		lines = r.clear ? [] : [...lines, ...r.lines].slice(-400);
+		const raw = value;
+		const r = run(raw);
+		const tag = r.pending ? ++seq : undefined;
+		if (tag) {
+			loadBarData(answerNeeds(raw, fuelZone));
+			if (parseConversion(raw)) loadFxRates();
+			retry(raw, tag);
+		}
+		lines = r.clear ? [] : [...lines, ...r.lines.map((l) => ({ ...l, tag }))].slice(-400);
 		const typed = value.trim();
 		if (typed && !r.clear) {
 			history = pushHistory(history, r.history ?? typed);
@@ -69,20 +95,37 @@
 		scrollDown();
 	}
 
+	function tab() {
+		const c = complete(value, ALL);
+		value = c.value;
+		if (c.list.length) {
+			lines = [...lines, { kind: 'in', text: `${PROMPT} ${value}` }, { kind: 'dim', text: c.list.map((o) => o.run ?? o.code).join('   ') }];
+			scrollDown();
+		}
+	}
+	function walk(dir: 1 | -1) {
+		const step = historyStep(history, histIdx, dir);
+		histIdx = step.idx;
+		value = step.value;
+	}
+	// Teclas para el dedo (en pantallas táctiles no hay Tab ni flechas): no quitan el foco, así el teclado sigue.
+	function softKey(e: PointerEvent, fn: () => void) {
+		e.preventDefault();
+		fn();
+		input.focus();
+	}
+	// Con el teclado del móvil abierto, que la línea de entrada quede a la vista.
+	function onfocus() {
+		setTimeout(() => input?.scrollIntoView({ block: 'nearest' }), 300);
+	}
+
 	function onkeydown(e: KeyboardEvent) {
 		if (e.key === 'Tab' && !e.shiftKey && value.trim()) {
 			e.preventDefault();
-			const c = complete(value, ALL);
-			value = c.value;
-			if (c.list.length) {
-				lines = [...lines, { kind: 'in', text: `${PROMPT} ${value}` }, { kind: 'dim', text: c.list.map((o) => o.run ?? o.code).join('   ') }];
-				scrollDown();
-			}
+			tab();
 		} else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
 			e.preventDefault();
-			const step = historyStep(history, histIdx, e.key === 'ArrowUp' ? 1 : -1);
-			histIdx = step.idx;
-			value = step.value;
+			walk(e.key === 'ArrowUp' ? 1 : -1);
 		} else if (e.key === 'l' && e.ctrlKey) {
 			e.preventDefault();
 			lines = [];
@@ -108,12 +151,18 @@
 			bind:this={input}
 			bind:value
 			{onkeydown}
+			{onfocus}
 			autocomplete="off"
 			autocapitalize="off"
 			spellcheck="false"
 			enterkeyhint="go"
 			aria-describedby="{uid}-help"
 		/>
+		<span class="keys" aria-hidden="true">
+			<button type="button" tabindex="-1" onpointerdown={(e) => softKey(e, () => value.trim() && tab())}>Tab</button>
+			<button type="button" tabindex="-1" onpointerdown={(e) => softKey(e, () => walk(1))}>↑</button>
+			<button type="button" tabindex="-1" onpointerdown={(e) => softKey(e, () => walk(-1))}>↓</button>
+		</span>
 		<span id="{uid}-help" class="sr">{helpLines().at(-1)?.text}</span>
 	</form>
 </div>
@@ -137,6 +186,11 @@
 		padding: var(--sp-8) var(--pad-x);
 		white-space: pre-wrap;
 		word-break: break-word;
+	}
+	/* Las líneas largas siguen con sangría, como en una consola (la ayuda se lee bien en el móvil). */
+	.line {
+		padding-left: 2ch;
+		text-indent: -2ch;
 	}
 	.line.in {
 		color: var(--amber);
@@ -168,6 +222,27 @@
 		font-size: var(--fs-field);
 		caret-color: var(--amber);
 		outline: none;
+	}
+	.keys {
+		display: none;
+		gap: var(--sp-4);
+	}
+	.keys button {
+		min-width: var(--touch);
+		height: var(--control-h);
+		padding: 0 var(--sp-6);
+		font: inherit;
+		font-size: var(--fs-s);
+		color: var(--muted);
+		background: var(--raise);
+		border: var(--border);
+		border-radius: var(--radius-s);
+		touch-action: manipulation;
+	}
+	@media (pointer: coarse) {
+		.keys {
+			display: inline-flex;
+		}
 	}
 	.sr {
 		position: absolute;

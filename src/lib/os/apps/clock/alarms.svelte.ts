@@ -1,14 +1,15 @@
-// Las alarmas en el navegador: la lista (un $state, como un ref() de Vue) y un reloj que mira cada 15 s si toca
-// alguna. Al sonar: un pitido (Web Audio, sin archivos), una notificación del sistema si se ha dado permiso y el
+// Las alarmas en el navegador: la lista (un $state, como un ref() de Vue) y un reloj que mira cada 5 s (y al volver
+// a la pestaña) si tocaba alguna desde la última vez (dueBetween: no se pierden si el navegador frena el reloj).
+// Arranca con Arc OS (reloj.ts), no solo al abrir el Reloj. Al sonar: un pitido (Web Audio, sin archivos), una notificación del sistema si se ha dado permiso y el
 // aviso de Arc OS (os.notice). Solo suenan con Arc OS abierto, como en cualquier web.
 import { os } from '../../os.svelte.ts';
 import { readJson, writeJson } from '../kit/store.ts';
-import { ALARMS_KEY, due, isAlarms, MAX_ALARMS, type Alarm } from './alarms.ts';
+import { ALARMS_KEY, dueBetween, isAlarms, MAX_ALARMS, type Alarm } from './alarms.ts';
 
 export const alarms = $state({ list: [] as Alarm[], ringing: null as Alarm | null });
 
 let started = false;
-let lastMinute = -1;
+let last = new Date();
 
 export function startAlarms() {
 	if (started || typeof window === 'undefined') return;
@@ -18,15 +19,17 @@ export function startAlarms() {
 	addEventListener('storage', (e) => {
 		if (e.key === ALARMS_KEY) alarms.list = readJson(ALARMS_KEY, [], isAlarms);
 	});
-	setInterval(tick, 15_000);
+	last = new Date();
+	setInterval(tick, 5_000);
+	document.addEventListener('visibilitychange', tick);
 }
 
 function tick() {
 	const now = new Date();
-	const m = now.getHours() * 60 + now.getMinutes();
-	if (m === lastMinute) return;
-	lastMinute = m;
-	for (const a of due(alarms.list, now)) ring(a);
+	// Si el reloj del sistema va hacia atrás (cambio de hora a mano), se empieza a contar desde ahora.
+	const from = now < last ? now : last;
+	last = now;
+	for (const a of dueBetween(alarms.list, from, now)) ring(a);
 }
 
 function save() {
@@ -35,7 +38,7 @@ function save() {
 
 export function addAlarm(time: string, label: string, days: number[]) {
 	if (alarms.list.length >= MAX_ALARMS) return;
-	alarms.list.push({ id: Math.random().toString(36).slice(2, 10), time, label: label.slice(0, 60), on: true, days });
+	alarms.list.push({ id: Math.random().toString(36).slice(2, 10), time, label: label.slice(0, 60), on: true, days: [...days] });
 	alarms.list.sort((x, y) => x.time.localeCompare(y.time));
 	save();
 }
