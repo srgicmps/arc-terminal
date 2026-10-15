@@ -117,7 +117,7 @@ export function recent(
 		(sections[n.section] ?? []).filter((item) => item.source === n.source && (!n.match || n.match.test(`${item.title} ${item.summary}`)))
 	);
 	const docs: NewsItem[] = leader.fedreg
-		? fedreg.map((d) => ({ title: d.title, url: d.url, source: 'Federal Register', time: `${d.date}T12:00:00Z`, summary: '' }))
+		? fedreg.map((d) => ({ title: d.title, url: d.url, source: 'Federal Register', time: d.date, summary: '' }))
 		: [];
 	return [...news, ...docs].sort((a, b) => (b.time ?? '').localeCompare(a.time ?? '')).slice(0, max);
 }

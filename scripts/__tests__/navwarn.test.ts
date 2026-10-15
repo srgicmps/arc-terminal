@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { pickWarnings } from '../sources/navwarn.ts';
-import { firstPoint, navDate, navSentence, toWarning } from '../../src/lib/navwarn.ts';
+import { firstPoint, navDate, navSentence, placeName, toWarning } from '../../src/lib/navwarn.ts';
 
 // Avisos reales del sondeo del PR #415 (recortados) y uno inventado de maniobras.
 const survey = { msgYear: 2024, msgNumber: 1540, navArea: 'P', issueDate: '081538Z MAY 2024', text: 'PERSIAN GULF.\nQATAR.\nDNC 10.\nSURVEY OPERATIONS 08 MAY UNTIL FURTHER\nNOTICE BY M/V HORIZON GEOBAY\nIN AREA BOUND BY\n26-09.23N 051-48.00E.\nWIDE BERTH REQUESTED.\n' };
@@ -18,10 +18,12 @@ describe('navwarn', () => {
 	it('se queda con los de seguridad en zonas calientes', () => {
 		expect(toWarning(survey)).toBeNull();
 		expect(toWarning(elsewhere)).toBeNull();
-		expect(toWarning(mines)).toMatchObject({ id: 'HYDROLANT 2452/23', region: 'Mar Negro', place: 'UKRAINE', kind: 'Minas', at: [46.38, 30.75] });
+		expect(toWarning(mines)).toMatchObject({ id: 'HYDROLANT 2452/23', region: 'Mar Negro', place: 'Ucrania', kind: 'Minas', at: [46.38, 30.75] });
 		expect(toWarning(drill)).toMatchObject({ region: 'Mar Rojo', place: '', kind: 'Maniobras militares' });
 		expect(pickWarnings([survey, mines, drill]).map((w) => w.id)).toEqual(['HYDROPAC 3001/26', 'HYDROLANT 2452/23']);
 		expect(navSentence(pickWarnings([mines, drill]))).toBe('Hay 2 avisos de seguridad a los barcos en Mar Rojo, Mar Negro.');
+		expect(placeName('QATAR')).toBe('Qatar');
+		expect(placeName('SAUDI ARABIA')).toBe('Arabia Saudí');
 		expect(navSentence(pickWarnings([drill]))).toBe('Hay un aviso de seguridad a los barcos en Mar Rojo.');
 	});
 });
