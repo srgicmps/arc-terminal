@@ -216,6 +216,33 @@
 	--fit-panel-min: 340px;
 }
 
+/* ── App Sencilla (src/routes/app, componentes de src/lib/components/sencillo) ───────────────
+ * Otra app, de consumo: letra del sistema, tarjetas redondeadas y cifras grandes. Solo geometría y letra: los
+ * colores son los de siempre (--bg, --panel, --amber…), así que el tema, el acento y las estéticas la colorean. */
+:root {
+	--app-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', var(--sans), sans-serif;
+	--app-fs-hero: 40px; /* cifra de una tarjeta abierta */
+	--app-fs-num: 30px; /* cifra de una tarjeta */
+	--app-fs-h1: 30px; /* título de pestaña */
+	--app-fs-h2: 20px; /* título de sección */
+	--app-fs-body: 17px; /* texto normal */
+	--app-fs-small: 14.5px;
+	--app-fs-tab: 11.5px; /* nombre bajo el icono de la barra de pestañas */
+	--app-radius: 18px; /* tarjetas */
+	--app-radius-s: 12px; /* botones y elementos dentro de una tarjeta */
+	--app-radius-pill: 999px;
+	--app-tab-h: 58px; /* barra de pestañas (sin la zona segura del iPhone) */
+	--app-icon: 24px;
+	--app-icon-l: 40px; /* icono de una historia */
+	--app-max: 680px; /* ancho de lectura de la columna principal */
+	--app-wide: 1120px; /* ancho máximo en pantallas grandes (rejilla de 2 columnas) */
+	--app-spark-h: 36px;
+	--app-chart-h: 120px;
+	--app-sheet-max: 86vh;
+	--app-shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 8px 24px rgba(0, 0, 0, 0.16);
+	--app-dur: 220ms;
+}
+
 /* ── Acento elegido («A tu gusto», src/lib/taste.svelte.ts) ─────────────────────────────────
  * Sin data-accent, el ámbar de arriba. Mismo contraste que el ámbar o más (WCAG AA sobre --panel). Cian y no verde: el verde es solo para las subidas. Los
  * nombres siguen siendo --amber*: son «el acento», sea del color que sea. Con el azul, la segunda serie de

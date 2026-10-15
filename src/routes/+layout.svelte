@@ -32,9 +32,18 @@
 	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
 	import { crossedNow, initThresholds } from '#lib/thresholds.svelte.ts';
 	import { parseTv, routeOf } from '#lib/tv.ts';
+	import { isAppRoute, sendToApp } from '#lib/sencillo/nav.ts';
+	import { modo } from '#lib/modo.svelte.ts';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
+
+	// La app Sencilla (src/routes/app) lleva su propio armazón: aquí no se pinta nada de Terminal.
+	const inApp = $derived(isAppRoute(page.route.id));
+	// En Sencillo, una vista de Terminal abierta desde dentro de la web (src/app.html ya lo hace al cargar) lleva a /app.
+	$effect(() => {
+		if (sendToApp(modo.value, page.route.id, page.url.search)) goto(resolve('/app'), { replaceState: true });
+	});
 
 	// El reloj arranca en el navegador (como onMounted en Vue) y se para al salir.
 	$effect(startClock);
@@ -196,6 +205,9 @@
 	<link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
 </svelte:head>
 
+{#if inApp}
+	{@render children()}
+{:else}
 <div class="app">
 	<header class="top">
 		<a class="brand" href={resolve('/')}>
@@ -314,6 +326,7 @@
 		<span><kbd>/</kbd> comando · <kbd>Esc</kbd> portada · <kbd>⇧F</kbd> pantalla completa</span>
 	</footer>
 </div>
+{/if}
 
 <style>
 	.top {

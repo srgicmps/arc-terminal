@@ -50,6 +50,15 @@
 				}
 			} catch (e) {}
 			document.documentElement.dataset.modo = m;
+			// En Sencillo, la app de consumo (src/routes/app): las vistas de Terminal llevan a /app antes de pintar,
+			// salvo las de OPEN_IN_SIMPLE (src/lib/sencillo/nav.ts, misma lista; un test lo comprueba) y el modo TV.
+			if (m === 'sencillo' && !/[?&]tv=/.test(location.search)) {
+				var p = location.pathname.replace(/\/+$/, '') || '/';
+				var open = ['/app', '/modo', '/admin', '/bienvenida', '/manual', '/avisos', '/status'];
+				var ok = false;
+				for (var j = 0; j < open.length; j++) if (p === open[j] || p.indexOf(open[j] + '/') === 0) ok = true;
+				if (!ok) location.replace('/app');
+			}
 		</script>
 		%sveltekit.head%
 	</head>

@@ -25,7 +25,8 @@ describe('comandos en el manual', () => {
 			(path) => path.replace(/^\/src\/routes/, '').replace(/\/\+page\.svelte$/, '') || '/'
 		);
 		const routes = COMMANDS.map((c) => c.route as string);
-		for (const page of pages.filter((p) => p !== '/s')) expect(routes, `vista ${page} sin comando`).toContain(page);
+		// La app Sencilla (/app…) es otra app, con sus pestañas: no lleva comandos.
+		for (const page of pages.filter((p) => p !== '/s' && !/^\/app(\/|$)/.test(p))) expect(routes, `vista ${page} sin comando`).toContain(page);
 		for (const route of routes) expect(pages, `comando sin vista: ${route}`).toContain(route);
 	});
 
