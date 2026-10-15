@@ -147,12 +147,12 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - [x] La inicial de la cuenta abre su menú (cuenta y ajustes, bloquear, volver a la web clásica) [QA 5] #546
 - [x] Panel de control: se cierra con Escape o con un clic fuera [QA 5] #546
 - [x] Widgets: uno nuevo no cae fuera de la pantalla (columna siguiente) y en una pantalla más pequeña se pintan dentro (`fitWidgets`) [QA 5] #546
-- [x] Centro de notificaciones: se cierra con Escape o con un clic fuera [QA 5] #PR2
-- [x] Con muchas ventanas, las pestañas de Mando se estrechan en vez de pisar el nivel de alerta [QA 5] #PR2
-- [x] Flechas para ir de un icono a otro del escritorio (Mayús: añadir a la selección) [QA 5] #PR2
-- [x] Launchpad: clic derecho en una app (abrir otra ventana, anclar, añadir al escritorio) [QA 5] #PR2
-- [x] Añadir una app al escritorio desde fuera (Launchpad, barra) ya no corre los iconos que no se habían movido [QA 5] #PR2
-- [x] Un icono soltado encima de un widget ya no se esconde debajo: va a la casilla libre más cercana [QA 5] #PR2
+- [x] Centro de notificaciones: se cierra con Escape o con un clic fuera [QA 5] #546
+- [x] Con muchas ventanas, las pestañas de Mando se estrechan en vez de pisar el nivel de alerta [QA 5] #546
+- [x] Flechas para ir de un icono a otro del escritorio (Mayús: añadir a la selección) [QA 5] #546
+- [x] Launchpad: clic derecho en una app (abrir otra ventana, anclar, añadir al escritorio) [QA 5] #546
+- [x] Añadir una app al escritorio desde fuera (Launchpad, barra) ya no corre los iconos que no se habían movido [QA 5] #546
+- [x] Un icono soltado encima de un widget ya no se esconde debajo: va a la casilla libre más cercana [QA 5] #546
 
 ## OS 4 · Cómo están hechas las apps del sistema
 - Cada app es un archivo `src/lib/os/apps/<id>.ts` (registro, `load` diferido) y su carpeta. Marco común
