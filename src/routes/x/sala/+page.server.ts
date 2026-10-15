@@ -2,12 +2,13 @@
 // geopolítica. Se calcula al construir; al navegador llegan los puntos ya hechos.
 import { dataset } from '#lib/data.ts';
 import { conflictPoints, electionPoints, fromGeo, gdacsPoints, outagePoints, travelPoints, type SalaPoint } from '#lib/exp/sala.ts';
-import { eventPoints, quakePoints, stormPoints, straitPoints } from '#lib/geo/layers.ts';
+import type { CzibData } from '#lib/czib.ts';
+import { airspacePoints, eventPoints, quakePoints, stormPoints, straitPoints } from '#lib/geo/layers.ts';
 import type { AdvisoriesData, Chokepoint, ElectionsData, GdacsEvent, HazardsData, IodaOutage, NewsData, Quake } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [geo, world, quakes, hazards, straits, advisories, elections, ioda, gdacs] = await Promise.all([
+	const [geo, world, quakes, hazards, straits, advisories, elections, ioda, gdacs, czib] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-world'),
 		dataset<Quake[]>('quakes'),
@@ -16,13 +17,16 @@ export const load: PageServerLoad = async () => {
 		dataset<AdvisoriesData>('advisories'),
 		dataset<ElectionsData>('elections'),
 		dataset<IodaOutage[]>('ioda'),
-		dataset<GdacsEvent[]>('gdacs')
+		dataset<GdacsEvent[]>('gdacs'),
+		dataset<CzibData>('czib')
 	]);
 	const now = Date.parse(geo?.fetchedAt ?? quakes?.fetchedAt ?? '') || 0;
 	const news = [...(geo?.data.items ?? []), ...(world?.data.items ?? [])]
 		.filter((n) => n.time)
 		.sort((a, b) => b.time!.localeCompare(a.time!))
 		.slice(0, 60);
+	// Zonas de conflicto para la aviación (EASA): la fecha de la última revisión, para que destelle lo nuevo.
+	const czibTimes = Object.fromEntries((czib?.data.items ?? []).map((c) => [`a-${c.id}`, `${c.revised ?? c.issued}T00:00:00Z`]));
 	const quakeTimes = Object.fromEntries((quakes?.data ?? []).map((q) => [`q-${q.id}`, q.time]));
 
 	const points: SalaPoint[] = [
@@ -33,6 +37,7 @@ export const load: PageServerLoad = async () => {
 		...travelPoints(advisories?.data),
 		...electionPoints(elections?.data.items, now),
 		...outagePoints(ioda?.data),
+		...fromGeo(airspacePoints(czib?.data.items ?? []), 'airspace', czibTimes),
 		...fromGeo(straitPoints(straits?.data ?? []), 'straits')
 	];
 

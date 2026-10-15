@@ -14,6 +14,7 @@ export const SALA_LAYERS = [
 	{ value: 'travel', label: 'Avisos de viaje' },
 	{ value: 'elections', label: 'Elecciones' },
 	{ value: 'internet', label: 'Cortes de internet' },
+	{ value: 'airspace', label: 'Espacio aéreo' },
 	{ value: 'straits', label: 'Estrechos' }
 ] as const;
 
