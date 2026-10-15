@@ -150,7 +150,7 @@
 				</section>
 
 				<section>
-					<h3>Relaciones <span class="count">{d.related.length}</span></h3>
+					<h3>Relaciones <span class="count">{d.relatedTotal}</span></h3>
 					<ul class="rel">
 						{#each d.related.slice(0, 16) as r (r.id)}
 							<li>
