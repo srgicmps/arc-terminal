@@ -33,15 +33,18 @@ nada en los traspasos entre sesiones.
 - [x] Restaurar la sesión de ventanas al volver (`arc-os-desks`) [OS 1] #477 (OS 5 lo revisa)
 - [x] /os sin tope de peso (`scripts/weight.ts` → `EXEMPT`) [OS 2] #497
 
-## Aspectos (`data-os-skin`)
-- [x] Arc DSM: barra fina, menú ▦, «Mostrar escritorio», pestañas, iconos grandes y widgets del sistema [OS 2] #500
-- [x] Windows: barra de tareas abajo o arriba, Inicio y bandeja [OS 2] #500
-- [x] Mac: barra de menús con la app activa, dock con lupa, Launchpad y semáforos [OS 2] #500 (ventanas: OS 1)
-- [x] Linux tipo GNOME: «Actividades» con mosaico, escritorios y dash; tecla Super [OS 2] #500
-- [ ] 5.º aspecto «Mando», al estilo de una sala de mando, propuesto como predeterminado. `skins.ts` admite añadirlo [OS 6]
-- [ ] Dentro de /os **no** se aplican las estéticas de la web (`data-style`, acento ni densidad): el OS tiene su
-      aspecto y sus tokens propios, y las vistas dentro de las ventanas usan el tema del aspecto del OS. Fuera de
-      /os todo sigue igual [OS 2]
+## Aspecto (cambio de Sergi, manda sobre lo anterior)
+«El escritorio no tiene un estilo a elegir: tiene SU estilo y no puede cambiar; solo cambian las apps».
+- [x] Hubo cuatro aspectos a elegir: Arc DSM, Windows, Mac y Linux [OS 2] #500. Se puede conservar el código
+      (`data-os-skin`), pero ya **sin interfaz** para elegirlo.
+- [ ] **Un único aspecto fijo, propio de Arc**: identidad «Centro de mando» (estilo de plataforma de inteligencia,
+      el que diseña OS 6) con estructura tipo DSM: barra superior fina, menú de apps, iconos grandes y widgets a la
+      derecha [OS 6 diseño + OS 2 estructura]
+- [ ] Quitar el selector de aspectos del asistente y del Panel de control. El asistente queda en fondo, widgets y
+      nombre [OS 2]
+- [ ] Las estéticas de la web (Apariencia: `data-style`, acento y densidad) solo afectan al **contenido de las
+      apps** dentro de las ventanas, nunca al escritorio, la barra, los menús ni la decoración de ventana [OS 2]
+- [ ] El fondo de pantalla sí se puede cambiar (ver «Escritorio») [OS 5 + OS 2]
 
 ## Escritorio
 - [x] Fondo por aspecto y fondos de tokens (sistema, estética, liso, rejilla, degradado) [OS 2] #476/#500
