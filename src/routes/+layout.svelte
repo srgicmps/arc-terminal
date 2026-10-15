@@ -164,9 +164,9 @@
 		if (next) goto(routeHref(next.route));
 	}
 
-	/** En modo TV, tocar la pantalla pausa o sigue (menos en los botones del aviso de pausa). */
+	/** En modo TV, tocar la pantalla pausa o sigue (menos en los botones del aviso de pausa, enlaces y controles). */
 	function onTvTap(e: PointerEvent) {
-		if (tv.on && !(e.target as Element | null)?.closest('.tv-chip')) togglePause();
+		if (tv.on && !(e.target as Element | null)?.closest('.tv-chip, a, button, input, select, textarea, label, summary')) togglePause();
 	}
 
 	const wide = new MediaQuery('min-width: 1280px');
@@ -214,6 +214,8 @@
 </svelte:head>
 
 <div class="app" data-ui="app">
+	<!-- Para el teclado y los lectores de pantalla: sin pasar por la cabecera y las pestañas. Solo se ve con el foco. -->
+	<a class="skip" href="#contenido">Saltar al contenido</a>
 	<header class="top" data-ui="top">
 		<a class="brand" data-ui="brand" href={resolve('/')}>
 			<Logo />
@@ -303,6 +305,8 @@
 	{#if !tv.on}<PanelIndex /><InstallHint /><OsNotice />{/if}
 
 	<main
+		id="contenido"
+		tabindex="-1"
 		data-ui="main"
 		class:nudged={shift !== 0}
 		style:translate={shift ? `${shift}px 0` : undefined}
@@ -345,6 +349,25 @@
 </div>
 
 <style>
+	.skip {
+		position: absolute;
+		top: var(--sp-4);
+		left: var(--sp-4);
+		z-index: var(--z-modal);
+		padding: var(--sp-6) var(--sp-10);
+		background: var(--panel);
+		border: var(--hair) solid var(--amber-edge);
+		color: var(--amber);
+		font-size: var(--fs-m);
+		text-decoration: none;
+		translate: 0 -200%;
+	}
+	.skip:focus-visible {
+		translate: none;
+	}
+	main:focus {
+		outline: none;
+	}
 	.top {
 		display: flex;
 		flex-wrap: wrap;

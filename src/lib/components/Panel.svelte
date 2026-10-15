@@ -19,7 +19,7 @@
 	import { getPanelIndex } from '#lib/panelindex.svelte.ts';
 	import { hashPanel, samePanel } from '#lib/panelhash.ts';
 	import type { ShareSource } from '#lib/share.ts';
-	import { hiddenPanels, isSimple, trimming } from '#lib/modo.svelte.ts';
+	import { hiddenPanels, isSimple, modo, trimming } from '#lib/modo.svelte.ts';
 	import { isEssential, plainTitle } from '#lib/simple.ts';
 	import Note from './ui/Note.svelte';
 	import Term from './ui/Term.svelte';
@@ -51,7 +51,8 @@
 	const modular = getModular();
 	// Índice de paneles del móvil: el panel se apunta mientras está en la página.
 	const index = getPanelIndex();
-	$effect(() => (gone ? undefined : index?.add(title, section)));
+	// `section` llega con bind:this, que puede ir después de este efecto (al pasar de oculto a visible en Sencillo).
+	$effect(() => (gone || !section ? undefined : index?.add(title, section)));
 	const tools = $derived(modular && id ? modular : null);
 	/** Menú del asa: subir, bajar y ancho. */
 	let menu = $state(false);
@@ -101,9 +102,14 @@
 	$effect(() => {
 		const want = hashPanel(page.url.hash);
 		if (!want || !samePanel(want, title)) return;
+		// En el modo Sencillo un panel no esencial no se pinta: para ir a él, se enseñan todos («Ver todos»).
+		if (gone) {
+			modo.all = true;
+			return;
+		}
 		untrack(() => isFolded(fkey) && toggleFold(fkey));
 		const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-		const frame = requestAnimationFrame(() => section.scrollIntoView({ block: 'start', behavior: smooth ? 'smooth' : 'auto' }));
+		const frame = requestAnimationFrame(() => section?.scrollIntoView({ block: 'start', behavior: smooth ? 'smooth' : 'auto' }));
 		flash = true;
 		const timer = setTimeout(() => (flash = false), 2000);
 		return () => {
