@@ -8,6 +8,8 @@
 	import { routeHref } from '#lib/routes.ts';
 	import { toggleFullscreen } from '#lib/fit.svelte.ts';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { isEmbedded } from '#lib/os/embed.ts';
 	import { resolve } from '$app/paths';
 	import { COMMANDS } from '#lib/commands.ts';
 	import { TICKERS } from '#lib/tickers.ts';
@@ -328,6 +330,9 @@
 
 	/** Atajos de teclado en toda la página (como un listener en window en Vue, pero declarativo). */
 	function onWindowKeydown(e: KeyboardEvent) {
+		// En el Modo OS la barra no está a la vista: ni en /os ni en una vista dentro de una ventana (allí manda
+		// el teclado de la ventana y Esc no debe sacarte del escritorio).
+		if (page.route.id === '/os' || isEmbedded()) return;
 		// Alt+→ con una cola de «ECO; WS CURVA»: la siguiente vista (también con el foco en la barra).
 		if (queue.length && isShortcut(e, 'queue')) {
 			e.preventDefault();

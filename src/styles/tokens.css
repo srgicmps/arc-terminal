@@ -179,6 +179,10 @@
 	--os-min-shift: 24px;
 	--os-min-scale: 0.9;
 	--os-anim-max: var(--dur-ui); /* al maximizar, encajar o en mosaico */
+	--os-anim-close: 0ms; /* al cerrar */
+	--os-menu-bg: var(--panel); /* menú contextual (clic derecho) */
+	--os-menu-radius: var(--radius-s);
+	--os-menu-shadow: var(--shadow-pop);
 	--focus-w: var(--hair); /* grosor del contorno de foco con teclado */
 	--scroll-w: 8px; /* ancho de las barras de desplazamiento (escritorio; en el móvil son las del sistema) */
 	--scroll-thumb: var(--neutral); /* la parte que se arrastra */
@@ -220,6 +224,7 @@
 	--os-anim-open: 160ms;
 	--os-anim-min: 180ms;
 	--os-anim-max: 160ms;
+	--os-anim-close: 140ms;
 }
 
 [data-os-skin='mac'] {
@@ -249,6 +254,8 @@
 	--os-min-shift: 40vh;
 	--os-min-scale: 0.2;
 	--os-anim-max: 220ms;
+	--os-anim-close: 180ms;
+	--os-menu-radius: 8px;
 }
 
 [data-os-skin='linux'] {
@@ -269,6 +276,8 @@
 	--os-open-scale: 0.94;
 	--os-anim-min: 200ms;
 	--os-anim-max: 200ms;
+	--os-anim-close: 160ms;
+	--os-menu-radius: 10px;
 }
 
 /* Pantallas táctiles: todos los controles a la zona pulsable mínima. */
