@@ -2,6 +2,8 @@
 // sobre una rejilla de 24 × 24 (d: trazo; f: partes rellenas, como puntos). Todo dibujo propio, sin marcas.
 // `bare`: sin azulejo; d es la parte de atrás (color oscuro) y f la de delante (degradado), como una carpeta.
 // Son la única excepción a «nada de colores fijos» (CLAUDE.md): los colores de los iconos viven solo aquí.
+// Una app nueva añade aquí su icono (id de apps.ts). Las vistas y las experiencias lo exigen en el test; una herramienta
+// sin icono sale con el genérico hasta que lo tenga.
 
 export interface Glyph {
 	hue: [string, string];
@@ -121,6 +123,9 @@ export const GLYPHS: Record<string, Glyph> = {
 	visor: { hue: ['#7a6fa6', '#4a4170'], d: rr(3, 4, 18, 16, 2) + 'M3 16.5l5-4.5 4 3.5 3-2.5 6 5', f: c(15.5, 8.5, 1.6) },
 	archivos: { hue: ['#e3c27a', '#c99a45'], d: rr(3, 5, 18, 14, 2) + 'M3 9h18M7 13h6M7 16h4' },
 	'mapa-op': { hue: ['#4f7f99', '#2c4f63'], d: rr(3, 4, 18, 16, 1.5) + 'M3 10h18M3 15h18M9 4v16M15 4v16', f: c(12, 12.5, 1.6) },
+	cronologia: { hue: ['#5f7f9a', '#36506a'], d: 'M3 12h18M7 12V7M12 12v6M17 12V8', f: dots(1.4, [7, 6], [12, 19], [17, 7]) },
+	paquetes: { hue: ['#9a7b52', '#664d2c'], d: 'M12 2.8 20.5 7.3v9.4L12 21.2 3.5 16.7V7.3zM3.5 7.3 12 11.8l8.5-4.5M12 11.8v9.4M7.8 5l8.4 4.6' },
+	registros: { hue: ['#6b7079', '#3c4048'], d: rr(4, 3, 16, 18, 2) + 'M7.5 7.5h9M7.5 11h9M7.5 14.5h6M7.5 18h4' },
 	monitor: { hue: ['#5a7a6a', '#344c40'], d: rr(2.5, 4, 19, 13, 1.5) + 'M8.5 21h7M12 17v4M5.5 11.5H8l1.5-3 2.5 5 1.5-2h5' },
 	explorador: { hue: ['#5e7f9e', '#37536e'], d: c(12, 12, 9) + 'M15.5 8.5l-2 5-5 2 2-5z' }
 };
