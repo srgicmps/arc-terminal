@@ -127,6 +127,7 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - [x] Iconos SVG de las cinco apps en `icons/glyphs.ts` (mapa, vigilancia y línea de tiempo de OS 2b; grafo y expediente de OS 6) [OS 6]
 - [ ] Título de ventana: no enseñar el path en las herramientas sin `href` («Expediente · /expediente#country:CN») [núcleo]
 - [x] Contraste AA en /os: `--muted` de Mando a 4,5:1 también sobre el fondo con acento [OS 6] #533
+- [x] QA del Centro de mando (QA OS 8): nivel de alerta con «Sin datos» y avisos caducados por hora, pilotos que dejan el verde si los datos se paran y con forma por estado, Mapa operacional en el móvil (pellizco, línea de tiempo táctil) [QA OS 8] #541
 
 ## OS 4 · Cómo están hechas las apps del sistema
 - Cada app es un archivo `src/lib/os/apps/<id>.ts` (registro, `load` diferido) y su carpeta. Marco común

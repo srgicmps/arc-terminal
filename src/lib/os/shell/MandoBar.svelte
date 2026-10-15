@@ -12,14 +12,21 @@
 	import { wdata } from './widgetdata.svelte.ts';
 
 	const wins = $derived(os.windows());
-	const alert = $derived(alertLevel(wdata.wall));
-
-	// Relojes con segundos: un tic por segundo solo mientras la barra está montada.
+	// Relojes con segundos: un tic por segundo solo mientras la barra está montada, alineado con el cambio de
+	// segundo (con un intervalo suelto, la hora iba hasta 1 s tarde y a veces se saltaba un segundo).
 	let now = $state(Date.now());
 	$effect(() => {
-		const id = setInterval(() => (now = Date.now()), 1000);
-		return () => clearInterval(id);
+		let id: ReturnType<typeof setTimeout>;
+		const tick = () => {
+			now = Date.now();
+			id = setTimeout(tick, 1000 - (now % 1000) + 5);
+		};
+		tick();
+		return () => clearTimeout(id);
 	});
+	// El nivel, con la hora por minutos: los avisos caducan aunque muro.json no cambie.
+	const minute = $derived(Math.floor(now / 60_000) * 60_000);
+	const alert = $derived(wdata.loaded ? alertLevel(wdata.wall, minute) : alertLevel(null));
 </script>
 
 <nav class="mando" aria-label="Barra del centro de mando">
@@ -39,7 +46,7 @@
 		<span class="k">Alerta</span>
 		<span class="pips" aria-hidden="true">{#each [1, 2, 3, 4, 5] as n (n)}<i class:on={n <= alert.level}></i>{/each}</span>
 		<b>{alert.label}</b>
-		<span class="sr">nivel {alert.level} de 5: {alert.reasons.join('. ')}</span>
+		<span class="sr">{alert.level ? `nivel ${alert.level} de 5` : 'sin datos'}: {alert.reasons.join('. ')}</span>
 	</div>
 	<div class="tray">
 		<button type="button" class="tray-btn" aria-label="Buscar (Ctrl+Espacio)" aria-expanded={shell.open === 'spotlight'} onclick={() => toggle('spotlight')}>⌕</button>
@@ -130,8 +137,10 @@
 		border-bottom-color: var(--cmd-cold);
 		color: var(--fg);
 	}
+	/* Minimizada: más apagada, pero legible (con opacidad 0,6 bajaba a 3:1, por debajo de AA). */
 	.tabs button.min {
-		opacity: 0.6;
+		color: var(--faint);
+		font-style: italic;
 	}
 	.ico {
 		color: var(--cmd-cold);
@@ -173,13 +182,18 @@
 		display: flex;
 		gap: var(--sp-2);
 	}
+	/* Apagado: solo el borde (antes, relleno de --line a 1,2:1: la escala de 5 casi no se veía). */
 	.pips i {
 		width: var(--sp-4);
 		height: var(--sp-10);
-		background: var(--line);
+		box-shadow: inset 0 0 0 var(--hair) var(--faint);
 	}
 	.pips i.on {
 		background: var(--lv);
+		box-shadow: none;
+	}
+	.level[data-level='0'] b {
+		color: var(--muted);
 	}
 	/* Nivel máximo: un latido lento, sin parpadeo. */
 	.level[data-level='5'] .pips i.on {
