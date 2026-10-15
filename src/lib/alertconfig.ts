@@ -1,6 +1,7 @@
 // Avisos al móvil por usuario: qué elige cada uno en AVISOS. Lo comparten la vista (src/routes/avisos), el
 // servidor (cloud/alerts.ts, que lo guarda en D1) y la Action (scripts/alerts/users.ts, que reparte los avisos).
 // Lógica pura, sin depender del navegador ni de Node.
+import { cleanWord, LIMITS, parseAlert, alertText, type UserAlert } from './useralerts.ts';
 
 /** Grupos de avisos, con los tipos de regla de scripts/alerts/rules.ts y world.ts que caen en cada uno. */
 export const GROUPS = [
@@ -25,7 +26,7 @@ export type GroupId = (typeof GROUPS)[number]['id'];
 export const groupOf = (type: string): GroupId =>
 	GROUPS.find((g) => (g.types as readonly string[]).includes(type))?.id ?? 'agenda';
 
-/** Tipos que son solo de Sergi (órdenes de la barra por issues): no se reparten. */
+/** Tipos que no se reparten por grupos: las alertas y palabras propias de cada uno (users.ts) y el saludo. */
 export const OWNER_ONLY = ['user-alert', 'vigila', 'hello'];
 
 export interface AlertConfig {
@@ -44,6 +45,51 @@ export interface AlertConfig {
 	quiet: { from: string; until: string } | null;
 	/** «Tu mañana»: un resumen personal al día, a su hora (de Madrid), por ntfy y, si lo pide, por email. */
 	brief: Brief;
+	/** Alertas de precio propias («alerta NVDA > 150» en la barra): saltan una vez y se borran solas. */
+	prices: PriceAlert[];
+	/** Palabras vigiladas («vigila aranceles»): titulares y BOE que las nombran. */
+	words: string[];
+}
+
+/** Una alerta de precio con su id aleatorio (8 hex): así la Action la borra al avisar. */
+export type PriceAlert = UserAlert & { id: string };
+
+const PRICE_ID = /^[0-9a-f]{8}$/;
+
+/** Una alerta de precio comprobada: se vuelve a leer desde su texto, así no entra nada raro. */
+export function parsePrice(raw: unknown): PriceAlert | null {
+	const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+	if (typeof o.id !== 'string' || !PRICE_ID.test(o.id)) return null;
+	if (typeof o.asset !== 'string' || typeof o.op !== 'string' || typeof o.value !== 'number') return null;
+	// El texto que lee parseAlert: el símbolo (o el nombre corto de BTC, ETH, diésel) y la condición.
+	const sym = o.asset.startsWith('coin:') ? o.asset.slice(5) : o.asset;
+	const text = o.op === '%' ? `${sym} ${o.value}%` : `${sym} ${o.op} ${o.value}`;
+	const a = parseAlert(text.replace('bitcoin', 'BTC').replace('ethereum', 'ETH'));
+	return a && a.asset === o.asset ? { ...a, id: o.id } : null;
+}
+
+/** Una alerta nueva de lo que se escribe en la barra, con su id. */
+export const newPrice = (a: UserAlert): PriceAlert => ({
+	...a,
+	id: [...crypto.getRandomValues(new Uint8Array(4))].map((b) => b.toString(16).padStart(2, '0')).join('')
+});
+
+/** Las alertas de una lista, sin repetir (misma condición) y con tope. */
+export function parsePrices(raw: unknown): PriceAlert[] {
+	if (!Array.isArray(raw)) return [];
+	const out: PriceAlert[] = [];
+	for (const r of raw) {
+		const p = parsePrice(r);
+		if (p && !out.some((x) => x.id === p.id || alertText(x) === alertText(p))) out.push(p);
+	}
+	return out.slice(0, LIMITS.alerts);
+}
+
+/** Palabras vigiladas limpias, sin repetir (sin mirar mayúsculas) y con tope. */
+export function parseWordList(raw: unknown): string[] {
+	if (!Array.isArray(raw)) return [];
+	const words = raw.flatMap((w) => (typeof w === 'string' ? [cleanWord(w)] : [])).filter((w): w is string => !!w);
+	return [...new Map(words.map((w) => [w.toLowerCase(), w])).values()].slice(0, LIMITS.words);
 }
 
 export interface Brief {
@@ -95,7 +141,9 @@ export const DEFAULT_CONFIG: AlertConfig = {
 	mis: [],
 	baseStocks: true,
 	quiet: null,
-	brief: DEFAULT_BRIEF
+	brief: DEFAULT_BRIEF,
+	prices: [],
+	words: []
 };
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -128,7 +176,7 @@ export function parseConfig(raw: unknown): AlertConfig {
 		q.from !== q.until
 			? { from: q.from, until: q.until }
 			: null;
-	return { on: o.on === true, groups, level, daily, mis, baseStocks: o.baseStocks !== false, quiet, brief: parseBrief(o.brief) };
+	return { on: o.on === true, groups, level, daily, mis, baseStocks: o.baseStocks !== false, quiet, brief: parseBrief(o.brief), prices: parsePrices(o.prices), words: parseWordList(o.words) };
 }
 
 /** ¿Está «hh:mm» dentro del silencio? Admite silencios que cruzan la medianoche (23:00–07:00). */

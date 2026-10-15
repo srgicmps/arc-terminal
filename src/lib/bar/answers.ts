@@ -151,7 +151,8 @@ export function answerFor(raw: string, ctx: AnswerCtx): Answer | null {
 	if (since) return sinceAnswer(since.sym, since.date, ctx);
 	if (/^(btc|bitcoin|eth|ether|ethereum)$/.test(q)) return cryptoAnswer(q.startsWith('b') ? 'bitcoin' : 'ethereum', ctx);
 	if (/^(us10y|10a us|bono us|bono ee ?uu|treasury)$/.test(q)) return treasuryAnswer(ctx);
-	if (q.startsWith('hipoteca')) return mortgageAnswer(q, ctx);
+	// «hipoteca» sola abre la vista HIPOTECA; con cifras, la cuota bajo la barra.
+	if (q.startsWith('hipoteca ')) return mortgageAnswer(q, ctx);
 	if (FUEL_WORDS.test(q)) return fuelAnswer(null, /^(diesel|gasoil|gasoleo)$/.test(q) ? 'diesel' : 'g95', ctx);
 	const fill = q.match(/^(?:llenar|repostar)(?: (\d+(?:[.,]\d+)?) ?(?:l|litros)?)?(?: (?:de )?(diesel|gasoil|gasoleo|gasolina|g95))?$/);
 	if (fill) return fuelAnswer(fill[1] ? Number(fill[1].replace(',', '.')) : null, fill[2] && /^(gasolina|g95)$/.test(fill[2]) ? 'g95' : fill[2] ? 'diesel' : null, ctx);
@@ -287,7 +288,7 @@ export function parseAmount(s: string): number | null {
 	return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/** «hipoteca 150000 25a 0,75»: capital, años y diferencial (por defecto 0,75, como la calculadora de ECO). */
+/** «hipoteca 150000 25a 0,75»: capital, años y diferencial (por defecto 0,75, como HIPOTECA). */
 export function parseMortgage(q: string): { capital: number; years: number; spread: number } | null {
 	const m = q.match(/^hipoteca (\S+(?: mil)?) (\d+) ?(?:a|anos)?(?: (?:\+ ?)?(\d+(?:[.,]\d+)?) ?%?)?$/);
 	if (!m) return null;
@@ -299,7 +300,7 @@ export function parseMortgage(q: string): { capital: number; years: number; spre
 
 function mortgageAnswer(q: string, ctx: AnswerCtx): Answer {
 	const code = 'HIPOTECA';
-	const open = 'ECO Tu hipoteca';
+	const open = 'HIPOTECA';
 	const form = parseMortgage(q);
 	if (!form) return { code, desc: 'Escribe capital y años: «hipoteca 150000 25a» (y, si quieres, el diferencial: «0,75»)', open };
 	const data = ctx.get('ecb') as SeriesData | null | undefined;
