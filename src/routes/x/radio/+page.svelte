@@ -9,7 +9,6 @@
 	import { onDestroy, onMount } from 'svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import Note from '#lib/components/ui/Note.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { persisted } from '#lib/persisted.svelte.ts';
 	import { routeHref } from '#lib/routes.ts';
@@ -192,9 +191,7 @@
 					</li>
 				{/each}
 			</ol>
-			{#snippet note()}
-				<Note>Voz del navegador, sin conexión a nada más. «Tus valores» sale de tu lista de MIS (valores de EE. UU. con cotización de Finnhub).</Note>
-			{/snippet}
+			{#snippet note()}Voz del navegador, sin conexión a nada más. «Tus valores» sale de tu lista de MIS (valores de EE. UU. con cotización de Finnhub).{/snippet}
 		</Panel>
 	</div>
 </div>
