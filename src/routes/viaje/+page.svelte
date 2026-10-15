@@ -19,10 +19,9 @@
 	import { fetchLocal, type LocalWeather } from '#lib/localweather.ts';
 	import { searchPlaces, type Place } from '#lib/place.ts';
 	import { phrases } from '#lib/plain.ts';
-	import { madridNow } from '#lib/power.ts';
 	import type { WorldHolidaysData } from '#lib/puentes.ts';
 	import { writeParams } from '#lib/urlstate.svelte.ts';
-	import { offsetFromMadrid, offsetLabel, tripHolidays } from '#lib/viaje.ts';
+	import { dayIn, dayNote, offsetFromMadrid, offsetLabel, tripHolidays } from '#lib/viaje.ts';
 	import { sky } from '#lib/weather.ts';
 	import type { PageProps } from './$types';
 
@@ -35,47 +34,88 @@
 	let city = $state<Place | null>(null);
 	let wx = $state<LocalWeather | null>(null);
 	let holidays = $state<WorldHolidaysData | null>(null);
+	/** Si no se ha podido leer holidays-world.json (para no quedarse en «Cargando…»). */
+	let holidaysFailed = $state(false);
+	/** Si Open-Meteo no ha dado el tiempo de la ciudad (para no quedarse en «Pidiendo el tiempo…»). */
+	let wxFailed = $state(false);
 	let message = $state('');
 
-	// La ciudad de la URL: la busca en Open-Meteo y pide su tiempo.
+	// La ciudad de la URL: la busca en Open-Meteo y pide su tiempo. Sin ?ciudad (VIAJE a secas), se vacía.
+	// Buscar y los atajos la escriben con una navegación «shallow» (writeParams): en SvelteKit 3 eso no cambia
+	// page.url, sino page.shallow.url, así que se mira primero esa.
 	$effect(() => {
-		const q = page.url.searchParams.get('ciudad');
-		if (!q) return;
-		untrack(() => open(q));
+		const q = (page.shallow?.url ?? page.url).searchParams.get('ciudad');
+		untrack(() => (q ? open(q) : clear()));
 	});
 
+	// Cada búsqueda lleva su número: si llega tarde la respuesta de una ciudad anterior, se descarta.
+	let seq = 0;
+	let ctrl: AbortController | null = null;
+
+	function clear() {
+		seq++;
+		ctrl?.abort();
+		query = '';
+		city = null;
+		wx = null;
+		wxFailed = false;
+		message = '';
+	}
+
 	async function open(q: string) {
+		const id = ++seq;
+		ctrl?.abort();
+		const signal = (ctrl = new AbortController()).signal;
 		query = q;
 		message = 'Buscando…';
 		wx = null;
+		wxFailed = false;
+		let found: Place | undefined;
 		try {
-			const [first] = await searchPlaces(q);
-			if (!first) {
-				city = null;
-				message = `No encuentro «${q}».`;
-				return;
-			}
-			city = first;
-			message = '';
-			loadHolidays();
-			wx = await fetchLocal(first);
+			[found] = await searchPlaces(q, signal);
 		} catch {
-			message = 'No se ha podido buscar la ciudad.';
+			if (id === seq) message = 'No se ha podido buscar la ciudad. Prueba otra vez en un momento.';
+			return;
+		}
+		if (id !== seq) return;
+		if (!found) {
+			city = null;
+			message = `No encuentro «${q}».`;
+			return;
+		}
+		city = found;
+		message = '';
+		loadHolidays();
+		try {
+			const w = await fetchLocal(found, signal);
+			if (id === seq) wx = w;
+		} catch {
+			if (id === seq) wxFailed = true;
 		}
 	}
 
 	async function loadHolidays() {
 		if (holidays) return;
+		holidaysFailed = false;
 		try {
 			const res = await fetch(asset('data/holidays-world.json' as Parameters<typeof asset>[0]));
-			if (res.ok) holidays = (await res.json()).data;
-		} catch {}
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			holidays = (await res.json()).data;
+		} catch {
+			holidaysFailed = true;
+		}
 	}
 
 	function submit(e: SubmitEvent) {
 		e.preventDefault();
 		const q = query.trim();
-		if (q) writeParams({ ciudad: q });
+		if (q) go(q);
+	}
+
+	/** Abre una ciudad. Si ya es la de la URL (otra vez Buscar tras un fallo), la URL no cambia: se busca de nuevo. */
+	function go(q: string) {
+		if ((page.shallow?.url ?? page.url).searchParams.get('ciudad') === q) open(q);
+		else writeParams({ ciudad: q });
 	}
 
 	const now = $derived(clock.now || Date.now());
@@ -86,7 +126,9 @@
 	const currency = $derived(country?.currency ?? '');
 	const rate = $derived(currency && currency !== 'EUR' ? rates.get(currency) : undefined);
 	const advisory = $derived(city?.cc && data.advisories ? advisoryFor(data.advisories.data.items, city.cc) : undefined);
-	const today = $derived(madridNow(now).day);
+	// «Hoy» es el del destino: en Tokio, a las 18:00 de Madrid ya es mañana y el festivo de hoy aquí ya pasó allí.
+	const today = $derived(dayIn(tz, now));
+	const note = $derived(tz ? dayNote(tz, now) : '');
 	const hols = $derived(city?.cc ? tripHolidays(holidays?.countries[city.cc] ?? [], today, 60) : []);
 	const hasHolidays = $derived(!!city?.cc && !!holidays?.countries[city.cc]);
 	const days = $derived(wx?.weather.daily.slice(0, 7) ?? []);
@@ -94,7 +136,7 @@
 	const plain = $derived(
 		city
 			? phrases([
-					tz ? `En ${city.name} son las ${hmIn(new Date(now).toISOString(), tz)}: ${offsetLabel(offset)}.` : null,
+					tz ? `En ${city.name} son las ${hmIn(new Date(now).toISOString(), tz)}: ${offsetLabel(offset)}${note ? ` (${note})` : ''}.` : null,
 					rate ? `Un euro vale ${nf(rate.perEur, rate.perEur >= 100 ? 0 : 2)} ${currency}.` : null,
 					advisory ? `Aviso de viaje de EE. UU.: ${LEVELS[advisory.level].toLowerCase()} (nivel ${advisory.level} de 4).` : null,
 					hasHolidays ? (hols.length ? `Próximo festivo: ${hols[0].names[0]}, el ${dm(`${hols[0].date}T12:00:00Z`)}.` : 'No hay festivos en los próximos dos meses.') : null
@@ -114,40 +156,43 @@
 			</form>
 			{#if !city}
 				<div class="quick">
-					{#each QUICK as q (q)}<button type="button" onclick={() => writeParams({ ciudad: q })}>{q}</button>{/each}
+					{#each QUICK as q (q)}<button type="button" onclick={() => go(q)}>{q}</button>{/each}
 				</div>
 			{/if}
 			{#if message}<p class="empty">{message}</p>{:else if !city}<p class="empty">Escribe una ciudad para ver su tiempo, su hora, su moneda y si hay festivos.</p>{/if}
+			{#if city}
+				<Tiles cols={4}>
+					<Tile label="Hora local" value={tz ? hmIn(new Date(now).toISOString(), tz) : '—'} sub={[offsetLabel(offset), note].filter(Boolean).join(' · ')} />
+					<Tile
+						label="Moneda"
+						value={!currency ? '—' : currency === 'EUR' ? 'Euro' : rate ? `1 € = ${nf(rate.perEur, rate.perEur >= 100 ? 0 : 2)} ${currency}` : currency}
+						sub={currency === 'EUR' ? 'no hace falta cambiar' : rate ? `BCE, ${dm(`${rate.date}T12:00:00Z`)}` : currency ? 'el BCE no la publica' : ''}
+					/>
+					<Tile
+						label="Aviso de viaje"
+						value={advisory ? `Nivel ${advisory.level}` : '—'}
+						tone={!advisory ? 'mut' : advisory.level >= 3 ? 'down' : advisory.level === 1 ? 'up' : undefined}
+						sub={advisory ? LEVELS[advisory.level] : 'sin aviso de EE. UU.'}
+					/>
+					<Tile
+						label="Próximo festivo"
+						value={hols[0] ? dm(`${hols[0].date}T12:00:00Z`) : '—'}
+						tone={hols[0] ? undefined : 'mut'}
+						sub={hols[0] ? hols[0].names.join(' · ') : hasHolidays ? 'ninguno en 2 meses' : holidays ? 'sin datos de ese país' : ''}
+					/>
+				</Tiles>
+			{/if}
 		</Panel>
 	</div>
 </div>
 
 {#if city}
-	<Tiles cols={4}>
-		<Tile label="Hora local" value={tz ? hmIn(new Date(now).toISOString(), tz) : '—'} sub={offsetLabel(offset)} />
-		<Tile
-			label="Moneda"
-			value={!currency ? '—' : currency === 'EUR' ? 'Euro' : rate ? `1 € = ${nf(rate.perEur, rate.perEur >= 100 ? 0 : 2)} ${currency}` : currency}
-			sub={currency === 'EUR' ? 'no hace falta cambiar' : rate ? `BCE, ${dm(`${rate.date}T12:00:00Z`)}` : currency ? 'el BCE no la publica' : ''}
-		/>
-		<Tile
-			label="Aviso de viaje"
-			value={advisory ? `Nivel ${advisory.level}` : '—'}
-			tone={!advisory ? 'mut' : advisory.level >= 3 ? 'down' : advisory.level === 1 ? 'up' : undefined}
-			sub={advisory ? LEVELS[advisory.level] : 'sin aviso de EE. UU.'}
-		/>
-		<Tile
-			label="Próximo festivo"
-			value={hols[0] ? dm(`${hols[0].date}T12:00:00Z`) : '—'}
-			tone={hols[0] ? undefined : 'mut'}
-			sub={hols[0] ? hols[0].names.join(' · ') : hasHolidays ? 'ninguno en 2 meses' : 'sin datos de ese país'}
-		/>
-	</Tiles>
-
 	<div class="grid grid-2">
 		<div class="col">
 			<Panel title="El tiempo" meta="{city.name} · 7 días">
-				{#if !wx}
+				{#if wxFailed}
+					<p class="empty">No se ha podido pedir el tiempo de {city.name} ahora mismo.</p>
+				{:else if !wx}
 					<p class="empty">Pidiendo el tiempo…</p>
 				{:else}
 					<Table>
@@ -157,7 +202,7 @@
 								{@const s = sky(d.code)}
 								<tr>
 									<td class="mut">{weekday(d.date)}</td>
-									<td class="l">{s.icon} {s.label}</td>
+									<td class="l sky"><span aria-hidden="true">{s.icon}</span>&nbsp;{s.label}</td>
 									<td>{nf(d.max, 0)}°</td>
 									<td class="mut">{nf(d.min, 0)}°</td>
 									<td class="mut">{nf(d.rain, 0)} %</td>
@@ -171,7 +216,9 @@
 		</div>
 		<div class="col">
 			<Panel title="Festivos" meta="{country?.name ?? city.country} · próximos 2 meses">
-				{#if !holidays}
+				{#if holidaysFailed}
+					<p class="empty">No se han podido cargar los festivos.</p>
+				{:else if !holidays}
 					<p class="empty">Cargando…</p>
 				{:else if !hasHolidays}
 					<p class="empty">No hay festivos de este país en la terminal.</p>
@@ -247,6 +294,10 @@
 		color: var(--amber);
 		font-size: var(--fs-s);
 		cursor: pointer;
+	}
+	/* El cielo puede partirse en dos líneas: así caben la mínima y la lluvia en el móvil sin scroll lateral. */
+	.sky {
+		white-space: normal;
 	}
 	small {
 		color: var(--muted);
