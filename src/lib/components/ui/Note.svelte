@@ -5,7 +5,7 @@
 	let { children }: { children: Snippet } = $props();
 </script>
 
-<p class="pnote">{@render children()}</p>
+<p class="pnote" data-ui="note">{@render children()}</p>
 
 <style>
 	.pnote {
