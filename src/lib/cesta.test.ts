@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { myInflation, parseBasket, type CpiGroup } from './cesta.ts';
+import { basketToSave, myInflation, parseBasket, type CpiGroup } from './cesta.ts';
 
 const groups: CpiGroup[] = [
 	{ code: 'CP01', label: 'Alimentos', weight: 200, rate: 4 },
@@ -26,5 +26,15 @@ describe('parseBasket', () => {
 	it('solo grupos conocidos y números válidos', () => {
 		expect(parseBasket('{"CP01":20,"CP99":5,"CP04":-1,"CP07":"x"}', ['CP01', 'CP04', 'CP07'])).toEqual({ CP01: 20 });
 		expect(parseBasket('roto', ['CP01'])).toEqual({});
+	});
+});
+
+describe('basketToSave', () => {
+	it('sin los grupos del IPCA no toca lo guardado (antes lo borraba)', () => {
+		expect(basketToSave({}, [])).toBeUndefined();
+	});
+	it('con grupos: guarda tus pesos o borra la clave si no queda ninguno', () => {
+		expect(basketToSave({ CP01: 30 }, ['CP01', 'CP07'])).toBe('{"CP01":30}');
+		expect(basketToSave({}, ['CP01', 'CP07'])).toBeNull();
 	});
 });

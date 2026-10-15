@@ -5,14 +5,16 @@
 -->
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import DecimalInput from '#lib/components/DecimalInput.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Note from '#lib/components/ui/Note.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
-	import { BASKET_KEY, myInflation, parseBasket } from '#lib/cesta.ts';
+	import { BASKET_KEY, basketToSave, myInflation, parseBasket } from '#lib/cesta.ts';
 	import { nf, period, signed } from '#lib/format.ts';
+	import { parseDecimal, showDecimal } from '#lib/decimal.ts';
 	import { compound, realValue } from '#lib/savings.ts';
 
 	let { data } = $props();
@@ -40,17 +42,17 @@
 	// Como un watch profundo: guarda cada cambio.
 	$effect(() => {
 		const f = JSON.stringify(form);
-		const b = JSON.stringify(basket);
+		const b = basketToSave(basket, codes);
 		if (!loaded) return;
 		try {
 			localStorage.setItem(SAVINGS_KEY, f);
-			if (b === '{}') localStorage.removeItem(BASKET_KEY);
-			else localStorage.setItem(BASKET_KEY, b);
+			if (b === null) localStorage.removeItem(BASKET_KEY);
+			else if (b !== undefined) localStorage.setItem(BASKET_KEY, b);
 		} catch {}
 	});
 
 	const inflation = $derived(data.cesta?.total ?? null);
-	const growth = $derived(compound(form.initial, form.monthly, form.rate, form.years));
+	const growth = $derived(compound(form.initial || 0, form.monthly || 0, form.rate, form.years));
 	// Lo que valdría el total en dinero de hoy si la inflación siguiera como ahora.
 	const realTotal = $derived(growth && inflation !== null ? growth.total / (1 + inflation / 100) ** form.years : null);
 	const yearsIndex = $derived(data.cesta?.index.points ?? []);
@@ -62,9 +64,9 @@
 	const tone = (v: number | null) => (v === null ? 'mut' : v > 0 ? 'up' : v < 0 ? 'down' : 'flat');
 
 	function setWeight(code: string, raw: string) {
-		const v = Number(raw.replace(',', '.'));
+		const v = parseDecimal(raw);
 		const next = { ...basket };
-		if (raw.trim() === '' || !Number.isFinite(v) || v < 0) delete next[code];
+		if (v === null || v < 0) delete next[code];
 		else next[code] = v;
 		basket = next;
 	}
@@ -101,10 +103,10 @@
 
 	<Panel title="Interés compuesto">
 		<div class="form">
-			<label>Hoy pones <span><input type="number" inputmode="decimal" min="0" step="100" bind:value={form.initial} /> €</span></label>
-			<label>Cada mes <span><input type="number" inputmode="decimal" min="0" step="10" bind:value={form.monthly} /> €</span></label>
-			<label>Rentabilidad al año <span><input type="number" inputmode="decimal" step="0.1" bind:value={form.rate} /> %</span></label>
-			<label>Durante <span><input type="number" inputmode="numeric" min="1" max="60" step="1" bind:value={form.years} /> años</span></label>
+			<label>Hoy pones <span><DecimalInput class="num" thousands bind:value={form.initial} /> €</span></label>
+			<label>Cada mes <span><DecimalInput class="num" thousands bind:value={form.monthly} /> €</span></label>
+			<label>Rentabilidad al año <span><DecimalInput class="num" bind:value={form.rate} /> %</span></label>
+			<label>Durante <span><DecimalInput class="num" bind:value={form.years} /> años</span></label>
 		</div>
 		{#if growth}
 			<Tiles>
@@ -121,7 +123,7 @@
 	<Panel title="Lo que vale hoy tu dinero de otro año">
 		{#if yearsIndex.length}
 			<div class="form">
-				<label>Cantidad <span><input type="number" inputmode="decimal" min="0" step="100" bind:value={form.amount} /> €</span></label>
+				<label>Cantidad <span><DecimalInput class="num" thousands bind:value={form.amount} /> €</span></label>
 				<label>
 					de
 					<select bind:value={form.year}>
@@ -157,13 +159,13 @@
 							<td class="hide-s mut">{nf(g.weight / 10, 1)} %</td>
 							<td>
 								<input
-									type="number"
+									class="num"
+									type="text"
 									inputmode="decimal"
-									min="0"
-									step="1"
+									autocomplete="off"
 									aria-label="Tu peso en {g.label}"
 									placeholder={nf(g.weight / 10, 1)}
-									value={basket[g.code] ?? ''}
+									value={showDecimal(basket[g.code])}
 									onchange={(e) => setWeight(g.code, e.currentTarget.value)}
 								/>
 							</td>
@@ -201,7 +203,9 @@
 		font-size: var(--fs-m);
 	}
 
-	input,
+	/* Los campos de cifras son de DecimalInput (otro componente): :global para que les lleguen estos estilos. */
+	label :global(input.num),
+	td input.num,
 	select {
 		height: var(--control-h);
 		padding: 0 var(--sp-6);
@@ -211,16 +215,18 @@
 		font: inherit;
 	}
 
-	input {
+	label :global(input.num) {
 		width: 10ch;
 		text-align: right;
 	}
 
-	td input {
+	td input.num {
 		width: 8ch;
+		text-align: right;
 	}
 
-	input:focus,
+	label :global(input.num:focus),
+	td input.num:focus,
 	select:focus {
 		outline: none;
 		border-color: var(--amber);

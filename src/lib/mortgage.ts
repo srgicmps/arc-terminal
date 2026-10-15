@@ -68,13 +68,28 @@ export function amortization(capital: number, years: number, ratePct: number): A
 }
 
 /**
+ * Lo que pagas en los 12 primeros meses (o en los que queden, si son menos), con el tipo de ahora.
+ * No es «cuota × 12»: a una hipoteca de 3 meses no le quedan 12 cuotas.
+ */
+export function firstYearPaid(capital: number, years: number, ratePct: number): number | null {
+	const pay = monthlyPayment(capital, years, ratePct);
+	return pay === null ? null : pay * Math.min(Math.round(years * 12), 12);
+}
+
+/** Año y mes de hoy en España (Europe/Madrid): el 1 de noviembre a las 00:30 ya es noviembre, aunque en UTC no. */
+function madridMonth(today: Date): { y: number; m: number } {
+	const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit' }).formatToParts(today);
+	const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+	return { y: get('year'), m: get('month') };
+}
+
+/**
  * Próxima revisión de una hipoteca variable que se revisa en `month` (1–12) cada `every` meses (6 o 12).
- * Si toca este mismo mes, cuenta como este mes (0 meses). Devuelve el mes («2027-03») y los meses que faltan.
+ * Si toca este mismo mes (en España), cuenta como este mes (0 meses). Devuelve el mes («2027-03») y los meses que faltan.
  */
 export function nextReview(month: number, every: 6 | 12, today: Date): { ym: string; months: number } | null {
 	if (!(month >= 1 && month <= 12)) return null;
-	const y = today.getUTCFullYear();
-	const m = today.getUTCMonth() + 1;
+	const { y, m } = madridMonth(today);
 	for (let ahead = 0; ahead < 12; ahead++) {
 		const mm = ((m - 1 + ahead) % 12) + 1;
 		if ((mm - month + 12) % every === 0) {

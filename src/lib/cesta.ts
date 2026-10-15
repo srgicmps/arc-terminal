@@ -38,6 +38,16 @@ export function parseBasket(text: string | null, codes: string[]): Record<string
 }
 
 /**
+ * Qué guardar en `BASKET_KEY`: el JSON de tus pesos, null para borrar la clave (lo has dejado todo vacío) o
+ * undefined para no tocarla. Sin los grupos del IPCA (cesta.json aún no ha llegado) no se sabe qué pesos valen:
+ * la cesta leída sale vacía y, si se guardara, borraría la tuya (y la de tu cuenta).
+ */
+export function basketToSave(basket: Record<string, number>, codes: string[]): string | null | undefined {
+	if (!codes.length) return undefined;
+	return Object.keys(basket).length ? JSON.stringify(basket) : null;
+}
+
+/**
  * Tu inflación: media de las tasas de cada grupo con tus pesos en % (los que no pongas, con el de la cesta media,
  * que viene en tanto por mil). Si no suman 100, se reparten en proporción.
  * Los grupos sin tasa no cuentan. null si no queda ningún peso.
