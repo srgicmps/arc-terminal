@@ -50,7 +50,7 @@
 >
 	{#each prices as p, i (`${p.hour}${p.repeat ? '²' : ''}`)}
 		<div class="bar {level(p.kwh)}" class:now={isHour(p, current)} class:sel={i === picked} title="{hourLabel(p)} · {nf(p.kwh, 3)} €/kWh">
-			<i style:height="{(8 + (92 * (p.kwh - min)) / (max - min || 1)).toFixed(0)}%"></i>
+			<i style:height="calc((100% - var(--label-h)) * {((8 + (92 * (p.kwh - min)) / (max - min || 1)) / 100).toFixed(3)})"></i>
 			<span>{p.hour % 3 === 0 && !p.repeat ? String(p.hour).padStart(2, '0') : ''}</span>
 		</div>
 	{/each}
@@ -74,6 +74,9 @@
 		grid-auto-columns: minmax(0, 1fr);
 		gap: var(--sp-2);
 		height: 150px;
+		/* Alto de la fila de horas bajo las barras: la barra se mide sobre lo que queda, si no la flex la encoge
+		   y las horas más caras salen casi igual de altas. */
+		--label-h: 16px;
 		padding: var(--sp-12) var(--pad-x) var(--sp-4);
 		/* Deslizar en horizontal marca horas; en vertical sigue moviendo la página. */
 		touch-action: pan-y;
@@ -115,7 +118,8 @@
 	}
 
 	.bar span {
-		height: 16px;
+		flex: none;
+		height: var(--label-h);
 		padding-top: var(--sp-3);
 		color: var(--faint);
 		font-size: var(--fs-xxs);
