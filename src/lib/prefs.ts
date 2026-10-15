@@ -50,6 +50,8 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-cmd-favs', storage: 'local', what: 'Tus favoritos de la barra (hasta 9)', where: 'Barra: «fav ECO TIPOS», luego «1»', kind: 'dato' },
 	{ key: 'arc-mortgage', storage: 'local', what: 'Los datos de tu hipoteca (capital, años, tipo, diferencial y revisión)', where: 'HIPOTECA y ECO, «Tu hipoteca»', kind: 'dato' },
 	{ key: 'arc-portfolio', storage: 'local', what: 'Tus posiciones: código, cantidad, precio de compra, divisa, sector y precio a mano', where: 'CARTERA', kind: 'dato' },
+	{ key: 'arc-savings', storage: 'local', what: 'Las cantidades de las calculadoras de ahorro (interés compuesto y «lo que vale hoy»)', where: 'AHORRO', kind: 'dato' },
+	{ key: 'arc-basket', storage: 'local', what: 'Los pesos de tu cesta de la compra para tu inflación', where: 'AHORRO, «Tu inflación»', kind: 'dato' },
 	{ key: 'arc-fx', storage: 'local', what: 'Cantidad y divisas del conversor', where: 'WS, «Conversor»', kind: 'dato' },
 	{ key: 'arc-chess', storage: 'local', what: 'La partida de ajedrez en curso', where: 'CHESS', kind: 'dato' },
 	{ key: 'arc-puzzle', storage: 'local', what: 'El último problema del día resuelto', where: 'CHESS', kind: 'dato' },
