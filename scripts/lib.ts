@@ -1,6 +1,6 @@
 /// <reference types="node" />
 // Herramientas comunes para los scripts que descargan datos.
-import { LEGACY_SITE, SITE } from './site.ts';
+import { LEGACY_SITE, PAGES_SITE, SITE } from './site.ts';
 
 /** Una fuente de datos: cómo se llama, cada cuánto merece la pena refrescarla y cómo descargarla. */
 export interface Source<T = unknown> {
@@ -157,17 +157,20 @@ export function accessHeaders(): Record<string, string> {
 
 /**
  * Un archivo de la carpeta de datos de la web publicada (`path`, relativo a /data/): la copia anterior que
- * reutilizan las fuentes. Prueba primero la web de Cloudflare (con el service token de Access) y, si no
- * responde bien, la de GitHub Pages mientras conviva. Sin seguir redirecciones: sin token válido, Access
+ * reutilizan las fuentes. Prueba primero la web de Cloudflare (con el service token de Access), en el dominio
+ * propio y en *.pages.dev, y, si no responde bien, la de GitHub Pages mientras conviva. Sin seguir redirecciones: sin token válido, Access
  * redirige al login, y eso cuenta como fallo. Devuelve la primera respuesta buena, la última si ninguna lo
  * es, o null si no hubo respuesta.
  */
 export async function fetchPublished(path: string, ms = 30_000): Promise<Response | null> {
 	let last: Response | null = null;
-	const sites: [string, Record<string, string>][] = [
+	const all: [string, Record<string, string>][] = [
 		[SITE, accessHeaders()],
+		[PAGES_SITE, accessHeaders()],
 		[LEGACY_SITE, {}]
 	];
+	// Sin repetir: SITE_URL puede ser la propia dirección de *.pages.dev.
+	const sites = all.filter(([site], i) => all.findIndex(([s]) => s === site) === i);
 	for (const [site, headers] of sites) {
 		const res = await fetch(`${site}/data/${path}`, { headers, redirect: 'manual', signal: AbortSignal.timeout(ms) }).catch(
 			() => null

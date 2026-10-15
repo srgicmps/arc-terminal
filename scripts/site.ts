@@ -3,8 +3,11 @@
 // La URL se cambia sin tocar código con la Variable de GitHub SITE_URL (Settings → Secrets and variables →
 // Actions → Variables), p. ej. al pasar a un dominio propio.
 
-/** La web privada: Cloudflare Pages, con Cloudflare Access delante (login por código al email). */
-export const SITE = (process.env.SITE_URL || 'https://arc-terminal.pages.dev').replace(/\/+$/, '');
+/** La web privada: Cloudflare Pages en el dominio propio, con Cloudflare Access delante (login por código al email). */
+export const SITE = (process.env.SITE_URL || 'https://arcterminal.dev').replace(/\/+$/, '');
+
+/** La dirección de Cloudflare Pages del proyecto: la alternativa si el dominio propio no responde. */
+export const PAGES_SITE = 'https://arc-terminal.pages.dev';
 
 /** La web antigua en GitHub Pages, mientras conviva con la nueva. Se quita al apagar Pages. */
 export const LEGACY_SITE = 'https://srgicmps.github.io/arc-terminal';
