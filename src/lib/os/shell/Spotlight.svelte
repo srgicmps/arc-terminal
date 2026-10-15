@@ -87,7 +87,7 @@
 	.spot {
 		position: fixed;
 		left: 50%;
-		top: 18vh;
+		top: 18dvh;
 		z-index: var(--z-modal);
 		width: min(600px, calc(100vw - 2 * var(--sp-16)));
 		transform: translateX(-50%);

@@ -31,6 +31,8 @@
 	let phase = $state<'loading' | 'none' | 'denied' | 'ready' | 'error'>('loading');
 	let users = $state<User[]>([]);
 	let access = $state('');
+	/** Tu email (el del administrador): a ti no te puedes quitar, así que no sale el botón. */
+	let me = $state('');
 	let items = $state<Item[]>([]);
 	let message = $state('');
 	let confirm = $state('');
@@ -40,9 +42,10 @@
 		const res = await fetch(api('api/admin'), { cache: 'no-store', redirect: 'manual' });
 		if (res.status === 403) return void (phase = 'denied');
 		if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) throw new Error(String(res.status));
-		const body = (await res.json()) as { users: User[]; access: string };
+		const body = (await res.json()) as { users: User[]; access: string; admin?: string };
 		users = body.users;
 		access = body.access;
+		me = body.admin ?? '';
 		const fb = await fetch(api('api/feedback'), { cache: 'no-store', redirect: 'manual' });
 		items = fb.ok ? ((await fb.json()) as { items: Item[] }).items : [];
 		phase = 'ready';
@@ -71,14 +74,21 @@
 				: `No se ha podido: ${body.error ?? res.status}`;
 			confirm = '';
 			if (res.ok) await load();
+		} catch {
+			// Sin red: antes no salía nada (y el error quedaba suelto en la consola).
+			message = 'No se ha podido: sin conexión. Prueba otra vez.';
+			confirm = '';
 		} finally {
 			busy = false;
 		}
 	}
 
+	let fbMessage = $state('');
 	async function dismiss(id: number) {
-		const res = await fetch(api(`api/feedback?id=${id}`), { method: 'DELETE', redirect: 'manual' });
-		if (res.ok) items = items.filter((i) => i.id !== id);
+		fbMessage = '';
+		const res = await fetch(api(`api/feedback?id=${id}`), { method: 'DELETE', redirect: 'manual' }).catch(() => null);
+		if (res?.ok) items = items.filter((i) => i.id !== id);
+		else fbMessage = 'No se ha podido borrar. Prueba otra vez.';
 	}
 
 	const when = (ms: number | null) =>
@@ -109,11 +119,11 @@
 					<tbody>
 						{#each users as u (u.email)}
 							<tr>
-								<td class="l name">{u.email}{#if !u.invited}<span class="sub"> sin acceso</span>{/if}</td>
+								<td class="l name mail">{u.email}{#if !u.invited}<span class="sub"> sin acceso</span>{/if}</td>
 								<td class="mut">{when(u.seen)}</td>
 								<td>{u.alerts ? 'Sí' : '—'}</td>
 								<td>
-									{#if u.invited && access === 'ok'}
+									{#if u.invited && access === 'ok' && u.email !== me}
 										<button
 											type="button"
 											class="quit"
@@ -155,6 +165,7 @@
 						{/each}
 					</ul>
 				{/if}
+				{#if fbMessage}<p class="msg" role="status">{fbMessage}</p>{/if}
 			</Panel>
 		</div>
 	</div>
@@ -162,6 +173,12 @@
 {/if}
 
 <style>
+	/* En el móvil, un email largo empujaba «Último acceso» y «Quitar» fuera de la pantalla. */
+	.mail {
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+
 	.quit {
 		height: var(--control-h);
 		padding-inline: var(--sp-8);

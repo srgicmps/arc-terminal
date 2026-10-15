@@ -6,8 +6,10 @@
 	En el HTML generado al construir queda el hueco con el aviso «Cargando TradingView…».
 -->
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { rgba, token } from '#lib/color.ts';
 	import { theme } from '#lib/theme.svelte.ts';
+	import { paint, watchPaint } from '#lib/tvpaint.svelte.ts';
 	import Note from './ui/Note.svelte';
 
 	interface Props {
@@ -27,6 +29,8 @@
 	let near = $state(false);
 	/** El script de TradingView ya ha llegado (o ha fallado): se quita el aviso. */
 	let ready = $state(false);
+	/** No ha llegado (sin red o con un bloqueador): se dice, en vez de dejar el hueco vacío. */
+	let failed = $state(false);
 
 	// 1) Vigila cuándo se acerca a la vista. Una sola vez: al verlo, desconecta.
 	$effect(() => {
@@ -49,10 +53,13 @@
 	});
 
 	// 2) Cuando está cerca, crea el script. Se rehace si cambian widget, config (p. ej. otro símbolo)
-	//    o el tema (día / noche), porque TradingView solo lee los colores al crearse.
+	//    o los colores (tema, acento o estética), porque TradingView solo los lee al crearse.
 	$effect(() => {
+		watchPaint();
 		if (!near) return;
+		void paint.n;
 		ready = false;
+		failed = false;
 		const script = document.createElement('script');
 		script.src = `https://s3.tradingview.com/external-embedding/embed-widget-${widget}.js`;
 		script.async = true;
@@ -60,7 +67,8 @@
 		const panel = rgba(token('--panel'));
 		const line = rgba(token('--line'));
 		script.textContent = JSON.stringify({
-			colorTheme: theme.resolved,
+			// Sin depender de theme.resolved: paint ya cambia con data-theme (si no, se rehacía dos veces).
+			colorTheme: untrack(() => theme.resolved),
 			isTransparent: true,
 			backgroundColor: panel,
 			gridColor: line,
@@ -70,7 +78,8 @@
 			height: '100%',
 			...config
 		});
-		script.onload = script.onerror = () => (ready = true);
+		script.onload = () => (ready = true);
+		script.onerror = () => (failed = ready = true);
 		const inner = document.createElement('div');
 		inner.className = 'tradingview-widget-container__widget';
 		box.replaceChildren(inner, script);
@@ -82,7 +91,9 @@
 </script>
 
 <div class="tv" data-widget={widget} style:height="{height}px" bind:this={frame}>
-	{#if !ready}
+	{#if failed}
+		<span class="wait" role="status">No se ha podido cargar TradingView (sin conexión o con un bloqueador).</span>
+	{:else if !ready}
 		<span class="wait" aria-hidden="true">Cargando TradingView…</span>
 	{/if}
 	<div class="box tradingview-widget-container" bind:this={box}></div>
@@ -117,6 +128,8 @@
 		font-family: var(--mono);
 		font-size: var(--fs-xs);
 		letter-spacing: var(--track-tight);
+		text-align: center;
+		padding: 0 var(--pad-x);
 		pointer-events: none;
 	}
 
