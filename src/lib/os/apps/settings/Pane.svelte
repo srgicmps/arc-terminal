@@ -12,6 +12,7 @@
 	import Seg from '../../../components/ui/Seg.svelte';
 	import Share from '../../../components/ui/Share.svelte';
 	import { cloud } from '../../../cloud.svelte.ts';
+	import { accountLine } from '../../system/account.ts';
 	import { takesAccent } from '../../../estilos.ts';
 	import { MODOS, modo, setModo } from '../../../modo.svelte.ts';
 	import { PREFS } from '../../../prefs.ts';
@@ -96,15 +97,18 @@
 	$effect(() => {
 		if (section === 'almacenamiento') measure();
 	});
+	// Qué pasa con tu cuenta: sincronizada, sin conexión, sesión caducada… (cloud.svelte.ts → account.ts).
+	const account = $derived(accountLine(cloud.state, cloud.user, cloud.frozen));
 </script>
 
 <div class="pane">
 	{#if section === 'cuenta'}
 		<h2 tabindex="-1">Cuenta</h2>
+		<p class:mut={!account.warn} class:warn={account.warn}>{account.text}</p>
 		{#if cloud.user}
-			<p>Tu cuenta: <b>{cloud.user}</b>. Tus ajustes, notas, alarmas y escritorios se sincronizan entre tus dispositivos.</p>
+			<p class="mut">Tus ajustes, notas, alarmas, carpetas y escritorios van con tu cuenta. Las imágenes de fondo propias, no: solo en este navegador.</p>
 		{:else}
-			<p class="mut">Sin cuenta: todo se queda en este navegador. En «Copia de ajustes» puedes llevártelos a otro dispositivo con un enlace.</p>
+			<p class="mut">En «Copia de ajustes» puedes llevártelos a otro dispositivo con un enlace.</p>
 		{/if}
 		<h3>Arc OS</h3>
 		<p class="mut">Es opcional: puedes volver a la web de siempre cuando quieras.</p>
@@ -228,6 +232,10 @@
 </div>
 
 <style>
+	.warn {
+		color: var(--amber-dim);
+	}
+
 	.pane {
 		min-width: 0;
 	}

@@ -445,4 +445,10 @@
 			display: inline-block;
 		}
 	}
+	/* iPhone e iPad: con menos de 16 px, Safari amplía la página al escribir (--fs-field vale 16 px en táctil). */
+	@media (pointer: coarse) {
+		.editor {
+			font-size: var(--fs-field);
+		}
+	}
 </style>

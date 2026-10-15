@@ -481,10 +481,15 @@
 		cursor: pointer;
 	}
 
-	.btn:hover,
 	.btn[aria-pressed='true'] {
 		border-color: var(--amber-edge);
 		background: var(--amber-soft);
+	}
+	@media (hover: hover) {
+		.btn:hover {
+			border-color: var(--amber-edge);
+			background: var(--amber-soft);
+		}
 	}
 
 	.main {
@@ -594,9 +599,13 @@
 		stroke-width: var(--hair);
 	}
 
-	.dot:hover circle,
 	.dot:focus-visible circle {
 		fill-opacity: var(--cmd-tl-dot-hover);
+	}
+	@media (hover: hover) {
+		.dot:hover circle {
+			fill-opacity: var(--cmd-tl-dot-hover);
+		}
 	}
 
 	.dot.sel circle {
@@ -692,9 +701,11 @@
 		cursor: pointer;
 	}
 
-	.mini:hover:not(:disabled) {
-		border-color: var(--cmd-tl-edge);
-		color: var(--fg);
+	@media (hover: hover) {
+		.mini:hover:not(:disabled) {
+			border-color: var(--cmd-tl-edge);
+			color: var(--fg);
+		}
 	}
 
 	.mini:disabled {

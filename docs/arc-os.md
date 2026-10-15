@@ -89,6 +89,7 @@ nada en los traspasos entre sesiones.
 - [x] Sonidos opcionales (Web Audio, apagados por defecto: `setSettings({ sounds })`) [OS 5] #511
 - [x] Interruptores de «Pantalla de inicio» y «Sonidos» en Ajustes [OS 4] #520
 - [x] Atajos del sistema en `shortcuts.ts` (salen en HELP) [OS 5] #499/#509
+- [x] Cuenta: estado de la sincronía (`cloud.state`: sin conexión, sesión caducada, error) en la barra, Panel de control y Ajustes, con un aviso; lo que no cabe en la cuenta (una nota de más de 64 KB) se queda aquí sin bloquear lo demás; al entrar otro usuario se borran las imágenes de fondo del anterior; varias pestañas no se pisan la base de la sincronía [QA OS 10]
 
 ## Apps del sistema
 - [x] Explorador de archivos al estilo de un gestor web de archivos, con papelera (mismo modelo de carpetas que el escritorio): árbol, barra de acciones, ruta clicable, lista ordenable o iconos, selección múltiple, menú contextual, arrastrar y soltar, Propiedades; a ≤ 600 px, árbol aparte y lista. App «Archivos» (`src/lib/os/apps/files/`, lógica en `explorer.ts`); las carpetas del escritorio se abren en ella [OS 4] #517

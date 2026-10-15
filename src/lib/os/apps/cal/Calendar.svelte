@@ -237,8 +237,10 @@
 		border-color: transparent;
 	}
 
-	.days button:hover {
-		border-color: var(--line);
+	@media (hover: hover) {
+		.days button:hover {
+			border-color: var(--line);
+		}
 	}
 
 	.out {

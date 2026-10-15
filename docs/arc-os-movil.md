@@ -42,3 +42,10 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
 - [x] «Atrás» del navegador o gesto del sistema: cierra lo de encima (hoja, carpeta, app) con el enrutado superficial
   de SvelteKit (`pushState`, `page.state.phone`); en inicio, sale de /os como siempre.
 - [ ] Probarlo en un iPhone de verdad (safe-area, PWA instalada): solo puede Sergi; probado en Chromium a 390×844.
+
+## iPhone, iPad y PWA (QA OS 3)
+- [x] `viewport-fit=cover` solo dentro de /os (`src/lib/os/mobile/viewport.ts`): sin él, Safari dejaba a 0 todas las
+  zonas seguras y el dock y la barra de las apps quedaban bajo la barra de inicio del iPhone.
+- [x] Teléfono en horizontal: rejilla de 8 × 3 con iconos de 40 px (antes se montaban unos sobre otros); nada bajo la muesca.
+- [x] Sin zoom por doble toque en las apps ni pellizco en inicio; en iPad vertical (700–900 px), iconos de 72 px.
+- iPad en horizontal (> 900 px) lleva el escritorio, con pantalla táctil.

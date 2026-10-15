@@ -3,23 +3,51 @@
 // trae lo de tus otros dispositivos. Sin servidor (GitHub Pages, sin conexión, en local), no hace nada.
 import { asset } from '$app/paths';
 import { collect } from './transfer.ts';
-import { isEmpty, merge, readMemory, startPlan, type Patch, type Prefs, type SyncMemory } from './cloud.ts';
+import { PREFS } from './prefs.ts';
+import { isEmpty, mergeFitting, readMemory, startPlan, type Patch, type Prefs, type SyncMemory } from './cloud.ts';
 
 const MEMORY = 'arc-sync';
 const RELOADED = 'arc-sync-reload';
 const EVERY = 5000;
+const RETRY = 60_000;
 
-/** Para HELP: con qué cuenta se guardan tus ajustes ('' si no hay servidor). */
-export const cloud = $state({ user: '' });
+/**
+ * Cómo va la cuenta. user: con qué cuenta se guardan tus ajustes ('' si no hay servidor). state:
+ *   local    sin servidor (en local, GitHub Pages): todo se queda en este navegador
+ *   sync     conectando · ok: sincronizado · offline: sin conexión · auth: la sesión ha caducado
+ *   error    el servidor ha fallado o ha rechazado los cambios
+ * En todos los casos se sigue guardando aquí y se sube en cuanto se pueda. frozen: claves que no caben en la cuenta.
+ */
+export const cloud = $state({
+	user: '',
+	state: 'local' as 'local' | 'sync' | 'ok' | 'offline' | 'auth' | 'error',
+	frozen: [] as string[]
+});
+
+/** Bases de IndexedDB de prefs.ts (las imágenes de fondo de Arc OS): son del usuario que estaba antes. */
+const IDB = PREFS.filter((p) => p.storage === 'idb').map((p) => p.key);
 
 let memory: SyncMemory | null = null;
 let busy = false;
 
 const url = () => asset('api/prefs' as Parameters<typeof asset>[0]);
 
+/** El estado según la respuesta: con Access, una sesión caducada llega como redirección (opaca) o como 401. */
+const failed = (res: Response) =>
+	(cloud.state =
+		res.type === 'opaqueredirect' || res.status === 401 || res.status === 403
+			? 'auth'
+			: // 503 con el JSON de cloud/prefs.ts: la cuenta no está configurada (o D1 no responde). Se sigue en local.
+				res.status === 503 && !memory
+				? 'local'
+				: 'error');
+
 async function getRemote(): Promise<{ user: string; prefs: Prefs } | null> {
 	const res = await fetch(url(), { cache: 'no-store', credentials: 'same-origin', redirect: 'manual' });
-	if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) return null;
+	if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) {
+		failed(res);
+		return null;
+	}
 	const body = (await res.json()) as { user?: unknown; prefs?: unknown };
 	return typeof body.user === 'string' && body.prefs && typeof body.prefs === 'object'
 		? { user: body.user, prefs: body.prefs as Prefs }
@@ -28,15 +56,41 @@ async function getRemote(): Promise<{ user: string; prefs: Prefs } | null> {
 
 async function push(patch: Patch, keepalive = false): Promise<boolean> {
 	if (isEmpty(patch)) return true;
+	const body = JSON.stringify(patch);
 	const res = await fetch(url(), {
 		method: 'PUT',
 		headers: { 'content-type': 'application/json' },
-		body: JSON.stringify(patch),
+		body,
 		credentials: 'same-origin',
 		redirect: 'manual',
-		keepalive
+		// Al cerrar la pestaña, keepalive deja acabar el envío, pero el navegador no admite más de 64 KB así.
+		keepalive: keepalive && body.length < 60_000
 	});
+	if (!res.ok) failed(res);
 	return res.ok;
+}
+
+/** Lo que ha quedado aquí sin subir porque no cabe. */
+const setFrozen = (keys: string[] | undefined) => {
+	const next = keys ?? [];
+	if (next.join() !== cloud.frozen.join()) cloud.frozen = next;
+};
+
+/** Otro usuario entra en este navegador: lo que el anterior guardó fuera de localStorage tampoco es suyo. */
+function forgetPrevious() {
+	for (const name of IDB) {
+		try {
+			indexedDB.deleteDatabase(name);
+		} catch {}
+	}
+}
+
+/** Otra pestaña puede haber sincronizado: la memoria buena es la guardada, no la de esta pestaña. */
+function refreshMemory() {
+	try {
+		const saved = readMemory(localStorage.getItem(MEMORY));
+		if (saved && (!memory || saved.user === memory.user)) memory = saved;
+	} catch {}
 }
 
 function applyLocal(patch: Patch) {
@@ -49,30 +103,44 @@ function remember(user: string, base: Prefs) {
 	localStorage.setItem(MEMORY, JSON.stringify(memory));
 }
 
+/** Cambios de fuera que esperan a que dejes de escribir. */
+let postponed = false;
+let lastPull = 0;
+
 /** Trae lo del servidor, junta y sube. Si ha cambiado algo de aquí, recarga para que las vistas lo lean. */
-async function pull(first: boolean) {
+async function pull() {
 	if (busy) return;
 	busy = true;
+	lastPull = Date.now();
 	try {
+		if (cloud.state !== 'ok') cloud.state = 'sync';
 		const remote = await getRemote();
 		if (!remote) return;
+		refreshMemory();
 		const local = collect(localStorage);
-		const plan = first
-			? startPlan(local, remote.prefs, memory, remote.user)
-			: merge(local, remote.prefs, memory?.base ?? null);
+		const switching = !!memory && memory.user !== remote.user;
+		const plan = startPlan(local, remote.prefs, memory, remote.user);
+		// Escribiendo (una nota, la terminal…): cambiar los ajustes por debajo sin recargar dejaría la vista con lo
+		// viejo, y su próximo guardado pisaría lo que llega de fuera. Se deja para cuando acabe.
+		postponed = !isEmpty(plan.apply) && typing() && !switching;
+		if (postponed) return;
 		if (!(await push(plan.push))) return;
+		if (switching) forgetPrevious();
 		applyLocal(plan.apply);
 		remember(remote.user, plan.result);
 		cloud.user = remote.user;
+		cloud.state = 'ok';
+		setFrozen(plan.frozen);
 		// Cada módulo lee sus ajustes al arrancar: una recarga (una sola por pestaña y vez) los pone al día.
-		if (!isEmpty(plan.apply) && !typing()) {
+		if (!isEmpty(plan.apply)) {
 			if (sessionStorage.getItem(RELOADED) !== '1') {
 				sessionStorage.setItem(RELOADED, '1');
 				location.reload();
 			}
 		} else sessionStorage.removeItem(RELOADED);
 	} catch {
-		// Sin conexión o con la sesión de Access caducada: se intenta en la próxima.
+		// Sin conexión: se intenta en la próxima. Todo sigue guardándose aquí.
+		cloud.state = navigator.onLine === false ? 'offline' : 'error';
 	} finally {
 		busy = false;
 	}
@@ -81,13 +149,19 @@ async function pull(first: boolean) {
 /** Sube lo que haya cambiado aquí desde la última vez. */
 async function flush(keepalive = false) {
 	if (busy || !memory) return;
-	const plan = merge(collect(localStorage), memory.base, memory.base);
+	refreshMemory();
+	const plan = mergeFitting(collect(localStorage), memory.base, memory.base);
+	setFrozen(plan.frozen);
 	if (isEmpty(plan.push)) return;
 	busy = true;
 	try {
-		if (await push(plan.push, keepalive)) remember(memory.user, plan.result);
+		if (await push(plan.push, keepalive)) {
+			remember(memory.user, plan.result);
+			cloud.state = 'ok';
+		}
 	} catch {
 		// Igual que arriba: ya se subirá.
+		cloud.state = navigator.onLine === false ? 'offline' : 'error';
 	} finally {
 		busy = false;
 	}
@@ -107,15 +181,26 @@ export function initCloud() {
 	} catch {
 		return;
 	}
-	void pull(true);
-	const id = setInterval(() => void flush(), EVERY);
+	cloud.state = 'sync';
+	void pull();
+	// Cada poco se sube lo de aquí. Si se dejó para luego, se vuelve a pedir lo de fuera al dejar de escribir; si
+	// falló (sin conexión, error), como mucho una vez por minuto. Sin cuenta configurada (503) ni se insiste.
+	const id = setInterval(() => {
+		if (postponed && !typing()) void pull();
+		else if (cloud.state === 'error' || cloud.state === 'offline') {
+			if (Date.now() - lastPull > RETRY) void pull();
+		} else if (memory) void flush();
+	}, EVERY);
+	const onOnline = () => void pull();
+	addEventListener('online', onOnline);
 	const onVisibility = () => {
 		if (document.visibilityState === 'hidden') void flush(true);
-		else void pull(false);
+		else void pull();
 	};
 	document.addEventListener('visibilitychange', onVisibility);
 	return () => {
 		clearInterval(id);
 		document.removeEventListener('visibilitychange', onVisibility);
+		removeEventListener('online', onOnline);
 	};
 }

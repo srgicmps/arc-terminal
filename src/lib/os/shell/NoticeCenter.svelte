@@ -140,8 +140,10 @@
 		padding: var(--row-y) var(--pad-x);
 		text-align: left;
 	}
-	li button:hover {
-		background: var(--raise);
+	@media (hover: hover) {
+		li button:hover {
+			background: var(--raise);
+		}
 	}
 	.kind {
 		color: var(--muted);
