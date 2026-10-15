@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeContext } from '../lib.ts';
-import { boeEntries, buildIndex, clip, MAX_BYTES, MAX_TITLE, newsEntries, search, tickerEntries } from '../sources/search.ts';
+import { agendaEntries, boeEntries, buildIndex, clip, MAX_BYTES, MAX_TITLE, newsEntries, search, tickerEntries } from '../sources/search.ts';
 import { TICKERS } from '../../src/lib/tickers.ts';
 import type { BoeData, NewsItem, SearchEntry } from '../../src/lib/types.ts';
 
@@ -93,5 +93,33 @@ describe('buildIndex', () => {
 
 	it('falla (y se reutiliza la copia anterior) si no hay ni titulares ni BOE', async () => {
 		await expect(search.fetch(undefined, makeContext(new Map()))).rejects.toThrow();
+	});
+});
+
+describe('agendaEntries', () => {
+	const now = Date.parse('2026-10-15T08:00:00Z'); // 10:00 en Madrid
+	const agenda = [
+		{
+			id: 'lagarde',
+			source: { name: 'BCE', url: 'https://www.ecb.europa.eu' },
+			events: [
+				{ start: '2026-10-14T09:00:00Z', date: '2026-10-14', title: 'Ayer', place: '' },
+				{ start: '2026-10-15T12:30:00Z', date: '2026-10-15', title: 'Rueda de prensa', place: 'Fráncfort' },
+				{ start: null, date: '2026-10-16', title: 'Viaje a Washington', place: '' }
+			]
+		},
+		{ id: 'nadie', source: { name: 'x', url: 'https://x.example' }, events: [{ start: null, date: '2026-10-15', title: 'X', place: '' }] },
+		{ id: 'trump', source: { name: 'x', url: 'https://x.example' }, events: null }
+	];
+
+	it('actos de hoy en adelante, en hora de Madrid, que enlazan a LIDER', () => {
+		expect(agendaEntries(agenda, now)).toEqual([
+			{ t: 'Lagarde · 15 oct 14:30 · Rueda de prensa', u: '/lider?id=lagarde', s: 'Agenda' },
+			{ t: 'Lagarde · 16 oct · Viaje a Washington', u: '/lider?id=lagarde', s: 'Agenda' }
+		]);
+	});
+
+	it('sin agenda, nada', () => {
+		expect(agendaEntries(undefined, now)).toEqual([]);
 	});
 });

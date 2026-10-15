@@ -1,8 +1,12 @@
 // LIDER: qué hacen ahora los líderes que se siguen. Para añadir uno (Von der Leyen, Lagarde…), una
 // entrada aquí y, si tiene agenda pública, su lector en scripts/sources/leaders.ts.
-import { norm } from './cmdline.ts';
+import { plain } from './news.ts';
 import { madridNow } from './power.ts';
 import type { AgendaEvent, FedRegDoc, NewsItem } from './types.ts';
+
+// Como norm() de cmdline.ts, pero sin importarlo: cmdline trae commands.ts (import.meta.glob, solo Vite) y
+// este archivo también lo usa el script de datos (scripts/sources/search.ts).
+const norm = (s: string) => plain(s).trim().toUpperCase();
 
 export interface Leader {
 	/** Va en la URL: /lider?id=lagarde. */

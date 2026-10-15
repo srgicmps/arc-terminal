@@ -25,13 +25,14 @@
 	} from '#lib/cmdline.ts';
 	import { argOptions } from '#lib/argcomplete.ts';
 	import type { Dataset } from '#lib/data.ts';
-	import { leaderEntries, prepare, searchOptions, type Indexed } from '#lib/search.ts';
+	import { countryEntries, leaderEntries, prepare, searchOptions, type Indexed } from '#lib/search.ts';
 	import type { SearchEntry } from '#lib/types.ts';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
 
 	const LEADER_OPTIONS = leaderEntries();
-	// Tus valores primero; después, las funciones, los líderes y los valores populares.
+	const COUNTRY_OPTIONS = countryEntries();
+	// Tus valores primero; después, las funciones, los líderes, los países y los valores populares.
 	const ALL: Option[] = $derived([
 		...watchlist.codes.map((code) => ({
 			code,
@@ -40,6 +41,7 @@
 		})),
 		...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función', aliases: c.aliases })),
 		...LEADER_OPTIONS,
+		...COUNTRY_OPTIONS,
 		...TICKERS.filter((t) => !watchlist.codes.includes(t.code)).map((t) => ({
 			code: t.code,
 			desc: t.name,
