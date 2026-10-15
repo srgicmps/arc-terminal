@@ -59,7 +59,16 @@
 				]
 			: []
 	);
-	const spots = $derived(arrange(icons.map((a) => a.id), shell.icons, cols, rows));
+	/**
+	 * Dónde se vio cada icono la última vez (en memoria). Los que no tienen casilla guardada conservan la suya cuando
+	 * aparece otro (una app añadida desde el Launchpad o la barra, un archivo restaurado): sin esto, se correrían todos.
+	 */
+	let seen: Spots = {};
+	const spots = $derived.by(() => {
+		const out = arrange(icons.map((a) => a.id), { ...seen, ...shell.icons }, cols, rows);
+		if (w > 0 && h > 0) seen = out;
+		return out;
+	});
 
 	let selected = $state<string[]>([]);
 	let drag = $state<{ id: string; from: Cell; start: { x: number; y: number }; dx: number; dy: number; moved: boolean } | null>(null);
@@ -255,7 +264,7 @@
 				{ label: 'Todas las apps…', run: () => (shell.open = 'launchpad') },
 				{ label: 'Buscar…', kbd: 'Ctrl+Espacio', run: () => (shell.open = 'spotlight') },
 				'sep',
-				{ label: 'Organizar iconos', run: () => setIcons({}) },
+				{ label: 'Organizar iconos', run: () => ((seen = {}), setIcons({})) },
 				{ label: 'Mostrar escritorio', run: os.showDesktop },
 				{ label: 'Ventanas en mosaico', run: os.tileWins },
 				{ label: 'Escritorio nuevo', run: os.addDesk },
