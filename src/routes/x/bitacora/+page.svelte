@@ -7,7 +7,6 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
-	import Note from '#lib/components/ui/Note.svelte';
 	import Search from '#lib/components/ui/Search.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
@@ -196,9 +195,7 @@
 			{:else}
 				<p class="empty">Anota una idea con su precio y aquí verás cómo va, sola.</p>
 			{/if}
-			{#snippet note()}
-				<Note>Precio de ahora: valores de EE. UU. (Finnhub, cada 10 min) o series de G por su atajo (US10, BTC, WTI…).</Note>
-			{/snippet}
+			{#snippet note()}Precio de ahora: valores de EE. UU. (Finnhub, cada 10 min) o series de G por su atajo (US10, BTC, WTI…).{/snippet}
 		</Panel>
 	</div>
 
@@ -239,9 +236,7 @@
 			{:else}
 				<p class="empty">{journal.entries.length ? 'Nada con ese filtro.' : 'Aún no has escrito nada.'}</p>
 			{/if}
-			{#snippet note()}
-				<Note>Se guarda en este navegador y, si entras con tu cuenta, en ella: lo ves en todos tus dispositivos y nadie más.</Note>
-			{/snippet}
+			{#snippet note()}Se guarda en este navegador y, si entras con tu cuenta, en ella: lo ves en todos tus dispositivos y nadie más.{/snippet}
 		</Panel>
 	</div>
 </div>
