@@ -33,7 +33,7 @@ describe('respuestas de datos', () => {
 	it('limpia la pregunta', () => expect(plain('  ¿Cuándo es el   próximo BCE? ')).toBe('cuando es el proximo bce'));
 
 	it('euríbor, prima y paro, con su variación', () => {
-		expect(ask('Euríbor')).toEqual({ code: 'EURÍBOR 12 M', desc: '2,450 % · sep 26 · +0,278 pp en un año · BCE', open: 'ECO' });
+		expect(ask('Euríbor')).toEqual({ code: 'EURÍBOR 12 M', desc: '2,450 % · sep 26 · +0,278 pp en un año · BCE', open: 'BTMM' });
 		expect(ask('prima')?.desc).toBe('63 pb · 14 oct · +3 en una semana · Banco de España');
 		expect(ask('paro es')?.desc).toBe('10,5 % · ago 26 · −0,9 pp en un año · Eurostat');
 		expect(ask('paro italia')?.code).toBe('PARO ITALIA');
@@ -55,7 +55,9 @@ describe('respuestas de datos', () => {
 	it('no tapa los comandos ni los valores', () => {
 		for (const raw of ['ECO', 'FUEL', 'NVDA', 'ES', 'WS', 'gasolina madrid']) expect(ask(raw)).toBeNull();
 		// Las palabras de las respuestas no son comandos; «diésel» y «gasolina» son alias de FUEL, y su respuesta abre FUEL.
-		for (const raw of ['euribor', 'prima', 'btc', 'hipoteca', 'llenar', 'hora']) expect(findCommand(raw)).toBeUndefined();
+		for (const raw of ['prima', 'btc', 'hipoteca', 'llenar', 'hora']) expect(findCommand(raw)).toBeUndefined();
+		// «euribor» es alias de BTMM (mercado monetario): su respuesta abre BTMM.
+		expect(findCommand('euribor')?.code).toBe('BTMM');
 		expect(findCommand('diesel')?.code).toBe('FUEL');
 		expect(ask('diesel')?.open).toBe('FUEL');
 	});
