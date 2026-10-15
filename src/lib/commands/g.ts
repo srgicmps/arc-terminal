@@ -1,7 +1,7 @@
 import type { Command } from '../commands.ts';
 
 export default {
-	order: 66, code: 'G', route: '/g', key: 'Gráfico', desc: 'Gráfico de cualquier serie de la terminal, sola o comparada', sources: 'Todas las series de la terminal', aliases: ['gráfico', 'series'], arg: { param: 's', label: 'Series separadas por comas', example: 'G US10, BUND' },
+	order: 65, code: 'G', route: '/g', key: 'Gráfico', desc: 'Gráfico de cualquier serie de la terminal, sola o comparada', sources: 'Todas las series de la terminal', aliases: ['gráfico', 'series'], arg: { param: 's', label: 'Series separadas por comas', example: 'G US10, BUND' },
 	manual: {
 		section: 'Economía y mercados',
 		what: 'Dibuja cualquier serie que ya descarga la terminal (bonos, tipos, inflación, paro, petróleo…) y compara varias en el mismo gráfico.',
