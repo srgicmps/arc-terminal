@@ -2,13 +2,15 @@ import { dataset } from '#lib/data.ts';
 import { rvMetrics } from '#lib/rv.ts';
 import type { Mention } from '#lib/news.ts';
 import { summarize, type FinraData } from '#lib/shortvol.ts';
-import type { AnalystsData, PeersData, PerfData, SecData } from '#lib/types.ts';
+import { holdersFromTop, issuersFor } from '#lib/holders.ts';
+import { TICKERS } from '#lib/tickers.ts';
+import type { AnalystsData, FundsData, PeersData, PerfData, SecData } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
 // Los documentos de la SEC y los titulares de todos los valores (dos archivos pequeños); la vista
 // elige los suyos.
 export const load: PageServerLoad = async () => {
-	const [sec, news, analysts, finra, perf, peers] = await Promise.all([
+	const [sec, news, analysts, finra, perf, peers, funds] = await Promise.all([
 		dataset<SecData>('sec'),
 		dataset<Record<string, Mention[]>>('news-index'),
 		// Analistas, resultados y directivos (Finnhub): solo valores de EE. UU., unos pocos KB cada uno.
@@ -17,12 +19,28 @@ export const load: PageServerLoad = async () => {
 		dataset<FinraData>('finra'),
 		// RV: cifras de unos 60 valores de EE. UU. y de sus competidores (Finnhub), solo las que compara RV.
 		dataset<PerfData>('perf'),
-		dataset<PeersData>('peers')
+		dataset<PeersData>('peers'),
+		// Fondos de FONDOS que tienen cada valor de la barra (HDS): solo los de EE. UU. que salen en el índice.
+		dataset<FundsData>('funds')
 	]);
 	const rv = perf?.data.metrics && peers && {
 		fetchedAt: perf.fetchedAt,
 		metrics: rvMetrics(perf.data.metrics, peers.data.metrics),
 		peers: Object.fromEntries(Object.entries(peers.data.symbols).map(([k, v]) => [k, v.peers]))
 	};
-	return { sec, news, analysts, finra: finra && { ...finra, data: summarize(finra.data) }, rv };
+	const issuers = funds ? (funds.data.holders ?? holdersFromTop(funds.data.funds)) : [];
+	const holders = Object.fromEntries(
+		TICKERS.filter((t) => t.cik)
+			.map((t) => [t.code, issuersFor(t.code, issuers).map((e) => ({ name: e.name, holders: e.holders.map(({ shares: _, ...h }) => h) }))] as const)
+			.filter(([, list]) => list.length)
+	);
+	const fundNames = Object.fromEntries((funds?.data.funds ?? []).map((f) => [f.key, f.name]));
+	return {
+		sec,
+		news,
+		analysts,
+		finra: finra && { ...finra, data: summarize(finra.data) },
+		rv,
+		hds: funds && { fetchedAt: funds.fetchedAt, holders, fundNames }
+	};
 };

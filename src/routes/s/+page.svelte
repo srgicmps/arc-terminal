@@ -15,6 +15,7 @@
 	import FilingList from '#lib/components/FilingList.svelte';
 	import RvTable from '#lib/components/RvTable.svelte';
 	import { compareWithPeers } from '#lib/rv.ts';
+	import HoldersTable from '#lib/components/HoldersTable.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import ShortVolume from '#lib/components/ShortVolume.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -51,6 +52,8 @@
 	const analysis = $derived(data.analysts?.data[code]);
 	// Frente a sus competidores (RV): solo los grandes valores de EE. UU. con cifras de Finnhub.
 	const rv = $derived(data.rv?.metrics[code] && data.rv.peers[code] ? compareWithPeers(code, data.rv.peers[code], data.rv.metrics) : null);
+	// Fondos de FONDOS que la tienen (HDS, 13F de la SEC).
+	const held = $derived(data.hds?.holders[code] ?? []);
 
 	// «Compartir»: símbolo y nombre, con ?sym en el enlace (la ficha sin ?sym abre NVDA).
 	function share(): ShareInfo {
@@ -122,6 +125,19 @@
 						<RvTable rows={rv.rows} />
 						{#snippet note()}En verde, mejor que la mediana de sus competidores · <Updated at={data.rv?.fetchedAt} source="perf" />{/snippet}
 					</Panel>
+				</div>
+			</div>
+		{/if}
+		{#if held.length}
+			<div class="grid">
+				<div class="col">
+					{#each held as issuer (issuer.name)}
+						<Panel title="Fondos que la tienen" meta="{issuer.name} · 13F" jump={{ code: 'HDS', href: `${resolve('/hds')}?s=${encodeURIComponent(code)}` }}>
+							<HoldersTable holders={issuer.holders} names={data.hds?.fundNames ?? {}} />
+							{#snippet note()}Solo los fondos de FONDOS, con el retraso del 13F (hasta 45 días tras el trimestre) · Fuente: SEC EDGAR ·
+								<Updated at={data.hds?.fetchedAt} source="funds" />{/snippet}
+						</Panel>
+					{/each}
 				</div>
 			</div>
 		{/if}
