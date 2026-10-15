@@ -66,7 +66,7 @@
 	<div class="col">
 		<Panel title="Comandos" meta="{COMMANDS.length} funciones" jump={{ code: 'MANUAL', href: resolve('/manual') }}>
 			<Table>
-				<thead><tr><th>Comando</th><th class="l">Qué abre</th><th class="l">Equivalente Bloomberg</th><th class="l">Fuentes</th></tr></thead>
+				<thead><tr><th>Comando</th><th class="l">Qué abre</th><th class="l side">Equivalente Bloomberg</th><th class="l side">Fuentes</th></tr></thead>
 				<tbody>
 					{#each COMMANDS as c (c.code)}
 						<tr>
@@ -74,11 +74,15 @@
 							<td class="l wrap">
 								{c.desc}
 								{#if c.aliases}<small class="mut">También: {c.aliases.join(', ')}</small>{/if}
+								<!-- En el móvil, Bloomberg y fuentes van aquí debajo en vez de en sus columnas (sin scroll lateral). -->
+								<small class="mut narrow">
+									{#if c.bloomberg?.length}Bloomberg: {c.bloomberg.map((b) => b.code).join(', ')} · {/if}{c.sources}
+								</small>
 							</td>
-							<td class="l wrap">
+							<td class="l wrap side">
 								{#each c.bloomberg ?? [] as b, i (b.code)}{i ? ', ' : ''}<span title={b.panel ?? c.code}>{b.code}</span>{/each}
 							</td>
-							<td class="l wrap mut">{c.sources}</td>
+							<td class="l wrap mut side">{c.sources}</td>
 						</tr>
 					{/each}
 				</tbody>
@@ -87,7 +91,7 @@
 	</div>
 	<div class="col">
 		<Panel title="Atajos de teclado">
-			<ul class="mini">
+			<ul class="mini keys">
 				{#each SHORTCUTS as s (s.id)}
 					<li>
 						<span class="l">{#each s.keys as k, i (i)}{#if i}{keyJoin(s)}{/if}<kbd>{k}</kbd>{/each}{#if 'how' in s}{s.keys.length ? ' ' : ''}{s.how}{/if}</span><b>{s.action}</b>
@@ -287,6 +291,31 @@
 	.wrap small {
 		display: block;
 		font-size: var(--fs-s);
+	}
+
+	.wrap small.narrow {
+		display: none;
+	}
+
+	/* Atajos: la acción puede ser larga; en el móvil baja de línea en vez de salirse del panel. */
+	.keys li {
+		grid-template-columns: auto minmax(0, 1fr);
+	}
+
+	.keys b {
+		white-space: normal;
+		text-align: right;
+	}
+
+	/* Móvil: cuatro columnas no caben; Bloomberg y fuentes pasan bajo la descripción. */
+	@media (max-width: 640px) {
+		.side {
+			display: none;
+		}
+
+		.wrap small.narrow {
+			display: block;
+		}
 	}
 
 	.tickers {
