@@ -12,6 +12,10 @@
 // - Motor de ajedrez (static/engine/, unos 7 MB): no entra en la precaché, para no descargarlo a quien no
 //   juega. Se guarda la primera vez que se usa, en una caché propia que sobrevive a las publicaciones.
 // - Todo lo demás (widgets de TradingView incluidos) pasa directo a la red, sin guardar nada.
+// - Cloudflare Access (arcterminal.dev): /cdn-cgi/ (login, callback, salida) nunca pasa por aquí, y las
+//   páginas que acaban en el login (`redirected`) no se guardan. Si una petición falla porque la sesión
+//   ha caducado (Access redirige al login de otro dominio y fetch da error), NO se sirve la copia vieja:
+//   se responde 401 y se avisa a la página, que recarga y lleva al login. Solo sin red de verdad sale la copia.
 import { self } from '$app/service-worker';
 import { immutable, assets, prerendered } from '$app/manifest';
 import { version } from '$app/env';
@@ -103,6 +107,8 @@ self.addEventListener('fetch', (event) => {
 
 	// Tus ajustes (/api/prefs): siempre a la red, nunca de la caché.
 	if (target.pathname.startsWith(`${scope.pathname}api/`)) return;
+	// Login y salida de Cloudflare Access: siempre a la red, sin tocar.
+	if (target.pathname.startsWith('/cdn-cgi/')) return;
 
 	if (request.mode === 'navigate') {
 		event.respondWith(page(request));
@@ -147,10 +153,30 @@ async function networkFirst(request: Request): Promise<Response> {
 		}
 		return response;
 	} catch (error) {
+		if (await loginNeeded()) return expired();
 		const cached = await cache.match(key(request));
 		if (cached) return cached;
 		throw error;
 	}
+}
+
+/**
+ * ¿Ha fallado porque la sesión de Access ha caducado? Se pide la portada sin seguir redirecciones: si
+ * responde con una redirección (al login), sí; si da 200, el fallo era otro; si no hay red, tampoco.
+ */
+async function loginNeeded(): Promise<boolean> {
+	try {
+		const probe = await fetch(scope.href, { redirect: 'manual', cache: 'no-store', credentials: 'include' });
+		return probe.type === 'opaqueredirect' || (probe.status >= 300 && probe.status < 400);
+	} catch {
+		return false;
+	}
+}
+
+/** Sesión caducada: se avisa a las pestañas abiertas (recargan y van al login) y no se da ninguna copia. */
+async function expired(): Promise<Response> {
+	for (const client of await self.clients.matchAll({ type: 'window' })) client.postMessage({ type: 'access-login' });
+	return new Response(null, { status: 401, statusText: 'Login needed' });
 }
 
 /**
@@ -165,7 +191,10 @@ async function prune(cache: Cache) {
 /** Páginas: red primero; sin red, la página guardada o, si nunca se abrió, la portada. */
 async function page(request: Request): Promise<Response> {
 	try {
-		return await networkFirst(request);
+		const response = await networkFirst(request);
+		// Sesión caducada en una navegación: a la portada, que Access redirige al login.
+		if (response.status === 401 && response.statusText === 'Login needed') return Response.redirect(scope.href, 302);
+		return response;
 	} catch (error) {
 		const path = new URL(request.url).pathname;
 		// GitHub Pages sirve /eco y /eco/ igual: probamos las dos formas.
