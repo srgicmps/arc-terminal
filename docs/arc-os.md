@@ -123,4 +123,4 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - [x] **Expediente** (`expediente`): ficha de cualquier entidad (resumen, datos, mapa, relaciones, cronología), exportar a Markdown/JSON e imprimir. API: `openDossier(kind, key)`, `openDossierFor('Lagarde')`, `openGraph()` (`apps/intel/open.ts`) [OS 6] #516
 - [ ] Iconos SVG de las cinco apps con el set de OS 2 (`OsIcon`) [OS 6, cuando esté el set]
 - [ ] Título de ventana: no enseñar el path en las herramientas sin `href` («Expediente · /expediente#country:CN») [núcleo]
-- [ ] Contraste: la prueba de humo avisa de 1 fallo de `color-contrast` en /os [OS 6]
+- [x] Contraste AA en /os: `--muted` de Mando a 4,5:1 también sobre el fondo con acento [OS 6] #533
