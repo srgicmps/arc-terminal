@@ -585,6 +585,8 @@
 		display: contents;
 	}
 	.phone {
+		/* Alto de la barra de inicio de abajo: la misma medida para la barra y para el hueco que le deja la app. */
+		--home-bar: calc(env(safe-area-inset-bottom, 0px) + 22px);
 		position: fixed;
 		inset: 0;
 		z-index: var(--z-modal);
@@ -921,7 +923,7 @@
 	.frame {
 		flex: 1;
 		min-height: 0;
-		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+		padding-bottom: var(--home-bar);
 	}
 	iframe {
 		width: 100%;
@@ -939,7 +941,9 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		height: calc(env(safe-area-inset-bottom, 0px) + 22px);
+		height: var(--home-bar);
+		/* Sin el mínimo táctil de app.css (44 px): la app solo deja libre --home-bar y lo de abajo quedaba tapado. */
+		min-height: 0;
 		padding: 0;
 		border: 0;
 		background: var(--bg);
