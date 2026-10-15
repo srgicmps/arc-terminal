@@ -30,8 +30,8 @@
 		--sq-light: #1d3a22;
 		--sq-dark: #0f2113;
 		--glow: rgba(93, 255, 134, 0.35);
-		--scan: rgba(0, 0, 0, 0.22);
-		--vignette: rgba(0, 0, 0, 0.45);
+		--scan: rgba(0, 0, 0, 0.12);
+		--vignette: rgba(0, 0, 0, 0.3);
 		--bg-image: radial-gradient(ellipse at 50% 40%, #0a170c 0%, #040804 70%);
 
 		/* Letras: VT323 (píxeles) para títulos y cifras; Plex Mono para todo lo demás, también los textos. */
@@ -47,22 +47,30 @@
 		--track-caps: 0.1em;
 		--track-label: 0.08em;
 
-		/* Forma: sin redondeos; cada panel, una caja de línea doble (con sombras: así no la cortan las reglas
-		   de las rejillas, que quitan bordes al apilar paneles). */
+		/* Forma: sin redondeos ni sombras. Los marcos de caja los dibuja la estructura (abajo, fuera de la capa). */
 		--radius: 0;
 		--radius-s: 0;
 		--border: var(--hair) solid var(--line);
 		--panel-edge: 0;
-		--shadow: 0 0 0 var(--hair) var(--line), 0 0 0 var(--sp-3) var(--bg), 0 0 0 var(--sp-4) var(--line);
-		--shadow-pop: 0 0 0 var(--hair) var(--amber-edge), 0 0 0 var(--sp-3) var(--bg), 0 0 0 var(--sp-4) var(--amber-edge);
-		--grid-gap: var(--sp-12);
+		--shadow: none;
+		--shadow-pop: none;
+		--grid-gap: var(--sp-10);
 		--grid-fill: transparent;
 		--grid-edge: 0;
-		--grid-join: var(--sp-12);
+		--grid-join: var(--sp-10);
 		--col-fill: transparent;
-		--stack-gap: var(--sp-12);
+		--stack-gap: var(--sp-10);
 		--stack-edge: 0;
-		--cmd-h: 36px;
+		--cmd-h: 44px;
+
+		/* Marco de caja de línea doble (1 px, 1 px de hueco, 1 px) y medidas de la interfaz de texto. */
+		--r-fw: calc(3 * var(--hair));
+		--r-in: calc(2 * var(--hair));
+		--r-pad: calc(var(--r-fw) + var(--hair));
+		--r-th: 22px; /* alto de la línea del título del panel: el marco la cruza por el centro */
+		--r-mid: calc(var(--r-th) / 2 - var(--hair));
+		--r-double: var(--r-fw) double var(--line);
+		--r-prompt: 26px; /* letra del prompt y de lo que se escribe (VT323 es baja) */
 
 		/* Movimiento a saltos, como un terminal que repinta. */
 		--dur-ui: 90ms;
@@ -121,23 +129,20 @@
 		line-height: 1;
 		letter-spacing: 0.02em;
 	}
-	[data-style='retro'] .brand {
+	[data-style='retro'] [data-ui='brand'] {
 		font-family: var(--pixel);
 		--fs-s: 20px;
 		--track-brand: 0.08em;
 	}
-	[data-style='retro'] .key {
+	[data-style='retro'] [data-ui='keys'] > a {
 		font-family: var(--pixel);
 		--fs-s: 19px;
 		--track-code: 0.04em;
 		line-height: 1;
 	}
 	/* La descripción de cada tecla, en Plex Mono y a su tamaño de siempre (el --fs-s de la tecla es el de VT323). */
-	[data-style='retro'] .key span {
+	[data-style='retro'] [data-ui='keys'] > a span {
 		font-size: calc(var(--fs-xs) + var(--sp-1));
-	}
-	[data-style='retro'] .panel .ph {
-		background: var(--raise);
 	}
 
 	/* Filas de tabla separadas a puntos, como un listado impreso. */
@@ -232,5 +237,320 @@
 		50% {
 			opacity: 0;
 		}
+	}
+}
+
+/* ══ Estructura: interfaz de texto de un terminal de los 80 ═══════════════════════════════════════════════
+ * Arriba, una línea de estado invertida (marca, sitio, relojes, botones); debajo, el prompt C:\ARC> en su
+ * propia línea con cursor de bloque. Las secciones, como barra de teclas de función fija abajo (en el móvil,
+ * fila deslizable bajo el prompt; abajo sigue la barra de pestañas). Cada panel, una caja de línea doble con
+ * el título incrustado en el marco (╡ TÍTULO ╞), y las tablas, listados con cabecera en inverso.
+ * Fuera de la capa y con el prefijo doble para ganar al CSS de los componentes (docs/estilos.md). */
+
+/* Colores de siempre guardados en la raíz de la app: la línea de estado los invierte y el prompt los recupera. */
+[data-style='retro'][data-style] [data-ui='app'] {
+	--k-fg: var(--fg);
+	--k-muted: var(--muted);
+	--k-faint: var(--faint);
+	--k-amber: var(--amber);
+	--k-amber-edge: var(--amber-edge);
+	--k-line: var(--line);
+	--k-up: var(--up);
+	display: flex;
+	flex-direction: column;
+	/* La línea de estado empieza en el borde de arriba de la pantalla. */
+	margin-top: calc(-1 * var(--sp-10));
+}
+
+/* ── Línea de estado (cabecera) ─────────────────────────────────────────────────────────────────────── */
+[data-style='retro'][data-style] [data-ui='top'] {
+	--fg: var(--on-amber);
+	--muted: var(--on-amber);
+	--faint: var(--on-amber);
+	--amber: var(--on-amber);
+	--amber-edge: var(--on-amber);
+	--line: var(--on-amber);
+	--up: var(--on-amber);
+	--border: var(--hair) solid var(--line);
+	/* Alto de la fila del prompt, que va sin invertir: el fondo invertido acaba justo encima. */
+	--r-cmd-row: calc(var(--cmd-h) + 2 * var(--sp-6));
+	margin-inline: calc(-1 * var(--gutter));
+	padding: var(--sp-4) var(--gutter) 0;
+	row-gap: var(--sp-4);
+	color: var(--fg);
+	background: linear-gradient(var(--k-muted) 0 0) top / 100% calc(100% - var(--r-cmd-row)) no-repeat;
+}
+/* Con la barra de comandos abierta como hoja (móvil), la fila del prompt sale de la cabecera. */
+[data-style='retro'][data-style] [data-ui='top']:has(> .sheet) {
+	--r-cmd-row: 0px;
+}
+[data-style='retro'][data-style] [data-ui='top'] [data-ui='brand'] {
+	color: var(--fg);
+}
+/* Mercado cerrado: el punto, a media tinta (abierto, tinta entera; festivo, hueco). */
+[data-style='retro'][data-style] [data-ui='clocks'] .dot:not(.on, .holiday) {
+	opacity: 0.45;
+}
+[data-style='retro'][data-style] [data-ui='top'] > button:hover,
+[data-style='retro'][data-style] [data-ui='place'] > button:hover {
+	text-decoration: underline;
+}
+
+/* ── Prompt: C:\ARC> grande, en su línea, con cursor de bloque ───────────────────────────────────────── */
+[data-style='retro'][data-style] [data-ui='top'] [data-ui='cmd'] {
+	--fg: var(--k-fg);
+	--muted: var(--k-muted);
+	--faint: var(--k-faint);
+	--amber: var(--k-amber);
+	--amber-edge: var(--k-amber-edge);
+	--line: var(--k-line);
+	--up: var(--k-up);
+	--border: var(--hair) solid var(--line);
+	order: 10;
+	flex: 1 1 100%;
+	height: var(--cmd-h);
+	margin-block: var(--sp-6);
+	border: 0;
+	border-bottom: var(--hair) dashed var(--line);
+	background: transparent;
+	color: var(--fg);
+}
+[data-style='retro'][data-style] [data-ui='top'] [data-ui='cmd']:focus-within {
+	border-bottom-color: var(--amber);
+}
+[data-style='retro'][data-style] [data-ui='top'] [data-ui='cmd'].sheet {
+	margin: 0;
+	background: var(--bg);
+	border-top: var(--hair) solid var(--amber);
+}
+[data-style='retro'][data-style] [data-ui='cmd'] .prompt {
+	padding-inline: 0 var(--sp-6);
+	color: var(--amber);
+	font-family: var(--pixel);
+	font-size: var(--r-prompt);
+	font-weight: var(--fw-regular);
+	line-height: 1;
+}
+[data-style='retro'][data-style] [data-ui='cmd'] .prompt .caret {
+	display: inline;
+	font-size: 0;
+}
+[data-style='retro'][data-style] [data-ui='cmd'] .prompt .caret::before {
+	content: 'C:\\ARC>';
+	font-size: var(--r-prompt);
+}
+[data-style='retro'][data-style] [data-ui='cmd'] .prompt .lens {
+	display: none;
+}
+[data-style='retro'][data-style] [data-ui='cmd'] input {
+	font-family: var(--pixel);
+	font-size: var(--r-prompt);
+	letter-spacing: 0.04em;
+}
+[data-style='retro'][data-style] [data-ui='cmd'] input::placeholder {
+	letter-spacing: 0.02em;
+}
+[data-style='retro'][data-style] [data-ui='cmd'] .go {
+	align-self: center;
+	height: calc(var(--cmd-h) - var(--sp-12));
+	min-height: 0;
+	padding-inline: var(--sp-10);
+}
+@media (max-width: 720px) {
+	[data-style='retro'][data-style] {
+		--r-prompt: 21px;
+	}
+}
+
+/* ── Teclas de función ──────────────────────────────────────────────────────────────────────────────── */
+/* Cada sección, un bloque invertido con su código y su nombre («TOP Portada»), como el menú de un programa de
+   MS-DOS. Sin «F1…»: la web no tiene esos atajos. */
+[data-style='retro'][data-style] [data-ui='keys'] {
+	gap: var(--sp-4) var(--sp-6);
+	padding-block: var(--sp-6);
+}
+[data-style='retro'][data-style] [data-ui='keys'] > a {
+	padding: var(--sp-1) var(--sp-8);
+	border: 0;
+	background: var(--line);
+	color: var(--fg);
+}
+[data-style='retro'][data-style] [data-ui='keys'] > a span {
+	color: inherit;
+}
+[data-style='retro'][data-style] [data-ui='keys'] > a:hover {
+	text-decoration: underline;
+	text-underline-offset: var(--sp-3);
+}
+[data-style='retro'][data-style] [data-ui='keys'] > a[aria-current='page'] {
+	background: var(--amber);
+	color: var(--on-amber);
+}
+/* En escritorio, la fila va abajo del todo y se queda fija al hacer scroll, como la barra de un programa de
+   MS-DOS. Es sticky (no fixed): si las teclas ocupan dos líneas, nada queda tapado. */
+@media (min-width: 721px) {
+	[data-style='retro'][data-style] [data-ui='keys'] {
+		order: 99;
+		position: sticky;
+		bottom: 0;
+		z-index: 30;
+		margin-inline: calc(-1 * var(--gutter));
+		padding: var(--sp-6) var(--gutter);
+		background: var(--bg);
+		border-top: var(--r-double);
+	}
+}
+
+/* ── Cinta, cabecera de vista y pie ─────────────────────────────────────────────────────────────────── */
+[data-style='retro'][data-style] [data-ui='tape'] {
+	border: var(--r-double);
+	background: transparent;
+}
+[data-style='retro'][data-style] [data-ui='view-head'] {
+	margin-bottom: var(--sp-12);
+	padding-block: var(--sp-4) var(--sp-8);
+	border-bottom: var(--r-double);
+}
+/* El código de la vista, como el directorio del prompt: «ECO>». */
+[data-style='retro'][data-style] [data-ui='view-code']::after {
+	content: '>';
+	content: '>' / '';
+}
+/* Pie: una línea de estado, con los campos separados por │. */
+[data-style='retro'][data-style] [data-ui='foot'] {
+	justify-content: flex-start;
+	gap: var(--sp-4) var(--sp-10);
+	margin-inline: calc(-1 * var(--gutter));
+	padding: var(--sp-6) var(--gutter);
+	border-top: var(--r-double);
+	background: var(--raise);
+	color: var(--muted);
+}
+[data-style='retro'][data-style] [data-ui='foot'] > :not(:first-child, dialog)::before {
+	content: '│';
+	content: '│' / '';
+	display: inline-block;
+	margin-right: var(--sp-10);
+	color: var(--muted);
+}
+
+/* ── Paneles: caja de línea doble con el título en el marco ─────────────────────────────────────────── */
+/* Las líneas son degradados de 1 px (no bordes ni sombras): no las tocan las reglas de las rejillas, que quitan
+   y ponen bordes al apilar paneles, y en un panel con scroll se quedan en su sitio. La línea de arriba la dibuja
+   la cabecera, para que vaya con ella cuando se queda fija («encajar», panel ampliado). */
+[data-style='retro'][data-style] [data-ui='panel'] {
+	--r-fc: var(--line);
+	--r-top: transparent;
+	padding: 0 var(--r-pad) var(--r-pad);
+	border: 0;
+	background:
+		linear-gradient(var(--r-fc) 0 0) left 0 top var(--r-mid) / var(--hair) 100% no-repeat,
+		linear-gradient(var(--r-fc) 0 0) right 0 top var(--r-mid) / var(--hair) 100% no-repeat,
+		linear-gradient(var(--r-fc) 0 0) left var(--r-in) top calc(var(--r-mid) + var(--r-in)) / var(--hair) calc(100% - var(--r-mid) - 2 * var(--r-in)) no-repeat,
+		linear-gradient(var(--r-fc) 0 0) right var(--r-in) top calc(var(--r-mid) + var(--r-in)) / var(--hair) calc(100% - var(--r-mid) - 2 * var(--r-in)) no-repeat,
+		linear-gradient(var(--r-fc) 0 0) left 0 bottom 0 / 100% var(--hair) no-repeat,
+		linear-gradient(var(--r-fc) 0 0) left var(--r-in) bottom var(--r-in) / calc(100% - 2 * var(--r-in)) var(--hair) no-repeat,
+		linear-gradient(var(--panel) 0 0) left 0 top var(--r-mid) / 100% 100% no-repeat;
+}
+[data-style='retro'][data-style] [data-ui='panel'].max {
+	--r-fc: var(--amber-edge);
+	--r-top: var(--bg);
+	border: 0;
+}
+[data-style='retro'][data-style][data-fit] [data-ui='panel'] {
+	--r-top: var(--bg);
+}
+[data-style='retro'][data-style] [data-ui='panel'] > [data-ui='panel-head'] {
+	align-items: flex-start;
+	margin-inline: calc(-1 * var(--r-pad));
+	padding: 0 var(--pad-x) var(--sp-4);
+	border-bottom: 0;
+	background:
+		linear-gradient(var(--r-fc) 0 0) left 0 top var(--r-mid) / 100% var(--hair) no-repeat,
+		linear-gradient(var(--r-fc) 0 0) left var(--r-in) top calc(var(--r-mid) + var(--r-in)) / calc(100% - 2 * var(--r-in)) var(--hair) no-repeat,
+		linear-gradient(var(--r-fc) 0 0) left 0 top var(--r-mid) / var(--hair) 100% no-repeat,
+		linear-gradient(var(--r-fc) 0 0) right 0 top var(--r-mid) / var(--hair) 100% no-repeat,
+		linear-gradient(var(--r-fc) 0 0) left var(--r-in) top calc(var(--r-mid) + var(--r-in)) / var(--hair) 100% no-repeat,
+		linear-gradient(var(--r-fc) 0 0) right var(--r-in) top calc(var(--r-mid) + var(--r-in)) / var(--hair) 100% no-repeat,
+		linear-gradient(var(--panel) 0 0) left 0 top var(--r-mid) / 100% 100% no-repeat,
+		linear-gradient(var(--r-top) 0 0) left 0 top 0 / 100% var(--r-mid) no-repeat;
+}
+/* Título y datos tapan la línea del marco: ═╡ PARO ╞═══╡ % de la población ⤢ ╞═ */
+[data-style='retro'][data-style] [data-ui='panel-head'] > :is(h2, .ph-r) {
+	min-height: var(--r-th);
+	padding-inline: var(--sp-6);
+	border-inline: var(--hair) solid var(--r-fc);
+	background: linear-gradient(transparent var(--r-mid), var(--panel) var(--r-mid));
+}
+/* Título y datos en la misma línea del marco: si no caben, el texto parte línea dentro de su caja en vez de
+   bajar entero a otra fila sin marco. */
+[data-style='retro'][data-style] [data-ui='panel'] > [data-ui='panel-head'] {
+	flex-wrap: nowrap;
+}
+[data-style='retro'][data-style] [data-ui='panel-head'] > h2 {
+	flex-shrink: 0;
+	max-width: 62%;
+	line-height: var(--r-th);
+}
+[data-style='retro'][data-style] [data-ui='panel-head'] > .ph-r {
+	min-width: 0;
+	margin-left: auto;
+	color: var(--muted);
+	line-height: var(--r-th);
+	text-align: right;
+}
+/* El ⓘ del glosario no estira la línea del título (en táctil ya crece su zona pulsable con ::after). */
+[data-style='retro'][data-style] [data-ui='panel-head'] > h2 button:not(.ttl) {
+	min-height: 0;
+}
+/* ✕ del panel ampliado: del alto de la línea del título; en táctil, 44 px pulsables sin estirar la cabecera. */
+[data-style='retro'][data-style] [data-ui='panel-head'] .close {
+	width: var(--r-th);
+	height: var(--r-th);
+	min-height: 0;
+	border: 0;
+}
+@media (pointer: coarse) {
+	[data-style='retro'][data-style] [data-ui='panel-head'] .close {
+		width: var(--touch);
+		height: var(--touch);
+		margin-block: calc((var(--r-th) - var(--touch)) / 2);
+	}
+}
+
+/* ── Tablas: listado de texto, cabecera en inverso y filas separadas por guiones ───────────────────── */
+[data-style='retro'][data-style] .t.t thead th {
+	background: var(--muted);
+	color: var(--on-amber);
+	font-weight: var(--fw-medium);
+	border-bottom: 0;
+	box-shadow: none;
+}
+[data-style='retro'][data-style] .t.t thead th:not(:last-child) {
+	border-right: var(--hair) solid var(--panel);
+}
+
+/* ── Cifras grandes: casillas separadas por guiones ─────────────────────────────────────────────────── */
+[data-style='retro'][data-style] [data-ui='tiles'] {
+	gap: 0;
+	background: transparent;
+	border-bottom: var(--hair) dashed var(--line);
+}
+
+/* ── Móvil: una columna; abajo, la barra de pestañas como teclas en inverso ─────────────────────────── */
+@media (max-width: 720px) {
+	[data-style='retro'][data-style] [data-ui='tabs'] {
+		background: var(--bg);
+		border-top: var(--r-double);
+	}
+	[data-style='retro'][data-style] [data-ui='tabs'] :is(a, button) {
+		color: var(--fg);
+		font-family: var(--pixel);
+		font-size: 21px;
+	}
+	[data-style='retro'][data-style] [data-ui='tabs'] :is([aria-current='page'], [aria-pressed='true']) {
+		background: var(--amber);
+		color: var(--on-amber);
+		text-decoration: none;
 	}
 }

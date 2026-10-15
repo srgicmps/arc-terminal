@@ -29,7 +29,8 @@ export const ESTILOS: readonly Estilo[] = [
 	{ id: 'lujo', label: 'Lujo', desc: 'Negro y dorado, serif de alto contraste y filetes finos.' },
 	{ id: 'oceano', label: 'Océano', desc: 'Azules profundos y turquesa, degradados y transiciones fluidas.' },
 	{ id: 'plano', label: 'Plano técnico', desc: 'Azul de plano con rejilla, líneas blancas y letra técnica.' },
-	{ id: 'contraste', label: 'Alto contraste', desc: 'Máxima legibilidad: AAA, letra grande, foco muy visible, sin efectos.' }
+	{ id: 'contraste', label: 'Alto contraste', desc: 'Máxima legibilidad: AAA, letra grande, foco muy visible, sin efectos.' },
+	{ id: 'zen', label: 'Zen', desc: 'Calma y aire: tarjetas suaves, títulos grandes y centrados, IBM Plex y entradas lentas.' }
 ];
 
 export type StyleId = string;

@@ -5,6 +5,7 @@
 <script lang="ts">
 	import { asset, resolve } from '$app/paths';
 	import type { Dataset } from '#lib/data.ts';
+	import { maxCols, packGrid } from '#lib/layout.ts';
 	import { findPin, type PinDef } from '#lib/pins.ts';
 	import { pins, setPinArea } from '#lib/pins.svelte.ts';
 	import Panel from './Panel.svelte';
@@ -12,6 +13,9 @@
 	setPinArea();
 
 	const list = $derived(pins.list.flatMap((p) => (findPin(p.id) ? [{ def: findPin(p.id)!, span: p.span }] : [])));
+	// Columnas según los fijados y el ancho (layout.ts): dos fijados son dos mitades, sin columna vacía.
+	let width = $state(0);
+	const grid = $derived(packGrid(list.map((p) => p.span), maxCols(width)));
 
 	async function json(name: string): Promise<Dataset<unknown> | null> {
 		try {
@@ -34,10 +38,12 @@
 	}
 </script>
 
+<svelte:window bind:innerWidth={width} />
+
 {#if list.length}
-	<div class="pins">
-		{#each list as { def, span } (def.id)}
-			<div class="cell s{span}">
+	<div class="pins" style:grid-template-columns="repeat({grid.cols}, minmax(0, 1fr))">
+		{#each list as { def }, i (def.id)}
+			<div class="cell" style:grid-column="span {grid.spans[i]}">
 				<Panel title={def.title} meta={def.meta} pin={def.id} jump={{ code: def.code, href: resolve(def.path) }}>
 					{#await get(def)}
 						<p class="empty">Cargando…</p>
@@ -55,8 +61,6 @@
 <style>
 	.pins {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		grid-auto-flow: dense;
 		gap: var(--grid-gap);
 		margin-bottom: var(--sp-8);
 		background: var(--grid-fill);
@@ -65,36 +69,18 @@
 
 	/* Como las columnas de app.css: fondo y separación según la estética (tokens --grid-* y --col-fill). */
 	.cell {
+		display: flex;
+		flex-direction: column;
 		background: var(--col-fill);
 		min-width: 0;
 	}
 
-	.s2 {
-		grid-column: span 2;
+	.cell > :global(.panel) {
+		flex: 1;
 	}
 
-	.s3 {
-		grid-column: span 3;
-	}
-
-	@media (max-width: 1100px) {
-		.pins {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-
-		.s3 {
-			grid-column: span 2;
-		}
-	}
-
-	@media (max-width: 720px) {
-		.pins {
-			grid-template-columns: minmax(0, 1fr);
-		}
-
-		.s2,
-		.s3 {
-			grid-column: auto;
-		}
+	/* Un mapa a todo el ancho sería más alto que la pantalla: se queda centrado, a poco más de media altura. */
+	.cell :global(.map svg) {
+		max-height: 55vh;
 	}
 </style>
