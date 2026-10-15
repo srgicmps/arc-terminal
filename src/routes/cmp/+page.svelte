@@ -15,6 +15,7 @@
 	import { parseSymbols, PERF_PERIODS } from '#lib/cmp.ts';
 	import { TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import { urlState } from '#lib/urlstate.svelte.ts';
+	import { isRange, rangeInterval } from '#lib/bar/ranges.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -23,6 +24,8 @@
 	// Un ?s= sin ningún código que valga se quita de la URL.
 	const sel = urlState<string>('s', '', (v) => parseSymbols(v).length > 0);
 	const codes = $derived(parseSymbols(sel.value));
+	// Rango del gráfico (?rango=12M, desde la barra: «NVDA vs AMD 5a»); por defecto, un año.
+	const range = urlState<string>('rango', '12M', isRange);
 
 	/** Lo que hay escrito en la casilla; se aplica al pulsar «Comparar» o Intro. */
 	let text = $state('');
@@ -37,8 +40,8 @@
 	const config = $derived({
 		symbol: tvSymbol(codes[0] ?? 'NVDA'),
 		compareSymbols: codes.slice(1).map((c) => ({ symbol: tvSymbol(c), position: 'SameScale' })),
-		interval: 'D',
-		range: '12M',
+		interval: rangeInterval(range.value),
+		range: range.value,
 		timezone: 'Europe/Madrid',
 		style: '2',
 		allow_symbol_change: false,

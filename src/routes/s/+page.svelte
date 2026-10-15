@@ -8,6 +8,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { isRange, rangeInterval, rangeLabel } from '#lib/bar/ranges.ts';
 	import Panel from '#lib/components/Panel.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import AnalystPanel from '#lib/components/AnalystPanel.svelte';
@@ -28,10 +29,14 @@
 	let code = $state('');
 	/** La función de la barra («gp», «des»…), si la hay. */
 	let fn = $state('');
+	/** Rango del gráfico desde la barra («NVDA 1a» → ?rango=12M); sin él, el que elija TradingView. */
+	let range = $state('');
 
 	$effect(() => {
 		code = (page.url.searchParams.get('sym') ?? 'NVDA').toUpperCase();
 		fn = (page.url.searchParams.get('fn') ?? '').toLowerCase();
+		const r = page.url.searchParams.get('rango') ?? '';
+		range = isRange(r) ? r : '';
 	});
 
 	const symbol = $derived(tvSymbol(code));
@@ -66,10 +71,10 @@
 	{#key symbol}
 		<div class="grid grid-2">
 			<div class="col">
-				<Panel title="Gráfico" meta={symbol} {share} expand={fn === 'gp'}>
+				<Panel title="Gráfico" meta={range ? `${symbol} · ${rangeLabel(range)}` : symbol} {share} expand={fn === 'gp' || !!range}>
 					<TvWidget
 						widget="advanced-chart"
-						config={{ symbol, interval: 'D', timezone: 'Europe/Madrid', style: '1', allow_symbol_change: false, hide_side_toolbar: true }}
+						config={{ symbol, interval: rangeInterval(range), ...(range && { range }), timezone: 'Europe/Madrid', style: '1', allow_symbol_change: false, hide_side_toolbar: true }}
 						height={480}
 					/>
 				</Panel>
