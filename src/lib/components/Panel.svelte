@@ -19,7 +19,10 @@
 	import { getPanelIndex } from '#lib/panelindex.svelte.ts';
 	import { hashPanel, samePanel } from '#lib/panelhash.ts';
 	import type { ShareSource } from '#lib/share.ts';
+	import { hiddenPanels, isSimple, trimming } from '#lib/modo.svelte.ts';
+	import { isEssential, plainTitle } from '#lib/simple.ts';
 	import Note from './ui/Note.svelte';
+	import Term from './ui/Term.svelte';
 	import Share from './ui/Share.svelte';
 
 	interface Props {
@@ -48,7 +51,7 @@
 	const modular = getModular();
 	// Índice de paneles del móvil: el panel se apunta mientras está en la página.
 	const index = getPanelIndex();
-	$effect(() => index?.add(title, section));
+	$effect(() => (gone ? undefined : index?.add(title, section)));
 	const tools = $derived(modular && id ? modular : null);
 	/** Menú del asa: subir, bajar y ancho. */
 	let menu = $state(false);
@@ -58,13 +61,24 @@
 	let pinMenu = $state(false);
 	const pinned = $derived(pin ? isPinned(pin) : false);
 
+	// Modo Sencillo (modo.ts): los paneles que no son esenciales en esta vista no se pintan (salvo los fijados
+	// en TOP y con «Ver todos»), y el título se lee en español claro. Los ocultos se apuntan para ViewHeader.
+	const essential = $derived(!!pinArea || isEssential(page.route.id, title, id));
+	const gone = $derived(trimming() && !essential && !tv.on);
+	$effect(() => {
+		if (!isSimple() || essential || tv.on) return;
+		hiddenPanels.add(title);
+		return () => hiddenPanels.delete(title);
+	});
+	const shown = $derived(isSimple() ? plainTitle(title) : title);
+
 	let max = $state(false);
 	// Plegado (M20): tocar el título lo pliega o despliega y se recuerda por vista y panel. Ampliar pasa a ⤢ y M.
 	const fkey = $derived(foldKey(page.route.id, title));
 	// En el modo TV no hay quien despliegue: ahí todos los paneles salen abiertos.
 	const shut = $derived(!max && !tv.on && isFolded(fkey));
-	let titleButton: HTMLButtonElement;
-	let section: HTMLElement;
+	let titleButton = $state<HTMLButtonElement>();
+	let section = $state() as HTMLElement;
 	let closeButton = $state<HTMLButtonElement>();
 
 	function open() {
@@ -148,6 +162,7 @@
 	});
 </script>
 
+{#if !gone}
 {#if max}
 	<!-- Fondo atenuado: tocarlo cierra el panel. Para teclado ya están Esc y ✕. -->
 	<div class="scrim" aria-hidden="true" onclick={close}></div>
@@ -165,8 +180,8 @@
 				onclick={() => (max ? close() : toggleFold(fkey))}
 				onkeydown={titleKeydown}
 			>
-				{#if !max}<span class="fold" aria-hidden="true">{shut ? '▸' : '▾'}</span>{/if}{title}
-			</button>
+				{#if !max}<span class="fold" aria-hidden="true">{shut ? '▸' : '▾'}</span>{/if}{shown}
+			</button>{#if isSimple()}<Term of={title} />{/if}
 		</h2>
 		<div class="ph-r">
 			{#if meta}<span class:accent>{meta}</span>{/if}
@@ -239,6 +254,7 @@
 		{/if}
 	{/if}
 </section>
+{/if}
 
 <style>
 	/* Al saltar desde el índice de paneles del móvil, el panel queda justo debajo de él. */
@@ -273,10 +289,11 @@
 
 	h2 {
 		margin: 0;
-		font-size: var(--fs-xs);
+		font-family: var(--title-font);
+		font-size: var(--fs-title);
 		font-weight: var(--fw-bold);
-		letter-spacing: var(--track-label);
-		text-transform: uppercase;
+		letter-spacing: var(--title-track);
+		text-transform: var(--title-case);
 		color: var(--amber);
 	}
 

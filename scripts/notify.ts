@@ -53,7 +53,8 @@ import { accessHeaders, fetchPublished } from './lib.ts';
 import { github, redact } from './issues.ts';
 import { closeIssue, emptyRequests, loadRequests, type Api, type Requests } from './requests.ts';
 import { alertId, userRules, type UserInputs } from './alerts/user.ts';
-import { loadUsers, runUsers, type RemoteUser } from './alerts/users.ts';
+import { weatherAt } from './alerts/brief.ts';
+import { loadUsers, postMails, runUsers, type BriefMail, type RemoteUser } from './alerts/users.ts';
 
 const NTFY = 'https://ntfy.sh';
 const DAY = 86_400_000;
@@ -486,9 +487,12 @@ export async function runNotify({
 		if (cache && users) {
 			const path = join(dirname(cache), USERS_FILE);
 			const logs = await readUserLogs(path);
-			const engine = { pickAlerts, baselineLog, trim, post, hello: HELLO, minute };
-			const next = await runUsers(users, inputs, base, logs, now, engine, say);
+			const engine = { pickAlerts, baselineLog, trim, post, hello: HELLO, minute, weather: (lat: number, lon: number) => weatherAt(lat, lon) };
+			const mails: BriefMail[] = [];
+			const next = await runUsers(users, inputs, base, logs, now, engine, say, undefined, mails);
 			await writeFile(path, JSON.stringify({ users: next }) + '\n');
+			const mailed = await postMails(mails);
+			if (mailed) say(mailed);
 		}
 	} catch (error) {
 		say(`::warning title=ntfy::${error instanceof Error ? error.message : String(error)}`);
