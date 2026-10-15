@@ -197,7 +197,12 @@
 					aria-expanded={pinArea ? pinMenu : undefined}
 					aria-label={pinArea ? `Ancho o quitar ${title} de TOP` : `Fijar ${title} en TOP`}
 					title={pinArea ? 'Ancho o quitar de TOP' : pinned ? 'Fijado en TOP · toca para soltarlo' : 'Fijar en TOP'}
-					onclick={() => (pinArea ? (pinMenu = !pinMenu) : togglePinned(pin))}>📌</button
+					onclick={() => (pinArea ? (pinMenu = !pinMenu) : togglePinned(pin))}
+					><!-- Chincheta en línea (no el emoji 📌, que en el iPhone sale grande, en color y descuadrado). --><svg
+						viewBox="0 0 16 16"
+						aria-hidden="true"
+						><path d="M5.5 1.5h5M6.5 1.5v5L4 9.5h8L9.5 6.5v-5M8 9.5v5" /></svg
+					></button
 				>
 			{/if}
 			{#if max}
@@ -315,6 +320,8 @@
 	}
 
 	.ph-r {
+		/* Si no cabe junto al título y pasa a otra línea, sigue pegada a la derecha, como en una sola línea. */
+		margin-left: auto;
 		display: flex;
 		align-items: center;
 		gap: var(--sp-12);
@@ -342,16 +349,19 @@
 		color: var(--amber);
 	}
 
-	/* El 📌 en gris y medio apagado; en color cuando el panel está fijado. */
-	.pin {
-		filter: grayscale(1);
-		opacity: 0.5;
+	/* La chincheta mide lo mismo que ⤢ (1 em de la letra de la cabecera); en ámbar cuando el panel está fijado. */
+	.pin svg {
+		width: 1em;
+		height: 1em;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.4;
+		stroke-linecap: round;
+		stroke-linejoin: round;
 	}
 
-	.pin:hover,
 	.pin.on {
-		filter: none;
-		opacity: 1;
+		color: var(--amber);
 	}
 
 	/* Menos ruido: con ratón, ampliar, compartir, fijar, mover y ocultar solo aparecen al pasar por el panel o
