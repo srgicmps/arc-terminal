@@ -31,7 +31,7 @@
 	<Panel title="Señales de recesión" meta="EE. UU. · FRED">
 		<Table>
 			<thead>
-				<tr><th>Señal</th><th>Último</th><th>Dato</th><th class="sp"></th><th>Estado</th></tr>
+				<tr><th>Señal</th><th>Último</th><th>Periodo</th><th class="sp"><span class="sr">Evolución</span></th><th>Estado</th></tr>
 			</thead>
 			<tbody>
 				{#each rows as s (s.name)}

@@ -20,7 +20,8 @@ export function addDays(day: string, n: number): string {
 }
 
 /** ¿Es un día que existe? («2026-02-30» no). */
-const valid = (day: string) => /^\d{4}-\d{2}-\d{2}$/.test(day) && addDays(day, 0) === day;
+const valid = (day: string) =>
+	/^\d{4}-\d{2}-\d{2}$/.test(day) && !Number.isNaN(Date.parse(`${day}T12:00:00Z`)) && addDays(day, 0) === day;
 
 /**
  * El día que pide un texto, o null si no es una fecha. `today` es hoy en Madrid («2026-10-15»).

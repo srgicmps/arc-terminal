@@ -112,8 +112,10 @@
 		color: var(--on-amber);
 	}
 
-	button:hover {
-		border-color: var(--amber-dim);
+	@media (hover: hover) {
+		button:hover {
+			border-color: var(--amber-dim);
+		}
 	}
 
 	.back {

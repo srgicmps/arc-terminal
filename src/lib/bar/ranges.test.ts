@@ -48,3 +48,13 @@ describe('rentabilidad desde una fecha', () => {
 		expect(rangeSince('2026-09-01', Date.parse('2026-10-15T00:00:00Z')).tv).toBe('3M');
 	});
 });
+
+describe('texto que no son valores (QA T7)', () => {
+	it('líderes y países no se comparan ni se grafican', () => {
+		expect(compareInput('biden vs trump')).toBeNull();
+		expect(compareInput('otan vs rusia')).toBeNull();
+		expect(symbolRange('trump 1a')).toBeNull();
+		expect(compareInput('NVDA vs AMD')?.route).toBe('/cmp');
+		expect(symbolRange('smci 1a')?.route).toBe('/s');
+	});
+});

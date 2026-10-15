@@ -14,6 +14,19 @@ export function axisTicks(count: number, width: number, minGap: number): number[
 	return [...out];
 }
 
+/**
+ * Marcas del eje Y de `lo` a `hi` cada `step`. Cada una se calcula desde `lo`, sin ir sumando, y se redondea:
+ * así no salen 0,30000000000000004 ni un «-0» junto al cero.
+ */
+export function valueTicks(lo: number, hi: number, step: number): number[] {
+	if (!(step > 0) || !Number.isFinite(lo) || !Number.isFinite(hi)) return [];
+	const n = Math.round((hi - lo) / step);
+	return Array.from({ length: n + 1 }, (_, k) => {
+		const v = lo + k * step;
+		return Math.abs(v) < step * 1e-9 ? 0 : +v.toPrecision(12);
+	});
+}
+
 /** Periodos que se pueden elegir en un gráfico: los meses hacia atrás desde el último dato (0 = todo). */
 export const PERIODS = [
 	{ months: 1, label: '1M' },

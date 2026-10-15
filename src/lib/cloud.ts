@@ -11,6 +11,10 @@ export interface Patch {
 	set: Prefs;
 	del: string[];
 }
+/** Topes del servidor (cloud/prefs.ts los aplica). El navegador los respeta antes de subir: si no, una sola clave enorme
+ * (una nota larguísima, por ejemplo) haría que el servidor rechazara todo y no se sincronizaría nada más. */
+export const LIMITS = { keys: 200, value: 64 * 1024, total: 512 * 1024, body: 600 * 1024 };
+
 export interface Plan {
 	/** Lo que hay que mandar al servidor. */
 	push: Patch;
@@ -18,6 +22,8 @@ export interface Plan {
 	apply: Patch;
 	/** Cómo quedan los dos al terminar: la base de la próxima vez. */
 	result: Prefs;
+	/** Claves que no caben en la cuenta: se quedan solo en este navegador, sin tocar, hasta que vuelvan a caber. */
+	frozen?: string[];
 }
 
 export const isEmpty = (p: Patch) => !Object.keys(p.set).length && !p.del.length;
@@ -45,6 +51,49 @@ export function merge(local: Prefs, remote: Prefs, base: Prefs | null): Plan {
 	return { push, apply, result };
 }
 
+const weight = (k: string, v: string) => k.length + v.length;
+
+/**
+ * Las claves de aquí que no caben en la cuenta: las que pasan del tope por valor y, si aun así el total o el número
+ * de claves no cabe, las más grandes hasta que quepa (con un margen para lo que haya fuera).
+ */
+export function oversized(local: Prefs): string[] {
+	const out = new Set<string>();
+	const bySize = Object.entries(local).sort((a, b) => weight(b[0], b[1]) - weight(a[0], a[1]));
+	let total = 0;
+	for (const [k, v] of bySize) {
+		if (v.length > LIMITS.value) out.add(k);
+		else total += weight(k, v);
+	}
+	let count = bySize.length - out.size;
+	for (const [k, v] of bySize) {
+		if (total <= LIMITS.total * 0.9 && count <= LIMITS.keys - 10) break;
+		if (out.has(k)) continue;
+		out.add(k);
+		total -= weight(k, v);
+		count--;
+	}
+	return [...out];
+}
+
+/**
+ * merge, pero sin las claves que no caben: ni se suben, ni se borran, ni se cambian aquí (si en el servidor queda una
+ * copia vieja, se respeta hasta que la de aquí vuelva a caber y gane por ser la cambiada).
+ */
+export function mergeFitting(local: Prefs, remote: Prefs, base: Prefs | null): Plan {
+	const frozen = oversized(local);
+	if (!frozen.length) return merge(local, remote, base);
+	const skip = new Set(frozen);
+	const keep = (p: Prefs) => Object.fromEntries(Object.entries(p).filter(([k]) => !skip.has(k)));
+	const plan = merge(keep(local), keep(remote), base && keep(base));
+	for (const k of frozen) {
+		// La base guarda cómo quedó la última vez que cupo: cuando vuelva a caber, la de aquí será la cambiada y ganará.
+		const was = base?.[k];
+		if (was !== undefined) plan.result[k] = was;
+	}
+	return { ...plan, frozen };
+}
+
 /**
  * Lo que este navegador recuerda de la última vez: de quién eran los ajustes y cómo quedaron.
  * Si ahora entra otra persona, lo de aquí no es suyo: no se sube, se cambia por lo de su cuenta.
@@ -56,7 +105,7 @@ export interface SyncMemory {
 
 export function startPlan(local: Prefs, remote: Prefs, memory: SyncMemory | null, user: string): Plan {
 	if (memory && memory.user !== user) return { push: { set: {}, del: [] }, apply: diff(local, remote), result: remote };
-	return merge(local, remote, memory?.base ?? null);
+	return mergeFitting(local, remote, memory?.base ?? null);
 }
 
 /** Qué cambiar en `from` para que quede como `to`. */

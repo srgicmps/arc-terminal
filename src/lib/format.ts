@@ -5,22 +5,28 @@ const TZ = 'Europe/Madrid';
 /** 1234.5 → «1.234,50» */
 export function nf(n: number | null | undefined, decimals = 2): string {
 	if (n === null || n === undefined || !Number.isFinite(n)) return '—';
-	return n.toLocaleString('es-ES', {
+	const s = n.toLocaleString('es-ES', {
 		minimumFractionDigits: decimals,
 		maximumFractionDigits: decimals
 	});
+	// Un negativo que se redondea a cero (o el -0 de sumar decimales en un eje) no lleva signo: «0,00», no «-0,00».
+	return /^-0(,0+)?$/.test(s) ? s.slice(1) : s;
 }
 
 /** Con signo: «+0,25», «−1,30». Usa el signo menos tipográfico, como la maqueta. */
 export function signed(n: number | null | undefined, decimals = 2): string {
 	if (n === null || n === undefined || !Number.isFinite(n)) return '—';
-	const sign = n > 0 ? '+' : n < 0 ? '−' : '';
-	return sign + nf(Math.abs(n), decimals);
+	const body = nf(Math.abs(n), decimals);
+	// Lo que se redondea a cero va sin signo: «0,00», no «+0,00» ni «−0,00».
+	const sign = /[1-9]/.test(body) ? (n > 0 ? '+' : '−') : '';
+	return sign + body;
 }
 
 /** Clase CSS para el color de una variación. */
-export function trend(n: number | null | undefined): 'up' | 'down' | 'flat' {
+export function trend(n: number | null | undefined, digits?: number): 'up' | 'down' | 'flat' {
 	if (!n || !Number.isFinite(n)) return 'flat';
+	// Con `digits`, lo que se escribe como cero con esos decimales («0,0») es plano, sin verde ni rojo.
+	if (digits !== undefined && Math.abs(n) < 0.5 * 10 ** -digits) return 'flat';
 	return n > 0 ? 'up' : 'down';
 }
 

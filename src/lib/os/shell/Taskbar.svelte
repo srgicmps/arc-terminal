@@ -129,9 +129,13 @@
 		border-radius: var(--radius-s);
 		color: var(--amber);
 	}
-	.startbtn[aria-expanded='true'],
-	.startbtn:hover {
+	.startbtn[aria-expanded='true'] {
 		background: var(--raise);
+	}
+	@media (hover: hover) {
+		.startbtn:hover {
+			background: var(--raise);
+		}
 	}
 	.tasks {
 		flex: 1;
@@ -154,9 +158,11 @@
 		border-radius: var(--radius-s);
 		color: var(--muted);
 	}
-	.task:hover {
-		background: var(--raise);
-		color: var(--fg);
+	@media (hover: hover) {
+		.task:hover {
+			background: var(--raise);
+			color: var(--fg);
+		}
 	}
 	.task.focused {
 		background: var(--raise);
@@ -213,9 +219,13 @@
 		top: calc(100% + var(--sp-8));
 		bottom: auto;
 	}
-	.tasks li:hover .peek,
 	.tasks li:focus-within .peek {
 		display: grid;
+	}
+	@media (hover: hover) {
+		.tasks li:hover .peek {
+			display: grid;
+		}
 	}
 	.peek b {
 		font-size: var(--fs-s);
@@ -251,9 +261,13 @@
 		color: var(--fg);
 		font-size: var(--fs-s);
 	}
-	.tray :global(.tray-btn:hover),
 	.tray :global(.tray-btn[aria-expanded='true']) {
 		background: var(--raise);
+	}
+	@media (hover: hover) {
+		.tray :global(.tray-btn:hover) {
+			background: var(--raise);
+		}
 	}
 	/* Desplegables de la barra: encima si la barra va abajo y debajo si va arriba. */
 	.taskbar :global(.pop) {
