@@ -33,6 +33,7 @@
 		uvWindow
 	} from '#lib/weather.ts';
 	import { phrases, pollenPhrase, uvPhrase } from '#lib/plain.ts';
+	import { uvTodaySub } from '#lib/wx.ts';
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
@@ -309,7 +310,7 @@
 						label="UV hoy"
 						value={uvToday ? `${nf(today?.uv ?? null, 0)} · ${uvToday.label}` : '—'}
 						tone={!uvToday ? 'mut' : uvToday.tone === 'ok' ? 'up' : uvToday.tone === 'bad' ? 'down' : undefined}
-						sub={uvHours ? `protégete de ${uvHours.from} a ${uvHours.to}` : 'no hace falta protegerse'}
+						sub={uvTodaySub(today?.uv, uvHours)}
 					/>
 					{#each [{ label: 'Polen hoy', high: pollenToday }, { label: 'Polen mañana', high: pollenTomorrow }] as p (p.label)}
 						<Tile
