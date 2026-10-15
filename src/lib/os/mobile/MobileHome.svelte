@@ -19,7 +19,7 @@
 	import { markSeen as seenWith } from '../shell/notices.ts';
 	import { EVENTS_KEY, isEvents, isoDay } from '../apps/cal/cal.ts';
 	import { APPS, appOfPath, embedSrc, findApp } from '../apps.ts';
-	import { os, phoneOpen } from '../os.svelte.ts';
+	import { closeNow, os, phoneOpen } from '../os.svelte.ts';
 	import {
 		ARRANGE_KEY,
 		WIDGETS,
@@ -195,12 +195,16 @@
 	}
 	// Lo que las apps abren con openApp/openPath (Terminal «eco», enlaces de Ajustes o Calendario…) sería una ventana
 	// del escritorio, que aquí no se ve: se abre a pantalla completa.
+	// Las herramientas leen su ruta («Abrir expediente», la sección de Ajustes) de esa ventana: se les pasa su uid.
+	let wins = $state<Record<string, string>>({});
 	$effect(() => {
-		phoneOpen.fn = (id, path) => {
-			const a = appOf(id);
-			if (!a) return false;
-			launch(a, path);
-			return true;
+		phoneOpen.fn = (w) => {
+			const a = appOf(w.app);
+			if (!a) return;
+			if (a.load) wins = { ...wins, [a.id]: w.uid };
+			// Las vistas van en su iframe: su ventana sobra (si no, saldría luego en el escritorio).
+			else queueMicrotask(() => closeNow(w.uid));
+			launch(a, a.load ? undefined : w.path);
 		};
 		return () => (phoneOpen.fn = null);
 	});
@@ -210,6 +214,11 @@
 		open = drop(open, id);
 		const { [id]: _, ...rest } = paths;
 		paths = rest;
+		if (wins[id]) {
+			closeNow(wins[id]);
+			const { [id]: _, ...others } = wins;
+			wins = others;
+		}
 		if (id in extra) {
 			const { [id]: _, ...others } = extra;
 			extra = others;
@@ -551,7 +560,7 @@
 						<div class="frame">
 							{#if a.load}
 								{#await a.load() then mod}
-									<mod.default win={id} />
+									<mod.default win={wins[id] ?? id} />
 								{/await}
 							{:else}
 								<iframe src={src(id)} title={a.name}></iframe>

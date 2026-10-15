@@ -62,20 +62,24 @@ const say = (text: string) => (os.notice = { text, at: Date.now() });
 const done = <T>(v: T): T => (persist(), v);
 
 /** Abre una app (o la trae al frente). `fresh`: otra ventana de la misma app («Nueva ventana»). */
-/** En el teléfono (MobileHome) no hay ventanas: abre él la app a pantalla completa. Devuelve true si lo ha hecho. */
-export const phoneOpen: { fn: ((id: string, path?: string) => boolean) | null } = { fn: null };
+/**
+ * En el teléfono (MobileHome) las ventanas no se ven: tras abrir una, se la pasa para que la enseñe a pantalla completa
+ * (las herramientas leen su ruta de la ventana, así que se crea igual).
+ */
+export const phoneOpen: { fn: ((w: wm.Win) => void) | null } = { fn: null };
 
 export function openApp(id: string, path?: string, fresh = false): wm.Win | null {
 	const app = findApp(id);
 	if (!app) return null;
-	if (phoneOpen.fn?.(id, path)) return null;
 	const r = wm.openWin(os.state, app, os.area, path, fresh);
 	if (!r.win) {
 		say(`Hay ${wm.MAX_WINS} ventanas en este escritorio: cierra alguna o abre otro escritorio.`);
 		return null;
 	}
 	if (r.created) logSession('abre', app.name);
-	return done(r.win);
+	const w = done(r.win);
+	phoneOpen.fn?.(w);
+	return w;
 }
 
 /** Abre la app de una ruta de la web («/eco?x=1», «/x/zen»). null si la ruta no es de ninguna app. */
