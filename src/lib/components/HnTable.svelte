@@ -15,7 +15,7 @@
 					<p class="m">
 						{#if item.domain}<span>{item.domain}</span>{/if}
 						<a href="https://news.ycombinator.com/item?id={item.id}" target="_blank" rel="noopener">
-							{item.comments} comentarios
+							{item.comments} {item.comments === 1 ? 'comentario' : 'comentarios'}
 						</a>
 					</p>
 				</div>
@@ -71,7 +71,8 @@
 	.m {
 		margin: var(--sp-3) 0 0;
 		display: flex;
-		gap: var(--sp-10);
+		flex-wrap: wrap;
+		gap: var(--sp-4) var(--sp-10);
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-s);

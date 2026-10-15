@@ -32,3 +32,16 @@ describe('whySentence', () => {
 		expect(whySentence('Tesla', null, 0)).toBe('Tesla no sale en titulares de las últimas 24 h.');
 	});
 });
+
+describe('fechas con zona (QA T5)', () => {
+	it('recent y latestQuote ordenan por la hora real, no por el texto', () => {
+		const now = Date.parse('2026-10-15T12:00:00Z');
+		const items = [
+			{ time: '2026-10-15T11:30:00+02:00', id: 'a' }, // 09:30 Z
+			{ time: '2026-10-15T10:00:00Z', id: 'b' }
+		];
+		expect(recent(items, now).map((i) => i.id)).toEqual(['b', 'a']);
+		const q = (time: string, changePct: number) => ({ symbol: 'NVDA', price: 1, change: 0, changePct, time }) as never;
+		expect(latestQuote('NVDA', [q('2026-10-15T11:30:00+02:00', 1), q('2026-10-15T10:00:00Z', 2)])?.changePct).toBe(2);
+	});
+});

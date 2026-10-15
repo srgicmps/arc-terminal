@@ -8,7 +8,7 @@ export const AI_RE =
 
 const RE: Record<Exclude<HnTopic, 'all'>, RegExp> = {
 	ai: AI_RE,
-	dev: /\b(programming|programmer|code|coding|compiler|rust|python|javascript|typescript|golang|go \d|c\+\+|java|linux|kernel|git|github|database|sql|postgres|sqlite|api|open[- ]source|framework|bug|debug|terminal|vim|emacs|wasm|webassembly|css|html|browser)\b/i,
+	dev: /\b(programming|programmer|code|coding|compiler|rust|python|javascript|typescript|golang|go \d|java|linux|kernel|git|github|database|sql|postgres|sqlite|api|open[- ]source|framework|bug|debug|terminal|vim|emacs|wasm|webassembly|css|html|browser)\b|\bc\+\+/i,
 	science: /\b(science|scientists?|physics|quantum|space|nasa|esa|spacex|mars|moon|telescope|biology|cells?|genes?|dna|brain|climate|study|research|researchers|math|mathematics|chemistry|fusion)\b/i,
 	business: /\b(startup|ipo|layoffs?|funding|raises|acquires|acquisition|antitrust|ftc|lawsuit|ceo|revenue|valuation|google|apple|microsoft|amazon|meta|nvidia|tesla|intel|amd)\b/i
 };

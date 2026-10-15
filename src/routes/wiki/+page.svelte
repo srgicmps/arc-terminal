@@ -170,7 +170,7 @@
 		font-family: var(--sans);
 	}
 
-	.year {
+	.otd .year {
 		color: var(--amber);
 		font-family: var(--mono);
 		font-size: var(--fs-s);
