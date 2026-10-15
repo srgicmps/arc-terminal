@@ -49,3 +49,12 @@ describe('Arc OS en táctil', () => {
 		expect(bad).toEqual([]);
 	});
 });
+
+describe('Arc OS en Safari', () => {
+	it('sin vh: en iPad la barra de Safari tapa lo que mide 100vh; se usa dvh', () => {
+		const root = new URL('../', import.meta.url).pathname;
+		const files = [...svelteFiles(join(root, 'os')), ...svelteFiles(join(root, 'components/os'))];
+		const bad = files.filter((f) => /[\d.]vh\b/.test(readFileSync(f, 'utf8').split('<style')[1] ?? '')).map((f) => f.slice(root.length));
+		expect(bad).toEqual([]);
+	});
+});
