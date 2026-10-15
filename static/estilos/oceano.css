@@ -1,0 +1,231 @@
+/* ── Estética «Océano» (src/lib/estilos.ts) ───────────────────────────────────────────────────────────
+ * <html data-style="oceano">: azul abisal y turquesa. El fondo baja del azul de la superficie al del fondo
+ * marino con una luz turquesa muy tenue; tarjetas opacas de esquinas suaves con sombra en vez de líneas, Manrope,
+ * títulos amplios y transiciones fluidas. El acento es turquesa (pisa el de «A tu gusto») y los gráficos van en
+ * la gama turquesa, azul y celeste. De día, agua clara de laguna. */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	:root[data-style='oceano'],
+	[data-style='oceano'] {
+		/* Noche: azul abisal. */
+		--bg: #03111e;
+		--panel: #072034;
+		--raise: #0c2b43;
+		--line: #133652;
+		--fg: #e3eff7;
+		--muted: #8eabc0;
+		--faint: #7f9db3;
+		--amber: #3ed3df; /* turquesa */
+		--amber-dim: #6cbcc6;
+		--amber-soft: rgba(62, 211, 223, 0.12);
+		--amber-edge: rgba(62, 211, 223, 0.42);
+		--on-amber: #01151a;
+		--up: #63d68c;
+		--down: #ff7383;
+		--neutral: #24435c;
+		--series-2: #5f8fff; /* azul */
+		--series-3: #a9d6ff; /* celeste */
+		--scrim: rgba(1, 9, 17, 0.66);
+		--sq-light: #1a3d58;
+		--sq-dark: #0f2a40;
+		--piece-b-edge: #8eabc0;
+		--bg-image:
+			radial-gradient(70vmax 40vmax at 15% -10%, rgba(62, 211, 223, 0.1), transparent 70%),
+			radial-gradient(60vmax 50vmax at 95% 0%, rgba(80, 120, 255, 0.09), transparent 70%),
+			linear-gradient(180deg, #062038 0%, #03111e 55%, #020c16 100%);
+		--sea-glow: rgba(62, 211, 223, 0.07); /* luz del agua en cabeceras y filas */
+		--sea-edge: rgba(150, 220, 255, 0.06);
+
+		/* Letra: Manrope, abierta y redonda; cifras tabulares (body ya lleva tabular-nums). */
+		--sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		--mono: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		--font-ui: var(--sans);
+		--fs-s: 12.5px;
+		--fs-m: 13.5px;
+		--fs-l: 15px;
+		--fs-xl: 24px;
+		--fs-big: 28px;
+		--fs-xxl: 30px;
+		--fw-medium: 600;
+		--fw-bold: 700;
+		--lh: 1.55;
+		--lh-text: 1.45;
+		--track-tight: 0.02em;
+		--track-code: 0.03em;
+		--track-caps: 0.07em;
+		--track-label: 0.02em;
+		--track-brand: 0.22em;
+
+		/* Forma: tarjetas sin borde, separadas por agua; sombras profundas y suaves. */
+		--border: var(--hair) solid var(--line);
+		--radius: 16px;
+		--radius-s: 10px;
+		--shadow: inset 0 var(--hair) 0 var(--sea-edge), 0 14px 34px -18px rgba(0, 0, 0, 0.75);
+		--shadow-pop: inset 0 var(--hair) 0 var(--sea-edge), 0 0 0 var(--hair) var(--line), 0 28px 60px -20px rgba(0, 0, 0, 0.8);
+		--grid-gap: var(--sp-16);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-16);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-16);
+		--stack-edge: 0;
+		--pad-x: var(--sp-14);
+		--row-y: var(--sp-7);
+		--head-y: var(--sp-8);
+
+		/* Títulos de panel: como se escriben, en negrita amplia y del color del texto. */
+		--fs-title: var(--fs-m);
+		--title-case: none;
+		--title-track: 0.005em;
+		--title-font: var(--sans);
+		--title-color: var(--fg);
+
+		/* Movimiento: como una ola, que arranca rápido y se posa despacio. */
+		--dur-ui: 260ms;
+		--dur-fast: 200ms;
+		--ease: cubic-bezier(0.22, 1, 0.36, 1);
+	}
+	:root[data-theme='light'][data-style='oceano'],
+	:root[data-theme='light'] [data-style='oceano'] {
+		/* Día: laguna clara, tinta azul marino y turquesa profundo. */
+		--bg: #eaf3f8;
+		--panel: #ffffff;
+		--raise: #e6f1f6;
+		--line: #d3e3ec;
+		--fg: #0b2234;
+		--muted: #46647a;
+		--faint: #4a677d;
+		--amber: #00727e;
+		--amber-dim: #1d6670;
+		--amber-soft: rgba(0, 114, 126, 0.09);
+		--amber-edge: rgba(0, 114, 126, 0.38);
+		--on-amber: #ffffff;
+		--up: #127343;
+		--down: #c2283f;
+		--neutral: #b5cad8;
+		--series-2: #2450c8;
+		--series-3: #4f8fc9;
+		--scrim: rgba(8, 34, 52, 0.32);
+		--sq-light: #eef5f9;
+		--sq-dark: #c6dae6;
+		--piece-b-edge: #0b2234;
+		--bg-image:
+			radial-gradient(70vmax 40vmax at 15% -10%, rgba(62, 200, 214, 0.1), transparent 70%),
+			radial-gradient(60vmax 50vmax at 95% 0%, rgba(90, 130, 255, 0.1), transparent 70%),
+			linear-gradient(180deg, #e2f0f7 0%, #eaf3f8 55%, #eef5f9 100%);
+		--sea-glow: rgba(0, 114, 126, 0.05);
+		--sea-edge: rgba(255, 255, 255, 0.9);
+		--shadow: 0 0 0 var(--hair) rgba(11, 34, 52, 0.05), 0 10px 28px -16px rgba(11, 50, 80, 0.28);
+		--shadow-pop: 0 0 0 var(--hair) rgba(11, 34, 52, 0.08), 0 24px 56px -18px rgba(11, 50, 80, 0.34);
+	}
+
+	/* Móvil: algo menos de agua entre tarjetas, para que quepa más. */
+	@media (max-width: 720px) {
+		:root[data-style='oceano'],
+		[data-style='oceano'] {
+			--grid-gap: var(--sp-12);
+			--grid-join: var(--sp-12);
+			--stack-gap: var(--sp-12);
+			--radius: 14px;
+		}
+	}
+
+	/* ── Lo que un token no alcanza ─────────────────────────────────────────────────────────────── */
+	/* Título de vista: amplio y algo apretado. */
+	[data-style='oceano'] .vh h1 {
+		letter-spacing: -0.015em;
+	}
+	/* Cabecera de panel: una luz de agua que se apaga hacia la derecha, siguiendo la esquina. */
+	[data-style='oceano'] .panel .ph {
+		border-top-left-radius: var(--radius);
+		border-top-right-radius: var(--radius);
+		background-image: linear-gradient(90deg, var(--sea-glow), transparent 70%);
+	}
+	/* Barra de comandos: redonda, con un halo turquesa al escribir. */
+	[data-style='oceano'] .cmd {
+		--radius-s: 14px;
+		box-shadow: var(--shadow);
+	}
+	[data-style='oceano'] .cmd:focus-within {
+		box-shadow: 0 0 0 var(--sp-3) var(--amber-soft), var(--shadow);
+	}
+	[data-style='oceano'] .cmd .go {
+		border-radius: 0 calc(var(--radius-s) - var(--hair)) calc(var(--radius-s) - var(--hair)) 0;
+	}
+	[data-style='oceano'] .cmd.sheet {
+		--radius-s: 0;
+	}
+	[data-style='oceano'] .cmd .suggest {
+		margin-top: var(--sp-6);
+		border-radius: var(--radius-s);
+		box-shadow: var(--shadow-pop);
+	}
+	[data-style='oceano'] .cmd.sheet .suggest {
+		margin: 0 0 var(--sp-6);
+	}
+	/* Teclas de función: cápsulas; la activa, con un reflejo turquesa debajo. */
+	[data-style='oceano'] .key {
+		--radius-s: 999px;
+	}
+	[data-style='oceano'] .key[aria-current='page'] {
+		box-shadow: 0 var(--sp-6) var(--sp-16) -8px var(--amber-edge);
+	}
+	[data-style='oceano'] .tape {
+		--radius-s: var(--radius);
+	}
+	/* Segmentados: cápsula, con la opción elegida en turquesa. */
+	[data-style='oceano'] .seg,
+	[data-style='oceano'] .seg button {
+		--radius-s: 999px;
+	}
+	/* Cifras grandes de cabecera de vista (fuera de un panel): una tarjeta más, sin la línea de abajo. */
+	[data-style='oceano'] .tiles:not(.panel *) {
+		--border: 0 solid transparent;
+		margin-bottom: var(--grid-gap);
+		border-radius: var(--radius);
+		overflow: hidden;
+		box-shadow: var(--shadow);
+	}
+	/* Chips sueltos: lugar de la cabecera e índice de paneles del móvil. */
+	[data-style='oceano'] .place .chip {
+		border-radius: var(--radius-s);
+	}
+	[data-style='oceano'] .pidx span {
+		border-radius: 999px;
+	}
+	/* Tablas: la fila bajo el ratón se ilumina como el agua. */
+	[data-style='oceano'] .t tbody tr:not(.hl):hover td {
+		background: var(--sea-glow);
+	}
+	/* Gráficos: líneas de puntas redondas. */
+	[data-style='oceano'] .chart path {
+		stroke-linecap: round;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		[data-style='oceano'] .key,
+		[data-style='oceano'] .theme,
+		[data-style='oceano'] select,
+		[data-style='oceano'] .cmd,
+		[data-style='oceano'] .t td,
+		[data-style='oceano'] .chart path {
+			transition:
+				background-color var(--dur-ui) var(--ease),
+				border-color var(--dur-ui) var(--ease),
+				box-shadow var(--dur-ui) var(--ease),
+				color var(--dur-ui) var(--ease),
+				stroke var(--dur-ui) var(--ease);
+		}
+		/* Al entrar en una vista, los paneles emergen un poco desde el fondo: todos a la vez y breve. */
+		[data-style='oceano'] main .panel {
+			animation: oceano-rise var(--dur-ui) var(--ease) both;
+		}
+	}
+	@keyframes oceano-rise {
+		from {
+			opacity: 0;
+			translate: 0 var(--sp-6);
+		}
+	}
+}
