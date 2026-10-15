@@ -1,5 +1,5 @@
 import { dataset } from '#lib/data.ts';
-import { crisisPoints, eventPoints, quakePoints, sanctionPoints, stormPoints, straitPoints, type LayerId, type MapPoint } from '#lib/geo/layers.ts';
+import { mapLayers } from '#lib/geo/layers.ts';
 import type { ClimateData } from '#lib/climate.ts';
 import { advisoryCountry, levelCounts, recentChanges } from '#lib/advisories.ts';
 import type { MilexData } from '#lib/milex.ts';
@@ -60,14 +60,14 @@ export const load: PageServerLoad = async () => {
 	// Sanciones y aranceles: los 8 que se pintan. Tormentas solares: el aviso no pinta el Kp de 24 h.
 	// Capas del mapa: se calculan aquí con los datos completos (las sanciones, antes de recortarlas a 8)
 	// y a la página solo le llegan los puntos.
-	const layers: Record<LayerId, MapPoint[]> = {
-		quakes: quakePoints(quakes?.data ?? []),
-		storms: stormPoints(hazards?.data.storms ?? []),
-		events: eventPoints(hazards?.data.events ?? []),
-		straits: straitPoints(portwatch?.data ?? []),
-		sanctions: sanctionPoints(trade),
-		crises: crisisPoints(reliefweb?.data ?? [])
-	};
+	const layers = mapLayers({
+		quakes: quakes?.data,
+		storms: hazards?.data.storms,
+		events: hazards?.data.events,
+		straits: portwatch?.data,
+		sanctions: trade,
+		crises: reliefweb?.data
+	});
 	return {
 		layers,
 		news,

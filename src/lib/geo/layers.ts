@@ -169,3 +169,20 @@ export const crisisPoints = (items: Disaster[]): MapPoint[] =>
 		if (!c) return [];
 		return [{ id: `r-${d.id}`, layer: 'crises' as const, lat: c.at[0], lon: c.at[1], r: 1.6, title: d.name, sub: d.type, url: d.url }];
 	});
+
+/** Todas las capas a la vez. La usan GEO (+page.server.ts) y el JSON del mapa fijado en TOP. */
+export const mapLayers = (d: {
+	quakes?: Quake[];
+	storms?: Storm[];
+	events?: NaturalEvent[];
+	straits?: Chokepoint[];
+	sanctions?: TradeLike[];
+	crises?: Disaster[];
+}): Record<LayerId, MapPoint[]> => ({
+	quakes: quakePoints(d.quakes ?? []),
+	storms: stormPoints(d.storms ?? []),
+	events: eventPoints(d.events ?? []),
+	straits: straitPoints(d.straits ?? []),
+	sanctions: sanctionPoints(d.sanctions ?? []),
+	crises: crisisPoints(d.crises ?? [])
+});
