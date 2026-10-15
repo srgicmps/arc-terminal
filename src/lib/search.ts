@@ -81,7 +81,8 @@ const TICKER_MAX = 5;
  * («ECO paro»): ahí Intro abre ese comando, como siempre.
  *
  * Si no hay sugerencias y lo escrito parece un código de valor corto (como mucho 5 caracteres), la primera
- * fila es la ficha de ese valor: así Intro hace lo mismo que antes de existir la búsqueda.
+ * fila es la ficha de ese valor: así Intro hace lo mismo que antes de existir la búsqueda. Si es texto
+ * suelto, la primera fila es «Buscar en NEWS» y debajo van los titulares.
  */
 export function searchOptions(raw: string, suggestions: Option[], index: Indexed[] | null, limit = 5): Option[] {
 	if (!raw.trim()) return [];
@@ -94,8 +95,11 @@ export function searchOptions(raw: string, suggestions: Option[], index: Indexed
 	if (!hits.length && !suggestions.length && isTickerLike(q) && q.length <= TICKER_MAX) {
 		hits.push({ code: q, desc: 'Ficha del valor', kind: 'Valor', run: q });
 	}
-	// Al final, buscar en el archivo de 3 meses (NEWS lo carga en diferido): la barra sigue ligera.
-	hits.push({ code: 'NEWS', desc: `Buscar «${text}» en el archivo de 3 meses`, kind: 'Archivo', run: `NEWS ${text}` });
+	// Buscar en NEWS, que mira también el archivo de 3 meses (lo carga en diferido): la barra sigue ligera.
+	const news = { code: 'NEWS', desc: `Buscar «${text}» en los titulares y el archivo`, kind: 'Buscar', run: `NEWS ${text}` };
+	// Texto suelto que no es un comando ni un valor («aranceles china»): va primero, e Intro abre NEWS.
+	if (!suggestions.length && hits[0]?.kind !== 'Valor') return [news, ...hits];
+	hits.push(news);
 	return hits;
 }
 
@@ -133,4 +137,56 @@ export function leaderEntries(): Option[] {
 		aliases: [l.name, ...l.aliases],
 		run: `LIDER ${l.id}`
 	}));
+}
+
+// ---- Filtros de NEWS escritos en la búsqueda: «inflación /eco /7d» ----
+
+/** Lo buscado en NEWS, separado en texto, sección y antigüedad máxima. */
+export interface NewsQuery {
+	text: string;
+	/** Clave de la sección («eco»), o null si no se filtra. */
+	section: string | null;
+	/** Horas hacia atrás, o null si no se filtra. */
+	hours: number | null;
+}
+
+/** «/24h», «/7d», «/2s» (semanas), «/3m» (meses). */
+const HOURS_PER: Record<string, number> = { h: 1, d: 24, s: 24 * 7, m: 24 * 30 };
+
+/**
+ * Separa los filtros del texto: «/eco» o «/economia» (clave o principio del nombre de la sección) y
+ * «/7d» (antigüedad). Un «/algo» que no es ningún filtro se queda en el texto. Si hay dos, gana el último.
+ */
+export function parseNewsQuery(raw: string, sections: readonly { key: string; label: string }[]): NewsQuery {
+	const out: NewsQuery = { text: '', section: null, hours: null };
+	const rest: string[] = [];
+	for (const token of raw.split(/\s+/).filter(Boolean)) {
+		const age = /^\/(\d{1,3})([hdsm])$/i.exec(token);
+		const name = fold(token.slice(1));
+		const section =
+			token.startsWith('/') && name
+				? (sections.find((s) => s.key === name) ?? (name.length >= 3 ? sections.find((s) => fold(s.label).startsWith(name)) : undefined))
+				: undefined;
+		if (age && Number(age[1]) > 0) out.hours = Number(age[1]) * HOURS_PER[age[2].toLowerCase()];
+		else if (section) out.section = section.key;
+		else rest.push(token);
+	}
+	out.text = rest.join(' ');
+	return out;
+}
+
+/** ¿Es de las últimas `hours` horas? Sin filtro, todo vale; sin fecha, no. */
+export function withinHours(time: string | null | undefined, hours: number | null, now = Date.now()): boolean {
+	if (hours === null) return true;
+	const t = time ? Date.parse(time) : NaN;
+	return Number.isFinite(t) && now - t <= hours * 3_600_000;
+}
+
+/** Quita de lo buscado el filtro de sección («inflación /eco» → «inflación»), al elegir otra a mano. */
+export function dropSectionFilter(raw: string, sections: readonly { key: string; label: string }[]): string {
+	return raw
+		.split(/\s+/)
+		.filter((t) => !t || !t.startsWith('/') || parseNewsQuery(t, sections).section === null)
+		.join(' ')
+		.trim();
 }

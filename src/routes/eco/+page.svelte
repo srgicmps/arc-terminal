@@ -265,7 +265,7 @@
 				head="Banco"
 				rows={(data.bis?.data.series ?? []).map((series) => ({ series, name: series.label, decimals: 2 }))}
 			/>
-			{#snippet note()}Fuente: BIS, tipos oficiales de los bancos centrales · <Updated at={data.bis?.fetchedAt} />{/snippet}
+			{#snippet note()}Fuente: BIS, tipos oficiales de los bancos centrales · <Updated at={data.bis?.fetchedAt} source="bis" />{/snippet}
 		</Panel>
 		<Panel title="Balances de los bancos centrales" meta="Total del activo y liquidez neta · semanal">
 			<BalanceSheets
