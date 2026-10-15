@@ -1,8 +1,9 @@
 import { dataset } from '#lib/data.ts';
+import { rvMetrics } from '#lib/rv.ts';
 import type { PeersData, PerfData } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
-// Cifras de unos 60 valores (perf.json, sin las rentabilidades) y sus competidores (peers.json): unos 15 KB.
+// Cifras de unos 60 valores (perf.json) y de sus competidores de fuera (peers.json), solo las que compara RV.
 // El valor se elige en el navegador (?s=NVDA).
 export const load: PageServerLoad = async () => {
 	const [perf, peers] = await Promise.all([dataset<PerfData>('perf'), dataset<PeersData>('peers')]);
@@ -12,7 +13,7 @@ export const load: PageServerLoad = async () => {
 		rv: {
 			fetchedAt: perf.fetchedAt,
 			peersAt: peers.fetchedAt,
-			metrics,
+			metrics: rvMetrics(metrics, peers.data.metrics),
 			peers: Object.fromEntries(Object.entries(peers.data.symbols).map(([k, v]) => [k, v.peers]))
 		}
 	};

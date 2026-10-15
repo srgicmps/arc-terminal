@@ -484,6 +484,8 @@ export interface PerfData {
 /** Competidores de cada valor (Finnhub /stock/peers), para RV. */
 export interface PeersData {
 	symbols: Record<string, { peers: string[]; fetchedAt: string }>;
+	/** Cifras de los competidores que no están en perf.json. Las copias guardadas antes no lo tienen. */
+	metrics?: Record<string, Metrics & { fetchedAt: string }>;
 }
 
 export interface FinnhubData {
