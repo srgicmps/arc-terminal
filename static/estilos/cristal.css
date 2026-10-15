@@ -282,6 +282,7 @@
 @media (prefers-reduced-motion: no-preference) {
 	[data-style='cristal'][data-style] [data-ui='key'],
 	[data-style='cristal'][data-style] .theme,
+	[data-style='cristal'][data-style] [data-ui='appearance'],
 	[data-style='cristal'][data-style] select,
 	[data-style='cristal'][data-style] [data-ui='cmd'],
 	[data-style='cristal'][data-style] .t td {

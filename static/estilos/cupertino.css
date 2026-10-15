@@ -212,7 +212,7 @@
 		--border: var(--hair) solid transparent;
 		background: var(--raise);
 	}
-	:root[data-style='cupertino'] .theme {
+	:root[data-style='cupertino'] :is(.theme, [data-ui='appearance']) {
 		--radius-s: 999px;
 		--border: var(--hair) solid transparent;
 	}
@@ -354,12 +354,12 @@
 		:root[data-style='cupertino'] main .col > .panel:nth-child(n + 3) {
 			animation-delay: 60ms;
 		}
-		:root[data-style='cupertino'] :is(.key, .theme, .go) {
+		:root[data-style='cupertino'] :is(.key, .theme, [data-ui='appearance'], .go) {
 			transition:
 				transform 320ms var(--cu-spring),
 				background-color var(--dur-ui) var(--ease);
 		}
-		:root[data-style='cupertino'] :is(.key, .theme, .go):active {
+		:root[data-style='cupertino'] :is(.key, .theme, [data-ui='appearance'], .go):active {
 			transform: scale(0.95);
 			transition-duration: 90ms;
 		}
@@ -1062,7 +1062,7 @@
 	background: var(--cu-track);
 	white-space: nowrap;
 }
-[data-style='cupertino'][data-style] [data-ui='app'] .theme {
+[data-style='cupertino'][data-style] [data-ui='app'] :is(.theme, [data-ui='appearance']) {
 	border: var(--hair) solid transparent;
 	border-radius: 50%;
 	background: var(--cu-track);
