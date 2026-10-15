@@ -24,7 +24,6 @@
 	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
 	import { initFolded } from '#lib/folded.svelte.ts';
 	import { initCloud } from '#lib/cloud.svelte.ts';
-	import Tour from '#lib/onboarding/Tour.svelte';
 	import { startTour, tour } from '#lib/onboarding/tour.svelte.ts';
 	import { listenServiceWorker } from '#lib/pwa.ts';
 	import PanelIndex from '#lib/components/PanelIndex.svelte';
@@ -284,7 +283,8 @@
 	{/if}
 
 	{#if !tv.on}<PanelIndex /><InstallHint />{/if}
-	{#if tour.open && !tv.on}<Tour />{/if}
+	<!-- El recorrido se descarga solo al abrirlo: así no pesa en cada vista. -->
+	{#if tour.open && !tv.on}{#await import('#lib/onboarding/Tour.svelte') then { default: Tour }}<Tour />{/await}{/if}
 
 	<main
 		class:nudged={shift !== 0}

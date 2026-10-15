@@ -1,7 +1,11 @@
 <!--
 	Recorrido de 5 pasos (pasos en tour.ts, estado en tour.svelte.ts). Una tarjeta abajo y, si el paso señala algo
 	que se ve, un marco fino alrededor. Se salta con «Saltar» o Esc; ← → cambian de paso.
+	Se descarga solo al abrirlo (+layout) y con el CSS dentro del JS (css="injected"): si no, cada vista precargaría
+	su hoja de estilos y pasaría del tope de peso (scripts/weight.ts).
 -->
+<svelte:options css="injected" />
+
 <script lang="ts">
 	import { TOUR } from './tour.ts';
 	import { closeTour, stepTour, tour } from './tour.svelte.ts';
@@ -29,8 +33,8 @@
 
 	function onkey(e: KeyboardEvent) {
 		if (e.key === 'Escape') closeTour();
-		else if (e.key === 'ArrowRight') stepTour(1);
-		else if (e.key === 'ArrowLeft') stepTour(-1);
+		else if (e.key === 'ArrowRight') stepTour(1, TOUR.length);
+		else if (e.key === 'ArrowLeft') stepTour(-1, TOUR.length);
 		else return;
 		e.preventDefault();
 		e.stopPropagation();
@@ -49,8 +53,8 @@
 	<p class="text">{step.text}</p>
 	<div class="actions">
 		<button type="button" class="skip" onclick={closeTour}>Saltar</button>
-		{#if tour.step > 0}<button type="button" onclick={() => stepTour(-1)}>Atrás</button>{/if}
-		<button type="button" class="next" onclick={() => stepTour(1)}>{tour.step === TOUR.length - 1 ? 'Listo' : 'Siguiente'}</button>
+		{#if tour.step > 0}<button type="button" onclick={() => stepTour(-1, TOUR.length)}>Atrás</button>{/if}
+		<button type="button" class="next" onclick={() => stepTour(1, TOUR.length)}>{tour.step === TOUR.length - 1 ? 'Listo' : 'Siguiente'}</button>
 	</div>
 </div>
 
