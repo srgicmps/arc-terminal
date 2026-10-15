@@ -62,6 +62,9 @@ export function describeAlert(e: LogEntry): AlertToast | null {
 	};
 }
 
+/** Lo que ya avisa la shell por su cuenta (terremotos fuertes y temas enormes, de /data/muro.json). */
+export const COVERED = new Set(['quake', 'imp']);
+
 /**
  * Los avisos nuevos desde `since` (ISO), de nivel `maxLevel` o más urgente, del más reciente al más antiguo y
  * como mucho `max`. La primera vez (`since` null) no sale ninguno: solo se toma la hora, para no inundar.
@@ -69,7 +72,7 @@ export function describeAlert(e: LogEntry): AlertToast | null {
 export function freshAlerts(entries: readonly LogEntry[], since: string | null, maxLevel: Level = 2, max = 3): AlertToast[] {
 	if (since === null) return [];
 	return entries
-		.filter((e) => e.t > since && (e.p ?? 3) <= maxLevel)
+		.filter((e) => e.t > since && (e.p ?? 3) <= maxLevel && !COVERED.has(e.k.split(':')[0]))
 		.map(describeAlert)
 		.filter((a): a is AlertToast => !!a)
 		.sort((a, b) => b.time.localeCompare(a.time))

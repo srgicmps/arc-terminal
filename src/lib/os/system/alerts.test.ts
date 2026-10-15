@@ -20,7 +20,8 @@ describe('avisos como toasts', () => {
 		const list = [e('quake:1', '2026-10-15T10:00', 1), e('mkt:Oro:t', '2026-10-15T11:00', 2), e('macro:ipc:t', '2026-10-15T12:00', 3)];
 		expect(freshAlerts(list, null)).toEqual([]);
 		expect(freshAlerts(list, '2026-10-15T10:30').map((a) => a.id)).toEqual(['alert:mkt:Oro:t']);
-		expect(freshAlerts(list, '2026-10-15T09:00', 3)).toHaveLength(3);
+		// El terremoto ya lo avisa la shell (muro): no se repite.
+		expect(freshAlerts(list, '2026-10-15T09:00', 3).map((a) => a.id)).toEqual(['alert:macro:ipc:t', 'alert:mkt:Oro:t']);
 		expect(lastTime(list)).toBe('2026-10-15T12:00');
 	});
 });
