@@ -13,6 +13,7 @@ import {
 	QUAKE,
 	QUOTAS,
 	RATES,
+	SESSIONS,
 	STOCKS,
 	STRAITS,
 	SUMMARIES,
@@ -157,7 +158,8 @@ const LEVEL_WHAT: Record<Level, string[]> = {
 		`Lanzamientos espaciales destacados, ${LAUNCHES.fromMin}–${LAUNCHES.toMin} minutos antes.`
 	],
 	4: [
-		`Resumen de la mañana (desde las ${SUMMARIES.morning.from}) y de la noche (desde las ${SUMMARIES.evening.from}).`,
+		`Resumen de la mañana (desde las ${SUMMARIES.morning.from}) y de la noche, con el cierre de Wall Street (desde las ${SUMMARIES.evening.from}).`,
+		`Bolsas, de lunes a viernes y a la hora local de cada plaza: ${SESSIONS.map((s) => s.title.toLowerCase()).join(', ')}.`,
 		`SEMANA: los domingos a las ${SUMMARIES.week.from}, los ${WEEK.top} temas de más peso de IMP.`
 	]
 };
