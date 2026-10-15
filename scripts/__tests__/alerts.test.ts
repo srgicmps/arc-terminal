@@ -91,6 +91,7 @@ describe('RULES', () => {
 			'1:rate',
 			'1:imp',
 			'1:strait',
+			'1:war',
 			'1:conflict',
 			'2:macro',
 			'2:market',

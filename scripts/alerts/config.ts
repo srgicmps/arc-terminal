@@ -176,6 +176,71 @@ export const CONFLICT = {
 };
 
 /**
+ * Guerras (P1, siempre llegan): un tema de IMP cuyo título cuenta un hecho grave de una de estas clases (cada
+ * una, una o dos expresiones que tienen que estar las dos), en español o inglés, y que dan al menos `media`
+ * medios de la lista `trusted`. Un aviso por tema cada `waitHours`, salvo escalada: una clase más grave que la
+ * del último aviso o el doble de medios fiables. Los temas que avisa no salen además como conflicto (P2).
+ */
+export const WAR = {
+	media: 3,
+	waitHours: 4,
+	/** De más grave a menos: el orden decide qué es una escalada. */
+	kinds: [
+		{
+			key: 'nuclear',
+			name: 'Amenaza nuclear',
+			all: [/\b(nuclear|nucleares|at[óo]mic[ao]s?|atomic)\b/i, /\b(ataque|arma|armas|bomba|amenaza|detona|attack|strike|weapons?|bomb|threat(ens?|s)?|detonat\w*)\b/i]
+		},
+		{
+			key: 'war',
+			name: 'Declaración de guerra',
+			all: [/\b(declara(ci[óo]n de)? (la )?guerra|declares? war|declaration of war|state of war|estado de guerra)\b/i]
+		},
+		{
+			key: 'invasion',
+			name: 'Invasión',
+			all: [/\b(invade[ns]?|invadi[óo]|invadieron|invasi[óo]n|invasion|invades|invaded|ofensiva terrestre|ground (offensive|invasion)|cruzan la frontera|cross(es|ed)? the border)\b/i]
+		},
+		{
+			key: 'nato',
+			name: 'Ataque a la OTAN o la UE',
+			all: [
+				/\b(OTAN|NATO|art[íi]culo 5|article 5|Polonia|Poland|Lituania|Lithuania|Letonia|Latvia|Estonia|Ruman[íi]a|Romania|Finlandia|Finland|Suecia|Sweden|Alemania|Germany|Moldavia|Moldova)\b/,
+				/\b(ataque|ataca|atacan|bombardeo|bombardea|misil(es)?|dron(es)?|derriba|invade|attack(s|ed)?|airstrikes?|missiles?|drones?|shot down|airspace|espacio a[ée]reo)\b/i
+			]
+		},
+		{
+			key: 'missiles',
+			name: 'Misiles contra una capital o infraestructuras',
+			all: [
+				/\b(misil(es)?|bal[íi]stic[oa]s?|dron(es)?|bombardeo|missiles?|ballistic|drones?|airstrikes?|bombing)\b/i,
+				/\b(capital|Kiev|Kyiv|Mosc[úu]|Moscow|Tel Aviv|Jerusal[ée]n|Jerusalem|Teher[áa]n|Tehran|Taip[ée]i|Se[úu]l|Seoul|Beirut|Damasco|Damascus|Riad|Riyadh|central nuclear|nuclear (power )?plant|central el[ée]ctrica|power (plant|grid)|red el[ée]ctrica|refiner[íi]a|refinery|oleoducto|gasoducto|pipeline|aeropuerto|airport|puerto|port)\b/i
+			]
+		},
+		{
+			key: 'mobilization',
+			name: 'Movilización general',
+			all: [/\b(movilizaci[óo]n (general|total|militar)|general mobili[sz]ation|mobili[sz]ation|ley marcial|martial law)\b/i]
+		},
+		{
+			key: 'ceasefire',
+			name: 'Alto el fuego',
+			all: [
+				/\b(alto el fuego|tregua|armisticio|acuerdo de paz|ceasefire|cease-fire|truce|armistice|peace (deal|agreement))\b/i,
+				/\b(firma|firman|firmado|acuerdan|entra en vigor|rompe|rompen|roto|viola|violan|colapsa|signs?|signed|agree[ds]?|takes effect|breaks?|broken|violat\w*|collaps\w*)\b/i
+			]
+		}
+	],
+	/** Medios que cuentan como fiables (nombres de las fuentes de scripts/sources/news.ts). */
+	trusted: [
+		'BBC', 'Al Jazeera', 'DW', 'France 24', 'The Guardian', 'Financial Times', 'WSJ', 'The Economist',
+		'El País', 'El Mundo', 'El Confidencial', 'elDiario.es', 'RTVE', 'Europa Press', 'Nikkei Asia',
+		'South China Morning Post', 'The Japan Times', 'Kyiv Independent', 'Noticias ONU', 'ONU', 'Crisis Group',
+		'CNBC', 'Africanews'
+	]
+};
+
+/**
  * Elecciones (elections.json): solo del G20 y la UE. «Hoy vota…» desde `from` (hora de Madrid) del día de
  * la votación; el resultado, con un tema de IMP de ese día o del siguiente con `media` medios o más.
  * G20 y UE son los mismos que isMajor de src/lib/elections.ts (rama claude/elecciones): cuando se mezcle,

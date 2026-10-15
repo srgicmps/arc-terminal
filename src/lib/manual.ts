@@ -18,6 +18,7 @@ import {
 	STRAITS,
 	SUMMARIES,
 	VIX,
+	WAR,
 	WEEK,
 	type Level
 } from '../../scripts/alerts/config.ts';
@@ -31,6 +32,21 @@ export interface GuideSection {
 	paras: string[];
 	items?: string[];
 }
+
+/** Lo que entiende la barra además de los comandos (lote 27-A). Cada PR de la barra añade su línea. */
+export const BAR: GuideSection = {
+	id: 'barra',
+	title: 'La barra de comandos',
+	paras: [
+		'Además de los comandos y los valores, la barra entiende estas formas. Todo se calcula en el navegador con los datos que ya tiene la web: nada se envía a ningún sitio.'
+	],
+	items: [
+		'↑ con la barra vacía: tu comando anterior, como en un terminal (guarda los 50 últimos); ↓ vuelve hacia los más recientes.',
+		'«fav ECO TIPOS»: lo guarda como favorito (hasta 9). Luego «1», «2», «3»… lo abren. «fav» los enseña y «fav -2» quita el segundo.',
+		'«=1250*1,21»: calculadora. «100 USD EUR»: conversor con el cambio del BCE.',
+		'«ECO ?»: la ficha del comando en este MANUAL. «LUZ mañana», «CAL viernes»: el comando en ese día.'
+	]
+};
 
 export const OFFLINE: GuideSection = {
 	id: 'sin-conexion',
@@ -118,6 +134,7 @@ const LEVEL_WHAT: Record<Level, string[]> = {
 		`Terremotos de magnitud ${QUAKE.mag} o más (${QUAKE.magTsunami} si hay aviso de tsunami).`,
 		`Cambios de tipos oficiales: ${RATES.map((r) => r.bank).join(', ')}.`,
 		`Temas muy grandes de IMP: ${IMP_BIG.media} medios o más en ${IMP_BIG.sections} secciones.`,
+		`Guerras, con ${WAR.media} medios fiables: ${WAR.kinds.map((k) => k.name.toLowerCase()).join(', ')}. Un aviso por tema cada ${WAR.waitHours} h, salvo escalada.`,
 		`Conflictos y escaladas de ese tamaño (los menores van en P2).`,
 		`Tránsito por ${STRAITS.names.join(', ')} que cae un ${pct(STRAITS.drop)} o más.`,
 		'Catástrofes en alerta roja (GDACS), un apagón en España y caídas de internet de un país.'
