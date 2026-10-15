@@ -44,6 +44,20 @@ export function defaultWidgets(deskW: number, skin = ''): Placed[] {
 	];
 }
 
+/**
+ * Los de por defecto, uno debajo de otro según su alto real (`heights`, en el mismo orden), con el mismo hueco
+ * entre todos. Sin medir aún (o si falta alguno), se quedan donde dice defaultWidgets.
+ */
+export function stackWidgets(list: Placed[], heights: number[]): Placed[] {
+	if (list.length !== heights.length || heights.some((h) => !(h > 0))) return list;
+	let y = 2 * GRID;
+	return list.map((p, i) => {
+		const placed = { ...p, y };
+		y += Math.ceil(heights[i] / GRID) * GRID + 2 * GRID;
+		return placed;
+	});
+}
+
 /** Al soltar: a la rejilla y dentro del escritorio (siempre queda a la vista un trozo para volver a cogerlo). */
 export function snap(p: Placed, deskW: number, deskH: number, h = 120): Placed {
 	const r = (v: number) => Math.round(v / GRID) * GRID;
