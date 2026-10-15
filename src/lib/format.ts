@@ -35,9 +35,11 @@ export function compact(n: number | null | undefined): string {
 	if (n === null || n === undefined || !Number.isFinite(n)) return '—';
 	const a = Math.abs(n);
 	if (a >= 1e12) return `${nf(n / 1e12, 2)} bill.`;
-	if (a >= 1e9) return `${nf(n / 1e9, 1)} mil M`;
-	if (a >= 1e6) return `${nf(n / 1e6, 1)} M`;
-	if (a >= 1e3) return `${nf(n / 1e3, 1)} mil`;
+	// Sin «,0» de sobra: «182 mil», no «182,0 mil».
+	const one = (x: number) => nf(x, 1).replace(/,0$/, '');
+	if (a >= 1e9) return `${one(n / 1e9)} mil M`;
+	if (a >= 1e6) return `${one(n / 1e6)} M`;
+	if (a >= 1e3) return `${one(n / 1e3)} mil`;
 	return nf(n, 0);
 }
 

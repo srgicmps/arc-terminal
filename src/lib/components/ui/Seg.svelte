@@ -67,7 +67,10 @@
 		border-radius: var(--radius-s);
 	}
 
+	/* flex: 1 1 auto: si el grupo no cabe y baja de línea, cada fila llena el marco y los fondos encendidos no
+	   quedan escalonados. En una sola línea no cambia nada (el marco mide lo que sus botones). */
 	button {
+		flex: 1 1 auto;
 		background: none;
 		border: 0;
 		border-radius: var(--radius-s);
