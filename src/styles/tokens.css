@@ -161,6 +161,15 @@
 	--os-lock-card: 360px; /* tarjeta de la pantalla de bloqueo */
 	--os-avatar: 56px; /* inicial del usuario en la pantalla de bloqueo */
 	--os-bar-h: calc(var(--control-h) + var(--sp-12)); /* alto de la barra de tareas (crece sola en pantallas táctiles) */
+	--os-dock-h: 64px; /* alto del dock del aspecto Mac (iconos de 40 px y su lupa) */
+	--os-font: var(--sans); /* letra de la barra, los menús y los títulos de ventana; cada aspecto pone la suya */
+	--os-menu-radius: var(--radius); /* esquinas de menús, buscador y dock */
+	--os-icon-radius: var(--radius); /* esquinas de los iconos de app */
+	--os-topbar-bg: var(--panel); /* barra de arriba y vista Actividades del aspecto Linux */
+	--os-topbar-fg: var(--fg);
+	--os-topbar-hover: var(--raise);
+	--os-blur: blur(24px); /* desenfoque del fondo bajo Launchpad y el primer arranque */
+	--os-veil: color-mix(in srgb, var(--bg) 82%, transparent); /* velo de Launchpad y del primer arranque */
 	/* Decoración de ventana: cada aspecto (data-os-skin: Windows, Mac, Linux…) la cambia aquí, sin tocar Window.svelte. */
 	--os-win-shadow-active: var(--os-win-shadow); /* sombra de la ventana con el foco */
 	--os-win-radius-snapped: 0; /* esquinas encajada o maximizada */
@@ -344,4 +353,49 @@
 	background-image: var(--bg-image);
 	color: var(--fg);
 	font-family: var(--font-ui);
+}
+
+/* ---------- Aspectos de Arc OS (data-os-skin en /os, src/lib/os/shell/skins.ts) ----------
+   Solo letra y formas: los colores siguen siendo los de la estética activa. Letras del sistema: no se descarga nada. */
+[data-os-skin='windows'] {
+	--os-font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+	--os-menu-radius: 8px;
+	--os-icon-radius: 4px;
+}
+[data-os-skin='mac'] {
+	--os-font: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+	--os-bar-h: max(28px, var(--control-h));
+	--os-icon-radius: 22%;
+}
+[data-os-skin='linux'] {
+	--os-font: Cantarell, 'Noto Sans', Ubuntu, system-ui, sans-serif;
+	--os-bar-h: max(32px, var(--control-h));
+	--os-icon-radius: 50%;
+	--os-topbar-bg: #121214; /* barra negra, de día y de noche */
+	--os-topbar-fg: #f2f2f3;
+	--os-topbar-hover: color-mix(in srgb, var(--os-topbar-fg) 14%, transparent);
+}
+/* DSM: barra fina translúcida arriba, iconos grandes y ventanas con botones pequeños y redondeados a la derecha. */
+[data-os-skin='dsm'] {
+	--os-font: 'Segoe UI', system-ui, 'Noto Sans', sans-serif;
+	--os-bar-h: max(36px, var(--control-h));
+	--os-icon-radius: 14px;
+	--os-topbar-bg: color-mix(in srgb, var(--panel) 78%, transparent);
+	--os-topbar-fg: var(--fg);
+	--os-topbar-hover: var(--raise);
+	--os-title-h: 34px;
+	--os-btns-pad: 6px;
+	--os-btn-gap: 4px;
+	--os-btn-w: 24px;
+	--os-btn-h: 24px;
+	--os-btn-radius: var(--radius-s);
+	--os-btn-hover: var(--raise);
+	--os-btn-close-hover: var(--os-close-red);
+	--os-btn-close-hover-fg: #fff;
+	--os-win-radius: 6px;
+	--os-win-radius-snapped: 0;
+	--os-anim-open: 160ms;
+	--os-anim-min: 180ms;
+	--os-anim-max: 160ms;
+	--os-anim-close: 140ms;
 }
