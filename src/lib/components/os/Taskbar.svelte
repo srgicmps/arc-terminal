@@ -55,7 +55,7 @@
 		{/each}
 	</span>
 	{#if os.notice}<span class="notice" role="status">{os.notice.text}</span>{/if}
-	<a class="classic" href={resolve('/')}>Modo clásico</a>
+	<a class="classic" href={resolve('/')}>Terminal clásico</a>
 </nav>
 
 <style>
