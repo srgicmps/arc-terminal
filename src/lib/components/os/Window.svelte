@@ -13,7 +13,7 @@
 	import { embedSrc } from '#lib/os/apps.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import type { EmbedMessage } from '#lib/os/embed.ts';
-	import { close, focus, maximize, minimize, os, place, setPath, snap } from '#lib/os/os.svelte.ts';
+	import { close, focus, maximize, minimize, nudge, os, place, setPath, snap } from '#lib/os/os.svelte.ts';
 	import { snapTo, type Rect, type Snap, type Win } from '#lib/os/wm.ts';
 
 	let {
@@ -114,6 +114,17 @@
 		return () => window.removeEventListener('message', onMessage);
 	});
 
+	const ARROWS: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+	/** Con el foco en la barra de título: flechas para mover, ⇧+flechas para cambiar el tamaño, Intro para maximizar. */
+	function onTitleKey(e: KeyboardEvent) {
+		if (e.altKey || e.ctrlKey || e.metaKey || e.target !== e.currentTarget) return;
+		const d = ARROWS[e.key];
+		if (d) nudge(win.uid, d[0], d[1], e.shiftKey);
+		else if (e.key === 'Enter') maximize(win.uid);
+		else return;
+		e.preventDefault();
+	}
+
 	const r = $derived(ghost ?? win);
 	const title = $derived(win.path && win.path !== app.href ? `${app.name} · ${win.path}` : app.name);
 </script>
@@ -135,22 +146,26 @@
 	aria-hidden={win.min || undefined}
 	onpointerdown={() => !active && focus(win.uid)}
 >
-	<!-- svelte-ignore a11y_no_static_element_interactions (con teclado: los atajos Alt de WindowLayer y los botones) -->
 	<header
 		class="title"
 		data-ui="os-title"
+		role="toolbar"
+		tabindex="0"
+		aria-label="{app.name}: flechas para mover, ⇧ y flechas para cambiar el tamaño, Intro para maximizar"
+		onkeydown={onTitleKey}
+		onfocus={() => !active && focus(win.uid)}
 		onpointerdown={(e) => down(e, 'move')}
 		onpointermove={move}
 		onpointerup={up}
 		onpointercancel={up}
 		ondblclick={(e) => !(e.target as HTMLElement).closest('button') && maximize(win.uid)}
 	>
-		<span class="icon" aria-hidden="true">{app.icon}</span>
-		<span class="name" {title}>{title}</span>
-		<span class="btns">
-			<button type="button" onclick={() => minimize(win.uid)} aria-label="Minimizar {app.name}" title="Minimizar">–</button>
-			<button type="button" onclick={() => maximize(win.uid)} aria-label={win.snap === 'max' ? `Restaurar ${app.name}` : `Maximizar ${app.name}`} title={win.snap === 'max' ? 'Restaurar' : 'Maximizar'}>{win.snap === 'max' ? '❐' : '□'}</button>
-			<button type="button" class="x" onclick={() => close(win.uid)} aria-label="Cerrar {app.name}" title="Cerrar">×</button>
+		<span class="icon" data-ui="os-icon" aria-hidden="true">{app.icon}</span>
+		<span class="name" data-ui="os-name" {title}>{title}</span>
+		<span class="btns" data-ui="os-btns">
+			<button type="button" data-ui="os-btn" data-btn="min" onclick={() => minimize(win.uid)} aria-label="Minimizar {app.name}" title="Minimizar"><span class="glyph" aria-hidden="true">–</span></button>
+			<button type="button" data-ui="os-btn" data-btn="max" onclick={() => maximize(win.uid)} aria-label={win.snap === 'max' ? `Restaurar ${app.name}` : `Maximizar ${app.name}`} title={win.snap === 'max' ? 'Restaurar' : 'Maximizar'}><span class="glyph" aria-hidden="true">{win.snap === 'max' ? '❐' : '□'}</span></button>
+			<button type="button" data-ui="os-btn" data-btn="close" onclick={() => close(win.uid)} aria-label="Cerrar {app.name}" title="Cerrar"><span class="glyph" aria-hidden="true">×</span></button>
 		</span>
 	</header>
 	<div class="body">
@@ -175,6 +190,10 @@
 </section>
 
 <style>
+	/*
+	 * La decoración sale de los tokens --os-* (tokens.css): cada aspecto del escritorio (data-os-skin en el
+	 * contenedor de /os: Windows, Mac, Linux…) y cada estética los redefinen sin tocar este archivo.
+	 */
 	.win {
 		position: absolute;
 		display: flex;
@@ -186,20 +205,31 @@
 		box-shadow: var(--os-win-shadow);
 		overflow: hidden;
 		contain: layout paint;
+		animation: os-open var(--os-anim-open) var(--ease);
 	}
 
 	.win.active {
 		border: var(--os-win-edge-active);
+		box-shadow: var(--os-win-shadow-active);
 	}
 
 	/* Minimizada: oculta sin desmontar (el iframe y sus widgets siguen cargados). */
 	.win.min {
 		visibility: hidden;
 		pointer-events: none;
+		opacity: 0;
+		transform: translateY(var(--os-min-shift)) scale(var(--os-min-scale));
 	}
 
 	.win.snapped {
-		border-radius: 0;
+		border-radius: var(--os-win-radius-snapped);
+	}
+
+	@keyframes os-open {
+		from {
+			opacity: 0;
+			transform: scale(var(--os-open-scale));
+		}
 	}
 
 	.title {
@@ -211,11 +241,17 @@
 		padding: 0 0 0 var(--pad-x);
 		background: var(--os-title-bg);
 		color: var(--os-title-fg);
-		border-bottom: var(--border);
+		border-bottom: var(--os-title-edge);
+		font-family: var(--os-title-font);
 		font-size: var(--fs-s);
 		cursor: grab;
 		touch-action: none;
 		user-select: none;
+	}
+
+	.title:focus-visible {
+		outline: var(--focus-w) solid var(--amber);
+		outline-offset: calc(-1 * var(--focus-w));
 	}
 
 	.busy .title {
@@ -223,10 +259,12 @@
 	}
 
 	.active .title {
+		background: var(--os-title-bg-active);
 		color: var(--os-title-fg-active);
 	}
 
 	.icon {
+		display: var(--os-icon-display);
 		color: var(--amber);
 	}
 
@@ -236,26 +274,65 @@
 		overflow: hidden;
 		white-space: nowrap;
 		text-overflow: ellipsis;
+		text-align: var(--os-title-align);
 	}
 
+	/* Los botones: a la derecha (order alto) o a la izquierda (order negativo), y en el orden de cada aspecto. */
 	.btns {
+		order: var(--os-btns-order);
 		display: flex;
+		align-items: center;
 		align-self: stretch;
+		gap: var(--os-btn-gap);
+		padding: 0 var(--os-btns-pad);
 	}
 
 	.btns button {
-		width: var(--os-title-h);
+		display: grid;
+		place-items: center;
+		width: var(--os-btn-w);
+		height: var(--os-btn-h);
 		padding: 0;
 		border: 0;
-		background: none;
+		border-radius: var(--os-btn-radius);
+		background: var(--os-btn-bg);
 		color: inherit;
 		font: inherit;
 		cursor: pointer;
 	}
 
+	.btns [data-btn='min'] {
+		order: var(--os-btn-min-order);
+		background: var(--os-btn-min-bg, var(--os-btn-bg));
+	}
+
+	.btns [data-btn='max'] {
+		order: var(--os-btn-max-order);
+		background: var(--os-btn-max-bg, var(--os-btn-bg));
+	}
+
+	.btns [data-btn='close'] {
+		order: var(--os-btn-close-order);
+		background: var(--os-btn-close-bg, var(--os-btn-bg));
+	}
+
+	.glyph {
+		opacity: var(--os-btn-glyph);
+	}
+
+	.btns button:hover .glyph,
+	.btns button:focus-visible .glyph {
+		opacity: 1;
+	}
+
 	.btns button:hover {
-		background: var(--amber-soft);
+		box-shadow: inset 0 0 0 100vmax var(--os-btn-hover);
 		color: var(--fg);
+	}
+
+	.btns [data-btn='close']:hover {
+		box-shadow: inset 0 0 0 100vmax var(--os-btn-close-hover, var(--os-btn-hover));
+		color: var(--os-btn-close-hover-fg, var(--fg));
 	}
 
 	.body {
@@ -307,13 +384,31 @@
 		cursor: nwse-resize;
 	}
 
-	@media (prefers-reduced-motion: no-preference) {
+	/* Maximizar, encajar y mosaico: el cambio de sitio se anima (salvo al arrastrar). */
+	.win:not(.busy) {
+		transition:
+			left var(--os-anim-max) var(--ease),
+			top var(--os-anim-max) var(--ease),
+			width var(--os-anim-max) var(--ease),
+			height var(--os-anim-max) var(--ease),
+			opacity var(--os-anim-min) var(--ease),
+			transform var(--os-anim-min) var(--ease),
+			visibility 0s;
+	}
+
+	.win.min:not(.busy) {
+		transition:
+			opacity var(--os-anim-min) var(--ease),
+			transform var(--os-anim-min) var(--ease),
+			visibility 0s var(--os-anim-min);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.win,
+		.win.min,
 		.win:not(.busy) {
-			transition:
-				left var(--dur-ui) var(--ease),
-				top var(--dur-ui) var(--ease),
-				width var(--dur-ui) var(--ease),
-				height var(--dur-ui) var(--ease);
+			animation: none;
+			transition: none;
 		}
 	}
 </style>
