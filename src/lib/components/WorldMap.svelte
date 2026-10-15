@@ -149,6 +149,12 @@
 		stroke-dasharray: 2 2;
 	}
 
+	/* Avisos a barcos: punto pequeño y relleno, sin borde. */
+	.maritime circle:not(.hit) {
+		fill: var(--amber-soft);
+		stroke: none;
+	}
+
 	.sanctions rect {
 		fill: var(--amber-soft);
 		stroke: var(--amber);
@@ -244,6 +250,11 @@
 
 	.legend i.airspace {
 		border-style: dashed;
+	}
+
+	.legend i.maritime {
+		background: var(--amber-soft);
+		border-color: transparent;
 	}
 
 	.legend i.sanctions {

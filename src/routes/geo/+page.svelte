@@ -24,6 +24,7 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import WorldMap from '#lib/components/WorldMap.svelte';
 	import { czibDate, czibSentence } from '#lib/czib.ts';
+	import { navSentence } from '#lib/navwarn.ts';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { LAYERS, type LayerId } from '#lib/geo/layers.ts';
 	import { DIPLOMACY_FEEDS } from '#lib/news.ts';
@@ -196,6 +197,23 @@
 				{#snippet note()}
 					Avisos de la <a href="https://www.easa.europa.eu/en/domains/air-operations/czibs" target="_blank" rel="noopener">EASA</a> a las aerolíneas: no volar o
 					hacerlo por encima de cierta altura · <Updated at={data.czib?.fetchedAt} source="czib" />
+				{/snippet}
+			</Panel>
+		{/if}
+		{#if data.navwarn?.data.items.length}
+			<Panel title="Avisos a barcos" meta="Seguridad en zonas calientes · NGA">
+				<p class="plain-czib">{navSentence(data.navwarn.data.items)}</p>
+				<ul class="mini">
+					{#each data.navwarn.data.items as w (w.id)}
+						<li>
+							<b>{w.kind}</b> · {w.region}{#if w.place}<span class="mut"> · {w.place}</span>{/if}
+							<span class="mut">· {w.issued ? new Date(w.issued).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : w.id}</span>
+						</li>
+					{/each}
+				</ul>
+				{#snippet note()}
+					Avisos de radio HYDROPAC e HYDROLANT de la <a href="https://msi.nga.mil/NavWarnings" target="_blank" rel="noopener">NGA</a> (EE. UU.), en vigor;
+					solo los de maniobras, minas, misiles, ataques, drones o interferencias GPS · <Updated at={data.navwarn?.fetchedAt} source="navwarn" />
 				{/snippet}
 			</Panel>
 		{/if}

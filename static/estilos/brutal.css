@@ -1,0 +1,620 @@
+/* ── Estética «Brutalista» (src/lib/estilos.ts) ───────────────────────────────────────────────────────
+ * <html data-style="brutal">: blanco y negro puro, sin redondeos ni degradados. Paneles como cajas con borde de
+ * 3 px y una sombra dura desplazada (sin difuminar); la cabecera de cada panel va invertida, con el título en
+ * Archivo 900 enorme. Datos en Space Mono. Un amarillo ácido, con mesura: la tecla activa, el código de la vista,
+ * el subrayado de lo vigilado. Sin transiciones: todo cambia de golpe.
+ *
+ * Orden del archivo: primero las reglas por pieza (cabecera invertida, título de vista…), después los dos bloques
+ * de tokens. Las piezas solo redefinen tokens con var(…) y los bloques de tokens van detrás para que el test de
+ * contraste (estilos.test.ts) mida la paleta de la página, no la de la cabecera invertida. */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=Space+Mono:wght@400;700&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	/* ── Por pieza ──────────────────────────────────────────────────────────────────────────── */
+
+	/* Cabecera del panel invertida: tinta de fondo y papel de letra. Todo lo que hay dentro (título, ▾, enlace
+	   «NVDA ›», botones, segmentados) lee los tokens invertidos, así que se ve sin tocar cada componente. */
+	[data-style='brutal'] .panel > .ph {
+		--panel: var(--ink);
+		--raise: var(--ink-raise);
+		--fg: var(--paper);
+		--muted: var(--paper-muted);
+		--faint: var(--paper-muted);
+		--line: var(--paper);
+		--amber: var(--paper);
+		--amber-dim: var(--paper);
+		--amber-edge: var(--paper);
+		--amber-soft: var(--ink-raise);
+		--on-amber: var(--ink);
+		--title-color: var(--paper);
+		--border: var(--hair) solid var(--line);
+		--fw-bold: 900;
+		--head-y: var(--sp-7);
+		background: var(--panel);
+		color: var(--fg);
+	}
+	[data-style='brutal'] .panel > .ph h2 {
+		line-height: 1;
+	}
+
+	/* Título de vista: cartel. Archivo 900 en mayúsculas, muy apretado, y debajo una raya de 3 px. */
+	[data-style='brutal'] .vh {
+		border-bottom: var(--thick) solid var(--fg);
+		margin-bottom: var(--sp-16);
+	}
+	[data-style='brutal'] .vh h1 {
+		--sans: var(--display);
+		--fw-medium: 900;
+		--fs-xl: clamp(34px, 6.4vw, 72px);
+		line-height: 0.9;
+		letter-spacing: -0.035em;
+		word-spacing: 0.12em;
+		text-transform: uppercase;
+		flex-wrap: wrap;
+		row-gap: var(--sp-8);
+	}
+	/* El código (ECO, WS…), una etiqueta amarilla con borde y sombra dura. */
+	[data-style='brutal'] .vh .code {
+		--fs-l: clamp(13px, 1.5vw, 18px);
+		--amber: var(--acid-ink);
+		align-self: center;
+		padding: var(--sp-2) var(--sp-8);
+		background: var(--acid);
+		border: var(--thin) solid var(--fg);
+		box-shadow: var(--sp-3) var(--sp-3) 0 0 var(--fg);
+		letter-spacing: 0;
+		line-height: var(--lh-tight);
+	}
+	[data-style='brutal'] .vh .sum {
+		--fs-s: var(--fs-m);
+		font-weight: var(--fw-medium);
+	}
+
+	/* Barra de comandos, teclas, cinta, botones y controles: borde grueso del color del texto. */
+	[data-style='brutal'] .cmd,
+	[data-style='brutal'] .tape {
+		--border: var(--thick) solid var(--fg);
+	}
+	[data-style='brutal'] .cmd input {
+		font-weight: var(--fw-bold);
+	}
+	[data-style='brutal'] .key,
+	[data-style='brutal'] .theme,
+	[data-style='brutal'] .seg,
+	[data-style='brutal'] select,
+	[data-style='brutal'] input[type='search'],
+	[data-style='brutal'] .tv-chip button {
+		--border: var(--thin) solid var(--fg);
+		--amber-edge: var(--acid);
+	}
+	[data-style='brutal'] .key {
+		text-transform: uppercase;
+	}
+	[data-style='brutal'] .seg button + button {
+		box-shadow: inset var(--thin) 0 0 0 var(--fg);
+	}
+	/* Pulsar hunde el botón lo que mide su sombra: sin animación, de golpe. */
+	[data-style='brutal'] :is(.go, .key, .theme, .seg button, .card):active {
+		translate: var(--sp-2) var(--sp-2);
+	}
+
+	/* Logotipo en Archivo negra, sin el espaciado de terminal. */
+	[data-style='brutal'] .brand {
+		--fw-bold: 900;
+		--track-brand: 0;
+		font-family: var(--display);
+		font-size: var(--fs-l);
+	}
+
+	/* Tablas: cabecera en negrita, del color del texto y con raya gruesa debajo. */
+	[data-style='brutal'] .t th {
+		--faint: var(--fg);
+		--fw-regular: 700;
+		--border: var(--thin) solid var(--fg);
+	}
+
+	/* Cifras grandes: Archivo 800, separadas por rayas del color del texto. */
+	[data-style='brutal'] .tiles {
+		--line: var(--fg);
+		--border: var(--thin) solid var(--line);
+	}
+	[data-style='brutal'] .tile b {
+		--fs-xl: 30px;
+		--fw-medium: 800;
+		font-family: var(--display);
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+	}
+	[data-style='brutal'] .tile .lbl {
+		font-weight: var(--fw-bold);
+	}
+
+	/* Pie y barra inferior del móvil: raya gruesa. */
+	[data-style='brutal'] .status,
+	[data-style='brutal'] .thumb {
+		--border: var(--thick) solid var(--fg);
+	}
+	[data-style='brutal'] .status kbd {
+		--border: var(--hair) solid var(--fg);
+	}
+	[data-style='brutal'] .thumb [aria-current='page'] {
+		background: var(--acid);
+		--amber: var(--acid-ink);
+	}
+
+	/* Vista previa (HELP, ESTILO): la cabecera de la tarjeta, invertida como la de los paneles. */
+	[data-style='brutal'] > .mock > .mh {
+		--title-color: var(--paper);
+		background: var(--ink);
+		font-size: var(--fs-l);
+		font-weight: 900;
+		text-transform: uppercase;
+	}
+	[data-style='brutal'] > .mock {
+		--border: var(--thin) solid var(--fg);
+	}
+
+	/* Lo vigilado (BOE, titulares), como con rotulador amarillo; y la selección, igual. */
+	[data-style='brutal'] mark {
+		--amber: var(--acid-ink);
+		--amber-soft: var(--acid);
+	}
+	[data-style='brutal'] ::selection {
+		background: var(--acid);
+		color: var(--acid-ink);
+	}
+	:root[data-style='brutal'] {
+		scrollbar-color: var(--fg) var(--bg);
+	}
+
+	/* ── Noche: negro con blanco ─────────────────────────────────────────────────────────────── */
+	:root[data-style='brutal'],
+	[data-style='brutal'] {
+		color-scheme: dark;
+		--bg: #000000;
+		--panel: #000000;
+		--raise: #1f1f1f;
+		--line: #4d4d4d;
+		--fg: #ffffff;
+		--muted: #c4c4c4;
+		--faint: #a8a8a8;
+		--amber: #e5ff00;
+		--amber-dim: #d6e85c;
+		--amber-soft: rgba(229, 255, 0, 0.16);
+		--amber-edge: rgba(229, 255, 0, 0.75);
+		--on-amber: #000000;
+		--up: #00e676;
+		--down: #ff4a4a;
+		--neutral: #575757;
+		--series-2: #ffffff;
+		--series-3: #5c9dff;
+		--sq-light: #3d3d3d;
+		--sq-dark: #141414;
+		--scrim: rgba(0, 0, 0, 0.82);
+		/* Propios de esta estética: tinta (el color del texto) y papel (el del fondo), para invertir piezas. */
+		--ink: #ffffff;
+		--paper: #000000;
+		--ink-raise: #e0e0e0;
+		--paper-muted: #333333;
+		--acid: #e5ff00;
+		--acid-ink: #000000;
+		--thick: 3px;
+		--thin: 2px;
+
+		--display: 'Archivo', 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
+		--sans: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+		--mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		--font-ui: var(--mono);
+		--fw-medium: 700;
+		--fw-bold: 800;
+		--fs-xl: 24px;
+		--fs-big: 32px;
+		--fs-xxl: 36px;
+		--lh: 1.4;
+		--track-tight: 0.02em;
+		--track-code: 0.02em;
+		--track-caps: 0.06em;
+		--track-label: 0;
+
+		--title-font: var(--display);
+		--fs-title: 19px;
+		--title-case: uppercase;
+		--title-track: -0.015em;
+		--title-color: var(--fg);
+
+		--radius: 0;
+		--radius-s: 0;
+		--key-edge: var(--thick);
+		--cmd-h: 40px;
+		--border: var(--hair) solid var(--line);
+		--panel-edge: var(--thick) solid var(--fg);
+		--shadow: 6px 6px 0 0 var(--fg);
+		--shadow-pop: 10px 10px 0 0 var(--fg);
+		--grid-gap: var(--sp-16);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-16);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-16);
+		--stack-edge: 0;
+		--bg-image: none;
+		--panel-blur: none;
+		--dur-ui: 0ms;
+		--dur-fast: 0ms;
+		--ease: steps(1, end);
+	}
+	/* En el móvil, sombra y huecos algo menores: el ancho no sobra. */
+	@media (max-width: 720px) {
+		:root[data-style='brutal'],
+		[data-style='brutal'] {
+			--shadow: 4px 4px 0 0 var(--fg);
+			--grid-gap: var(--sp-12);
+			--grid-join: var(--sp-12);
+			--stack-gap: var(--sp-12);
+			--fs-title: 17px;
+		}
+	}
+
+	/* ── Día: blanco con negro ───────────────────────────────────────────────────────────────── */
+	:root[data-theme='light'][data-style='brutal'],
+	:root[data-theme='light'] [data-style='brutal'] {
+		color-scheme: light;
+		--bg: #ffffff;
+		--panel: #ffffff;
+		--raise: #ebebeb;
+		--line: #a3a3a3;
+		--fg: #000000;
+		--muted: #383838;
+		--faint: #545454;
+		--amber: #c93600;
+		--amber-dim: #a33000;
+		--amber-soft: rgba(229, 255, 0, 0.55);
+		--amber-edge: #c93600;
+		--on-amber: #ffffff;
+		--up: #00802b;
+		--down: #d40000;
+		--neutral: #bdbdbd;
+		--series-2: #000000;
+		--series-3: #0047ff;
+		--sq-light: #ffffff;
+		--sq-dark: #c7c7c7;
+		--piece-w: #ffffff;
+		--piece-w-edge: #000000;
+		--piece-b: #000000;
+		--piece-b-edge: #000000;
+		--scrim: rgba(0, 0, 0, 0.5);
+		--ink: #000000;
+		--paper: #ffffff;
+		--ink-raise: #262626;
+		--paper-muted: #d1d1d1;
+		--acid: #e5ff00;
+		--acid-ink: #000000;
+	}
+}
+
+/* ══ Estructura: rompe la rejilla ═════════════════════════════════════════════════════════════════════
+ * Solo con los ganchos data-ui (docs/estilos.md, «Estructura»). Fuera de la capa y con el prefijo doble para
+ * ganar al CSS de los componentes. Qué cambia:
+ * - Cabecera: la marca, enorme y a todo el ancho; debajo, la barra de comandos como un bloque grueso.
+ * - Secciones (≥1100 px): una columna a la izquierda con las teclas como lista de palabras grandes, pegada al
+ *   desplazarse. Más estrecho, una fila de palabras grandes (en el móvil, la fila deslizable de siempre).
+ * - Vista: título a 10vw; columnas desiguales y la segunda, más baja; paneles con anchos, sangrías y giros
+ *   distintos según su puesto, montados sobre la sombra del de arriba. Títulos de panel como bandas.
+ * - Giros y solapes solo con prefers-reduced-motion: no-preference. Nada de transform en los contenedores:
+ *   el panel ampliado (.max, position: fixed) se queda siempre a pantalla completa y sin girar.
+ * - «Encajar en pantalla» (data-fit) conserva su maqueta de columna; solo se modera la cabecera. */
+
+/* ── Cabecera ──────────────────────────────────────────────────────────────────────────────── */
+[data-style='brutal'][data-style] [data-ui='top'] {
+	gap: var(--sp-12) var(--sp-16);
+	padding-block: 0 var(--sp-16);
+	margin-bottom: var(--sp-16);
+	border-bottom: var(--thick) solid var(--fg);
+}
+/* La marca a todo el ancho: el tamaño de letra sale del ancho de la ventana para que quepa en una línea. */
+[data-style='brutal'][data-style] [data-ui='brand'] {
+	--logo: clamp(36px, 8.4vw, 150px);
+	flex: 1 1 100%;
+	order: -3;
+	gap: clamp(6px, 1.2vw, 20px);
+	font-size: clamp(38px, 10.4vw, 190px);
+	line-height: 0.82;
+	letter-spacing: -0.055em;
+	padding-block: var(--sp-6) var(--sp-2);
+	white-space: nowrap;
+}
+[data-style='brutal'][data-style] [data-ui='brand'] .brand-sub {
+	color: inherit;
+	font-weight: inherit;
+	-webkit-text-stroke: var(--thin) var(--fg);
+	-webkit-text-fill-color: transparent;
+}
+/* Barra de comandos: un bloque grueso de lado a lado, con sombra dura. La hoja del móvil (.sheet) no se toca. */
+[data-style='brutal'][data-style] [data-ui='cmd']:not(.sheet) {
+	--border: 5px solid var(--fg);
+	flex: 1 1 100%;
+	order: -2;
+	height: clamp(56px, 6.4vw, 92px);
+	box-shadow: var(--shadow);
+}
+[data-style='brutal'][data-style] [data-ui='cmd']:not(.sheet):focus-within {
+	border-color: var(--amber);
+}
+[data-style='brutal'][data-style] [data-ui='cmd']:not(.sheet) input {
+	font-family: var(--display);
+	font-weight: 900;
+	font-size: clamp(18px, 2.5vw, 36px);
+	letter-spacing: -0.01em;
+}
+[data-style='brutal'][data-style] [data-ui='cmd']:not(.sheet) input::placeholder {
+	font-weight: 600;
+}
+[data-style='brutal'][data-style] [data-ui='cmd']:not(.sheet) .prompt {
+	padding-inline: clamp(10px, 1.6vw, 24px);
+	font-size: clamp(18px, 2.5vw, 36px);
+}
+[data-style='brutal'][data-style] [data-ui='cmd']:not(.sheet) .go {
+	padding-inline: clamp(16px, 3vw, 48px);
+	font-family: var(--display);
+	font-weight: 900;
+	font-size: clamp(16px, 2vw, 30px);
+	letter-spacing: 0;
+	border-left: 5px solid var(--fg);
+}
+
+/* ── Secciones: palabras grandes ──────────────────────────────────────────────────────────────── */
+[data-style='brutal'][data-style] [data-ui='keys'] {
+	gap: var(--sp-8) var(--sp-10);
+	padding-block: 0 var(--sp-16);
+}
+[data-style='brutal'][data-style] [data-ui='keys'] .key {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--sp-2);
+	padding: var(--sp-6) var(--sp-10) var(--sp-8);
+	border: var(--thin) solid var(--fg);
+	color: var(--fg);
+	font-family: var(--display);
+	font-weight: 900;
+	font-size: clamp(20px, 2.2vw, 34px);
+	line-height: 0.95;
+	letter-spacing: -0.03em;
+}
+[data-style='brutal'][data-style] [data-ui='keys'] .key span {
+	margin: 0;
+	font-family: var(--mono);
+	font-size: var(--fs-xs);
+	font-weight: 400;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+[data-style='brutal'][data-style] [data-ui='keys'] .key:hover {
+	background: var(--fg);
+	color: var(--bg);
+}
+[data-style='brutal'][data-style] [data-ui='keys'] .key:hover span {
+	color: var(--bg);
+}
+[data-style='brutal'][data-style] [data-ui='keys'] .key[aria-current='page'],
+[data-style='brutal'][data-style] [data-ui='keys'] .key[aria-current='page'] span {
+	background: var(--acid);
+	border-color: var(--fg);
+	color: var(--acid-ink);
+}
+
+/* ── Cabecera de vista: el título a 10vw, con el código como etiqueta torcida encima ───────────────── */
+[data-style='brutal'][data-style] [data-ui='view-head'] {
+	border-bottom-width: 6px;
+	padding-bottom: var(--sp-16);
+}
+[data-style='brutal'][data-style] [data-ui='view-head'] h1 {
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--sp-12);
+	font-size: clamp(44px, 10vw, 220px);
+	line-height: 0.84;
+	letter-spacing: -0.05em;
+	overflow-wrap: break-word;
+	hyphens: auto;
+	max-width: 100%;
+}
+[data-style='brutal'][data-style] [data-ui='view-head'] .code {
+	align-self: flex-start;
+}
+[data-style='brutal'][data-style] [data-ui='view-head'] > div:first-child {
+	min-width: 0;
+	max-width: 100%;
+}
+[data-style='brutal'][data-style] [data-ui='view-head'] .sum,
+[data-style='brutal'][data-style] [data-ui='view-head'] .plain {
+	max-width: 60ch;
+	font-size: var(--fs-l);
+	border-left: 6px solid var(--acid);
+	padding-left: var(--sp-12);
+}
+
+/* ── Paneles: el título como banda ─────────────────────────────────────────────────────────── */
+[data-style='brutal'][data-style] [data-ui='panel-head'] {
+	padding-block: var(--sp-10);
+	align-items: flex-end;
+}
+[data-style='brutal'][data-style] [data-ui='panel-head'] h2 {
+	font-size: clamp(22px, 2.3vw, 38px);
+	line-height: 0.92;
+	letter-spacing: -0.035em;
+	overflow-wrap: break-word;
+	min-width: 0;
+}
+[data-style='brutal'][data-style] [data-ui='panel-head'] h2 .fold {
+	width: auto;
+	margin-inline-end: 0.2em;
+	font-size: 0.6em;
+	vertical-align: 0.15em;
+}
+/* Uno de cada tres paneles lleva la banda en amarillo ácido, con todo lo de dentro en negro. */
+[data-style='brutal'][data-style] [data-ui='main'] [data-ui='panel']:nth-child(3n + 2 of [data-ui='panel']) > [data-ui='panel-head'] {
+	--panel: var(--acid);
+	--raise: var(--acid);
+	--fg: var(--acid-ink);
+	--muted: var(--acid-ink);
+	--faint: var(--acid-ink);
+	--line: var(--acid-ink);
+	--amber: var(--acid-ink);
+	--amber-dim: var(--acid-ink);
+	--amber-edge: var(--acid-ink);
+	--amber-soft: var(--acid);
+	--on-amber: var(--acid);
+	--title-color: var(--acid-ink);
+	border-bottom: var(--thick) solid var(--acid-ink);
+}
+
+/* ── Escritorio (≥1100 px): columna de secciones y rejilla rota ─────────────────────────────────────── */
+@media screen and (min-width: 1100px) {
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='app'] {
+		display: grid;
+		grid-template-columns: minmax(170px, 14vw) minmax(0, 1fr);
+		column-gap: clamp(24px, 3vw, 48px);
+		align-items: start;
+	}
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='app'] > * {
+		grid-column: 2;
+		min-width: 0;
+	}
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='app'] > :is([data-ui='top'], [data-ui='foot']) {
+		grid-column: 1 / -1;
+	}
+	/* Las secciones, en vertical a la izquierda, pegadas arriba al bajar. */
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='keys'] {
+		grid-column: 1;
+		grid-row: 2 / span 30;
+		position: sticky;
+		top: var(--sp-16);
+		flex-direction: column;
+		flex-wrap: nowrap;
+		gap: 0;
+		padding: 0;
+		border-top: 6px solid var(--fg);
+	}
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='keys'] .key {
+		display: flex;
+		border-width: 0 0 var(--thin);
+		padding: var(--sp-8) var(--sp-6) var(--sp-10);
+		font-size: clamp(24px, 2.4vw, 42px);
+	}
+
+	/* Columnas desiguales y la de la derecha más baja. */
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] > .grid:is(.grid-2, .grid-2e, .grid-3) {
+		column-gap: clamp(32px, 4vw, 64px);
+	}
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] > .grid-2:has(> .col + .col):not(:has(> .col + .col + .col)) {
+		grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+	}
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] > .grid:is(.grid-2, .grid-2e, .grid-3) > .col:nth-child(even) {
+		margin-top: clamp(28px, 4vw, 72px);
+	}
+	/* Subcolumnas: con hueco ancho, para que los paneles desplazados no se pisen. */
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] > .grid > .col:has(> .panel + .panel) {
+		column-gap: clamp(32px, 4vw, 64px);
+	}
+}
+@media screen and (min-width: 1400px) {
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] > .grid-3:has(> .col + .col + .col) {
+		grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr) minmax(0, 0.8fr);
+	}
+}
+
+/* Giros, sangrías y solapes: solo si el sistema no pide menos movimiento. */
+@media screen and (min-width: 1100px) and (prefers-reduced-motion: no-preference) {
+	/* Cada panel apoyado sobre la sombra del de arriba: se monta un poco sin tapar nada. */
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] .col {
+		--stack-gap: var(--sp-6);
+	}
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] .col > [data-ui='panel']:not(.max) {
+		position: relative;
+	}
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] .col > [data-ui='panel']:not(.max):nth-child(3n + 1) {
+		rotate: -0.6deg;
+	}
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] .col > [data-ui='panel']:not(.max):nth-child(3n + 2) {
+		rotate: 0.45deg;
+		margin-inline-start: clamp(14px, 2.2vw, 36px);
+	}
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] .col > [data-ui='panel']:not(.max):nth-child(3n) {
+		rotate: 0.9deg;
+		margin-inline-end: clamp(10px, 1.4vw, 22px);
+	}
+	/* Más anchos que su columna: se salen por la izquierda, hacia el hueco de al lado o el de la columna de
+	   secciones. Por la derecha no, que una columna puede acabar en el borde de la página. */
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] .col > [data-ui='panel']:not(.max):is(:nth-child(4n + 1), :nth-child(4n + 3)) {
+		margin-inline-start: calc(-1 * clamp(10px, 1.4vw, 22px));
+	}
+	/* Paneles a todo el ancho (rejilla de una columna): el giro, menor, que en 1000 px se nota mucho más. */
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] > .grid:not(.grid-2, .grid-2e, .grid-3) > .col > [data-ui='panel']:not(.max) {
+		rotate: -0.25deg;
+	}
+	/* Las etiquetas de la columna de secciones, algo torcidas. */
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='keys'] .key:nth-child(3n + 1) {
+		rotate: -1.2deg;
+	}
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='keys'] .key:nth-child(3n + 2) {
+		rotate: 0.8deg;
+		margin-inline-start: var(--sp-10);
+	}
+	[data-style='brutal'][data-style] [data-ui='view-head'] .code {
+		rotate: -3deg;
+	}
+}
+
+/* «Encajar en pantalla»: la cabecera, más contenida para dejar alto a los paneles. */
+[data-style='brutal'][data-style][data-fit] [data-ui='brand'] {
+	--logo: 36px;
+	flex: none;
+	font-size: 44px;
+}
+[data-style='brutal'][data-style][data-fit] [data-ui='cmd']:not(.sheet) {
+	flex: 1 1 380px;
+	order: 0;
+	height: 48px;
+}
+[data-style='brutal'][data-style][data-fit] [data-ui='cmd']:not(.sheet) :is(input, .prompt) {
+	font-size: 22px;
+}
+[data-style='brutal'][data-style][data-fit] [data-ui='cmd']:not(.sheet) .go {
+	font-size: 18px;
+}
+[data-style='brutal'][data-style][data-fit] [data-ui='keys'] .key {
+	flex-direction: row;
+	align-items: baseline;
+	gap: var(--sp-6);
+	font-size: 20px;
+}
+[data-style='brutal'][data-style][data-fit] [data-ui='view-head'] h1 {
+	flex-direction: row;
+	align-items: baseline;
+	font-size: clamp(36px, 3.6vw, 72px);
+}
+
+/* ── Móvil: apilado crudo, sin giros ni desplazamientos ──────────────────────────────────────────── */
+@media (max-width: 720px) {
+	[data-style='brutal'][data-style] [data-ui='keys'] {
+		padding-bottom: var(--sp-12);
+		gap: var(--sp-6);
+	}
+	[data-style='brutal'][data-style] [data-ui='keys'] .key {
+		font-size: 22px;
+		padding: var(--sp-6) var(--sp-10);
+	}
+	[data-style='brutal'][data-style] [data-ui='panel-head'] h2 {
+		font-size: 24px;
+	}
+	/* Los relojes, que ya no comparten línea con el logo: si no caben (letra mayor del modo Sencillo), bajan. */
+	[data-style='brutal'][data-style] [data-ui='top'] .clocks {
+		flex-wrap: wrap;
+		row-gap: var(--sp-4);
+	}
+	[data-style='brutal'][data-style] [data-ui='view-head'] h1 {
+		font-size: clamp(40px, 13vw, 64px);
+	}
+}

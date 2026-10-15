@@ -1,0 +1,169 @@
+/* ── Estética «Nórdico» (src/lib/estilos.ts) ─────────────────────────────────────────────────────────
+ * <html data-style="nordico">: minimal escandinavo. Arena y madera clara de día, gris piedra de noche; Nunito
+ * (redondeada) para todo, esquinas suaves, sombras que apenas se ven y mucho aire. El acento es madera de roble:
+ * así no se confunde con el verde de las subidas, que aquí es más frío y limpio. No toca la densidad. */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	:root[data-style='nordico'],
+	[data-style='nordico'] {
+		/* Noche: piedra mojada y roble. */
+		--bg: #1a1c1b;
+		--panel: #222524;
+		--raise: #2b2f2d;
+		--line: #353a37;
+		--fg: #ece7dd;
+		--muted: #aba69b;
+		--faint: #a09b90;
+		--amber: #ddb17c; /* roble claro */
+		--amber-dim: #c9ab86;
+		--amber-soft: rgba(221, 177, 124, 0.12);
+		--amber-edge: rgba(221, 177, 124, 0.4);
+		--on-amber: #1e140a;
+		--up: #4fc7a0; /* verde frío, lejos de la madera */
+		--down: #f07f78;
+		--neutral: #454b47;
+		--series-2: #8fb0cc; /* fiordo */
+		--series-3: #b6a3cf; /* brezo */
+		--sq-light: #3b403d;
+		--sq-dark: #2a2e2c;
+		--scrim: rgba(14, 16, 15, 0.55);
+
+		/* Letras: Nunito para todo (las cifras, tabulares). */
+		--sans: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		--mono: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		--font-ui: var(--sans);
+		--fs-xxs: 10.5px;
+		--fs-xs: 11.5px;
+		--fs-s: 12.5px;
+		--fs-m: 14px;
+		--fs-l: 15.5px;
+		--fs-xl: 22px;
+		--fw-medium: 600;
+		--fw-bold: 700;
+		--lh: 1.55;
+		--lh-text: 1.5;
+		--track-tight: 0.01em;
+		--track-code: 0.03em;
+		--track-caps: 0.06em;
+		--track-label: 0.01em;
+		--track-brand: 0.2em;
+
+		/* Títulos de panel: redondos, en el color del texto y sin mayúsculas. */
+		--fs-title: var(--fs-m);
+		--title-case: none;
+		--title-track: 0.005em;
+		--title-font: var(--sans);
+		--title-color: var(--fg);
+
+		/* Forma: esquinas suaves y sombra que solo se intuye; un anillo de 1 px marca el borde. */
+		--border: var(--hair) solid var(--line);
+		--radius: 14px;
+		--radius-s: 10px;
+		--shadow: 0 0 0 var(--hair) var(--line), 0 2px 10px rgba(0, 0, 0, 0.18);
+		--shadow-pop: 0 0 0 var(--hair) var(--line), 0 14px 36px rgba(0, 0, 0, 0.42);
+		--panel-edge: 0;
+
+		/* Aire. */
+		--grid-gap: var(--sp-18);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-18);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-18);
+		--stack-edge: 0;
+		--pad-x: var(--sp-16);
+		--row-y: var(--sp-9);
+		--head-y: var(--sp-10);
+		--gutter: var(--sp-24);
+		--gutter-touch: var(--sp-14);
+		--cmd-h: 40px;
+
+		--dur-ui: 220ms;
+		--dur-fast: 200ms;
+		--ease: cubic-bezier(0.22, 1, 0.36, 1);
+	}
+	:root[data-theme='light'][data-style='nordico'],
+	:root[data-theme='light'] [data-style='nordico'] {
+		/* Día: arena, lino y nogal. */
+		--bg: #f1ede5;
+		--panel: #fcfaf6;
+		--raise: #efe9df;
+		--line: #e3dccf;
+		--fg: #2a2b28;
+		--muted: #5d5b55;
+		--faint: #65625b;
+		--amber: #8a5a2e; /* nogal */
+		--amber-dim: #7d5c3c;
+		--amber-soft: rgba(138, 90, 46, 0.09);
+		--amber-edge: rgba(138, 90, 46, 0.36);
+		--on-amber: #ffffff;
+		--up: #166b4f;
+		--down: #b23a33;
+		--neutral: #cbc3b5;
+		--series-2: #3a6788;
+		--series-3: #7a5a99;
+		--sq-light: #f3eee4;
+		--sq-dark: #dbd1c0;
+		--scrim: rgba(42, 43, 40, 0.28);
+		--shadow: 0 0 0 var(--hair) var(--line), 0 1px 2px rgba(80, 64, 40, 0.04), 0 6px 18px rgba(80, 64, 40, 0.05);
+		--shadow-pop: 0 0 0 var(--hair) var(--line), 0 16px 40px rgba(80, 64, 40, 0.16);
+	}
+
+	/* ── Lo que un token no alcanza ───────────────────────────────────────────────────────── */
+
+	/* Título de vista: grande y redondo, con el código en madera. */
+	[data-style='nordico'] .vh {
+		--fs-xl: 28px;
+		--sp-12: 20px;
+	}
+	[data-style='nordico'] .vh h1 {
+		letter-spacing: -0.01em;
+	}
+	@media (max-width: 720px) {
+		[data-style='nordico'] .vh {
+			--fs-xl: 24px;
+		}
+	}
+
+	/* Tablas y recuadros con más aire. */
+	[data-style='nordico'] .t {
+		--sp-5: 8px;
+		--sp-6: 9px;
+		--sp-10: 12px;
+	}
+	[data-style='nordico'] .tile {
+		--sp-12: 18px;
+		--sp-3: 6px;
+	}
+
+	/* Teclas de sección más sueltas. */
+	[data-style='nordico'] .keys {
+		--sp-6: 8px;
+		--sp-10: 14px;
+	}
+
+	/* Cifras sueltas de cabecera (fuera de un panel): una tarjeta más, con sus esquinas. */
+	[data-style='nordico'] .tiles:not(.panel .tiles) {
+		--border: 0 solid transparent;
+		margin-bottom: var(--grid-join);
+		border-radius: var(--radius);
+		box-shadow: var(--shadow);
+		overflow: hidden;
+	}
+
+	/* Movimiento: lo que se toca cambia de color con calma. */
+	@media (prefers-reduced-motion: no-preference) {
+		[data-style='nordico'] .key,
+		[data-style='nordico'] .theme,
+		[data-style='nordico'] .cmd,
+		[data-style='nordico'] select,
+		[data-style='nordico'] .mini a,
+		[data-style='nordico'] .t a.name {
+			transition:
+				color var(--dur-ui) var(--ease),
+				background-color var(--dur-ui) var(--ease),
+				border-color var(--dur-ui) var(--ease);
+		}
+	}
+}
