@@ -2,6 +2,7 @@
 // WorldMap solo tenga que dibujarlos. Funciones puras, con tests.
 import { findCountries } from '../countries.ts';
 import { nf } from '../format.ts';
+import { AREAS, type Czib } from '../czib.ts';
 import type { Chokepoint, NaturalEvent, Quake, Storm } from '../types.ts';
 
 /** Lo que hace falta de un documento de sanciones o aranceles (sanctions.json). */
@@ -11,14 +12,15 @@ export interface TradeLike {
 	url: string;
 }
 
-export type LayerId = 'quakes' | 'storms' | 'events' | 'straits' | 'sanctions';
+export type LayerId = 'quakes' | 'storms' | 'events' | 'straits' | 'sanctions' | 'airspace';
 
 export const LAYERS: { value: LayerId; label: string }[] = [
 	{ value: 'quakes', label: 'Terremotos' },
 	{ value: 'storms', label: 'Ciclones' },
 	{ value: 'events', label: 'Incendios y volcanes' },
 	{ value: 'straits', label: 'Estrechos' },
-	{ value: 'sanctions', label: 'Sanciones' }
+	{ value: 'sanctions', label: 'Sanciones' },
+	{ value: 'airspace', label: 'Espacio aéreo' }
 ];
 
 export interface MapPoint {
@@ -128,6 +130,15 @@ export function sanctionPoints(docs: TradeLike[]): MapPoint[] {
 	}));
 }
 
+/** Espacio aéreo en conflicto (CZIB de la EASA, F22): un punto por boletín, en el centro del país o de la zona. */
+export const airspacePoints = (items: Czib[]): MapPoint[] =>
+	items.flatMap((c) => {
+		const country = findCountries(c.areaEn)[0];
+		const at = AREAS[c.areaEn.split(/\s+[–-]\s+/)[0].toLowerCase()]?.at ?? country?.center;
+		if (!at) return [];
+		return [{ id: `a-${c.id}`, layer: 'airspace' as const, lat: at[0], lon: at[1], r: 2.2, title: `Espacio aéreo: ${c.area}`, sub: `${c.id} · EASA`, url: c.url, country: country?.code }];
+	});
+
 /** Todas las capas a la vez. La usan GEO (+page.server.ts) y el JSON del mapa fijado en TOP. */
 export const mapLayers = (d: {
 	quakes?: Quake[];
@@ -135,10 +146,12 @@ export const mapLayers = (d: {
 	events?: NaturalEvent[];
 	straits?: Chokepoint[];
 	sanctions?: TradeLike[];
+	airspace?: Czib[];
 }): Record<LayerId, MapPoint[]> => ({
 	quakes: quakePoints(d.quakes ?? []),
 	storms: stormPoints(d.storms ?? []),
 	events: eventPoints(d.events ?? []),
 	straits: straitPoints(d.straits ?? []),
-	sanctions: sanctionPoints(d.sanctions ?? [])
+	sanctions: sanctionPoints(d.sanctions ?? []),
+	airspace: airspacePoints(d.airspace ?? [])
 });
