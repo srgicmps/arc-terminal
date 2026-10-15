@@ -52,3 +52,9 @@ describe('findEntity con upperCodes (NEWS)', () => {
 		expect(findEntity('España', { upperCodes: true })).toMatchObject({ kind: 'country', country: { code: 'ES' } });
 	});
 });
+
+describe('entitiesIn sin repetir etiqueta', () => {
+	it('«S&P 500» sale una sola vez', () => {
+		expect(entitiesIn('S&P 500 closes at record').filter((e) => e.label === 'S&P 500')).toHaveLength(1);
+	});
+});

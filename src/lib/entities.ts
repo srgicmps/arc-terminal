@@ -74,5 +74,6 @@ export function entitiesIn(text: string, max = 3): EntityLink[] {
 	const found = named.filter((n) => n.re.some((re) => re.test(t))).map(({ label, query }) => ({ label, query }));
 	const countries = findCountries(text).map((c) => ({ label: c.name, query: c.name }));
 	const seen = new Set<string>();
-	return [...found, ...countries].filter((e) => !seen.has(e.query) && seen.add(e.query)).slice(0, max);
+	// Sin repetir ni la búsqueda ni la etiqueta: «S&P 500» es el índice y su ETF, y saldría dos veces.
+	return [...found, ...countries].filter((e) => !seen.has(e.query) && !seen.has(e.label) && seen.add(e.query).add(e.label)).slice(0, max);
 }
