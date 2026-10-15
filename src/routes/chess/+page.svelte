@@ -225,9 +225,12 @@
 		game.orientation = other(game.orientation);
 	}
 
-	/** Las acciones que no se pueden deshacer piden una segunda pulsación en 3 s. */
+	/**
+	 * Las acciones que no se pueden deshacer piden una segunda pulsación en 3 s. «Nueva» no la pide si no hay
+	 * nada que perder: sin jugadas o con la partida ya acabada.
+	 */
 	function confirm(action: 'new' | 'resign', run: () => void) {
-		if (confirming === action || (action === 'new' && !game.moves.length)) {
+		if (confirming === action || (action === 'new' && (!game.moves.length || end))) {
 			confirming = null;
 			run();
 			return;
