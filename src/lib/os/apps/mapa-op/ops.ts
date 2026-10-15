@@ -168,8 +168,10 @@ export function buildPoints(d: OpRaw): OpPoint[] {
 	const trade = mergeSanctions(d.sanctions, d.sanctionsUk, d.eurlex);
 	const tradeByUrl = new Map(trade.map((t) => [t.url, t]));
 	const sanctions = sanctionPoints(trade);
+	// news-geo y news-world comparten muchos titulares: cada noticia (por enlace) sale una sola vez.
+	const seenNews = new Set<string>();
 	const news = (d.news ?? [])
-		.filter((n) => n.time)
+		.filter((n) => n.time && !seenNews.has(n.url) && !!seenNews.add(n.url))
 		.sort((a, b) => b.time!.localeCompare(a.time!))
 		.slice(0, 80);
 
@@ -425,6 +427,8 @@ export const clampCursor = (cursor: number, r: Range) => Math.min(r.end, Math.ma
  * final, `done` (se para).
  */
 export function playStep(cursor: number, r: Range, steps = 120): { cursor: number; done: boolean } {
+	// Un cursor de antes del rango (al pasar de «Todo» a «6 h») empieza por el principio, no se queda clavado.
+	cursor = Math.max(r.start, cursor);
 	if (cursor >= r.end) return { cursor: r.start, done: false };
 	const next = Math.min(r.end, cursor + (r.end - r.start) / steps);
 	return { cursor: next, done: next >= r.end };

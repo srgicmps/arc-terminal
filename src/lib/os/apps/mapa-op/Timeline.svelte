@@ -50,6 +50,25 @@
 		cursor = null;
 	}
 
+	// En táctil (iOS) tocar la pista de un range no mueve el valor y su pulgar no se ve: el dedo lo lleva directamente.
+	function fromX(e: PointerEvent) {
+		const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		const f = Math.min(1, Math.max(0, (e.clientX - r.left) / Math.max(1, r.width)));
+		playing = false;
+		set(range.start + f * span);
+	}
+
+	function touchDown(e: PointerEvent) {
+		if (e.pointerType === 'mouse') return;
+		e.preventDefault();
+		(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+		fromX(e);
+	}
+
+	function touchMove(e: PointerEvent) {
+		if (e.pointerType !== 'mouse' && (e.currentTarget as HTMLElement).hasPointerCapture?.(e.pointerId)) fromX(e);
+	}
+
 	function key(e: KeyboardEvent) {
 		if (e.key === ' ' || e.key === 'k') {
 			e.preventDefault();
@@ -88,6 +107,8 @@
 				set(+e.currentTarget.value);
 			}}
 			onkeydown={key}
+			onpointerdown={touchDown}
+			onpointermove={touchMove}
 		/>
 		<div class="ends" aria-hidden="true">
 			<span>{label(range.start)}</span>
@@ -110,6 +131,7 @@
 	.tl {
 		display: grid;
 		grid-template-columns: auto 1fr auto;
+		grid-template-areas: 'ctl track read';
 		align-items: center;
 		gap: var(--sp-12);
 		padding: var(--sp-6) var(--pad-x);
@@ -121,6 +143,7 @@
 	}
 
 	.ctl {
+		grid-area: ctl;
 		display: flex;
 		gap: var(--sp-4);
 	}
@@ -150,6 +173,7 @@
 	}
 
 	.track {
+		grid-area: track;
 		position: relative;
 		height: calc(var(--control-h) + var(--sp-14));
 		min-width: 0;
@@ -193,6 +217,7 @@
 		margin: 0;
 		opacity: 0;
 		cursor: ew-resize;
+		touch-action: none;
 	}
 
 	input:focus-visible ~ .ends {
@@ -217,6 +242,7 @@
 	}
 
 	.read {
+		grid-area: read;
 		display: grid;
 		justify-items: end;
 		gap: var(--sp-2);
@@ -240,6 +266,30 @@
 
 	.mut {
 		color: var(--muted);
+	}
+
+	/* Ventana estrecha (el móvil): los botones y la lectura arriba, la pista a todo el ancho debajo. */
+	@container (max-width: 560px) {
+		.tl {
+			grid-template-columns: auto 1fr;
+			grid-template-areas: 'ctl read' 'track track';
+			gap: var(--sp-6) var(--sp-12);
+		}
+
+		.read {
+			grid-auto-flow: column;
+			align-items: baseline;
+			gap: var(--sp-8);
+		}
+
+		.bins {
+			gap: 0;
+		}
+
+		/* «hace 2 d 4 h» no cabe al lado: la fecha ya lo dice. */
+		.read .mut {
+			display: none;
+		}
 	}
 
 	.sr {
