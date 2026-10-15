@@ -1,5 +1,6 @@
 // Forma de los datos de static/data/*.json. La comparten los scripts que los descargan (scripts/sources/)
 // y las vistas que los muestran.
+import type { HeldIssuer } from './holders.ts';
 import type { SeaState, SunDay } from './weather.ts';
 
 // ---------- Series temporales (macro, tipos, divisas) ----------
@@ -655,6 +656,8 @@ export interface Fund {
 
 export interface FundsData {
 	funds: Fund[];
+	/** HDS: quién tiene cada valor (src/lib/holders.ts). Las copias guardadas antes no lo tienen. */
+	holders?: HeldIssuer[];
 }
 
 /** Un grupo de tecnologías del mix eléctrico (Eólica, Solar…). */
