@@ -19,8 +19,9 @@ const PATHS = [...viewPaths(), '/s?sym=NVDA'];
 const WIDTHS = [390, 1280];
 /** Los dos modos (src/lib/modo.ts): Sencillo enseña menos paneles y letra mayor; Terminal, todo. */
 const MODES = ['sencillo', 'terminal'] as const;
-/** Vistas de texto, sin paneles. */
-const NO_PANELS = new Set(['/help', '/doc', '/bienvenida']);
+
+/** Vistas de texto, sin paneles, y el Modo OS (/os: un escritorio con ventanas). */
+const NO_PANELS = new Set(['/help', '/doc', '/bienvenida', '/os']);
 /** Peso máximo razonable de una vista en el móvil (4G), en bytes gzip. */
 const WEIGHT_LIMIT = 300 * 1024;
 /** Reglas de axe-core que se miran: contraste y que todo control, enlace e imagen tenga nombre o etiqueta. */
