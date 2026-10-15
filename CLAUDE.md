@@ -83,7 +83,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   (tiempo de su sitio con Open-Meteo, sus valores, su agenda y titulares de IMP de sus temas; 5 líneas). Por su ntfy y,
   si lo pide, por email: la Action manda el texto por uid a `/api/brief` (`cloud/brief.ts`) y la web lo envía con
   Brevo (Secrets de Pages `BREVO_API_KEY` y `BREVO_SENDER`); el email nunca sale de Cloudflare. Uno al día.
-- **Avisos de casa** (F16, `scripts/alerts/home.ts`, panel «En casa» de AVISOS): horas baratas de la luz de mañana, polen de
+- **Avisos de casa** (F16, `scripts/alerts/home.ts`, panel «En casa» de AVISOS): horas baratas de la luz de mañana, su gasolinera favorita (si baja 2 cts), polen de
   mañana en el sitio de «Tu mañana» (Open-Meteo, CAMS) y la víspera de los resultados de sus valores (F12). Por usuario.
 - **Mandar a la familia** (F15): «Mandar» en cada titular (`FamilySend.svelte`) y panel «Familia» en AVISOS. `/api/family`
   (`cloud/family.ts`, tablas `family` y `family_sent`): cada uno pone un nombre y acepta o no; la Function manda al tema
