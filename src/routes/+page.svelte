@@ -33,6 +33,7 @@
 	import { zoneFor } from '#lib/fuel.ts';
 	import { inMenorca, inSpain, place } from '#lib/place.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
+	import { initTitles, shown } from '#lib/titles.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -58,6 +59,8 @@
 		if (go) goto(routeHref(go as '/'), { replaceState: true });
 	});
 	$effect(initRefCountry);
+	// Titulares de «Lo importante» y «Tu semana» en español si hay traducción (ES / EN, como en IMP y SEMANA).
+	$effect(initTitles);
 
 	const get = $derived(seriesMap(data.ecb, data.eurostat, data.bls));
 	const premium = $derived(spread(get('bond10-es'), get('bond10-de'), 'premium-es', 'Prima de riesgo'));
@@ -204,7 +207,8 @@
 					{@const d = pts.length > 1 ? ((pts.at(-1)!.v / pts.at(-2)!.v - 1) * 100) : null}
 					<li>
 						<span class="l">{s.label}</span>
-						<b>{nf(pts.at(-1)!.v, 4)} <em><Change value={d} unit=" %" /></em></b>
+						<!-- EUR/JPY ronda los 170: con 2 decimales basta (como en WS); los demás pares, 4. -->
+						<b>{nf(pts.at(-1)!.v, id === 'eurjpy' ? 2 : 4)} <em><Change value={d} unit=" %" /></em></b>
 					</li>
 				{/if}
 			{/each}
@@ -222,7 +226,7 @@
 	<Panel id="week" title="Tu semana en 2 minutos" meta="Últimos 7 días" jump={{ code: 'SEMANA', href: resolve('/semana') }}>
 		<ul class="mini">
 			{#each data.week.top as t (t.k)}
-				<li><a class="l" href={t.url} target="_blank" rel="noopener">{t.title}</a><b class="mut">{t.days} {t.days === 1 ? 'día' : 'días'}</b></li>
+				<li><a class="l" href={t.url} target="_blank" rel="noopener">{shown(t).text}</a><b class="mut">{t.days} {t.days === 1 ? 'día' : 'días'}</b></li>
 			{/each}
 			{#each data.week.markets as m (m.label)}
 				<li>
@@ -241,7 +245,7 @@
 			<ul class="mini">
 				{#each important as e (e.k)}
 					<li>
-						<a class="l" href={e.url} target="_blank" rel="noopener">{e.title}</a>
+						<a class="l" href={e.url} target="_blank" rel="noopener">{shown(e).text}</a>
 						<b class="mut">{e.sources.length} {e.sources.length === 1 ? 'medio' : 'medios'}</b>
 					</li>
 				{/each}
