@@ -69,6 +69,7 @@ export const EXTRA: (GlossaryEntry & { why: string; how: string })[] = [
 	{ id: 'quakes', term: 'Terremotos', match: ['terremotos'], def: 'Los terremotos recientes, con su magnitud y dónde han sido.', why: 'Los fuertes pueden causar daños y alertas de tsunami.', how: 'Por debajo de 4 apenas se notan; de 6 para arriba pueden hacer mucho daño.' },
 	{ id: 'map', term: 'Mapa', match: ['mapa'], def: 'Lo que está pasando en el mundo, situado en el mapa.', why: 'Ayuda a ver dónde se concentran los conflictos y las noticias.', how: 'Toca un punto para ver qué ha pasado allí.' },
 	{ id: 'headlines', term: 'Titulares', match: ['titulares', 'en las noticias'], def: 'Las últimas noticias de medios de confianza sobre este tema.', why: 'Te pone al día en un minuto.', how: 'Las más recientes van arriba; toca una para leerla entera.' },
+	{ id: 'uv-pollen', term: 'UV y polen', match: ['uv y polen'], def: 'El índice UV mide la fuerza del sol; el polen, cuántos granos de cada planta hay en el aire.', why: 'Con UV alto te quemas antes; con polen alto, los alérgicos lo notan.', how: 'UV de 3 o más: crema y gorra en esas horas. Polen moderado o alto de tu planta: ventanas cerradas y la medicación a mano.' },
 	{ id: 'elections', term: 'Próximas elecciones', match: ['proximas elecciones'], def: 'Las elecciones que vienen en el mundo, con su fecha.', why: 'Un cambio de gobierno puede mover mercados y relaciones entre países.', how: 'Las más cercanas van primero.' }
 ];
 
