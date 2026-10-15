@@ -21,7 +21,7 @@ export interface Env {
 	ACCESS_AUD?: string;
 }
 
-const json = (status: number, body: unknown) =>
+export const json = (status: number, body: unknown) =>
 	new Response(JSON.stringify(body), {
 		status,
 		headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }
