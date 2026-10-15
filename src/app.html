@@ -56,6 +56,22 @@
 				}
 			} catch (e) {}
 			document.documentElement.dataset.modo = m;
+			// Estética: como decideStyle (src/lib/estilos.ts).
+			var st;
+			try {
+				st = localStorage.getItem('arc-style');
+				if (st === 'modern' || !/^[a-z]+$/.test(st || '')) {
+					st = 'grafito';
+					for (var j = 0; j < localStorage.length; j++) {
+						var q = localStorage.key(j);
+						if (q && q.indexOf('arc-') === 0 && q !== 'arc-modo' && q !== 'arc-style') st = 'terminal';
+					}
+					localStorage.setItem('arc-style', st);
+				}
+			} catch (e) {}
+			st = st || 'grafito';
+			document.documentElement.dataset.style = st;
+			if (st !== 'terminal') document.write('<link id="style-sheet" rel="stylesheet" href="%sveltekit.assets%/estilos/' + st + '.css">');
 		</script>
 		%sveltekit.head%
 	</head>

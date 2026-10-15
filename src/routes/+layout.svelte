@@ -3,6 +3,7 @@
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import '../app.css';
+	import '../styles/ajustes.css';
 	import { goto } from '$app/navigation';
 	import { neighbour, nudge, SWIPE, swipeDirection } from '#lib/swipe.ts';
 	import { asset, resolve } from '$app/paths';
@@ -343,6 +344,7 @@
 		height: var(--btn-sm);
 		background: none;
 		border: var(--border);
+		border-radius: var(--radius-s);
 		color: var(--muted);
 		font-size: var(--fs-m);
 		cursor: pointer;
@@ -378,6 +380,7 @@
 		text-transform: uppercase;
 		color: var(--amber);
 		border: var(--hair) solid var(--amber-edge);
+		border-radius: var(--radius-s);
 		padding: var(--sp-2) var(--sp-7);
 	}
 
@@ -404,6 +407,7 @@
 		color: var(--amber);
 		text-decoration: none;
 		border: var(--border);
+		border-radius: var(--radius-s);
 		padding: var(--sp-4) var(--sp-10);
 	}
 
@@ -433,6 +437,7 @@
 	.tape {
 		overflow: hidden;
 		border: var(--border);
+		border-radius: var(--radius-s);
 		background: var(--panel);
 		margin-bottom: var(--sp-12);
 	}
@@ -454,6 +459,7 @@
 		z-index: 30;
 		background: var(--raise);
 		border: var(--hair) solid var(--amber-edge);
+		border-radius: var(--radius-s);
 		color: var(--muted);
 		padding: var(--sp-7) var(--pad-x);
 		font-size: var(--fs-s);
@@ -516,6 +522,7 @@
 		padding: var(--sp-6) var(--sp-10);
 		background: var(--panel);
 		border: var(--hair) solid var(--amber-edge);
+		border-radius: var(--radius-s);
 		color: var(--muted);
 		font-size: var(--fs-s);
 	}
@@ -523,6 +530,7 @@
 	.tv-chip button {
 		background: none;
 		border: var(--border);
+		border-radius: var(--radius-s);
 		padding: var(--sp-4) var(--sp-10);
 		color: var(--fg);
 		font-size: var(--fs-s);
@@ -749,8 +757,8 @@
 		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel)) {
 			display: grid;
 			grid-template-columns: repeat(2, minmax(0, 1fr));
-			gap: var(--hair);
-			background: var(--line);
+			gap: var(--grid-gap);
+			background: var(--grid-fill);
 		}
 
 		:global(html[data-fit] main > .grid:is(.grid-2, .grid-2e):last-child > .col:has(> .panel + .panel) > .panel:not(.max, .folded)) {
@@ -777,8 +785,8 @@
 		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel)) {
 			display: grid;
 			grid-template-columns: repeat(2, minmax(0, 1fr));
-			gap: var(--hair);
-			background: var(--line);
+			gap: var(--grid-gap);
+			background: var(--grid-fill);
 		}
 
 		:global(html[data-fit] main > .grid.grid-3:last-child > .col:has(> .panel + .panel) > .panel:not(.max, .folded)) {

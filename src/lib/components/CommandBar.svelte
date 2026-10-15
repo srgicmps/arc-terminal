@@ -457,6 +457,7 @@
 		align-items: stretch;
 		height: var(--cmd-h);
 		border: var(--border);
+		border-radius: var(--radius-s);
 		background: var(--panel);
 	}
 

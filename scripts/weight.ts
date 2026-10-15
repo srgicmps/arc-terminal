@@ -9,10 +9,10 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
 /**
- * Tope por vista, en bytes gzip. Hoy la más pesada (GEO) ronda los 181 KB. Cada ruta nueva engorda un poco el
- * manifiesto de rutas que cargan todas las vistas (las experiencias /x/* añadieron ~2,5 KB a GEO).
+ * Tope por vista, en bytes gzip. Hoy la más pesada (GEO) ronda los 182 KB. Cada ruta nueva engorda un poco el
+ * manifiesto de rutas que cargan todas las vistas. Sergi lo subió a 200 con las estéticas (D45).
  */
-export const LIMIT = 190 * 1024;
+export const LIMIT = 200 * 1024;
 
 /** El JS y el CSS de la propia web que nombra una página: «_app/immutable/…». Sin repetir. */
 export function refsOf(html: string): string[] {
