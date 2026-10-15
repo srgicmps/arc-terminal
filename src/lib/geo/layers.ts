@@ -105,8 +105,6 @@ export const straitPoints = (items: Chokepoint[]): MapPoint[] =>
 		];
 	});
 
-/** Países que nombra un texto. */
-
 /** Sanciones y aranceles agrupados por país: un punto por país, más grande cuantos más documentos. */
 export function sanctionPoints(docs: TradeLike[]): MapPoint[] {
 	const by = new Map<string, { at: [number, number]; code?: string; docs: TradeLike[] }>();
