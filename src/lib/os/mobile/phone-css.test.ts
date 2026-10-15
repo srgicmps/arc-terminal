@@ -13,8 +13,8 @@ describe('inicio del teléfono (CSS)', () => {
 		expect(rule(home, '.page')).toMatch(/container-type:\s*size/);
 		expect(rule(home, '.page > .icon')).toMatch(/--os-icon-size:\s*clamp\(.*cqh/);
 		// …y el dibujo sigue al hueco, no a los 58 px fijos de OsIcon.
-		expect(css('./PhoneIcon.svelte')).toMatch(/\.sq > :global\(\.os-icon\)[^{]*\{[^}]*width: 100% !important/);
-		expect(css('./PhoneFolderIcon.svelte')).toMatch(/\.mini > :global\(\.os-icon\)[^{]*\{[^}]*width: 100% !important/);
+		expect(css('./PhoneIcon.svelte')).toMatch(/\.sq > :global\(\.os-icon\)[^{]*\{[^}]*width: 100% !important;\s*height: auto !important/);
+		expect(css('./PhoneFolderIcon.svelte')).toMatch(/\.mini > :global\(\.os-icon\)[^{]*\{[^}]*width: 100% !important;\s*height: auto !important/);
 	});
 	it('el «−» de los widgets es redondo con pantalla táctil (el min-height global lo estiraba)', () => {
 		expect(rule(home, '.minus')).toMatch(/min-height:\s*0/);

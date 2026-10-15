@@ -9,7 +9,7 @@
 	let { folder, apps, badge = 0, onopen }: { folder: Folder; apps: PhoneApp[]; badge?: number; onopen: () => void } = $props();
 </script>
 
-<button class="app" onclick={onopen} aria-label="Carpeta {folder.name}, {apps.length} apps{badge ? `, ${badge} nuevas` : ''}">
+<button class="app" onclick={onopen} aria-label="Carpeta {folder.name}, {apps.length} apps{badge ? `, ${badge} ${badge === 1 ? 'nueva' : 'nuevas'}` : ''}">
 	<span class="sq" aria-hidden="true">
 		{#each apps.slice(0, 9) as a (a.id)}<span class="mini"><OsIcon id={a.id} size={13} /></span>{/each}
 		{#if badge}<b class="badge">{badgeText(badge)}</b>{/if}
@@ -59,10 +59,9 @@
 	}
 	/* Las miniaturas siguen al hueco (--os-icon-size encoge en pantallas bajas). */
 	.mini > :global(.os-icon),
-	.mini > :global(.os-icon) :global(.tile),
 	.mini > :global(.os-icon) :global(svg) {
 		width: 100% !important;
-		height: 100% !important;
+		height: auto !important;
 	}
 	.app:active .sq {
 		transform: scale(0.92);

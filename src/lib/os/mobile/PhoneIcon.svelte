@@ -11,7 +11,7 @@
 	const SIZE = 58;
 </script>
 
-<button class="app" onclick={() => onopen(app)} aria-label={badge ? `${app.name}, ${badge} nuevas` : app.name}>
+<button class="app" onclick={() => onopen(app)} aria-label={badge ? `${app.name}, ${badge} ${badge === 1 ? 'nueva' : 'nuevas'}` : app.name}>
 	<span class="sq" aria-hidden="true">
 		<OsIcon id={app.id} size={SIZE} />
 		{#if badge}<b class="badge">{badgeText(badge)}</b>{/if}
@@ -45,10 +45,9 @@
 	}
 	/* El dibujo sigue al hueco (--os-icon-size encoge en pantallas bajas). */
 	.sq > :global(.os-icon),
-	.sq > :global(.os-icon) :global(.tile),
 	.sq > :global(.os-icon) :global(svg) {
 		width: 100% !important;
-		height: 100% !important;
+		height: auto !important;
 	}
 	.app:active .sq {
 		transform: scale(0.92);
