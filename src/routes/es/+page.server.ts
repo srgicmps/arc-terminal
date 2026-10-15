@@ -3,10 +3,11 @@ import { headlines, pickSeries, trim } from '#lib/trim.ts';
 import type { FuelSpainData } from '#lib/fuel.ts';
 import type { BoeData, NewsData, PowerData, Quake, SeriesData, ReleaseCalData } from '#lib/types.ts';
 import { nextMap } from '#lib/nextrelease.ts';
+import type { ParoData } from '#lib/paro.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, gov, boe, power, eurostat, ecb, fuel, quakes, ine, cal, afiliacion] = await Promise.all([
+	const [news, gov, boe, power, eurostat, ecb, fuel, quakes, ine, cal, afiliacion, paro] = await Promise.all([
 		dataset<NewsData>('news-es'),
 		dataset<NewsData>('news-gov'),
 		dataset<BoeData>('boe'),
@@ -17,7 +18,8 @@ export const load: PageServerLoad = async () => {
 		dataset<Quake[]>('quakes-es'),
 		dataset<SeriesData>('ine'),
 		dataset<ReleaseCalData>('releases-cal'),
-		dataset<SeriesData>('afiliacion')
+		dataset<SeriesData>('afiliacion'),
+		dataset<ParoData>('paro')
 	]);
 	return {
 		news,
@@ -36,6 +38,7 @@ export const load: PageServerLoad = async () => {
 		quakes: trim(quakes, (d) => [...d].sort((a, b) => b.mag - a.mag).slice(0, 15)),
 		ine,
 		afiliacion,
+		paro,
 		// Próximo dato de cada serie, calculado aquí: al navegador solo le llega la fecha y el título.
 		next: nextMap(
 			[eurostat, ine].flatMap((d) => d?.data.series.map((s) => s.id) ?? []),
