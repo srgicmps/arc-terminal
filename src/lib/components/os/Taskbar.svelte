@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { APPS, appOf, desk, focus, focusedWin, goDesk, minimize, newDesk, openApp, os, setShell } from '#lib/os/os.svelte.ts';
+	import { APPS, appOf, desk, focus, focusedWin, goDesk, minimize, newDesk, openApp, os } from '#lib/os/os.svelte.ts';
 
 	let pick = $state('');
 	const groups = [
@@ -55,7 +55,7 @@
 		{/each}
 	</span>
 	{#if os.notice}<span class="notice" role="status">{os.notice.text}</span>{/if}
-	<a class="classic" href={resolve('/')} onclick={() => setShell('clasico')}>Modo clásico</a>
+	<a class="classic" href={resolve('/')}>Modo clásico</a>
 </nav>
 
 <style>
