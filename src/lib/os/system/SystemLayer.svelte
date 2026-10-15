@@ -34,6 +34,8 @@
 
 <svelte:window onkeydown={key} onkeyup={(e) => sw.open && e.key === 'Alt' && commit()} onblur={commit} />
 
+<!-- Fuera del escritorio, pero con el estilo único de Arc OS («Mando»): también en el móvil. -->
+<div class="skin" data-os-skin="mando">
 {#if sys.phase === 'boot'}
 	<Boot ondone={bootDone} />
 {:else if sys.phase === 'lock'}
@@ -41,3 +43,10 @@
 {:else if sw.open}
 	<Switcher />
 {/if}
+</div>
+
+<style>
+	.skin {
+		display: contents;
+	}
+</style>
