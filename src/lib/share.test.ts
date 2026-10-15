@@ -31,6 +31,13 @@ describe('shareOrCopy', () => {
 		expect(writeText).not.toHaveBeenCalled();
 	});
 
+	it('si canShare dice que no, copia sin abrir el menú', async () => {
+		const share = vi.fn();
+		const writeText = vi.fn().mockResolvedValue(undefined);
+		expect(await shareOrCopy(info, { share, canShare: () => false, clipboard: { writeText } })).toBe('copied');
+		expect(share).not.toHaveBeenCalled();
+	});
+
 	it('sin navigator.share, copia título, texto y URL', async () => {
 		const writeText = vi.fn().mockResolvedValue(undefined);
 		expect(await shareOrCopy(info, { clipboard: { writeText } })).toBe('copied');

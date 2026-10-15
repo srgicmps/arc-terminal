@@ -11,7 +11,7 @@
 	import { NEWS_SECTIONS as SECTIONS } from '#lib/news.ts';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Search from '#lib/components/ui/Search.svelte';
-	import { dropSectionFilter, fold, hasWords, MIN_QUERY, parseNewsQuery, queryWords, withinHours } from '#lib/search.ts';
+	import { dropSectionFilter, fold, foldedHasWordsAt, hasWordsAt, MIN_QUERY, parseNewsQuery, queryWords, withinHours } from '#lib/search.ts';
 	import type { ArchiveEntry, NewsItem } from '#lib/types.ts';
 	import { urlState, writeParams } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
@@ -48,11 +48,11 @@
 
 	const words = $derived(queryWords(parsed.text));
 	// Si lo buscado tiene ficha (valor, líder, banco central o país), sale arriba y los titulares debajo.
-	const entity = $derived(findEntity(parsed.text));
+	const entity = $derived(findEntity(parsed.text, { upperCodes: true }));
 	const inSection = $derived(
 		data.items.filter((i) => (section === 'all' || i.section === section) && withinHours(i.time, parsed.hours))
 	);
-	const filtered = $derived(inSection.filter((i) => hasWords(`${i.title} ${i.summary} ${i.source}`, words)));
+	const filtered = $derived(inSection.filter((i) => hasWordsAt(`${i.title} ${i.titleEs ?? ''} ${i.summary} ${i.source}`, words)));
 
 	// Archivo de 3 meses (scripts/sources/archive.ts): cada mes es un JSON aparte (de 1 a 2 MB, unos
 	// 700 KB con gzip) que solo se pide al buscar algo de 3 letras o más. Primero el mes en curso; los
@@ -96,7 +96,7 @@
 		const now = new Set(data.items.map((i) => i.url));
 		return data.months
 			.flatMap((m) => archive[m.month] ?? [])
-			.filter(({ e, key }) => !now.has(e.u) && withinHours(e.d, parsed.hours) && words.every((w) => key.includes(w)))
+			.filter(({ e, key }) => !now.has(e.u) && withinHours(e.d, parsed.hours) && foldedHasWordsAt(key, words))
 			.map(({ e }) => ({ title: e.t, url: e.u, source: e.s, time: e.d, summary: '' }));
 	});
 
