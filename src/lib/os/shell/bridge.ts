@@ -1,6 +1,7 @@
 // Puente entre la shell (este directorio) y el núcleo de Arc OS (src/lib/os/os.svelte.ts): traduce sus apps,
 // ventanas y escritorios a la forma mínima de types.ts, y las acciones de la shell a las suyas. Son funciones
 // que leen estado reactivo: dentro de un $derived o de la plantilla se actualizan solas.
+import { isInstalled } from '../packages.svelte.ts';
 import { leaveOS } from '../mode.svelte.ts';
 import { APPS, appOf, close, desk, focus, focusedWin, goDesk, maximize, minimize, newDesk, openApp, openPath, os, tile } from '../os.svelte.ts';
 import { opened } from './shell.svelte.ts';
@@ -8,6 +9,8 @@ import type { StartApp } from './start.ts';
 import type { DeskInfo, TaskWin } from './types.ts';
 
 export const apps: StartApp[] = APPS.map((a) => ({ id: a.id, title: a.name, code: a.code, icon: a.icon, desc: a.desc }));
+/** Las que están instaladas (Centro de paquetes de «OS 4»): las listas de la shell usan estas. */
+export const installed = () => apps.filter((a) => isInstalled(a.id));
 
 export function windows(): TaskWin[] {
 	const f = focusedWin();
