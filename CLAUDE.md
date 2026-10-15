@@ -79,9 +79,17 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   (`/api/alerts?all=1`, sin emails) y `scripts/alerts/users.ts` reparte los avisos de la pasada según cada uno. Su
   historial va SOLO en la caché de Actions (`.notify-cache/notify-users.json`, por uid aleatorio), nunca en static/data.
   Los de Sergi siguen saliendo por `NTFY_TOPIC`.
+- **«Tu mañana»** (`scripts/alerts/brief.ts`, panel en AVISOS): resumen diario personal a la hora que elige cada uno
+  (tiempo de su sitio con Open-Meteo, sus valores, su agenda y titulares de IMP de sus temas; 5 líneas). Por su ntfy y,
+  si lo pide, por email: la Action manda el texto por uid a `/api/brief` (`cloud/brief.ts`) y la web lo envía con
+  Brevo (Secrets de Pages `BREVO_API_KEY` y `BREVO_SENDER`); el email nunca sale de Cloudflare. Uno al día.
 - **Sugerencias** (pie de cada vista, `Feedback.svelte`): `/api/feedback` (`cloud/feedback.ts`) las guarda en D1
   (tabla `feedback`) y avisa a Sergi por ntfy si Pages tiene el Secret `NTFY_TOPIC`. Leerlas, solo el admin
   (Secret de Pages `ADMIN_EMAIL`, nunca en el repo).
+- **ADMIN** (`/admin`, `cloud/admin.ts`, `/api/admin`): solo para `ADMIN_EMAIL`. Usuarios (último acceso, tabla
+  `seen` que apunta `/api/prefs`; avisos), invitar o quitar emails de la política de Access «Sergi» (Variable
+  `ACCESS_POLICY` si se llama distinto) con los Secrets de Pages `CF_ACCESS_ADMIN_TOKEN` (Access: Apps and Policies ·
+  Edit) y `CF_ACCOUNT_ID`, y las sugerencias. Quitar cierra su sesión y borra sus datos de D1.
 - **Órdenes desde la barra** (D41): «alerta NVDA > 150», «+NVDA», «vigila aranceles» abren un issue ya escrito
   (`src/lib/useralerts.ts`); `notify.ts` lee con `scripts/requests.ts` solo los issues abiertos **del dueño**,
   los aplica (`scripts/alerts/user.ts`) y cierra la alerta al avisar. Los issues son públicos.

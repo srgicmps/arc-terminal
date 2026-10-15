@@ -9,6 +9,7 @@ export default {
 		panels: [
 			{ name: 'Qué te llega', what: 'Temas, nivel, tope diario y silencio.' },
 			{ name: 'Tus valores', what: 'Los valores de EE. UU. que vigilar (subidas y bajadas fuertes del día).' },
+			{ name: 'Tu mañana', what: 'Un resumen al día, a la hora que elijas: el tiempo en tu sitio, tus valores, tu agenda y lo más importante de tus temas. Al móvil y, si quieres, por email.' },
 			{ name: 'En tu móvil', what: 'Cómo suscribirte a tu canal en la app ntfy.' }
 		]
 	}
