@@ -52,6 +52,7 @@
 	// Canales de diplomacia dentro de news-intl; el resto son organismos internacionales.
 	const DIPLO = new Set(DIPLOMACY_FEEDS);
 	const diplo = $derived((data.intl?.data.items ?? []).filter((i) => DIPLO.has(i.source)).slice(0, 15));
+	const orgs = $derived((data.intl?.data.items ?? []).filter((i) => !DIPLO.has(i.source)).slice(0, 15));
 
 	// Tira de arriba: el terremoto más fuerte de la semana, los ciclones activos y las alertas de catástrofe.
 	const topQuake = $derived(strongest[0]);
@@ -265,10 +266,13 @@
 				{#snippet note()}Informes y artículos de fondo sobre conflictos · <Updated at={data.analysis?.fetchedAt} source="news-analysis" />{/snippet}
 			</Panel>
 		{/if}
-		<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">
-			<NewsList items={(data.intl?.data.items ?? []).filter((i) => !DIPLO.has(i.source)).slice(0, 15)} />
-			{#snippet note()}<Updated at={data.intl?.fetchedAt} source="news-intl" />{/snippet}
-		</Panel>
+		<!-- Si solo llegan los canales de diplomacia (los de la ONU y la OMC caídos), el panel no sale vacío. -->
+		{#if orgs.length}
+			<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">
+				<NewsList items={orgs} />
+				{#snippet note()}<Updated at={data.intl?.fetchedAt} source="news-intl" />{/snippet}
+			</Panel>
+		{/if}
 		{#if diplo.length}
 			<Panel title="Diplomacia" meta="Exteriores británico y OIEA · comunicados">
 				<NewsList items={diplo} />
