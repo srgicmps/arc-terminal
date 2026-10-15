@@ -24,6 +24,8 @@ permissions:
   id-token: write
   # NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
   pull-requests: read
+  # Órdenes de la barra (scripts/requests.ts): leer y cerrar los issues [alerta]/[mis]/[vigila].
+  issues: write
 
 concurrency:
   group: ${{ github.event_name == 'pull_request' && format('fast-{0}', github.ref) || 'pages-refs/heads/main' }}
@@ -32,7 +34,7 @@ concurrency:
 env:
   # Fuentes urgentes (si alguna deja de existir, update.ts la ignora). Mercados, para que un -10 % de
   # Bitcoin o de un valor seguido avise en ≤5 min:
-  # crypto son 2 peticiones a CoinGecko y alert-quotes, 16 a Finnhub por pasada (límites: ~30/min y 60/min).
+  # crypto son 2 peticiones a CoinGecko y alert-quotes, ~22 a Finnhub por pasada (la mitad de sus valores, por turnos; límites: ~30/min y 60/min).
   URGENT: >-
     quakes quakes-es alerts hazards gdacs statuspage ioda ree-demand
     crypto alert-quotes
@@ -85,6 +87,9 @@ jobs:
           ALERT_FUEL_ZONE: ${{ secrets.ALERT_FUEL_ZONE }}
           # Opcional: con ella, notify.ts pide los ADR europeos (D25), solo para los avisos.
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          # Órdenes de la barra (scripts/requests.ts): lee los issues [alerta]/[mis]/[vigila] del dueño y cierra
+          # las alertas que avisan.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - if: github.event_name != 'pull_request' && hashFiles('.notify-cache/notify-log.json') != ''
         uses: actions/cache/save@v4
         continue-on-error: true

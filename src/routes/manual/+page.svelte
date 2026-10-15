@@ -18,6 +18,7 @@
 	import {
 		ALERT_LEVELS,
 		ALERTS,
+		BAR,
 		CHESS_GUIDE,
 		commandText,
 		FAQ,
@@ -90,6 +91,7 @@
 		{ id: PERSONAL.id, title: PERSONAL.title, has: guideHit(PERSONAL) },
 		{ id: 'navegador', title: 'Lo que se guarda en tu navegador', has: prefs.length > 0 },
 		{ id: ALERTS.id, title: ALERTS.title, has: levels.length > 0 || guideHit(ALERTS) },
+		{ id: BAR.id, title: BAR.title, has: guideHit(BAR) },
 		{ id: OFFLINE.id, title: OFFLINE.title, has: guideHit(OFFLINE) },
 		{ id: PLACE.id, title: PLACE.title, has: guideHit(PLACE) },
 		{ id: CHESS_GUIDE.id, title: CHESS_GUIDE.title, has: guideHit(CHESS_GUIDE) },
@@ -317,7 +319,7 @@
 {/snippet}
 {@render section(ALERTS.id, ALERTS.title, alertsBody)}
 
-{#each [OFFLINE, PLACE, CHESS_GUIDE] as s (s.id)}
+{#each [BAR, OFFLINE, PLACE, CHESS_GUIDE] as s (s.id)}
 	{#snippet body()}
 		<div class="grid">
 			<div class="col">

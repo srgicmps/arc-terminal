@@ -10,36 +10,24 @@ export interface HeatMap {
 	kind: 'index' | 'country';
 }
 
+/**
+ * Comprobados con tv-shots (15/10/2026). TradingView no tiene en este widget Francia, Reino Unido, Japón, China,
+ * Euro Stoxx ni Russell 2000 (con esos nombres saca el S&P 500): para ellos, «Bolsas del mundo».
+ */
 export const HEATMAPS: readonly HeatMap[] = [
 	{ key: 'spx', label: 'S&P 500', dataSource: 'SPX500', kind: 'index' },
 	{ key: 'ndx', label: 'Nasdaq 100', dataSource: 'NASDAQ100', kind: 'index' },
+	{ key: 'nasdaq', label: 'Nasdaq Composite', dataSource: 'NASDAQCOMPOSITE', kind: 'index' },
 	{ key: 'dji', label: 'Dow Jones', dataSource: 'DJDJI', kind: 'index' },
 	{ key: 'dax', label: 'DAX', dataSource: 'DAX', kind: 'index' },
 	{ key: 'ibex', label: 'IBEX 35', dataSource: 'IBEX35', kind: 'index' },
-	{ key: 'us', label: 'EE. UU. (todas)', dataSource: 'AllUSA', kind: 'country' },
-	{ key: 'de', label: 'Alemania (todas)', dataSource: 'AllDE', kind: 'country' },
-	{ key: 'es', label: 'España (todas)', dataSource: 'AllES', kind: 'country' },
-	{ key: 't1', label: 'AllFR', dataSource: 'AllFR', kind: 'country' },
-	{ key: 't2', label: 'AllGB', dataSource: 'AllGB', kind: 'country' },
-	{ key: 't3', label: 'AllUK', dataSource: 'AllUK', kind: 'country' },
-	{ key: 't4', label: 'AllIT', dataSource: 'AllIT', kind: 'country' },
-	{ key: 't5', label: 'AllCH', dataSource: 'AllCH', kind: 'country' },
-	{ key: 't6', label: 'AllNL', dataSource: 'AllNL', kind: 'country' },
-	{ key: 't7', label: 'AllJPN', dataSource: 'AllJPN', kind: 'country' },
-	{ key: 't8', label: 'AllCN', dataSource: 'AllCN', kind: 'country' },
-	{ key: 't9', label: 'AllIN', dataSource: 'AllIN', kind: 'country' },
-	{ key: 't10', label: 'AllKR', dataSource: 'AllKR', kind: 'country' },
-	{ key: 't11', label: 'AllBR', dataSource: 'AllBR', kind: 'country' },
-	{ key: 't12', label: 'UK100', dataSource: 'UK100', kind: 'index' },
-	{ key: 't13', label: 'NIKKEI225', dataSource: 'NIKKEI225', kind: 'index' },
-	{ key: 't14', label: 'SX5E', dataSource: 'SX5E', kind: 'index' },
-	{ key: 't15', label: 'FTSE', dataSource: 'FTSE', kind: 'index' },
-	{ key: 't16', label: 'CAC', dataSource: 'CAC', kind: 'index' },
-	{ key: 't17', label: 'EUROSTOXX50', dataSource: 'EUROSTOXX50', kind: 'index' },
-	{ key: 't18', label: 'NASDAQCOMPOSITE', dataSource: 'NASDAQCOMPOSITE', kind: 'index' },
-	{ key: 't19', label: 'RUSSELL2000', dataSource: 'RUSSELL2000', kind: 'index' },
-	{ key: 't20', label: 'AllCA', dataSource: 'AllCA', kind: 'country' },
-	{ key: 't21', label: 'AllAU', dataSource: 'AllAU', kind: 'country' }
+	{ key: 'us', label: 'EE. UU.', dataSource: 'AllUSA', kind: 'country' },
+	{ key: 'de', label: 'Alemania', dataSource: 'AllDE', kind: 'country' },
+	{ key: 'es', label: 'España', dataSource: 'AllES', kind: 'country' },
+	{ key: 'it', label: 'Italia', dataSource: 'AllIT', kind: 'country' },
+	{ key: 'ca', label: 'Canadá', dataSource: 'AllCA', kind: 'country' },
+	{ key: 'au', label: 'Australia', dataSource: 'AllAU', kind: 'country' },
+	{ key: 'br', label: 'Brasil', dataSource: 'AllBR', kind: 'country' }
 ];
 
 export const isHeatMap = (v: string) => HEATMAPS.some((m) => m.key === v);

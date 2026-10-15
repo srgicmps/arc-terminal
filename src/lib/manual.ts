@@ -13,9 +13,12 @@ import {
 	QUAKE,
 	QUOTAS,
 	RATES,
+	SESSIONS,
 	STOCKS,
 	STRAITS,
 	SUMMARIES,
+	VIX,
+	WAR,
 	WEEK,
 	type Level
 } from '../../scripts/alerts/config.ts';
@@ -29,6 +32,29 @@ export interface GuideSection {
 	paras: string[];
 	items?: string[];
 }
+
+/** Lo que entiende la barra además de los comandos (lote 27-A). Cada PR de la barra añade su línea. */
+export const BAR: GuideSection = {
+	id: 'barra',
+	title: 'La barra de comandos',
+	paras: [
+		'Además de los comandos y los valores, la barra entiende estas formas. Todo se calcula en el navegador con los datos que ya tiene la web: nada se envía a ningún sitio.'
+	],
+	items: [
+		'↑ con la barra vacía: tu comando anterior, como en un terminal (guarda los 50 últimos); ↓ vuelve hacia los más recientes.',
+		'«fav ECO TIPOS»: lo guarda como favorito (hasta 9). Luego «1», «2», «3»… lo abren. «fav» los enseña y «fav -2» quita el segundo.',
+		'Respuesta al momento, sin cambiar de vista (Intro abre la vista del dato): «euribor», «euribor 3m», «prima», «bund», «bono», «tipos bce», «fed», «estr», «dolar», «wti», «btc», «eth», «us10y», «paro es» (o it, de, fr, pt, ue, ea, us), «ipc», «inflación it».',
+		'Periodos: «NVDA 1a», «IBEX 5d», «AAPL 6m», «BTC ytd», «NVDA max»: el gráfico del valor con ese rango. En las series, «paro es 10a» o «euribor 1a» da el cambio en ese tiempo si hay datos (si no llegan tan atrás, lo dice).',
+		'Comparar: «NVDA vs AMD» (o «NVDA vs AMD vs AVGO 5a») abre CMP; «paro es vs it», «ES vs IT paro» o «inflación de vs fr» dan los dos datos y la diferencia.',
+		'«NVDA desde 2024-01-01»: Arc Terminal no guarda cierres diarios de los valores, así que no calcula desde ese día: lo dice, enseña las rentabilidades fijas que haya (5 días, mes, 3 meses, 1 año, año) e Intro abre el gráfico con un rango que cubre esa fecha.',
+		'«diésel» o «gasolina»: lo más barato de tu zona de FUEL (la última que elegiste; si no, Menorca) y la media de España. «llenar 50L» (o «llenar 40 diésel»): lo que cuesta el depósito en la gasolinera más barata de tu zona.',
+		'«hipoteca 150000 25a» (y el diferencial, «hipoteca 150k 30a 1,1»; si no, 0,75): la cuota con el euríbor a 12 meses de hoy y los intereses totales. Intro abre la calculadora de ECO.',
+		'«hora tokio», «hora NY», «qué hora es en Londres»: la hora allí, la diferencia con Madrid y si su bolsa está abierta. «hora» a secas: NY, Londres y Tokio.',
+		'Preguntas sencillas, sin IA: «¿está abierta la bolsa?», «¿abre la bolsa mañana?», «¿abre Wall Street el lunes?» (con sus festivos) y «¿cuándo es el próximo BCE?» (o la Fed, el BoE, el BoJ…).',
+		'«=1250*1,21»: calculadora. «100 USD EUR»: conversor con el cambio del BCE.',
+		'«ECO ?»: la ficha del comando en este MANUAL. «LUZ mañana», «CAL viernes»: el comando en ese día.'
+	]
+};
 
 export const OFFLINE: GuideSection = {
 	id: 'sin-conexion',
@@ -116,12 +142,14 @@ const LEVEL_WHAT: Record<Level, string[]> = {
 		`Terremotos de magnitud ${QUAKE.mag} o más (${QUAKE.magTsunami} si hay aviso de tsunami).`,
 		`Cambios de tipos oficiales: ${RATES.map((r) => r.bank).join(', ')}.`,
 		`Temas muy grandes de IMP: ${IMP_BIG.media} medios o más en ${IMP_BIG.sections} secciones.`,
+		`Guerras, con ${WAR.media} medios fiables: ${WAR.kinds.map((k) => k.name.toLowerCase()).join(', ')}. Un aviso por tema cada ${WAR.waitHours} h, salvo escalada.`,
 		`Conflictos y escaladas de ese tamaño (los menores van en P2).`,
 		`Tránsito por ${STRAITS.names.join(', ')} que cae un ${pct(STRAITS.drop)} o más.`,
 		'Catástrofes en alerta roja (GDACS), un apagón en España y caídas de internet de un país.'
 	],
 	2: [
-		'Datos macro nuevos: IPC, paro, PIB, euríbor…, con la diferencia frente al anterior.',
+		'Datos macro nuevos: IPC, paro, PIB, euríbor, sentimiento económico, peticiones de paro…, con la diferencia frente al anterior y si es un máximo o mínimo de varios años.',
+		`Inventarios de petróleo de EE. UU. cada semana, el VIX si sube un ${VIX.jump} % o su curva se invierte, y subastas flojas del Tesoro de EE. UU.`,
 		'Mercados que se mueven más que su umbral (bolsas, bonos, primas de riesgo, divisas, cripto, petróleo).',
 		`Valores seguidos que se mueven un ${STOCKS.threshold} % o más.`,
 		'Sanciones y aranceles del Federal Register, elecciones del G20 y la UE, y gas almacenado en la UE.',
@@ -137,7 +165,8 @@ const LEVEL_WHAT: Record<Level, string[]> = {
 		`Lanzamientos espaciales destacados, ${LAUNCHES.fromMin}–${LAUNCHES.toMin} minutos antes.`
 	],
 	4: [
-		`Resumen de la mañana (desde las ${SUMMARIES.morning.from}) y de la noche (desde las ${SUMMARIES.evening.from}).`,
+		`Resumen de la mañana (desde las ${SUMMARIES.morning.from}) y de la noche, con el cierre de Wall Street (desde las ${SUMMARIES.evening.from}).`,
+		`Bolsas, de lunes a viernes y a la hora local de cada plaza: ${SESSIONS.map((s) => s.title.toLowerCase()).join(', ')}.`,
 		`SEMANA: los domingos a las ${SUMMARIES.week.from}, los ${WEEK.top} temas de más peso de IMP.`
 	]
 };
@@ -207,6 +236,10 @@ export const FAQ: Faq[] = [
 	{
 		q: '¿Cómo comparto una vista?',
 		a: '«compartir WS» copia el enlace de esa vista (en el móvil abre el menú de compartir); «compartir» solo, el de la vista abierta. También vale con un valor: «compartir NVDA».'
+	},
+	{
+		q: '¿Puedo crear alertas o cambiar MIS desde la barra?',
+		a: '«alerta NVDA > 150», «alerta BTC -5%» o «alerta diésel < 1,40» avisan al móvil cuando se cumplen, una sola vez. «+NVDA» y «-AAPL» añaden o quitan de MIS, y «vigila aranceles» añade una palabra vigilada. Como la web no tiene servidor, la barra abre un issue de GitHub ya escrito: pulsa «Submit» y la Action lo aplica en la pasada siguiente. Ojo: el repo es público y esos issues se ven. «alertas» abre las tuyas; para borrar una, cierra su issue.'
 	},
 	{
 		q: '¿Usa inteligencia artificial?',

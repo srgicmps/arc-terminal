@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ALERT_TICKERS, alertQuotes, fetchQuotes } from '../sources/alert-quotes.ts';
+import { ALERT_TICKERS, BATCHES, alertQuotes, batchFor, fetchQuotes } from '../sources/alert-quotes.ts';
 import { mockFetch } from './mock.ts';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -29,4 +29,29 @@ describe('alert-quotes', () => {
 		mockFetch(() => ({ c: 0 }));
 		await expect(alertQuotes.fetch(undefined)).rejects.toThrow('ningún símbolo');
 	}, 20_000);
+
+	it('por turnos: cada pasada pide un lote y entre todas cubren la lista, sin pasar de 30 llamadas', () => {
+		const slot = 5 * 60_000;
+		const lots = Array.from({ length: BATCHES }, (_, i) => batchFor(i * slot));
+		expect(lots.flat().sort()).toEqual([...ALERT_TICKERS].sort());
+		for (const lot of lots) expect(lot.length).toBeLessThanOrEqual(30);
+		expect(batchFor(BATCHES * slot)).toEqual(lots[0]);
+	});
+
+	it('guarda la cotización anterior de los del otro lote, y olvida los que ya no se siguen', async () => {
+		vi.useFakeTimers({ toFake: ['Date'] });
+		vi.setSystemTime(0);
+		vi.stubEnv('FINNHUB_API_KEY', 'k');
+		const batch = batchFor(0);
+		const other = ALERT_TICKERS.find((s) => !batch.includes(s))!;
+		mockFetch(() => quote);
+		const old = { symbol: other, price: 1, change: 0, changePct: 0, prevClose: 1, time: 'x' };
+		const gone = { ...old, symbol: 'ZZZZ' };
+		const mine = { ...old, symbol: batch[0] };
+		const out = await alertQuotes.fetch([old, gone, mine]);
+		expect(out.map((q) => q.symbol).sort()).toEqual([...batch, other].sort());
+		expect(out.find((q) => q.symbol === batch[0])!.price).toBe(101.5);
+		vi.useRealTimers();
+		vi.unstubAllEnvs();
+	}, 30_000);
 });

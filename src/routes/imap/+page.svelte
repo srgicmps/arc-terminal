@@ -11,7 +11,7 @@
 	import { quotesHeight } from '#lib/tickers.ts';
 	import { urlState } from '#lib/urlstate.svelte.ts';
 
-	// El mapa va en la URL (/imap?mapa=ftse), para compartirlo.
+	// El mapa va en la URL (/imap?mapa=it), para compartirlo.
 	const sel = urlState<string>('mapa', 'spx', isHeatMap);
 	const map = $derived(HEATMAPS.find((m) => m.key === sel.value) ?? HEATMAPS[0]);
 
@@ -22,11 +22,15 @@
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Mapa de calor" meta="{map.label} · variación del día">
+		<Panel title="Mapa de calor" meta="{map.label}{map.kind === 'country' ? ' · todas' : ''} · variación del día">
 			<div class="maps">
 				<Seg label="Mapa de calor" options={HEATMAPS.map((m) => ({ value: m.key, label: m.label }))} bind:value={sel.value} />
 			</div>
 			<TvWidget widget="stock-heatmap" config={heatmapConfig(map)} height={600} />
+			{#snippet note()}
+				Índices y, por país, todas sus acciones cotizadas. TradingView no da el mapa de Francia, Reino Unido ni Japón:
+				están en «Bolsas del mundo».
+			{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
