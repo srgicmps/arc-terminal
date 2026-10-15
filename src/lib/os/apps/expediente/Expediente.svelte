@@ -261,7 +261,7 @@
 		align-items: center;
 		gap: var(--sp-6);
 		margin: 0;
-		color: var(--cmd-cool);
+		color: var(--cmd-cold);
 		font-family: var(--mono);
 		font-size: var(--fs-xxs);
 		letter-spacing: var(--track-label);
@@ -442,7 +442,7 @@
 	}
 
 	.tag {
-		color: var(--cmd-cool);
+		color: var(--cmd-cold);
 		font-family: var(--mono);
 		font-size: var(--fs-xxs);
 		letter-spacing: var(--track-code);

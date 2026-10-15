@@ -39,7 +39,7 @@
 	}
 
 	.sea {
-		fill: var(--cmd-bg);
+		fill: var(--panel);
 	}
 
 	.grat {
@@ -49,7 +49,7 @@
 	}
 
 	.land {
-		fill: var(--raise);
+		fill: var(--cmd-land);
 		stroke: var(--cmd-edge);
 		stroke-width: var(--hair);
 		vector-effect: non-scaling-stroke;

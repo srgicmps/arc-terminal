@@ -394,36 +394,30 @@
 }
 
 /* Centro de mando: grafo y expediente */
-/* Pizarra oscura con acentos fríos y el ámbar para lo que se elige. Los colores de cada tipo de entidad
-   salen de aquí (el lienzo del grafo los lee con getComputedStyle). */
-:root {
-	--cmd-cool: var(--series-2); /* azul acero: países, líneas */
-	--cmd-teal: #5fb3a8; /* bancos centrales */
-	--cmd-ice: #b7c6d6; /* sucesos */
-	--cmd-slate: #8a97a8; /* temas de IMP */
-	--cmd-bg: color-mix(in srgb, var(--bg) 86%, var(--cmd-cool)); /* fondo del lienzo: pizarra */
-	--cmd-grid: color-mix(in srgb, var(--cmd-cool) 9%, transparent); /* retícula del lienzo */
-	--cmd-edge: color-mix(in srgb, var(--cmd-cool) 38%, transparent); /* arista */
+/* Se derivan de los tokens base de Mando (--cmd-slate, --cmd-deck, --cmd-cold, --cmd-grid…, bloque [data-os-skin]):
+   pizarra, acento frío y el ámbar para lo que se elige. El lienzo del grafo los lee con getComputedStyle. */
+[data-os-skin] {
+	--cmd-teal: color-mix(in srgb, var(--cmd-cold) 55%, var(--up)); /* bancos centrales */
+	--cmd-ice: color-mix(in srgb, var(--cmd-cold) 35%, var(--fg)); /* sucesos */
+	--cmd-steel: color-mix(in srgb, var(--cmd-cold) 30%, var(--muted)); /* temas de IMP */
+	--cmd-violet: color-mix(in srgb, var(--cmd-cold) 55%, var(--down)); /* valores */
+	--cmd-bg: var(--cmd-slate); /* fondo del lienzo */
+	--cmd-land: color-mix(in srgb, var(--cmd-cold) 14%, var(--cmd-deck)); /* tierra del mapa del expediente */
+	--cmd-edge: var(--cmd-cold-dim); /* arista */
 	--cmd-edge-hot: var(--amber); /* aristas del nodo elegido */
 	--cmd-halo: var(--amber-edge); /* aro del nodo elegido */
 	--cmd-label: var(--fg); /* nombre de un nodo */
-	--cmd-label-bg: color-mix(in srgb, var(--cmd-bg) 78%, transparent); /* fondo del nombre */
-	--cmd-country: var(--cmd-cool);
+	--cmd-label-bg: color-mix(in srgb, var(--cmd-slate) 80%, transparent); /* fondo del nombre */
+	--cmd-country: var(--cmd-cold);
 	--cmd-leader: var(--amber);
 	--cmd-bank: var(--cmd-teal);
-	--cmd-ticker: var(--series-3);
+	--cmd-ticker: var(--cmd-violet);
 	--cmd-sanction: var(--amber-dim);
 	--cmd-event: var(--cmd-ice);
-	--cmd-story: var(--cmd-slate);
+	--cmd-story: var(--cmd-steel);
 	--cmd-node-r: 5px; /* radio del nodo más pequeño */
 	--cmd-node-r-max: 14px; /* radio del más nombrado */
 	--cmd-side: 300px; /* ancho del panel lateral del grafo */
 	--cmd-map-h: 160px; /* alto del mapa del expediente */
 	--cmd-results: 260px; /* alto máximo de la lista de resultados del buscador */
-}
-:root[data-theme='light'] {
-	--cmd-teal: #23776d;
-	--cmd-ice: #4e6377;
-	--cmd-slate: #5a6676;
-	--cmd-bg: color-mix(in srgb, var(--bg) 92%, var(--cmd-cool));
 }

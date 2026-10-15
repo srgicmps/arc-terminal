@@ -108,13 +108,16 @@ export function settle(bodies: Body[], springs: Spring[], steps = 300, cx = 0, c
 	for (let i = 0; i < steps; i++) tick(bodies, springs, Math.max(0.02, 1 - i / steps), cx, cy);
 }
 
-/** El nodo bajo un punto (en coordenadas del grafo), con un margen para el dedo. */
-export function hit(bodies: Body[], x: number, y: number, slop = 4): Body | null {
+/**
+ * El nodo bajo un punto (en coordenadas del grafo), con un margen para el dedo. `scale`: cuánto mide el radio en
+ * el grafo (los nodos se pintan a tamaño fijo en la pantalla, así que con zoom es 1 / zoom).
+ */
+export function hit(bodies: Body[], x: number, y: number, slop = 4, scale = 1): Body | null {
 	let best: Body | null = null;
 	let bestD = Infinity;
 	for (const b of bodies) {
 		const d = Math.hypot(b.x - x, b.y - y);
-		if (d <= b.r + slop && d < bestD) {
+		if (d <= b.r * scale + slop && d < bestD) {
 			best = b;
 			bestD = d;
 		}

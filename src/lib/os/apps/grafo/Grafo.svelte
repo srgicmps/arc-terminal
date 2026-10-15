@@ -253,7 +253,9 @@
 			if (!n) continue;
 			ctx.globalAlpha = dim(b.id) ? 0.3 : 1;
 			const col = c[KIND_TOKEN[n.kind]];
-			shape(ctx, n.kind, b.x, b.y, b.r);
+			// Tamaño fijo en la pantalla: el zoom separa los nodos, no los engorda.
+			const r = b.r / view.k;
+			shape(ctx, n.kind, b.x, b.y, r);
 			if (n.kind === 'story') {
 				ctx.lineWidth = 1.5 / view.k;
 				ctx.strokeStyle = col;
@@ -269,7 +271,7 @@
 				ctx.lineWidth = 1.5 / view.k;
 				ctx.strokeStyle = b.id === selected ? c['cmd-halo'] : c['muted'];
 				ctx.beginPath();
-				ctx.arc(b.x, b.y, b.r + 4 / view.k + 2, 0, Math.PI * 2);
+				ctx.arc(b.x, b.y, r + 4 / view.k, 0, Math.PI * 2);
 				ctx.stroke();
 			}
 		}
@@ -284,7 +286,7 @@
 			const n = g.nodes.get(b.id)!;
 			const text = n.label.length > 30 ? `${n.label.slice(0, 29)}…` : n.label;
 			const s = toScreen(b);
-			const x = s.x + b.r * view.k + 5;
+			const x = s.x + b.r + 5;
 			const tw = ctx.measureText(text).width;
 			ctx.globalAlpha = 1;
 			ctx.fillStyle = c['cmd-label-bg'];
@@ -308,7 +310,7 @@
 		if (e.button !== 0) return;
 		const { sx, sy } = local(e);
 		const w = toWorld(sx, sy);
-		const b = hit(bodies, w.x, w.y, 6 / view.k);
+		const b = hit(bodies, w.x, w.y, 6 / view.k, 1 / view.k);
 		canvas.setPointerCapture(e.pointerId);
 		drag = { mode: b ? 'node' : 'pan', id: b?.id, sx, sy, vx: view.x, vy: view.y, moved: false };
 		if (b) b.fixed = true;
@@ -318,7 +320,7 @@
 		const { sx, sy } = local(e);
 		if (!drag) {
 			const w = toWorld(sx, sy);
-			const id = hit(bodies, w.x, w.y, 6 / view.k)?.id ?? null;
+			const id = hit(bodies, w.x, w.y, 6 / view.k, 1 / view.k)?.id ?? null;
 			if (id !== hover) {
 				hover = id;
 				redraw();
@@ -366,7 +368,7 @@
 		clearTimeout(clickTimer);
 		const { sx, sy } = local(e);
 		const w = toWorld(sx, sy);
-		const b = hit(bodies, w.x, w.y, 6 / view.k);
+		const b = hit(bodies, w.x, w.y, 6 / view.k, 1 / view.k);
 		if (b) expandNode(b.id);
 	}
 
