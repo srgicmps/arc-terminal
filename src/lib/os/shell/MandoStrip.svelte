@@ -87,8 +87,10 @@
 		gap: var(--sp-4);
 		padding: 0 var(--sp-6);
 	}
-	.feeds button:hover {
-		color: var(--fg);
+	@media (hover: hover) {
+		.feeds button:hover {
+			color: var(--fg);
+		}
 	}
 	.feeds i {
 		width: var(--sp-6);

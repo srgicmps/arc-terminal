@@ -75,10 +75,14 @@
 		height: var(--os-bar-h);
 		font-size: var(--fs-l);
 	}
-	.main:hover,
-	.main[aria-expanded='true'],
-	.tool:hover {
+	.main[aria-expanded='true'] {
 		background: var(--os-topbar-hover);
+	}
+	@media (hover: hover) {
+		.main:hover,
+		.tool:hover {
+			background: var(--os-topbar-hover);
+		}
 	}
 	.tool {
 		border-right: var(--hair) solid var(--line);
@@ -103,8 +107,10 @@
 		padding: 0 var(--sp-10);
 		border-bottom: var(--sp-2) solid transparent;
 	}
-	.tabs button:hover {
-		background: var(--os-topbar-hover);
+	@media (hover: hover) {
+		.tabs button:hover {
+			background: var(--os-topbar-hover);
+		}
 	}
 	.tabs button.on {
 		border-bottom-color: var(--amber);
@@ -137,9 +143,13 @@
 		color: inherit;
 		font-size: var(--fs-s);
 	}
-	.dsm :global(.tray-btn:hover),
 	.dsm :global(.tray-btn[aria-expanded='true']) {
 		background: var(--os-topbar-hover);
+	}
+	@media (hover: hover) {
+		.dsm :global(.tray-btn:hover) {
+			background: var(--os-topbar-hover);
+		}
 	}
 	.dsm :global(.tray-btn[aria-pressed='false']) {
 		opacity: 0.6;

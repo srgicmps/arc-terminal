@@ -117,10 +117,15 @@
 		cursor: pointer;
 	}
 
-	button:hover:not(:disabled),
 	button:focus-visible {
 		background: var(--amber-soft);
 		outline: none;
+	}
+	@media (hover: hover) {
+		button:hover:not(:disabled) {
+			background: var(--amber-soft);
+			outline: none;
+		}
 	}
 
 	button:disabled {
