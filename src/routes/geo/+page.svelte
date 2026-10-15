@@ -182,7 +182,7 @@
 			{/snippet}
 		</Panel>
 		{#if data.czib?.data.items.length}
-			<Panel title="Espacio aéreo en conflicto" meta="{data.czib.data.items.length} boletines CZIB activos · EASA">
+			<Panel title="Espacio aéreo en conflicto" meta="{data.czib.data.items.length} {data.czib.data.items.length === 1 ? 'boletín CZIB activo' : 'boletines CZIB activos'} · EASA">
 				<p class="plain-czib">{czibSentence(data.czib.data.items)}</p>
 				<Table csv={false}>
 					<tbody>
@@ -190,7 +190,7 @@
 							<tr>
 								<td class="name"><a class="name" href={c.url} target="_blank" rel="noopener">{c.area}</a></td>
 								<td class="mut per">{c.id}</td>
-								<td class="mut">hasta {czibDate(c.validUntil)}</td>
+								<td class="mut">{c.validUntil ? `hasta ${czibDate(c.validUntil)}` : 'sin fecha de fin'}</td>
 							</tr>
 						{/each}
 					</tbody>
@@ -208,7 +208,7 @@
 					{#each data.navwarn.data.items as w (w.id)}
 						<li>
 							<b>{w.kind}</b> · {w.region}{#if w.place}<span class="mut"> · {w.place}</span>{/if}
-							<span class="mut">· {w.issued ? new Date(w.issued).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : w.id}</span>
+							<span class="mut">· {w.issued ? new Date(w.issued).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : w.id}</span>
 						</li>
 					{/each}
 				</ul>
