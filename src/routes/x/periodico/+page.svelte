@@ -50,9 +50,10 @@
 		<p class="line"><span>{editionName}</span><span>Mundo · Economía · España · Mercados · Tecnología</span></p>
 	</header>
 
-	{#if lead}
+	<!-- Sin titulares de esta edición, los Breves (cifras del día) salen igual. -->
+	{#if lead || data.figures.length}
 		<section class="front">
-			<div class="lead-col">
+			{#if lead}<div class="lead-col">
 				<a class="lead" href={lead.url} rel="noopener" target="_blank">
 					<span class="kicker">Lo más importante · {sourcesText(lead.sources.length)}</span>
 					<h2>{shown(lead).text}</h2>
@@ -68,7 +69,7 @@
 						{/each}
 					</div>
 				{/if}
-			</div>
+			</div>{/if}
 			{#if data.figures.length}
 				<aside class="breves" aria-label="Breves: cifras del día">
 					<h3>Breves</h3>
