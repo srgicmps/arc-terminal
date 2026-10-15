@@ -235,3 +235,17 @@ describe('QA del gestor de ventanas', () => {
 		expect(w.y).toBeLessThanOrEqual(720 - wm.KEEP);
 	});
 });
+
+describe('relayout', () => {
+	it('el mosaico se queda igual al recargar aunque no vaya a la rejilla de 8 px', () => {
+		const s = wm.emptyState();
+		const a840 = { w: 1440, h: 840 };
+		for (const id of ['eco', 'geo', 'ws', 'imp']) wm.openWin(s, app(id), a840);
+		wm.tileDesk(s, a840);
+		const before = JSON.stringify(s.desks[0].wins.map((w) => [w.x, w.y, w.w, w.h]));
+		expect(before).toContain('420');
+		wm.relayout(s, a840);
+		expect(JSON.stringify(s.desks[0].wins.map((w) => [w.x, w.y, w.w, w.h]))).toBe(before);
+		for (const w of s.desks[0].wins) expect(w.y + w.h).toBeLessThanOrEqual(a840.h);
+	});
+});

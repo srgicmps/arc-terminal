@@ -230,12 +230,13 @@ export function superSnap(cur: Snap | undefined, key: 'ArrowLeft' | 'ArrowRight'
 
 export const toggleMax = (s: OsState, uid: string, area: { w: number; h: number }) => snapWin(s, uid, 'max', area);
 
-/** Al cambiar el tamaño del escritorio: los encajes se recalculan y las demás vuelven dentro. */
+/** Al cambiar el tamaño del escritorio: los encajes se recalculan y las que se salen vuelven dentro. Las que caben
+ *  se quedan tal cual: fit() las pasaría a la rejilla de 8 px y el mosaico, al recargar, se salía por abajo. */
 export function relayout(s: OsState, area: { w: number; h: number }): void {
 	for (const d of s.desks)
 		for (const w of d.wins) {
 			if (w.snap) Object.assign(w, snapRect(w.snap, area));
-			else Object.assign(w, fit(w, area));
+			else if (w.x < 0 || w.y < 0 || w.x + w.w > area.w || w.y + w.h > area.h) Object.assign(w, fit(w, area));
 		}
 }
 
