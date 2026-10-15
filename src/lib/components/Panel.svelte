@@ -62,8 +62,9 @@
 	const pinned = $derived(pin ? isPinned(pin) : false);
 
 	// Modo Sencillo (modo.ts): los paneles que no son esenciales en esta vista no se pintan (salvo los fijados
-	// en TOP y con «Ver todos»), y el título se lee en español claro. Los ocultos se apuntan para ViewHeader.
-	const essential = $derived(!!pinArea || isEssential(page.route.id, title, id));
+	// en TOP, los que dejaste a la vista en la modular y con «Ver todos»), y el título se lee en español claro.
+	// Los ocultos se apuntan para ViewHeader.
+	const essential = $derived(!!pinArea || !!tools || isEssential(page.route.id, title, id));
 	const gone = $derived(trimming() && !essential && !tv.on);
 	$effect(() => {
 		if (!isSimple() || essential || tv.on) return;
@@ -264,6 +265,18 @@
 		}
 	}
 
+	/* Con esquinas redondeadas (cualquier estética menos Terminal), lo de dentro se recorta con la forma del panel:
+	   filas, cabeceras y tablas con scroll no asoman por las esquinas. clip y no hidden: no crea un contenedor de
+	   scroll, así las cabeceras fijas siguen funcionando. El panel ampliado y el de «encajar» ya hacen scroll (auto). El foco
+	   va hacia dentro para que el recorte no lo corte. */
+	:global(:root:not([data-style='terminal'])) .panel:not(.max) {
+		overflow: clip;
+	}
+
+	:global(:root:not([data-style='terminal'])) .panel :global(:focus-visible) {
+		outline-offset: calc(-1 * var(--focus-w));
+	}
+
 	/* M47: el panel al que lleva la barra se marca con el borde del acento, que se apaga solo. */
 	.panel.flash {
 		outline: var(--hair) solid var(--amber);
@@ -339,6 +352,24 @@
 	.pin.on {
 		filter: none;
 		opacity: 1;
+	}
+
+	/* Menos ruido: con ratón, ampliar, compartir, fijar, mover y ocultar solo aparecen al pasar por el panel o
+	   con el foco del teclado (no cambian de sitio: solo se encienden). En táctil siguen siempre a la vista.
+	   El 📌 de un panel ya fijado no se esconde: dice algo. */
+	@media (hover: hover) and (pointer: fine) {
+		.ph-r > :is(.tool:not(.pin.on)),
+		.ph-r > :global(.share) {
+			opacity: 0;
+			transition: opacity var(--dur-ui) var(--ease);
+		}
+
+		.panel:hover .ph-r > :is(.tool:not(.pin.on)),
+		.panel:hover .ph-r > :global(.share),
+		.ph:focus-within .ph-r > :is(.tool:not(.pin.on)),
+		.ph:focus-within .ph-r > :global(.share) {
+			opacity: 1;
+		}
 	}
 
 	.grip {

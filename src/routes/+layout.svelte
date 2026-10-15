@@ -5,6 +5,7 @@
 	import '../app.css';
 	import '../styles/ajustes.css';
 	import { goto } from '$app/navigation';
+	import { MediaQuery } from 'svelte/reactivity';
 	import { neighbour, nudge, SWIPE, swipeDirection } from '#lib/swipe.ts';
 	import { asset, resolve } from '$app/paths';
 	import { page, updated } from '$app/state';
@@ -12,7 +13,9 @@
 	import { COMMANDS } from '#lib/commands.ts';
 	import Clocks from '#lib/components/Clocks.svelte';
 	import Logo from '#lib/components/Logo.svelte';
+	import Menu from '#lib/components/ui/Menu.svelte';
 	import CommandBar from '#lib/components/CommandBar.svelte';
+	import ExpLauncher from '#lib/components/ExpLauncher.svelte';
 	import Feedback from '#lib/components/Feedback.svelte';
 	import PlacePicker from '#lib/components/PlacePicker.svelte';
 	import InstallHint from '#lib/components/InstallHint.svelte';
@@ -31,7 +34,7 @@
 	import PanelIndex from '#lib/components/PanelIndex.svelte';
 	import { setPanelIndex } from '#lib/panelindex.svelte.ts';
 	import { tvSymbol } from '#lib/tickers.ts';
-	import { initTaste, taste } from '#lib/taste.svelte.ts';
+	import { initTaste, taste, VISIBLE_KEYS } from '#lib/taste.svelte.ts';
 	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
 	import { crossedNow, initThresholds } from '#lib/thresholds.svelte.ts';
 	import { parseTv, routeOf } from '#lib/tv.ts';
@@ -158,9 +161,14 @@
 		if (tv.on && !(e.target as Element | null)?.closest('.tv-chip')) togglePause();
 	}
 
+	const wide = new MediaQuery('min-width: 1280px');
 
 	// Fila de arriba y barra inferior del móvil (a mano del pulgar): las de la web o las de «A tu gusto».
 	const keys = $derived(COMMANDS.filter((c) => taste.top.includes(c.code)));
+	// A la vista, solo las primeras de la fila (como mucho VISIBLE_KEYS); el resto va en «Más».
+	const visibleKeys = $derived(keys.slice(0, VISIBLE_KEYS));
+	const hiddenKeys = $derived(keys.slice(VISIBLE_KEYS));
+	const hiddenCurrent = $derived(hiddenKeys.find((k) => k.route === page.route.id));
 	const thumb = $derived(COMMANDS.filter((c) => taste.thumb.includes(c.code)));
 
 	// navigator.onLine, enlazado como en Vue con un ref que se actualiza solo.
@@ -205,43 +213,40 @@
 		</a>
 		<CommandBar />
 		{#if !online}<span class="offline" title="Se muestra la última copia guardada">Sin conexión</span>{/if}
-		<PlacePicker />
 		<Clocks />
+		<PlacePicker />
 		{#if crossedRules.length}
 			<span class="limits" role="status" title={crossedRules.map(([, r]) => `${r.name} ${r.op === '>' ? 'por encima de' : 'por debajo de'} ${r.v.toLocaleString('es-ES', { maximumFractionDigits: 3 })}`).join(' · ')}>
 				<span aria-hidden="true">⚑</span>
 				{crossedRules.length}<span class="sr"> {crossedRules.length === 1 ? 'umbral cruzado' : 'umbrales cruzados'}</span>
 			</span>
 		{/if}
-		{#if page.route.id === '/'}
-			<!-- General / Modular: de momento solo la portada se puede personalizar. -->
-			<button
-				class="theme mode"
-				type="button"
-				onclick={toggleMode}
-				aria-pressed={mode.modular}
-				title={mode.modular ? 'Portada modular · toca para volver a la general' : 'Personalizar la portada: ocultar, ordenar y ensanchar paneles'}
-				aria-label="Portada modular"
-			>
-				<span aria-hidden="true">▦</span>
-			</button>
-		{/if}
-		<button
-			class="theme fit"
-			type="button"
-			onclick={toggleFit}
-			aria-pressed={fit.on}
-			title={fit.on ? 'Encajada en la pantalla · toca para volver al scroll normal' : 'Encajar en la pantalla: cada panel con su propio scroll'}
-			aria-label="Encajar en la pantalla"
-		>
-			<span aria-hidden="true">⤢</span>
-		</button>
 		<!-- Estética, tema, acento y densidad: un solo botón (src/lib/components/Appearance.svelte). -->
 		<Appearance />
+		<!-- Lo que se usa poco va en «⋯»: así la cabecera queda en logo, barra, sitio, hora y avisos. -->
+		<Menu label="Más opciones" cls="theme" ui="more" title="Más opciones: encajar y portada modular">
+			{#snippet button()}<span aria-hidden="true">⋯</span>{/snippet}
+			{#snippet children(close)}
+				{#if page.route.id === '/'}
+					<!-- General / Modular: de momento solo la portada se puede personalizar. -->
+					<button type="button" aria-pressed={mode.modular} onclick={() => (toggleMode(), close())}>
+						Portada modular <small>{mode.modular ? 'sí' : 'no'} · ▦</small>
+					</button>
+				{/if}
+				<!-- «Encajar» solo tiene sentido en escritorio. -->
+				{#if wide.current}
+					<button type="button" aria-pressed={fit.on} onclick={() => (toggleFit(), close())}>
+						Encajar en la pantalla <small>{fit.on ? 'sí' : 'no'} · ⤢</small>
+					</button>
+				{/if}
+				<hr />
+				<a href={resolve('/help')} onclick={close}>A tu gusto y ayuda <small>HELP</small></a>
+			{/snippet}
+		</Menu>
 	</header>
 
 	<nav class="keys" data-ui="keys" aria-label="Secciones">
-		{#each keys as key (key.code)}
+		{#each visibleKeys as key (key.code)}
 			<a
 				class="key"
 				data-ui="key"
@@ -252,9 +257,20 @@
 				{key.code}<span>{key.key}</span>
 			</a>
 		{/each}
-		<a class="key more" href={resolve('/help')} aria-current={page.route.id === '/help' ? 'page' : undefined}>
-			…<span>Más</span>
-		</a>
+		<!-- El resto de tu fila y la ayuda, en «Más»; si estás en una de esas vistas, el botón lo dice. -->
+		<Menu label="Más secciones" cls="key more" ui="key" current={!!hiddenCurrent || page.route.id === '/help'} title="Más secciones">
+			{#snippet button()}{hiddenCurrent?.code ?? 'Más'}<span aria-hidden="true">▾</span>{/snippet}
+			{#snippet children(close)}
+				{#each hiddenKeys as key (key.code)}
+					<a href={routeHref(key.route)} onclick={close} aria-current={page.route.id === key.route ? 'page' : undefined}>
+						{key.code} <small>{key.key}</small>
+					</a>
+				{/each}
+				{#if hiddenKeys.length}<hr />{/if}
+				<a href={resolve('/help')} onclick={close} aria-current={page.route.id === '/help' ? 'page' : undefined}>Todos los comandos <small>HELP</small></a>
+			{/snippet}
+		</Menu>
+		<ExpLauncher hotkey />
 	</nav>
 
 	<div class="tape" data-ui="tape">
@@ -286,6 +302,7 @@
 		{#each thumb as c (c.code)}
 			<a href={routeHref(c.route)} data-code={c.code} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
 		{/each}
+		<ExpLauncher variant="thumb" />
 		<button type="button" aria-label="Buscar o escribir un comando" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>
 			<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5 14 14" /></svg>
 		</button>
@@ -332,7 +349,7 @@
 		text-transform: uppercase;
 	}
 
-	.theme {
+	.top :global(.theme) {
 		display: grid;
 		place-items: center;
 		width: var(--btn-sm);
@@ -345,19 +362,20 @@
 		cursor: pointer;
 	}
 
-	.theme:hover {
+	.top :global(.theme:hover),
+	.top :global(.theme[aria-expanded='true']) {
 		color: var(--amber);
 		border-color: var(--amber-edge);
 	}
 
 	/* En pantallas táctiles se ve igual (28 px), pero la zona pulsable llega a 44 × 44 px. */
 	@media (pointer: coarse) {
-		.theme {
+		.top :global(.theme) {
 			position: relative;
 			min-height: var(--btn-sm);
 		}
 
-		.theme::after {
+		.top :global(.theme::after) {
 			content: '';
 			position: absolute;
 			inset: calc(-1 * var(--sp-8));
@@ -395,7 +413,7 @@
 		padding-block: var(--sp-2) var(--sp-10);
 	}
 
-	.key {
+	.keys :global(.key) {
 		font-size: var(--fs-s);
 		font-weight: var(--fw-medium);
 		letter-spacing: var(--track-code);
@@ -406,7 +424,7 @@
 		padding: var(--sp-4) var(--sp-10);
 	}
 
-	.key span {
+	.keys :global(.key span) {
 		margin-left: var(--sp-7);
 		color: var(--muted);
 		font-family: var(--sans);
@@ -414,17 +432,25 @@
 		letter-spacing: 0;
 	}
 
-	.key:hover {
+	/* «Más ▾» es un botón: se pinta como las pestañas. */
+	.keys :global(button.key) {
+		background: none;
+		font-family: inherit;
+		line-height: inherit;
+		cursor: pointer;
+	}
+
+	.keys :global(.key:hover) {
 		border-color: var(--amber-edge);
 	}
 
-	.key[aria-current='page'] {
+	.keys :global(.key[aria-current='page']) {
 		background: var(--amber);
 		border-color: var(--amber);
 		color: var(--on-amber);
 	}
 
-	.key[aria-current='page'] span {
+	.keys :global(.key[aria-current='page'] span) {
 		color: var(--on-amber);
 	}
 
@@ -556,7 +582,8 @@
 			bottom: 0;
 			z-index: 35;
 			display: grid;
-			grid-template-columns: repeat(5, minmax(0, 1fr));
+			grid-auto-flow: column;
+			grid-auto-columns: minmax(0, 1fr);
 			background: var(--panel);
 			border-top: var(--border);
 			padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -599,7 +626,8 @@
 
 		/* La cabecera del móvil en una línea: logo a la izquierda; tu sitio y los botones, a la derecha. */
 		.top {
-			column-gap: var(--sp-10);
+			/* 6 px: logo, reloj, sitio, Apariencia y «⋯» caben en una línea a 390 px. */
+			column-gap: var(--sp-6);
 		}
 
 		.top :global(.place .caret) {
@@ -607,11 +635,11 @@
 		}
 
 		/* Accesos de arriba: se ven igual, pero la zona pulsable llega a --touch de alto. */
-		.key {
+		.keys :global(.key) {
 			position: relative;
 		}
 
-		.key::after {
+		.keys :global(.key::after) {
 			content: '';
 			position: absolute;
 			inset: calc((var(--touch) - 100%) / -2) 0;
@@ -626,7 +654,7 @@
 			bottom: calc(var(--tabbar-h) + var(--sp-12) + env(safe-area-inset-bottom, 0px));
 		}
 
-		.key span {
+		.keys :global(.key span:not([aria-hidden])) {
 			display: none;
 		}
 
@@ -643,7 +671,7 @@
 			display: none;
 		}
 
-		.key {
+		.keys :global(.key) {
 			flex: none;
 		}
 
@@ -658,7 +686,7 @@
 			order: -2;
 		}
 
-		.theme,
+		.top :global(.theme),
 		.top :global([data-ui='appearance']) {
 			order: -1;
 			margin-block: calc((var(--logo) - var(--btn-sm)) / 2);
@@ -667,34 +695,21 @@
 		/* El chip de «Tu sitio» va delante del tema, empujado a la derecha, con los mismos márgenes negativos. */
 		.top :global(.place) {
 			order: -1;
-			margin-left: auto;
 			margin-block: calc((var(--logo) - var(--btn-sm)) / 2);
 		}
 
-		/* Con el botón de la portada modular delante, el de Apariencia va pegado a él. */
-		.mode + .fit + :global([data-ui='appearance']) {
-			margin-left: 0;
+		/* El reloj (uno solo en el móvil), en la misma línea, empujado a la derecha, delante de tu sitio. */
+		.top :global(.clocks) {
+			order: -1;
+			margin-left: auto;
+			margin-block: calc((var(--logo) - var(--control-h)) / 2);
 		}
-	}
-
-	/* El interruptor de «encajar» solo tiene sentido en escritorio. */
-	.fit {
-		display: none;
-	}
-
-	.fit[aria-pressed='true'],
-	.mode[aria-pressed='true'] {
-		color: var(--amber);
 	}
 
 	/* «Encajar en pantalla» (html[data-fit], solo ≥1280 px): la página no hace scroll; la vista llena el
 	   alto que queda y cada panel se desplaza por dentro. Si una vista tiene varias filas de paneles,
 	   la zona de la vista hace scroll como último recurso. */
 	@media (min-width: 1280px) {
-		.fit {
-			display: inline-flex;
-		}
-
 		:global(html[data-fit]),
 		:global(html[data-fit] body) {
 			height: 100dvh;

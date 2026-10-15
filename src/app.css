@@ -58,6 +58,34 @@ select {
 	outline-offset: var(--sp-2);
 }
 
+/* Barras de desplazamiento finas, del color de la estética y con el carril transparente: en un panel con esquinas
+   redondeadas no asoma ningún rectángulo. Chrome y Safari, con ::-webkit-scrollbar (sin flechas y con el carril
+   apartado de las esquinas redondeadas); Firefox, que no lo tiene, con scrollbar-*. Si se pusieran los dos, Chrome
+   haría caso a scrollbar-* y dibujaría flechas en las esquinas. */
+@supports not selector(::-webkit-scrollbar) {
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+	}
+}
+::-webkit-scrollbar {
+	width: var(--scroll-w);
+	height: var(--scroll-w);
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+	background: var(--scroll-track);
+}
+::-webkit-scrollbar-track {
+	margin: calc(var(--radius) / 2);
+}
+::-webkit-scrollbar-thumb {
+	background: var(--scroll-thumb);
+	border-radius: var(--scroll-w);
+	border: calc(var(--scroll-w) / 4) solid transparent;
+	background-clip: padding-box;
+}
+
 .sr {
 	position: absolute;
 	width: 1px;

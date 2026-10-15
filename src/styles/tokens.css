@@ -142,6 +142,9 @@
 	--bg-image: none; /* dibujo de fondo de la página (rejilla, degradado…) */
 	--panel-blur: none; /* backdrop-filter de los paneles (cristal) */
 	--focus-w: var(--hair); /* grosor del contorno de foco con teclado */
+	--scroll-w: 8px; /* ancho de las barras de desplazamiento (escritorio; en el móvil son las del sistema) */
+	--scroll-thumb: var(--neutral); /* la parte que se arrastra */
+	--scroll-track: transparent; /* el carril: transparente, así no asoma ninguna esquina cuadrada */
 	--dur-ui: 0ms; /* transición de botones y filas al pasar el ratón */
 	--ease: cubic-bezier(0.2, 0, 0, 1);
 
