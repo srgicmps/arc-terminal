@@ -24,7 +24,7 @@ export const KEYS = {
 
 /** Fondos del escritorio, siempre con los colores del aspecto (dentro de /os no se aplican las estéticas de la web). */
 export const WALLPAPERS = [
-	{ id: 'sistema', label: 'El del aspecto' },
+	{ id: 'sistema', label: 'El de Arc OS' },
 	{ id: 'liso', label: 'Liso' },
 	{ id: 'rejilla', label: 'Rejilla' },
 	{ id: 'degradado', label: 'Degradado' },

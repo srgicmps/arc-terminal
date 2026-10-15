@@ -11,6 +11,12 @@ export function dayKey(d: Date): string {
 /** ¿Toca la pantalla de inicio? Solo si hoy aún no ha salido. */
 export const bootDue = (last: string | null, now: Date) => last !== dayKey(now);
 
+/** Con qué se abre Arc OS: el arranque si toca hoy; si no, el bloqueo si la pestaña se quedó bloqueada; si no, el escritorio. */
+export function startPhase(bootOn: boolean, last: string | null, now: Date, locked: boolean): 'boot' | 'lock' | 'on' {
+	if (bootOn && bootDue(last, now)) return 'boot';
+	return locked ? 'lock' : 'on';
+}
+
 /** Pasos que enseña el arranque, en orden. Son de adorno: la web ya está cargada. */
 export const BOOT_STEPS = ['Abriendo escritorios', 'Leyendo tus ajustes', 'Mirando los avisos', 'Listo'] as const;
 

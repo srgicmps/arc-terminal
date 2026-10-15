@@ -176,6 +176,8 @@
 	// A la vista, solo las primeras de la fila (como mucho VISIBLE_KEYS); el resto va en «Más».
 	const visibleKeys = $derived(keys.slice(0, VISIBLE_KEYS));
 	const hiddenKeys = $derived(keys.slice(VISIBLE_KEYS));
+	/** En /os el escritorio tapa la web: el atajo de Experiencias (⇧X) no debe abrir su diálogo encima ni sacarte de /os. */
+	const inOs = $derived(page.route.id === '/os');
 	const hiddenCurrent = $derived(hiddenKeys.find((k) => k.route === page.route.id));
 	const thumb = $derived(COMMANDS.filter((c) => taste.thumb.includes(c.code)));
 
@@ -284,7 +286,7 @@
 				<a href={resolve('/help')} onclick={close} aria-current={page.route.id === '/help' ? 'page' : undefined}>Todos los comandos <small>HELP</small></a>
 			{/snippet}
 		</Menu>
-		<ExpLauncher hotkey />
+		<ExpLauncher hotkey={!inOs} />
 	</nav>
 
 	{#if tapeState.on}

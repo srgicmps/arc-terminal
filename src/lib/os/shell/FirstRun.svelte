@@ -8,6 +8,8 @@
 	import * as os from './bridge.ts';
 	import { setName, setSkin, setWallpaper, setWidgets, shell, WALLPAPERS } from './shell.svelte.ts';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from './widgets.ts';
+	import WallLayer from '../system/wall/WallLayer.svelte';
+	import { isPreset } from '../system/wall/wall.ts';
 
 	const STEPS = ['Fondo', 'Widgets', 'Nombre'] as const;
 	let name = $state(shell.name);
@@ -42,7 +44,7 @@
 			<div class="walls" role="radiogroup" aria-label="Fondo del escritorio">
 				{#each WALLPAPERS as wp (wp.id)}
 					<button type="button" role="radio" aria-checked={shell.wallpaper === wp.id} class="wall" onclick={() => setWallpaper(wp.id)}>
-						<span class="sw" data-wp={wp.id} aria-hidden="true"></span>
+						<span class="sw" aria-hidden="true">{#if isPreset(wp.id)}<WallLayer source={{ kind: 'preset', id: wp.id }} preview />{/if}</span>
 						<span>{wp.label}</span>
 					</button>
 				{/each}
@@ -143,6 +145,8 @@
 	}
 	.wall {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		min-width: 0;
 		gap: var(--sp-6);
 		padding: var(--sp-6);
 		border: var(--hair) solid var(--line);
@@ -155,23 +159,14 @@
 		background: var(--amber-soft);
 	}
 	.sw {
+		position: relative;
+		overflow: hidden;
 		display: block;
+		width: 100%;
 		aspect-ratio: 16 / 10;
 		border-radius: var(--radius-s);
 		background: var(--bg);
 		border: var(--hair) solid var(--line);
-	}
-	.sw[data-wp='sistema'] {
-		background-image: linear-gradient(180deg, var(--amber-soft), transparent 60%), radial-gradient(ellipse at 30% 100%, var(--raise), transparent 70%);
-	}
-	.sw[data-wp='rejilla'] {
-		background-image:
-			linear-gradient(var(--line) var(--hair), transparent var(--hair)),
-			linear-gradient(90deg, var(--line) var(--hair), transparent var(--hair));
-		background-size: 12px 12px;
-	}
-	.sw[data-wp='degradado'] {
-		background-image: radial-gradient(ellipse at 20% 0%, var(--amber-soft), transparent 60%), linear-gradient(var(--bg), var(--panel));
 	}
 	.chips {
 		display: flex;
