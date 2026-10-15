@@ -16,6 +16,12 @@ describe('holidays-world (F6)', () => {
 		]);
 	});
 
+	it('parseHolidays: nombre en inglés fuera de los países de habla hispana', () => {
+		const raw = [{ date: '2026-11-03', localName: '文化の日', name: 'Culture Day', global: true, types: ['Public'] }];
+		expect(parseHolidays(raw, 'JP')[0].name).toBe('Culture Day');
+		expect(parseHolidays(raw, 'MX')[0].name).toBe('文化の日');
+	});
+
 	it('si un país falla se queda el de la copia anterior; sin España, error', async () => {
 		mockFetch((url) => {
 			if (url.endsWith('/FR')) return undefined; // 404

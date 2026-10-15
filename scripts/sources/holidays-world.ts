@@ -13,14 +13,18 @@ export const HOLIDAY_COUNTRIES = [
 	'HU', 'HR', 'US', 'CA', 'MX', 'AR', 'BR', 'CL', 'CO', 'PE', 'UY', 'VE', 'EC', 'MA', 'ZA', 'JP', 'CN', 'KR', 'AU', 'NZ'
 ];
 
-export function parseHolidays(raw: Raw[]): WorldHoliday[] {
+/** Países de habla hispana: el nombre local del festivo; en los demás, el inglés (más fácil de leer que 文化の日). */
+const SPANISH = new Set(['ES', 'MX', 'AR', 'CL', 'CO', 'PE', 'UY', 'VE', 'EC']);
+
+export function parseHolidays(raw: Raw[], cc = 'ES'): WorldHoliday[] {
 	return list<Raw>(raw).flatMap((h) => {
 		if (!h?.date) return [];
 		const counties = h.global ? [] : list<string>(h.counties);
 		const types = list<string>(h.types);
 		// Solo los días de fiesta de verdad: fuera los de bancos u opcionales (Nager los marca con «types»).
 		if (types.length && !types.includes('Public')) return [];
-		return [{ date: String(h.date), name: String(h.localName ?? h.name), ...(counties.length ? { counties } : {}) }];
+		const name = SPANISH.has(cc) ? (h.localName ?? h.name) : (h.name ?? h.localName);
+		return [{ date: String(h.date), name: String(name), ...(counties.length ? { counties } : {}) }];
 	});
 }
 
@@ -39,7 +43,7 @@ export const holidaysWorld: Source<WorldHolidaysData> = {
 					const years = await Promise.all(
 						[year, year + 1].map((y) => getJson<Raw[]>(`https://date.nager.at/api/v3/PublicHolidays/${y}/${cc}`))
 					);
-					return years.flatMap(parseHolidays);
+					return years.flatMap((y) => parseHolidays(y, cc));
 				})
 			);
 			got.forEach((r, j) => {
