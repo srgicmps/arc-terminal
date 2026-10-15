@@ -64,6 +64,8 @@
 <button
 	type="button"
 	class="launch {variant}"
+	data-code="EXP"
+	data-ui={variant === 'keys' ? 'key' : undefined}
 	onclick={open}
 	aria-haspopup="dialog"
 	title="Experiencias: otras formas de usar Arc (Mayús + X)"
