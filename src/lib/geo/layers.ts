@@ -3,6 +3,7 @@
 import { findCountries } from '../countries.ts';
 import { nf } from '../format.ts';
 import { AREAS, type Czib } from '../czib.ts';
+import type { NavWarning } from '../navwarn.ts';
 import type { Chokepoint, NaturalEvent, Quake, Storm } from '../types.ts';
 
 /** Lo que hace falta de un documento de sanciones o aranceles (sanctions.json). */
@@ -12,7 +13,7 @@ export interface TradeLike {
 	url: string;
 }
 
-export type LayerId = 'quakes' | 'storms' | 'events' | 'straits' | 'sanctions' | 'airspace';
+export type LayerId = 'quakes' | 'storms' | 'events' | 'straits' | 'sanctions' | 'airspace' | 'maritime';
 
 export const LAYERS: { value: LayerId; label: string }[] = [
 	{ value: 'quakes', label: 'Terremotos' },
@@ -20,7 +21,8 @@ export const LAYERS: { value: LayerId; label: string }[] = [
 	{ value: 'events', label: 'Incendios y volcanes' },
 	{ value: 'straits', label: 'Estrechos' },
 	{ value: 'sanctions', label: 'Sanciones' },
-	{ value: 'airspace', label: 'Espacio aéreo' }
+	{ value: 'airspace', label: 'Espacio aéreo' },
+	{ value: 'maritime', label: 'Avisos a barcos' }
 ];
 
 export interface MapPoint {
@@ -139,6 +141,14 @@ export const airspacePoints = (items: Czib[]): MapPoint[] =>
 		return [{ id: `a-${c.id}`, layer: 'airspace' as const, lat: at[0], lon: at[1], r: 2.2, title: `Espacio aéreo: ${c.area}`, sub: `${c.id} · EASA`, url: c.url, country: country?.code }];
 	});
 
+/** Avisos a navegantes de seguridad (F21): un punto por aviso, en su primera coordenada. */
+export const maritimePoints = (items: NavWarning[]): MapPoint[] =>
+	items.flatMap((w) =>
+		w.at && ok(w.at[0], w.at[1])
+			? [{ id: `n-${w.id}`, layer: 'maritime' as const, lat: w.at[0], lon: w.at[1], r: 1.1, title: `${w.kind} · ${w.region}`, sub: `${w.id}${w.place ? ` · ${w.place}` : ''}`, url: 'https://msi.nga.mil/NavWarnings' }]
+			: []
+	);
+
 /** Todas las capas a la vez. La usan GEO (+page.server.ts) y el JSON del mapa fijado en TOP. */
 export const mapLayers = (d: {
 	quakes?: Quake[];
@@ -147,11 +157,13 @@ export const mapLayers = (d: {
 	straits?: Chokepoint[];
 	sanctions?: TradeLike[];
 	airspace?: Czib[];
+	maritime?: NavWarning[];
 }): Record<LayerId, MapPoint[]> => ({
 	quakes: quakePoints(d.quakes ?? []),
 	storms: stormPoints(d.storms ?? []),
 	events: eventPoints(d.events ?? []),
 	straits: straitPoints(d.straits ?? []),
 	sanctions: sanctionPoints(d.sanctions ?? []),
-	airspace: airspacePoints(d.airspace ?? [])
+	airspace: airspacePoints(d.airspace ?? []),
+	maritime: maritimePoints(d.maritime ?? [])
 });
