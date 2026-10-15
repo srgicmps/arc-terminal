@@ -76,7 +76,7 @@
 		})).filter((g) => g.items.length)
 	);
 
-	const STORAGE = { local: 'localStorage', session: 'sessionStorage (esta pestaña)', cache: 'Caché sin conexión' };
+	const STORAGE = { local: 'localStorage', session: 'sessionStorage (esta pestaña)', cache: 'Caché sin conexión', idb: 'IndexedDB (solo este navegador)' };
 	const prefs = $derived(PREFS.filter((p) => hit([p.key, p.what, p.where, p.kind, STORAGE[p.storage]].join(' '))));
 	const levels = $derived(ALERT_LEVELS.filter((l) => hit([`P${l.level}`, l.name, ...l.what, sectionText(ALERTS)].join(' '))));
 	const faq = $derived(FAQ.filter((f) => hit(`${f.q} ${f.a}`)));

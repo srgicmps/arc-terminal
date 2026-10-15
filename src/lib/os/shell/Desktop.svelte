@@ -7,6 +7,7 @@
 	import type { Snippet } from 'svelte';
 	import { onMount } from 'svelte';
 	import { place } from '#lib/place.svelte.ts';
+	import WallLayer from '../system/wall/WallLayer.svelte';
 	import DesktopIcons from './DesktopIcons.svelte';
 	import { setWidgets, shell } from './shell.svelte.ts';
 	import type { StartApp } from './start.ts';
@@ -47,6 +48,8 @@
 
 <!-- data-fs-drop: aquí se pueden soltar iconos de las ventanas de carpeta; sobre otra ventana, no («none»). -->
 <div class="desktop" data-wallpaper={shell.wallpaper} data-fs-drop="desktop" bind:clientWidth={w} bind:clientHeight={h}>
+	<!-- El fondo (app «Fondo de pantalla» de «OS 5»): uno por escritorio, imagen propia, vivos y presentación. -->
+	<WallLayer />
 	<DesktopIcons {apps} {w} {h} />
 	<div class="widgets" class:hidden={shell.widgetsHidden}>
 		{#each widgets as wd (wd.kind)}

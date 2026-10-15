@@ -314,7 +314,7 @@
 				onclick={(e) => (e as unknown as PointerEvent).pointerType === 'touch' && open(a.id)}
 				onkeydown={(e) => iconKey(e, a.id)}
 			>
-				<OsIcon id={a.icon} size={shell.skin === 'dsm' ? 56 : 48} />
+				<OsIcon id={a.icon} size={shell.skin === 'mando' ? 64 : shell.skin === 'dsm' ? 56 : 48} />
 				{#if editing !== a.id}<span class="name">{a.name}</span>{/if}
 			</button>
 			{#if editing === a.id}

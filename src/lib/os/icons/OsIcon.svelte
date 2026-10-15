@@ -62,7 +62,17 @@
 	.tile {
 		display: block;
 		overflow: hidden;
+		position: relative;
 		border-radius: var(--os-icon-radius, var(--radius));
+	}
+	/* Filo del aspecto (Mando: borde de 1 px), por encima del dibujo. */
+	.tile::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		box-shadow: var(--os-icon-ring);
+		pointer-events: none;
 	}
 	.bare .tile {
 		overflow: visible;
