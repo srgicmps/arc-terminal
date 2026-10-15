@@ -51,6 +51,13 @@
 					.join('–')
 			: '—';
 
+	// Agenda .ics (src/routes/agenda.ics): https al construir (así el prerender la genera) y webcal:// en el navegador.
+	const icsPath = resolve('/agenda.ics');
+	let icsHref = $state<string>(icsPath);
+	$effect(() => {
+		icsHref = `webcal://${location.host}${icsPath}`;
+	});
+
 	const HOUR: Record<string, string> = { bmo: 'Pre', amc: 'Post', dmh: 'Sesión' };
 
 	// Festivos de los próximos 12 meses: España y Baleares (Nager.Date) y días sin bolsa (por reglas).
@@ -93,7 +100,17 @@
 	code="CAL"
 	title="Agenda económica"
 	sub="Datos macro de la semana (TradingView), resultados empresariales y salidas a bolsa (Finnhub)"
-/>
+>
+	{#snippet aside()}
+		<!-- webcal:// abre «Suscribirse» en el calendario del móvil; antes de arrancar, el enlace https al .ics. -->
+		<a
+			class="ics"
+			href={icsHref}
+			title="Bancos centrales, datos macro y resultados en tu calendario (se actualiza solo). En Google Calendar: «Desde URL» con la dirección del .ics."
+			>Suscribirse a la agenda ›</a
+		>
+	{/snippet}
+</ViewHeader>
 
 <div class="grid grid-2">
 	<div class="col">
@@ -272,6 +289,14 @@
 </div>
 
 <style>
+	.ics {
+		color: var(--amber-dim);
+	}
+
+	.ics:hover {
+		color: var(--amber);
+	}
+
 	.filters {
 		display: flex;
 		flex-wrap: wrap;

@@ -2,11 +2,13 @@
 // (`after`): no descarga nada, junta lo que las demás fuentes acaban de dejar en esta pasada:
 //   - titulares de todas las secciones news-* de los últimos 2 días (etiqueta NEWS), sin repetir enlace;
 //   - disposiciones del BOE del día (etiqueta BOE);
-//   - los valores conocidos de src/lib/tickers.ts (etiqueta Valor), que enlazan a su ficha /s?sym=….
+//   - los valores conocidos de src/lib/tickers.ts (etiqueta Valor), que enlazan a su ficha /s?sym=…;
+//   - los actos de agenda de los líderes desde hoy (etiqueta Agenda), que enlazan a /lider?id=….
 // La web lo carga solo la primera vez que se enfoca la barra, así que tiene que pesar poco.
+import { LEADERS } from '../../src/lib/leaders.ts';
 import { TICKERS } from '../../src/lib/tickers.ts';
 import { NEWS_SECTIONS } from '../../src/lib/news.ts';
-import type { BoeData, NewsData, NewsItem, SearchEntry } from '../../src/lib/types.ts';
+import type { BoeData, LeaderAgenda, NewsData, NewsItem, SearchEntry } from '../../src/lib/types.ts';
 import { NO_CONTEXT, type Source } from '../lib.ts';
 import { normUrl } from './imp.ts';
 
@@ -67,11 +69,39 @@ export function tickerEntries(): SearchEntry[] {
 	return TICKERS.map((t) => ({ t: `${t.code} · ${t.name}`, u: `/s?sym=${encodeURIComponent(t.code)}`, s: 'Valor' }));
 }
 
+const DAY = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', timeZone: 'Europe/Madrid' });
+const HOUR_FMT = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' });
+const madridDay = (t: number) => new Date(t).toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+
+/**
+ * Actos de agenda de los líderes de hoy en adelante (hora de Madrid): «Lagarde · 16 oct 10:00 · Reunión…».
+ * Los que no tienen hora llevan solo el día, el de la agenda del propio líder.
+ */
+export function agendaEntries(agendas: LeaderAgenda[] | undefined, now: number): SearchEntry[] {
+	const today = madridDay(now);
+	const out: SearchEntry[] = [];
+	for (const agenda of agendas ?? []) {
+		const leader = LEADERS.find((l) => l.id === agenda.id);
+		if (!leader) continue;
+		const surname = leader.name.split(' ').at(-1);
+		for (const e of agenda.events ?? []) {
+			const start = e.start ? Date.parse(e.start) : NaN;
+			const day = Number.isFinite(start) ? madridDay(start) : e.date;
+			if (!e.title || day < today) continue;
+			const when = Number.isFinite(start)
+				? `${DAY.format(start)} ${HOUR_FMT.format(start)}`
+				: DAY.format(Date.parse(`${e.date}T12:00:00Z`));
+			out.push({ t: clip(`${surname} · ${when} · ${e.title}`), u: `/lider?id=${encodeURIComponent(leader.id)}`, s: 'Agenda' });
+		}
+	}
+	return out;
+}
+
 /** Bytes que ocupa una entrada dentro de la lista JSON (más la coma). */
 const size = (e: SearchEntry) => Buffer.byteLength(JSON.stringify(e)) + 1;
 
 /**
- * Junta las entradas por orden de prioridad y se para al llegar a `maxBytes`: valores, BOE (I–III),
+ * Junta las entradas por orden de prioridad y se para al llegar a `maxBytes`: valores, agenda, BOE (I–III),
  * titulares del más nuevo al más antiguo y, si queda sitio, los anuncios del BOE.
  */
 export function buildIndex(groups: SearchEntry[][], maxBytes = MAX_BYTES): SearchEntry[] {
@@ -90,7 +120,7 @@ export function buildIndex(groups: SearchEntry[][], maxBytes = MAX_BYTES): Searc
 
 export const search: Source<SearchEntry[]> = {
 	name: 'search',
-	label: 'Índice de la barra de comandos · titulares, BOE y valores de esta misma actualización',
+	label: 'Índice de la barra de comandos · titulares, BOE, valores y agenda de esta misma actualización',
 	maxAgeMinutes: 12,
 	after: true,
 	async fetch(_previous, ctx = NO_CONTEXT) {
@@ -98,6 +128,7 @@ export const search: Source<SearchEntry[]> = {
 		const boe = boeEntries(ctx.get<BoeData>('boe'));
 		const news = newsEntries(sections, Date.now());
 		if (!news.length && !boe.main.length) throw new Error('sin titulares ni BOE con los que hacer el índice');
-		return buildIndex([tickerEntries(), boe.main, news, boe.rest]);
+		const agenda = agendaEntries(ctx.get<LeaderAgenda[]>('leaders'), Date.now());
+		return buildIndex([tickerEntries(), agenda, boe.main, news, boe.rest]);
 	}
 };
