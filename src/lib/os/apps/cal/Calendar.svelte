@@ -351,7 +351,20 @@
 
 	@container (max-width: 560px) {
 		.cal {
-			grid-template-columns: 1fr;
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		/* En el móvil, el título del evento en una fila y la hora con «Añadir» debajo. */
+		form {
+			flex-wrap: wrap;
+		}
+
+		form input:first-child {
+			flex: 1 0 100%;
+		}
+
+		form input[type='time'] {
+			flex: 1;
 		}
 	}
 </style>
