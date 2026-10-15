@@ -175,10 +175,23 @@ export async function fetchPublished(path: string, ms = 30_000): Promise<Respons
 		const res = await fetch(`${site}/data/${path}`, { headers, redirect: 'manual', signal: AbortSignal.timeout(ms) }).catch(
 			() => null
 		);
-		if (res?.ok) return res;
+		if (res?.ok) {
+			report(`Copia anterior: leída de ${new URL(site).host}`);
+			return res;
+		}
+		// Un 404 es normal (archivo nuevo); lo demás (login de Access, 5xx, sin respuesta) se avisa una vez.
+		if (res?.status !== 404) report(`::warning::Copia anterior: ${new URL(site).host} responde ${res ? `HTTP ${res.status}` : 'sin respuesta'}`);
 		if (res) last = res;
 	}
 	return last;
+}
+
+/** Cada aviso de fetchPublished, una sola vez por pasada (se llama cientos de veces). */
+const reported = new Set<string>();
+function report(line: string) {
+	if (reported.has(line)) return;
+	reported.add(line);
+	console.log(line);
 }
 
 /** Escribe un archivo extra de una fuente en static/data/<path>. */
