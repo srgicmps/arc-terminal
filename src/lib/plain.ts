@@ -59,7 +59,9 @@ export function euriborPhrase(points: readonly Point[] | undefined): string | nu
 export function policyPhrase(bank: string, points: readonly Point[] | undefined): string | null {
 	const last = points?.at(-1);
 	if (!last) return null;
-	const prev = points!.findLast((p) => p.v !== last.v);
+	// Un cambio de verdad es de al menos 0,10 puntos: el tipo efectivo de la Fed (DFF) baila ±0,01 cada día
+	// sin que haya reunión, y eso no es «los subió».
+	const prev = points!.findLast((p) => Math.abs(p.v - last.v) >= 0.1);
 	const move = !prev ? '' : last.v < prev.v ? ': la última vez los bajó, para animar la economía' : ': la última vez los subió, para frenar los precios';
 	return `${bank} tiene los tipos de interés en el ${nf(last.v, 2)} %${move}.`;
 }

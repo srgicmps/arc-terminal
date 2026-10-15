@@ -345,8 +345,8 @@
 						tone={premiumWeek === null || Math.round(premiumWeek) === 0 ? undefined : premiumWeek > 0 ? 'down' : 'up'}
 						sub="{period(premiumDay.t)}{premiumWeek === null ? '' : ` · ${signed(premiumWeek, 0)} pb en 7 días`}"
 					/>
-					<Tile label="Bono español 10A" value="{nf(es?.v, 2)} %" sub={es ? period(es.t) : ''} />
-					<Tile label="Bono alemán 10A" value="{nf(de?.v, 2)} %" sub={de ? period(de.t) : ''} />
+					<Tile label="Bono español 10A" value={es ? `${nf(es.v, 2)} %` : '—'} sub={es ? period(es.t) : ''} />
+					<Tile label="Bono alemán 10A" value={de ? `${nf(de.v, 2)} %` : '—'} sub={de ? period(de.t) : ''} />
 				</Tiles>
 			{/if}
 			<SeriesTable head="País" rows={premiums} spark={12} />
@@ -529,7 +529,7 @@
 				{#snippet note()}Precios de mercados de predicción: reflejan apuestas, no pronósticos oficiales.{/snippet}
 			</Panel>
 		{/if}
-		<Panel title="Titulares" meta={headlines.length > 25 ? `25 de ${headlines.length}` : 'Economía'} jump={{ code: 'NEWS', href: `${resolve('/news')}?s=eco` }}>
+		<Panel title="Titulares" meta="Economía" jump={{ code: 'NEWS', href: `${resolve('/news')}?s=eco` }}>
 			<NewsList items={headlines.slice(0, 25)} />
 		</Panel>
 	</div>
