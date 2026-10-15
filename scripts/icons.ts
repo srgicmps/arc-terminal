@@ -16,11 +16,15 @@ const ICONS: [string, number, number, number][] = [
 	['icon-maskable-512.png', 512, 512, 0.56],
 	['apple-touch-icon.png', 180, 180, 0.68],
 	// Pantallas de arranque de iOS (apple-touch-startup-image), en vertical. Ver src/app.html.
+	['splash-1320x2868.png', 1320, 2868, 0.22],
 	['splash-1290x2796.png', 1290, 2796, 0.22],
+	['splash-1284x2778.png', 1284, 2778, 0.22],
+	['splash-1206x2622.png', 1206, 2622, 0.22],
 	['splash-1179x2556.png', 1179, 2556, 0.22],
 	['splash-1170x2532.png', 1170, 2532, 0.22],
 	['splash-1125x2436.png', 1125, 2436, 0.22],
-	['splash-828x1792.png', 828, 1792, 0.22]
+	['splash-828x1792.png', 828, 1792, 0.22],
+	['splash-750x1334.png', 750, 1334, 0.22]
 ];
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
