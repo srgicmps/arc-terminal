@@ -413,6 +413,9 @@
 	{#if summary}<span class="sum">{summary}</span>{#if fresh || luzManana}{' · '}{/if}{/if}{fresh}{#if fresh && luzManana}{' · '}{/if}{#if luzManana && cheapWindow}Luz más barata mañana: <b class="cheap">{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)}</b> · {nf(cheapWindow.avg, 3)} €/kWh{/if}
 {/snippet}
 
+<!-- TOP no tiene ViewHeader: el título de la página, solo para lectores de pantalla (clase .sr de app.css). -->
+<h1 class="sr">Arc Terminal · Portada</h1>
+
 <!-- «Mi mañana»: el tiempo de «Tu sitio», la luz, la agenda y los avisos de hoy (se pliega a partir de las 11).
 	La luz (PVPC) solo si «Tu sitio» está en España, y los avisos de MeteoAlarm (son los de Menorca) solo en Menorca. -->
 <Morning
