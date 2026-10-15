@@ -198,9 +198,9 @@
 	<link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
 </svelte:head>
 
-<div class="app">
-	<header class="top">
-		<a class="brand" href={resolve('/')}>
+<div class="app" data-ui="app">
+	<header class="top" data-ui="top">
+		<a class="brand" data-ui="brand" href={resolve('/')}>
 			<Logo />
 			<span>Arc <span class="brand-sub">Terminal</span></span>
 		</a>
@@ -248,10 +248,12 @@
 		</button>
 	</header>
 
-	<nav class="keys" aria-label="Secciones">
+	<nav class="keys" data-ui="keys" aria-label="Secciones">
 		{#each keys as key (key.code)}
 			<a
 				class="key"
+				data-ui="key"
+				data-code={key.code}
 				href={routeHref(key.route)}
 				aria-current={page.route.id === key.route ? 'page' : undefined}
 			>
@@ -263,7 +265,7 @@
 		</a>
 	</nav>
 
-	<div class="tape">
+	<div class="tape" data-ui="tape">
 		<TvWidget widget="ticker-tape" config={tapeConfig} height={44} credit={false} />
 	</div>
 
@@ -277,6 +279,7 @@
 	{#if !tv.on}<PanelIndex /><InstallHint />{/if}
 
 	<main
+		data-ui="main"
 		class:nudged={shift !== 0}
 		style:translate={shift ? `${shift}px 0` : undefined}
 		ontouchstart={onSwipeStart}
@@ -287,9 +290,9 @@
 		{@render children()}
 	</main>
 
-	<nav class="thumb" aria-label="Accesos rápidos">
+	<nav class="thumb" data-ui="tabs" aria-label="Accesos rápidos">
 		{#each thumb as c (c.code)}
-			<a href={routeHref(c.route)} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
+			<a href={routeHref(c.route)} data-code={c.code} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
 		{/each}
 		<button type="button" aria-label="Buscar o escribir un comando" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>
 			<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5 14 14" /></svg>
@@ -308,7 +311,7 @@
 		{/if}
 	{/if}
 
-	<footer class="status">
+	<footer class="status" data-ui="foot">
 		<span>Datos públicos actualizados cada 15 min con GitHub Actions · cotizaciones de TradingView</span>
 		<a href={resolve('/status')}>Estado de las fuentes</a>
 		<Feedback />

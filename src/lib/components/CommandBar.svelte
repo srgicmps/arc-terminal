@@ -353,7 +353,7 @@
 
 <svelte:window onkeydown={onWindowKeydown} />
 
-<form class="cmd" class:sheet={ui.sheet} role="search" autocomplete="off" {onsubmit}>
+<form class="cmd" data-ui="cmd" class:sheet={ui.sheet} role="search" autocomplete="off" {onsubmit}>
 	<label class="prompt" for="cmd">
 		<span class="caret" aria-hidden="true">&gt;</span>
 		<!-- En el móvil, una lupa: la barra se usa como un buscador normal. -->

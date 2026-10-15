@@ -168,8 +168,8 @@
 	<div class="scrim" aria-hidden="true" onclick={close}></div>
 {/if}
 
-<section bind:this={section} class="panel" class:max class:folded={shut} class:flash role={max ? 'dialog' : undefined} aria-modal={max ? 'true' : undefined} aria-label={max ? title : undefined}>
-	<header class="ph">
+<section bind:this={section} class="panel" data-ui="panel" class:max class:folded={shut} class:flash role={max ? 'dialog' : undefined} aria-modal={max ? 'true' : undefined} aria-label={max ? title : undefined}>
+	<header class="ph" data-ui="panel-head">
 		<h2>
 			<button
 				bind:this={titleButton}
@@ -180,11 +180,11 @@
 				onclick={() => (max ? close() : toggleFold(fkey))}
 				onkeydown={titleKeydown}
 			>
-				{#if !max}<span class="fold" aria-hidden="true">{shut ? '▸' : '▾'}</span>{/if}{shown}
+				{#if !max}<span class="fold" data-ui="fold" aria-hidden="true">{shut ? '▸' : '▾'}</span>{/if}{shown}
 			</button>{#if isSimple()}<Term of={title} />{/if}
 		</h2>
 		<div class="ph-r">
-			{#if meta}<span class:accent>{meta}</span>{/if}
+			{#if meta}<span class:accent data-ui="panel-meta">{meta}</span>{/if}
 			{#if share}<Share source={share} />{/if}
 			{#if jump}<a class="jump" href={jump.href}>{jump.code} ›</a>{/if}
 			{#if pin && !max}
@@ -200,9 +200,9 @@
 				>
 			{/if}
 			{#if max}
-				<button bind:this={closeButton} class="close" type="button" aria-label="Cerrar el panel ampliado" onclick={close}>✕</button>
+				<button bind:this={closeButton} class="close" data-ui="panel-close" type="button" aria-label="Cerrar el panel ampliado" onclick={close}>✕</button>
 			{:else}
-				<button class="tool grow" type="button" aria-label="Ampliar {title}" title="Ampliar (M)" onclick={open}>⤢</button>
+				<button class="tool grow" data-ui="panel-grow" type="button" aria-label="Ampliar {title}" title="Ampliar (M)" onclick={open}>⤢</button>
 			{/if}
 			{#if tools && id && !max}
 				<button
