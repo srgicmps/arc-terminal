@@ -40,6 +40,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-ws-heatmap', storage: 'local', what: 'Último mapa de calor elegido', where: 'WS', kind: 'ajuste' },
 	{ key: 'arc-tv', storage: 'local', what: 'Vistas y segundos del modo TV', where: 'TV', kind: 'ajuste' },
 	{ key: 'arc-cal', storage: 'local', what: 'Países e importancia del calendario económico', where: 'CAL', kind: 'ajuste' },
+	{ key: 'arc-fuel-fav', storage: 'local', what: 'Tu gasolinera favorita y su precio de cada día que abriste FUEL (120 días)', where: 'FUEL, ☆ de cada estación', kind: 'dato' },
 	{ key: 'fuel-zone', storage: 'local', what: 'Última provincia elegida', where: 'FUEL', kind: 'ajuste' },
 	{ key: 'arc-place', storage: 'local', what: 'Tu sitio y hasta 5 favoritos', where: 'Chip «Tu sitio» de la cabecera, WX', kind: 'dato' },
 	{ key: 'arc-watchlists', storage: 'local', what: 'Tus listas de valores y cuál se enseña', where: 'MIS', kind: 'dato' },
