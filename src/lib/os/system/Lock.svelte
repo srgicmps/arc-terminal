@@ -35,7 +35,7 @@
 	const time = $derived(now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }));
 	const date = $derived(now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }));
 	const sum = $derived(lockSummary(shell.notices, shell.seen));
-	const name = $derived(userName(cloud.user));
+	const name = $derived(shell.name || userName(cloud.user));
 
 	function go() {
 		if (leaving) return;
