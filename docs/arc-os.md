@@ -59,6 +59,13 @@ nada en los traspasos entre sesiones.
       abrir carpeta en una ventana con sus iconos, carpetas dentro de carpetas, eliminar a la papelera. Se guardan
       en la cuenta. Mismo modelo que el explorador [OS 2 + OS 4]
 
+## Revisión de Decisiones 2 (main a 1440 y 390 px)
+- [x] El reloj de la bandeja salía en UTC: ahora usa la zona del navegador, y Madrid si no hay ninguna [OS 2] #501
+- [x] «5 abiertas» se leía como ventanas: ahora dice «5 bolsas abiertas» [OS 2] #501
+- [ ] Iconos todavía como glifos (▦ ★ % $): va con el set SVG de «Escritorio» [OS 2]
+- [ ] Widgets vacíos en local: comprobar que en la web real se llenan y, si una fuente falla, poner un mensaje útil (qué falla y cuándo se vuelve a intentar) [OS 2]
+- [ ] A 390 px sigue saliendo el escritorio de PC: lo resuelve la versión móvil (#494) [OS 3]
+
 ## Barra, Inicio y bandeja
 - [x] Barra de tareas: clic para enfocar o minimizar, vista previa al pasar, ancladas [OS 2] #495
 - [x] Clic derecho en la barra, el dock y las pestañas de DSM [OS 2] #501
