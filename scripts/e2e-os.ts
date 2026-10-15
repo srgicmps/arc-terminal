@@ -45,16 +45,18 @@ async function open(): Promise<Browser> {
 
 /** Las ventanas abiertas, en orden de la capa: app, nombre y caja. */
 const wins = (p: Page) =>
+	// La caja del estilo y no getBoundingClientRect: así no se mide a mitad de la animación de la ventana.
 	p.$$eval('section.win[data-ui="os-win"]:not(.min)', (els) =>
 		els.map((e) => {
-			const r = e.getBoundingClientRect();
+			const st = (e as HTMLElement).style;
+			const n = (v: string) => parseFloat(v) || 0;
 			return {
 				app: e.getAttribute('data-app')!,
 				name: e.getAttribute('aria-label')!,
-				x: r.x,
-				y: r.y,
-				w: r.width,
-				h: r.height
+				x: n(st.left),
+				y: n(st.top),
+				w: n(st.width),
+				h: n(st.height)
 			};
 		})
 	);
@@ -94,7 +96,8 @@ const win = (p: Page, app: string) => p.locator(`section.win[data-app="${app}"]`
 
 try {
 	const browser = await open();
-	const context = await browser.newContext({ viewport: W });
+	// Sin service worker: sus peticiones no pasan por context.route (y /api acabaría en 404).
+	const context = await browser.newContext({ viewport: W, serviceWorkers: 'block' });
 	// La web clásica sin bienvenida ni aviso del Modo OS: el recorrido empieza en /os.
 	await context.addInitScript(() => {
 		if (!localStorage.getItem('arc-welcome')) localStorage.setItem('arc-welcome', '1');
@@ -115,7 +118,11 @@ try {
 	const p = await context.newPage();
 	p.setDefaultTimeout(8000);
 	page = p;
-	p.on('pageerror', (e) => errors.push(`[${current}] excepción: ${e.message}`));
+	p.on('pageerror', (e) => {
+		// Aviso benigno del navegador (WebKit lo lanza como error), no un fallo de Arc OS.
+		if (/ResizeObserver loop/.test(e.message)) return;
+		errors.push(`[${current}] excepción: ${e.message}`);
+	});
 	// Los 404 se miran en las respuestas (WebKit no dice la URL en la consola): sin datos descargados, /data/* falta.
 	p.on('response', (r) => {
 		if (r.status() >= 400 && !new URL(r.url()).pathname.includes('/data/'))
