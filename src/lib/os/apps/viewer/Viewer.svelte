@@ -4,6 +4,7 @@
 	del propio navegador. Con varias, ← → pasan de una a otra.
 -->
 <script lang="ts">
+	import UiIcon from '../../icons/UiIcon.svelte';
 	import { onDestroy } from 'svelte';
 	import type { AppProps } from '../../apps.ts';
 	import Tool from '../kit/Tool.svelte';
@@ -83,7 +84,7 @@
 				<button type="button" onclick={() => (zoom = Math.max(0.1, (zoom || 1) / 1.25))} aria-label="Alejar">−</button>
 				<button type="button" onclick={() => (zoom = zoom ? 0 : 1)} title="Encajar o tamaño real">{zoom ? `${Math.round(zoom * 100)} %` : 'Encajar'}</button>
 				<button type="button" onclick={() => (zoom = Math.min(8, (zoom || 1) * 1.25))} aria-label="Acercar">+</button>
-				<button type="button" onclick={() => (turn = (turn + 90) % 360)} aria-label="Girar" title="Girar (R)">↻</button>
+				<button type="button" onclick={() => (turn = (turn + 90) % 360)} aria-label="Girar" title="Girar (R)"><UiIcon id="rotate" size={14} /></button>
 			{/if}
 			<button type="button" onclick={closeDoc} aria-label="Cerrar este archivo">×</button>
 		{/if}

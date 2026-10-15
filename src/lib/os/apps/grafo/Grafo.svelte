@@ -5,6 +5,7 @@
 	La ventana puede llegar centrada en una entidad: path «/grafo#country:ES» (openGraph de intel/open.ts).
 -->
 <script lang="ts">
+	import UiIcon from '../../icons/UiIcon.svelte';
 	import { onMount, untrack } from 'svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import type { AppProps } from '../../apps.ts';
@@ -448,7 +449,7 @@
 		<span class="tools">
 			<button type="button" onclick={() => graph && reset(graph, null)} title="Volver a la vista de la actualidad">Actualidad</button>
 			<button type="button" onclick={fit} title="Encajar todo en la ventana">Encajar</button>
-			<button type="button" onclick={() => loadIntel(true)} disabled={intel.loading} title="Volver a leer los datos" aria-label="Actualizar los datos">↻</button>
+			<button type="button" onclick={() => loadIntel(true)} disabled={intel.loading} title="Volver a leer los datos" aria-label="Actualizar los datos"><UiIcon id="refresh" size={14} /></button>
 		</span>
 	</div>
 
