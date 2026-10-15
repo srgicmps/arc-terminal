@@ -1,13 +1,12 @@
 <!--
 	Capa del sistema de Arc OS («OS 5»): pantalla de inicio la primera vez del día, bloqueo (también con
-	Ctrl+Alt+L), Alt+Tab visual y, más adelante, sonidos y el resto de la experiencia de sistema. Se monta una vez en
+	Ctrl+Alt+L), Alt+Tab visual sonidos, avisos de Arc como toasts y las alarmas del Reloj. Se monta una vez en
 	src/routes/os/+page.svelte, encima del escritorio. Estado en system.svelte.ts.
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import { startAlerts } from './alerts.svelte.ts';
-	import { shell } from '../shell/shell.svelte.ts';
 	import Boot from './Boot.svelte';
 	import Lock from './Lock.svelte';
 	import { shell } from '../shell/shell.svelte.ts';
