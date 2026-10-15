@@ -268,6 +268,13 @@ kbd {
 		inset: 0;
 	}
 
+	/* Safari en el iPhone amplía la página al tocar un campo con letra de menos de 16 px, y no la devuelve a
+	   su tamaño. --fs-field vale 16 px en táctil; !important porque cada componente fija su letra. */
+	input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='button'], [type='submit']),
+	select,
+	textarea {
+		font-size: var(--fs-field) !important;
+	}
 }
 
 /* Quien pide menos movimiento en su sistema no ve animaciones ni transiciones. */
