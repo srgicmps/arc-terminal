@@ -1,7 +1,7 @@
 import type { Command } from '../commands.ts';
 
 export default {
-	order: 64, code: 'IMAP', route: '/imap', key: 'Mapa de calor', desc: 'Mapas de calor de índices y países, sectores de EE. UU. y bolsas del mundo', sources: 'TradingView', aliases: ['mapa de calor', 'heatmap', 'sectores'],
+	order: 67, code: 'IMAP', route: '/imap', key: 'Mapa de calor', desc: 'Mapas de calor de índices y países, sectores de EE. UU. y bolsas del mundo', sources: 'TradingView', aliases: ['mapa de calor', 'heatmap', 'sectores'],
 	manual: {
 		section: 'Economía y mercados',
 		what: 'Mapas de calor de más índices y países que en WS (Dow Jones, CAC 40, FTSE 100, Nikkei, todas las acciones de un país…), cómo va cada sector de EE. UU. y un índice por país.',
