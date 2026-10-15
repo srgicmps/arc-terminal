@@ -17,9 +17,12 @@ import { launch, preview, viewPaths } from './browser.ts';
 import { osChecks } from './smoke-os.ts';
 
 const PATHS = process.env.SMOKE_ONLY ? process.env.SMOKE_ONLY.split(',') : [...viewPaths(), '/s?sym=NVDA'];
-const WIDTHS = [390, 1280];
+/** SMOKE_WIDTHS y SMOKE_MODES (separados por comas) acotan la pasada; SMOKE_STYLE fija una estética con tema claro y
+ *  acento azul (como el iPhone de Sergi). Los usa el paso de WebKit del CI. */
+const WIDTHS = process.env.SMOKE_WIDTHS ? process.env.SMOKE_WIDTHS.split(',').map(Number) : [390, 1280];
 /** Los dos modos (src/lib/modo.ts): Sencillo enseña menos paneles y letra mayor; Terminal, todo. */
-const MODES = ['sencillo', 'terminal'] as const;
+const MODES = process.env.SMOKE_MODES ? process.env.SMOKE_MODES.split(',') : ['sencillo', 'terminal'];
+const STYLE = process.env.SMOKE_STYLE ?? '';
 
 /** Vistas de texto, sin paneles, y el Modo OS (/os: un escritorio con ventanas). */
 const NO_PANELS = new Set(['/help', '/doc', '/bienvenida', '/os']);
@@ -47,7 +50,16 @@ try {
 	for (const mode of MODES)
 	for (const width of WIDTHS) {
 		const context = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width < 600, hasTouch: width < 600 });
-		await context.addInitScript((m) => localStorage.setItem('arc-modo', m), mode);
+		await context.addInitScript(
+			([m, style]) => {
+				localStorage.setItem('arc-modo', m);
+				if (!style) return;
+				localStorage.setItem('arc-style', style);
+				localStorage.setItem('arc-theme', 'light');
+				localStorage.setItem('arc-accent', 'blue');
+			},
+			[mode, STYLE]
+		);
 		// Peso y accesibilidad se miran una vez, en el primer modo.
 		const first = mode === MODES[0];
 		await context.route('**/*', (route) => {
@@ -161,7 +173,8 @@ try {
 	}
 	// Arc OS en el escritorio, con 12 ventanas (scripts/smoke-os.ts).
 	failures.push(...(await osChecks(browser, ROOT)));
-	await keyboard(browser);
+	// La pasada acotada de WebKit solo mira el móvil.
+	if (!process.env.SMOKE_BROWSER) await keyboard(browser);
 	await browser.close();
 } catch (error) {
 	failures.push(String(error));

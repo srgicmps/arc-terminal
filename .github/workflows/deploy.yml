@@ -224,7 +224,7 @@ jobs:
   smoke:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -252,6 +252,17 @@ jobs:
           SITE_URL: ${{ vars.SITE_URL }}
       - run: pnpm build --logLevel warn
       - run: pnpm smoke
+      # Lo mismo en WebKit (motor de Safari) a 390 px con la estética del iPhone de Sergi: lo que Chromium no ve
+      # (scroll horizontal, campos que amplían…). De momento solo avisa.
+      - run: pnpm exec playwright-core install --with-deps webkit
+        continue-on-error: true
+      - run: pnpm smoke
+        continue-on-error: true
+        env:
+          SMOKE_BROWSER: webkit
+          SMOKE_WIDTHS: '390'
+          SMOKE_MODES: terminal
+          SMOKE_STYLE: cupertino
 
   # PR: recorridos de punta a punta de Arc OS en el escritorio (scripts/e2e-os.ts), sin datos ni red. Chromium manda;
   # Firefox y WebKit (los de Playwright) de momento solo avisan, hasta que se vea que van estables.
