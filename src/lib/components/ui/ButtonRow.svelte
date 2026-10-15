@@ -33,9 +33,11 @@
 		cursor: pointer;
 	}
 
-	.row :global(button:hover:not(:disabled)) {
-		background: var(--raise);
-		color: var(--amber);
+	@media (hover: hover) {
+		.row :global(button:hover:not(:disabled)) {
+			background: var(--raise);
+			color: var(--amber);
+		}
 	}
 
 	.row :global(button:disabled) {

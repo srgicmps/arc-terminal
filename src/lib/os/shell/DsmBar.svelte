@@ -39,7 +39,7 @@
 		<NoticeCenter onnavigate={os.navigate} />
 		<button type="button" class="tray-btn" aria-label={shell.widgetsHidden ? 'Mostrar los widgets' : 'Ocultar los widgets'} aria-pressed={!shell.widgetsHidden} onclick={() => (shell.widgetsHidden = !shell.widgetsHidden)}>◫</button>
 		<TrayClock />
-		<button type="button" class="tray-btn" aria-label="Panel de control" aria-expanded={shell.open === 'control'} onclick={() => toggle('control')}>⚙</button>
+		<button type="button" class="tray-btn" aria-label="Panel de control" aria-controls="os-control" aria-expanded={shell.open === 'control'} onclick={() => toggle('control')}>⚙</button>
 		<span class="user" title={cloud.user || 'Sin cuenta (solo en este navegador)'}>{cloud.user ? cloud.user.slice(0, 1).toUpperCase() : '·'}</span>
 	</div>
 </nav>

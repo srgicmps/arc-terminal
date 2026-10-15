@@ -28,24 +28,35 @@ async function fetchJson(method = 'GET', body?: unknown) {
 	return { status: res.status, body: (await res.json()) as Record<string, unknown> };
 }
 
-/** Carga la lista una vez (o de nuevo con `force`). */
-export async function loadFamily(force = false) {
-	if (family.phase === 'loading' || (!force && family.phase !== 'idle')) return;
+let loading: Promise<void> | null = null;
+
+/**
+ * Carga la lista una vez (o de nuevo con `force`). Al recargar no se pasa por «loading»: así el panel de
+ * Familia no desaparece y vuelve a salir cada vez que guardas. Si ya se está cargando, espera a esa carga.
+ */
+export function loadFamily(force = false): Promise<void> {
+	if (loading) return loading;
+	if (!force && family.phase !== 'idle') return Promise.resolve();
 	if (new URL(url(), location.href).pathname !== '/api/family') {
 		family.phase = 'none';
-		return;
+		return Promise.resolve();
 	}
-	family.phase = 'loading';
-	try {
-		const { status, body } = await fetchJson();
-		if (status !== 200) throw new Error(String(status));
-		family.me = body.me as typeof family.me;
-		family.reachable = body.reachable === true;
-		family.people = body.people as Person[];
-		family.phase = 'ready';
-	} catch {
-		family.phase = 'error';
-	}
+	if (family.phase !== 'ready') family.phase = 'loading';
+	loading = (async () => {
+		try {
+			const { status, body } = await fetchJson();
+			if (status !== 200) throw new Error(String(status));
+			family.me = body.me as typeof family.me;
+			family.reachable = body.reachable === true;
+			family.people = body.people as Person[];
+			family.phase = 'ready';
+		} catch {
+			if (family.phase !== 'ready') family.phase = 'error';
+		} finally {
+			loading = null;
+		}
+	})();
+	return loading;
 }
 
 /** Guarda tu nombre y si aceptas recibir. true si ha ido bien. */

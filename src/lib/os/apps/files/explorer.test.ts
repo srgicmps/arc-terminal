@@ -157,3 +157,35 @@ describe('Archivos: selección e historial', () => {
 		expect(goBack({ back: [], fwd: [] }, 'a')).toBeNull();
 	});
 });
+
+describe('papelera y contadores (QA)', () => {
+	it('en la papelera, la ubicación y la fecha que se enseñan son de dónde venía y cuándo se tiró', async () => {
+		const { plural, shownAt, shownWhere } = await import('./explorer.ts');
+		const r = mkdir({}, DESKTOP, 'Viejo', 1000);
+		const t = trash(r.tree, [r.id!], 5000);
+		const i = nodeItem(t[r.id!], () => undefined);
+		expect(i.where).toBe(TRASH);
+		expect(shownWhere(i)).toBe(DESKTOP);
+		expect(shownAt(i)).toBe(5000);
+		const fresh = nodeItem(r.tree[r.id!], () => undefined);
+		expect(shownWhere(fresh)).toBe(DESKTOP);
+		expect(shownAt(fresh)).toBe(1000);
+		expect(plural(0, '1 elemento', '# elementos')).toBe('0 elementos');
+		expect(plural(1, '1 elemento', '# elementos')).toBe('1 elemento');
+		expect(plural(3, '1 elemento', '# elementos')).toBe('3 elementos');
+	});
+
+	it('ordenar por «Venía de» y por fecha usa lo que se enseña en la papelera', () => {
+		let tree: Tree = {};
+		const a = mkdir(tree, DESKTOP, 'A', 1);
+		tree = a.tree;
+		const b = mkdir(tree, a.id!, 'B', 2);
+		tree = b.tree;
+		tree = trash(tree, [b.id!], 100);
+		tree = trash(tree, [a.id!], 50);
+		const items = [nodeItem(tree[a.id!], () => undefined), nodeItem(tree[b.id!], () => undefined)];
+		const names = (l: { name: string }[]) => l.map((i) => i.name);
+		expect(names(sortItems(items, { col: 'at', dir: -1 }))).toEqual(['B', 'A']);
+		expect(names(sortItems(items, { col: 'where', dir: 1 }, (l) => (l === DESKTOP ? 'Escritorio' : 'A')))).toEqual(['B', 'A']);
+	});
+});

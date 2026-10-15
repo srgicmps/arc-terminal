@@ -19,14 +19,32 @@ export function prepare(entries: SearchEntry[]): Indexed[] {
 /** Texto sin tildes y en minúsculas, para los buscadores de las vistas (NEWS, BOE). */
 export const fold = (s: string) => plain(s).toLowerCase();
 
-/** Las palabras sueltas de lo escrito, ya sin tildes: «Banco  España» → ['banco', 'espana']. */
-export const queryWords = (q: string) => fold(q).split(/\s+/).filter(Boolean);
+/** Las palabras sueltas de lo escrito, ya sin tildes ni la puntuación de los extremos: «Banco,  España» → ['banco', 'espana']. */
+export const queryWords = (q: string) =>
+	fold(q)
+		.split(/\s+/)
+		.map((w) => w.replace(/^[,.;:«»"“”'‘’()¿?¡!]+|[,.;:«»"“”'‘’()¿?¡!]+$/g, ''))
+		.filter(Boolean);
 
 /** ¿Están todas las palabras en el texto, en cualquier orden? Sin palabras, todo encaja. */
 export const hasWords = (text: string, words: string[]) => {
 	const t = fold(text);
 	return words.every((w) => t.includes(w));
 };
+
+/** Palabras de menos de 4 letras que tienen que empezar una palabra del texto: «ia» no encaja en «Francia». */
+const SHORT_WORD = 4;
+
+/** Como hasWords, pero las palabras cortas solo encajan al principio de una palabra (titulares de NEWS). */
+export const hasWordsAt = (text: string, words: string[]) => foldedHasWordsAt(fold(text), words);
+
+/** hasWordsAt sobre un texto ya pasado por fold (el archivo de NEWS lo guarda así, para no repetirlo). */
+export const foldedHasWordsAt = (t: string, words: string[]) =>
+	words.every((w) => {
+		if (w.length >= SHORT_WORD) return t.includes(w);
+		for (let p = t.indexOf(w); p >= 0; p = t.indexOf(w, p + 1)) if (isWordStart(t, p)) return true;
+		return false;
+	});
 
 /** Por debajo de estas letras no se busca: «a» o «de» salen en todo. */
 export const MIN_QUERY = 3;
@@ -93,7 +111,7 @@ export function searchOptions(raw: string, suggestions: Option[], index: Indexed
 	if (norm(text).length < MIN_QUERY) return hits;
 	// Un código corto sin nada más (AMZN): Intro sigue abriendo su ficha, no el archivo.
 	const q = norm(raw);
-	if (!hits.length && !suggestions.length && isTickerLike(q) && q.length <= TICKER_MAX) {
+	if (!hits.length && !suggestions.length && isTickerLike(q) && (q.length <= TICKER_MAX || /[:.]/.test(q))) {
 		hits.push({ code: q, desc: 'Ficha del valor', kind: 'Valor', run: q });
 	}
 	// Buscar en NEWS, que mira también el archivo de 3 meses (lo carga en diferido): la barra sigue ligera.
@@ -133,7 +151,7 @@ function indexHits(raw: string, suggestions: Option[], index: Indexed[], limit: 
 		if (hits.length >= limit) break;
 	}
 	const q = norm(raw);
-	if (hits.length && !suggestions.length && isTickerLike(q) && q.length <= TICKER_MAX) {
+	if (hits.length && !suggestions.length && isTickerLike(q) && (q.length <= TICKER_MAX || /[:.]/.test(q))) {
 		hits.unshift({ code: q, desc: 'Ficha del valor', kind: 'Valor', run: q });
 	}
 	return hits;
@@ -148,7 +166,8 @@ export function countryEntries(): Option[] {
 		code: norm(c.name),
 		desc: `Ficha · ${c.code}`,
 		kind: 'País',
-		aliases: [...(c.aliases ?? []), ...demonymForms(c.demonym)],
+		// El código ISO también («FR», «DE»): solo cuenta escrito entero (ver strongMatch en cmdline.ts).
+		aliases: [...(c.aliases ?? []), ...demonymForms(c.demonym), c.code],
 		run: `PAIS ${c.code}`
 	}));
 }
@@ -193,7 +212,8 @@ export function parseNewsQuery(raw: string, sections: readonly { key: string; la
 		const name = fold(token.slice(1));
 		const section =
 			token.startsWith('/') && name
-				? (sections.find((s) => s.key === name) ?? (name.length >= 3 ? sections.find((s) => fold(s.label).startsWith(name)) : undefined))
+				? (sections.find((s) => s.key === name || fold(s.label) === name) ??
+					(name.length >= 3 ? sections.find((s) => fold(s.label).startsWith(name)) : undefined))
 				: undefined;
 		if (age && Number(age[1]) > 0) out.hours = Number(age[1]) * HOURS_PER[age[2].toLowerCase()];
 		else if (section) out.section = section.key;

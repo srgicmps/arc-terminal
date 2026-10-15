@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanPosition, parsePortfolio, summarize } from './portfolio.ts';
+import { cleanPosition, parseDecimal, parsePortfolio, summarize } from './portfolio.ts';
 import type { Quote } from './types.ts';
 
 const rates = new Map([
@@ -56,5 +56,18 @@ describe('summarize', () => {
 	});
 	it('«NASDAQ:NVDA» usa la cotización de NVDA', () => {
 		expect(summarize([{ sym: 'NASDAQ:NVDA', qty: 1, cost: 1, cur: 'USD' }], [q('NVDA', 2)], rates).rows[0].source).toBe('finnhub');
+	});
+});
+
+describe('parseDecimal', () => {
+	it('entiende la coma decimal y el punto de miles', () => {
+		expect(parseDecimal('1,5')).toBe(1.5);
+		expect(parseDecimal('1.5')).toBe(1.5);
+		// Antes «1.500» acciones se guardaban como 1,5 sin avisar.
+		expect(parseDecimal('1.500')).toBe(1500);
+		expect(parseDecimal('1.234,56')).toBe(1234.56);
+		expect(parseDecimal(' 120,50 ')).toBe(120.5);
+		expect(parseDecimal('')).toBeNaN();
+		expect(parseDecimal('12a')).toBeNaN();
 	});
 });

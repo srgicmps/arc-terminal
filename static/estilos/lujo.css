@@ -279,7 +279,7 @@
 	}
 	[data-style='lujo'] .seg,
 	[data-style='lujo'] select,
-	[data-style='lujo'] .theme {
+	[data-style='lujo'] :is(.theme, [data-ui='appearance']) {
 		--border: var(--hair) solid var(--lx-rule-soft);
 	}
 	[data-style='lujo'] .seg button {

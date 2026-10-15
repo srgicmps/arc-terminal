@@ -23,6 +23,8 @@
 	const COLS = { mag: (q: Quake) => q.mag, place: (q: Quake) => q.place, depth: (q: Quake) => q.depth, time: (q: Quake) => Date.parse(q.time) };
 	const sort = new Sorter<keyof typeof COLS>();
 	const shown = $derived(sort.key ? sortBy(quakes, COLS[sort.key], sort.dir) : quakes);
+	/** Nivel PAGER del USGS, en español. */
+	const ALERT: Record<string, string> = { yellow: 'amarilla', orange: 'naranja', red: 'roja' };
 </script>
 
 {#if quakes.length}
@@ -42,7 +44,7 @@
 					<td class="l">
 						<a class="name" href={q.url} target="_blank" rel="noopener">{q.place}</a>
 						{#if q.tsunami}<span class="flag">tsunami</span>{/if}
-						{#if q.alert && q.alert !== 'green'}<span class="flag {q.alert}">alerta {q.alert}</span>{/if}
+						{#if q.alert && q.alert !== 'green'}<span class="flag {q.alert}">alerta {ALERT[q.alert] ?? q.alert}</span>{/if}
 					</td>
 					<td class="mut">{nf(q.depth, 0)} km</td>
 					<td class="mut">{when(q.time, clock.now)}</td>

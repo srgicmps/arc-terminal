@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
 	import { tick, untrack } from 'svelte';
+	import UiIcon from '../../icons/UiIcon.svelte';
 	import Search from '../../../components/ui/Search.svelte';
 	import { isShortcut } from '../../../shortcuts.ts';
 	import type { AppProps } from '../../apps.ts';
@@ -50,6 +51,16 @@
 		root?.closest('[data-ui="os-tool"]')?.querySelector('.main')?.scrollTo(0, 0);
 	}
 
+	// Intro en el buscador entra en el primer resultado.
+	function searchKey(e: KeyboardEvent) {
+		if (e.key !== 'Enter' || e.isComposing || !(e.target as HTMLElement).matches('input')) return;
+		const first = hits[0];
+		if (!first) return;
+		e.preventDefault();
+		query = '';
+		go(first.section.id as SectionId);
+	}
+
 	function onkeydown(e: KeyboardEvent) {
 		if (e.defaultPrevented || !section || !isShortcut(e, 'os-settings-home')) return;
 		const t = e.target as HTMLElement;
@@ -63,7 +74,8 @@
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="wrap" bind:this={root} {onkeydown}>
 		{#if !section}
-			<div class="home">
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="home" onkeydown={searchKey}>
 				<Search label="Buscar en los ajustes" placeholder="Buscar: tema, widgets, sonidos…" bind:value={query} />
 				{#if query.trim()}
 					{#if hits.length}
@@ -71,7 +83,7 @@
 							{#each hits as h, i (i)}
 								<li>
 									<button type="button" onclick={() => go(h.section.id as SectionId)}>
-										<span class="ico" aria-hidden="true">{h.section.icon}</span>
+										<span class="ico" aria-hidden="true"><UiIcon id={h.section.icon} /></span>
 										<span class="txt"><b>{h.item ?? h.section.label}</b><span class="sub">{h.item ? h.section.label : h.section.desc}</span></span>
 									</button>
 								</li>
@@ -88,7 +100,7 @@
 								{#each bySection(c.id) as s (s.id)}
 									<li>
 										<button type="button" class="tile" data-sec={s.id} title={s.desc} onclick={() => go(s.id)}>
-											<span class="ico" aria-hidden="true">{s.icon}</span>
+											<span class="ico" aria-hidden="true"><UiIcon id={s.icon} /></span>
 											<span class="txt"><b>{s.label}</b><span class="sub">{s.desc}</span></span>
 										</button>
 									</li>
@@ -105,7 +117,7 @@
 					{#each CATEGORIES as c (c.id)}
 						<span class="cat">{c.label}</span>
 						{#each bySection(c.id) as s (s.id)}
-							<button type="button" aria-current={section === s.id} onclick={() => go(s.id)}><span class="g" aria-hidden="true">{s.icon}</span> {s.label}</button>
+							<button type="button" aria-current={section === s.id} onclick={() => go(s.id)}><span class="g" aria-hidden="true"><UiIcon id={s.icon} /></span> {s.label}</button>
 						{/each}
 					{/each}
 				</nav>
@@ -282,10 +294,12 @@
 	}
 
 	nav .g {
-		display: inline-block;
+		display: inline-grid;
+		place-items: center;
 		width: var(--sp-16);
 		color: var(--amber);
-		text-align: center;
+		font-size: var(--sp-14);
+		vertical-align: -0.15em;
 	}
 
 	nav [aria-current='true'] {

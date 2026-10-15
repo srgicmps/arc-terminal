@@ -42,7 +42,9 @@ export function onRowKey(e: KeyboardEvent): boolean {
 	}
 	const dir = isShortcut(e, 'row-next') || e.key === 'ArrowDown' ? 1 : isShortcut(e, 'row-prev') || e.key === 'ArrowUp' ? -1 : 0;
 	if (!dir) return false;
-	const rows = [...document.querySelectorAll<HTMLElement>(ROW_SELECTOR)].filter(visible);
+	// Con un panel ampliado, solo sus filas: las de detrás quedan bajo el fondo atenuado.
+	const scope: ParentNode = row.closest('.panel.max') ?? document;
+	const rows = [...scope.querySelectorAll<HTMLElement>(ROW_SELECTOR)].filter(visible);
 	const next = rows[stepRow(rows.length, rows.indexOf(row), dir)];
 	if (next && next !== row) focusRow(next);
 	return true;

@@ -158,6 +158,8 @@
 
 	function onkeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape' && (promo || selected)) {
+			// preventDefault: así la barra no lleva además a la portada.
+			e.preventDefault();
 			e.stopPropagation();
 			promo = null;
 			selected = null;

@@ -41,7 +41,19 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
 - [x] Fondo de pantalla: el inicio del teléfono pinta `WallLayer` de OS 5 (el que eliges en la app «Fondo de pantalla»).
 - [x] «Atrás» del navegador o gesto del sistema: cierra lo de encima (hoja, carpeta, app) con el enrutado superficial
   de SvelteKit (`pushState`, `page.state.phone`); en inicio, sale de /os como siempre.
+- [x] QA 2 (apps y gestos): notificaciones que no se abrían (bucle de efectos), tirón corto de la barra a inicio y
+  parar el dedo para la multitarea, valores del buscador a pantalla completa (`webApp`), un teléfono grande girado
+  (932 px) ya no pasa al escritorio, Esc en un campo no cierra la app, teclado en pantalla (`keyboardFit`).
 - [ ] Probarlo en un iPhone de verdad (safe-area, PWA instalada): solo puede Sergi; probado en Chromium a 390×844.
+
+## QA OS 1 (inicio del móvil)
+- [x] Iconos que encogen con el alto de la pantalla (iPhone SE y 320 px: el nombre pisaba el icono de abajo) y widgets
+  que se ajustan a su hueco (`@container`).
+- [x] Widgets en franjas de 2 filas (`layout` + `rowsOf` de `home.ts`): con 4 pequeños el último se salía de la rejilla.
+- [x] «−» de los widgets, redondo. En horizontal (8 × 3 de QA OS 3) un widget pequeño ocupa 2 × 1 (no cabían).
+- [x] Arrastrando, el dedo quieto en el borde sigue pasando páginas (antes, una o ninguna).
+- [x] Mantener un widget entra en el modo edición; tocar un hueco vacío lo termina. Carpetas: miniaturas 3×3 desde
+  arriba a la izquierda.
 
 ## iPhone, iPad y PWA (QA OS 3)
 - [x] `viewport-fit=cover` solo dentro de /os (`src/lib/os/mobile/viewport.ts`): sin él, Safari dejaba a 0 todas las

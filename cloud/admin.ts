@@ -5,7 +5,8 @@
 //   tienen los avisos activados.
 // - POST { action: 'invite' | 'remove', email }: añade o quita el email de la política de Access (por defecto,
 //   la que se llama «Sergi»; Variable ACCESS_POLICY) con la API de Cloudflare. Al quitar, se cierran sus
-//   sesiones y se borran sus datos de D1 (ajustes, avisos, último acceso). Al admin no se le puede quitar.
+//   sesiones y se borran sus datos de D1 (ajustes, avisos, último acceso, familia, Mis RSS y predicciones).
+//   Al admin no se le puede quitar.
 // Necesita los Secrets de Pages CF_ACCESS_ADMIN_TOKEN (Access: Apps and Policies · Edit) y CF_ACCOUNT_ID; sin
 // ellos, la lista sale igual (solo con lo de D1) y no se puede invitar ni quitar.
 import { isAdmin, person, readJson, type AdminEnv } from './feedback.ts';
@@ -239,10 +240,11 @@ export function d1AdminStore(db: D1Database): AdminStore {
 			await db.batch(
 				['prefs', 'alerts', 'seen'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email))
 			);
-			// Predicciones (cloud/forecasts.ts): sus tablas solo existen si alguien ha jugado.
-			await db
-				.batch(['forecast_bets', 'forecast_players'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email)))
-				.catch(() => {});
+			// Las de los demás módulos solo existen si alguien los ha usado: una a una, para que la que falte no
+			// impida borrar las otras. Familia (cloud/family.ts), Mis RSS (cloud/rss.ts) y predicciones
+			// (cloud/forecasts.ts).
+			for (const t of ['family', 'family_sent', 'rss', 'forecast_bets', 'forecast_players'])
+				await db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email).run().catch(() => {});
 		}
 	};
 }

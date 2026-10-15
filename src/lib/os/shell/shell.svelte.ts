@@ -4,7 +4,7 @@
 import { asset } from '$app/paths';
 import type { WallData } from '../../exp/muro.ts';
 import type { ChangesData } from '../../types.ts';
-import { buildNotices, markSeen, toastsFor, unread, type Notice } from './notices.ts';
+import { addNotice, buildNotices, markSeen, noticeTime, toastsFor, unread, type Notice } from './notices.ts';
 import { parseIds, pushRecent, togglePin } from './start.ts';
 import { parseSpots, type Spots } from './icons.ts';
 import { DEFAULT_SKIN, type Skin } from './skins.ts';
@@ -24,7 +24,7 @@ export const KEYS = {
 
 /** Fondos del escritorio, siempre con los colores del aspecto (dentro de /os no se aplican las estéticas de la web). */
 export const WALLPAPERS = [
-	{ id: 'sistema', label: 'El del aspecto' },
+	{ id: 'sistema', label: 'El de Arc OS' },
 	{ id: 'liso', label: 'Liso' },
 	{ id: 'rejilla', label: 'Rejilla' },
 	{ id: 'degradado', label: 'Degradado' },
@@ -161,16 +161,18 @@ async function getJson<T>(name: string): Promise<T | null> {
 
 /** Avisos de la propia web (del sistema, de una app…): los que no vienen de muro.json ni changes.json. */
 let local: Notice[] = [];
+let seq = 0;
 
 /**
  * Para otras piezas de Arc OS (sistema, apps): un aviso que queda en el centro de notificaciones y sale como
  * toast. Devuelve su id.
  */
-export function notify(n: { title: string; detail?: string; href?: string; kind?: Notice['kind'] }): string {
-	const time = new Date().toISOString();
-	const notice: Notice = { id: `s:${time}:${n.title}`, kind: n.kind ?? 'aviso', title: n.title, detail: n.detail ?? '', time, href: n.href };
+export function notify(n: { title: string; detail?: string; href?: string; kind?: Notice['kind']; time?: string }): string {
+	// La hora del suceso, si la trae (un aviso de hace 10 min no es «ahora»); el contador evita ids repetidos.
+	const time = noticeTime(n.time, new Date());
+	const notice: Notice = { id: `s:${++seq}:${time}:${n.title}`, kind: n.kind ?? 'aviso', title: n.title, detail: n.detail ?? '', time, href: n.href };
 	local = [notice, ...local].slice(0, 30);
-	shell.notices = [notice, ...shell.notices];
+	shell.notices = addNotice(shell.notices, notice);
 	shell.toasts = [...shell.toasts, notice].slice(-3);
 	return notice.id;
 }

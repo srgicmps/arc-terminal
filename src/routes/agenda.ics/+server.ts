@@ -16,7 +16,7 @@ export async function GET() {
 	const from = minus(madridDate(Date.now()), 7);
 	const events = [
 		...CB_MEETINGS.filter((m) => m.date >= from).map(meetingEvent),
-		...[...(releases?.data.past ?? []), ...(releases?.data.events ?? [])].filter((r) => r.date.slice(0, 10) >= from).map(releaseEvent),
+		...[...(releases?.data.past ?? []), ...(releases?.data.events ?? [])].filter((r) => madridDate(Date.parse(r.date)) >= from).map(releaseEvent),
 		...(finnhub?.data.earnings ?? []).filter((e) => e.date >= from).map(earningsEvent)
 	];
 	const unique = [...new Map(events.map((e) => [e.uid, e])).values()];

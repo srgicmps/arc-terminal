@@ -25,13 +25,13 @@
 
 <Table>
 	<thead>
-		<tr><th class="l">Fondo</th><th>Puesto</th><th>Peso</th><th>Valor</th><th>Trimestre</th></tr>
+		<tr><th class="l">Fondo</th><th class="per">Puesto</th><th>Peso</th><th>Valor</th><th>Trimestre</th></tr>
 	</thead>
 	<tbody>
 		{#each holders as h (h.fund)}
 			<tr>
-				<td class="l name">{names[h.fund] ?? h.fund}</td>
-				<td class="mut">{h.rank}.º</td>
+				<td class="l name cut" title={names[h.fund] ?? h.fund}>{names[h.fund] ?? h.fund}</td>
+				<td class="mut per">{h.rank}.º</td>
 				<td>{nf(h.weight * 100, 1)} %</td>
 				<td class="mut">{compact(h.value)} $</td>
 				<td class:up={h.change === 'new' || h.change === 'add'} class:down={h.change === 'trim'} class:mut={h.change === null || h.change === 'same'}>{change(h)}</td>
@@ -39,3 +39,15 @@
 		{/each}
 	</tbody>
 </Table>
+
+<style>
+	/* En el móvil, el nombre del fondo se corta con «…» (como en FONDOS) y el puesto (.per) se oculta: así caben
+	   el peso, el valor y el trimestre sin scroll lateral. */
+	td.cut {
+		width: 100%;
+		max-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+</style>

@@ -9,7 +9,7 @@
 	import { hasWords, queryWords } from '../../../search.ts';
 	import type { AppProps } from '../../apps.ts';
 	import Tool from '../kit/Tool.svelte';
-	import { MAX_NOTES, plainText, snippetOf, titleOf, whenText } from './notes.ts';
+	import { isBlank, makeRoom, MAX_NOTES, plainText, snippetOf, titleOf, whenText } from './notes.ts';
 	import { deleteNote, newNote, notes, pinNote, restoreNote, sanitize, startNotes, trashNote, updateNote } from './notes.svelte.ts';
 
 	let { win }: AppProps = $props();
@@ -18,6 +18,7 @@
 	let trash = $state(false);
 	let current = $state<string | null>(null);
 	let editor = $state<HTMLDivElement>();
+	let wrap: HTMLDivElement;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
 	onMount(() => {
@@ -25,8 +26,9 @@
 		// Intro crea párrafos <p> (no <div>), como en un editor de textos.
 		document.execCommand('defaultParagraphSeparator', false, 'p');
 		const first = notes.list.find((n) => !n.trashed);
-		if (first && !notes.pending && matchMedia('(min-width: 640px)').matches) void open(first.id);
-		return () => flush();
+		// Lista y nota a la vez solo si la ventana es ancha (el mismo corte que el @container de abajo), no la pantalla.
+		if (first && !notes.pending && wrap.clientWidth > NARROW) void open(first.id);
+		return () => leave();
 	});
 
 	// Archivos ha pedido abrir una nota.
@@ -42,18 +44,23 @@
 	const words = $derived(queryWords(query));
 	const shown = $derived(notes.list.filter((n) => !!n.trashed === trash && (!words.length || hasWords(plainText(n.html), words))));
 	const note = $derived(notes.list.find((n) => n.id === current));
-	const live = $derived(notes.list.filter((n) => !n.trashed).length);
+	const room = $derived(makeRoom(notes.list, MAX_NOTES).ok);
+	/** Ancho (px) por debajo del cual se ve una cosa cada vez: el mismo del @container. */
+	const NARROW = 560;
 
 	async function open(id: string) {
-		flush();
+		if (id !== current) leave();
 		current = id;
 		await tick();
-		if (editor) editor.innerHTML = sanitize(notes.list.find((n) => n.id === id)?.html ?? '');
+		const html = sanitize(notes.list.find((n) => n.id === id)?.html ?? '');
+		// Vacía, con un párrafo: así la primera línea también va en <p>, como las demás.
+		if (editor) editor.innerHTML = isBlank(html) ? '<p><br></p>' : html;
 	}
 
 	async function create() {
 		trash = false;
 		query = '';
+		leave();
 		const n = newNote();
 		if (!n) return;
 		await open(n.id);
@@ -63,6 +70,14 @@
 	function flush() {
 		clearTimeout(timer);
 		if (current && editor) updateNote(current, sanitize(editor.innerHTML));
+	}
+
+	/** Al dejar una nota: se guarda y, si se ha quedado sin nada escrito, se borra (no quedan «Nota nueva» vacías). */
+	function leave() {
+		flush();
+		const n = notes.list.find((x) => x.id === current);
+		if (n && !n.trashed && isBlank(n.html)) deleteNote(n.id);
+		current = null;
 	}
 
 	const changed = () => {
@@ -98,9 +113,23 @@
 
 	function remove() {
 		if (!note) return;
-		if (note.trashed) deleteNote(note.id);
+		flush();
+		if (note.trashed || isBlank(note.html)) deleteNote(note.id);
 		else trashNote(note.id);
 		current = null;
+	}
+
+	/** Restaurada, vuelve a la lista de notas y sigue abierta para escribir. */
+	function restore() {
+		if (!note) return;
+		restoreNote(note.id);
+		trash = false;
+		query = '';
+	}
+
+	function toggleTrash() {
+		leave();
+		trash = !trash;
 	}
 
 	function emptyTrash() {
@@ -124,12 +153,15 @@
 	];
 </script>
 
+<!-- Iconos de trazo fino (currentColor), en lugar de emojis: siguen el color del tema. -->
+{#snippet pin()}<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5h4M6.8 2.5 6.2 7 4.5 9h7L9.8 7l-.6-4.5M8 9v4.5" /></svg>{/snippet}
+
 <Tool {win}>
-	<div class="wrap"><div class="notes" class:editing={current !== null}>
+	<div class="wrap" bind:this={wrap}><div class="notes" class:editing={current !== null}>
 		<aside>
 			<div class="top">
-				<button type="button" class="new" onclick={create} disabled={live >= MAX_NOTES} title={live >= MAX_NOTES ? `Como mucho ${MAX_NOTES} notas` : 'Nota nueva'}>＋ Nueva</button>
-				<button type="button" aria-pressed={trash} onclick={() => ((trash = !trash), (current = null))}>Papelera</button>
+				<button type="button" class="new" onclick={create} disabled={!room} title={room ? 'Nota nueva' : `Como mucho ${MAX_NOTES} notas: borra alguna para hacer sitio`}>＋ Nueva</button>
+				<button type="button" aria-pressed={trash} onclick={toggleTrash}>Papelera</button>
 			</div>
 			<div><Search label="Buscar en las notas" placeholder="Buscar…" bind:value={query} /></div>
 			{#if trash && shown.length}<button type="button" class="link" onclick={emptyTrash}>Vaciar la papelera</button>{/if}
@@ -137,7 +169,7 @@
 				{#each shown as n (n.id)}
 					<li>
 						<button type="button" aria-current={n.id === current} onclick={() => open(n.id)}>
-							<b>{n.pinned ? '📌 ' : ''}{titleOf(n)}</b>
+							<b>{#if n.pinned}{@render pin()}<span class="sr">Fijada: </span>{/if}{titleOf(n)}</b>
 							<span><span class="when">{whenText(n.updated)}</span> {snippetOf(n)}</span>
 						</button>
 					</li>
@@ -149,17 +181,19 @@
 		<section>
 			{#if note}
 				<div class="tools" role="toolbar" aria-label="Formato">
-					<button type="button" class="back" onclick={() => (flush(), (current = null))} aria-label="Volver a la lista">‹ Notas</button>
+					<button type="button" class="back" onclick={leave} aria-label="Volver a la lista">‹ Notas</button>
 					{#if note.trashed}
-						<button type="button" onclick={() => restoreNote(note.id)}>Restaurar</button>
+						<button type="button" onclick={restore}>Restaurar</button>
 						<button type="button" onclick={remove}>Borrar del todo</button>
 					{:else}
 						{#each TOOLS as [label, title, run] (label)}
 							<button type="button" {title} aria-label={title} onmousedown={(e) => e.preventDefault()} onclick={run}>{label}</button>
 						{/each}
 						<span class="gap"></span>
-						<button type="button" aria-pressed={!!note.pinned} onclick={() => pinNote(note.id)} title="Fijar arriba">📌</button>
-						<button type="button" onclick={remove} title="A la papelera" aria-label="A la papelera">🗑</button>
+						<button type="button" aria-pressed={!!note.pinned} onclick={() => pinNote(note.id)} title="Fijar arriba" aria-label="Fijar arriba">{@render pin()}</button>
+						<button type="button" onclick={remove} title="A la papelera" aria-label="A la papelera">
+							<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5M7 7v4M9 7v4" /></svg>
+						</button>
 					{/if}
 				</div>
 				<div
@@ -316,12 +350,30 @@
 		flex: 1;
 	}
 
+	svg {
+		width: var(--fs-l);
+		height: var(--fs-l);
+		vertical-align: middle;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.3;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	li b svg {
+		margin-right: var(--sp-4);
+		color: var(--amber);
+	}
+
 	.back {
 		display: none;
 	}
 
 	.editor {
 		flex: 1;
+		/* En una ventana muy baja no se aplasta: hace scroll la ventana. */
+		min-height: calc(var(--control-h) * 4);
 		overflow: auto;
 		padding: var(--sp-12);
 		background: var(--bg);

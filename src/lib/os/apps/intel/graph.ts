@@ -40,7 +40,7 @@ export function whyText(e: IntelEdge): string {
 export function overview(g: Graph, kinds: readonly Kind[], max = 48): Set<string> {
 	const score = new Map<string, number>();
 	for (const e of g.edges.values()) {
-		const live = e.w - (e.why.cargo ?? 0) * 2 - (e.why.banco ?? 0) * 2 - (e.why.pais ?? 0);
+		const live = e.w - (e.ws.cargo ?? 0) - (e.ws.banco ?? 0) - (e.ws.pais ?? 0);
 		if (live <= 0) continue;
 		for (const id of [e.a, e.b]) score.set(id, (score.get(id) ?? 0) + live);
 	}
@@ -99,7 +99,9 @@ export function targetOf(path: string | null | undefined): string | null {
 	const kind = hash.slice(0, i);
 	if (!isKind(kind)) return null;
 	try {
-		const key = decodeURIComponent(hash.slice(i + 1));
+		const raw = decodeURIComponent(hash.slice(i + 1));
+		// Los códigos de país y de valor van en mayúsculas («#country:cn» es «country:CN»).
+		const key = kind === 'country' || kind === 'ticker' ? raw.toUpperCase() : raw;
 		return key ? nodeId(kind, key) : null;
 	} catch {
 		return null;

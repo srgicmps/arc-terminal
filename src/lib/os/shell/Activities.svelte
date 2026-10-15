@@ -142,7 +142,7 @@
 		place-items: center;
 		width: 100%;
 		aspect-ratio: 16 / 10;
-		max-height: 32vh;
+		max-height: 32dvh;
 		border-radius: var(--os-win-radius);
 		background: var(--os-win-bg);
 		color: var(--amber);

@@ -34,4 +34,11 @@ describe('agenda .ics', () => {
 		expect(ics).toContain('DESCRIPTION:Publica tras el cierre de Wall Street');
 		expect(ics).toContain('DTSTART;VALUE=DATE:20261030');
 	});
+
+	it('un dato de día completo es el día de Madrid, no el de UTC', () => {
+		// Así lo guarda scripts/ics.ts: la medianoche del 30 en Madrid es el 29 a las 23:00 UTC.
+		const e = releaseEvent({ date: '2026-10-29T23:00:00.000Z', allDay: true, title: 'IPC adelantado', source: 'INE', topic: 'ipc' });
+		expect(e.start).toBe('2026-10-30');
+		expect(e.uid).toContain('2026-10-30');
+	});
 });

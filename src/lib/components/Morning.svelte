@@ -48,11 +48,9 @@
 	const place = $derived(weather?.places.find((p) => p.name === city) ?? weather?.places[0] ?? null);
 	const day = $derived(place?.daily.find((d) => d.date === today) ?? place?.daily[0] ?? null);
 
-	// Las dos horas seguidas más baratas de lo que queda de hoy (PVPC).
-	const cheap = $derived.by(() => {
-		const prices = hourly(power?.pvpc ?? []);
-		return cheapestWindow(prices, today, 2, hour) ?? cheapestWindow(prices, today, 2);
-	});
+	// Las dos horas seguidas más baratas de lo que queda de hoy (PVPC). Si ya no cabe ninguna (desde las 23:00),
+	// nada: una franja ya pasada no sirve.
+	const cheap = $derived(cheapestWindow(hourly(power?.pvpc ?? []), today, 2, hour));
 
 	// Agenda de hoy: reuniones de bancos centrales y resultados (los de tu lista primero), como mucho 3.
 	const agenda = $derived.by(() => {
@@ -117,7 +115,7 @@
 			<button type="button" class="line" onclick={() => (open = true)} aria-expanded="false">
 				<!-- Etiqueta en gris con la clase común .mut de app.css: sin CSS propio que copie el de Tile. -->
 				<span class="mut">Mi mañana</span>
-				{items.map((i) => i.value).join(' · ')}{#if tail}<span class="tail">{@render tail()}</span>{/if}
+				<span class="text">{items.map((i) => i.value).join(' · ')}</span>{#if tail}<span class="tail">{@render tail()}</span>{/if}
 			</button>
 		{:else}
 			{#each items as item (item.label)}
@@ -167,17 +165,29 @@
 		cursor: pointer;
 	}
 
+	/* Centrado en alto: en pantallas táctiles el botón mide --touch y el texto quedaba pegado arriba. */
 	.line {
 		flex: 1;
 		display: flex;
 		gap: var(--sp-12);
-		align-items: baseline;
+		align-items: center;
 		padding: var(--sp-6) var(--pad-x);
 		text-align: left;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		font-size: var(--fs-s);
+	}
+
+	/* El texto se corta con «…» (en el móvil no cabe entero); la etiqueta no se encoge. */
+	.line .mut {
+		flex: none;
+	}
+
+	.line .text {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.line:hover,

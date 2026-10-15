@@ -3,6 +3,8 @@
 // EE. UU. (Maritime Safety Information, dominio público), que recogen los de NAVAREA IX, JRCC y otros. Muchos
 // son rutinarios (pecios, cables, prospecciones): aquí solo se quedan los de zonas calientes y de seguridad
 // (maniobras, minas, misiles, ataques, interferencias GPS…). Funciones puras; la descarga, en scripts/sources/navwarn.ts.
+import { findCountries } from './countries.ts';
+
 
 export interface NavWarning {
 	/** «HYDROPAC 1540/24». */
@@ -88,7 +90,7 @@ export function toWarning(w: RawWarning): NavWarning | null {
 	if (!region) return null;
 	// Sin la cabecera: zona, lugar y la carta («DNC 10.»).
 	const body = lines.slice(1).filter((l, i) => !(i <= 1 && /^DNC \d+\.?$/.test(l)));
-	const place = body[0] && !/\d/.test(body[0]) && body[0].length < 40 ? body.shift()!.replace(/\.$/, '') : '';
+	const place = body[0] && !/\d/.test(body[0]) && body[0].length < 40 ? placeName(body.shift()!.replace(/\.$/, '')) : '';
 	const text = body.join(' ').replace(/\s+/g, ' ');
 	const kind = KINDS.find(([re]) => re.test(text))?.[1];
 	if (!kind) return null;
@@ -103,9 +105,15 @@ export function toWarning(w: RawWarning): NavWarning | null {
 	};
 }
 
+/** «UKRAINE» → «Ucrania»; lo que no es un país conocido, sin mayúsculas de télex: «KOREA» → «Korea». */
+export function placeName(raw: string): string {
+	const names = findCountries(raw).map((c) => c.name);
+	return names.length ? names.join(', ') : raw.toLowerCase().replace(/(^|[\s/-])\p{L}/gu, (m) => m.toUpperCase());
+}
+
 /** Frase para el modo Sencillo. */
 export function navSentence(items: Pick<NavWarning, 'region'>[]): string {
 	if (!items.length) return '';
 	const regions = [...new Set(items.map((i) => i.region))];
-	return `Hay ${items.length} avisos de seguridad a los barcos en ${regions.slice(0, 3).join(', ')}${regions.length > 3 ? ' y otras zonas' : ''}.`;
+	return `Hay ${items.length === 1 ? 'un aviso' : `${items.length} avisos`} de seguridad a los barcos en ${regions.slice(0, 3).join(', ')}${regions.length > 3 ? ' y otras zonas' : ''}.`;
 }

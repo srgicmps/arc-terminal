@@ -17,6 +17,7 @@ export type ShareResult = 'shared' | 'copied' | 'cancelled' | 'failed';
 /** Lo que se usa del navigator: así los tests pasan uno simulado. */
 export interface ShareNavigator {
 	share?: (data: { title?: string; text?: string; url?: string }) => Promise<void>;
+	canShare?: (data: { title?: string; text?: string; url?: string }) => boolean;
 	clipboard?: { writeText?: (text: string) => Promise<void> };
 }
 
@@ -42,9 +43,12 @@ export async function shareOrCopy(
 	nav: ShareNavigator,
 	legacyCopy: (text: string) => boolean = () => false
 ): Promise<ShareResult> {
-	if (typeof nav.share === 'function') {
+	const data = { title: info.title, text: info.text, url: info.url };
+	// Si el menú del sistema dice de antemano que no puede con estos datos, se copia sin esperar a que falle:
+	// tras un await fallido, Safari ya no deja usar el portapapeles (se ha perdido el gesto del usuario).
+	if (typeof nav.share === 'function' && nav.canShare?.(data) !== false) {
 		try {
-			await nav.share({ title: info.title, text: info.text, url: info.url });
+			await nav.share(data);
 			return 'shared';
 		} catch (e) {
 			if (isAbort(e)) return 'cancelled';

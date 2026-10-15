@@ -33,7 +33,7 @@ export const load: PageServerLoad = async () => {
 		})),
 		power: trim(power, (d) => ({ pvpc: d.pvpc, spot: [] })),
 		eurostat: pickSeries(eurostat, ['unemployment-es', 'youth-unemployment-es', 'inflation-es', 'gdp-es', 'debt-es']),
-		ecb: pickSeries(ecb, ['bond10-es', 'bond10-de', 'mortgage-es']),
+		ecb: pickSeries(ecb, ['bond10-es', 'bond10-de', 'mortgage-es', 'euribor-12m']),
 		// De las gasolineras de España, solo la media del día (el historial por provincias pesa mucho y es de FUEL).
 		fuel: trim(fuel, (d) => ({ sourceDate: d.sourceDate, avg: d.avg, provinces: [] })),
 		// Terremotos del IGN: solo los 15 más fuertes, que es lo que se pinta (el más fuerte va en «España en cifras»).

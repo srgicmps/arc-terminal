@@ -2,6 +2,9 @@
 // Informe «legacy», solo futuros, vía la API Socrata de publicreporting.cftc.gov (sin clave). Datos del martes,
 // publicados el viernes. Sin imports de Vite: lo usa también el script de Node.
 
+/** Campo numérico del CFTC; vacío o ausente → NaN (la fila se descarta). */
+const num = (v: unknown): number => (v === '' || v === null || v === undefined ? NaN : Number(v));
+
 export interface CotMarket {
 	code: string;
 	name: string;
@@ -53,8 +56,9 @@ export function parseCot(rows: CotRow[]): CotData | null {
 			.filter((r) => r.cftc_contract_market_code === code)
 			.map((r) => ({
 				t: r.report_date_as_yyyy_mm_dd.slice(0, 10),
-				net: Number(r.noncomm_positions_long_all) - Number(r.noncomm_positions_short_all),
-				oi: Number(r.open_interest_all)
+				// Number('') es 0: un campo vacío daría una neta igual a los largos.
+				net: num(r.noncomm_positions_long_all) - num(r.noncomm_positions_short_all),
+				oi: num(r.open_interest_all)
 			}))
 			.filter((h) => Number.isFinite(h.net) && h.oi > 0)
 			.sort((a, b) => a.t.localeCompare(b.t))

@@ -24,6 +24,21 @@
 	let { maxHeight, csv = true, children }: Props = $props();
 
 	let table: HTMLTableElement;
+	let scroller: HTMLDivElement;
+	// Si la tabla no cabe y se desplaza, el teclado tiene que poder llegar a ella (y un lector, saber qué es): la caja
+	// se vuelve una región enfocable con el nombre del panel. Si cabe, no añade una parada más al Tab.
+	let scrolls = $state(false);
+	let name = $state('Tabla');
+	$effect(() => {
+		const check = () => {
+			scrolls = scroller.scrollWidth > scroller.clientWidth + 1 || scroller.scrollHeight > scroller.clientHeight + 1;
+			name = cellText(table.closest('section')?.querySelector('h2')?.textContent ?? '') || 'Tabla';
+		};
+		const ro = new ResizeObserver(check);
+		ro.observe(scroller);
+		ro.observe(table);
+		return () => ro.disconnect();
+	});
 
 	/** Descarga la tabla en CSV: cabecera y filas tal y como se ven, con el nombre del panel y la fecha de hoy. */
 	function download() {
@@ -40,7 +55,16 @@
 </script>
 
 <div class="wrap" data-ui="table">
-	<div class="scroll" class:capped={maxHeight} style:max-height={maxHeight}>
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex (solo cuando se desplaza: así se mueve con las flechas) -->
+	<div
+		class="scroll"
+		class:capped={maxHeight}
+		style:max-height={maxHeight}
+		bind:this={scroller}
+		tabindex={scrolls ? 0 : undefined}
+		role={scrolls ? 'region' : undefined}
+		aria-label={scrolls ? name : undefined}
+	>
 		<table class="t" bind:this={table}>
 			{@render children()}
 		</table>
@@ -68,9 +92,14 @@
 		cursor: pointer;
 	}
 
-	.csv:hover,
 	.csv:focus-visible {
 		color: var(--amber);
+	}
+
+	@media (hover: hover) {
+		.csv:hover {
+			color: var(--amber);
+		}
 	}
 
 	/* Con ratón, solo al pasar por encima de la tabla (o al llegar con el teclado). */

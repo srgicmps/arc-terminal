@@ -54,9 +54,12 @@ const MAX = 60;
 export function upcoming(source: ReleaseEvent['source'], ics: string, tz: string, from: Date): ReleaseEvent[] {
 	const to = new Date(from.getTime() + DAYS * 86_400_000).toISOString();
 	const start = from.toISOString();
+	// Los de día completo empiezan a la medianoche de Madrid, en UTC la víspera (22:00 o 23:00): con un día de margen
+	// sigue el de hoy, y el de ayer no (el desfase nunca pasa de 2 h).
+	const dayStart = new Date(from.getTime() - 86_400_000).toISOString();
 	return (
 		parseIcs(ics, tz)
-			.filter((e) => e.start >= start && e.start <= to)
+			.filter((e) => e.start >= (e.allDay ? dayStart : start) && e.start <= to)
 			.sort((a, b) => a.start.localeCompare(b.start))
 			.map((e) => ({
 				date: e.start,

@@ -1,8 +1,12 @@
 // Inseguridad alimentaria aguda (FEWS NET): textos para GEO y PAIS. Lógica pura, con tests.
+import { COUNTRIES } from './countries.ts';
 import { nf } from './format.ts';
 
 /** Nombre del país en español a partir del código ISO; si no, el que da FEWS NET. */
 export function foodCountry(code: string, fallback: string): string {
+	// Primero la lista propia (con tildes: «Malí»); el navegador da «Mali».
+	const own = COUNTRIES.find((c) => c.code === code);
+	if (own) return own.name;
 	try {
 		return new Intl.DisplayNames('es', { type: 'region' }).of(code) ?? fallback;
 	} catch {

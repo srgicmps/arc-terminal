@@ -51,13 +51,18 @@
 				onclick={() => pick(p)}
 				onkeydown={(e) => pick(p, e)}
 			>
-				<!-- Zona de toque invisible y más grande que el punto: en el móvil, los puntos miden pocos px. -->
-				<circle class="hit" {cx} {cy} r={Math.max(p.r, HIT)} />
-				{#if p.layer === 'sanctions'}
-					<rect x={cx - p.r} y={cy - p.r} width={p.r * 2} height={p.r * 2} transform="rotate(45 {cx} {cy})" />
-				{:else}
-					<circle {cx} {cy} r={p.r} />
-				{/if}
+				<!-- Pegado al borde (±180°, Fiyi o las Aleutianas), también al otro lado: si no, sale cortado por la mitad. -->
+				{#each [0, ...(p.lon > 175 ? [-360] : p.lon < -175 ? [360] : [])] as dx (dx)}
+					<g transform="translate({dx} 0)">
+						<!-- Zona de toque invisible y más grande que el punto: en el móvil, los puntos miden pocos px. -->
+						<circle class="hit" {cx} {cy} r={Math.max(p.r, HIT)} />
+						{#if p.layer === 'sanctions'}
+							<rect x={cx - p.r} y={cy - p.r} width={p.r * 2} height={p.r * 2} transform="rotate(45 {cx} {cy})" />
+						{:else}
+							<circle {cx} {cy} r={p.r} />
+						{/if}
+					</g>
+				{/each}
 				<title>{p.title} · {p.sub}</title>
 			</g>
 		{/each}
@@ -150,8 +155,9 @@
 	}
 
 	/* Avisos a barcos: punto pequeño y relleno, sin borde. */
+	/* Puntos pequeños y sin borde: con el ámbar casi transparente de los fondos no se veían. */
 	.maritime circle:not(.hit) {
-		fill: var(--amber-soft);
+		fill: var(--amber-edge);
 		stroke: none;
 	}
 
@@ -253,7 +259,7 @@
 	}
 
 	.legend i.maritime {
-		background: var(--amber-soft);
+		background: var(--amber-edge);
 		border-color: transparent;
 	}
 

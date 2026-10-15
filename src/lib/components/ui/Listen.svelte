@@ -6,13 +6,9 @@
 -->
 <script lang="ts">
 	import { onDestroy } from 'svelte';
+	import { speaker, type SpeechLine } from '#lib/speech.ts';
 
-	interface Line {
-		text: string;
-		lang?: 'es' | 'en';
-	}
-
-	let { lines, label = 'Escuchar' }: { lines: () => Line[]; label?: string } = $props();
+	let { lines, label = 'Escuchar' }: { lines: () => SpeechLine[]; label?: string } = $props();
 
 	let can = $state(false);
 	let speaking = $state(false);
@@ -21,28 +17,16 @@
 		can = typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined';
 	});
 
-	function stop() {
-		speechSynthesis.cancel();
-		speaking = false;
-	}
+	let reader: ReturnType<typeof speaker> | undefined;
 
 	function play() {
-		if (speaking) return stop();
-		const all = lines().filter((l) => l.text.trim());
-		if (!all.length) return;
-		speechSynthesis.cancel();
-		all.forEach((line, i) => {
-			const u = new SpeechSynthesisUtterance(line.text);
-			u.lang = line.lang === 'en' ? 'en-GB' : 'es-ES';
-			u.rate = 1.05;
-			if (i === all.length - 1) u.onend = u.onerror = () => (speaking = false);
-			speechSynthesis.speak(u);
-		});
-		speaking = true;
+		if (speaking) return reader?.stop();
+		reader ??= speaker(speechSynthesis, (text) => new SpeechSynthesisUtterance(text), () => (speaking = false));
+		speaking = reader.play(lines());
 	}
 
 	onDestroy(() => {
-		if (speaking) speechSynthesis.cancel();
+		if (speaking) reader?.stop();
 	});
 </script>
 
@@ -70,10 +54,16 @@
 		font-size: var(--fs-xs);
 	}
 
-	.listen:hover,
 	.listen:focus-visible {
 		text-decoration: underline var(--hair);
 		text-underline-offset: var(--sp-3);
+	}
+
+	@media (hover: hover) {
+		.listen:hover {
+			text-decoration: underline var(--hair);
+			text-underline-offset: var(--sp-3);
+		}
 	}
 
 	@media (pointer: coarse) {

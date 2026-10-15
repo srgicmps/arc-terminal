@@ -22,8 +22,9 @@
 		try {
 			const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null');
 			if (typeof saved?.amount === 'number' && Number.isFinite(saved.amount)) form.amount = saved.amount;
-			if (typeof saved?.from === 'string') form.from = saved.from;
-			if (typeof saved?.to === 'string') form.to = saved.to;
+			// Solo divisas que hay hoy: con una que ya no está, el desplegable salía en blanco y el resultado «— USD».
+			if (typeof saved?.from === 'string' && rates.has(saved.from)) form.from = saved.from;
+			if (typeof saved?.to === 'string' && rates.has(saved.to)) form.to = saved.to;
 		} catch {}
 		loaded = true;
 	});

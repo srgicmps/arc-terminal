@@ -18,3 +18,6 @@ export function neighbour<T>(list: T[], index: number, dir: -1 | 1): T | null {
 
 /** El pequeño desplazamiento que acompaña al dedo mientras se desliza: una pista, no un arrastre. */
 export const nudge = (dx: number) => Math.max(-SWIPE.max, Math.min(SWIPE.max, dx * 0.15));
+
+/** ¿La ruta `id` (page.route.id) es la sección `route` o una de sus subrutas? EXP sigue marcada en /x/periodico. */
+export const isOnRoute = (id: string | null, route: string) => id === route || (route !== '/' && !!id?.startsWith(`${route}/`));

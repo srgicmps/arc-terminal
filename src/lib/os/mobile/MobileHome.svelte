@@ -12,14 +12,15 @@
 	import { routeHref } from '#lib/routes.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import { COMMANDS } from '#lib/commands.ts';
-	import { pushState } from '$app/navigation';
+	import { pushState, replaceState } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { page as nav } from '$app/state';
 	import { markAllSeen, shell, startNotices } from '../shell/shell.svelte.ts';
 	import { markSeen as seenWith } from '../shell/notices.ts';
 	import { EVENTS_KEY, isEvents, isoDay } from '../apps/cal/cal.ts';
 	import { APPS, appOfPath, embedSrc, findApp } from '../apps.ts';
-	import { os } from '../os.svelte.ts';
+	import { onEmbedLink } from '../embed.ts';
+	import { closeNow, os, phoneOpen } from '../os.svelte.ts';
 	import {
 		ARRANGE_KEY,
 		WIDGETS,
@@ -32,11 +33,15 @@
 		drop,
 		folderName,
 		gesture,
+		keyboardFit,
+		readSession,
+		SESSION_KEY,
 		layout,
 		place,
 		rename,
 		takeOut,
 		touch,
+		webApp,
 		type Arrangement,
 		type Folder,
 		type PhoneApp,
@@ -49,6 +54,7 @@
 	import PhoneWidget from './PhoneWidget.svelte';
 	import Spotlight from './Spotlight.svelte';
 	import CenterSheet from './CenterSheet.svelte';
+	import Toasts from '../shell/Toasts.svelte';
 	import WallLayer from '../system/wall/WallLayer.svelte';
 	import OsIcon from '../icons/OsIcon.svelte';
 	import type { Hit } from '../system/search.ts';
@@ -118,10 +124,13 @@
 			localStorage.setItem('arc-os-seen', JSON.stringify(shell.seen));
 		} catch {}
 	}
+	// Solo depende de `sheet`: markAllSeen() reescribe shell.seen y, si se leyera aquí, el efecto se relanzaría sin fin.
 	$effect(() => {
 		if (sheet !== 'notif') return;
-		unreadAtOpen = new Set(shell.notices.filter((n) => !shell.seen.includes(n.id)).map((n) => n.id));
-		markAllSeen();
+		untrack(() => {
+			unreadAtOpen = new Set(shell.notices.filter((n) => !shell.seen.includes(n.id)).map((n) => n.id));
+			markAllSeen();
+		});
 	});
 
 	// Widgets: en el modo edición se quitan («−») o se añaden («+», arriba a la izquierda).
@@ -137,27 +146,90 @@
 		current = a.id;
 		markSeen(a.id);
 	}
-	/** Una ruta de la web («/news?q=x»): la abre su app, con esa ruta. */
-	function launchPath(path: string) {
+	/** Rutas sin app (la ficha de un valor, MODO…): se abren con una app de paso (webApp) mientras siguen abiertas. */
+	let extra = $state<Record<string, PhoneApp>>({});
+	// Tras recargar, siguen las apps abiertas y la de delante (sessionStorage de esta pestaña, como arc-os-desks en
+	// el escritorio).
+	let restored = false;
+	$effect(() =>
+		untrack(() => {
+			let raw: string | null = null;
+			try {
+				raw = sessionStorage.getItem(SESSION_KEY);
+			} catch {}
+			const s = readSession(raw, (id) => !!(findApp(id) ?? apps.find((a) => a.id === id)));
+			extra = Object.fromEntries(s.open.filter((id) => id.startsWith('web:')).map((id) => [id, webApp(id.slice(4), s.names[id])]));
+			paths = s.paths;
+			open = s.open;
+			restored = true;
+			// Si había algo abierto, la entrada del historial en la que estamos es la suya, pero page.state no sobrevive a
+			// la recarga: se le vuelve a poner (replaceState, ya con el enrutador de SvelteKit en marcha). Así «atrás»
+			// cierra la app de delante y no se apila otra entrada en cada recarga.
+			if (s.entry)
+				setTimeout(() => {
+					replaceState('', { phone: 'app' });
+					pushed = true;
+					current = s.current;
+				});
+		})
+	);
+	$effect(() => {
+		const data = JSON.stringify({ open, current, paths, names: Object.fromEntries(Object.values(extra).map((w) => [w.id, w.name])), entry: layer !== null });
+		if (!restored) return;
+		try {
+			sessionStorage.setItem(SESSION_KEY, data);
+		} catch {}
+	});
+	/** Una ruta de la web («/news?q=x»): la abre su app, con esa ruta; si no tiene, una app de paso. */
+	function launchPath(path: string, name?: string) {
 		const clean = base && path.startsWith(base) ? path.slice(base.length) || '/' : path;
 		const a = appOfPath(clean) as PhoneApp | undefined;
-		if (a) launch(a, clean);
+		if (a) return launch(a, clean);
+		// /os dentro de /os no: es volver a inicio.
+		if (/^\/os(?:[/?#]|$)/.test(clean)) return goHome();
+		const w = webApp(clean, name);
+		extra = { ...extra, [w.id]: w };
+		launch(w);
 	}
 	function launchCode(code: string) {
 		const c = COMMANDS.find((x) => x.code === code);
 		if (c) launchPath(c.route);
 	}
+	// Lo que las apps abren con openApp/openPath (Terminal «eco», enlaces de Ajustes o Calendario…) sería una ventana
+	// del escritorio, que aquí no se ve: se abre a pantalla completa.
+	// Las herramientas leen su ruta («Abrir expediente», la sección de Ajustes) de esa ventana: se les pasa su uid.
+	let wins = $state<Record<string, string>>({});
+	$effect(() => {
+		phoneOpen.fn = (w) => {
+			const a = appOf(w.app);
+			if (!a) return;
+			if (a.load) wins = { ...wins, [a.id]: w.uid };
+			// Las vistas van en su iframe: su ventana sobra (si no, saldría luego en el escritorio).
+			else queueMicrotask(() => closeNow(w.uid));
+			launch(a, a.load ? undefined : w.path);
+		};
+		return () => (phoneOpen.fn = null);
+	});
 	const goHome = () => ((current = null), (sheet = null), (openFolder = null));
 
 	function closeApp(id: string) {
 		open = drop(open, id);
 		const { [id]: _, ...rest } = paths;
 		paths = rest;
+		if (wins[id]) {
+			closeNow(wins[id]);
+			const { [id]: _, ...others } = wins;
+			wins = others;
+		}
+		if (id in extra) {
+			const { [id]: _, ...others } = extra;
+			extra = others;
+		}
 		if (current === id) current = null;
 		if (!open.length && sheet === 'switch') sheet = null;
 	}
 
-	const appOf = (id: string) => (findApp(id) ?? apps.find((a) => a.id === id)) as PhoneApp | undefined;
+	const appOf = (id: string) => (findApp(id) ?? apps.find((a) => a.id === id) ?? extra[id]) as PhoneApp | undefined;
 
 	// Páginas: el punto activo sale del scroll.
 	let page = $state(0);
@@ -167,15 +239,25 @@
 
 	// Gestos (Pointer Events, como en el núcleo). Mantener la barra de abajo 0,5 s abre la multitarea.
 	let start: { x: number; y: number } | null = null;
+	/** Dónde y cuándo se movió el dedo por última vez: si se para antes de soltar, la barra lleva a la multitarea. */
+	let last = { x: 0, y: 0, at: 0 };
 	let hold: ReturnType<typeof setTimeout> | undefined;
+	let topBar: HTMLDivElement;
 	function down(e: PointerEvent) {
 		start = { x: e.clientX, y: e.clientY };
+		last = { x: e.clientX, y: e.clientY, at: e.timeStamp };
+	}
+	function track(e: PointerEvent) {
+		// Mantener la barra es mantenerla quieta: si el dedo ya sube, decide el gesto al soltar.
+		if (start && hold && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) (clearTimeout(hold), (hold = undefined));
+		if (start && Math.hypot(e.clientX - last.x, e.clientY - last.y) > 8) last = { x: e.clientX, y: e.clientY, at: e.timeStamp };
 	}
 	function up(e: PointerEvent) {
 		clearTimeout(hold);
 		if (!start) return;
 		if (editing || drag || openFolder) return void (start = null);
-		const g = gesture(start, { x: e.clientX, y: e.clientY }, { w: innerWidth, h: innerHeight }, current !== null);
+		const top = topBar?.getBoundingClientRect().bottom ?? 48;
+		const g = gesture(start, { x: e.clientX, y: e.clientY }, { w: innerWidth, h: innerHeight }, current !== null, { top, paused: e.timeStamp - last.at > 250 });
 		start = null;
 		if (sheet) return;
 		if (g === 'home') goHome();
@@ -192,6 +274,9 @@
 
 	function onkeydown(e: KeyboardEvent) {
 		if (e.key !== 'Escape') return;
+		// Esc en un campo de una app (borrar, salir de una nota) no cierra la app entera.
+		const t = e.target as HTMLElement | null;
+		if (!sheet && !openFolder && !editing && current && t?.closest('input, textarea, select, [contenteditable]')) return;
 		if (openFolder) openFolder = null;
 		else if (editing) editing = false;
 		else if (sheet) sheet = null;
@@ -281,6 +366,7 @@
 
 	let edge: ReturnType<typeof setTimeout> | undefined;
 	function onmove(e: PointerEvent) {
+		track(e);
 		if (!press && !drag) return;
 		if (press && !drag) {
 			const d = Math.hypot(e.clientX - press.x, e.clientY - press.y);
@@ -288,7 +374,7 @@
 				if (d > 10) (clearTimeout(press.timer), (press = null));
 				return;
 			}
-			if (d < 6) return;
+			if (d < 6 || !press.src.id) return;
 			drag = { src: press.src, x: e.clientX, y: e.clientY, to: null };
 		}
 		if (!drag) return;
@@ -300,13 +386,28 @@
 			if (r && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) openFolder = null;
 		}
 		drag.to = targetAt(e.clientX, e.clientY);
-		// Cerca del borde, pasa de página.
-		const side = e.clientX < 24 ? -1 : e.clientX > innerWidth - 24 ? 1 : 0;
-		clearTimeout(edge);
-		if (side && !openFolder) edge = setTimeout(() => toPage(Math.max(0, Math.min(pages.length - 1, page + side))), 600);
+		// Cerca del borde, pasa de página; y, si el dedo sigue ahí, otra cada 0,6 s. Moverse sin salir del borde no
+		// vuelve a empezar la cuenta (antes, con el pulso del dedo, no pasaba nunca o solo una).
+		const side = openFolder ? 0 : e.clientX < 24 ? -1 : e.clientX > innerWidth - 24 ? 1 : 0;
+		if (side !== edgeSide) {
+			clearTimeout(edge);
+			edgeSide = side;
+			if (side) flip();
+		}
+	}
+	let edgeSide = 0;
+	function flip() {
+		edge = setTimeout(() => {
+			if (!drag || !edgeSide) return;
+			const to = Math.max(0, Math.min(pages.length - 1, page + edgeSide));
+			if (to === page) return;
+			toPage(to);
+			flip();
+		}, 600);
 	}
 	function onrelease() {
 		clearTimeout(edge);
+		edgeSide = 0;
 		if (press) clearTimeout(press.timer);
 		press = null;
 		if (!drag) return;
@@ -320,6 +421,7 @@
 	}
 	function oncancel() {
 		clearTimeout(edge);
+		edgeSide = 0;
 		if (press) clearTimeout(press.timer);
 		press = null;
 		drag = null;
@@ -328,6 +430,11 @@
 	function tap(a: PhoneApp) {
 		if (swallow || editing) return void (swallow = false);
 		launch(a);
+	}
+	/** Un toque en un widget abre lo suyo, salvo en el modo edición o tras mantenerlo. */
+	function fromWidget() {
+		if (swallow || editing) return ((swallow = false), false);
+		return true;
 	}
 	function tapFolder(f: Folder) {
 		if (swallow) return void (swallow = false);
@@ -358,12 +465,37 @@
 		if ('app' in a) {
 			const app = appOf(a.app);
 			if (app) launch(app);
-		} else if ('path' in a) launchPath(a.path);
+		} else if ('path' in a) launchPath(a.path, h.kind === 'Valor' ? undefined : h.title);
 		else if (a.sys === 'lock') ((sheet = null), lock());
 		else if (a.sys === 'leave') leaveOS();
 		else if (a.sys === 'control') sheet = 'control';
 		else if (a.sys === 'notices') sheet = 'notif';
 		else goHome();
+	}
+
+	// Teclado en pantalla: el teléfono se ajusta a lo que queda visible (visualViewport), así el campo que escribes
+	// no queda tapado y la barra de abajo sube con el teclado. Sin zoom de pellizco de por medio.
+	let kb = $state<{ top: number; h: number } | null>(null);
+	$effect(() => {
+		const vv = window.visualViewport;
+		if (!vv) return;
+		const fit = () => (kb = keyboardFit(vv, innerHeight));
+		vv.addEventListener('resize', fit);
+		vv.addEventListener('scroll', fit);
+		return () => (vv.removeEventListener('resize', fit), vv.removeEventListener('scroll', fit));
+	});
+
+	/** Un enlace de una app a otra (TOP → «LUZ ›») abre la otra a pantalla completa; los suyos navegan dentro. */
+	function links(frame: HTMLIFrameElement, id: string) {
+		return {
+			destroy: onEmbedLink(frame, (href) => {
+				const path = base && href.startsWith(base + '/') ? href.slice(base.length) : href;
+				const to = appOfPath(path) as PhoneApp | undefined;
+				if (!to || to.id === id) return false;
+				launch(to, path);
+				return true;
+			})
+		};
 	}
 
 	/** Lo que se carga en el iframe de cada app abierta. */
@@ -374,10 +506,10 @@
 
 <!-- Arc OS tiene un solo estilo, «Mando» (tokens.css): también el teléfono y lo que se abre encima. -->
 <div class="skin" data-os-skin="mando" data-ui="os">
-<div class="phone" class:in-app={current !== null} class:editing role="application" oncontextmenu={(e) => e.preventDefault()} aria-label="Modo OS" onpointerdown={down} onpointerup={up}>
+<div class="phone" class:in-app={current !== null} class:editing style:top={kb ? `${kb.top}px` : null} style:height={kb ? `${kb.h}px` : null} role="application" oncontextmenu={(e) => e.preventDefault()} aria-label="Modo OS" onpointerdown={down} onpointerup={up}>
 	<!-- Fondo de pantalla: el que eliges en la app «Fondo de pantalla» de OS 5 (el mismo que el escritorio). -->
 	<div class="wall" aria-hidden="true"><WallLayer /></div>
-	<div class="top">
+	<div class="top" bind:this={topBar}>
 		<PhoneStatus {time} onnotif={() => (sheet = 'notif')} oncontrol={() => (sheet = 'control')} />
 		{#if editing && current === null}
 			<button class="add" onclick={() => (picking = true)} disabled={!addable.length} aria-label="Añadir un widget">+</button>
@@ -389,7 +521,9 @@
 	<div class="home" inert={current !== null || sheet === 'switch'} aria-hidden={current !== null}>
 		<div class="pager" bind:this={pager} {onscroll}>
 			{#each pages as cells, i (i)}
-				<section class="page" aria-label="Página {i + 1} de {pages.length}">
+				<!-- En el modo edición, tocar un hueco vacío lo termina (como «Listo»). -->
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
+				<section class="page" aria-label="Página {i + 1} de {pages.length}" onclick={(e) => editing && e.target === e.currentTarget && ((editing = false), (picking = false))}>
 					{#each cells as c (c.kind === 'app' ? c.app.id : c.kind === 'folder' ? c.folder.id : c.id)}
 						{#if c.kind === 'app' || c.kind === 'folder'}
 							{@const key = c.kind === 'app' ? c.app.id : c.folder.id}
@@ -407,8 +541,10 @@
 								{/if}
 							</div>
 						{:else}
-							<div class="cell w-{c.size}">
-								<PhoneWidget id={c.id} {now} notices={shell.notices} onopen={launchCode} onpath={launchPath} />
+							<!-- Mantener un widget también entra en el modo edición (no se arrastra: src vacío). -->
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
+							<div class="cell w-{c.size}" onpointerdown={(e) => pressStart(e, { id: '' })}>
+								<PhoneWidget id={c.id} {now} notices={shell.notices} onopen={(code) => fromWidget() && launchCode(code)} onpath={(p) => fromWidget() && launchPath(p)} />
 								{#if editing}
 									<button class="minus" onclick={() => save(removeWidget(arr, c.id))} aria-label="Quitar el widget {widgetName(c.id)}">−</button>
 								{/if}
@@ -464,10 +600,10 @@
 						<div class="frame">
 							{#if a.load}
 								{#await a.load() then mod}
-									<mod.default win={id} />
+									<mod.default win={wins[id] ?? id} />
 								{/await}
 							{:else}
-								<iframe src={src(id)} title={a.name}></iframe>
+								<iframe src={src(id)} title={a.name} use:links={id}></iframe>
 							{/if}
 						</div>
 						{#if sheet === 'switch'}
@@ -535,6 +671,8 @@
 {:else if sheet === 'notif' || sheet === 'control'}
 	<CenterSheet kind={sheet} notices={shell.notices} unread={unreadAtOpen} {notice} {now} onclose={() => (sheet = null)} onpath={launchPath} />
 {/if}
+<!-- Los avisos nuevos (notify() y los del centro) como banner arriba, también con una app abierta. -->
+<Toasts phone ongo={(t) => t.href && launchPath(t.href)} />
 
 </div>
 
@@ -543,6 +681,8 @@
 		display: contents;
 	}
 	.phone {
+		/* Alto de la barra de inicio de abajo: la misma medida para la barra y para el hueco que le deja la app. */
+		--home-bar: calc(env(safe-area-inset-bottom, 0px) + 22px);
 		position: fixed;
 		inset: 0;
 		z-index: var(--z-modal);
@@ -569,6 +709,8 @@
 	}
 	.phone {
 		-webkit-touch-callout: none;
+		/* El tamaño de icono de este teléfono (cambia en tablet y en horizontal); .page > .icon lo encoge si no cabe. */
+		--os-icon-full: var(--os-icon-size);
 	}
 	.done {
 		position: absolute;
@@ -610,6 +752,8 @@
 	.w-l,
 	.w-s {
 		position: relative;
+		/* El widget se ajusta a su hueco (PhoneWidget, @container). */
+		container-type: size;
 	}
 	.minus {
 		position: absolute;
@@ -618,6 +762,7 @@
 		z-index: 1;
 		width: 24px;
 		height: 24px;
+		min-height: 0;
 		padding: 0;
 		border: 0;
 		border-radius: 50%;
@@ -774,6 +919,12 @@
 		grid-template-rows: repeat(6, minmax(0, 1fr));
 		gap: var(--sp-6) var(--sp-12);
 		padding: var(--sp-8) var(--sp-20);
+		container-type: size;
+	}
+	/* Tope: el tamaño de .phone (58 px; 72 en tablet). En pantallas bajas (iPhone SE…) el icono encoge para que su nombre quepa en la fila: alto de una fila (la
+	   página menos sus huecos, entre 6) menos el nombre; y nunca más ancho que su columna. */
+	.page > .icon {
+		--os-icon-size: clamp(32px, min(calc((100cqh - 30px) / 6 - 22px), calc((100cqw - 36px) / 4 - 4px)), var(--os-icon-full));
 	}
 	.cell {
 		display: flex;
@@ -879,7 +1030,7 @@
 	.frame {
 		flex: 1;
 		min-height: 0;
-		padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+		padding-bottom: var(--home-bar);
 	}
 	iframe {
 		width: 100%;
@@ -897,7 +1048,9 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		height: calc(env(safe-area-inset-bottom, 0px) + 22px);
+		height: var(--home-bar);
+		/* Sin el mínimo táctil de app.css (44 px): la app solo deja libre --home-bar y lo de abajo quedaba tapado. */
+		min-height: 0;
 		padding: 0;
 		border: 0;
 		background: var(--bg);
@@ -1003,8 +1156,15 @@
 		padding-left: env(safe-area-inset-left, 0px);
 		padding-right: env(safe-area-inset-right, 0px);
 	}
+	/* Solo las páginas se desplazan (en horizontal): un arrastre vertical desde «Buscar», los puntos o el dock era
+	   para el navegador, que cancelaba el puntero (pointercancel) y el gesto de Spotlight no llegaba. */
 	.home {
-		touch-action: pan-x pan-y;
+		touch-action: pan-x;
+	}
+	/* Sin el rebote de Safari en toda la página al tirar hacia abajo o hacia arriba. */
+	:global(html:has(.phone)),
+	:global(body:has(.phone)) {
+		overscroll-behavior: none;
 	}
 	.apps {
 		left: env(safe-area-inset-left, 0px);
@@ -1014,6 +1174,7 @@
 	@media (min-width: 700px) and (min-height: 700px) {
 		.phone {
 			--os-icon-size: 72px;
+			--os-icon-full: 72px;
 		}
 	}
 	/* Teléfono en horizontal: 6 filas no caben en ~390 px de alto y los iconos se montaban. Las mismas 24 casillas
@@ -1021,6 +1182,13 @@
 	@media (orientation: landscape) and (max-height: 540px) {
 		.phone {
 			--os-icon-size: 40px;
+		}
+		.page > .icon {
+			--os-icon-size: 40px;
+		}
+		/* Un widget pequeño ocupa 2 × 1: los de 2 filas no cabían en la tercera y se aplastaban. */
+		.w-s {
+			grid-row: span 1;
 		}
 		.page {
 			grid-template-columns: repeat(8, 1fr);

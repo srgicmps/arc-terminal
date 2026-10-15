@@ -1,9 +1,12 @@
 <!--
 	Launchpad (aspecto Mac) y «Mostrar aplicaciones» (Linux): todas las apps en una rejilla grande a pantalla
-	completa, por categorías, con buscador. Tocar una la abre; Escape o tocar el fondo, cierra.
+	completa, por categorías, con buscador. Tocar una la abre; clic derecho, su menú (otra ventana, anclar, al
+	escritorio). Escape o tocar el fondo, cierra.
 -->
 <script lang="ts">
+	import ContextMenu, { type MenuEntry } from '#lib/components/os/ContextMenu.svelte';
 	import OsIcon from '../icons/OsIcon.svelte';
+	import { appMenu } from './menus.ts';
 	import { tick } from 'svelte';
 	import * as os from './bridge.ts';
 	import { shell } from './shell.svelte.ts';
@@ -21,7 +24,19 @@
 		shell.open = null;
 		os.open(id);
 	}
+	let menu = $state<{ x: number; y: number; items: MenuEntry[]; label: string } | null>(null);
+	function ctx(e: MouseEvent, id: string, title: string) {
+		e.preventDefault();
+		menu = {
+			x: e.clientX,
+			y: e.clientY,
+			label: `Menú de ${title}`,
+			// El de la barra (abrir, anclar, al escritorio), más «Abrir otra ventana»; abrir cierra el Launchpad.
+			items: [{ label: 'Abrir', run: () => go(id) }, { label: 'Abrir otra ventana', run: () => ((shell.open = null), os.openFresh(id)) }, ...appMenu(id).slice(1)]
+		};
+	}
 	function key(e: KeyboardEvent) {
+		if (menu) return;
 		if (e.key === 'Escape') shell.open = null;
 		if (e.key === 'Enter' && query.trim() && groups[0]?.apps[0]) go(groups[0].apps[0].id);
 	}
@@ -36,7 +51,7 @@
 			<ul>
 				{#each g.apps as a (a.id)}
 					<li>
-						<button type="button" onclick={() => go(a.id)} title={a.desc}>
+						<button type="button" onclick={() => go(a.id)} oncontextmenu={(e) => ctx(e, a.id, a.title)} title={a.desc}>
 							<OsIcon id={a.id} size={64} />
 							<span class="name">{a.title}</span>
 						</button>
@@ -45,6 +60,7 @@
 			</ul>
 		{/each}
 	</div>
+	{#if menu}<ContextMenu x={menu.x} y={menu.y} items={menu.items} label={menu.label} onclose={() => ((menu = null), input?.focus())} />{/if}
 </div>
 
 <style>
@@ -76,6 +92,11 @@
 		color: var(--fg);
 		font: inherit;
 		text-align: center;
+	}
+	/* El foco pisa el borde, en vez de un segundo marco separado. */
+	input:focus-visible {
+		outline: var(--hair) solid var(--amber);
+		outline-offset: calc(-1 * var(--hair));
 	}
 	.scroll {
 		width: min(1100px, 100%);
