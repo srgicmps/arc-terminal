@@ -131,11 +131,11 @@ describe('RULES', () => {
 });
 
 describe('P1', () => {
-	it('terremoto M7+ o M6+ con tsunami, de las últimas 24 h', () => {
+	it('terremoto M6,5+ o M6+ con tsunami, de las últimas 24 h', () => {
 		const { ids, alerts } = run(quakeRule, {
 			quakes: [
 				quake('a', 7.1),
-				quake('b', 6.9),
+				quake('b', 6.4),
 				quake('c', 6.2, 1, true),
 				quake('d', 5.9, 1, true),
 				quake('e', 7.5, 30)
@@ -177,7 +177,7 @@ describe('P1', () => {
 		expect(alerts.map((a) => a.title)).toEqual(['BoE sube tipos: 4,25 %']);
 	});
 
-	it('IMP: 8 medios o más en 3 secciones o más', () => {
+	it('IMP: 6 medios o más en 3 secciones o más', () => {
 		const t = (k: string, media: number, sections: number) => ({
 			k,
 			title: k,
@@ -185,7 +185,7 @@ describe('P1', () => {
 			sources: Array.from({ length: media }, (_, i) => `m${i}`),
 			sections: Array.from({ length: sections }, (_, i) => `s${i}`)
 		});
-		expect(run(impRule, { imp: { current: [t('a', 8, 3), t('b', 7, 4), t('c', 9, 2)] } }).ids).toEqual(['imp:a']);
+		expect(run(impRule, { imp: { current: [t('a', 6, 3), t('b', 5, 4), t('c', 9, 2)] } }).ids).toEqual(['imp:a']);
 	});
 
 	it('estrecho: avisa al caer más de un 50 % frente a la semana anterior, y no repite hasta que se recupera', () => {
@@ -256,8 +256,8 @@ describe('P2', () => {
 		]
 	});
 
-	it('mercados: umbrales «B» (BTC ±3,5 %)', () => {
-		expect(run(marketRule, { crypto: crypto(-3.4) }).ids).toEqual([]);
+	it('mercados: umbrales «B» (BTC ±2,5 %)', () => {
+		expect(run(marketRule, { crypto: crypto(-2.4) }).ids).toEqual([]);
 		const { alerts } = run(marketRule, { crypto: crypto(-4.1) });
 		expect(alerts.map((a) => a.title)).toEqual(['Mercados: BTC −4,1 %']);
 	});
@@ -266,26 +266,26 @@ describe('P2', () => {
 		// 1.º del día: −4 % desde el cierre (60.000 → 57.600).
 		const first = run(marketRule, { crypto: crypto(-4, 0, 57600) });
 		expect(first.alerts.map((a) => a.title)).toEqual(['Mercados: BTC −4,0 %']);
-		expect(first.alerts[0].body).toBe('Movimiento del día (escalón ±3,5 %).');
+		expect(first.alerts[0].body).toBe('Movimiento del día (escalón ±2,5 %).');
 		const log = emptyLog();
 		first.alerts[0].commit!(log);
 		expect(log.last['mkt:BTC']).toBe('2026-10-14|60000|57600');
-		// A los 15 min: −2,8 % desde el último aviso, todavía no; −3,6 %, sí (aunque no haya pasado ninguna espera).
-		expect(run(marketRule, { crypto: crypto(-6.7, 0, 56000) }, log, NOW + 15 * 60_000).ids).toEqual([]);
+		// A los 15 min: −1,9 % desde el último aviso, todavía no; −3,6 %, sí (aunque no haya pasado ninguna espera).
+		expect(run(marketRule, { crypto: crypto(-5.8, 0, 56500) }, log, NOW + 15 * 60_000).ids).toEqual([]);
 		const second = run(marketRule, { crypto: crypto(-7.5, 0, 55500) }, log, NOW + 15 * 60_000);
 		expect(second.alerts[0].title).toBe('Mercados: BTC −7,5 %');
-		expect(second.alerts[0].body).toBe('Movimiento del día; −3,6 % desde el último aviso (escalón ±3,5 %).');
+		expect(second.alerts[0].body).toBe('Movimiento del día; −3,6 % desde el último aviso (escalón ±2,5 %).');
 		second.alerts[0].commit!(log);
 		// Rebote: +3,6 % desde el último aviso también avisa, aunque en el día siga en negativo.
 		const third = run(marketRule, { crypto: crypto(-4.2, 0, 57500) }, log, NOW + 30 * 60_000);
-		expect(third.alerts[0].body).toBe('Movimiento del día; +3,6 % desde el último aviso (escalón ±3,5 %).');
+		expect(third.alerts[0].body).toBe('Movimiento del día; +3,6 % desde el último aviso (escalón ±2,5 %).');
 		expect(third.alerts[0].tags).toBe('chart_with_upwards_trend');
 		third.alerts[0].commit!(log);
 		expect(run(marketRule, { crypto: crypto(-4.2, 0, 57500) }, log, NOW + HOUR).ids).toEqual([]);
 		// Al día siguiente se reinicia: vuelve a contar desde el cierre anterior.
 		const tomorrow = NOW + 24 * HOUR;
 		expect(run(marketRule, { crypto: crypto(-3.6, 0, 57400) }, log, tomorrow).alerts[0].body).toBe(
-			'Movimiento del día (escalón ±3,5 %).'
+			'Movimiento del día (escalón ±2,5 %).'
 		);
 		expect(run(marketRule, { crypto: crypto(-1, 0, 57400) }, log, tomorrow).ids).toEqual([]);
 	});
@@ -303,9 +303,9 @@ describe('P2', () => {
 		const log = emptyLog();
 		first.alerts[0].commit!(log);
 		expect(run(marketRule, { uscurve: curve(4.09) }, log, NOW + 6 * HOUR).ids).toEqual([]);
-		expect(run(marketRule, { uscurve: curve(4.15) }, log).ids).toEqual([]);
+		expect(run(marketRule, { uscurve: curve(4.13) }, log).ids).toEqual([]);
 		const next = run(marketRule, { uscurve: curve(4.17) }, log);
-		expect(next.alerts[0].body).toBe('Movimiento del día; +8 pb desde el último aviso (escalón ±7,5 pb).');
+		expect(next.alerts[0].body).toBe('Movimiento del día; +8 pb desde el último aviso (escalón ±5 pb).');
 	});
 
 	it('mercados: 3 o más a la vez van juntos en un solo aviso', () => {
@@ -370,7 +370,7 @@ describe('P2', () => {
 		};
 		const first = run(marketRule, { ecb });
 		expect(first.alerts.map((a) => a.title)).toEqual(['Mercados: Prima IT +12 pb']);
-		expect(first.alerts[0].body).toBe('Movimiento del día (escalón +10 pb).');
+		expect(first.alerts[0].body).toBe('Movimiento del día (escalón +6 pb).');
 		const dax = ASSETS.find((a) => a.name === 'DAX')!;
 		expect(readAsset(dax, {})).toBeNull();
 	});
@@ -621,7 +621,7 @@ describe('P3', () => {
 		]
 	});
 
-	it('Polymarket: guarda una foto cada 4 h y avisa si cambia 15 puntos o más frente a hace ~24 h', () => {
+	it('Polymarket: guarda una foto cada 4 h y avisa si cambia 10 puntos o más frente a hace ~24 h', () => {
 		const first = run(polyRule, { predictions: { geopolitics: [market(0.3)], economy: [] } });
 		expect(first.ids).toEqual([]);
 		expect(first.after.poly.m1).toHaveLength(1);
@@ -641,7 +641,7 @@ describe('P3', () => {
 		expect(next.ids).toEqual(['poly:m1:2026-10-15']);
 		expect(next.alerts[0].title).toBe('Polymarket: +20 puntos');
 		expect(
-			run(polyRule, { predictions: { geopolitics: [market(0.42)], economy: [] } }, first.after, NOW + 24 * HOUR).ids
+			run(polyRule, { predictions: { geopolitics: [market(0.38)], economy: [] } }, first.after, NOW + 24 * HOUR).ids
 		).toEqual([]);
 		expect(
 			run(polyRule, { predictions: { geopolitics: [market(0.6, 1000)], economy: [] } }, first.after, NOW + 24 * HOUR)
@@ -662,7 +662,7 @@ describe('P3', () => {
 			revenueActual: epsActual ? 5.2e10 : null
 		});
 		const finnhub = {
-			earnings: [e('NVDA', 1.1), e('MSFT', null), e('JPM', 4), e('AAPL', 2, '2026-10-13')],
+			earnings: [e('NVDA', 1.1), e('MSFT', null), e('KO', 4), e('AAPL', 2, '2026-10-13')],
 			news: [],
 			quotes: []
 		};

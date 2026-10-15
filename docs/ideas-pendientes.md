@@ -199,6 +199,94 @@ clave ni registro. Comparar con el lote 26-A antes de repartir, por si algo se r
 10. **Récords y extremos**: marcar cuando un dato toca su máximo o mínimo de varios años («paro mínimo desde 2008»).
 11. **Resumen en una línea** arriba de cada vista, hecho con los datos (sin IA), pensado para el móvil.
 
+## 2g. Lote 28 (Ideas 4, 15/10): viabilidad de 21 ideas de otros terminales, aprobadas en principio
+
+Sin red en el entorno de Ideas: ninguna fuente nueva está comprobada en vivo; las marcadas «probe» se confirman con
+`scripts/probe.txt`. Esfuerzo: S (horas), M (un PR normal), L (varios PR). ✅ viable · ⚠ con pega · ❌ no viable.
+
+1. ✅ M **EQS**: widget «screener» de TradingView (sin clave; filtros de sector, PER, dividendo, subida). Probe del widget.
+2. ✅ S **MOST**: ya existe `HotLists` (TradingView hotlists, EE. UU./Alemania/España) en WS; falta solo el comando.
+3. ⚠ M **RV**: Finnhub `/stock/peers` + `/stock/metric` (gratis, ya se usa en `perf.ts`); pega: cupo de 60/min, solo
+   EE. UU. y para unos 50 valores, cada 12 h.
+4. ✅ M **HDS**: invertir los 13F que ya baja `funds.ts`: «qué fondos de FONDOS tienen NVDA». Solo esos fondos, con 45 días de retraso.
+5. ⚠ M **CACS**: dividendos y splits salen gratis de SEC (8-K) a medias; `/stock/dividend` de Finnhub es de pago
+   (probar `dividend2`/`split` con probe). Recompras: solo texto de 8-K/10-Q. Empezar por resultados + dividendos.
+6. ⚠ M **WB**: EE. UU. (Tesoro, 2/10/30), zona euro (curva del BCE, `YC`), Japón (`jgb.ts`) sí; Reino Unido y China
+   siguen aparcados. FRED da 10 años mensual de la OCDE para ~30 países. Probe de `YC` 30Y.
+7. ✅ S **BTMM**: SOFR ya en FRED; €STR (BCE), letras del Tesoro y Euríbor (BCE/FRED); NY Fed API sin clave (probe).
+8. ✅ S **NI**: filtrar los titulares ya descargados con `queryWords`/`hasWords` y temas predefinidos (CHIPS, OIL…).
+   Solapa con NEWS: mejor como argumento de NEWS («NEWS CHIPS») que como comando nuevo.
+9. ⚠ L **DASH**: ya hay paneles fijados en TOP (`pins`); ampliarlo a varios tableros con nombre. Toca el layout y el
+   modo encajar.
+10. ✅ M **G**: un registro de series (id → dataset + ruta) y `LineChart`; varias a la vez en base 100 o dos ejes.
+11. ✅ S **Estacionalidad**: cálculo propio sobre series mensuales ya guardadas (FRED, INE, luz). Sin fuente nueva.
+12. ⚠ M **Correlaciones**: hace falta historial diario de precios; FRED (S&P, petróleo, oro, euro, 10 años) sí. Acciones
+    sueltas no (Finnhub `candle` es de pago). Empezar por macroactivos de FRED.
+13. ⚠ S **Mapa de calor mundial**: ya hay S&P, Nasdaq, DAX e IBEX; el widget admite más índices (Euro Stoxx, Nikkei…).
+    Por país en una sola vista: TradingView no lo da; quedaría «índice por índice».
+14. ⚠ M **Señales técnicas**: Finnhub `/stock/metric` da máx./mín. de 52 semanas gratis; cruces de medias y RSI piden
+    velas diarias (de pago en Finnhub). Alternativa: widget «technical-analysis» de TradingView en la ficha.
+15. ❌ **Conflictos en directo**: ACLED pide registro y no deja redistribuir; UCDP pide token desde 2025 y va con
+    retraso; GDELT descartado. Lo más cercano ya está (GEO con titulares y terremotos).
+16. ⚠ M **Aviones de Estado**: adsb.lol (ODbL, `/v2/mil`, sin clave) o OpenSky (no comercial, 400 créditos/día).
+    Pegas: privacidad (solo militares/Estado, sin seguir rutas) y que bloqueen IP de Actions. Probe.
+17. ⚠ S **Ctrl/Cmd+K**: ya aprobado (lista 1, n.º 10); comprobar con Prog Barra 3/4 antes de repartir.
+18. ⚠ S **Atajos vim**: «/» ya existe; «g t», «g w» caben en `shortcuts.ts`. Mismo choque con Prog Barra 3/4.
+19. ⚠ M **Solo texto**: un `data-density` en tokens (`--row-y`, `--pad-x`) sin gráficos ni widgets. Toca el layout.
+20. ✅ S **Notas**: localStorage registrado en `prefs.ts`, en ficha de valor y PAIS. Sin datos externos.
+21. ⚠ M **Informe semanal**: PDF con la impresión del navegador (CSS de impresión en SEMANA, S); email desde Actions
+    pide un servicio de correo (cuenta/clave): decisión de Sergi. ntfy con enlace a SEMANA, gratis.
+
+22. ✅ L **VENTANAS** (aprobada por Sergi; va con la 9): modo Launchpad solo en escritorio (≥1280 px). Paneles que se
+    arrastran, redimensionan, minimizan y pasan al frente; mezcla de vistas; varios escritorios con nombre guardados
+    en el navegador. En el móvil no cambia nada. Sin datos externos.
+    Encaje: es una **ruta propia** (`/ventanas`), no un modo de las vistas actuales. Así no toca la rejilla ni
+    «encajar en pantalla» de `+layout.svelte`: el lienzo ocupa el alto libre y cada ventana tiene su propio scroll.
+    Para mezclar vistas se reutiliza el registro de `pins.ts` (import dinámico del contenido + `dataset()`), que ya
+    monta paneles fuera de su vista en TOP. Los paneles que no están en `PINS` se añaden ahí, y así también sirven
+    para fijarlos.
+    Enfoque sin librerías: Pointer Events (`pointerdown`/`move`/`up` con `setPointerCapture`) en la cabecera para
+    mover, un asa en la esquina para redimensionar, z-index por orden de uso, ajuste a una cuadrícula de 8 px
+    (`--sp-8`) y límites dentro del lienzo. Estado en localStorage (`{escritorios: {nombre: [{pin, x, y, w, h,
+    min}]}}`) registrado en `prefs.ts`. Teclado: Tab entre ventanas y flechas para mover (accesibilidad).
+    Pegas: los widgets de TradingView se recargan si se vuelven a montar (se mueven con CSS, sin desmontarlos).
+    Con muchas ventanas pesa: tope de ~12 por escritorio.
+    Esfuerzo: 2 PR. (1) lienzo, ventanas y un escritorio; (2) varios escritorios, minimizar a una barra inferior y
+    DASH (9) como «escritorio en rejilla».
+
+**Revisión con la regla nueva de Sergi (15/10)**: claves y registros gratuitos, sí; lo que manda es la licencia.
+Hecho de memoria, sin red: confirmar límites y términos con probe y en la web de cada servicio antes de programar.
+- **15 Conflictos → ⚠ M (antes ❌).** UCDP GED Candidate (CC BY 4.0, eventos con muertos, versión mensual con
+  ~1 mes de retraso). Token gratis que se pide en https://ucdp.uu.se/apidocs/ · Secret `UCDP_TOKEN`. Es «casi en
+  directo», no tiempo real. ACLED: registro gratis (https://acleddata.com), pero sus términos prohíben redistribuir
+  los datos de eventos y la cuenta gratuita da poco detalle. Solo cabrían agregados con cita: descartarlo y usar UCDP.
+- **21 Email → ✅ M.** Brevo: 300 correos/día gratis, sin dominio propio (basta un remitente verificado).
+  Registro en https://www.brevo.com · Secrets `BREVO_API_KEY` y `MAIL_TO` (el correo de Sergi, nunca en el repo).
+  Resend (3.000/mes) obliga a tener un dominio propio verificado, así que no conviene.
+- **5 CACS → ✅ M (antes ⚠).** Mejor sin clave nueva: SEC XBRL `companyfacts` (dominio público, ya hay
+  `SEC_USER_AGENT`). Dividendo por acción (`CommonStockDividendsPerShareDeclared`), recompras
+  (`PaymentsForRepurchaseOfCommonStock`) y splits por los 8-K. Es trimestral, no al día.
+- **12 Correlaciones y 14 Señales técnicas → siguen ⚠.** Los planes gratuitos con clave (Alpha Vantage: 25
+  consultas/día; Twelve Data: 800/día; Polygon/Massive: 5/min y cierre del día; FMP: 250/día; Tiingo: 1.000/día) son
+  **para uso personal y prohíben mostrar o redistribuir los datos** en una web pública. Ninguno sirve.
+  Se queda como estaba: 12 con series de FRED de dominio público (tipos, euro-dólar, petróleo de la EIA; ojo, el
+  S&P 500 de FRED tiene copyright de S&P), y 14 con el máx./mín. de 52 semanas de Finnhub y el widget
+  «technical-analysis» de TradingView para medias y RSI.
+- **16 Aviones → ⚠ M.** OpenSky con cuenta gratis (cliente OAuth2, unos 4.000 créditos/día, frente a 400 sin cuenta).
+  Licencia no comercial con cita; vale para una web personal. Registro en https://opensky-network.org · Secrets
+  `OPENSKY_CLIENT_ID` y `OPENSKY_CLIENT_SECRET`. La pega que queda: puede bloquear las IP de nube (probe) y la
+  privacidad (solo aviones de Estado o militares conocidos, sin seguir rutas). Alternativa sin clave: adsb.lol (ODbL).
+- **22 VENTANAS**: sin cambios (✅ L, bloque D).
+
+**Bloques para programar, sin choques**
+- **A · Mercados (WS/ficha/FONDOS)**: 1, 2, 3, 4, 5, 13, 14. Datos: TradingView, Finnhub, SEC.
+- **B · Datos y gráficos (ECO/WS)**: 6, 7, 10, 11, 12. Fuentes: Tesoro, BCE, FRED, NY Fed.
+- **C · Interfaz (barra, layout, navegador)**: 8, 17, 18, 19, 20, 21. Va tras Prog Barra 3/4.
+- **D · VENTANAS + DASH** (22 + 9), para una sola sesión: toca `pins.ts`, `prefs.ts` y una ruta nueva; no toca el
+  layout de las vistas. Coordinar con C solo en `prefs.ts`.
+- **E · Fuentes con clave nueva** (otra sesión): 15 (UCDP), 16 (OpenSky) y el email de la 21, cuando Sergi cree los
+  Secrets. 16 solo si acepta la pega de privacidad.
+
 ## 3. Decisiones de Sergi que hay que respetar
 
 - Arc Terminal es **mundial**: nada nuevo centrado en Menorca, salvo los puertos AIS de Maó y Ciutadella.
