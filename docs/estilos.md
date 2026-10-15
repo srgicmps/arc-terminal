@@ -54,7 +54,7 @@ Colores (`--bg`, `--panel`, `--raise`, `--line`, `--fg`, `--muted`, `--faint`, `
 `--hair`, `--border`, `--panel-edge`, `--panel-blur`), rejillas (`--grid-gap`, `--grid-fill`, `--grid-edge`,
 `--grid-join`, `--col-fill`, `--stack-gap`, `--stack-edge`), títulos (`--fs-title`, `--title-case`, `--title-track`,
 `--title-color`), espaciado (`--sp-*`, `--pad-x`, `--row-y`, `--head-y`, `--gutter`), fondo (`--bg-image`) y
-movimiento (`--dur-ui`, `--dur-fast`, `--ease`), foco (`--focus-w`). Modo OS (`/os`): `--os-desk`, `--os-win-bg`,
+movimiento (`--dur-ui`, `--dur-fast`, `--ease`), foco (`--focus-w`) y barras de desplazamiento (`--scroll-w`, `--scroll-thumb`, `--scroll-track`). Modo OS (`/os`): `--os-desk`, `--os-win-bg`,
 `--os-win-edge`, `--os-win-edge-active`, `--os-win-radius`, `--os-win-shadow`, `--os-title-h`, `--os-title-bg`,
 `--os-title-fg`, `--os-title-fg-active` y `--os-snap` (salen de los de arriba: no hace falta tocarlos; ganchos
 `data-ui="os-win"` y `"os-title"`). Ejemplo completo: `static/estilos/grafito.css`.

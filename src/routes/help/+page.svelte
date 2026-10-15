@@ -22,6 +22,7 @@
 	import { collect, decode, encode, HASH } from '#lib/transfer.ts';
 	import { cloud } from '#lib/cloud.svelte.ts';
 	import StylePicker from '#lib/components/StylePicker.svelte';
+	import { takesAccent } from '#lib/estilos.ts';
 	import Tour from '#lib/onboarding/Tour.svelte';
 	import { startTour, tour } from '#lib/onboarding/tour.svelte.ts';
 	import { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, resetTaste, setAccent, setDensity, setThumb, setTop, taste, THUMB_MAX } from '#lib/taste.svelte.ts';
@@ -53,7 +54,7 @@
 		location.reload();
 	}
 	const custom = $derived(
-		taste.accent !== 'amber' || taste.density !== 'compacta' || taste.top.join() !== DEFAULT_TOP.join() || taste.thumb.join() !== DEFAULT_THUMB.join()
+		taste.accent !== 'auto' || taste.density !== 'normal' || taste.top.join() !== DEFAULT_TOP.join() || taste.thumb.join() !== DEFAULT_THUMB.join()
 	);
 </script>
 
@@ -109,7 +110,13 @@
 				<dt>Estética</dt>
 				<dd><StylePicker /></dd>
 				<dt>Acento</dt>
-				<dd><Seg label="Color de acento" options={ACCENTS} bind:value={() => taste.accent, setAccent} /></dd>
+				<dd>
+					{#if takesAccent(taste.style)}
+						<Seg label="Color de acento" options={ACCENTS} bind:value={() => taste.accent, setAccent} />
+					{:else}
+						<span class="fixed">Esta estética lleva su propio color; el acento vale en las demás.</span>
+					{/if}
+				</dd>
 				<dt>Densidad</dt>
 				<dd><Seg label="Densidad" options={DENSITIES} bind:value={() => taste.density, setDensity} /></dd>
 				<dt>Fila de arriba</dt>
@@ -179,6 +186,12 @@
 </div>
 
 <style>
+	.fixed {
+		color: var(--muted);
+		font-family: var(--sans);
+		font-size: var(--fs-s);
+	}
+
 	.taste {
 		display: grid;
 		grid-template-columns: max-content minmax(0, 1fr);

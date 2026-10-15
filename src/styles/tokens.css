@@ -154,6 +154,9 @@
 	--os-title-fg-active: var(--fg); /* texto de la barra de título con el foco */
 	--os-snap: var(--amber-soft); /* zona donde va a encajar la ventana al soltarla */
 	--focus-w: var(--hair); /* grosor del contorno de foco con teclado */
+	--scroll-w: 8px; /* ancho de las barras de desplazamiento (escritorio; en el móvil son las del sistema) */
+	--scroll-thumb: var(--neutral); /* la parte que se arrastra */
+	--scroll-track: transparent; /* el carril: transparente, así no asoma ninguna esquina cuadrada */
 	--dur-ui: 0ms; /* transición de botones y filas al pasar el ratón */
 	--ease: cubic-bezier(0.2, 0, 0, 1);
 
@@ -225,39 +228,4 @@
 	background-image: var(--bg-image);
 	color: var(--fg);
 	font-family: var(--font-ui);
-}
-
-/* ── Acento elegido («A tu gusto», src/lib/taste.svelte.ts) ─────────────────────────────────
- * Sin data-accent, el ámbar de arriba. Mismo contraste que el ámbar o más (WCAG AA sobre --panel). Cian y no verde: el verde es solo para las subidas. Los
- * nombres siguen siendo --amber*: son «el acento», sea del color que sea. Con el azul, la segunda serie de
- * los gráficos pasa a ámbar para no confundirse con la primera. */
-:root[data-accent='cyan'] {
-	--amber: #4fd6c8;
-	--amber-dim: #6fb3ab;
-	--amber-soft: rgba(79, 214, 200, 0.12);
-	--amber-edge: rgba(79, 214, 200, 0.4);
-	--on-amber: #04120f;
-}
-:root[data-accent='blue'] {
-	--amber: #5eb1ef;
-	--amber-dim: #7fa3c4;
-	--amber-soft: rgba(94, 177, 239, 0.13);
-	--amber-edge: rgba(94, 177, 239, 0.42);
-	--on-amber: #04101a;
-	--series-2: #f2a83b;
-}
-:root[data-theme='light'][data-accent='cyan'] {
-	--amber: #0b7a70;
-	--amber-dim: #2f6a64;
-	--amber-soft: rgba(11, 122, 112, 0.1);
-	--amber-edge: rgba(11, 122, 112, 0.4);
-	--on-amber: #ffffff;
-}
-:root[data-theme='light'][data-accent='blue'] {
-	--amber: #1f63a8;
-	--amber-dim: #3f5f80;
-	--amber-soft: rgba(31, 99, 168, 0.1);
-	--amber-edge: rgba(31, 99, 168, 0.4);
-	--on-amber: #ffffff;
-	--series-2: #9a5a00;
 }
