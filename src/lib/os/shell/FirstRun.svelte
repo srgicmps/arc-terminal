@@ -21,7 +21,7 @@
 
 	const current = $derived(shell.widgets ?? defaultWidgets(os.deskW(), shell.skin));
 	const has = (k: WidgetKind) => current.some((w) => w.kind === k);
-	const flip = (k: WidgetKind) => setWidgets(has(k) ? removeWidget(current, k) : addWidget(current, k, os.deskW()));
+	const flip = (k: WidgetKind) => setWidgets(has(k) ? removeWidget(current, k) : addWidget(current, k, os.deskW(), os.deskH()));
 
 	function finish() {
 		setName(name);

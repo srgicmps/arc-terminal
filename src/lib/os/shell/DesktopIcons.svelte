@@ -2,7 +2,7 @@
 	Iconos del escritorio de Arc OS: lo que hay en la carpeta Escritorio (src/lib/os/fs/: accesos a apps y carpetas)
 	y la Papelera, como en un escritorio de verdad:
 	- Clic: seleccionar (Ctrl o ⌘ para añadir o quitar). Doble clic o Intro: abrir. Con el dedo, un toque abre.
-	  F2: cambiar el nombre. Supr: a la papelera.
+	  F2: cambiar el nombre. Supr: a la papelera. Ctrl+A: todos.
 	- Arrastrar: mueve el icono (o todos los seleccionados). Al soltar en el escritorio caen en la casilla libre más
 	  cercana; sobre una carpeta (de aquí o de una ventana) entran en ella, y sobre la Papelera, a la papelera.
 	- Arrastrar sobre el fondo: rectángulo de selección. Clic en el fondo: quita la selección.
@@ -85,6 +85,11 @@
 		for (const id of ids) out[id] = nearestFree(cell, out, [], cols, rows);
 		setIcons({ ...shell.icons, ...out });
 	}
+	/**
+	 * Apunta la casilla de todos los iconos tal y como se ven ahora. Se hace antes de añadir o quitar uno: los que no
+	 * tenían casilla guardada se colocan por orden, y sin esto se correrían todos al entrar o salir otro.
+	 */
+	const freeze = () => setIcons({ ...spots });
 	// Lo que se suelta en el escritorio desde una ventana de carpeta cae en la casilla del puntero.
 	$effect(() => onDeskPlace((ids, x, y) => layer && placeAt(ids, cellAt(x, y))));
 
@@ -118,8 +123,13 @@
 				const p = cellToPx(drag.from, size);
 				const to = pxToCell(p.x + drag.dx, p.y + drag.dy, size, cols, rows);
 				setIcons({ ...shell.icons, ...moveGroup(spots, ids, drag.from, to, cols, rows) });
-			} else if (plan.kind === 'move') move(plan.ids, plan.to);
-			else if (plan.kind === 'trash') trash(plan.ids);
+			} else if (plan.kind === 'move') {
+				freeze();
+				move(plan.ids, plan.to);
+			} else if (plan.kind === 'trash') {
+				freeze();
+				trash(plan.ids);
+			}
 			if (plan.kind !== 'desk') selected = selected.filter((id) => !files.tree[id] || files.tree[id].parent === DESKTOP || id === TRASH);
 		}
 		drag = null;
@@ -132,6 +142,7 @@
 		else if (files.tree[id]) openNode(files.tree[id]);
 	}
 	function toTrash(ids: string[]) {
+		freeze();
 		trash(ids.filter((id) => id !== TRASH));
 		selected = [];
 	}
@@ -157,6 +168,7 @@
 		el.select();
 	}
 	function newFolder(x: number, y: number) {
+		freeze();
 		const id = mkdir(DESKTOP);
 		if (!id) return;
 		placeAt([id], cellAt(x, y));
@@ -242,7 +254,7 @@
 				{ label: 'Ventanas en mosaico', run: os.tileWins },
 				{ label: 'Escritorio nuevo', run: os.addDesk },
 				'sep',
-				...WIDGET_KINDS.map((k): MenuEntry => ({ label: `Widget: ${WIDGET_LABEL[k]}`, checked: has(k), run: () => setWidgets(has(k) ? removeWidget(current, k) : addWidget(current, k, w)) })),
+				...WIDGET_KINDS.map((k): MenuEntry => ({ label: `Widget: ${WIDGET_LABEL[k]}`, checked: has(k), run: () => setWidgets(has(k) ? removeWidget(current, k) : addWidget(current, k, w, h)) })),
 				'sep',
 				{ label: 'Cambiar fondo…', run: () => os.open('wallpaper') },
 				{ label: 'Aspecto y apariencia…', run: () => (shell.open = 'control') },
@@ -258,12 +270,23 @@
 		else deskMenu(e.clientX, e.clientY);
 	}
 	function layerKey(e: KeyboardEvent) {
-		if (e.target === layer && (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10'))) {
+		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+			e.preventDefault();
+			selected = icons.map((a) => a.id);
+		}
+		if (e.key === 'Escape') selected = [];
+		// Con el foco en el fondo (tras un rectángulo de selección), las teclas actúan sobre lo seleccionado.
+		if (e.target !== layer) return;
+		if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
 			e.preventDefault();
 			const r = layer.getBoundingClientRect();
 			deskMenu(r.left + 40, r.top + 40);
+		} else if (e.key === 'Enter') selected.forEach(open);
+		else if (e.key === 'Delete') toTrash(selected);
+		else if (e.key === 'F2' && selected.length === 1) {
+			e.preventDefault();
+			startRename(selected[0]);
 		}
-		if (e.key === 'Escape') selected = [];
 	}
 </script>
 

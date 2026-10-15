@@ -139,6 +139,15 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - [x] Contraste AA en /os: `--muted` de Mando a 4,5:1 también sobre el fondo con acento [OS 6] #533
 - [x] QA del Centro de mando (QA OS 8): nivel de alerta con «Sin datos» y avisos caducados por hora, pilotos que dejan el verde si los datos se paran y con forma por estado, Mapa operacional en el móvil (pellizco, línea de tiempo táctil) [QA OS 8] #541
 
+## QA 5 · Escritorio y barra (repaso con Playwright a 1280 y 1440 px)
+- [x] Una carpeta nueva (o tirar o meter un icono) ya no corre los demás iconos de sitio (`freeze` en `DesktopIcons`) [QA 5]
+- [x] Tras un rectángulo de selección, Supr, Intro y F2 actúan sobre lo seleccionado; Ctrl+A selecciona todo [QA 5]
+- [x] Barra de Mando: iconos SVG en las pestañas, título real de la ventana (carpetas), clic derecho en pestañas y en la barra [QA 5]
+- [x] Escritorios virtuales visibles en la barra de Mando (1…6, «+», clic derecho para cerrar) [QA 5]
+- [x] La inicial de la cuenta abre su menú (cuenta y ajustes, bloquear, volver a la web clásica) [QA 5]
+- [x] Panel de control: se cierra con Escape o con un clic fuera [QA 5]
+- [x] Widgets: uno nuevo no cae fuera de la pantalla (columna siguiente) y en una pantalla más pequeña se pintan dentro (`fitWidgets`) [QA 5]
+
 ## OS 4 · Cómo están hechas las apps del sistema
 - Cada app es un archivo `src/lib/os/apps/<id>.ts` (registro, `load` diferido) y su carpeta. Marco común
   `kit/Tool.svelte` y `kit/store.ts` (JSON en localStorage; si la clave está en `prefs.ts`, se sincroniza con D1).
