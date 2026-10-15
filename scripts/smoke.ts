@@ -1,6 +1,6 @@
 /// <reference types="node" />
 // Prueba de humo de todas las vistas (`pnpm smoke`, después de `pnpm build`). Arranca `vite preview`, abre
-// cada vista de build/ y la ficha de NVDA a 390 y 1280 px con Chromium, y falla si:
+// cada vista de build/, las experiencias de build/x/ y la ficha de NVDA a 390 y 1280 px con Chromium, y falla si:
 // - hay errores en la consola o excepciones sin capturar;
 // - a 390 px la página es más ancha que la pantalla (scroll horizontal);
 // - sale «NaN», «undefined», «Infinity» o «[object Object]» en el texto de la vista;
@@ -16,12 +16,13 @@ import { gzipSync } from 'node:zlib';
 import { launch, preview, viewPaths } from './browser.ts';
 import { osChecks } from './smoke-os.ts';
 
-const PATHS = process.env.SMOKE_ONLY ? process.env.SMOKE_ONLY.split(',') : [...viewPaths(), '/s?sym=NVDA'];
+/** Con las experiencias (/x/<id>, en su propia carpeta de build/). */
+const PATHS = process.env.SMOKE_ONLY ? process.env.SMOKE_ONLY.split(',') : [...viewPaths(), ...viewPaths('build/x').map((p) => `/x${p}`), '/s?sym=NVDA'];
 const WIDTHS = [390, 1280];
 /** Los dos modos (src/lib/modo.ts): Sencillo enseña menos paneles y letra mayor; Terminal, todo. */
 const MODES = ['sencillo', 'terminal'] as const;
 
-/** Vistas de texto, sin paneles, y el Modo OS (/os: un escritorio con ventanas). */
+/** Vistas de texto, sin paneles, y el Modo OS (/os: un escritorio con ventanas). Las experiencias (/x/<id>) tampoco usan Panel. */
 const NO_PANELS = new Set(['/help', '/doc', '/bienvenida', '/os']);
 /** Peso máximo razonable de una vista en el móvil (4G), en bytes gzip. */
 const WEIGHT_LIMIT = 300 * 1024;
@@ -32,10 +33,18 @@ const NO_WEIGHT_LIMIT = new Set(['/os']);
  * nunca en los PR. Si faltan aquí, su 404 no cuenta como fallo (Arc OS lo pide para sus avisos).
  */
 const ONLY_PUBLISHED = ['/data/notify-log.json'];
-/** Reglas de axe-core que se miran: contraste y que todo control, enlace e imagen tenga nombre o etiqueta. */
-const AXE_RULES = ['color-contrast', 'label', 'select-name', 'button-name', 'link-name', 'image-alt', 'input-button-name', 'aria-input-field-name'];
+/**
+ * Reglas de axe-core que se miran: contraste, que todo control, enlace e imagen tenga nombre o etiqueta, que lo que
+ * hace scroll se pueda alcanzar con el teclado, ARIA bien formado y título y lengua de la página.
+ */
+const AXE_RULES = [
+	'color-contrast', 'label', 'select-name', 'button-name', 'link-name', 'image-alt', 'input-button-name', 'aria-input-field-name',
+	'scrollable-region-focusable', 'nested-interactive', 'aria-allowed-attr', 'aria-valid-attr-value', 'aria-required-children',
+	'aria-required-parent', 'empty-table-header', 'document-title', 'html-has-lang', 'frame-title', 'list', 'listitem'
+];
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 
+// Para probar solo unas vistas: SMOKE_ONLY=/x/zen,/eco pnpm smoke
 const { server, root: ROOT } = await preview(4317);
 const failures: string[] = [];
 const warnings: string[] = [];
@@ -113,7 +122,7 @@ try {
 			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px`);
 			if (width < 600) for (const f of new Set(check.zoom)) failures.push(`${where}: el campo «${f}» tiene letra de menos de 16 px (el iPhone amplía al tocarlo)`);
 			if (check.keys.length > 1) failures.push(`${where}: pestañas de arriba de alturas distintas (${check.keys.join(', ')} px)`);
-			if (!NO_PANELS.has(path) && !check.panels) failures.push(`${where}: sin paneles`);
+			if (!NO_PANELS.has(path) && !path.startsWith('/x/') && !check.panels) failures.push(`${where}: sin paneles`);
 			for (const text of check.missing) failures.push(`${where}: panel sin datos («${text}»)`);
 			for (const text of check.glitches) failures.push(`${where}: «${text}» en la vista`);
 			if (width < 600 && first) {

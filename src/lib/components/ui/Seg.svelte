@@ -91,4 +91,8 @@
 		color: var(--amber);
 		font-weight: var(--fw-regular);
 	}
+	/* De día, el ámbar sobre su propio fondo suave se queda en 4,4:1 fuera de un panel: el tenue pasa de 4,5:1 (WCAG AA). */
+	:global([data-theme='light']) .multi button[aria-pressed='true'] {
+		color: var(--amber-dim);
+	}
 </style>

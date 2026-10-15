@@ -320,6 +320,10 @@
 		background: var(--amber-soft);
 		color: var(--amber);
 	}
+	/* El gris de .mut no llega a 4,5:1 sobre el fondo ámbar suave: el del tramo que suena va en ámbar tenue. */
+	.program button[aria-current] .mut {
+		color: var(--amber-dim);
+	}
 	.program button:hover {
 		color: var(--amber);
 	}

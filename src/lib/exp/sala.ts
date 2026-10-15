@@ -43,6 +43,20 @@ const center = (code: string) => COUNTRIES.find((c) => c.code === code)?.center;
 const jitter = (i: number): [number, number] => [((i * 37) % 7) - 3, ((i * 53) % 9) - 4].map((v) => v * 0.6) as [number, number];
 
 /** Titulares de geopolítica: un punto por país nombrado (los 2 primeros), en el centro del país. */
+/**
+ * Sin repetidos por clave, el primero gana. Un mismo titular llega por news-geo y news-world, y dos puntos pueden
+ * salir con el mismo id (dos elecciones el mismo día en un país): en un {#each} con clave, Svelte da error.
+ */
+export function uniqueBy<T>(items: T[], key: (item: T) => string): T[] {
+	const seen = new Set<string>();
+	return items.filter((item) => {
+		const k = key(item);
+		if (seen.has(k)) return false;
+		seen.add(k);
+		return true;
+	});
+}
+
 export function conflictPoints(items: Pick<NewsItem, 'title' | 'titleEs' | 'url' | 'source' | 'time'>[]): SalaPoint[] {
 	const perCountry = new Map<string, number>();
 	return items.flatMap((n, i) =>
