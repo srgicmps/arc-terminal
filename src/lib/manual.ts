@@ -17,6 +17,7 @@ import {
 	STOCKS,
 	STRAITS,
 	SUMMARIES,
+	WAR,
 	WEEK,
 	type Level
 } from '../../scripts/alerts/config.ts';
@@ -132,6 +133,7 @@ const LEVEL_WHAT: Record<Level, string[]> = {
 		`Terremotos de magnitud ${QUAKE.mag} o más (${QUAKE.magTsunami} si hay aviso de tsunami).`,
 		`Cambios de tipos oficiales: ${RATES.map((r) => r.bank).join(', ')}.`,
 		`Temas muy grandes de IMP: ${IMP_BIG.media} medios o más en ${IMP_BIG.sections} secciones.`,
+		`Guerras, con ${WAR.media} medios fiables: ${WAR.kinds.map((k) => k.name.toLowerCase()).join(', ')}. Un aviso por tema cada ${WAR.waitHours} h, salvo escalada.`,
 		`Conflictos y escaladas de ese tamaño (los menores van en P2).`,
 		`Tránsito por ${STRAITS.names.join(', ')} que cae un ${pct(STRAITS.drop)} o más.`,
 		'Catástrofes en alerta roja (GDACS), un apagón en España y caídas de internet de un país.'

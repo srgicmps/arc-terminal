@@ -57,6 +57,7 @@ import {
 	SESSIONS,
 	SUMMARIES,
 	TOMORROW,
+	WAR,
 	WEEK,
 	type Asset,
 	type Level,
@@ -564,6 +565,48 @@ export function straitRule(d: Inputs, { now, log, update }: RuleContext): Draft[
 const impBig = (t: { sources?: string[]; sections?: string[] }) =>
 	list(t.sources).length >= IMP_BIG.media && list(t.sections).length >= IMP_BIG.sections;
 
+/** La clase de WAR más grave que cuenta el título (su posición en WAR.kinds), o -1. */
+export function warKind(title: string): number {
+	return WAR.kinds.findIndex((k) => k.all.every((re) => re.test(title)));
+}
+
+const trustedCount = (sources: string[] | undefined) => list(sources).filter((s) => WAR.trusted.includes(s)).length;
+
+/** El tema es un aviso de guerra (P1): una clase de WAR y WAR.media medios fiables. */
+const isWar = (t: { title?: string; sources?: string[] }) =>
+	warKind(t.title ?? '') >= 0 && trustedCount(t.sources) >= WAR.media;
+
+/**
+ * Guerras (P1): declaraciones de guerra, invasiones, ataques a la OTAN o la UE, amenaza nuclear, misiles contra
+ * capitales o infraestructuras, movilizaciones y altos el fuego (WAR). Un aviso por tema cada WAR.waitHours,
+ * salvo escalada: una clase más grave o el doble de medios fiables. Id: war:<k>:<minuto>.
+ */
+export function warRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+	const t0 = minute(now);
+	return list(d.imp?.current).flatMap((t): Draft[] => {
+		if (!t?.k || !isWar(t)) return [];
+		const kind = warKind(t.title);
+		const trusted = trustedCount(t.sources);
+		const key = `war:${t.k}`;
+		const [at, lastKind, lastTrusted] = (log.last[key] ?? '').split('|');
+		const recent = Boolean(at) && now - Date.parse(at) < WAR.waitHours * HOUR;
+		const escalates = kind < Number(lastKind) || trusted >= 2 * Number(lastTrusted);
+		if (recent && !escalates) return [];
+		const media = list(t.sources).length;
+		return [
+			{
+				id: `${key}:${t0}`,
+				title: `🚨 ${WAR.kinds[kind].name}`,
+				body: [`${t.title} · ${media} medios (${trusted} fiables)`, t.url].filter(Boolean).join('\n'),
+				tags: 'rotating_light',
+				click: t.url || `${SITE}/geo`,
+				time: now,
+				commit: (l) => void (l.last[key] = `${t0}|${kind}|${trusted}`)
+			}
+		];
+	});
+}
+
 /**
  * Conflictos (P1/P2): un tema de IMP cuyo título habla de ataques, guerra, OTAN… P1 si es «grande» (IMP_BIG;
  * entonces impRule no lo repite) y P2 con 5 medios o más. Por tema (la k de IMP), un aviso cada 12 h, salvo
@@ -572,7 +615,8 @@ const impBig = (t: { sources?: string[]; sections?: string[] }) =>
 export function conflictRule(d: Inputs, { now, log }: RuleContext): Draft[] {
 	const t0 = minute(now);
 	return list(d.imp?.current).flatMap((t): Draft[] => {
-		if (!t?.k || !CONFLICT.words.test(t.title ?? '')) return [];
+		// Lo que ya avisa warRule (P1) no sale también aquí.
+		if (!t?.k || !CONFLICT.words.test(t.title ?? '') || isWar(t)) return [];
 		const media = list(t.sources).length;
 		const level: Level | null = impBig(t) ? 1 : media >= CONFLICT.media ? 2 : null;
 		if (!level) return [];
@@ -1865,6 +1909,7 @@ export const RULES: Rule[] = [
 	{ type: 'imp', level: 1, run: impRule },
 	{ type: 'strait', level: 1, run: straitRule },
 	// P1 o P2 según el tema (el nivel lo pone la regla).
+	{ type: 'war', level: 1, run: warRule },
 	{ type: 'conflict', level: 1, run: conflictRule },
 	{ type: 'macro', level: 2, run: macroRule },
 	{ type: 'market', level: 2, run: marketRule },
