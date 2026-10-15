@@ -55,7 +55,7 @@ export const load: PageServerLoad = async () => {
 		dataset<RadarData>('radar'),
 		// Espacio aéreo en conflicto (F22): una docena de boletines activos de la EASA.
 		dataset<CzibData>('czib'),
-		// Avisos a navegantes de seguridad (F21): unos 40 como mucho; la página enseña 12.
+		// Avisos a navegantes de seguridad (F21): unos 40 como mucho; la página enseña 10, sin el texto.
 		dataset<NavWarnData>('navwarn')
 	]);
 	// Sanciones y aranceles: EE. UU. (Federal Register), Reino Unido (OFSI) y UE (actos de la serie L con el tema
@@ -78,7 +78,7 @@ export const load: PageServerLoad = async () => {
 	return {
 		layers,
 		czib,
-		navwarn: navwarn && { fetchedAt: navwarn.fetchedAt, data: { items: navwarn.data.items.slice(0, 12).map(({ at: _, ...w }) => w) } },
+		navwarn: navwarn && { fetchedAt: navwarn.fetchedAt, data: { items: navwarn.data.items.slice(0, 10).map(({ at: _a, text: _t, ...w }) => w) } },
 		news,
 		// Organismos y diplomacia salen del mismo canal: 40 titulares para que haya de los dos paneles.
 		intl: headlines(intl, 40),

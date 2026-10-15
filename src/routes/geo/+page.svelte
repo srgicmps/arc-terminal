@@ -205,7 +205,7 @@
 				<p class="plain-czib">{navSentence(data.navwarn.data.items)}</p>
 				<ul class="mini">
 					{#each data.navwarn.data.items as w (w.id)}
-						<li title={w.text}>
+						<li>
 							<b>{w.kind}</b> · {w.region}{#if w.place}<span class="mut"> · {w.place}</span>{/if}
 							<span class="mut">· {w.issued ? new Date(w.issued).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : w.id}</span>
 						</li>
