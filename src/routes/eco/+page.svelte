@@ -19,6 +19,7 @@
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import { euriborPhrase, inflationPhrase, phrases, policyPhrase, unemploymentPhrase } from '#lib/plain.ts';
 	import { summaryLine, trend } from '#lib/summary.ts';
 	import { compact, dm, nf, period, signed } from '#lib/format.ts';
 	import { change, diffDays, last, seriesMap, spread } from '#lib/series.ts';
@@ -112,6 +113,17 @@
 		})
 	);
 	const fedNow = $derived(last(get('fedfunds-us')));
+	// Modo Sencillo: lo mismo, en frases (src/lib/plain.ts), con los tipos y el euríbor.
+	const plain = $derived(
+		phrases([
+			inflationPhrase('la zona euro', get('inflation-ea')?.points),
+			unemploymentPhrase('la zona euro', get('unemployment-ea')?.points),
+			policyPhrase('El Banco Central Europeo', get('ecb-dfr')?.points),
+			euriborPhrase(get('euribor-12m')?.points),
+			inflationPhrase('EE. UU.', get('cpi-us')?.points),
+			policyPhrase('La Reserva Federal de EE. UU.', get('fedfunds-us')?.points)
+		])
+	);
 	// Resumen en una línea (src/lib/summary.ts): inflación y paro de la zona euro y de EE. UU.
 	const summary = $derived(
 		summaryLine([
@@ -123,7 +135,7 @@
 	);
 </script>
 
-<ViewHeader code="ECO" title="Economía y macro" sub="Eurostat, Banco Central Europeo, BLS, Tesoro de EE. UU. y FRED" {summary} />
+<ViewHeader code="ECO" title="Economía y macro" sub="Eurostat, Banco Central Europeo, BLS, Tesoro de EE. UU. y FRED" {summary} {plain} />
 
 {#if strip.length}
 	<Tiles cols={3}>

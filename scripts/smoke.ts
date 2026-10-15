@@ -3,6 +3,7 @@
 // cada vista de build/ y la ficha de NVDA a 390 y 1280 px con Chromium, y falla si:
 // - hay errores en la consola o excepciones sin capturar;
 // - a 390 px la página es más ancha que la pantalla (scroll horizontal);
+// - sale «NaN», «undefined», «Infinity» o «[object Object]» en el texto de la vista;
 // - la vista no tiene paneles o alguno dice «… todavía» (le faltan sus datos). Una fuente que ha respondido
 //   sin nada que contar (hoy no hay terremotos ni avisos) tiene que decirlo con otro aviso, sin «todavía».
 // Además avisa (sin fallar) si una vista pesa más de WEIGHT_LIMIT: lo que descarga de la propia web
@@ -16,6 +17,8 @@ import { launch, preview, viewPaths } from './browser.ts';
 
 const PATHS = [...viewPaths(), '/s?sym=NVDA'];
 const WIDTHS = [390, 1280];
+/** Los dos modos (src/lib/modo.ts): Sencillo enseña menos paneles y letra mayor; Terminal, todo. */
+const MODES = ['sencillo', 'terminal'] as const;
 /** Vistas de texto, sin paneles. */
 const NO_PANELS = new Set(['/help', '/doc']);
 /** Peso máximo razonable de una vista en el móvil (4G), en bytes gzip. */
@@ -32,14 +35,20 @@ const a11y: string[] = [];
 
 try {
 	const browser = await launch();
+	for (const mode of MODES)
 	for (const width of WIDTHS) {
 		const context = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width < 600, hasTouch: width < 600 });
+		await context.addInitScript((m) => localStorage.setItem('arc-modo', m), mode);
+		// Peso y accesibilidad se miran una vez, en el primer modo.
+		const first = mode === MODES[0];
 		await context.route('**/*', (route) => {
 			const url = new URL(route.request().url());
-			return url.hostname === 'localhost' ? route.continue() : route.fulfill({ status: 200, body: '' });
+			// /api/* son Pages Functions: en vite preview no existen. Una respuesta vacía (sin JSON) es «sin cuenta».
+			const local = url.hostname === 'localhost' && !url.pathname.startsWith('/api/');
+			return local ? route.continue() : route.fulfill({ status: 200, body: '' });
 		});
 		for (const path of PATHS) {
-			const where = `${path} a ${width} px`;
+			const where = `${path} a ${width} px (${mode})`;
 			const page = await context.newPage();
 			page.on('console', (m) => {
 				if (m.type() === 'error') failures.push(`${where}: consola: ${m.text()} (${m.location().url})`);
@@ -61,12 +70,24 @@ try {
 				panels: document.querySelectorAll('section.panel').length,
 				missing: [...document.querySelectorAll('.empty')]
 					.map((e) => e.textContent?.trim() ?? '')
-					.filter((t) => /todav[ií]a/i.test(t))
+					.filter((t) => /todav[ií]a/i.test(t)),
+				// Restos de un fallo técnico que no deben llegar nunca a la vista. Se salta el texto de los enlaces
+				// externos (titulares, títulos de PR): es de otros y puede decir «undefined» a propósito.
+				glitches: (() => {
+					const found = new Set<string>();
+					const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+					for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+						if (n.parentElement?.closest('a[target="_blank"], script, style, noscript, template')) continue;
+						for (const m of n.textContent?.match(/\b(?:NaN|undefined|Infinity)\b|\[object Object\]/g) ?? []) found.add(m);
+					}
+					return [...found];
+				})()
 			}));
 			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px`);
 			if (!NO_PANELS.has(path) && !check.panels) failures.push(`${where}: sin paneles`);
 			for (const text of check.missing) failures.push(`${where}: panel sin datos («${text}»)`);
-			if (width < 600) {
+			for (const text of check.glitches) failures.push(`${where}: «${text}» en la vista`);
+			if (width < 600 && first) {
 				await page.addScriptTag({ path: AXE });
 				const found = await page.evaluate(async (rules) => {
 					const r = await (window as unknown as { axe: { run: (c: Document, o: object) => Promise<{ violations: { id: string; nodes: unknown[] }[] }> } }).axe.run(document, {
@@ -77,7 +98,7 @@ try {
 				if (found.length) a11y.push(`${path}: ${found.join(', ')}`);
 			}
 			const weight = (await Promise.all(sizes)).reduce((a, b) => a + b, 0);
-			if (width < 600 && weight > WEIGHT_LIMIT) {
+			if (width < 600 && first && weight > WEIGHT_LIMIT) {
 				warnings.push(`${path} pesa ${Math.round(weight / 1024)} KB (gzip, sin terceros); el límite es ${WEIGHT_LIMIT / 1024} KB`);
 			}
 			await page.close();
@@ -100,4 +121,4 @@ if (failures.length) {
 	console.log(`✗ Prueba de humo: ${failures.length} fallos\n${failures.map((f) => `  - ${f}`).join('\n')}`);
 	process.exit(1);
 }
-console.log(`✓ Prueba de humo: ${PATHS.length} vistas a ${WIDTHS.join(' y ')} px sin errores`);
+console.log(`✓ Prueba de humo: ${PATHS.length} vistas a ${WIDTHS.join(' y ')} px, en modo ${MODES.join(' y ')}, sin errores`);
