@@ -186,12 +186,23 @@ export function snapWin(s: OsState, uid: string, snap: Snap | null, area: { w: n
 export const toggleMax = (s: OsState, uid: string, area: { w: number; h: number }) => snapWin(s, uid, 'max', area);
 
 /** Al cambiar el tamaño del escritorio: los encajes se recalculan y las demás vuelven dentro. */
-export function relayout(s: OsState, area: { w: number; h: number }): void {
+export function relayout(s: OsState, area: { w: number; h: number }, prev?: { w: number; h: number }): void {
 	for (const d of s.desks)
 		for (const w of d.wins) {
 			if (w.snap) Object.assign(w, snapRect(w.snap, area));
+			else if (prev && inside(w, prev)) Object.assign(w, contain(fit(w, area), area));
 			else Object.assign(w, fit(w, area));
 		}
+}
+
+/** Si la ventana se ve entera en ese escritorio. */
+const inside = (r: Rect, area: { w: number; h: number }) => r.x >= 0 && r.y >= 0 && r.x + r.w <= area.w && r.y + r.h <= area.h;
+
+/** La ventana entera dentro del escritorio: se mueve hacia dentro y, si no cabe, encoge (hasta MIN_W × MIN_H). */
+export function contain(r: Rect, area: { w: number; h: number }): Rect {
+	const w = Math.max(MIN_W, Math.min(r.w, area.w));
+	const h = Math.max(MIN_H, Math.min(r.h, area.h));
+	return { w, h, x: clamp(r.x, 0, Math.max(0, area.w - w)), y: clamp(r.y, 0, Math.max(0, area.h - h)) };
 }
 
 /** Alt+Tab: la siguiente ventana por orden de uso (dir 1) o la anterior (-1), incluidas las minimizadas. */
