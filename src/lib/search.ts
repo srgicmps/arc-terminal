@@ -1,6 +1,7 @@
 // Búsqueda de la barra de comandos en el índice static/data/search.json (scripts/sources/search.ts).
 // Lógica pura, sin Svelte, para probarla con Vitest. El índice se carga aparte, en diferido.
 import { commandWithArg, findCommand, isTickerLike, norm, splitInput, symbolFunction, type Option } from './cmdline.ts';
+import { COUNTRIES, demonymForms } from './countries.ts';
 import { LEADERS } from './leaders.ts';
 import { plain } from './news.ts';
 import type { SearchEntry } from './types.ts';
@@ -103,13 +104,26 @@ export function searchOptions(raw: string, suggestions: Option[], index: Indexed
 	return hits;
 }
 
-/** Titulares, BOE y valores del índice ligero que encajan con lo escrito. */
+/** El líder de un enlace interno a LIDER («/lider?id=lagarde» → «lagarde»), o null si es otro enlace. */
+export function leaderOf(url: string): string | null {
+	const m = /^\/lider\?id=([^&#]+)/.exec(url);
+	return m ? decodeURIComponent(m[1]) : null;
+}
+
+/** Titulares, BOE, valores y actos de agenda del índice ligero que encajan con lo escrito. */
 function indexHits(raw: string, suggestions: Option[], index: Indexed[], limit: number): Option[] {
 	if (!index.length) return [];
 	const listed = new Set(suggestions.map((o) => o.code));
 	const hits: Option[] = [];
+	// Un acto por líder: todos abren la misma ficha.
+	const leaders = new Set<string>();
 	for (const e of searchIndex(raw, index, limit + listed.size)) {
-		if (e.s === 'Valor') {
+		if (e.s === 'Agenda') {
+			const id = leaderOf(e.u);
+			if (!id || leaders.has(id)) continue;
+			leaders.add(id);
+			hits.push({ code: 'AGENDA', desc: e.t, kind: 'Agenda', run: `LIDER ${id}` });
+		} else if (e.s === 'Valor') {
 			const sym = symbolOf(e.u);
 			if (!sym || listed.has(sym)) continue;
 			hits.push({ code: sym, desc: e.t.replace(/^\S+ · /, ''), kind: 'Valor', run: sym });
@@ -123,6 +137,20 @@ function indexHits(raw: string, suggestions: Option[], index: Indexed[], limit: 
 		hits.unshift({ code: q, desc: 'Ficha del valor', kind: 'Valor', run: q });
 	}
 	return hits;
+}
+
+/**
+ * Los países de PAIS como opciones de la barra: «alemania», «japón» o «francés» + Intro abren su ficha
+ * (/pais?c=DE). El código es el nombre, no «DE»: ese es también un valor (Deere) y «ES», un comando.
+ */
+export function countryEntries(): Option[] {
+	return COUNTRIES.map((c) => ({
+		code: norm(c.name),
+		desc: `Ficha · ${c.code}`,
+		kind: 'País',
+		aliases: [...(c.aliases ?? []), ...demonymForms(c.demonym)],
+		run: `PAIS ${c.code}`
+	}));
 }
 
 /**

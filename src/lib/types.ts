@@ -803,8 +803,8 @@ export interface SearchEntry {
 	t: string;
 	/** Enlace: externo (https://…) o interno de la web («/s?sym=NVDA», sin la base). */
 	u: string;
-	/** Etiqueta que se ve en la barra: NEWS, BOE o Valor. */
-	s: 'NEWS' | 'BOE' | 'Valor';
+	/** Etiqueta que se ve en la barra: NEWS, BOE, Valor o Agenda (actos de los líderes). */
+	s: 'NEWS' | 'BOE' | 'Valor' | 'Agenda';
 }
 
 // ---------- Rutas marítimas clave (IMF PortWatch) ----------

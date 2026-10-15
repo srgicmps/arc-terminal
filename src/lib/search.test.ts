@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { canonical, resolveInput, suggest, targetPath, type Option } from './cmdline.ts';
-import { hasWords, leaderEntries, prepare, queryWords, searchIndex, searchOptions, symbolOf } from './search.ts';
+import { countryEntries, hasWords, leaderEntries, prepare, queryWords, searchIndex, searchOptions, symbolOf } from './search.ts';
 import type { SearchEntry } from './types.ts';
 
 const entry = (t: string, s: SearchEntry['s'] = 'NEWS', u = `https://a.example/${encodeURIComponent(t)}`): SearchEntry => ({ t, u, s });
@@ -120,6 +120,32 @@ describe('leaderEntries', () => {
 		const target = resolveInput('trump', suggest('trump', leaderEntries()));
 		expect(target && canonical(target)).toBe('LIDER trump');
 		expect(target && targetPath(target)).toEqual({ route: '/lider', search: '?id=trump' });
+	});
+});
+
+describe('countryEntries', () => {
+	const all = () => [...leaderEntries(), ...countryEntries()];
+	it('«alemania», «japon» o «francés» + Intro abren la ficha del país', () => {
+		for (const [q, c] of [['alemania', 'DE'], ['japon', 'JP'], ['francés', 'FR'], ['germany', 'DE']]) {
+			const target = resolveInput(q, suggest(q, all()));
+			expect(target && canonical(target)).toBe(`PAIS ${c}`);
+		}
+	});
+	it('«DE» no es Alemania: el código es el nombre', () => {
+		expect(countryEntries().some((o) => o.code === 'DE' || o.code === 'ES')).toBe(false);
+	});
+});
+
+describe('actos de agenda en la barra', () => {
+	const agenda = prepare([
+		entry('Lagarde · 15 oct 14:30 · Rueda de prensa', 'Agenda', '/lider?id=lagarde'),
+		entry('Lagarde · 16 oct · Rueda en Washington', 'Agenda', '/lider?id=lagarde'),
+		entry('Trump · 15 oct 18:00 · Rueda de prensa', 'Agenda', '/lider?id=trump')
+	]);
+	it('abren la ficha del líder, uno por líder', () => {
+		const hits = searchOptions('rueda', [], agenda).filter((o) => o.kind === 'Agenda');
+		expect(hits.map((o) => o.run)).toEqual(['LIDER lagarde', 'LIDER trump']);
+		expect(hits[0].desc).toBe('Lagarde · 15 oct 14:30 · Rueda de prensa');
 	});
 });
 
