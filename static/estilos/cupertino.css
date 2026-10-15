@@ -63,6 +63,14 @@
 		--cu-icon: 22px;
 		--cu-stick: 0px; /* lo que ya hay pegado arriba en el móvil (índice de paneles) */
 		--tabbar-h: 56px;
+		--cu-card: #1c1c1e; /* la tarjeta (--panel), opaca también donde --panel pasa a material */
+		--cu-menu: #252527; /* menús (sugerencias de la barra) */
+		--cu-bar-opaque: #0c0c0d; /* barras fijas del móvil (sin desenfoque): opacas, que no se lea nada a través */
+		/* Barras de desplazamiento como las del sistema: finas, grises translúcidas y sin carril. */
+		--scroll-w: 9px;
+		--scroll-thumb: rgba(255, 255, 255, 0.22);
+		--scroll-track: transparent;
+		--cu-scroll-hover: rgba(255, 255, 255, 0.4);
 
 		/* ── Letras: las del sistema, en todo (las cifras ya van tabulares) ── */
 		--sans: -apple-system, system-ui, 'Segoe UI', Roboto, 'Inter', sans-serif;
@@ -164,6 +172,11 @@
 		--cu-hover: rgba(0, 0, 0, 0.025);
 		--cu-sheet: #f2f2f7;
 		--cu-grabber: #c7c7cc;
+		--cu-card: #ffffff;
+		--cu-menu: #ffffff;
+		--cu-bar-opaque: #f9f9fb;
+		--scroll-thumb: rgba(0, 0, 0, 0.22);
+		--cu-scroll-hover: rgba(0, 0, 0, 0.4);
 		--shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.05);
 		--shadow-pop: 0 18px 48px rgba(0, 0, 0, 0.16), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
 	}
@@ -244,9 +257,9 @@
 		border-radius: var(--radius);
 		box-shadow: var(--shadow-pop);
 	}
-	:root[data-style='cupertino'] .suggest li[aria-selected='true'] {
-		border-radius: var(--radius-s);
-		margin-inline: var(--sp-6);
+	/* Menú opaco: con material translúcido se leía el texto de debajo entre las sugerencias. */
+	:root[data-style='cupertino'] .suggest {
+		--raise: var(--cu-menu);
 	}
 
 	/* ── Segmentado en píldora: pista gris y la opción elegida como una tarjeta con sombra ─────────── */
@@ -296,25 +309,19 @@
 	 * y sin desenfoque. Con «reducir transparencia», opaco del todo (más abajo). */
 	@media (max-width: 720px) {
 		:root[data-style='cupertino'] .thumb {
-			--panel: var(--cu-bar-solid);
+			--panel: var(--cu-bar-opaque);
 		}
 		:root[data-style='cupertino'] .pidx {
-			--bg: var(--cu-bar-solid);
+			--bg: var(--cu-bar-opaque);
 		}
 	}
 	@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
 		@media (min-width: 721px) {
 			:root[data-style='cupertino'][data-fit] .ph,
-			:root[data-style='cupertino'] .max .ph,
-			:root[data-style='cupertino'] .capped .t thead th {
+			:root[data-style='cupertino'] .max .ph {
 				--panel: var(--cu-material);
 				-webkit-backdrop-filter: saturate(180%) blur(20px);
 				backdrop-filter: saturate(180%) blur(20px);
-			}
-			:root[data-style='cupertino'] .suggest {
-				--raise: var(--cu-material-solid);
-				-webkit-backdrop-filter: saturate(180%) blur(24px);
-				backdrop-filter: saturate(180%) blur(24px);
 			}
 		}
 	}
@@ -324,7 +331,7 @@
 			--cu-material-solid: var(--raise);
 			--cu-bar-solid: var(--bg);
 		}
-		:root[data-style='cupertino'] :is(.ph, .suggest, .t thead th) {
+		:root[data-style='cupertino'] :is(.ph, .t thead th) {
 			-webkit-backdrop-filter: none;
 			backdrop-filter: none;
 		}
@@ -462,8 +469,9 @@
 	stroke-width: 1.5;
 	stroke-linecap: round;
 }
-/* La lupa también lleva su etiqueta, como las demás pestañas (el nombre accesible ya lo da aria-label). */
-[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] button::after {
+/* La lupa (el último botón de la barra) también lleva su etiqueta, como las demás pestañas (el nombre accesible ya lo
+   da aria-label). Solo la lupa: el botón de Experiencias tiene la suya. */
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] > button:last-child::after {
 	content: 'Buscar' / '';
 }
 [data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] :is([aria-current='page'], [aria-pressed='true']) {
@@ -476,7 +484,7 @@
 }
 @media (max-width: 720px) {
 	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] {
-		background: var(--cu-bar-solid);
+		background: var(--cu-bar-opaque);
 		border-top: var(--hair) solid var(--line);
 	}
 }
@@ -593,7 +601,6 @@
 		max-height: calc(100dvh - var(--cu-top-h));
 		overflow-y: auto;
 		overscroll-behavior: contain;
-		scrollbar-width: thin;
 		padding: var(--sp-4) 0 var(--sp-24);
 	}
 	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='keys']::before {
@@ -691,6 +698,16 @@
 	border-radius: 7px;
 	font-size: var(--fs-xs);
 }
+/* La sugerencia elegida, como una fila de menú del sistema: píldora separada de los bordes y el texto en su sitio
+   (el margen se descuenta del relleno, así no se mueve al recorrerlas con las flechas). */
+[data-style='cupertino'][data-style] [data-ui='cmd'] .suggest li[aria-selected='true']:not(:has(> a)),
+[data-style='cupertino'][data-style] [data-ui='cmd'] .suggest li[aria-selected='true'] > a {
+	padding-inline: calc(var(--pad-x) - var(--sp-6));
+}
+[data-style='cupertino'][data-style] [data-ui='cmd'] .suggest li[aria-selected='true'] {
+	margin-inline: var(--sp-6);
+	border-radius: var(--radius-s);
+}
 /* Hoja de búsqueda (la lupa de las pestañas). En el móvil, un campo flotante sobre las pestañas. */
 [data-style='cupertino'][data-style] [data-ui='app'] [data-ui='cmd'].sheet {
 	left: var(--gutter);
@@ -701,6 +718,13 @@
 	box-shadow:
 		var(--shadow-pop),
 		0 0 0 100vmax var(--scrim);
+}
+/* En el móvil las sugerencias se abren hacia arriba: separadas del campo y sin la sombra que caía sobre él. */
+@media (max-width: 720px) {
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='cmd'].sheet .suggest {
+		margin-bottom: var(--sp-8);
+		box-shadow: var(--cu-field-ring);
+	}
 }
 /* Desde 721 px, como un buscador de sistema: centrado arriba, grande, con el resto atenuado. */
 @media (min-width: 721px) {
@@ -946,6 +970,33 @@
 [data-style='cupertino'][data-style] .news li:not(:last-child) {
 	background: linear-gradient(var(--line), var(--line)) no-repeat right bottom / calc(100% - var(--pad-x)) var(--hair);
 }
+/* Lo redondeado recorta lo suyo: una tabla que se desplaza a lo ancho, una fila resaltada o una barra de
+   desplazamiento no asoman con esquinas cuadradas. clip y no hidden: no crea un contenedor de scroll, así las
+   cabeceras fijas de las tablas siguen funcionando. */
+[data-style='cupertino'][data-style] [data-ui='panel'] > :nth-child(1 of :not([data-ui='panel-head'], .pnote)),
+[data-style='cupertino'][data-style] [data-ui='panel'] > :nth-last-child(1 of :not([data-ui='panel-head'], .pnote)) {
+	overflow: clip;
+}
+
+/* Encajar en pantalla: cada panel hace scroll por dentro. Si el título quedara fuera de la tarjeta, la barra de
+   desplazamiento iría por fuera y el contenido se cortaría con esquinas cuadradas abajo. Así que aquí el panel
+   entero es la tarjeta (título dentro y fijo arriba, opaco: con material se leían las filas a través) y lo recorta todo con sus esquinas. */
+@media (min-width: 1280px) {
+	[data-style='cupertino'][data-style][data-fit] [data-ui='main'] [data-ui='panel']:not(.max) {
+		border-radius: var(--radius);
+		background: var(--cu-card);
+		box-shadow: var(--shadow);
+	}
+	[data-style='cupertino'][data-style][data-fit] [data-ui='main'] [data-ui='panel']:not(.max) > [data-ui='panel-head'] {
+		padding: var(--sp-10) var(--pad-x) var(--sp-8);
+		background: var(--cu-card);
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+	[data-style='cupertino'][data-style][data-fit] [data-ui='main'] [data-ui='panel']:not(.max) > .pnote {
+		padding-bottom: var(--sp-10);
+	}
+}
 
 /* ── Panel ampliado: hoja modal desde abajo ─────────────────────────────────────────────────────── */
 [data-style='cupertino'][data-style] [data-ui='panel'].max {
@@ -1017,6 +1068,16 @@
 [data-style='cupertino'][data-style] :is(.search, .chip-input) input:focus-visible {
 	border-color: var(--amber);
 }
+/* Campos y desplegables sueltos de las vistas (HIPOTECA, AHORRO…): los mismos que el buscador, redondeados y
+   sobre la pista gris, en vez de cajas cuadradas; el foco sigue marcando el borde con el acento. */
+[data-style='cupertino'][data-style] [data-ui='main'] :is(input:is([type='number'], [type='text'], [type='search'], [type='email'], [type='url'], :not([type])), select) {
+	border-color: transparent;
+	border-radius: var(--radius-s);
+	background-color: var(--cu-track);
+}
+[data-style='cupertino'][data-style] [data-ui='main'] :is(input, select):focus {
+	border-color: var(--amber);
+}
 [data-style='cupertino'][data-style] [data-ui='foot'] {
 	border-top: 0;
 }
@@ -1072,4 +1133,9 @@
 	from {
 		transform: translateY(100%);
 	}
+}
+
+/* Al pasar el ratón, la barra de desplazamiento se marca un poco más, como en el sistema. */
+[data-style='cupertino'][data-style] ::-webkit-scrollbar-thumb:hover {
+	background-color: var(--cu-scroll-hover);
 }

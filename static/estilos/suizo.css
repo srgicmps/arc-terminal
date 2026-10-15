@@ -38,6 +38,10 @@
 		--sz-red: #ff3b30;
 		--sz-on-red: #000000;
 		--sz-rule: var(--sp-3);
+		/* Barras de desplazamiento: una línea gris recta, sin carril; al pasar el ratón, del color del texto. */
+		--scroll-w: 8px;
+		--scroll-thumb: #5c5c5c;
+		--scroll-track: transparent;
 
 		/* ── Letras: una neogrotesca para todo, cifras tabulares (las pone body) ── */
 		--sans: 'Inter Tight', 'Inter', Arial, sans-serif;
@@ -127,6 +131,7 @@
 		--piece-b-edge: #0a0a0a;
 		--sz-red: #e3000f;
 		--sz-on-red: #ffffff;
+		--scroll-thumb: #a3a3a3;
 	}
 	@media (max-width: 720px) {
 		:root[data-style='suizo'] {
@@ -448,34 +453,34 @@
 	[data-style='suizo'][data-style] [data-ui='main'] > :is(.grid-2, .grid-2e, .grid-3) {
 		grid-template-columns: repeat(12, minmax(0, 1fr));
 	}
-	[data-style='suizo'][data-style] [data-ui='main'] > :is(.grid-2, .grid-2e) > .col {
+	[data-style='suizo'][data-style] [data-ui='main'] > :is(.grid-2, .grid-2e) > :is(.col, [data-ui='panel']) {
 		grid-column: span 6;
 	}
-	[data-style='suizo'][data-style] [data-ui='main'] > .grid-3 > .col {
+	[data-style='suizo'][data-style] [data-ui='main'] > .grid-3 > :is(.col, [data-ui='panel']) {
 		grid-column: span 4;
 	}
-	[data-style='suizo'][data-style] [data-ui='main'] > .grid > .col:only-child {
+	[data-style='suizo'][data-style] [data-ui='main'] > .grid > :is(.col, [data-ui='panel']):only-child {
 		grid-column: 1 / -1;
 	}
 	/* La primera rejilla de la vista abre con la columna principal más ancha. */
-	[data-style='suizo'][data-style] [data-ui='main'] > .grid-2:not(.grid ~ .grid) > .col:first-child:nth-last-child(2) {
+	[data-style='suizo'][data-style] [data-ui='main'] > .grid-2:not(.grid ~ .grid) > :is(.col, [data-ui='panel']):first-child:nth-last-child(2) {
 		grid-column: span 7;
 	}
-	[data-style='suizo'][data-style] [data-ui='main'] > .grid-2:not(.grid ~ .grid) > .col:nth-child(2):last-child {
+	[data-style='suizo'][data-style] [data-ui='main'] > .grid-2:not(.grid ~ .grid) > :is(.col, [data-ui='panel']):nth-child(2):last-child {
 		grid-column: span 5;
 	}
-	[data-style='suizo'][data-style] [data-ui='main'] > .grid-3:not(.grid ~ .grid) > .col:nth-last-child(3):first-child,
-	[data-style='suizo'][data-style] [data-ui='main'] > .grid-3:not(.grid ~ .grid) > .col:nth-child(3):last-child {
+	[data-style='suizo'][data-style] [data-ui='main'] > .grid-3:not(.grid ~ .grid) > :is(.col, [data-ui='panel']):nth-last-child(3):first-child,
+	[data-style='suizo'][data-style] [data-ui='main'] > .grid-3:not(.grid ~ .grid) > :is(.col, [data-ui='panel']):nth-child(3):last-child {
 		grid-column: span 3;
 	}
-	[data-style='suizo'][data-style] [data-ui='main'] > .grid-3:not(.grid ~ .grid) > .col:nth-child(2):nth-last-child(2) {
+	[data-style='suizo'][data-style] [data-ui='main'] > .grid-3:not(.grid ~ .grid) > :is(.col, [data-ui='panel']):nth-child(2):nth-last-child(2) {
 		grid-column: span 6;
 	}
 	/* Filete vertical en el centro de cada medianil. */
-	[data-style='suizo'][data-style] [data-ui='main'] > .grid > .col + .col {
+	[data-style='suizo'][data-style] [data-ui='main'] > .grid > :is(.col, [data-ui='panel']:not(.max)) + :is(.col, [data-ui='panel']:not(.max)) {
 		position: relative;
 	}
-	[data-style='suizo'][data-style] [data-ui='main'] > .grid > .col + .col::before {
+	[data-style='suizo'][data-style] [data-ui='main'] > .grid > :is(.col, [data-ui='panel']:not(.max)) + :is(.col, [data-ui='panel']:not(.max))::before {
 		content: '';
 		position: absolute;
 		top: 0;
@@ -483,6 +488,11 @@
 		left: calc(var(--grid-gap) / -2);
 		width: var(--hair);
 		background: var(--line);
+	}
+	/* Un panel suelto en la rejilla (sin .col) lleva el filete por fuera: sin esquinas redondeadas, no hace falta que
+	   recorte su contenido (la base recorta los paneles de las estéticas redondeadas). */
+	[data-style='suizo'][data-style] [data-ui='main'] > .grid > [data-ui='panel']:not(.max) + [data-ui='panel']:not(.max) {
+		overflow: visible;
 	}
 	/* Subcolumnas de texto, como en un diario, con su filete. */
 	[data-style='suizo'][data-style] [data-ui='main'] > .grid > .col {
@@ -493,6 +503,7 @@
 
 /* ── El panel que abre la vista, destacado: título grande (en el móvil, también) ── */
 [data-style='suizo'][data-style] [data-ui='main'] > .grid-2:not(.grid ~ .grid) > .col:first-child > [data-ui='panel']:first-child,
+[data-style='suizo'][data-style] [data-ui='main'] > .grid-2:not(.grid ~ .grid) > [data-ui='panel']:first-child,
 [data-style='suizo'][data-style] [data-ui='main'] > .grid-3:not(.grid ~ .grid) > .col:nth-child(2) > [data-ui='panel']:first-child,
 [data-style='suizo'][data-style] [data-ui='main'] > .grid:not(.grid-2, .grid-2e, .grid-3, .grid ~ .grid) > .col:first-child > [data-ui='panel']:first-child {
 	--fs-title: var(--fs-xxl);
@@ -560,5 +571,49 @@
 		color: var(--sz-red);
 		box-shadow: inset 0 var(--sp-3) 0 var(--sz-red);
 		text-decoration: none;
+	}
+}
+
+/* ── Barras de desplazamiento: rectas, como todo lo demás (la base las redondea) ── */
+[data-style='suizo'][data-style] ::-webkit-scrollbar-thumb {
+	border-radius: 0;
+}
+[data-style='suizo'][data-style] ::-webkit-scrollbar-thumb:hover {
+	background-color: var(--fg);
+}
+
+/* ── Panel ampliado: margen interior (todo va a ras del borde, y aquí el borde es el marco) y sin el filete de arriba,
+   que con el marco se veía doble ── */
+[data-style='suizo'][data-style] [data-ui='panel'].max {
+	padding-inline: var(--sp-20);
+}
+[data-style='suizo'][data-style] [data-ui='panel'].max > [data-ui='panel-head'] {
+	border-top: 0;
+}
+
+/* ── Sugerencias de la barra: con margen dentro del marco y la elegida invertida (el fondo gris apenas se veía) ── */
+[data-style='suizo'][data-style] [data-ui='cmd'] .suggest {
+	--pad-x: var(--sp-12);
+}
+[data-style='suizo'][data-style] [data-ui='cmd'] .suggest li[aria-selected='true'] {
+	--amber: var(--bg);
+	--faint: var(--bg);
+	background-color: var(--fg);
+	color: var(--bg);
+}
+
+/* ── Campos sueltos de las vistas (HIPOTECA…): marco del color del texto, como los desplegables ── */
+[data-style='suizo'][data-style] [data-ui='main'] input:is([type='number'], [type='text'], [type='search'], [type='email'], [type='url'], :not([type])) {
+	border-color: var(--fg);
+	background-color: var(--panel);
+}
+[data-style='suizo'][data-style] [data-ui='main'] :is(input, select):focus {
+	border-color: var(--amber);
+}
+
+/* ── Encajar en pantalla: el panel hace scroll por dentro; un poco de aire entre el texto (a ras) y su barra ── */
+@media (min-width: 1280px) {
+	[data-style='suizo'][data-style][data-fit] [data-ui='main'] > .grid:last-child > .col > [data-ui='panel']:not(.max) {
+		padding-right: var(--sp-8);
 	}
 }
