@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countriesIn, quakePoints, sanctionPoints, straitPoints } from './layers.ts';
+import { airspacePoints, countriesIn, quakePoints, sanctionPoints, straitPoints } from './layers.ts';
 
 describe('capas del mapa', () => {
 	it('encuentra países por nombre y gentilicio, sin confundir Sudán con Sudán del Sur', () => {
@@ -31,5 +31,17 @@ describe('capas del mapa', () => {
 	it('descarta lo que no tiene coordenadas', () => {
 		const q = { id: '1', mag: 6.2, place: 'Japón', time: '', url: 'u', tsunami: false, alert: null, lat: NaN, lon: 140, depth: 10 };
 		expect(quakePoints([q, { ...q, id: '2', lat: 35 }])).toMatchObject([{ id: 'q-2', strong: true }]);
+	});
+});
+
+describe('airspacePoints (F22)', () => {
+	it('sitúa cada CZIB en su país o zona y descarta lo que no sabe situar', () => {
+		const c = (id: string, areaEn: string) => ({ id, area: areaEn, areaEn, issued: '2026-01-01', revised: null, validUntil: null, url: 'u' });
+		const pts = airspacePoints([c('A', 'Ukraine'), c('B', 'the Persian Gulf and Gulf of Oman'), c('C', 'Atlantis')]);
+		expect(pts.map((p) => [p.id, p.country])).toEqual([
+			['a-A', 'UA'],
+			['a-B', undefined]
+		]);
+		expect(pts[1].lat).toBe(26.2);
 	});
 });
