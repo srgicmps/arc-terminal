@@ -3,7 +3,6 @@
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import '../app.css';
-	import '#lib/estilos-css.ts';
 	import '../styles/ajustes.css';
 	import { goto } from '$app/navigation';
 	import { neighbour, nudge, SWIPE, swipeDirection } from '#lib/swipe.ts';

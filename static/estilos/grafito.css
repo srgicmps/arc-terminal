@@ -2,6 +2,7 @@
  * <html data-style="grafito">: paneles como tarjetas separadas, esquinas suaves, sombra muy leve, Inter para
  * todo (cifras tabulares) y algo más de aire. No toca el
  * acento (bloques [data-accent]) ni la densidad: se combinan con cualquiera. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @layer tokens, estilos, ajustes;
 @layer estilos {
 	:root[data-style='grafito'],

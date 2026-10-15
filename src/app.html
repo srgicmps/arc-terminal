@@ -50,32 +50,11 @@
 				}
 			} catch (e) {}
 			document.documentElement.dataset.modo = m;
-			// Estética (src/lib/estilos.ts, decideStyle: misma regla). Sin nada guardado, quien ya tenía otras claves
-			// arc-… sigue en Terminal y quien llega nuevo empieza en Grafito; se guarda. Luego, las letras del estilo.
-			var FONTS = {
-				terminal: '',
-				grafito: 'family=Inter:wght@400;500;600;700',
-				cristal: 'family=Inter:wght@400;500;600;700',
-				papel: 'family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500',
-				calido: 'family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;500;600',
-				cupertino: 'family=Inter:wght@400;500;600;700',
-				retro: 'family=VT323&family=IBM+Plex+Mono:wght@400;500',
-				neon: 'family=Orbitron:wght@500;700&family=Share+Tech+Mono',
-				brutal: 'family=Archivo:wght@400;600;800;900&family=Space+Mono:wght@400;700',
-				bauhaus: 'family=Jost:wght@400;500;600;700',
-				suizo: 'family=Inter+Tight:wght@400;500;600;700;800',
-				cuaderno: 'family=Caveat:wght@500;700&family=Nunito+Sans:wght@400;600;700',
-				nordico: 'family=Nunito:wght@400;500;600;700',
-				lujo: 'family=Playfair+Display:wght@500;600;700&family=Lato:wght@400;700',
-				oceano: 'family=Manrope:wght@400;500;600;700',
-				plano: 'family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@500;600',
-				contraste: 'family=Atkinson+Hyperlegible:wght@400;700'
-			};
-			var st = 'grafito';
+			// Estética: como decideStyle (src/lib/estilos.ts).
+			var st;
 			try {
 				st = localStorage.getItem('arc-style');
-				if (st === 'modern') st = 'grafito';
-				if (!(st in FONTS)) {
+				if (st === 'modern' || !/^[a-z]+$/.test(st || '')) {
 					st = 'grafito';
 					for (var j = 0; j < localStorage.length; j++) {
 						var q = localStorage.key(j);
@@ -84,15 +63,9 @@
 					localStorage.setItem('arc-style', st);
 				}
 			} catch (e) {}
-			if (!(st in FONTS)) st = 'grafito';
+			st = st || 'grafito';
 			document.documentElement.dataset.style = st;
-			if (FONTS[st]) {
-				var fl = document.createElement('link');
-				fl.id = 'font-style';
-				fl.rel = 'stylesheet';
-				fl.href = 'https://fonts.googleapis.com/css2?' + FONTS[st] + '&display=swap';
-				document.head.append(fl);
-			}
+			if (st !== 'terminal') document.write('<link id="style-sheet" rel="stylesheet" href="%sveltekit.assets%/estilos/' + st + '.css">');
 		</script>
 		%sveltekit.head%
 	</head>

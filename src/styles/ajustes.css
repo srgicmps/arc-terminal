@@ -1,7 +1,7 @@
 /*
- * Ajustes que van por encima de la estética: densidad «Cómoda» y modo «Sencillo». Se cargan DESPUÉS de los
- * archivos de src/styles/estilos/ (ver src/lib/estilos-css.ts), para mandar sobre ellos con la misma
- * especificidad: elijas la estética que elijas, «Cómoda» y «Sencillo» dan su letra y su aire.
+ * Ajustes que van por encima de la estética: densidad «Cómoda» y modo «Sencillo». Van en la capa «ajustes», que
+ * manda sobre la de las estéticas (static/estilos/, capa «estilos») por el orden de capas de app.css: elijas la
+ * estética que elijas, «Cómoda» y «Sencillo» dan su letra y su aire.
  */
 @layer tokens, estilos, ajustes;
 @layer ajustes {

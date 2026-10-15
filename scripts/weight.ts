@@ -8,8 +8,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
-/** Tope por vista, en bytes gzip. Hoy la más pesada (GEO) ronda los 156 KB. */
-export const LIMIT = 180 * 1024;
+/** Tope por vista, en bytes gzip. GEO ronda los 180 KB; Sergi lo subió a 200 con las estéticas (D45). */
+export const LIMIT = 200 * 1024;
 
 /** El JS y el CSS de la propia web que nombra una página: «_app/immutable/…». Sin repetir. */
 export function refsOf(html: string): string[] {

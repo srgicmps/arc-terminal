@@ -135,7 +135,7 @@ Un cambio de estética se hace en un solo sitio.
   mismo archivo). Para una web más densa o más aireada: `--pad-x` y `--row-y`, o la escala `--sp-*`.
   Sergi también puede elegir cian o azul en HELP, «A tu gusto» (`src/lib/taste.svelte.ts`): son bloques
   `[data-accent]` al final de `tokens.css` que redefinen `--amber*`; nada lleva el acento escrito a mano.
-  **Estéticas** (`ESTILO` y «A tu gusto»): `<html data-style="<id>">`, una por archivo en `src/styles/estilos/<id>.css`
+  **Estéticas** (`ESTILO` y «A tu gusto»): `<html data-style="<id>">`, una por archivo en `static/estilos/<id>.css`
   (registro en `src/lib/estilos.ts`; cómo se hace una, en `docs/estilos.md`). Capas CSS: `tokens` < `estilos` <
   `ajustes` (`src/styles/ajustes.css`: densidad y modo Sencillo). Clave `arc-style`, sincronizada con la cuenta. Sin
   nada guardado, `src/app.html` decide: «Terminal» si el navegador ya usaba la web, «Grafito» si es nuevo.

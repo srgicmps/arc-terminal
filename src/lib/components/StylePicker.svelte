@@ -1,14 +1,16 @@
 <!-- Selector de estética con vista previa: cada tarjeta lleva data-style y se pinta con los tokens de su estética
-	(tokens.css, «Vistas previas»). Lo usan HELP («A tu gusto») y ESTILO. Las letras de todas se cargan al abrirlo. -->
+	(tokens.css, «Vistas previas»). Lo usan HELP («A tu gusto») y ESTILO. Las hojas de todas (con sus letras) se cargan al abrirlo. -->
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { ESTILOS } from '#lib/estilos.ts';
-	import { READY } from '#lib/estilos-css.ts';
-	import { loadFonts, setStyle, taste } from '#lib/taste.svelte.ts';
+	import { ESTILOS, READY } from '#lib/estilos.ts';
+	import { useSheet } from '#lib/estilos-css.ts';
+	import { setStyle, taste } from '#lib/taste.svelte.ts';
 
 	const list = ESTILOS.filter((e) => READY.includes(e.id));
 
-	onMount(() => loadFonts(list.map((e) => e.id), 'font-preview'));
+	onMount(() => {
+		for (const e of list) useSheet(e.id, `style-preview-${e.id}`);
+	});
 </script>
 
 <div class="picker" role="radiogroup" aria-label="Estética">

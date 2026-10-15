@@ -1,8 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { decideStyle, ESTILOS, fontsUrl, parseStyle } from './estilos.ts';
+import { decideStyle, ESTILOS, parseStyle } from './estilos.ts';
 
-const DIR = 'src/styles/estilos';
+const DIR = 'static/estilos';
 const files = readdirSync(DIR).filter((f) => f.endsWith('.css'));
 const css = (id: string) => readFileSync(`${DIR}/${id}.css`, 'utf8');
 
@@ -46,8 +46,11 @@ const baseLight = tokens(base, (s) => s.split(',')[0].trim() === ":root[data-the
 function palettes(id: string) {
 	if (id === 'terminal') return { dark: baseDark, light: { ...baseDark, ...baseLight } };
 	const text = css(id);
-	const dark = tokens(text, (s) => s.includes(`[data-style='${id}']`) && !s.includes('data-theme'));
-	const light = tokens(text, (s) => s.includes(`[data-style='${id}']`) && s.includes("data-theme='light'"));
+	// Solo los bloques de la estética entera (cada parte del selector acaba en [data-style='id']), no los retoques
+	// de un elemento concreto (`[data-style='id'] .panel h2 { --faint: … }`).
+	const whole = (sel: string) => sel.split(',').every((p) => p.trim().endsWith(`[data-style='${id}']`));
+	const dark = tokens(text, (s) => whole(s) && !s.includes('data-theme'));
+	const light = tokens(text, (s) => whole(s) && s.includes("data-theme='light'"));
 	return { dark: { ...baseDark, ...dark }, light: { ...baseDark, ...baseLight, ...dark, ...light } };
 }
 
@@ -76,28 +79,24 @@ describe('estéticas', () => {
 		expect(decideStyle('nada', [])).toBe('grafito');
 	});
 
-	it('src/app.html conoce las mismas estéticas y letras', () => {
+	it('src/app.html aplica la misma regla y pone la hoja de la estética', () => {
 		const html = readFileSync('src/app.html', 'utf8');
-		for (const e of ESTILOS) expect(html, e.id).toContain(`${e.id}: '${e.fonts}'`);
 		expect(html).toContain("q !== 'arc-modo' && q !== 'arc-style'");
+		expect(html).toContain("%sveltekit.assets%/estilos/' + st + '.css");
 	});
 
-	it('una sola hoja de Google Fonts, sin familias repetidas', () => {
-		const url = fontsUrl(ESTILOS.map((e) => e.id))!;
-		const families = [...url.matchAll(/family=([^:&]+)/g)].map((m) => m[1]);
-		expect(new Set(families).size).toBe(families.length);
-		expect(fontsUrl(['terminal'])).toBeNull();
-	});
-
-	it('cada archivo de src/styles/estilos es una estética, en su capa, con su bloque de noche y de día', () => {
+	it('cada archivo de static/estilos es una estética, en su capa, con su bloque de noche y de día', () => {
 		for (const f of files) {
 			const id = f.replace(/\.css$/, '');
 			expect(ESTILOS.some((e) => e.id === id && id !== 'terminal'), f).toBe(true);
 			const text = css(id);
-			expect(text, f).toContain('@layer tokens, estilos, ajustes;\n@layer estilos {');
+			expect(text, f).toMatch(/^(?:\/\*[\s\S]*?\*\/\s*)?(?:@import url\('[^']+'\);\n)*@layer tokens, estilos, ajustes;\n@layer estilos \{/);
 			expect(text, f).toMatch(new RegExp(`:root\\[data-style='${id}'\\],\\s*\\[data-style='${id}'\\]`));
 			expect(text, f).toContain(`:root[data-theme='light'] [data-style='${id}']`);
 			expect(text, f).not.toContain('!important');
+			// Letras: solo de Google Fonts (libres), con @import al principio.
+			for (const m of text.matchAll(/@import\s+url\('([^']+)'\)/g)) expect(m[1], f).toMatch(/^https:\/\/fonts\.googleapis\.com\/css2\?/);
+			expect(text.replace(/@import[^;]+;/g, ''), f).not.toMatch(/url\(\s*['"]?https?:/);
 		}
 	});
 

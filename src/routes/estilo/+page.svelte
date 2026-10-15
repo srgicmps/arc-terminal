@@ -1,13 +1,12 @@
 <!-- ESTILO: elegir la estética, con vista previa de cada una (src/lib/estilos.ts; el aspecto, en
-	src/styles/estilos/). «ESTILO fósforo» llega con ?s=fósforo y se aplica al abrir. -->
+	static/estilos/). «ESTILO fósforo» llega con ?s=fósforo y se aplica al abrir. -->
 <script lang="ts">
 	import { page } from '$app/state';
 	import Panel from '#lib/components/Panel.svelte';
 	import StylePicker from '#lib/components/StylePicker.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Note from '#lib/components/ui/Note.svelte';
-	import { parseStyle } from '#lib/estilos.ts';
-	import { READY } from '#lib/estilos-css.ts';
+	import { parseStyle, READY } from '#lib/estilos.ts';
 	import { setStyle, taste } from '#lib/taste.svelte.ts';
 
 	$effect(() => {

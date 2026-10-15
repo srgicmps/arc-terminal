@@ -1,7 +1,21 @@
-// Carga las hojas de las estéticas (src/styles/estilos/*.css). +layout.svelte importa app.css, luego esto y
-// luego styles/ajustes.css (densidad y modo Sencillo, que mandan sobre la estética): el orden importa.
-// READY: las estéticas que ya tienen archivo (y Terminal, que es tokens.css). Solo esas salen en el selector.
+// Hojas de las estéticas: static/estilos/<id>.css. No van en el paquete de cada vista (pesarían en todas): se carga
+// solo la elegida, con un <link> que pone src/app.html antes de pintar y que setStyle cambia. Las vistas previas
+// (StylePicker) cargan las demás al abrirse. El orden da igual: van en la capa «estilos» (ver app.css).
+import { asset } from '$app/paths';
 
-const sheets = import.meta.glob('../styles/estilos/*.css', { eager: true });
+/** Dirección de la hoja de una estética (null para Terminal, que no tiene). */
+export const sheetHref = (id: string) => (id === 'terminal' ? null : asset(`/estilos/${id}.css` as Parameters<typeof asset>[0]));
 
-export const READY: string[] = ['terminal', ...Object.keys(sheets).map((p) => p.replace(/^.*\//, '').replace(/\.css$/, ''))];
+/** Pone (o quita) el <link> con id `linkId` para la hoja de esa estética. */
+export function useSheet(id: string, linkId: string) {
+	const href = sheetHref(id);
+	let link = document.getElementById(linkId) as HTMLLinkElement | null;
+	if (!href) return link?.remove();
+	if (!link) {
+		link = document.createElement('link');
+		link.id = linkId;
+		link.rel = 'stylesheet';
+		document.head.append(link);
+	}
+	if (link.getAttribute('href') !== href) link.href = href;
+}

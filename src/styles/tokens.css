@@ -121,7 +121,7 @@
 	--scrim: rgba(8, 10, 13, 0.72); /* fondo atenuado detrás del panel maximizado */
 	--dur-fast: 120ms; /* aparición breve (se quita con prefers-reduced-motion) */
 
-	/* ── Estética («Terminal», la de por defecto; cada estética la redefine en src/styles/estilos/<id>.css) ──
+	/* ── Estética («Terminal», la de por defecto; cada estética la redefine en static/estilos/<id>.css) ──
 	 * Solo forma: esquinas, sombras, cómo se separan los paneles, títulos y la letra base. Los colores van
 	 * arriba; la densidad, en su bloque. Un componente usa estos tokens y no sabe en qué estética está. */
 	--font-ui: var(--mono); /* letra base de la página (body) */
@@ -140,6 +140,7 @@
 	--title-color: var(--amber); /* color de los títulos de panel (tamaño, letra y mayúsculas: --fs-title, --title-*) */
 	--bg-image: none; /* dibujo de fondo de la página (rejilla, degradado…) */
 	--panel-blur: none; /* backdrop-filter de los paneles (cristal) */
+	--focus-w: var(--hair); /* grosor del contorno de foco con teclado */
 	--dur-ui: 0ms; /* transición de botones y filas al pasar el ratón */
 	--ease: cubic-bezier(0.2, 0, 0, 1);
 
@@ -200,6 +201,8 @@
  * Un elemento con data-style dentro de la página se pinta con esa estética. Los tokens que dependen de otros se
  * vuelven a calcular en él (si no, heredaría el valor ya calculado en <html>). Cada estilo puede pisarlos. */
 [data-style] {
+	--bg-image: none;
+	--panel-blur: none;
 	--border: var(--hair) solid var(--line);
 	--font-ui: var(--mono);
 	--title-font: var(--mono);

@@ -3,14 +3,14 @@
 // El acento va en <html data-accent> (lo pone ya src/app.html antes de pintar, para que no parpadee) y
 // tokens.css redefine --amber y compañía: ningún componente sabe de qué color es el acento.
 import { ACCENTS, cleanCodes, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, THUMB_MAX, type Accent, type Density } from './taste.ts';
-import { fontsUrl, isStyle, STYLE_KEY, type StyleId } from './estilos.ts';
+import { useSheet } from './estilos-css.ts';
 
 export { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, THUMB_MAX, type Accent, type Density };
 
-const KEYS = { style: STYLE_KEY, accent: 'arc-accent', density: 'arc-density', top: 'arc-keys', thumb: 'arc-thumb' };
+const KEYS = { style: 'arc-style', accent: 'arc-accent', density: 'arc-density', top: 'arc-keys', thumb: 'arc-thumb' };
 
 export const taste = $state({
-	style: 'terminal' as StyleId,
+	style: 'terminal',
 	accent: 'amber' as Accent,
 	density: 'compacta' as Density,
 	top: [...DEFAULT_TOP],
@@ -43,8 +43,7 @@ function json(key: string): unknown {
 /** Se llama al arrancar en el navegador (desde el layout). */
 export function initTaste() {
 	// src/app.html ya ha elegido y guardado la estética antes de pintar: aquí solo se lee.
-	const style = document.documentElement.dataset.style;
-	taste.style = isStyle(style) ? style : 'terminal';
+	taste.style = document.documentElement.dataset.style ?? 'terminal';
 	const accent = read(KEYS.accent);
 	if (accent === 'cyan' || accent === 'blue') taste.accent = accent;
 	if (read(KEYS.density) === 'comoda') taste.density = 'comoda';
@@ -53,27 +52,13 @@ export function initTaste() {
 }
 
 /** Estética: siempre se guarda (también «Terminal»), para que src/app.html no la vuelva a decidir. */
-export function setStyle(style: StyleId) {
-	if (!isStyle(style)) return;
+export function setStyle(style: string) {
 	taste.style = style;
 	document.documentElement.dataset.style = style;
 	write(KEYS.style, style);
-	loadFonts([style], 'font-style');
+	useSheet(style, 'style-sheet');
 }
 
-/** Pone (o cambia) la hoja de Google Fonts con las letras de esas estéticas. */
-export function loadFonts(ids: StyleId[], id: string) {
-	const href = fontsUrl(ids);
-	let link = document.getElementById(id) as HTMLLinkElement | null;
-	if (!href) return;
-	if (!link) {
-		link = document.createElement('link');
-		link.id = id;
-		link.rel = 'stylesheet';
-		document.head.append(link);
-	}
-	if (link.href !== href) link.href = href;
-}
 
 export function setAccent(accent: Accent) {
 	taste.accent = accent;

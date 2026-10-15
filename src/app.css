@@ -54,7 +54,7 @@ select {
 /* Foco con teclado: contorno ámbar fino. Solo con :focus-visible, para que el ratón y el dedo no lo muestren.
    Si un componente quita el outline, tiene que poner otra señal (borde ámbar, fondo…). */
 :focus-visible {
-	outline: var(--hair) solid var(--amber);
+	outline: var(--focus-w) solid var(--amber);
 	outline-offset: var(--sp-2);
 }
 

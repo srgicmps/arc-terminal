@@ -176,6 +176,7 @@
 		padding-inline: var(--sp-8);
 		background: none;
 		border: var(--border);
+		border-radius: var(--radius-s);
 		color: var(--muted);
 		font-size: var(--fs-s);
 		cursor: pointer;

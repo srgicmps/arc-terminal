@@ -383,6 +383,7 @@
 	.menu button {
 		background: none;
 		border: var(--border);
+		border-radius: var(--radius-s);
 		padding: 0 var(--sp-8);
 		color: var(--muted);
 		font-size: var(--fs-xs);
@@ -473,6 +474,7 @@
 		flex-direction: column;
 		overflow: auto;
 		border: var(--border);
+		border-radius: var(--radius-s);
 		box-shadow: var(--shadow-pop);
 	}
 
@@ -497,6 +499,7 @@
 		height: var(--btn-sm);
 		background: none;
 		border: var(--border);
+		border-radius: var(--radius-s);
 		color: var(--muted);
 		font-size: var(--fs-s);
 		cursor: pointer;
