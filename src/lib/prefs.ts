@@ -17,9 +17,10 @@ export interface Pref {
 }
 
 export const PREFS: Pref[] = [
-	{ key: 'arc-theme', storage: 'local', what: 'Tema: automático, de día o de noche', where: 'Botón ◐ de la cabecera', kind: 'ajuste' },
-	{ key: 'arc-fit', storage: 'local', what: 'Encajar en la pantalla (cada panel con su scroll)', where: 'Botón ⤢ de la cabecera', kind: 'ajuste' },
-	{ key: 'arc-mode', storage: 'local', what: 'Portada general o modular', where: 'Botón ▦ de la cabecera, en TOP', kind: 'ajuste' },
+	{ key: 'arc-theme', storage: 'local', what: 'Tema: automático, de día o de noche', where: '«⋯» de la cabecera', kind: 'ajuste' },
+	{ key: 'arc-fit', storage: 'local', what: 'Encajar en la pantalla (cada panel con su scroll)', where: '«⋯» de la cabecera', kind: 'ajuste' },
+	{ key: 'arc-tape-on', storage: 'local', what: 'Cinta de cotizaciones de la cabecera, a la vista o plegada', where: '«⋯» de la cabecera', kind: 'ajuste' },
+	{ key: 'arc-mode', storage: 'local', what: 'Portada general o modular', where: '«⋯» de la cabecera, en TOP', kind: 'ajuste' },
 	{ key: 'arc-modo', storage: 'local', what: 'Modo Sencillo (lo esencial, con explicaciones) o Terminal (todo, denso)', where: 'HELP, «A tu gusto», o MODO en la barra', kind: 'ajuste' },
 	{ key: 'arc-layout-<vista>', prefix: 'arc-layout-', storage: 'local', what: 'Paneles ocultos, orden y ancho de la vista modular', where: 'TOP en modo modular', kind: 'ajuste' },
 	{ key: 'arc-titles', storage: 'local', what: 'Idioma de los titulares (ES traducido o EN original)', where: 'Selector ES / EN de IMP', kind: 'ajuste' },
@@ -60,6 +61,8 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-cmd-favs', storage: 'local', what: 'Tus favoritos de la barra (hasta 9)', where: 'Barra: «fav ECO TIPOS», luego «1»', kind: 'dato' },
 	{ key: 'arc-mortgage', storage: 'local', what: 'Los datos de tu hipoteca (capital, años, tipo, diferencial y revisión)', where: 'HIPOTECA y ECO, «Tu hipoteca»', kind: 'dato' },
 	{ key: 'arc-portfolio', storage: 'local', what: 'Tus posiciones: código, cantidad, precio de compra, divisa, sector y precio a mano', where: 'CARTERA', kind: 'dato' },
+	{ key: 'arc-savings', storage: 'local', what: 'Las cantidades de las calculadoras de ahorro (interés compuesto y «lo que vale hoy»)', where: 'AHORRO', kind: 'dato' },
+	{ key: 'arc-basket', storage: 'local', what: 'Los pesos de tu cesta de la compra para tu inflación', where: 'AHORRO, «Tu inflación»', kind: 'dato' },
 	{ key: 'arc-fx', storage: 'local', what: 'Cantidad y divisas del conversor', where: 'WS, «Conversor»', kind: 'dato' },
 	{ key: 'arc-chess', storage: 'local', what: 'La partida de ajedrez en curso', where: 'CHESS', kind: 'dato' },
 	{ key: 'arc-puzzle', storage: 'local', what: 'El último problema del día resuelto', where: 'CHESS', kind: 'dato' },
