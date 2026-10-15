@@ -33,13 +33,13 @@
 
 <div class="vh" data-ui="view-head">
 	<div>
-		<h1><span class="code">{code}</span>{title}</h1>
-		{#if sub}<p>{sub}</p>{/if}
+		<h1 data-ui="view-title"><span class="code" data-ui="view-code">{code}</span>{title}</h1>
+		{#if sub}<p data-ui="view-sub">{sub}</p>{/if}
 		{#if isSimple() && plain?.length}
-			<ul class="plain">
+			<ul class="plain" data-ui="view-sum">
 				{#each plain as line (line)}<li>{line}</li>{/each}
 			</ul>
-		{:else if summary}<p class="sum">{summary}</p>{/if}
+		{:else if summary}<p class="sum" data-ui="view-sum">{summary}</p>{/if}
 		{#if isSimple() && hiddenPanels.size}
 			<p class="more">
 				{modo.all ? 'Ves todos los paneles.' : `Ves lo esencial: ${hiddenPanels.size} ${hiddenPanels.size === 1 ? 'panel más' : 'paneles más'} en el modo completo.`}

@@ -1,7 +1,7 @@
 /// <reference types="node" />
-// Órdenes de Sergi desde la barra (lote 27-B, D41 = A): alertas propias, lista MIS y palabras vigiladas.
-// La barra abre un issue ya escrito («[alerta] NVDA > 150», «[mis] NVDA AAPL», «[vigila] aranceles») y
-// scripts/notify.ts los lee aquí con el GITHUB_TOKEN de la Action.
+// Órdenes de Sergi que quedaban en issues (lote 27-B, D41): «[alerta] NVDA > 150», «[mis] NVDA AAPL»,
+// «[vigila] aranceles». Desde F14 van en su cuenta (D1); notify.ts solo usa esto para pasar a la cuenta los
+// issues que queden abiertos y cerrarlos. Cuando no quede ninguno, este archivo se puede borrar.
 // SEGURIDAD: el repo es público y cualquiera puede abrir issues. Solo cuentan los que ha abierto el dueño
 // (`user.login` y `author_association: OWNER`); los demás se ignoran sin tocarlos. Hay topes por tipo
 // (LIMITS de src/lib/useralerts.ts). Nada de aquí lleva el tema de ntfy ni la zona del diésel: los
