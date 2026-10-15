@@ -80,6 +80,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-localwx:<lat>,<lon>', prefix: 'arc-localwx:', storage: 'local', what: 'El tiempo de tu sitio, para no volver a pedirlo enseguida', where: 'WX', kind: 'caché' },
 	{ key: 'arc-os-pinned', storage: 'local', what: 'Apps ancladas en la barra de tareas de Arc OS', where: 'Arc OS, menú Inicio (clic derecho o «Anclar»)', kind: 'ajuste' },
 	{ key: 'arc-os-recent', storage: 'local', what: 'Las últimas apps abiertas en Arc OS (8)', where: 'Arc OS, menú Inicio', kind: 'dato' },
+	{ key: 'arc-os-packages', storage: 'local', what: 'Apps quitadas de Arc OS (salen de los menús; se siguen abriendo por comando)', where: 'Arc OS, Centro de paquetes', kind: 'ajuste' },
 	{ key: 'arc-os-widgets', storage: 'local', what: 'Widgets del escritorio de Arc OS y dónde está cada uno', where: 'Arc OS, escritorio y Panel de control', kind: 'ajuste' },
 	{ key: 'arc-os-bar', storage: 'local', what: 'Barra de tareas de Arc OS abajo o arriba', where: 'Arc OS, Panel de control', kind: 'ajuste' },
 	{ key: 'arc-os-wallpaper', storage: 'local', what: 'Fondo del escritorio de Arc OS', where: 'Arc OS, Panel de control', kind: 'ajuste' },
