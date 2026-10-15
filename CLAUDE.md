@@ -47,7 +47,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 ## Arquitectura
 - **La web es privada**: **Cloudflare Pages** la sirve en https://arcterminal.dev (dominio propio; también en https://arc-terminal.pages.dev), en la raíz, con
   **Cloudflare Access** delante (login por código al email de Sergi). La URL está en un solo sitio, `scripts/site.ts`,
-  y se cambia sin tocar código con la Variable de GitHub `SITE_URL` (p. ej. al pasar a un dominio propio).
+  y se cambia sin tocar código con la Variable de GitHub `SITE_URL`. GitHub Pages está apagado.
   Las Actions publican con `wrangler` (Secrets `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`) y leen la copia
   anterior con el service token de Access (`CF_ACCESS_CLIENT_ID`/`CF_ACCESS_CLIENT_SECRET`, `fetchPublished` en
   `scripts/lib.ts`).
@@ -61,11 +61,8 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   lo rellena al publicar con la API de Cloudflare (crea la base si no está, lee el AUD de la app de Access y el dominio
   del equipo; el token necesita D1 · Edit y Access: Apps and Policies y Organizations · Read). Las Variables
   `D1_DATABASE_ID`, `ACCESS_TEAM_DOMAIN` y `ACCESS_AUD` son opcionales y mandan. Sin nada, /api/* responde 503 y la web
-  va igual, solo en local. En GitHub Pages no hay API: todo sigue en el navegador.
-- **Transición**: GitHub Pages sigue publicando la misma web en https://srgicmps.github.io/arc-terminal/ (por eso
-  `paths.base` es `/arc-terminal` salvo con `BASE_PATH` vacío, que usa el build de Cloudflare) hasta que Sergi
-  confirme que la nueva va bien; luego se apaga en otro PR.
-- Pages no tiene servidor, así que **GitHub Actions hace de servidor**: cada 15–30 min un script de Node
+  va igual, solo en local.
+- La web es estática, así que **GitHub Actions hace de servidor**: cada 15–30 min un script de Node
   descarga los datos, los guarda como JSON y vuelve a publicar la web. Así tampoco hay problemas de CORS.
 - **Dos velocidades**: `deploy.yml` (cada 15 min y en cada push a main) refresca todo lo caducado según el
   `maxAgeMinutes` de cada fuente; `fast.yml` (cada 5 min) fuerza solo las urgentes (lista `URGENT`: terremotos,
@@ -82,9 +79,17 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   (`/api/alerts?all=1`, sin emails) y `scripts/alerts/users.ts` reparte los avisos de la pasada según cada uno. Su
   historial va SOLO en la caché de Actions (`.notify-cache/notify-users.json`, por uid aleatorio), nunca en static/data.
   Los de Sergi siguen saliendo por `NTFY_TOPIC`.
+- **«Tu mañana»** (`scripts/alerts/brief.ts`, panel en AVISOS): resumen diario personal a la hora que elige cada uno
+  (tiempo de su sitio con Open-Meteo, sus valores, su agenda y titulares de IMP de sus temas; 5 líneas). Por su ntfy y,
+  si lo pide, por email: la Action manda el texto por uid a `/api/brief` (`cloud/brief.ts`) y la web lo envía con
+  Brevo (Secrets de Pages `BREVO_API_KEY` y `BREVO_SENDER`); el email nunca sale de Cloudflare. Uno al día.
 - **Sugerencias** (pie de cada vista, `Feedback.svelte`): `/api/feedback` (`cloud/feedback.ts`) las guarda en D1
   (tabla `feedback`) y avisa a Sergi por ntfy si Pages tiene el Secret `NTFY_TOPIC`. Leerlas, solo el admin
   (Secret de Pages `ADMIN_EMAIL`, nunca en el repo).
+- **ADMIN** (`/admin`, `cloud/admin.ts`, `/api/admin`): solo para `ADMIN_EMAIL`. Usuarios (último acceso, tabla
+  `seen` que apunta `/api/prefs`; avisos), invitar o quitar emails de la política de Access «Sergi» (Variable
+  `ACCESS_POLICY` si se llama distinto) con los Secrets de Pages `CF_ACCESS_ADMIN_TOKEN` (Access: Apps and Policies ·
+  Edit) y `CF_ACCOUNT_ID`, y las sugerencias. Quitar cierra su sesión y borra sus datos de D1.
 - **Órdenes desde la barra** (D41): «alerta NVDA > 150», «+NVDA», «vigila aranceles» abren un issue ya escrito
   (`src/lib/useralerts.ts`); `notify.ts` lee con `scripts/requests.ts` solo los issues abiertos **del dueño**,
   los aplica (`scripts/alerts/user.ts`) y cierra la alerta al avisar. Los issues son públicos.
@@ -131,6 +136,12 @@ Un cambio de estética se hace en un solo sitio.
 - **`app.css`** solo tiene el reset, la tipografía base y lo que comparten todas las vistas: rejillas (`.grid`,
   `.grid-2`, `.grid-2e`, `.grid-3`, `.col`), listas `.mini`, `.empty` y los colores `.up`, `.down`, `.mut`.
   El resto va en el `<style>` de su componente.
+- **Modo Sencillo** (`src/lib/modo.ts`, `<html data-modo>`, clave `arc-modo`): bloque `[data-modo='sencillo']` de
+  `tokens.css` (letra, aire, títulos de panel), paneles esenciales por vista y títulos claros en `src/lib/simple.ts`.
+  `Panel` oculta solo lo que no es esencial y `ViewHeader` ofrece «Ver todos». Una vista nueva sin lista se ve entera.
+  Explicaciones (qué es, por qué importa, cómo leerlo) en `src/lib/explain.ts`, sobre el glosario: el ⓘ de `Term` y
+  del título de cada panel. Frases con los datos clave en `src/lib/plain.ts` (plantillas, sin IA), con la prop `plain`
+  de `ViewHeader`.
 - **Cambiar la estética**, por ejemplo el acento: `--amber` en `tokens.css` (y su versión de día, abajo en el
   mismo archivo). Para una web más densa o más aireada: `--pad-x` y `--row-y`, o la escala `--sp-*`.
   Sergi también puede elegir cian o azul en HELP, «A tu gusto» (`src/lib/taste.svelte.ts`): son bloques
@@ -169,6 +180,7 @@ vista `HELP`. Resumen:
 | `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica, Comisión Europea (Weekly Oil Bulletin) |
 | `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
 | `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista, análisis y problema del día | Stockfish, chess.js, Lichess |
+| `MODO` | Modo Sencillo (lo esencial, letra mayor, explicaciones; por defecto para usuarios nuevos) o Terminal (todo) | — |
 | `TV` | Modo TV: las vistas rotan solas, encajadas y a pantalla completa | — |
 | `FONDOS` | Carteras 13F de grandes fondos: mayores posiciones, compras y ventas | SEC* |
 | `HDS` | Qué fondos de FONDOS tienen un valor (13F al revés, con 45 días de retraso) | SEC* |

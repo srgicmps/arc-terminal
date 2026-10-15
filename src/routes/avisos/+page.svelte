@@ -12,7 +12,17 @@
 	import Note from '#lib/components/ui/Note.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
-	import { DEFAULT_CONFIG, GROUPS, MIS_MAX, parseConfig, type AlertConfig, type GroupId } from '#lib/alertconfig.ts';
+	import {
+		BRIEF_HOURS,
+		DEFAULT_CONFIG,
+		GROUPS,
+		MIS_MAX,
+		parseConfig,
+		type AlertConfig,
+		type Brief,
+		type GroupId
+	} from '#lib/alertconfig.ts';
+	import { place } from '#lib/place.svelte.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
 	import { readWelcome, WELCOME_KEY, type AlertSuggestion } from '#lib/onboarding/plan.ts';
 
@@ -66,6 +76,10 @@
 	}
 
 	const set = (patch: Partial<AlertConfig>) => save({ ...config, ...patch });
+	/** «Tu mañana»: al activarlo, con tu sitio de LUGAR para el tiempo (si no hay ya uno). */
+	const here = () => ({ name: place.current.name, lat: place.current.lat, lon: place.current.lon });
+	const setBrief = (patch: Partial<Brief>) =>
+		set({ brief: { ...config.brief, ...(patch.on && !config.brief.place ? { place: here() } : {}), ...patch } });
 
 	// La propuesta de la bienvenida (BIENVENIDA): se ofrece mientras los avisos están apagados; nunca se pone sola.
 	let proposal = $state<AlertSuggestion | null>(null);
@@ -225,6 +239,52 @@
 			</Panel>
 		</div>
 		<div class="col">
+			<Panel title="Tu mañana" meta={config.brief.on ? `A las ${config.brief.at}` : 'Apagado'} accent={config.brief.on}>
+				<dl class="form">
+					<dt>Resumen</dt>
+					<dd>
+						<Seg
+							label="Tu mañana"
+							options={[
+								{ value: 'on', label: 'Cada día' },
+								{ value: 'off', label: 'No' }
+							]}
+							bind:value={() => (config.brief.on ? 'on' : 'off'), (v) => setBrief({ on: v === 'on' })}
+						/>
+					</dd>
+					{#if config.brief.on}
+						<dt>Hora</dt>
+						<dd>
+							<Select label="Hora de Tu mañana" bind:value={() => config.brief.at, (v) => setBrief({ at: v })}>
+								{#each BRIEF_HOURS as h (h)}<option value={h}>{h}</option>{/each}
+							</Select>
+						</dd>
+						<dt>Email</dt>
+						<dd>
+							<Seg
+								label="También por email"
+								options={[
+									{ value: 'no', label: 'Solo al móvil' },
+									{ value: 'yes', label: 'También por email' }
+								]}
+								bind:value={() => (config.brief.email ? 'yes' : 'no'), (v) => setBrief({ email: v === 'yes' })}
+							/>
+						</dd>
+						<dt>El tiempo</dt>
+						<dd class="where">
+							<span>{config.brief.place?.name ?? 'Sin sitio'}</span>
+							{#if config.brief.place?.name !== place.current.name}
+								<button type="button" onclick={() => setBrief({ place: here() })}>Usar {place.current.name}</button>
+							{/if}
+						</dd>
+					{/if}
+				</dl>
+				{#if config.brief.on && !config.on}
+					<p class="empty">Activa los avisos (arriba) para que te llegue.</p>
+				{/if}
+				{#snippet note()}Cada mañana, lo 5 que importa hoy para ti: el tiempo en tu sitio, tus valores, tu agenda y lo
+					más importante de tus temas. Hora de España; el email va a tu cuenta.{/snippet}
+			</Panel>
 			<Panel title="En tu móvil">
 				{#if !topic}
 					<p class="empty">Activa los avisos y aquí saldrá tu canal.</p>
@@ -297,6 +357,25 @@
 		border: var(--border);
 		font: inherit;
 		padding: 0 var(--sp-4);
+	}
+	.where {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--sp-8);
+		align-items: center;
+	}
+	.where button {
+		height: var(--control-h);
+		padding: 0 var(--sp-8);
+		background: none;
+		color: var(--muted);
+		border: var(--border);
+		font-family: var(--mono);
+		font-size: var(--fs-xs);
+		cursor: pointer;
+	}
+	.where button:hover {
+		color: var(--amber);
 	}
 	.steps {
 		margin: 0;

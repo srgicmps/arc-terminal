@@ -13,6 +13,7 @@
 	import CommandBar from '#lib/components/CommandBar.svelte';
 	import Feedback from '#lib/components/Feedback.svelte';
 	import PlacePicker from '#lib/components/PlacePicker.svelte';
+	import InstallHint from '#lib/components/InstallHint.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { fit, initFit, toggleFit } from '#lib/fit.svelte.ts';
@@ -25,6 +26,7 @@
 	import { initCloud } from '#lib/cloud.svelte.ts';
 	import Tour from '#lib/onboarding/Tour.svelte';
 	import { startTour, tour } from '#lib/onboarding/tour.svelte.ts';
+	import { listenServiceWorker } from '#lib/pwa.ts';
 	import PanelIndex from '#lib/components/PanelIndex.svelte';
 	import { setPanelIndex } from '#lib/panelindex.svelte.ts';
 	import { tvSymbol } from '#lib/tickers.ts';
@@ -60,6 +62,8 @@
 		history.replaceState(history.state, '', location.pathname + location.search);
 		startTour();
 	});
+	// Sesión de Cloudflare Access caducada: el service worker avisa y se recarga para ir al login.
+	$effect(listenServiceWorker);
 
 	// Modo TV: cualquier URL con ?tv=TOP,WS…&s=30 lo arranca y salta a la primera vista.
 	$effect(() => {
@@ -279,7 +283,7 @@
 		</button>
 	{/if}
 
-	{#if !tv.on}<PanelIndex />{/if}
+	{#if !tv.on}<PanelIndex /><InstallHint />{/if}
 	{#if tour.open && !tv.on}<Tour />{/if}
 
 	<main

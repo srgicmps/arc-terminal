@@ -35,6 +35,21 @@
 				// Y la densidad (compacta, si no hay nada).
 				if (localStorage.getItem('arc-density') === 'comoda') document.documentElement.dataset.density = 'comoda';
 			} catch (e) {}
+			// Modo Sencillo o Terminal (src/lib/modo.ts, decideModo: misma regla). Sin nada guardado, quien ya tenía
+			// otras claves arc-… sigue en Terminal y quien llega nuevo empieza en Sencillo; se guarda la decisión.
+			var m = 'terminal';
+			try {
+				m = localStorage.getItem('arc-modo');
+				if (m !== 'sencillo' && m !== 'terminal') {
+					m = 'sencillo';
+					for (var i = 0; i < localStorage.length; i++) {
+						var k = localStorage.key(i);
+						if (k && k.indexOf('arc-') === 0 && k !== 'arc-modo') m = 'terminal';
+					}
+					localStorage.setItem('arc-modo', m);
+				}
+			} catch (e) {}
+			document.documentElement.dataset.modo = m;
 		</script>
 		%sveltekit.head%
 	</head>

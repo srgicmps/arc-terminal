@@ -16,6 +16,7 @@
 	// Vista de inicio (home.ts): la que se abre al entrar, guardada en este navegador.
 	const home = persisted(HOME_KEY, 'TOP', isHomeCode);
 	import Seg from '#lib/components/ui/Seg.svelte';
+	import { modo, MODOS, setModo } from '#lib/modo.svelte.ts';
 	import Share from '#lib/components/ui/Share.svelte';
 	import { collect, decode, encode, HASH } from '#lib/transfer.ts';
 	import { cloud } from '#lib/cloud.svelte.ts';
@@ -98,6 +99,8 @@
 				</div>
 			{/if}
 			<dl class="taste">
+				<dt>Modo</dt>
+				<dd><Seg label="Modo" options={MODOS} bind:value={() => modo.value, setModo} /></dd>
 				<dt>Acento</dt>
 				<dd><Seg label="Color de acento" options={ACCENTS} bind:value={() => taste.accent, setAccent} /></dd>
 				<dt>Densidad</dt>
