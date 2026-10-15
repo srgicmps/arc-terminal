@@ -246,6 +246,10 @@
 /* Fila de secciones e índice de paneles del móvil: se desplazan de lado y recortan lo que asoma; el foco va por
    dentro de la tecla para que no se corte. */
 @media (max-width: 720px) {
+	/* El logotipo a mano, algo menor: a 24 px «⋯» no cabía en su fila y bajaba solo a otra línea. */
+	[data-style='cuaderno'][data-style] [data-ui='brand'] {
+		--fs-s: 20px;
+	}
 	[data-style='cuaderno'][data-style] :is([data-ui='keys'], [data-ui='panel-index']) :focus-visible {
 		outline-offset: calc(-1 * var(--focus-w));
 	}

@@ -157,6 +157,13 @@
 	border-radius: 999px;
 }
 
+/* En el móvil, con 20 px entre piezas, «⋯» no cabía en la fila de la marca y bajaba solo a otra línea. */
+@media (max-width: 720px) {
+	[data-style='zen'][data-style] [data-ui='top'] {
+		column-gap: var(--sp-8);
+	}
+}
+
 /* Secciones: una navegación de web, en pastillas sin borde; la actual, con fondo ámbar suave. */
 [data-style='zen'][data-style] [data-ui='keys'] {
 	gap: var(--sp-4) var(--sp-6);
