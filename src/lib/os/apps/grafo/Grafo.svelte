@@ -1,6 +1,7 @@
 <!--
 	Grafo de entidades (Arc OS 6, Centro de mando). Lienzo con fuerzas propias (intel/force.ts): clic elige y abre
-	el Expediente, doble clic carga los vecinos, arrastrar mueve un nodo o el lienzo, la rueda acerca. Filtro por
+	el Expediente, doble clic carga los vecinos, arrastrar mueve un nodo o el lienzo, la rueda (o + − abajo) acerca.
+	En táctil, tocar solo elige (el Expediente se abre desde la ficha) y dos dedos pellizcan para acercar. Filtro por
 	tipo, buscador y, a la derecha, la ficha corta del nodo elegido con sus enlaces (también para teclado).
 	La ventana puede llegar centrada en una entidad: path «/grafo#country:ES» (openGraph de intel/open.ts).
 -->
@@ -298,36 +299,78 @@
 
 	// ---------- Ratón, dedo y teclado ----------
 
-	let drag: { mode: 'node' | 'pan'; id?: string; sx: number; sy: number; vx: number; vy: number; moved: boolean } | null = null;
+	// Cada dedo (o el ratón) por su pointerId: con dos a la vez, pellizco.
+	const pointers = new Map<number, { sx: number; sy: number }>();
+	let pinch: { d: number; mx: number; my: number } | null = null;
+	let drag: { mode: 'node' | 'pan'; id?: string; sx: number; sy: number; vx: number; vy: number; moved: boolean; touch: boolean } | null = null;
 	let clickTimer: ReturnType<typeof setTimeout> | undefined;
+
+	/** Margen para acertar un nodo, en px de la pantalla: el dedo tapa más que la flecha del ratón. */
+	const slopOf = (e: PointerEvent) => (e.pointerType === 'mouse' ? 6 : 16);
 
 	function local(e: PointerEvent | MouseEvent) {
 		const r = canvas.getBoundingClientRect();
 		return { sx: e.clientX - r.left, sy: e.clientY - r.top };
 	}
 
+	/** Los dos primeros dedos: distancia y punto medio. */
+	function twoFingers() {
+		const [a, b] = [...pointers.values()];
+		return { d: Math.max(1, Math.hypot(a.sx - b.sx, a.sy - b.sy)), mx: (a.sx + b.sx) / 2, my: (a.sy + b.sy) / 2 };
+	}
+
+	/** Suelta el nodo que se arrastraba (y, con movimiento reducido, coloca el resto de una vez). */
+	function dropNode(d: NonNullable<typeof drag>) {
+		if (d.mode !== 'node') return;
+		const b = bodies[index.get(d.id!) ?? -1];
+		if (d.moved && reduced) heat(0.3);
+		if (b) b.fixed = false;
+	}
+
 	function down(e: PointerEvent) {
-		if (e.button !== 0) return;
-		const { sx, sy } = local(e);
-		const w = toWorld(sx, sy);
-		const b = hit(bodies, w.x, w.y, 6 / view.k, 1 / view.k);
+		if (e.pointerType === 'mouse' && e.button !== 0) return;
+		const p = local(e);
+		pointers.set(e.pointerId, p);
 		canvas.setPointerCapture(e.pointerId);
-		drag = { mode: b ? 'node' : 'pan', id: b?.id, sx, sy, vx: view.x, vy: view.y, moved: false };
+		if (pointers.size === 2) {
+			// Segundo dedo: deja lo que hubiera (no cuenta como toque) y empieza el pellizco.
+			if (drag) dropNode(drag);
+			drag = null;
+			clearTimeout(clickTimer);
+			pinch = twoFingers();
+			return;
+		}
+		if (pointers.size > 2) return;
+		const w = toWorld(p.sx, p.sy);
+		const b = hit(bodies, w.x, w.y, slopOf(e) / view.k, 1 / view.k);
+		drag = { mode: b ? 'node' : 'pan', id: b?.id, sx: p.sx, sy: p.sy, vx: view.x, vy: view.y, moved: false, touch: e.pointerType !== 'mouse' };
 		if (b) b.fixed = true;
 	}
 
 	function move(e: PointerEvent) {
 		const { sx, sy } = local(e);
+		if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { sx, sy });
+		if (pinch) {
+			if (pointers.size < 2) return;
+			const now = twoFingers();
+			// Lo que se mueve el punto medio arrastra el lienzo; lo que se abren los dedos, acerca en ese punto.
+			view.x += now.mx - pinch.mx;
+			view.y += now.my - pinch.my;
+			zoomAt(now.mx, now.my, now.d / pinch.d);
+			pinch = now;
+			return;
+		}
 		if (!drag) {
+			if (e.pointerType !== 'mouse') return;
 			const w = toWorld(sx, sy);
-			const id = hit(bodies, w.x, w.y, 6 / view.k, 1 / view.k)?.id ?? null;
+			const id = hit(bodies, w.x, w.y, slopOf(e) / view.k, 1 / view.k)?.id ?? null;
 			if (id !== hover) {
 				hover = id;
 				redraw();
 			}
 			return;
 		}
-		if (Math.hypot(sx - drag.sx, sy - drag.sy) > 4) drag.moved = true;
+		if (Math.hypot(sx - drag.sx, sy - drag.sy) > (drag.touch ? 8 : 4)) drag.moved = true;
 		if (drag.mode === 'pan') {
 			view.x = drag.vx + sx - drag.sx;
 			view.y = drag.vy + sy - drag.sy;
@@ -337,26 +380,39 @@
 			const w = toWorld(sx, sy);
 			b.x = w.x;
 			b.y = w.y;
-			heat(0.3);
+			// Con movimiento reducido no se anima nada mientras se arrastra: se coloca al soltar.
+			if (reduced) draw();
+			else heat(0.3);
 		}
 	}
 
-	function up(e: PointerEvent) {
+	/** Un dedo (o el ratón) se levanta (`tap`: puede contar como toque) o el navegador cancela el gesto (no). */
+	function end(e: PointerEvent, tap: boolean) {
+		if (!pointers.delete(e.pointerId)) return;
+		if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+		if (pinch) {
+			if (pointers.size >= 2) pinch = twoFingers();
+			else {
+				pinch = null;
+				// Queda un dedo: sigue arrastrando el lienzo desde donde está, sin salto (y ya no es un toque).
+				const rest = [...pointers.values()][0];
+				drag = rest ? { mode: 'pan', sx: rest.sx, sy: rest.sy, vx: view.x, vy: view.y, moved: true, touch: true } : null;
+			}
+			return;
+		}
 		if (!drag) return;
 		const d = drag;
 		drag = null;
-		if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
-		if (d.mode === 'node') {
-			const b = bodies[index.get(d.id!)!];
-			if (b) b.fixed = false;
-		}
-		if (d.moved) return;
+		dropNode(d);
+		if (!tap || d.moved) return;
 		if (d.mode === 'node' && d.id) {
 			const id = d.id;
 			selected = id;
 			redraw();
 			clearTimeout(clickTimer);
-			// Espera un poco por si es un doble clic (que expande y no abre el Expediente).
+			// En táctil, tocar solo elige: el Expediente se abre con el botón de la ficha.
+			if (d.touch) return;
+			// Con ratón, espera un poco por si es un doble clic (que expande y no abre el Expediente).
 			clickTimer = setTimeout(() => openDossierId(id), 280);
 		} else {
 			selected = null;
@@ -444,10 +500,9 @@
 <div class="grafo" data-win={win}>
 	<div class="bar">
 		<EntitySearch graph={graph} onpick={pick} />
-		<Seg label="Tipos de entidad" options={KIND_OPTIONS} bind:values={kinds} />
+		<div class="kinds"><Seg label="Tipos de entidad" options={KIND_OPTIONS} bind:values={kinds} /></div>
 		<span class="tools">
 			<button type="button" onclick={() => graph && reset(graph, null)} title="Volver a la vista de la actualidad">Actualidad</button>
-			<button type="button" onclick={fit} title="Encajar todo en la ventana">Encajar</button>
 			<button type="button" onclick={() => loadIntel(true)} disabled={intel.loading} title="Volver a leer los datos" aria-label="Actualizar los datos">↻</button>
 		</span>
 	</div>
@@ -461,8 +516,8 @@
 				class:hand={hover !== null}
 				onpointerdown={down}
 				onpointermove={move}
-				onpointerup={up}
-				onpointercancel={up}
+				onpointerup={(e) => end(e, true)}
+				onpointercancel={(e) => end(e, false)}
 				onpointerleave={() => {
 					if (!drag && hover) {
 						hover = null;
@@ -477,6 +532,11 @@
 			{:else if !visible.size}
 				<p class="msg">Nada que enseñar con estos tipos. Elige alguno más arriba.</p>
 			{/if}
+			<div class="zoom" role="group" aria-label="Zoom">
+				<button type="button" onclick={() => zoomAt(W / 2, H / 2, 1.25)} aria-label="Acercar" title="Acercar">+</button>
+				<button type="button" onclick={() => zoomAt(W / 2, H / 2, 1 / 1.25)} aria-label="Alejar" title="Alejar">−</button>
+				<button type="button" onclick={fit} aria-label="Encajar todo en la ventana" title="Encajar todo en la ventana">⤢</button>
+			</div>
 			<p class="status">
 				{visible.size} entidades · {edgeCount} enlaces{at ? ` · datos de las ${at}` : ''}
 			</p>
@@ -525,7 +585,8 @@
 					Las líneas unen entidades que salen en los mismos titulares, además del país de cada líder o valor, el banco
 					central de cada país y el país de cada sanción o suceso. Cuanto más gruesa, más peso.
 				</p>
-				<p class="help">Clic: abre el expediente · doble clic: carga los vecinos · arrastra: mueve · rueda: acerca.</p>
+				<p class="help">Clic: abre el expediente · doble clic: carga los vecinos · arrastra: mueve · rueda o + −: acerca.</p>
+				<p class="help">En táctil: toca para elegir (el expediente se abre desde aquí) · dos dedos: acerca.</p>
 				{#if intel.error}<p class="help warn">{intel.error}</p>{/if}
 			{/if}
 		</aside>
@@ -535,7 +596,8 @@
 <style>
 	.grafo {
 		display: grid;
-		grid-template-rows: auto 1fr;
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: auto minmax(0, 1fr);
 		height: 100%;
 		min-height: 0;
 		container-type: inline-size;
@@ -584,10 +646,30 @@
 		cursor: default;
 	}
 
+	.kinds {
+		min-width: 0;
+		max-width: 100%;
+	}
+
 	.main {
 		display: grid;
-		grid-template-columns: 1fr var(--cmd-side);
+		grid-template-columns: minmax(0, 1fr) var(--cmd-side);
 		min-height: 0;
+	}
+
+	.zoom {
+		position: absolute;
+		right: var(--sp-8);
+		bottom: var(--sp-8);
+		display: flex;
+		flex-direction: column;
+		gap: var(--sp-4);
+	}
+
+	.zoom button {
+		width: var(--control-h);
+		padding: 0;
+		font-size: var(--fs-m);
 	}
 
 	.stage {
@@ -794,15 +876,30 @@
 	}
 
 	@container (max-width: 680px) {
+		/* El lienzo, al menos el 55 % del alto; la ficha, debajo, con lo que quede (y su propio scroll). */
 		.main {
-			grid-template-columns: 1fr;
-			grid-template-rows: 1fr auto;
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: minmax(55%, 1fr) minmax(0, auto);
 		}
 
 		.side {
-			max-height: 40cqh;
 			border-left: 0;
 			border-top: var(--border);
+		}
+
+		/* Los tipos, en una sola fila que se desliza: no se comen el alto del lienzo. */
+		.kinds {
+			flex: 1 1 100%;
+			overflow-x: auto;
+			scrollbar-width: none;
+		}
+
+		.kinds :global(.seg) {
+			flex-wrap: nowrap;
+		}
+
+		.kinds :global(button) {
+			white-space: nowrap;
 		}
 
 		.tools {
