@@ -107,6 +107,13 @@
 		/* Sin movimiento. */
 		--dur-ui: 0ms;
 		--dur-fast: 0ms;
+
+		/* Foco MUY visible: contorno de 4 px del acento (ver «Foco», fuera de la capa). Barras de desplazamiento
+		   gruesas: un bloque del color del texto sobre un carril visible (ver «Barras»). */
+		--focus-w: var(--sp-4);
+		--scroll-w: 14px;
+		--scroll-thumb: var(--fg);
+		--scroll-track: var(--raise);
 	}
 	:root[data-theme='light'][data-style='contraste'],
 	:root[data-theme='light'] [data-style='contraste'] {
@@ -132,15 +139,6 @@
 		--scrim: #ffffff;
 		--sq-light: #f0f0f0;
 		--sq-dark: #b5b5b5;
-	}
-
-	/* Foco MUY visible: un anillo de 3 px del acento separado por un hueco del color del fondo. app.css (sin capa)
-	   ya pone un outline de --hair; el anillo va con box-shadow para sumarse a él (una capa no puede pisarlo). */
-	[data-style='contraste'] :focus-visible {
-		outline-color: var(--amber);
-		box-shadow:
-			0 0 0 var(--sp-2) var(--bg),
-			0 0 0 var(--sp-5) var(--amber);
 	}
 
 	/* Subidas y bajadas con forma, no solo color: ▲ y ▼ delante (el lector de pantalla ya lee el signo). Con @scope,
@@ -184,5 +182,100 @@
 		border: var(--border);
 		border-radius: var(--radius);
 		overflow: hidden;
+	}
+}
+
+/* ── Fuera de la capa: retoques que tienen que ganar al CSS de los componentes ───────────────────── */
+
+/* Foco: contorno de 4 px del acento (AAA sobre el fondo, de día y de noche), separado 2 px. Gana a los campos y
+   botones que quitan el contorno y ponen solo un borde de color. Dentro de un panel (que recorta lo que asoma y,
+   al encajar o ampliado, hace scroll) va hacia dentro, para que nunca se corte. */
+[data-style='contraste'][data-style] :focus-visible {
+	outline: var(--focus-w) solid var(--amber);
+	outline-offset: var(--sp-2);
+}
+[data-style='contraste'][data-style] [data-ui='panel'][data-ui] :focus-visible {
+	outline-offset: calc(-1 * var(--focus-w));
+}
+/* En la cabecera del panel los botones son pequeños (⤢, ✕, título): por dentro taparían el símbolo. La cabecera
+   tiene aire de sobra para el contorno por fuera, pegado al botón. */
+[data-style='contraste'][data-style] [data-ui='panel'][data-ui] [data-ui='panel-head'] :focus-visible {
+	outline-offset: 0;
+}
+/* En la opción marcada de un segmentado, que ya es del color del acento, el contorno va del color de su texto. */
+[data-style='contraste'][data-style] :is([aria-checked='true'], [aria-pressed='true']):focus-visible {
+	outline-color: var(--on-amber);
+}
+/* Barra de comandos: el contorno rodea la barra entera (el campo va pegado a su borde y quedaría montado). */
+[data-style='contraste'][data-style] [data-ui='cmd'] input:focus-visible {
+	outline: none;
+}
+[data-style='contraste'][data-style] [data-ui='cmd']:has(input:focus-visible) {
+	outline: var(--focus-w) solid var(--amber);
+	outline-offset: var(--sp-2);
+}
+
+/* Barras de desplazamiento: el pulgar ocupa casi todo el carril (10 de 14 px) y es recto; al pasar el ratón, del
+   color del acento. */
+[data-style='contraste'][data-style]::-webkit-scrollbar-thumb,
+[data-style='contraste'][data-style] ::-webkit-scrollbar-thumb {
+	border-width: var(--sp-2);
+	border-radius: var(--radius-s);
+}
+[data-style='contraste'][data-style]::-webkit-scrollbar-thumb:hover,
+[data-style='contraste'][data-style] ::-webkit-scrollbar-thumb:hover {
+	background-color: var(--amber);
+}
+
+/* «Encajar en pantalla»: la vista hace scroll y recortaría el contorno de foco de lo que va pegado a sus bordes
+   (título, segmentados de la cabecera). Se le deja ese margen dentro. */
+[data-style='contraste'][data-style][data-fit] [data-ui='main'] {
+	padding-inline: var(--sp-6);
+	padding-bottom: var(--sp-6);
+}
+
+/* Sugerencias de la barra de comandos: con la letra grande, la descripción se lee entera (en varias líneas si
+   hace falta) en vez de cortarse; la elegida lleva además una barra del acento a la izquierda, no solo el fondo. */
+[data-style='contraste'][data-style] [data-ui='cmd'] [role='option'] span:nth-child(2) {
+	white-space: normal;
+}
+[data-style='contraste'][data-style] [data-ui='cmd'] [role='option'][aria-selected='true'] {
+	box-shadow: inset var(--sp-6) 0 0 var(--amber);
+}
+[data-style='contraste'][data-style] [data-ui='cmd'] [role='listbox'] {
+	border: var(--hair) solid var(--fg);
+}
+
+/* Burbujas del glosario: borde del color del texto, que se separen bien de lo de debajo. */
+[data-style='contraste'][data-style] [role='tooltip'] {
+	border: var(--hair) solid var(--fg);
+}
+
+/* En el móvil, con la letra grande, los campos numéricos de una tabla (hipoteca) más estrechos: si no, la fila
+   no cabe y hay que desplazar la tabla de lado para ver la unidad. */
+@media (max-width: 720px) {
+	[data-style='contraste'][data-style] [data-ui='table'] input[type='number'] {
+		width: 8ch;
+	}
+}
+
+/* Sugerencias de la barra de comandos por encima del índice de paneles del móvil (fijo, con --z-bar), que si no
+   las tapa al bajar. */
+[data-style='contraste'][data-style] [data-ui='cmd'] [role='listbox'] {
+	z-index: calc(var(--z-bar) + 1);
+}
+/* Fila de secciones e índice de paneles del móvil: se desplazan de lado y recortan lo que asoma; el foco va por
+   dentro de la tecla para que no se corte. */
+@media (max-width: 720px) {
+	[data-style='contraste'][data-style] :is([data-ui='keys'], [data-ui='panel-index']) :focus-visible {
+		outline-offset: calc(-1 * var(--focus-w));
+	}
+}
+/* En el móvil, con la letra grande, los cuatro relojes no caben en una línea y ensanchaban la página (la barra
+   inferior quedaba fuera de la pantalla): bajan a una segunda línea. */
+@media (max-width: 720px) {
+	[data-style='contraste'][data-style] [data-ui='clocks'] {
+		flex-wrap: wrap;
+		row-gap: var(--sp-4);
 	}
 }
