@@ -67,7 +67,11 @@
 		/* Movimiento a saltos, como un terminal que repinta. */
 		--dur-ui: 90ms;
 		--ease: steps(2, end);
-		scrollbar-color: var(--line) var(--bg);
+
+		/* Barras de desplazamiento: un bloque de fósforo cuadrado (sin redondeo: ver abajo, fuera de la capa). */
+		--scroll-w: 10px;
+		--scroll-thumb: #2f7a43;
+		--scroll-track: transparent;
 	}
 	:root[data-theme='light'][data-style='retro'],
 	:root[data-theme='light'] [data-style='retro'] {
@@ -96,6 +100,7 @@
 		--scan: rgba(10, 42, 18, 0.04);
 		--vignette: rgba(10, 42, 18, 0.12);
 		--bg-image: radial-gradient(ellipse at 50% 40%, #e6f5e1 0%, #dcefd6 70%);
+		--scroll-thumb: #5a8a60;
 	}
 
 	/* ── Títulos y cifras en píxeles ──────────────────────────────────────────────────────────────── */
@@ -136,14 +141,15 @@
 	[data-style='retro'] .key span {
 		font-size: calc(var(--fs-xs) + var(--sp-1));
 	}
-	[data-style='retro'] .panel .ph {
-		background: var(--raise);
-	}
 
 	/* Filas de tabla separadas a puntos, como un listado impreso. */
 	[data-style='retro'] .t,
 	[data-style='retro'] .mini {
 		--border: var(--hair) dashed var(--line);
+	}
+	/* …pero los campos y desplegables de dentro, de línea continua: un campo a puntos parece desactivado. */
+	[data-style='retro'] :is(.t, .mini) :is(input, select, button) {
+		--border: var(--hair) solid var(--line);
 	}
 
 	/* ── Subidas y bajadas: brillo y flecha (el color no basta: todo es verde) ─────────────────────── */
@@ -216,7 +222,9 @@
 			content: '';
 			position: fixed;
 			inset: 0;
-			z-index: calc(var(--z-modal) + 1);
+			/* Por debajo de la barra de índices, las sugerencias, las burbujas y el panel ampliado: lo que flota se
+			   lee limpio, sin rayas encima. */
+			z-index: calc(var(--z-bar) - 1);
 			pointer-events: none;
 			background:
 				repeating-linear-gradient(to bottom, transparent 0, transparent 2px, var(--scan) 2px, var(--scan) 3px),
@@ -233,4 +241,38 @@
 			opacity: 0;
 		}
 	}
+}
+
+/* ── Retoques fuera de la capa (ganan al CSS de los componentes) ─────────────────────────────────── */
+
+/* Cabecera del panel en --raise también al encajar y en el panel ampliado (allí el componente la pinta con
+   --panel para que tape lo que pasa por debajo). */
+[data-style='retro'][data-style] [data-ui='panel-head'].ph {
+	background-color: var(--raise);
+}
+
+/* Barras de desplazamiento: bloque cuadrado, sin la píldora de la base. */
+:root[data-style='retro'][data-style]::-webkit-scrollbar-thumb,
+[data-style='retro'][data-style] ::-webkit-scrollbar-thumb {
+	border-radius: 0;
+}
+:root[data-style='retro'][data-style]::-webkit-scrollbar-thumb:hover,
+[data-style='retro'][data-style] ::-webkit-scrollbar-thumb:hover {
+	background-color: var(--muted);
+}
+
+/* «Encajar en pantalla»: la vista hace scroll por dentro y recortaría la caja doble (va 4 px por fuera de cada
+   panel). Se le da ese margen por dentro sin mover nada de sitio. */
+@media (min-width: 1280px) {
+	:root[data-style='retro'][data-style][data-fit] [data-ui='main'] {
+		margin-inline: calc(-1 * var(--sp-4));
+		padding: var(--sp-4) var(--sp-4) var(--sp-4);
+	}
+}
+
+/* Foco con teclado en un botón activo (relleno del acento) dentro de un panel: el contorno va hacia dentro y, del
+   color del acento, no se vería; se pinta con el color del texto sobre el acento, un poco más adentro. */
+[data-style='retro'][data-style] [data-ui='panel'].panel :is([aria-checked='true'], [aria-pressed='true'], .go):focus-visible {
+	outline-color: var(--on-amber);
+	outline-offset: calc(-1 * var(--sp-3));
 }
