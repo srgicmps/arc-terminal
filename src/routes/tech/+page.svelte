@@ -35,7 +35,7 @@
 	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
 </script>
 
-<ViewHeader code="TECH" title="Tecnología" sub="Hacker News, {sources}" />
+<ViewHeader code="TECH" title="Tecnología" sub={sources ? `Hacker News, ${sources}` : 'Hacker News'} />
 
 <div class="grid grid-2e">
 	<div class="col">

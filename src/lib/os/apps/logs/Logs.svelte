@@ -5,6 +5,7 @@
 	origen, texto e intervalo, y CSV. Lee los JSON al abrir y cada minuto mientras la pestaña está visible.
 -->
 <script lang="ts">
+	import UiIcon from '../../icons/UiIcon.svelte';
 	import { asset } from '$app/paths';
 	import { onMount } from 'svelte';
 	import Search from '../../../components/ui/Search.svelte';
@@ -142,7 +143,7 @@
 		<Seg label="Registros" options={TABS} bind:value={tab} />
 		<span class="gap"></span>
 		<button type="button" onclick={exportCsv} disabled={!rows.length} title="Descargar lo filtrado en CSV (Excel)">⤓ CSV</button>
-		<button type="button" onclick={load} title="Volver a leer" aria-label="Volver a leer">↻</button>
+		<button type="button" onclick={load} title="Volver a leer" aria-label="Volver a leer"><UiIcon id="refresh" size={14} /></button>
 	{/snippet}
 	{#if !loaded}
 		<p class="mut">Leyendo…</p>
@@ -150,7 +151,7 @@
 		<Tiles cols={3}>
 			<Tile label="Errores" value={String(sum.errors)} tone={sum.errors ? 'down' : 'mut'} sub="en lo filtrado" />
 			<Tile label="Avisos" value={String(sum.warnings)} tone={sum.warnings ? 'flat' : 'mut'} sub="en lo filtrado" />
-			<Tile label="Fuentes al día" value={`${sum.fresh} de ${sum.active}`} tone={sum.fresh === sum.active ? 'up' : 'flat'} sub="sin contar las que no tienen clave" />
+			<Tile label="Fuentes al día" value={sum.active ? `${sum.fresh} de ${sum.active}` : '—'} tone={sum.active && sum.fresh === sum.active ? 'up' : 'flat'} sub="sin contar las que no tienen clave" />
 		</Tiles>
 		{#if failed}<p class="down">No se ha podido leer el estado de las fuentes; se enseña lo último que se leyó.</p>{/if}
 		<div class="tools">

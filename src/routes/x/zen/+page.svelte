@@ -54,7 +54,7 @@
 <svelte:window onkeydown={onKey} />
 
 <ExpHeader {exp} sub="Una cosa cada vez. Flechas o deslizar para pasar.">
-	{#snippet aside()}<Listen {lines} />{/snippet}
+	{#snippet aside()}{#if cards.length}<Listen {lines} />{/if}{/snippet}
 </ExpHeader>
 
 {#if card}

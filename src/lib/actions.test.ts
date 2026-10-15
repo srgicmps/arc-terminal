@@ -47,6 +47,8 @@ describe('acciones de MIS, vigila y alerta', () => {
 		expect(nextMis(['AAPL', 'NVDA'], { add: true, code: 'NVDA' })).toEqual(['AAPL', 'NVDA']);
 		expect(nextMis(['AAPL'], { add: true, code: 'MSFT' })).toEqual(['AAPL', 'MSFT']);
 		expect(nextMis(['AAPL', 'MSFT'], { add: false, code: 'AAPL' })).toEqual(['MSFT']);
+		// Ya estaba: no se mueve al final (se perdería el orden hecho con ↑↓).
+		expect(nextMis(['NVDA', 'AAPL'], { add: true, code: 'NVDA' })).toEqual(['NVDA', 'AAPL']);
 	});
 	it('«vigila aranceles»', () => {
 		expect(parseAction('vigila  aranceles  UE')).toMatchObject({ kind: 'watch', word: 'aranceles UE' });

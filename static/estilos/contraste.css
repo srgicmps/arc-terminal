@@ -278,4 +278,8 @@
 		flex-wrap: wrap;
 		row-gap: var(--sp-4);
 	}
+	/* Con la letra grande, la marca entera echaba el tema y «⋯» a otra línea: en el móvil queda el logo y «Arc». */
+	[data-style='contraste'][data-style] [data-ui='brand'] .brand-sub {
+		display: none;
+	}
 }

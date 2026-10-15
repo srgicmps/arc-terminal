@@ -105,9 +105,10 @@
 		color: var(--muted);
 	}
 
-	/* Teléfono: banner de cristal arriba, sobre la app abierta y bajo el bloqueo. */
+	/* Teléfono: banner de cristal arriba, sobre la app abierta y bajo el bloqueo y la barra de estado. */
 	.toasts.phone {
-		top: calc(env(safe-area-inset-top, 0px) + var(--sp-8));
+		/* Bajo la barra de estado (44 px, como --touch): así se sigue pudiendo tocar la hora o tirar desde arriba. */
+		top: calc(env(safe-area-inset-top, 0px) + var(--touch) + var(--sp-4));
 		right: var(--sp-8);
 		bottom: auto;
 		left: var(--sp-8);

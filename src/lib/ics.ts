@@ -4,6 +4,7 @@
 // Las horas van en UTC (sufijo Z): cada calendario las pasa a la zona del móvil sin ambigüedad, también en los
 // cambios de hora. En la descripción se escribe además la hora de Madrid.
 import { CB, type CbMeeting } from './cb-calendar.ts';
+import { madridDate } from './meetings.ts';
 import type { Earnings, ReleaseEvent } from './types.ts';
 
 export interface IcsEvent {
@@ -108,10 +109,12 @@ export function meetingEvent(m: CbMeeting): IcsEvent {
 
 /** Publicación de un dato macro (calendarios de Eurostat, BLS, INE, BEA…). */
 export function releaseEvent(r: ReleaseEvent): IcsEvent {
+	// Un dato «de día completo» llega como la medianoche de Madrid en UTC (el 30 → «29T22:00Z»): el día, en Madrid.
+	const date = madridDate(Date.parse(r.date));
 	return {
-		uid: `dato-${slug(r.source)}-${r.date.slice(0, 10)}-${slug(r.title)}`,
+		uid: `dato-${slug(r.source)}-${date}-${slug(r.title)}`,
 		title: `${r.source}: ${r.title}`,
-		start: r.allDay ? r.date.slice(0, 10) : r.date,
+		start: r.allDay ? date : r.date,
 		allDay: r.allDay,
 		minutes: 15,
 		description: r.allDay ? `Dato de ${r.source}, sin hora publicada` : `Dato de ${r.source}: ${madridTime(r.date)}`,

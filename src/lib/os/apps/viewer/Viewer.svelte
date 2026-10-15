@@ -5,6 +5,7 @@
 	a otra. La geometría (encajar, caja girada, pasos de zoom) está en fit.ts.
 -->
 <script lang="ts">
+	import UiIcon from '../../icons/UiIcon.svelte';
 	import { onDestroy, tick } from 'svelte';
 	import type { AppProps } from '../../apps.ts';
 	import Tool from '../kit/Tool.svelte';
@@ -178,7 +179,7 @@
 					<button type="button" onclick={() => step(-1)} aria-label="Alejar" title="Alejar (−)">−</button>
 					<button type="button" class="pct" onclick={toggleFit} title="Encajar o tamaño real (0, 1)">{zoom ? `${Math.round(zoom * 100)} %` : 'Encajar'}</button>
 					<button type="button" onclick={() => step(1)} aria-label="Acercar" title="Acercar (+)">+</button>
-					<button type="button" onclick={() => (turn = (turn + 90) % 360)} aria-label="Girar" title="Girar (R)">↻</button>
+					<button type="button" onclick={() => (turn = (turn + 90) % 360)} aria-label="Girar" title="Girar (R)"><UiIcon id="rotate" size={14} /></button>
 				{:else}
 					<a class="btn" href={doc.url} target="_blank" rel="noopener" title="Abrir en una pestaña del navegador">Abrir aparte</a>
 				{/if}

@@ -551,6 +551,8 @@
 		letter-spacing: var(--track-caps);
 		padding-inline: var(--sp-14);
 		cursor: pointer;
+		/* Llena la barra sin el mínimo táctil de .go (app.css): con él sobresalía 1 px por debajo del borde. */
+		min-height: 0;
 	}
 
 	.suggest {

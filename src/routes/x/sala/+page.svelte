@@ -82,7 +82,9 @@
 
 	const flashSet = $derived(new Set(points.filter(flashes).map((p) => p.id)));
 	const now = $derived(clock.now || (data.fetchedAt ? Date.parse(data.fetchedAt) : 0));
-	const pick = (p: SalaPoint) => (selected = selected?.id === p.id ? null : p);
+	// El elegido solo cuenta si su capa se ve: al ocultarla, su tarjeta se cierra.
+	const sel = $derived(selected && layers.includes(selected.layer) ? selected : null);
+	const pick = (p: SalaPoint) => (selected = sel?.id === p.id ? null : p);
 </script>
 
 <ExpHeader {exp} sub="Todo lo que pasa en el mundo, en el mapa">
@@ -90,21 +92,24 @@
 </ExpHeader>
 
 <section class="stage" bind:this={stage}>
-	<div class="regions" role="group" aria-label="Regiones">
-		<button type="button" class:on={region === 'all'} onclick={() => (region = 'all')}>Mundo</button>
-		{#each regions as r (r.id)}
-			<button type="button" class:on={region === r.id} class:hot={r.count > 0} onclick={() => (region = region === r.id ? 'all' : r.id)}>
-				{r.label}{#if r.count}<b>{r.count}</b>{/if}
-			</button>
-		{/each}
-	</div>
+	<!-- Las regiones acercan el mapa plano; en el globo no hacen nada, así que no salen. -->
+	{#if look === 'map'}
+		<div class="regions" role="group" aria-label="Regiones">
+			<button type="button" class:on={region === 'all'} aria-pressed={region === 'all'} onclick={() => (region = 'all')}>Mundo</button>
+			{#each regions as r (r.id)}
+				<button type="button" class:on={region === r.id} aria-pressed={region === r.id} class:hot={r.count > 0} onclick={() => (region = region === r.id ? 'all' : r.id)}>
+					{r.label}{#if r.count}<b>{r.count}</b>{/if}
+				</button>
+			{/each}
+		</div>
+	{/if}
 
 	<div class="main">
 		<div class="mapwrap">
 			{#if look === 'globe'}
 				<Globe {points} legend={SALA_LAYERS} flash={flashSet} />
 			{:else}
-			<svg viewBox={VIEWS[region]} role="img" aria-label="Mapa con {points.length} sucesos">
+			<svg viewBox={VIEWS[region]} role="group" aria-label="Mapa con {points.length} sucesos">
 				<path class="land" d={LAND} />
 				{#each points as p (p.id)}
 					{@const cx = x(p.lon)}
@@ -113,8 +118,9 @@
 						class="pt {p.layer}"
 						class:strong={p.strong}
 						class:flash={flashes(p)}
-						class:on={selected?.id === p.id}
+						class:on={sel?.id === p.id}
 						role="button"
+						aria-pressed={sel?.id === p.id}
 						tabindex="0"
 						aria-label="{p.title}. {p.sub}"
 						onclick={() => pick(p)}
@@ -135,13 +141,13 @@
 				{/each}
 			</svg>
 			{/if}
-			{#if selected && look === 'map'}
+			{#if sel && look === 'map'}
 				<div class="card">
-					<b>{selected.title}</b>
-					<span>{selected.sub}{selected.t ? ` · ${when(selected.t, now)}` : ''}</span>
+					<b>{sel.title}</b>
+					<span>{sel.sub}{sel.t ? ` · ${when(sel.t, now)}` : ''}</span>
 					<span class="links">
-						{#if selected.country}<a href="{href('/pais')}?c={selected.country}">PAIS ›</a>{/if}
-						<a href={selected.url} target="_blank" rel="noopener">Abrir ›</a>
+						{#if sel.country}<a href="{href('/pais')}?c={sel.country}">PAIS ›</a>{/if}
+						<a href={sel.url} target="_blank" rel="noopener">Abrir ›</a>
 						<button type="button" onclick={() => (selected = null)} aria-label="Cerrar">✕</button>
 					</span>
 				</div>

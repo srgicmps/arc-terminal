@@ -14,7 +14,7 @@
 	import Widget from './Widget.svelte';
 	import WidgetBody from './WidgetBody.svelte';
 	import { REFRESH_MS, refreshWidgets } from './widgetdata.svelte.ts';
-	import { defaultWidgets, removeWidget, stackWidgets, type Placed } from './widgets.ts';
+	import { defaultWidgets, fitWidgets, removeWidget, stackWidgets, type Placed } from './widgets.ts';
 
 	interface Props {
 		apps: StartApp[];
@@ -48,6 +48,8 @@
 		measure();
 		return () => ro.disconnect();
 	});
+	// En una pantalla más pequeña que cuando se colocaron, ninguno se queda fuera.
+	const shown = $derived(fitWidgets(widgets, w, h));
 
 	onMount(() => {
 		const go = () => refreshWidgets(place.current);
@@ -67,7 +69,7 @@
 	<WallLayer />
 	<DesktopIcons {apps} {w} {h} />
 	<div class="widgets" class:hidden={shell.widgetsHidden} bind:this={layer}>
-		{#each widgets as wd (wd.kind)}
+		{#each shown as wd (wd.kind)}
 			<Widget w={wd} desk={{ w, h }} onmove={moveTo} onremove={() => setWidgets(removeWidget(widgets, wd.kind))}>
 				<WidgetBody kind={wd.kind} {onnavigate} />
 			</Widget>

@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type { Notice } from '../shell/notices.ts';
-import { bootDue, dayKey, greeting, lockSummary, userName } from './boot.ts';
+import { bootDue, dayKey, greeting, lockSummary, startPhase, userName } from './boot.ts';
 
 const n = (id: string, kind: Notice['kind'] = 'aviso'): Notice => ({ id, kind, title: id, detail: '', time: '2026-10-15T10:00:00Z' });
 
 describe('arranque', () => {
+	it('al recargar, una pestaña bloqueada sigue bloqueada', () => {
+		const now = new Date(2026, 9, 15, 9, 0);
+		expect(startPhase(true, null, now, false)).toBe('boot');
+		expect(startPhase(true, '2026-10-15', now, true)).toBe('lock');
+		expect(startPhase(true, '2026-10-15', now, false)).toBe('on');
+		expect(startPhase(false, null, now, true)).toBe('lock');
+		expect(startPhase(false, null, now, false)).toBe('on');
+	});
 	it('sale una vez al día', () => {
 		const now = new Date(2026, 9, 15, 9, 0);
 		expect(dayKey(now)).toBe('2026-10-15');

@@ -58,7 +58,7 @@
 			<li>
 				<a class="l" href={o.url ?? 'https://radar.cloudflare.com/outage-center'} target="_blank" rel="noopener">
 					Internet · {o.country}
-					<small>{[o.cause, o.scope].filter(Boolean).join(' · ')} · Cloudflare Radar</small>
+					<small>{[o.cause, o.scope, 'Cloudflare Radar'].filter(Boolean).join(' · ')}</small>
 				</a>
 				<span class:mut={!!o.end}>{o.end ? `Hasta el ${dm(o.end)}` : 'En curso'}</span>
 			</li>

@@ -14,4 +14,8 @@ describe('hnByTopic', () => {
 		expect(hnByTopic(items, 'science').map((i) => i.title)).toEqual(['NASA finds water on Mars']);
 		expect(hnByTopic(items, 'business').map((i) => i.title)).toEqual(['Nvidia raises guidance']);
 	});
+
+	it('detecta C++ como programación', () => {
+		expect(hnByTopic(['Why C++ is hard', 'C++26 ships', 'Ac++ess'].map(item), 'dev').map((i) => i.title)).toEqual(['Why C++ is hard', 'C++26 ships']);
+	});
 });

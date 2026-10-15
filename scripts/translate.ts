@@ -95,8 +95,14 @@ interface MyMemoryReply {
 	quotaFinished?: boolean;
 }
 
-const ENTITIES: Record<string, string> = { amp: '&', quot: '"', apos: "'", lt: '<', gt: '>', '#39': "'" };
-const decode = (s: string) => s.replace(/&(amp|quot|apos|lt|gt|#39);/g, (_, e: string) => ENTITIES[e]);
+const ENTITIES: Record<string, string> = { amp: '&', quot: '"', apos: "'", lt: '<', gt: '>', nbsp: ' ' };
+/** Entidades HTML con nombre y numéricas (&#039;, &#8217;, &#x2019;), en una sola pasada: «&amp;#39;» queda «&#39;». */
+const decode = (s: string) =>
+	s.replace(/&(?:(amp|quot|apos|lt|gt|nbsp)|#(\d{1,7})|#x([0-9a-f]{1,6}));/gi, (all, name?: string, dec?: string, hex?: string) => {
+		if (name) return ENTITIES[name.toLowerCase()];
+		const code = dec ? Number(dec) : parseInt(hex!, 16);
+		return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : all;
+	});
 
 /** Traduce un texto del inglés al español. Lanza QuotaError si se acabó el cupo y Error si falla. */
 export async function myMemory(text: string, email: string, fetchFn: typeof fetch = fetch): Promise<string> {

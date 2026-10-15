@@ -1,6 +1,6 @@
 <!--
-	Una ventana de Arc OS. Se mueve arrastrando la barra de título y se redimensiona por los bordes derecho e inferior
-	y la esquina (Pointer Events con setPointerCapture, sin librerías). Al soltarla contra un borde del escritorio
+	Una ventana de Arc OS. Se mueve arrastrando la barra de título y se redimensiona por los cuatro bordes y las
+	cuatro esquinas (Pointer Events con setPointerCapture, sin librerías); Esc mientras arrastras lo deshace. Al soltarla contra un borde del escritorio
 	se encaja a una mitad, y contra una esquina a un cuarto; arriba, a pantalla entera. Doble clic en el título:
 	maximizar o volver.
 	Dentro va la vista en un iframe (?embed=1, sin la cabecera de la web) o, si la app es una herramienta, su
@@ -16,7 +16,7 @@
 	import { routeHref } from '#lib/routes.ts';
 	import { onEmbedLink, type EmbedMessage } from '#lib/os/embed.ts';
 	import { close, closeNow, focus, maximize, minimize, nudge, openPath, os, place, setPath, snap } from '#lib/os/os.svelte.ts';
-	import { snapTo, stackZ, type Rect, type Snap, type Win } from '#lib/os/wm.ts';
+	import { EDGES, resizeRect, snapTo, stackZ, type Edge, type Rect, type Snap, type Win } from '#lib/os/wm.ts';
 
 	let {
 		win,
@@ -74,7 +74,7 @@
 		});
 	});
 
-	type Drag = { kind: 'move' | 'e' | 's' | 'se'; px: number; py: number; start: Rect; moved: boolean };
+	type Drag = { kind: 'move' | Edge; el: HTMLElement; id: number; px: number; py: number; start: Rect; moved: boolean };
 	let drag = $state<Drag | null>(null);
 	let ghost = $state<Rect | null>(null);
 	let target: Snap | null = null;
@@ -92,8 +92,9 @@
 		if (e.button !== 0) return;
 		if (kind === 'move' && (e.target as HTMLElement).closest('button')) return;
 		focus(win.uid);
-		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-		drag = { kind, px: e.clientX, py: e.clientY, start: { x: win.x, y: win.y, w: win.w, h: win.h }, moved: false };
+		const grab = e.currentTarget as HTMLElement;
+		grab.setPointerCapture(e.pointerId);
+		drag = { kind, el: grab, id: e.pointerId, px: e.clientX, py: e.clientY, start: { x: win.x, y: win.y, w: win.w, h: win.h }, moved: false };
 		e.preventDefault();
 	}
 
@@ -107,22 +108,27 @@
 		if (drag.kind === 'move') {
 			// Una ventana encajada se suelta al arrastrarla: recupera su tamaño, bajo el puntero.
 			const from = win.snap && win.restore ? win.restore : s;
-			const x = win.snap && win.restore ? e.clientX - layerX() - from.w / 2 : s.x + dx;
+			// (La capa se busca desde la ventana: antes se buscaba desde el iframe y las herramientas, que no
+			// tienen, la ponían media ventana a un lado si el escritorio no empezaba en x = 0.)
+			const host = el?.closest('[data-os-layer]')?.getBoundingClientRect();
+			const x = win.snap && win.restore ? e.clientX - (host?.left ?? 0) - from.w / 2 : s.x + dx;
 			ghost = { x: snapTo(x), y: snapTo(Math.max(0, s.y + dy)), w: from.w, h: from.h };
-			const host = (e.currentTarget as HTMLElement).closest('[data-os-layer]')?.getBoundingClientRect();
 			target = host ? snapAt(e.clientX - host.left, e.clientY - host.top) : null;
 			onpreview(target);
-		} else {
-			ghost = {
-				x: s.x,
-				y: s.y,
-				w: drag.kind === 'e' || drag.kind === 'se' ? snapTo(s.w + dx) : s.w,
-				h: drag.kind === 's' || drag.kind === 'se' ? snapTo(s.h + dy) : s.h
-			};
-		}
+		} else ghost = resizeRect(s, drag.kind, dx, dy);
 	}
 
-	const layerX = () => frame?.closest('[data-os-layer]')?.getBoundingClientRect().left ?? 0;
+	/** Esc mientras arrastras o cambias el tamaño: se queda como estaba. */
+	function cancel(e: KeyboardEvent) {
+		if (!drag || e.key !== 'Escape') return;
+		e.preventDefault();
+		e.stopPropagation();
+		if (drag.el.hasPointerCapture(drag.id)) drag.el.releasePointerCapture(drag.id);
+		drag = null;
+		ghost = null;
+		target = null;
+		onpreview(null);
+	}
 
 	function up() {
 		if (!drag) return;
@@ -173,6 +179,8 @@
 	const title = $derived(winTitle(app, win.path));
 </script>
 
+<svelte:window onkeydowncapture={cancel} />
+
 <section
 	class="win"
 	class:active
@@ -189,7 +197,7 @@
 	style:z-index={stackZ(win)}
 	bind:this={el}
 	onanimationend={(e) => closing && e.animationName.endsWith('os-close') && closeNow(win.uid)}
-	aria-label={app.name}
+	aria-label={title}
 	aria-hidden={win.min || undefined}
 	onpointerdown={() => !active && focus(win.uid)}
 >
@@ -229,7 +237,7 @@
 			<iframe bind:this={frame} {src} title={app.name} loading="lazy"></iframe>
 		{/if}
 	</div>
-	{#each ['e', 's', 'se'] as const as k (k)}
+	{#each win.snap === 'max' ? [] : EDGES as k (k)}
 		<div
 			class="grip {k}"
 			aria-hidden="true"
@@ -445,32 +453,93 @@
 		pointer-events: none;
 	}
 
+	/* Los bordes y esquinas por donde se cambia el tamaño: una franja fina por dentro del borde (más ancha en
+	   pantallas táctiles), las esquinas por encima de los bordes. El de arriba no tapa los botones del título. */
 	.grip {
+		--grip: var(--sp-4);
+		--corner: var(--sp-12);
 		position: absolute;
+		z-index: 1;
 		touch-action: none;
 	}
 
-	.grip.e {
-		top: var(--os-title-h);
-		right: 0;
-		bottom: var(--sp-8);
-		width: var(--sp-4);
-		cursor: ew-resize;
+	@media (pointer: coarse) {
+		.grip {
+			--grip: var(--sp-8);
+			--corner: var(--sp-20);
+		}
 	}
 
+	.grip.n,
 	.grip.s {
-		left: 0;
-		right: var(--sp-8);
-		bottom: 0;
-		height: var(--sp-4);
+		left: var(--corner);
+		right: var(--corner);
+		height: var(--grip);
 		cursor: ns-resize;
 	}
 
+	.grip.n {
+		top: 0;
+	}
+
+	.grip.s {
+		bottom: 0;
+	}
+
+	.grip.e,
+	.grip.w {
+		top: var(--corner);
+		bottom: var(--corner);
+		width: var(--grip);
+		cursor: ew-resize;
+	}
+
+	.grip.e {
+		right: 0;
+	}
+
+	.grip.w {
+		left: 0;
+	}
+
+	.grip.ne,
+	.grip.nw,
+	.grip.se,
+	.grip.sw {
+		z-index: 2;
+		width: var(--corner);
+		height: var(--corner);
+	}
+
+	/* Las de arriba, solo la franja fina: el resto de la esquina es el título (y sus botones). */
+	.grip.ne,
+	.grip.nw {
+		top: 0;
+		height: var(--grip);
+	}
+
+	.grip.se,
+	.grip.sw {
+		bottom: 0;
+	}
+
+	.grip.ne,
 	.grip.se {
 		right: 0;
-		bottom: 0;
-		width: var(--sp-12);
-		height: var(--sp-12);
+	}
+
+	.grip.nw,
+	.grip.sw {
+		left: 0;
+	}
+
+	.grip.ne,
+	.grip.sw {
+		cursor: nesw-resize;
+	}
+
+	.grip.nw,
+	.grip.se {
 		cursor: nwse-resize;
 	}
 

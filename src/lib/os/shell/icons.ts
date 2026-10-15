@@ -84,6 +84,26 @@ export function moveGroup(spots: Spots, ids: string[], from: Cell, to: Cell, col
 	return out;
 }
 
+/**
+ * El icono vecino al pulsar una flecha: el más cercano en esa dirección (misma fila o columna primero). null si no
+ * hay ninguno por ese lado.
+ */
+export function neighbor(spots: Spots, from: string, key: string): string | null {
+	const c = spots[from];
+	const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[key];
+	if (!c || !d) return null;
+	let best: string | null = null;
+	let score = Infinity;
+	for (const [id, o] of Object.entries(spots)) {
+		const along = (o.col - c.col) * d[0] + (o.row - c.row) * d[1];
+		if (id === from || along <= 0) continue;
+		const across = Math.abs((o.col - c.col) * d[1]) + Math.abs((o.row - c.row) * d[0]);
+		const s = along + across * 4;
+		if (s < score) (score = s), (best = id);
+	}
+	return best;
+}
+
 export interface Rect {
 	x: number;
 	y: number;

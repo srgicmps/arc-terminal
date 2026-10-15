@@ -76,13 +76,42 @@ export function nudge(p: Placed, key: string, big: boolean): Placed {
 	return { ...p, x: p.x + dx, y: p.y + dy };
 }
 
-/** Añadir uno (si no está ya) debajo del último; quitar uno. */
-export function addWidget(list: Placed[], kind: WidgetKind, deskW: number): Placed[] {
+/** Hueco que se reserva a cada widget al colocarlo solo (px): su alto habitual más un margen. */
+const SLOT = 24 * GRID;
+
+/**
+ * Añadir uno (si no está ya) debajo del último de su columna. Si no cabe en el alto del escritorio (`deskH`), en
+ * la primera columna con sitio, de derecha a izquierda; así nunca queda fuera de la pantalla.
+ */
+export function addWidget(list: Placed[], kind: WidgetKind, deskW: number, deskH = Infinity): Placed[] {
 	if (list.some((w) => w.kind === kind)) return list;
-	const x = Math.max(GRID, deskW - WIDGET_W - 3 * GRID);
-	const y = list.length ? Math.max(...list.map((w) => w.y)) + 24 * GRID : 2 * GRID;
-	return [...list, { kind, x, y }];
+	const right = Math.max(GRID, deskW - WIDGET_W - 3 * GRID);
+	const step = WIDGET_W + 2 * GRID;
+	for (let x = right; x >= 0; x -= step) {
+		const col = list.filter((w) => Math.abs(w.x - x) < step / 2);
+		const y = col.length ? Math.max(...col.map((w) => w.y)) + SLOT : 2 * GRID;
+		// Cabe si se ve entero uno de alto normal (unos 120 px).
+		if (y + 15 * GRID <= deskH) return [...list, { kind, x, y }];
+	}
+	return [...list, { kind, x: right, y: 2 * GRID }];
 }
+
+/**
+ * Dónde se pinta cada widget en un escritorio de `deskW` × `deskH`: lo guardado, pero sin salirse. Si la pantalla
+ * es más estrecha que cuando se colocaron (otra ventana del navegador, otro monitor), se corren todos a la vez hacia
+ * la izquierda, así las columnas no se montan; si es más baja, los de abajo suben al borde. No cambia lo guardado:
+ * al volver a la pantalla grande, cada uno sigue en su sitio.
+ */
+export function fitWidgets(list: Placed[], deskW: number, deskH: number): Placed[] {
+	if (deskW < 1 || deskH < 1 || !list.length) return list;
+	const over = Math.max(0, Math.max(...list.map((w) => w.x)) + WIDGET_W - deskW);
+	return list.map((w) => {
+		const x = Math.min(Math.max(0, w.x - over), Math.max(0, deskW - WIDGET_W));
+		const y = Math.min(Math.max(0, w.y), Math.max(0, deskH - 6 * GRID));
+		return x === w.x && y === w.y ? w : { ...w, x, y };
+	});
+}
+
 export const removeWidget = (list: Placed[], kind: WidgetKind) => list.filter((w) => w.kind !== kind);
 
 /** Lo guardado, validado. */

@@ -18,12 +18,12 @@
 
 <Table>
 	<thead>
-		<tr><th class="l">Cifra</th><th>Valor</th><th>Mediana del sector</th><th>Puesto</th></tr>
+		<tr><th class="l">Cifra</th><th>Valor</th><th title="Mediana del sector">Mediana</th><th>Puesto</th></tr>
 	</thead>
 	<tbody>
 		{#each rows as r (r.key)}
 			<tr>
-				<td class="l name">{r.label}</td>
+				<td class="l name wrap">{r.label}</td>
 				<td class:up={r.better === true} class:down={r.better === false}>{fmt(r.value, r.unit)}</td>
 				<td class="mut">{fmt(r.median, r.unit)}</td>
 				<td class="mut">{r.rank === null ? '—' : `${r.rank}.º de ${r.of}`}</td>
@@ -31,3 +31,10 @@
 		{/each}
 	</tbody>
 </Table>
+
+<style>
+	/* La cifra («Crecimiento de las ventas») puede ir en dos líneas: en el móvil la tabla no cabía. */
+	td.wrap {
+		white-space: normal;
+	}
+</style>

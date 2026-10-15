@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
 	import { tick, untrack } from 'svelte';
+	import UiIcon from '../../icons/UiIcon.svelte';
 	import Search from '../../../components/ui/Search.svelte';
 	import { isShortcut } from '../../../shortcuts.ts';
 	import type { AppProps } from '../../apps.ts';
@@ -82,7 +83,7 @@
 							{#each hits as h, i (i)}
 								<li>
 									<button type="button" onclick={() => go(h.section.id as SectionId)}>
-										<span class="ico" aria-hidden="true">{h.section.icon}</span>
+										<span class="ico" aria-hidden="true"><UiIcon id={h.section.icon} /></span>
 										<span class="txt"><b>{h.item ?? h.section.label}</b><span class="sub">{h.item ? h.section.label : h.section.desc}</span></span>
 									</button>
 								</li>
@@ -99,7 +100,7 @@
 								{#each bySection(c.id) as s (s.id)}
 									<li>
 										<button type="button" class="tile" data-sec={s.id} title={s.desc} onclick={() => go(s.id)}>
-											<span class="ico" aria-hidden="true">{s.icon}</span>
+											<span class="ico" aria-hidden="true"><UiIcon id={s.icon} /></span>
 											<span class="txt"><b>{s.label}</b><span class="sub">{s.desc}</span></span>
 										</button>
 									</li>
@@ -116,7 +117,7 @@
 					{#each CATEGORIES as c (c.id)}
 						<span class="cat">{c.label}</span>
 						{#each bySection(c.id) as s (s.id)}
-							<button type="button" aria-current={section === s.id} onclick={() => go(s.id)}><span class="g" aria-hidden="true">{s.icon}</span> {s.label}</button>
+							<button type="button" aria-current={section === s.id} onclick={() => go(s.id)}><span class="g" aria-hidden="true"><UiIcon id={s.icon} /></span> {s.label}</button>
 						{/each}
 					{/each}
 				</nav>
@@ -293,10 +294,12 @@
 	}
 
 	nav .g {
-		display: inline-block;
+		display: inline-grid;
+		place-items: center;
 		width: var(--sp-16);
 		color: var(--amber);
-		text-align: center;
+		font-size: var(--sp-14);
+		vertical-align: -0.15em;
 	}
 
 	nav [aria-current='true'] {

@@ -46,7 +46,7 @@
 	}
 
 	/* Móvil: de borde a borde del panel. */
-	@media (max-width: 640px) {
+	@media (max-width: 720px) {
 		.stage {
 			padding-inline: 0;
 		}
