@@ -6,6 +6,7 @@
 <script lang="ts">
 	import { nf, period, signed } from '#lib/format.ts';
 	import { lastAndYearAgo, monthlyPayment } from '#lib/mortgage.ts';
+	import DecimalInput from './DecimalInput.svelte';
 	import Table from './ui/Table.svelte';
 	import Tile from './ui/Tile.svelte';
 	import Tiles from './ui/Tiles.svelte';
@@ -38,8 +39,10 @@
 	});
 
 	const rates = $derived(lastAndYearAgo(euribor));
-	const now = $derived(rates ? monthlyPayment(form.capital, form.years, rates.now.v + form.spread) : null);
-	const before = $derived(rates?.before ? monthlyPayment(form.capital, form.years, rates.before.v + form.spread) : null);
+	// Diferencial vacío = 0 (como en HIPOTECA).
+	const spread = $derived(Number.isFinite(form.spread) ? form.spread : 0);
+	const now = $derived(rates ? monthlyPayment(form.capital, form.years, rates.now.v + spread) : null);
+	const before = $derived(rates?.before ? monthlyPayment(form.capital, form.years, rates.before.v + spread) : null);
 	const diff = $derived(now !== null && before !== null ? now - before : null);
 </script>
 
@@ -48,15 +51,15 @@
 		<tbody>
 			<tr>
 				<td class="name"><label for="mc-capital">Capital pendiente</label></td>
-				<td><input id="mc-capital" type="number" inputmode="numeric" min="0" step="1000" bind:value={form.capital} /> €</td>
+				<td><DecimalInput id="mc-capital" class="num" thousands bind:value={form.capital} /> €</td>
 			</tr>
 			<tr>
 				<td class="name"><label for="mc-years">Años que quedan</label></td>
-				<td><input id="mc-years" type="number" inputmode="numeric" min="1" max="40" step="1" bind:value={form.years} /> a</td>
+				<td><DecimalInput id="mc-years" class="num" bind:value={form.years} /> a</td>
 			</tr>
 			<tr>
 				<td class="name"><label for="mc-spread">Diferencial</label></td>
-				<td><input id="mc-spread" type="number" inputmode="decimal" min="0" step="0.05" bind:value={form.spread} /> %</td>
+				<td><DecimalInput id="mc-spread" class="num" bind:value={form.spread} /> %</td>
 			</tr>
 		</tbody>
 	</Table>
@@ -80,7 +83,8 @@
 {/if}
 
 <style>
-	input {
+	/* Los campos son de DecimalInput (otro componente): :global para que les lleguen estos estilos. */
+	td :global(input.num) {
 		width: 9ch;
 		height: var(--control-h);
 		padding: 0 var(--sp-6);
@@ -89,7 +93,7 @@
 		border: var(--border);
 	}
 
-	input:focus {
+	td :global(input.num:focus) {
 		outline: none;
 		border-color: var(--amber);
 	}
