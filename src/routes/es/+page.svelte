@@ -6,7 +6,9 @@
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { dm, nf } from '#lib/format.ts';
+	import Change from '#lib/components/ui/Change.svelte';
+	import Table from '#lib/components/ui/Table.svelte';
+	import { dm, nf, period } from '#lib/format.ts';
 	import { hourly } from '#lib/power.ts';
 	import { seriesMap, spread } from '#lib/series.ts';
 	import type { PageProps } from './$types';
@@ -27,6 +29,8 @@
 		const today = pvpc.filter((p) => p.day === day);
 		return today.length ? today.reduce((a, p) => a + p.kwh, 0) / today.length : null;
 	});
+	const paro = $derived(data.paro?.data);
+	const paroPct = (now: number, before: number | undefined) => (before ? ((now - before) / before) * 100 : null);
 	const strongestQuake = $derived([...(data.quakes?.data ?? [])].sort((a, b) => b.mag - a.mag)[0]);
 
 	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
@@ -81,6 +85,37 @@
 			</ul>
 			{#snippet note()}Fuentes: INE, Eurostat, Seguridad Social, BCE, Ministerio para la Transición Ecológica, REE e IGN{/snippet}
 		</Panel>
+		{#if paro?.regions.length}
+			{@const nat = paro.national}
+			{@const total = nat.at(-1)?.v ?? 0}
+			{@const yearAgo = nat.find((p) => p.t === `${Number(paro.month.slice(0, 4)) - 1}${paro.month.slice(4)}`)?.v}
+			<Panel title="Paro registrado por comunidad" meta="SEPE · {period(paro.month)}">
+				<Table>
+					<thead><tr><th>Comunidad</th><th>Parados</th><th>Mes</th><th>Año</th></tr></thead>
+					<tbody>
+						<tr class="total">
+							<td class="name">España</td>
+							<td>{nf(total, 0)}</td>
+							<td><Change value={paroPct(total, nat.at(-2)?.v)} digits={1} unit=" %" invert /></td>
+							<td><Change value={paroPct(total, yearAgo)} digits={1} unit=" %" invert /></td>
+						</tr>
+						{#each paro.regions as r (r.code)}
+							<tr>
+								<td class="name">{r.name}</td>
+								<td>{nf(r.value, 0)}</td>
+								<td><Change value={r.mom} digits={1} unit=" %" invert /></td>
+								<td><Change value={r.yoy} digits={1} unit=" %" invert /></td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
+				{#snippet note()}
+					Demandantes de empleo parados a fin de mes, variación frente al mes anterior y al mismo mes del año pasado.
+					Suma de los municipios (el SEPE da «&lt;5» en los pequeños), así que el total es aproximado. La afiliación,
+					en «España en cifras». Fuente: SEPE, datos abiertos · <Updated at={data.paro?.fetchedAt} source="paro" />
+				{/snippet}
+			</Panel>
+		{/if}
 		{#if get('turistas-es') || get('ipv-es')}
 			<Panel title="Turismo y vivienda" meta="INE · último dato">
 				<SeriesTable next={data.next}
@@ -121,3 +156,9 @@
 		</Panel>
 	</div>
 </div>
+
+<style>
+	.total td {
+		font-weight: var(--fw-medium);
+	}
+</style>
