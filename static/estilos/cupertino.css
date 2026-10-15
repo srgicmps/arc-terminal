@@ -1,0 +1,358 @@
+/* ── Estética «Cupertino» (src/lib/estilos.ts) ────────────────────────────────────────────────────────
+ * <html data-style="cupertino">: como una interfaz de sistema móvil. Letra del sistema, títulos de vista grandes,
+ * tarjetas de 12 px sin bordes, separadores finos, segmentados en píldora (la opción activa es una tarjeta), azul
+ * de sistema como acento, materiales translúcidos muy sutiles en lo que se queda fijo y movimiento suave de muelle.
+ * Tokens propios (--cu-*): solo se usan en este archivo. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	:root[data-style='cupertino'],
+	[data-style='cupertino'] {
+		/* ── Noche: negro puro de fondo y tarjetas grafito, como los grupos de ajustes del sistema ── */
+		--bg: #000000;
+		--panel: #1c1c1e;
+		--raise: #2c2c2e;
+		--line: #38383a;
+		--fg: #f5f5f7;
+		--muted: #98989f;
+		--faint: #8e8e93;
+		--amber: #409cff; /* azul de sistema, versión legible como texto: 6:1 sobre --panel */
+		--amber-dim: #6aaef2;
+		--amber-soft: rgba(64, 156, 255, 0.16);
+		--amber-edge: rgba(64, 156, 255, 0.5);
+		--on-amber: #00172f;
+		--up: #30d158;
+		--down: #ff453a;
+		--neutral: #48484a;
+		--series-2: #ff9f0a;
+		--series-3: #bf5af2;
+		--scrim: rgba(0, 0, 0, 0.55);
+		--sq-light: #3a3a3c;
+		--sq-dark: #2c2c2e;
+		--piece-w: #f5f5f7;
+		--piece-w-edge: #0b0b0c;
+		--piece-b: #050506;
+		--piece-b-edge: #a1a1a6;
+		/* Propios: relleno de los botones llenos (texto blanco, 4,9:1), pista y tarjeta del segmentado, campo. */
+		--cu-fill: #0a6fdb;
+		--cu-on-fill: #ffffff;
+		--cu-track: #2c2c2e;
+		--cu-thumb: #636366;
+		--cu-thumb-fg: #ffffff;
+		--cu-thumb-shadow: 0 3px 8px rgba(0, 0, 0, 0.24), 0 0 0 0.5px rgba(0, 0, 0, 0.12);
+		--cu-field: #1c1c1e;
+		--cu-field-ring: 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+		--cu-material: rgba(28, 28, 30, 0.72);
+		--cu-material-solid: rgba(28, 28, 30, 0.94);
+		--cu-bar: rgba(0, 0, 0, 0.72);
+		--cu-bar-solid: rgba(0, 0, 0, 0.94);
+		--cu-hover: rgba(255, 255, 255, 0.04);
+		--cu-spring: cubic-bezier(0.34, 1.32, 0.64, 1); /* muelle: se pasa un poco y vuelve */
+		--cu-title: 34px; /* «título grande» de la vista */
+
+		/* ── Letras: las del sistema, en todo (las cifras ya van tabulares) ── */
+		--sans: -apple-system, system-ui, 'Segoe UI', Roboto, 'Inter', sans-serif;
+		--mono: var(--sans);
+		--font-ui: var(--sans);
+		--title-font: var(--sans);
+		--fs-xxs: 11px;
+		--fs-xs: 12px;
+		--fs-s: 13px;
+		--fs-m: 14px;
+		--fs-l: 16px;
+		--fs-xl: 22px;
+		--fs-big: 28px;
+		--fs-xxl: 30px;
+		--fw-medium: 500;
+		--fw-bold: 600;
+		--lh: 1.42;
+		--track-tight: 0;
+		--track-code: 0.01em;
+		--track-caps: 0.03em;
+		--track-label: 0.02em;
+		--track-brand: 0.04em;
+
+		/* ── Títulos de panel: como cabeceras de sección, sin mayúsculas, en el color del texto ── */
+		--fs-title: 15px;
+		--title-case: none;
+		--title-track: -0.01em;
+		--title-color: var(--fg);
+
+		/* ── Forma: tarjetas de 12 px, controles de 8 px, sin bordes, una sombra apenas ── */
+		--border: var(--hair) solid var(--line);
+		--radius: 12px;
+		--radius-s: 8px;
+		--shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.05);
+		--shadow-pop: 0 18px 48px rgba(0, 0, 0, 0.55), 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+		--panel-edge: 0;
+		--grid-gap: var(--sp-12);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-12);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-12);
+		--stack-edge: 0;
+
+		/* ── Ritmo: algo más de aire que la terminal, cabeceras de panel más altas ── */
+		--pad-x: var(--sp-14);
+		--row-y: var(--sp-7);
+		--head-y: var(--sp-9);
+		--gutter: var(--sp-16);
+		--gutter-touch: var(--sp-16);
+		--control-h-desk: 30px;
+		--btn-sm: 30px;
+		--cmd-h: 36px;
+
+		/* ── Movimiento: suave, con la curva de las hojas del sistema ── */
+		--dur-ui: 220ms;
+		--dur-fast: 260ms;
+		--ease: cubic-bezier(0.32, 0.72, 0, 1);
+	}
+	:root[data-theme='light'][data-style='cupertino'],
+	:root[data-theme='light'] [data-style='cupertino'] {
+		/* ── Día: gris de grupo y tarjetas blancas ── */
+		--bg: #f2f2f7;
+		--panel: #ffffff;
+		--raise: #efeff4;
+		--line: #dcdce0;
+		--fg: #1c1c1e;
+		--muted: #636366;
+		--faint: #6c6c70;
+		--amber: #0066cc;
+		--amber-dim: #2b5f99;
+		--amber-soft: rgba(0, 102, 204, 0.1);
+		--amber-edge: rgba(0, 102, 204, 0.4);
+		--on-amber: #ffffff;
+		--up: #1e7a34;
+		--down: #d70015;
+		--neutral: #c7c7cc;
+		--series-2: #c93400;
+		--series-3: #8944ab;
+		--scrim: rgba(0, 0, 0, 0.28);
+		--sq-light: #f2f2f7;
+		--sq-dark: #d1d1d6;
+		--piece-w: #ffffff;
+		--piece-w-edge: #1c1c1e;
+		--piece-b: #2c2c2e;
+		--piece-b-edge: #2c2c2e;
+		--cu-fill: #0066cc;
+		--cu-on-fill: #ffffff;
+		--cu-track: #e8e8ed;
+		--cu-thumb: #ffffff;
+		--cu-thumb-fg: #1c1c1e;
+		--cu-thumb-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+		--cu-field: #ffffff;
+		--cu-field-ring: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+		--cu-material: rgba(255, 255, 255, 0.72);
+		--cu-material-solid: rgba(255, 255, 255, 0.94);
+		--cu-bar: rgba(249, 249, 251, 0.78);
+		--cu-bar-solid: rgba(249, 249, 251, 0.95);
+		--cu-hover: rgba(0, 0, 0, 0.025);
+		--shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.05);
+		--shadow-pop: 0 18px 48px rgba(0, 0, 0, 0.16), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+	}
+
+	/* ── Página ───────────────────────────────────────────────────────────────────────────── */
+	:root[data-style='cupertino'] body {
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		letter-spacing: -0.003em;
+	}
+	/* Además del anillo fino de la base, un halo suave del acento, como el foco del sistema. */
+	:root[data-style='cupertino'] :focus-visible {
+		box-shadow: 0 0 0 var(--sp-4) var(--amber-soft);
+	}
+
+	/* ── Título grande: el código de la vista encima, pequeño y azul; el título, grande y en negrita ── */
+	:root[data-style='cupertino'] .vh h1 {
+		--fs-xl: var(--cu-title);
+		--fw-medium: 700;
+		--sp-12: var(--sp-2); /* el hueco entre código y título */
+		flex-direction: column;
+		line-height: 1.1;
+		letter-spacing: 0.011em;
+	}
+	:root[data-style='cupertino'] .vh .code {
+		--fs-l: var(--fs-s);
+		letter-spacing: 0.02em;
+	}
+	:root[data-style='cupertino'] .vh p {
+		--fs-xs: var(--fs-s);
+	}
+	@media (max-width: 720px) {
+		:root[data-style='cupertino'] {
+			--cu-title: 30px;
+		}
+	}
+
+	/* ── Cabecera: accesos en píldora, botones redondos, cinta como tarjeta ─────────────────────── */
+	:root[data-style='cupertino'] .key {
+		--radius-s: 999px;
+		--border: var(--hair) solid transparent;
+		background: var(--raise);
+	}
+	:root[data-style='cupertino'] .theme {
+		--radius-s: 999px;
+		--border: var(--hair) solid transparent;
+	}
+	:root[data-style='cupertino'] .place .chip {
+		border-radius: 999px;
+	}
+	/* Índice de paneles del móvil: píldoras grises en vez de cajas. */
+	:root[data-style='cupertino'] .pidx span {
+		--border: var(--hair) solid transparent;
+		--track-label: 0.02em;
+		border-radius: 999px;
+		background: var(--raise);
+	}
+	/* Las cifras grandes de cabecera de vista, como una tarjeta más. */
+	:root[data-style='cupertino'] main > .tiles {
+		--border: 0 solid transparent;
+		border-radius: var(--radius);
+		overflow: hidden;
+		margin-bottom: var(--sp-12);
+		box-shadow: var(--shadow);
+	}
+	:root[data-style='cupertino'] .tape {
+		--radius-s: var(--radius);
+		--border: var(--hair) solid transparent;
+	}
+	/* Botones llenos (la tecla de la vista actual, «Ir», «Empezar»): azul más hondo y texto blanco. */
+	:root[data-style='cupertino'] :is(.go, .key[aria-current='page']) {
+		--amber: var(--cu-fill);
+		--on-amber: var(--cu-on-fill);
+	}
+
+	/* ── Barra de comandos: campo de búsqueda redondeado, sin borde ──────────────────────────── */
+	:root[data-style='cupertino'] .cmd {
+		--panel: var(--cu-field);
+		--border: var(--hair) solid transparent;
+		--radius-s: 10px;
+		box-shadow: var(--cu-field-ring);
+	}
+	:root[data-style='cupertino'] .suggest {
+		--hair: 0px;
+		margin-top: var(--sp-6);
+		border-radius: var(--radius);
+		box-shadow: var(--shadow-pop);
+	}
+	:root[data-style='cupertino'] .suggest li[aria-selected='true'] {
+		border-radius: var(--radius-s);
+		margin-inline: var(--sp-6);
+	}
+
+	/* ── Segmentado en píldora: pista gris y la opción elegida como una tarjeta con sombra ─────────── */
+	[data-style='cupertino'] .seg {
+		--border: var(--hair) solid transparent;
+		--radius-s: 9px;
+		gap: var(--sp-2);
+		padding: var(--sp-2);
+		background: var(--cu-track);
+	}
+	[data-style='cupertino'] .seg button {
+		--radius-s: 7px;
+		--control-h: calc(var(--control-h-desk) - var(--sp-4));
+		--muted: var(--fg);
+	}
+	@media (pointer: coarse) {
+		[data-style='cupertino'] .seg button {
+			--control-h: calc(var(--touch) - var(--sp-4));
+		}
+	}
+	[data-style='cupertino'] .seg button[aria-checked='true'] {
+		--amber: var(--cu-thumb);
+		--on-amber: var(--cu-thumb-fg);
+		box-shadow: var(--cu-thumb-shadow);
+	}
+
+	/* ── Tablas y tarjetas de cifras ────────────────────────────────────────────────────────── */
+	:root[data-style='cupertino'] .t th {
+		--track-caps: 0.02em;
+	}
+	@media (hover: hover) {
+		:root[data-style='cupertino'] .t tbody tr:hover td {
+			background: var(--cu-hover);
+		}
+	}
+	:root[data-style='cupertino'] .tile b {
+		--fw-medium: 600;
+		letter-spacing: -0.01em;
+	}
+	:root[data-style='cupertino'] select {
+		--raise: var(--cu-track);
+		--border: var(--hair) solid transparent;
+	}
+
+	/* ── Materiales: lo que se queda fijo deja ver, muy poco, lo que pasa por debajo ────────────────
+	 * Con desenfoque solo en pantallas de más de 720 px y si el navegador lo sabe hacer; en el móvil, casi opaco
+	 * y sin desenfoque. Con «reducir transparencia», opaco del todo (más abajo). */
+	@media (max-width: 720px) {
+		:root[data-style='cupertino'] .thumb {
+			--panel: var(--cu-bar-solid);
+		}
+		:root[data-style='cupertino'] .pidx {
+			--bg: var(--cu-bar-solid);
+		}
+	}
+	@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+		@media (min-width: 721px) {
+			:root[data-style='cupertino'][data-fit] .ph,
+			:root[data-style='cupertino'] .max .ph,
+			:root[data-style='cupertino'] .capped .t thead th {
+				--panel: var(--cu-material);
+				-webkit-backdrop-filter: saturate(180%) blur(20px);
+				backdrop-filter: saturate(180%) blur(20px);
+			}
+			:root[data-style='cupertino'] .suggest {
+				--raise: var(--cu-material-solid);
+				-webkit-backdrop-filter: saturate(180%) blur(24px);
+				backdrop-filter: saturate(180%) blur(24px);
+			}
+		}
+	}
+	@media (prefers-reduced-transparency: reduce) {
+		:root[data-style='cupertino'] {
+			--cu-material: var(--panel);
+			--cu-material-solid: var(--raise);
+			--cu-bar-solid: var(--bg);
+		}
+		:root[data-style='cupertino'] :is(.ph, .suggest, .t thead th) {
+			-webkit-backdrop-filter: none;
+			backdrop-filter: none;
+		}
+	}
+
+	/* ── Movimiento de muelle: las tarjetas suben al aparecer y los botones se hunden al pulsarlos ──── */
+	@media (prefers-reduced-motion: no-preference) {
+		:root[data-style='cupertino'] main .panel {
+			animation: cu-rise 420ms var(--cu-spring) backwards;
+		}
+		:root[data-style='cupertino'] main .col > .panel:nth-child(2) {
+			animation-delay: 30ms;
+		}
+		:root[data-style='cupertino'] main .col > .panel:nth-child(n + 3) {
+			animation-delay: 60ms;
+		}
+		:root[data-style='cupertino'] :is(.key, .theme, .go) {
+			transition:
+				transform 320ms var(--cu-spring),
+				background-color var(--dur-ui) var(--ease);
+		}
+		:root[data-style='cupertino'] :is(.key, .theme, .go):active {
+			transform: scale(0.95);
+			transition-duration: 90ms;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		:root[data-style='cupertino'] {
+			--dur-ui: 0ms;
+			--dur-fast: 0ms;
+		}
+	}
+	@keyframes cu-rise {
+		from {
+			opacity: 0;
+			transform: translateY(var(--sp-8)) scale(0.995);
+		}
+	}
+}

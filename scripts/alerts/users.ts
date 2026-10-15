@@ -17,6 +17,7 @@ import { madrid, RULES, type Alert, type Inputs, type NotifyLog, type Rule } fro
 import { ordersOf, userRules } from './user.ts';
 import { homeRules } from './home.ts';
 import type { AirData } from '../../src/lib/weather.ts';
+import type { FuelStation } from '../../src/lib/fuel.ts';
 
 export interface RemoteUser {
 	uid: string;
@@ -179,6 +180,8 @@ export interface Engine {
 	weather?: (lat: number, lon: number) => Promise<Weather | null>;
 	/** Aire y polen de un sitio (home.ts → airAt). Sin él, no hay aviso de polen. */
 	air?: (lat: number, lon: number) => Promise<AirData | null>;
+	/** Una gasolinera de FUEL por zona e id (notify.ts lee fuel.json o fuel/<zona>.json). */
+	station?: (zone: string, id: string) => Promise<FuelStation | null>;
 }
 
 /** Un «Tu mañana» que también va por email: la web busca el email por el uid (cloud/brief.ts). */
@@ -225,7 +228,9 @@ export async function runUsers(
 		const place = u.config.brief.place;
 		const air = u.config.home.pollen && place ? await airOf(place) : null;
 		const tomorrow = air?.days[1] ?? null;
-		const home = inQuiet(madrid(now).hm, u.config.quiet) ? [] : homeRules(u.config, tomorrow);
+		const fav = u.config.home.fuel;
+		const station = fav ? ((await engine.station?.(fav.zone, fav.id)) ?? null) : null;
+		const home = inQuiet(madrid(now).hm, u.config.quiet) ? [] : homeRules(u.config, tomorrow, station);
 		const rules = [...rulesFor(u.config, now, all), ...ownRulesFor(u, now), ...home];
 		const input = inputsFor(d, u.config, base);
 		const who = `usuario ${u.uid.slice(0, 4)}`;

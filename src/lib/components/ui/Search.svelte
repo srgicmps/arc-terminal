@@ -54,6 +54,7 @@
 		padding: 0 var(--control-h) 0 var(--sp-10);
 		background: var(--panel);
 		border: var(--border);
+		border-radius: var(--radius-s);
 		font-family: var(--sans);
 		font-size: var(--fs-l);
 	}

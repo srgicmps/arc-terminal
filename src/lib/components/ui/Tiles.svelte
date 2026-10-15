@@ -9,7 +9,7 @@
 	let { cols, children }: { cols?: number; children: Snippet } = $props();
 </script>
 
-<div class="tiles" class:strip={cols} style:--cols={cols}>
+<div class="tiles" data-ui="tiles" class:strip={cols} style:--cols={cols}>
 	{@render children()}
 </div>
 

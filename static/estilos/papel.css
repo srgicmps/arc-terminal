@@ -1,0 +1,179 @@
+/* ── Estética «Papel» (src/lib/estilos.ts) ───────────────────────────────────────────────────────────
+ * <html data-style="papel">: plana como una hoja impresa. Sin sombras: cada panel es una tarjeta con un filete de
+ * 1 px (un anillo sin desenfoque), esquinas de 8 px y mucho aire. IBM Plex Sans para leer y Plex Mono para las
+ * cifras. Blanco roto de día, gris tinta cálido de noche; el acento es tinta azul. No toca la densidad. */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	:root[data-style='papel'],
+	[data-style='papel'] {
+		/* Noche: gris tinta cálido, como papel ahumado. */
+		--bg: #1b1a18;
+		--panel: #22211e;
+		--raise: #2c2a26;
+		--line: #393631;
+		--fg: #ebe6dc;
+		--muted: #aea79b;
+		--faint: #a29b8f;
+		--amber: #9dbbe8; /* tinta azul */
+		--amber-dim: #a9bcd8;
+		--amber-soft: rgba(157, 187, 232, 0.12);
+		--amber-edge: rgba(157, 187, 232, 0.42);
+		--on-amber: #0f1724;
+		--up: #6cc597;
+		--down: #f08378;
+		--neutral: #4a463f;
+		--series-2: #d2a75c; /* ocre */
+		--series-3: #b79ccf;
+		--sq-light: #3a3731;
+		--sq-dark: #2a2824;
+		--scrim: rgba(12, 11, 10, 0.62);
+
+		/* Letras: Plex Sans (no condensada) para todo lo que se lee; Plex Mono solo para cifras y códigos. */
+		--sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		--mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		--font-ui: var(--sans);
+		--fs-xxs: 10.5px;
+		--fs-xs: 11.5px;
+		--fs-s: 12.5px;
+		--fs-m: 13.5px;
+		--fs-l: 15px;
+		--fs-xl: 21px;
+		--lh: 1.55;
+		--lh-text: 1.5;
+		--track-tight: 0.01em;
+		--track-code: 0.02em;
+		--track-caps: 0.07em;
+		--track-label: 0.01em;
+		--track-brand: 0.16em;
+
+		/* Títulos de panel: como un epígrafe, en el color del texto y sin mayúsculas. */
+		--fs-title: var(--fs-m);
+		--title-case: none;
+		--title-track: -0.003em;
+		--title-font: var(--sans);
+		--title-color: var(--fg);
+
+		/* Forma: filete fino, sin sombra; lo que flota lleva el mismo filete, algo más marcado. */
+		--border: var(--hair) solid var(--line);
+		--radius: 8px;
+		--radius-s: 6px;
+		--shadow: 0 0 0 var(--hair) var(--line);
+		--shadow-pop: 0 0 0 var(--hair) var(--amber-edge);
+		--panel-edge: 0;
+
+		/* Aire: paneles sueltos, separados por el fondo. */
+		--grid-gap: var(--sp-16);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-16);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-16);
+		--stack-edge: 0;
+		--pad-x: var(--sp-14);
+		--row-y: var(--sp-8);
+		--head-y: var(--sp-9);
+		--gutter: var(--sp-20);
+		--gutter-touch: var(--sp-14);
+		--cmd-h: 38px;
+
+		--dur-ui: 160ms;
+		--dur-fast: 160ms;
+		--ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+	}
+	:root[data-theme='light'][data-style='papel'],
+	:root[data-theme='light'] [data-style='papel'] {
+		/* Día: blanco roto, papel de algodón. */
+		--bg: #f3f0e9;
+		--panel: #fbfaf6;
+		--raise: #efebe3;
+		--line: #e0dbd0;
+		--fg: #22201c;
+		--muted: #5c574f;
+		--faint: #635e56;
+		--amber: #2b4c82; /* tinta azul */
+		--amber-dim: #3b5478;
+		--amber-soft: rgba(43, 76, 130, 0.08);
+		--amber-edge: rgba(43, 76, 130, 0.36);
+		--on-amber: #ffffff;
+		--up: #1b6a42;
+		--down: #b2333b;
+		--neutral: #c9c2b5;
+		--series-2: #9a6a12;
+		--series-3: #7a4f9a;
+		--sq-light: #f1ede4;
+		--sq-dark: #d9d1c2;
+		--scrim: rgba(34, 32, 28, 0.32);
+	}
+
+	/* ── Lo que un token no alcanza ───────────────────────────────────────────────────────── */
+
+	/* Cifras en Plex Mono: tablas y recuadros (los nombres de las tablas siguen en Sans). */
+	[data-style='papel'] .t,
+	[data-style='papel'] .tile b {
+		font-family: var(--mono);
+	}
+	[data-style='papel'] .t {
+		/* Celdas con más aire, sin agrandar la letra. */
+		--sp-5: 7px;
+		--sp-6: 8px;
+		--sp-10: 12px;
+	}
+	[data-style='papel'] .tile {
+		--sp-12: 16px;
+		--sp-3: 5px;
+	}
+
+	/* Título de vista: grande, ligero y apretado, como el de una revista. */
+	[data-style='papel'] .vh {
+		--fs-xl: 27px;
+		--fw-medium: 400;
+		--sp-12: 18px;
+	}
+	[data-style='papel'] .vh h1 {
+		letter-spacing: -0.015em;
+	}
+	@media (max-width: 720px) {
+		[data-style='papel'] .vh {
+			--fs-xl: 23px;
+		}
+	}
+
+	/* Cabecera de panel algo más alta; el filete de debajo, del mismo tono que el borde. */
+	[data-style='papel'] .ph h2 {
+		line-height: var(--lh-tight);
+	}
+
+	/* Teclas de sección y barra de comandos: más espacio, sin peso de terminal. */
+	[data-style='papel'] .keys {
+		--sp-6: 8px;
+		--sp-10: 12px;
+	}
+	[data-style='papel'] .cmd input {
+		letter-spacing: var(--track-code);
+	}
+
+	/* Cifras sueltas de cabecera (fuera de un panel): una tarjeta más, con sus esquinas. */
+	[data-style='papel'] .tiles:not(.panel .tiles) {
+		--border: 0 solid transparent;
+		margin-bottom: var(--grid-join);
+		border-radius: var(--radius);
+		box-shadow: var(--shadow);
+		overflow: hidden;
+	}
+
+	/* Transiciones suaves en lo que se toca. */
+	@media (prefers-reduced-motion: no-preference) {
+		[data-style='papel'] .key,
+		[data-style='papel'] .theme,
+		[data-style='papel'] .cmd,
+		[data-style='papel'] select,
+		[data-style='papel'] .mini a,
+		[data-style='papel'] .t a.name {
+			transition:
+				color var(--dur-ui) var(--ease),
+				background-color var(--dur-ui) var(--ease),
+				border-color var(--dur-ui) var(--ease);
+		}
+	}
+}

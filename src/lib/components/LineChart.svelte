@@ -93,7 +93,7 @@
 	const fmt = (v: number) => `${nf(v, decimals)}${unit}`;
 </script>
 
-<div class="chart" bind:clientWidth={width}>
+<div class="chart" data-ui="chart" bind:clientWidth={width}>
 	{#if ts.length && values.length}
 		<svg
 			viewBox="0 0 {width} {height}"
