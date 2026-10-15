@@ -11,8 +11,10 @@ import type { FuelData, FuelSpainData, FuelStation } from '../../src/lib/fuel.ts
 import { bmeHolidays, nyseHolidays } from '../../src/lib/markets.ts';
 import { BANKS, decisionTime, MEETINGS } from '../../src/lib/meetings.ts';
 import { lastAndYearAgo, monthlyPayment } from '../../src/lib/mortgage.ts';
+import { weekChange as eiaWeekChange, type EiaData } from '../../src/lib/eia.ts';
 import { hourly } from '../../src/lib/power.ts';
 import type {
+	AuctionsData,
 	Chokepoint,
 	CryptoData,
 	FedRegData,
@@ -33,6 +35,8 @@ import { decide, downSpan, madridTime } from '../issues.ts';
 import {
 	AI_NEWS,
 	ASSETS,
+	AUCTIONS,
+	EIA,
 	CONFLICT,
 	DIESEL,
 	DOWN,
@@ -51,12 +55,15 @@ import {
 	POLYMARKET,
 	QUAKE,
 	RATES,
+	RECORD,
 	STOCKS,
 	STRAITS,
 	MOVERS,
 	SESSIONS,
 	SUMMARIES,
 	TOMORROW,
+	VIX,
+	WAR,
 	WEEK,
 	type Asset,
 	type Level,
@@ -174,6 +181,10 @@ export interface Inputs extends WorldInputs {
 	jgb?: YieldCurveData;
 	/** VIX y su curva (vix.json, Cboe). */
 	vix?: YieldCurveData;
+	/** Inventarios de petróleo de EE. UU. (eia.json, con EIA_API_KEY). */
+	eia?: EiaData;
+	/** Subastas del Tesoro de EE. UU. (auctions.json). */
+	auctions?: AuctionsData;
 	/** No es un archivo: la pone notify.ts a partir del secreto. */
 	zone?: FuelZone;
 }
@@ -210,6 +221,8 @@ export const FILES: Record<Exclude<keyof Inputs, 'zone'>, string> = {
 	bde: 'bde',
 	jgb: 'jgb',
 	vix: 'vix',
+	eia: 'eia',
+	auctions: 'auctions',
 	...WORLD_FILES
 };
 
@@ -564,6 +577,48 @@ export function straitRule(d: Inputs, { now, log, update }: RuleContext): Draft[
 const impBig = (t: { sources?: string[]; sections?: string[] }) =>
 	list(t.sources).length >= IMP_BIG.media && list(t.sections).length >= IMP_BIG.sections;
 
+/** La clase de WAR más grave que cuenta el título (su posición en WAR.kinds), o -1. */
+export function warKind(title: string): number {
+	return WAR.kinds.findIndex((k) => k.all.every((re) => re.test(title)));
+}
+
+const trustedCount = (sources: string[] | undefined) => list(sources).filter((s) => WAR.trusted.includes(s)).length;
+
+/** El tema es un aviso de guerra (P1): una clase de WAR y WAR.media medios fiables. */
+const isWar = (t: { title?: string; sources?: string[] }) =>
+	warKind(t.title ?? '') >= 0 && trustedCount(t.sources) >= WAR.media;
+
+/**
+ * Guerras (P1): declaraciones de guerra, invasiones, ataques a la OTAN o la UE, amenaza nuclear, misiles contra
+ * capitales o infraestructuras, movilizaciones y altos el fuego (WAR). Un aviso por tema cada WAR.waitHours,
+ * salvo escalada: una clase más grave o el doble de medios fiables. Id: war:<k>:<minuto>.
+ */
+export function warRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+	const t0 = minute(now);
+	return list(d.imp?.current).flatMap((t): Draft[] => {
+		if (!t?.k || !isWar(t)) return [];
+		const kind = warKind(t.title);
+		const trusted = trustedCount(t.sources);
+		const key = `war:${t.k}`;
+		const [at, lastKind, lastTrusted] = (log.last[key] ?? '').split('|');
+		const recent = Boolean(at) && now - Date.parse(at) < WAR.waitHours * HOUR;
+		const escalates = kind < Number(lastKind) || trusted >= 2 * Number(lastTrusted);
+		if (recent && !escalates) return [];
+		const media = list(t.sources).length;
+		return [
+			{
+				id: `${key}:${t0}`,
+				title: `🚨 ${WAR.kinds[kind].name}`,
+				body: [`${t.title} · ${media} medios (${trusted} fiables)`, t.url].filter(Boolean).join('\n'),
+				tags: 'rotating_light',
+				click: t.url || `${SITE}/geo`,
+				time: now,
+				commit: (l) => void (l.last[key] = `${t0}|${kind}|${trusted}`)
+			}
+		];
+	});
+}
+
 /**
  * Conflictos (P1/P2): un tema de IMP cuyo título habla de ataques, guerra, OTAN… P1 si es «grande» (IMP_BIG;
  * entonces impRule no lo repite) y P2 con 5 medios o más. Por tema (la k de IMP), un aviso cada 12 h, salvo
@@ -572,7 +627,8 @@ const impBig = (t: { sources?: string[]; sections?: string[] }) =>
 export function conflictRule(d: Inputs, { now, log }: RuleContext): Draft[] {
 	const t0 = minute(now);
 	return list(d.imp?.current).flatMap((t): Draft[] => {
-		if (!t?.k || !CONFLICT.words.test(t.title ?? '')) return [];
+		// Lo que ya avisa warRule (P1) no sale también aquí.
+		if (!t?.k || !CONFLICT.words.test(t.title ?? '') || isWar(t)) return [];
 		const media = list(t.sources).length;
 		const level: Level | null = impBig(t) ? 1 : media >= CONFLICT.media ? 2 : null;
 		if (!level) return [];
@@ -600,6 +656,22 @@ export function conflictRule(d: Inputs, { now, log }: RuleContext): Draft[] {
 
 // ---------- P2 ----------
 
+/**
+ * «máximo de 3 años» / «mínimo de 2 años» si el último dato es el más alto o el más bajo de un historial de al
+ * menos RECORD.minYears años (solo hasta donde llega lo que se descarga).
+ */
+export function recordNote(s: Series | undefined): string | null {
+	const pts = list(s?.points).filter((p) => typeof p?.t === 'string' && Number.isFinite(p?.v));
+	const last = pts.at(-1);
+	if (!last || pts.length < 3) return null;
+	const years = Number(last.t.slice(0, 4)) - Number(pts[0].t.slice(0, 4)) - (pts[0].t.slice(4) > last.t.slice(4) ? 1 : 0);
+	if (years < RECORD.minYears) return null;
+	const rest = pts.slice(0, -1).map((p) => p.v);
+	if (last.v > Math.max(...rest)) return `máximo de ${years} años`;
+	if (last.v < Math.min(...rest)) return `mínimo de ${years} años`;
+	return null;
+}
+
 /** Dato macro nuevo: valor, el anterior y la diferencia. La primera vez solo se apunta. Id: macro:<serie>:<periodo>. */
 export function macroRule(d: Inputs, { now, log, update }: RuleContext): Draft[] {
 	return MACRO.flatMap((m) => {
@@ -625,19 +697,111 @@ export function macroRule(d: Inputs, { now, log, update }: RuleContext): Draft[]
 				}
 			];
 		}
-		const jobs = m.unit !== '%';
-		const value = jobs ? `${signed(last.v, 0)} ${m.unit}` : `${num(last.v)} %`;
-		const previous = prev ? (jobs ? `${signed(prev.v, 0)} ${m.unit}` : `${num(prev.v)} %`) : null;
-		const diff = prev && !jobs ? ` (${signed((last.v - prev.v) * 100, 0)} pb)` : '';
+		const jobs = m.unit === 'mil empleos';
+		const digits = 'digits' in m ? m.digits : 1;
+		const fmt = (v: number) =>
+			jobs ? `${signed(v, 0)} ${m.unit}` : m.unit === '%' ? `${num(v)} %` : `${num(v, digits)} ${m.unit}`;
+		const value = fmt(last.v);
+		const previous = prev ? fmt(prev.v) : null;
+		const diff = !prev || jobs ? '' : m.unit === '%' ? ` (${signed((last.v - prev.v) * 100, 0)} pb)` : ` (${signed(last.v - prev.v, digits)})`;
+		const record = recordNote(seriesOf(d[m.file], m.id));
+		const when = /^\d{4}-\d{2}-\d{2}$/.test(last.t) ? `Semana del ${Number(last.t.slice(8))} de ${periodName(last.t)}` : periodName(last.t);
 		return [
 			{
 				id: `macro:${m.id}:${last.t}`,
-				title: `${m.name}: ${value}`,
-				body: `${periodName(last.t)} (${m.source}).${previous ? ` Anterior: ${previous}${diff}.` : ''}`,
+				title: `${m.name}: ${value}${record ? ` · ${record}` : ''}`,
+				body: `${when} (${m.source}).${previous ? ` Anterior: ${previous}${diff}.` : ''}`,
 				tags: 'chart_with_upwards_trend',
 				click: `${SITE}/eco`,
 				time: now,
 				commit: (l) => void (l.last[key] = last.t)
+			}
+		];
+	});
+}
+
+/**
+ * Inventarios de petróleo de EE. UU. (P2), cada semana nueva de la EIA (sale los miércoles): cambio semanal de
+ * crudo, gasolina, destilados y Cushing, en millones de barriles. Id: eia:<semana>.
+ */
+export function eiaRule(d: Inputs, { now }: RuleContext): Draft[] {
+	const stocks = list(d.eia?.stocks);
+	const week = stocks[0]?.points?.at(-1)?.t;
+	if (!week || now - Date.parse(`${week}T12:00:00Z`) > EIA.days * 24 * HOUR) return [];
+	const parts = stocks
+		.filter((s) => s.id !== 'WCSSTUS1')
+		.flatMap((s) => {
+			const c = eiaWeekChange(s.points);
+			return c === null ? [] : [`${s.label} ${signed(c)}`];
+		});
+	if (!parts.length) return [];
+	return [
+		{
+			id: `eia:${week}`,
+			title: `Inventarios de petróleo: ${parts[0]} M bbl`,
+			body: `${parts.join(' · ')} millones de barriles en la semana del ${Number(week.slice(8))} de ${periodName(week)} (EIA).`,
+			tags: 'oil_drum',
+			click: `${SITE}/ws`,
+			time: now
+		}
+	];
+}
+
+/**
+ * VIX (P2): sube VIX.jump % o más en el día, o la curva se invierte (1 mes por encima de 3 meses, y el día
+ * anterior no). Id: vix:<día> y vix-inv:<día>.
+ */
+export function vixRule(d: Inputs, { now }: RuleContext): Draft[] {
+	const tenors = list(d.vix?.tenors);
+	const i1 = tenors.indexOf('1M');
+	const i3 = tenors.indexOf('3M');
+	const days = list(d.vix?.days).filter((x) => typeof x?.values?.[i1] === 'number');
+	const [prev, last] = days.slice(-2);
+	if (i1 < 0 || !prev || !last) return [];
+	const v = last.values[i1] as number;
+	const out: Draft[] = [];
+	const jump = (v / (prev.values[i1] as number) - 1) * 100;
+	if (jump >= VIX.jump) {
+		out.push({
+			id: `vix:${last.date}`,
+			title: `VIX ${signed(jump, 0)} %: ${num(v)}`,
+			body: `La volatilidad del S&P 500 sube de ${num(prev.values[i1] as number)} a ${num(v)} (Cboe, cierre del ${Number(last.date.slice(8))} de ${periodName(last.date)}).`,
+			tags: 'warning',
+			click: `${SITE}/ws`,
+			time: now
+		});
+	}
+	const inverted = (x: { values: (number | null)[] }) =>
+		i3 >= 0 && typeof x.values[i3] === 'number' && (x.values[i1] as number) > (x.values[i3] as number);
+	if (inverted(last) && !inverted(prev)) {
+		out.push({
+			id: `vix-inv:${last.date}`,
+			title: 'VIX: curva invertida',
+			body: `El VIX a 1 mes (${num(v)}) pasa por encima del de 3 meses (${num(last.values[i3] as number)}): el mercado teme más lo inmediato.`,
+			tags: 'warning',
+			click: `${SITE}/ws`,
+			time: now
+		});
+	}
+	return out;
+}
+
+/**
+ * Subasta floja del Tesoro de EE. UU. (P2): bid-to-cover al menos AUCTIONS.gap por debajo de la media de las
+ * anteriores del mismo plazo, de los últimos AUCTIONS.days días. Id: auction:<día>:<plazo>.
+ */
+export function auctionRule(d: Inputs, { now, today }: RuleContext): Draft[] {
+	return list(d.auctions?.recent).flatMap((a): Draft[] => {
+		if (a?.bidToCover == null || a.avgBidToCover == null || a.date < addDays(today, -AUCTIONS.days)) return [];
+		if (a.avgBidToCover - a.bidToCover < AUCTIONS.gap) return [];
+		return [
+			{
+				id: `auction:${a.date}:${a.term}`,
+				title: `Subasta floja: ${a.term} del Tesoro`,
+				body: `Bid-to-cover ${num(a.bidToCover, 2)}, frente a ${num(a.avgBidToCover, 2)} de media${a.highYield != null ? ` · rentabilidad ${num(a.highYield, 3)} %` : ''}${a.indirectPct != null ? ` · extranjeros (indirectos) ${num(a.indirectPct)} %` : ''}.`,
+				tags: 'bank',
+				click: `${SITE}/ws`,
+				time: now
 			}
 		];
 	});
@@ -1865,9 +2029,13 @@ export const RULES: Rule[] = [
 	{ type: 'imp', level: 1, run: impRule },
 	{ type: 'strait', level: 1, run: straitRule },
 	// P1 o P2 según el tema (el nivel lo pone la regla).
+	{ type: 'war', level: 1, run: warRule },
 	{ type: 'conflict', level: 1, run: conflictRule },
 	{ type: 'macro', level: 2, run: macroRule },
 	{ type: 'market', level: 2, run: marketRule },
+	{ type: 'eia', level: 2, run: eiaRule },
+	{ type: 'vix', level: 2, run: vixRule },
+	{ type: 'auction', level: 2, run: auctionRule },
 	{ type: 'fedreg', level: 2, run: fedregRule },
 	{ type: 'gas', level: 2, run: gasRule },
 	{ type: 'diesel-day', level: 2, run: dieselDayRule },
