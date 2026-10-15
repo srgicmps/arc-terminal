@@ -249,6 +249,15 @@
 		transform: translateY(var(--os-min-shift)) scale(var(--os-min-scale));
 	}
 
+	/*
+	 * Y sin pintar su contenido (al acabar la animación): el iframe deja de dibujar (sin esto seguía a 60 fps
+	 * minimizado) y el globo y los gráficos se paran, porque su IntersectionObserver ya no lo ve. No se recarga.
+	 */
+	.win.min .body {
+		content-visibility: hidden;
+		transition: content-visibility 0s var(--os-anim-min) allow-discrete;
+	}
+
 	.win.snapped {
 		border-radius: var(--os-win-radius-snapped);
 	}

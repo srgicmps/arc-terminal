@@ -138,6 +138,11 @@
 		pointer-events: none;
 	}
 
+	/* Y sin pintar: sus iframes, globos y gráficos no gastan mientras no se ve (como al minimizar). */
+	.desk.off {
+		content-visibility: hidden;
+	}
+
 	.preview {
 		position: absolute;
 		z-index: 9999;

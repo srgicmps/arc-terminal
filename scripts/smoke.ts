@@ -14,6 +14,7 @@
 import { createRequire } from 'node:module';
 import { gzipSync } from 'node:zlib';
 import { launch, preview, viewPaths } from './browser.ts';
+import { osChecks } from './smoke-os.ts';
 
 const PATHS = [...viewPaths(), '/s?sym=NVDA'];
 const WIDTHS = [390, 1280];
@@ -123,6 +124,8 @@ try {
 		}
 		await context.close();
 	}
+	// Arc OS en el escritorio, con 12 ventanas (scripts/smoke-os.ts).
+	failures.push(...(await osChecks(browser, ROOT)));
 	await browser.close();
 } catch (error) {
 	failures.push(String(error));

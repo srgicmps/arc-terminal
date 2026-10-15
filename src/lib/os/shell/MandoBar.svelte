@@ -107,14 +107,19 @@
 		padding: 0 var(--sp-8);
 		list-style: none;
 		border-left: var(--hair) solid var(--line);
+		overflow: hidden;
 	}
+	/* Con muchas ventanas, cada pestaña encoge (hasta quedarse en el icono) en vez de pisar a la de al lado. */
 	.tabs li {
 		min-width: 0;
+		display: flex;
+		overflow: hidden;
 	}
 	.tabs button {
 		display: flex;
 		align-items: center;
 		gap: var(--sp-6);
+		min-width: 0;
 		max-width: 180px;
 		height: var(--os-bar-h);
 		padding: 0 var(--sp-10);
@@ -134,6 +139,7 @@
 		opacity: 0.6;
 	}
 	.ico {
+		flex: none;
 		color: var(--cmd-cold);
 	}
 	.t {
