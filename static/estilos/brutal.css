@@ -661,3 +661,16 @@
 [data-style='brutal'][data-style] [data-ui='panel'] :is([aria-checked='true'], [aria-pressed='true']):focus-visible {
 	outline-color: var(--on-amber);
 }
+
+/* Sugerencias de la barra de comandos por encima del índice de paneles del móvil (fijo, con --z-bar), que si no
+   las tapa al bajar. */
+[data-style='brutal'][data-style] [data-ui='cmd'] [role='listbox'] {
+	z-index: calc(var(--z-bar) + 1);
+}
+/* Fila de secciones e índice de paneles del móvil: se desplazan de lado y recortan lo que asoma; el foco va por
+   dentro de la tecla para que no se corte. */
+@media (max-width: 720px) {
+	[data-style='brutal'][data-style] :is([data-ui='keys'], [data-ui='panel-index']) :focus-visible {
+		outline-offset: calc(-1 * var(--focus-w));
+	}
+}
