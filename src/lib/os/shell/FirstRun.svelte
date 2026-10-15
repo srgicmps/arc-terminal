@@ -41,7 +41,7 @@
 			<SkinPicker />
 		{:else if step === 1}
 			<h2 id="os-first-title">Elige un fondo</h2>
-			<p class="mut">Siempre con los colores de tu estética.</p>
+			<p class="mut">Siempre con los colores del aspecto que has elegido.</p>
 			<div class="walls" role="radiogroup" aria-label="Fondo del escritorio">
 				{#each WALLPAPERS as wp (wp.id)}
 					<button type="button" role="radio" aria-checked={shell.wallpaper === wp.id} class="wall" onclick={() => setWallpaper(wp.id)}>
@@ -162,9 +162,6 @@
 	}
 	.sw[data-wp='sistema'] {
 		background-image: linear-gradient(180deg, var(--amber-soft), transparent 60%), radial-gradient(ellipse at 30% 100%, var(--raise), transparent 70%);
-	}
-	.sw[data-wp='estilo'] {
-		background-image: var(--bg-image, none);
 	}
 	.sw[data-wp='rejilla'] {
 		background-image:

@@ -1,0 +1,65 @@
+// Dentro de Arc OS no se aplican las estéticas de la web (data-style, acento ni densidad): el OS tiene sus colores
+// y su letra, los del aspecto (data-os-skin, tokens al final de tokens.css). Vale para /os y para las vistas
+// embebidas en sus ventanas (?embed=1). Fuera de /os todo sigue igual: al salir se vuelve a lo guardado.
+// src/app.html hace lo mismo antes de pintar (data-os-look), para que no parpadee.
+
+/** Atributos de <html> que pone la web y que en Arc OS no se usan. */
+export const WEB_LOOK = ['style', 'accent', 'density'] as const;
+
+const sheet = () => document.getElementById('style-sheet') as HTMLLinkElement | null;
+
+/** Quita lo de la web (atributos y hoja de la estética) y pone el aspecto. */
+function strip(root: HTMLElement, skin: string | null) {
+	for (const k of WEB_LOOK) if (k in root.dataset) delete root.dataset[k];
+	const link = sheet();
+	if (link && !link.disabled) link.disabled = true;
+	if (skin && root.dataset.osSkin !== skin) root.dataset.osSkin = skin;
+}
+
+/**
+ * Pone el aspecto del OS en <html> y lo mantiene aunque algo vuelva a poner la estética (la nube al sincronizar,
+ * ESTILO abierto en una ventana…). `skin` da el aspecto actual. Devuelve la limpieza, que devuelve la web a lo
+ * guardado en localStorage (por si se cambió algo desde dentro).
+ */
+export function osLook(skin: () => string | null) {
+	const root = document.documentElement;
+	root.dataset.osLook = '1';
+	const apply = () => strip(root, skin());
+	apply();
+	const watch = new MutationObserver(apply);
+	watch.observe(root, { attributes: true, attributeFilter: WEB_LOOK.map((k) => `data-${k}`) });
+	watch.observe(document.head, { childList: true });
+	return {
+		/** Vuelve a mirar el aspecto (al cambiarlo). */
+		refresh: apply,
+		stop() {
+			watch.disconnect();
+			delete root.dataset.osLook;
+			delete root.dataset.osSkin;
+			restore(root);
+		}
+	};
+}
+
+/** Lo que pondría src/app.html: la estética, el acento y la densidad guardados. */
+function restore(root: HTMLElement) {
+	const get = (k: string) => {
+		try {
+			return localStorage.getItem(k);
+		} catch {
+			return null;
+		}
+	};
+	const st = get('arc-style');
+	if (st && /^[a-z]+$/.test(st)) {
+		root.dataset.style = st;
+		// Con import(): apps.ts (y sus tests) llega aquí por embed.ts, y estilos-css necesita $app/paths.
+		void import('../estilos-css.ts').then((m) => m.useSheet(st, 'style-sheet'));
+	}
+	const a = get('arc-accent');
+	if (a === 'amber' || a === 'cyan' || a === 'blue') root.dataset.accent = a;
+	const d = get('arc-density');
+	if (d === 'compacta' || d === 'comoda') root.dataset.density = d;
+	const link = sheet();
+	if (link) link.disabled = false;
+}

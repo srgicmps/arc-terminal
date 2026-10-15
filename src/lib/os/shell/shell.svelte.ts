@@ -21,10 +21,9 @@ export const KEYS = {
 	icons: 'arc-os-icons'
 } as const;
 
-/** Fondos del escritorio: «estilo» sigue la estética activa; los demás, sobre sus colores. */
+/** Fondos del escritorio, siempre con los colores del aspecto (dentro de /os no se aplican las estéticas de la web). */
 export const WALLPAPERS = [
 	{ id: 'sistema', label: 'El del aspecto' },
-	{ id: 'estilo', label: 'El de la estética' },
 	{ id: 'liso', label: 'Liso' },
 	{ id: 'rejilla', label: 'Rejilla' },
 	{ id: 'degradado', label: 'Degradado' }

@@ -1,12 +1,11 @@
 <!--
-	Panel de control de Arc OS: Apariencia (estética con vista previa, el mismo selector que ESTILO; fondo y
-	barra arriba o abajo), Escritorio (widgets y escritorios virtuales), Avisos, Cuenta y, solo para el admin,
+	Panel de control de Arc OS: Apariencia (fondo y barra arriba o abajo; dentro de Arc OS manda el aspecto, no
+	la estética de la web), Escritorio (widgets y escritorios virtuales), Avisos, Cuenta y, solo para el admin,
 	Administración. Lo de fuera de Arc OS se abre en su ventana (AVISOS, ESTILO, ADMIN).
 -->
 <script lang="ts">
 	import { asset } from '$app/paths';
 	import { onMount } from 'svelte';
-	import StylePicker from '#lib/components/StylePicker.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { cloud } from '#lib/cloud.svelte.ts';
 	import * as os from './bridge.ts';
@@ -53,8 +52,7 @@
 		</section>
 		<section>
 			<h3>Apariencia</h3>
-			<p class="mut">Colores y letra de todo Arc (la estética).</p>
-			<StylePicker />
+			<p class="mut">Dentro de Arc OS, los colores y la letra son los del aspecto. La estética de la web (ESTILO), el acento y la densidad se aplican fuera.</p>
 			<div class="row">
 				<Seg label="Fondo del escritorio" options={WALLPAPERS.map((w) => ({ value: w.id, label: w.label }))} bind:value={wallpaper} />
 			</div>

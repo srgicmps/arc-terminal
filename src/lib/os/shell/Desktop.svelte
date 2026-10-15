@@ -1,6 +1,6 @@
 <!--
-	Escritorio de Arc OS: el fondo (el de la estética activa, o liso, rejilla o degradado, siempre con sus
-	tokens), los iconos de las apps ancladas (DesktopIcons) y los widgets movibles. Las ventanas del
+	Escritorio de Arc OS: el fondo (el del aspecto, liso, rejilla o degradado, siempre con los tokens
+	del aspecto), los iconos de las apps ancladas (DesktopIcons) y los widgets movibles. Las ventanas del
 	núcleo van encima (children).
 -->
 <script lang="ts">
@@ -64,9 +64,8 @@
 		height: 100%;
 		overflow: hidden;
 		background: var(--os-desk);
-		background-image: var(--bg-image, none);
 	}
-	/* «El del aspecto»: un fondo propio de cada uno, hecho con los colores de la estética. */
+	/* «El del aspecto»: un fondo propio de cada uno, hecho con sus colores. */
 	:global([data-os-skin='windows']) .desktop[data-wallpaper='sistema'] {
 		background-image: radial-gradient(ellipse 80% 60% at 50% 110%, var(--amber-soft), transparent 70%), radial-gradient(ellipse 60% 50% at 80% 0%, var(--raise), transparent 70%);
 	}

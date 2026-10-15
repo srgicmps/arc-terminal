@@ -4,14 +4,26 @@
 	(src/lib/os/, src/lib/components/os/WindowLayer.svelte). Ocupa toda la pantalla, por encima de la cabecera de la web.
 -->
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import WindowLayer from '#lib/components/os/WindowLayer.svelte';
 	import { apps, navigate, open } from '#lib/os/shell/bridge.ts';
 	import Desktop from '#lib/os/shell/Desktop.svelte';
 	import OsChrome from '#lib/os/shell/OsChrome.svelte';
+	import { osLook } from '#lib/os/look.ts';
 	import { loadShell, shell } from '#lib/os/shell/shell.svelte.ts';
 
 	// La shell de «OS 2» (aspecto, barras, escritorio con iconos y widgets) alrededor de las ventanas del núcleo.
 	$effect(() => loadShell(['top', 'imp', 'eco', 'ws', 'geo']));
+	// Dentro de Arc OS, los colores y la letra son los del aspecto, no la estética de la web (src/lib/os/look.ts).
+	let look: ReturnType<typeof osLook> | undefined;
+	$effect(() => {
+		look = untrack(() => osLook(() => shell.skin));
+		return () => look?.stop();
+	});
+	$effect(() => {
+		void shell.skin;
+		look?.refresh();
+	});
 </script>
 
 <svelte:head>
@@ -38,7 +50,6 @@
 		/* Barra de arriba (si la hay), escritorio y barra o dock de abajo (si lo hay). */
 		grid-template-rows: auto 1fr auto;
 		background: var(--os-desk);
-		background-image: var(--bg-image);
 		font-family: var(--os-font);
 	}
 

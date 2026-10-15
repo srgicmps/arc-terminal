@@ -12,7 +12,7 @@
 	import ContextMenu, { type MenuEntry } from '#lib/components/os/ContextMenu.svelte';
 	import * as os from './bridge.ts';
 	import { arrange, cellSize, cellToPx, inRect, moveGroup, pxToCell, rectOf, type Cell, type Rect } from './icons.ts';
-	import { pin, setIcons, setWallpaper, setWidgets, shell } from './shell.svelte.ts';
+	import { pin, setIcons, setWallpaper, setWidgets, shell, WALLPAPERS } from './shell.svelte.ts';
 	import type { StartApp } from './start.ts';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL } from './widgets.ts';
 
@@ -137,8 +137,8 @@
 		};
 	}
 	function nextWallpaper() {
-		const ids = ['sistema', 'estilo', 'liso', 'rejilla', 'degradado'] as const;
-		const i = ids.indexOf(shell.wallpaper as (typeof ids)[number]);
+		const ids = WALLPAPERS.map((w) => w.id);
+		const i = ids.indexOf(shell.wallpaper);
 		setWallpaper(ids[(i + 1) % ids.length]);
 	}
 	function contextmenu(e: MouseEvent) {
