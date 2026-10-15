@@ -77,6 +77,7 @@ describe('bienvenida', () => {
 		expect(needsWelcome(memory(), '?lugar=1,2,X')).toBe(false);
 		expect(needsWelcome(memory({ 'arc-theme': 'dark' }), '')).toBe(false);
 		expect(needsWelcome(memory({ 'arc-sync': '{}' }), '')).toBe(true);
+		expect(needsWelcome(memory({ 'arc-modo': 'sencillo' }), '')).toBe(true);
 		expect(needsWelcome(memory({ [WELCOME_KEY]: '{}' }), '')).toBe(false);
 	});
 

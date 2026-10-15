@@ -242,7 +242,8 @@ export function readWelcome(text: string | null): Welcome | null {
 export function needsWelcome(store: Pick<Storage, 'length' | 'key' | 'getItem'>, search: string): boolean {
 	if (search) return false;
 	if (store.getItem(WELCOME_KEY) !== null) return false;
-	return Object.keys(collect(store)).length === 0;
+	// arc-modo no cuenta: app.html lo pone solo antes de pintar, también a quien llega por primera vez.
+	return Object.keys(collect(store)).every((k) => k === SIMPLE_KEY);
 }
 
 /** «Ahora no»: se apunta que ya la has visto (no vuelve a salir sola) sin cambiar nada más. */
