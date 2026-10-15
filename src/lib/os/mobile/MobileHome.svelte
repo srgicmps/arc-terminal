@@ -1003,8 +1003,15 @@
 		padding-left: env(safe-area-inset-left, 0px);
 		padding-right: env(safe-area-inset-right, 0px);
 	}
+	/* Solo las páginas se desplazan (en horizontal): un arrastre vertical desde «Buscar», los puntos o el dock era
+	   para el navegador, que cancelaba el puntero (pointercancel) y el gesto de Spotlight no llegaba. */
 	.home {
-		touch-action: pan-x pan-y;
+		touch-action: pan-x;
+	}
+	/* Sin el rebote de Safari en toda la página al tirar hacia abajo o hacia arriba. */
+	:global(html:has(.phone)),
+	:global(body:has(.phone)) {
+		overscroll-behavior: none;
 	}
 	.apps {
 		left: env(safe-area-inset-left, 0px);

@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { clearKeyCache } from './access.ts';
 import { handleAdmin, memoryAdminStore, withEmail } from './admin.ts';
 import { handlePrefs, memoryStore } from './prefs.ts';
-import { ENV, testKeys } from './testkeys.ts';
+import { AUD, ENV, part, TEAM, testKeys } from './testkeys.ts';
 
 let k: Awaited<ReturnType<typeof testKeys>>;
 beforeAll(async () => void (k = await testKeys()));
@@ -77,6 +77,43 @@ describe('/api/admin', () => {
 		// Sin ADMIN_EMAIL, ni Sergi.
 		const { ADMIN_EMAIL: _, ...noAdmin } = FULL;
 		expect((await call(noAdmin, store, cf.fetcher, { email: 'jefe@x.es' })).status).toBe(403);
+	});
+
+	it('nunca por una cabecera suelta ni por un JWT sin firma, de otra app, de otra clave o caducado', async () => {
+		const cf = cloudflare();
+		const store = memoryAdminStore([{ email: 'ana@x.es', seen: 5, alerts: true }]);
+		const now = Math.floor(Date.now() / 1000);
+		const claims = { email: 'jefe@x.es', aud: [AUD], iss: TEAM, exp: now + 3600 };
+		const tokens = [
+			`${part({ alg: 'none', typ: 'JWT' })}.${part(claims)}.`,
+			`${part({ alg: 'RS256', kid: 'k1' })}.${part(claims)}.AAAA`,
+			await k.sign({ email: 'jefe@x.es', aud: ['otra-app'] }),
+			await k.sign({ email: 'jefe@x.es' }, k.other),
+			await k.sign({ email: 'jefe@x.es', exp: now - 10 })
+		];
+		const headers: Record<string, string>[] = [
+			{ 'cf-access-authenticated-user-email': 'jefe@x.es' },
+			...tokens.map((t) => ({ 'cf-access-jwt-assertion': t })),
+			...tokens.map((t) => ({ cookie: `CF_Authorization=${t}` }))
+		];
+		for (const h of headers) {
+			for (const method of ['GET', 'POST']) {
+				const res = await handleAdmin(
+					new Request('https://arcterminal.dev/api/admin', {
+						method,
+						headers: { ...h, 'content-type': 'application/json' },
+						body: method === 'POST' ? JSON.stringify({ action: 'remove', email: 'ana@x.es' }) : undefined
+					}),
+					FULL,
+					store,
+					cf.fetcher
+				);
+				expect(res.status).toBe(401);
+				expect(await res.text()).not.toContain('ana@');
+			}
+		}
+		expect(cf.calls).toHaveLength(0);
+		expect(store.rows).toHaveLength(1);
 	});
 
 	it('?yo=1 solo dice si eres el admin, sin la lista ni llamar a Cloudflare', async () => {
