@@ -29,6 +29,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-home-done', storage: 'session', what: 'Esta pestaña ya ha abierto la vista de inicio (luego TOP es la portada)', where: 'Al entrar', kind: 'dato' },
 	{ key: 'arc-chart-period', storage: 'local', what: 'Último periodo elegido en los gráficos de línea', where: 'Botones 1M · 6M · 1A · 5A · Máx', kind: 'ajuste' },
 	{ key: 'arc-thresholds', storage: 'local', what: 'Umbrales «resáltame si pasa de X» de las tablas de series', where: 'Tocar la cifra «Último» de una serie', kind: 'ajuste' },
+	{ key: 'arc-pins', storage: 'local', what: 'Paneles fijados en TOP y su ancho', where: 'Botón 📌 de cada panel', kind: 'ajuste' },
 	{ key: 'arc-folded', storage: 'local', what: 'Paneles plegados de cada vista', where: 'Título de cada panel', kind: 'ajuste' },
 	{ key: 'arc-accent', storage: 'local', what: 'Color de acento: ámbar, cian o azul', where: 'HELP, «A tu gusto»', kind: 'ajuste' },
 	{ key: 'arc-density', storage: 'local', what: 'Densidad: compacta o cómoda', where: 'HELP, «A tu gusto»', kind: 'ajuste' },
