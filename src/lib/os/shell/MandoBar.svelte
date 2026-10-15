@@ -238,9 +238,14 @@
 		font-size: var(--fs-xxs);
 		font-variant-numeric: tabular-nums;
 	}
-	.desk:hover {
-		background: var(--os-topbar-hover);
-		color: var(--fg);
+	@media (hover: hover) {
+		.desk:hover {
+			background: var(--os-topbar-hover);
+			color: var(--fg);
+		}
+		.user:hover {
+			background: var(--os-topbar-hover);
+		}
 	}
 	.desk[aria-pressed='true'] {
 		border-color: var(--cmd-cold);
@@ -373,7 +378,6 @@
 		border-color: var(--amber-edge);
 		color: var(--amber);
 	}
-	.user:hover,
 	.user[aria-expanded='true'] {
 		background: var(--os-topbar-hover);
 	}
