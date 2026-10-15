@@ -81,8 +81,9 @@
 			<ul class="mini">
 				<li>
 					<span class="l">
-						GitHub Pages sirve la web ya construida: HTML, JS, CSS y los JSON de datos. No hay servidor.
-						<small>Por eso <code>paths.base</code> es <code>/arc-terminal</code> en <code>vite.config.ts</code>.</small>
+						Cloudflare Pages sirve la web ya construida: HTML, JS, CSS y los JSON de datos, con Cloudflare Access
+						delante (solo entra Sergi).
+						<small>Las Actions la publican con <code>wrangler</code>; la URL está en <code>scripts/site.ts</code>.</small>
 					</span>
 					<b>Pages</b>
 				</li>

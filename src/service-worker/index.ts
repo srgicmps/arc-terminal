@@ -24,8 +24,7 @@ const PAGES_MAX = 40;
 const FONTS = 'arc-fonts';
 const ENGINE = 'arc-engine';
 
-// La web vive en /arc-terminal/; el scope del SW es esa carpeta. Las rutas del manifest
-// son relativas a ella.
+// El scope del SW es la carpeta de la web (la raíz). Las rutas del manifest son relativas a ella.
 const scope = new URL(self.registration.scope);
 const url = (path: string) => new URL(path.replace(/^\//, ''), scope).href;
 
