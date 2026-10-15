@@ -12,7 +12,7 @@ export const ESSENTIAL: Record<string, string[]> = {
 	'/pais': ['Tus países', 'Países', 'Datos', 'Moneda', 'Luz', 'En las noticias'],
 	'/tech': ['Titulares', 'Tecnológicas en bolsa', 'Regulación'],
 	'/ai': ['Titulares', 'Tecnológicas en bolsa', 'Modelos nuevos del mes', 'Modelos frontera'],
-	'/s': ['Gráfico', 'Cotización', 'Perfil de la empresa', 'Datos fundamentales', 'Analistas y resultados', 'En las noticias'],
+	'/s': ['Gráfico', 'Cotización', 'Por qué se mueve', 'Perfil de la empresa', 'Datos fundamentales', 'Analistas y resultados', 'En las noticias'],
 	'/cal': ['Calendario', 'Próximos datos', 'Resultados', 'Festivos'],
 	'/semana': ['Lo más importante', 'Mercados', 'Agenda']
 };
