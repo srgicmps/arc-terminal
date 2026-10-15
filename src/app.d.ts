@@ -5,7 +5,10 @@ declare global {
 		// interface Error {}
 		// interface Locals {}
 		// interface PageData {}
-		// interface PageState {}
+		interface PageState {
+			/** Modo OS en el móvil: hay una app, la multitarea o una hoja encima (el «atrás» la cierra). */
+			phone?: string;
+		}
 		// interface Platform {}
 	}
 }
