@@ -107,3 +107,26 @@ https://www.worldbank.org/en/research/commodity-markets ~ CMO-Historical-Data-Mo
 # LIDER: quién preside ahora la Fed y quién forma el Comité Ejecutivo del BCE
 https://www.federalreserve.gov/aboutthefed/bios/board/default.htm ~ .{0,120}(Chair|Powell).{0,60}
 https://www.ecb.europa.eu/ecb/orga/decisions/eb/html/index.en.html ~ .{0,100}(Vice-President|Member of the Executive Board).{0,20}
+# 26B.4 AI: Epoch AI, modelos notables y frontera (CSV, CC BY), licencia y robots
+https://epoch.ai/data/notable_ai_models.csv
+https://epoch.ai/data/frontier_ai_models.csv
+https://epoch.ai/data/large_scale_ai_models.csv
+https://epoch.ai/data/ai-models ~ .{0,120}(CC BY|Creative Commons|license|\.csv|\.zip).{0,120}
+https://epoch.ai/robots.txt
+# 26B.5 ES: paro registrado del SEPE (datos abiertos), robots
+https://sede.sepe.gob.es/es/portaltrabaja/resources/sede/datos_abiertos/datos/Paro_por_municipios_2026_csv.csv
+https://www.sepe.es/HomeSepe/que-es-el-sepe/transparencia/datos-abiertos.html ~ .{0,80}(csv|xlsx|Paro|paro).{0,120}
+https://datos.gob.es/apidata/catalog/dataset/title/paro?_pageSize=10 ~ .{0,200}
+https://www.sepe.es/robots.txt
+https://sede.sepe.gob.es/robots.txt
+# 26B.6 ES: Congreso, datos abiertos, aviso legal y robots
+https://www.congreso.es/robots.txt
+https://www.congreso.es/es/opendata/votaciones ~ .{0,60}(\.json|\.xml|Votacion|Sesion).{0,160}
+https://www.congreso.es/es/opendata/iniciativas ~ .{0,60}(\.json|\.xml|\.csv).{0,160}
+https://www.congreso.es/es/aviso-legal ~ .{0,200}(reutiliza|reproduc|robot|automatizad).{0,300}
+https://www.congreso.es/es/opendata ~ .{0,200}(reutiliza|licencia|condiciones).{0,300}
+# 26B.7 GEO: Frontex, mapa migratorio y XLSX mensual, robots y aviso legal
+https://www.frontex.europa.eu/robots.txt
+https://www.frontex.europa.eu/what-we-do/monitoring-and-risk-analysis/migratory-map/ ~ .{0,80}\.xlsx.{0,80}
+https://www.frontex.europa.eu/what-we-do/monitoring-and-risk-analysis/migratory-map/ ~ .{0,200}(reuse|reproduc|source: Frontex).{0,200}
+https://www.frontex.europa.eu/legal-notice/ ~ .{0,200}(reuse|reproduc|authori).{0,300}
