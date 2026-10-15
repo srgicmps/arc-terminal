@@ -1,9 +1,11 @@
 // Rentabilidad de los grandes valores de EE. UU. en varios plazos (5 días, 13 y 52 semanas, en lo que va de
-// año…), para la tabla de CMP. Finnhub, /stock/metric (plan gratuito, «basic financials»); misma clave que
+// año…), para la tabla de CMP, y de la misma respuesta su valoración, márgenes y máx./mín. de 52 semanas
+// (src/lib/rv.ts), para RV y SIG. Finnhub, /stock/metric (plan gratuito, «basic financials»); misma clave que
 // finnhub.ts (FINNHUB_API_KEY). Sin clave, la fuente se salta y la tabla de CMP no sale.
 // Límite: 60 consultas por minuto (el proyecto se queda en 40). Corre en la segunda fase (`after`), cuando
 // finnhub.ts ya ha terminado, y de una en una cada 2,5 s (24 por minuto). Una vez cada 12 horas: son
 // datos de cierre diario.
+import { toMetrics } from '../../src/lib/rv.ts';
 import type { PerfData } from '../../src/lib/types.ts';
 import { TICKERS } from '../../src/lib/tickers.ts';
 import { getJson, num, type Source } from '../lib.ts';
@@ -42,6 +44,7 @@ export const perf: Source<PerfData> = {
 	async fetch(previous) {
 		const key = process.env[ENV] ?? '';
 		const symbols: PerfData['symbols'] = {};
+		const metrics: NonNullable<PerfData['metrics']> = {};
 		for (const [i, s] of PERF_SYMBOLS.entries()) {
 			if (i) await wait(GAP_MS);
 			try {
@@ -50,16 +53,19 @@ export const perf: Source<PerfData> = {
 				});
 				const r = toReturns(body);
 				if (r) symbols[s] = r;
+				const m = toMetrics(body);
+				if (m) metrics[s] = m;
 			} catch (error) {
 				console.log(`  perf · ${s}: ${error instanceof Error ? error.message : error}`);
 				// Si un valor falla, se conserva el de la vez anterior.
 				if (previous?.symbols[s]) symbols[s] = previous.symbols[s];
+				if (previous?.metrics?.[s]) metrics[s] = previous.metrics[s];
 			}
 		}
 		const count = Object.keys(symbols).length;
 		if (!count) throw new Error('Finnhub no ha devuelto rentabilidades');
 		// El resumen de update.ts solo cuenta listas: así se ve en el registro cuántos valores han llegado.
 		console.log(`  perf · ${count} de ${PERF_SYMBOLS.length} valores`);
-		return { symbols };
+		return { symbols, metrics };
 	}
 };
