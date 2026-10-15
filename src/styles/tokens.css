@@ -177,9 +177,14 @@
 	--os-icon-radius: 27%; /* esquinas «squircle» de los iconos */
 	--os-icon-bg: linear-gradient(160deg, var(--raise), var(--panel)); /* fondo de un icono */
 	--os-icon-fg: var(--amber); /* dibujo de un icono */
+	--os-icon-edge: var(--line); /* filo de un icono */
+	--os-icon-name-case: none; /* nombres bajo los iconos: tal cual o en mayúsculas */
+	--os-icon-name-track: 0; /* espaciado de esos nombres */
 	--os-badge-bg: var(--down); /* insignia con número */
 	--os-badge-fg: var(--bg);
 	--os-radius-l: 22px; /* esquinas de widgets, dock y tarjetas */
+	--os-radius-xl: calc(var(--os-radius-l) + var(--sp-8)); /* dock y carpeta abierta del móvil */
+	--os-radius-pill: 15px; /* «Buscar» del móvil */
 	--os-bar-h: calc(var(--control-h) + var(--sp-12)); /* alto de la barra de tareas (crece sola en pantallas táctiles) */
 	--os-dock-h: 64px; /* alto del dock del aspecto Mac (iconos de 40 px y su lupa) */
 	--os-font: var(--sans); /* letra de la barra, los menús y los títulos de ventana; cada aspecto pone la suya */
@@ -398,6 +403,21 @@
 	--os-anim-min: 140ms;
 	--os-anim-max: 140ms;
 	--os-anim-close: 100ms;
+	/* Móvil: la misma pizarra con rejilla, iconos como placas de consola (casi rectas, filo frío) y nombres en mono. */
+	--os-phone-font: var(--mono);
+	--os-phone-wall: var(--bg-image), var(--cmd-slate);
+	--os-glass: color-mix(in srgb, var(--cmd-deck) 88%, transparent);
+	--os-glass-blur: blur(14px);
+	--os-glass-strong: color-mix(in srgb, var(--cmd-slate) 94%, transparent);
+	--os-icon-radius: 4px;
+	--os-icon-bg: linear-gradient(180deg, var(--raise), var(--cmd-deck));
+	--os-icon-edge: var(--cmd-cold-dim);
+	--os-icon-fg: var(--cmd-cold);
+	--os-icon-name-case: uppercase;
+	--os-icon-name-track: 0.04em;
+	--os-radius-l: 4px;
+	--os-radius-xl: 4px;
+	--os-radius-pill: 4px;
 }
 
 /* Pantallas táctiles: todos los controles a la zona pulsable mínima. */
