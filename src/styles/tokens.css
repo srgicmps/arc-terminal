@@ -180,6 +180,7 @@
 	--os-menu-radius: var(--radius); /* esquinas de menús, buscador y dock */
 	--os-icon-radius: var(--radius); /* esquinas de los iconos de app */
 	--os-icon-shadow: 0 1px 2px rgb(0 0 0 / 0.28); /* sombra de los iconos de app (una sola, de drop-shadow) */
+	--os-icon-ring: none; /* filo de los iconos de app (box-shadow; Mando lo usa como borde de 1 px) */
 	--os-topbar-bg: var(--panel); /* barra de arriba y vista Actividades del aspecto Linux */
 	--os-topbar-fg: var(--fg);
 	--os-topbar-hover: var(--raise);
@@ -388,6 +389,8 @@
 	--os-menu-bg: var(--cmd-deck);
 	--os-menu-radius: 2px;
 	--os-icon-radius: 2px;
+	--os-icon-ring: inset 0 0 0 var(--hair) var(--cmd-cold-dim);
+	--os-icon-shadow: 0 0 0 transparent;
 	--os-anim-open: 120ms;
 	--os-open-scale: 0.985;
 	--os-anim-min: 140ms;

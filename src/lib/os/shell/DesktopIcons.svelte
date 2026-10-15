@@ -195,7 +195,7 @@
 			onclick={(e) => (e as unknown as PointerEvent).pointerType === 'touch' && open(a.id)}
 			onkeydown={(e) => iconKey(e, a.id)}
 		>
-			<OsIcon id={a.id} size={shell.skin === 'dsm' ? 56 : 48} />
+			<OsIcon id={a.id} size={shell.skin === 'mando' ? 64 : shell.skin === 'dsm' ? 56 : 48} />
 			<span class="name">{a.title}</span>
 		</button>
 	{/each}
