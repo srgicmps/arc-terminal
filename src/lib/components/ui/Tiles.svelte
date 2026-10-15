@@ -1,7 +1,8 @@
 <!--
 	Fila de recuadros con una cifra grande (<Tile>). Tres columnas por defecto; en el móvil, una debajo de otra.
 	Con `cols` (una tira de 4–6 cifras, como en PAIS): todas en una fila y, en el móvil, de dos en dos, con la
-	última a todo el ancho si son impares.
+	última a todo el ancho si son impares. Una tira de 4 o más dentro de un panel estrecho (una columna de una
+	rejilla de tres) también va de dos en dos: las cifras no caben y pisaban la de al lado.
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
@@ -9,7 +10,7 @@
 	let { cols, children }: { cols?: number; children: Snippet } = $props();
 </script>
 
-<div class="tiles" data-ui="tiles" class:strip={cols} style:--cols={cols}>
+<div class="tiles" data-ui="tiles" class:strip={cols} class:many={cols && cols >= 4} style:--cols={cols}>
 	{@render children()}
 </div>
 
@@ -24,6 +25,17 @@
 
 	.strip {
 		grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+	}
+
+	/* El panel es el contenedor (Panel.svelte): se mira su ancho, no el de la pantalla. */
+	@container (max-width: 560px) {
+		.many {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+		.many > :global(:last-child:nth-child(odd)) {
+			grid-column: 1 / -1;
+		}
 	}
 
 	@media (max-width: 720px) {
