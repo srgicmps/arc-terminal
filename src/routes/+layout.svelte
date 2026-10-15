@@ -22,6 +22,7 @@
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { fit, initFit, toggleFit } from '#lib/fit.svelte.ts';
+	import { initTape, tape as tapeState, toggleTape } from '#lib/tape.svelte.ts';
 	import { initMode, mode, toggleMode } from '#lib/layout.svelte.ts';
 	import { loadPins } from '#lib/pins.svelte.ts';
 	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
@@ -55,6 +56,7 @@
 	$effect(() => followPlaceUrl(page.url.searchParams));
 	$effect(initTheme);
 	$effect(initFit);
+	$effect(initTape);
 	$effect(initMode);
 	$effect(loadPins);
 	// Tus ajustes en tu cuenta (arcterminal.dev): los sube y trae los de tus otros dispositivos.
@@ -241,6 +243,9 @@
 				<button type="button" onclick={cycleTheme}>
 					Tema <small>{THEME_SHORT[theme.mode]} · {THEME_ICON[theme.mode]}</small>
 				</button>
+				<button type="button" aria-pressed={tapeState.on} onclick={() => (toggleTape(), close())}>
+					Cinta de cotizaciones <small>{tapeState.on ? 'sí' : 'no'}</small>
+				</button>
 				<hr />
 				<a href={resolve('/help')} onclick={close}>A tu gusto y ayuda <small>HELP</small></a>
 			{/snippet}
@@ -275,9 +280,11 @@
 		<ExpLauncher hotkey />
 	</nav>
 
-	<div class="tape" data-ui="tape">
-		<TvWidget widget="ticker-tape" config={tapeConfig} height={44} credit={false} />
-	</div>
+	{#if tapeState.on}
+		<div class="tape" data-ui="tape">
+			<TvWidget widget="ticker-tape" config={tapeConfig} height={44} credit={false} />
+		</div>
+	{/if}
 
 	<!-- Aviso discreto cuando la Action ha publicado una versión nueva (datos o mejoras). -->
 	{#if updated.current}
