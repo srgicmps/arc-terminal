@@ -95,6 +95,10 @@
 	:global([data-os-skin='dsm']) [data-wall='sistema'] {
 		background-image: linear-gradient(180deg, var(--amber-soft) 0%, transparent 40%), radial-gradient(ellipse 70% 50% at 30% 100%, var(--raise), transparent 70%);
 	}
+	/* Estilo único de Arc OS («Mando», OS 6): su rejilla técnica tenue. */
+	:global([data-os-skin='mando']) [data-wall='sistema'] {
+		background-image: var(--bg-image, none);
+	}
 	[data-wall='estilo'] {
 		background-image: var(--bg-image, none);
 	}

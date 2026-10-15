@@ -4,7 +4,7 @@
 
 /** Fondos incluidos. Todos salen de los tokens, así que tienen versión de día y de noche sin hacer nada. */
 export const PRESETS = [
-	{ id: 'sistema', label: 'El del aspecto', group: 'Incluidos' },
+	{ id: 'sistema', label: 'El de Arc OS', group: 'Incluidos' },
 	{ id: 'estilo', label: 'El de la estética', group: 'Incluidos' },
 	{ id: 'degradado', label: 'Degradado', group: 'Incluidos' },
 	{ id: 'aurora', label: 'Aurora', group: 'Incluidos' },
