@@ -10,9 +10,10 @@
 	import { shell } from '../shell/shell.svelte.ts';
 	import Boot from './Boot.svelte';
 	import Lock from './Lock.svelte';
+	import { shell } from '../shell/shell.svelte.ts';
 	import Switcher from './Switcher.svelte';
 	import { cancel, commit, sw } from './switcher.svelte.ts';
-	import { bootDone, lock, startSystem, sys, unlock } from './system.svelte.ts';
+	import { bootDone, lock, sound, startSystem, sys, unlock } from './system.svelte.ts';
 
 	// Arranque y, mientras dure, los avisos P1–P2 de Arc como toasts (alerts.svelte.ts).
 	onMount(() => {
@@ -20,6 +21,14 @@
 		// Las alarmas de la app Reloj (OS 4) suenan aunque la app esté cerrada; se cargan aparte, sin pesar.
 		import('../apps/clock/alarms.svelte.ts').then((m) => m.startAlarms()).catch(() => {});
 		return startAlerts();
+	});
+
+	// Un aviso nuevo (toast de la shell) suena, si los sonidos están encendidos.
+	let toasts = 0;
+	$effect(() => {
+		const n = shell.toasts.length;
+		if (n > toasts) sound('notify');
+		toasts = n;
 	});
 
 	function key(e: KeyboardEvent) {
