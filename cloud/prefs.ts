@@ -2,11 +2,12 @@
 // Cada fila es (email, clave, valor): un usuario solo ve y cambia las suyas, porque el email sale del JWT
 // de Access verificado (access.ts), nunca de lo que mande el navegador. Las claves válidas son las mismas
 // que se pueden llevar a otro dispositivo (portable, de src/lib/transfer.ts, que sale de prefs.ts).
+import { LIMITS } from '../src/lib/cloud.ts';
 import { portable } from '../src/lib/transfer.ts';
 import { tokenOf, verifyAccess, type AccessConfig } from './access.ts';
 
-/** Topes: de sobra para lo que se guarda hoy (lo más grande, la partida de ajedrez, no llega a 5 KB). */
-export const LIMITS = { keys: 200, value: 64 * 1024, total: 512 * 1024, body: 600 * 1024 };
+/** Topes (en src/lib/cloud.ts, para que el navegador los respete antes de subir): de sobra para lo de hoy. */
+export { LIMITS };
 
 /** Dónde se guarda. En Cloudflare, D1 (d1Store); en los tests, memoryStore. */
 export interface Store {

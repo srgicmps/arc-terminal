@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
 	import { cloud } from '#lib/cloud.svelte.ts';
+	import { accountLine } from '#lib/os/system/account.ts';
 	import * as os from './bridge.ts';
 	import { alertLevel, hms } from './mando.ts';
 	import NoticeCenter from './NoticeCenter.svelte';
@@ -20,6 +21,7 @@
 		const id = setInterval(() => (now = Date.now()), 1000);
 		return () => clearInterval(id);
 	});
+	const account = $derived(accountLine(cloud.state, cloud.user, cloud.frozen));
 </script>
 
 <nav class="mando" aria-label="Barra del centro de mando">
@@ -47,7 +49,7 @@
 		<span class="clk" title="Hora universal coordinada"><span class="k">UTC</span>{hms('UTC', now)}</span>
 		<span class="clk" title="Hora de Madrid"><span class="k">MAD</span>{hms('Europe/Madrid', now)}</span>
 		<button type="button" class="tray-btn" aria-label="Panel de control" aria-expanded={shell.open === 'control'} onclick={() => toggle('control')}>⚙</button>
-		<span class="user" title={cloud.user || 'Sin cuenta (solo en este navegador)'}>{cloud.user ? cloud.user.slice(0, 1).toUpperCase() : '·'}</span>
+		<span class="user" class:warn={account.warn} title={account.text}>{cloud.user ? cloud.user.slice(0, 1).toUpperCase() : '·'}</span>
 	</div>
 </nav>
 
@@ -254,6 +256,11 @@
 		border: var(--hair) solid var(--cmd-cold);
 		color: var(--cmd-cold);
 		font-size: var(--fs-xxs);
+	}
+	/* La cuenta no está sincronizando (sin conexión, sesión caducada): en ámbar, y el porqué en el título. */
+	.user.warn {
+		border-color: var(--amber-edge);
+		color: var(--amber);
 	}
 	/* Pantallas estrechas: fuera la marca y Madrid; quedan las pestañas, el nivel y UTC. */
 	@media (max-width: 900px) {
