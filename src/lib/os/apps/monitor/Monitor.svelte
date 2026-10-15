@@ -1,7 +1,7 @@
 <!--
 	Monitor del sistema de Arc OS, como el Administrador de tareas: «Apps» (las ventanas abiertas, con «Finalizar»),
 	«Fuentes» (cada fuente de datos como un proceso: estado, última descarga, cada cuánto, error) y «Rendimiento»
-	(salud de las fuentes, almacenamiento y memoria del navegador). Lee /data/status.json al abrir y cada minuto.
+	(salud de las fuentes, almacenamiento y memoria del navegador) y «Recursos» (gráficas en directo, Resources.svelte). Lee /data/status.json al abrir y cada minuto.
 -->
 <script lang="ts">
 	import { asset } from '$app/paths';
@@ -14,15 +14,17 @@
 	import { appOf, close, focus, openApp, os } from '../../os.svelte.ts';
 	import type { AppProps } from '../../apps.ts';
 	import Tool from '../kit/Tool.svelte';
+	import Resources from './Resources.svelte';
 	import { ageMin, ageText, late, sortProcs, STATE_TEXT, summary, type SortKey } from './procs.ts';
 
 	let { win }: AppProps = $props();
 
-	let tab = $state<'apps' | 'src' | 'perf'>('src');
+	let tab = $state<'apps' | 'src' | 'perf' | 'res'>('src');
 	const TABS = [
 		{ value: 'apps', label: 'Apps' },
 		{ value: 'src', label: 'Fuentes' },
-		{ value: 'perf', label: 'Rendimiento' }
+		{ value: 'perf', label: 'Rendimiento' },
+		{ value: 'res', label: 'Recursos' }
 	] as const;
 
 	let list = $state<SourceStatus[] | null>(null);
@@ -107,6 +109,8 @@
 			</tbody>
 		</Table>
 		<p class="mut">{wins.length} ventanas en {os.state.desks.length} escritorios.</p>
+	{:else if tab === 'res'}
+		<Resources wins={wins.length} sources={sum ? { fresh: sum.count.ok + sum.count.cached, stale: sum.count.stale + sum.count.error } : null} />
 	{:else if failed && !list}
 		<p class="mut">No se ha podido leer el estado de las fuentes.</p>
 	{:else if !list || !sum}

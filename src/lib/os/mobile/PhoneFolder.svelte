@@ -107,7 +107,7 @@
 		max-height: 60dvh;
 		overflow-y: auto;
 		padding: var(--sp-20) var(--sp-12);
-		border-radius: calc(var(--os-radius-l) + var(--sp-8));
+		border-radius: var(--os-radius-xl);
 		background: var(--os-glass);
 		backdrop-filter: var(--os-glass-blur);
 		-webkit-backdrop-filter: var(--os-glass-blur);

@@ -306,6 +306,8 @@
 
 <svelte:window {onkeydown} onpointermove={onmove} onpointerup={onrelease} onpointercancel={oncancel} />
 
+<!-- Arc OS tiene un solo estilo, «Mando» (tokens.css): también el teléfono y lo que se abre encima. -->
+<div class="skin" data-os-skin="mando" data-ui="os">
 <div class="phone" class:in-app={current !== null} class:editing role="application" oncontextmenu={(e) => e.preventDefault()} aria-label="Modo OS" onpointerdown={down} onpointerup={up}>
 	<div class="top">
 		<PhoneStatus {time} onnotif={() => (sheet = 'notif')} oncontrol={() => (sheet = 'control')} />
@@ -444,7 +446,12 @@
 	<CenterSheet kind={sheet} {changes} {notice} {now} onclose={() => (sheet = null)} onpath={launchPath} />
 {/if}
 
+</div>
+
 <style>
+	.skin {
+		display: contents;
+	}
 	.phone {
 		position: fixed;
 		inset: 0;
@@ -613,7 +620,7 @@
 		height: 30px;
 		padding: 0 var(--sp-14);
 		border: 0;
-		border-radius: 15px;
+		border-radius: var(--os-radius-pill);
 		background: var(--os-glass);
 		backdrop-filter: var(--os-glass-blur);
 		-webkit-backdrop-filter: var(--os-glass-blur);
@@ -653,7 +660,7 @@
 		grid-template-columns: repeat(4, 1fr);
 		margin: 0 var(--sp-12);
 		padding: var(--sp-14) var(--sp-12);
-		border-radius: calc(var(--os-radius-l) + var(--sp-8));
+		border-radius: var(--os-radius-xl);
 		background: var(--os-glass);
 		backdrop-filter: var(--os-glass-blur);
 		-webkit-backdrop-filter: var(--os-glass-blur);
