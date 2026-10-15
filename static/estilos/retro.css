@@ -1,0 +1,236 @@
+/* ── Estética «Fósforo» (src/lib/estilos.ts) ───────────────────────────────────────────────────────────
+ * <html data-style="retro">: monitor de fósforo de los 80. Un solo color (verde) en varios brillos, VT323 en
+ * títulos y cifras grandes, IBM Plex Mono en el resto, cajas de línea doble, cursor que parpadea en la barra y
+ * líneas de escaneo muy suaves. Aquí el verde NO es «sube»: subidas y bajadas se distinguen por el brillo y por
+ * ▲/▼. De día, la pantalla invertida: tinta verde muy oscura sobre verde pálido. */
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	:root[data-style='retro'],
+	[data-style='retro'] {
+		/* Noche: fósforo verde sobre negro. Brillos: --up (el más fuerte) > --amber > --fg > --muted. */
+		--bg: #040804;
+		--panel: #071008;
+		--raise: #0c1a0e;
+		--line: #1f4a29;
+		--fg: #9cf2ae;
+		--muted: #62b574;
+		--faint: #559f66;
+		--amber: #5dff86;
+		--amber-dim: #7fd994;
+		--amber-soft: rgba(93, 255, 134, 0.12);
+		--amber-edge: rgba(93, 255, 134, 0.45);
+		--on-amber: #021a08;
+		--up: #ecfff1;
+		--down: #6fcf84;
+		--neutral: #24502e;
+		--series-2: #c9ffd6;
+		--series-3: #4f9d61;
+		--scrim: rgba(2, 6, 2, 0.8);
+		--sq-light: #1d3a22;
+		--sq-dark: #0f2113;
+		--glow: rgba(93, 255, 134, 0.35);
+		--scan: rgba(0, 0, 0, 0.22);
+		--vignette: rgba(0, 0, 0, 0.45);
+		--bg-image: radial-gradient(ellipse at 50% 40%, #0a170c 0%, #040804 70%);
+
+		/* Letras: VT323 (píxeles) para títulos y cifras; Plex Mono para todo lo demás, también los textos. */
+		--pixel: 'VT323', 'IBM Plex Mono', ui-monospace, monospace;
+		--mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		--sans: var(--mono);
+		--font-ui: var(--mono);
+		--title-font: var(--pixel);
+		--fs-title: 19px;
+		--title-case: uppercase;
+		--title-track: 0.06em;
+		--title-color: var(--amber);
+		--track-caps: 0.1em;
+		--track-label: 0.08em;
+
+		/* Forma: sin redondeos; cada panel, una caja de línea doble (con sombras: así no la cortan las reglas
+		   de las rejillas, que quitan bordes al apilar paneles). */
+		--radius: 0;
+		--radius-s: 0;
+		--border: var(--hair) solid var(--line);
+		--panel-edge: 0;
+		--shadow: 0 0 0 var(--hair) var(--line), 0 0 0 var(--sp-3) var(--bg), 0 0 0 var(--sp-4) var(--line);
+		--shadow-pop: 0 0 0 var(--hair) var(--amber-edge), 0 0 0 var(--sp-3) var(--bg), 0 0 0 var(--sp-4) var(--amber-edge);
+		--grid-gap: var(--sp-12);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-12);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-12);
+		--stack-edge: 0;
+		--cmd-h: 36px;
+
+		/* Movimiento a saltos, como un terminal que repinta. */
+		--dur-ui: 90ms;
+		--ease: steps(2, end);
+		scrollbar-color: var(--line) var(--bg);
+	}
+	:root[data-theme='light'][data-style='retro'],
+	:root[data-theme='light'] [data-style='retro'] {
+		/* Día: pantalla invertida. Aquí manda la tinta más oscura: --up es la más negra. */
+		--bg: #dcefd6;
+		--panel: #e9f6e5;
+		--raise: #d0e6c9;
+		--line: #9cc39f;
+		--fg: #0a2a12;
+		--muted: #2b5a35;
+		--faint: #335f3c;
+		--amber: #0b5a20;
+		--amber-dim: #1f5a2d;
+		--amber-soft: rgba(11, 90, 32, 0.1);
+		--amber-edge: rgba(11, 90, 32, 0.45);
+		--on-amber: #e9f6e5;
+		--up: #001a07;
+		--down: #3b6a45;
+		--neutral: #a9cba9;
+		--series-2: #001a07;
+		--series-3: #5a8a63;
+		--scrim: rgba(10, 42, 18, 0.35);
+		--sq-light: #e9f6e5;
+		--sq-dark: #b9d8b4;
+		--glow: rgba(11, 90, 32, 0.18);
+		--scan: rgba(10, 42, 18, 0.04);
+		--vignette: rgba(10, 42, 18, 0.12);
+		--bg-image: radial-gradient(ellipse at 50% 40%, #e6f5e1 0%, #dcefd6 70%);
+	}
+
+	/* ── Títulos y cifras en píxeles ──────────────────────────────────────────────────────────────── */
+	/* VT323 es baja para su tamaño: se sube la letra en el propio elemento (el componente usa var(--…)). */
+	[data-style='retro'] .vh h1 {
+		--sans: var(--pixel);
+		--mono: var(--pixel);
+		--fs-xl: 34px;
+		--fs-l: 34px;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		line-height: 1;
+	}
+	@media (max-width: 720px) {
+		[data-style='retro'] .vh h1 {
+			--fs-xl: 28px;
+			--fs-l: 28px;
+		}
+	}
+	[data-style='retro'] .tile b {
+		font-family: var(--pixel);
+		--fs-xl: 38px;
+		line-height: 1;
+		letter-spacing: 0.02em;
+	}
+	[data-style='retro'] .brand {
+		font-family: var(--pixel);
+		--fs-s: 20px;
+		--track-brand: 0.08em;
+	}
+	[data-style='retro'] .key {
+		font-family: var(--pixel);
+		--fs-s: 19px;
+		--track-code: 0.04em;
+		line-height: 1;
+	}
+	/* La descripción de cada tecla, en Plex Mono y a su tamaño de siempre (el --fs-s de la tecla es el de VT323). */
+	[data-style='retro'] .key span {
+		font-size: calc(var(--fs-xs) + var(--sp-1));
+	}
+	[data-style='retro'] .panel .ph {
+		background: var(--raise);
+	}
+
+	/* Filas de tabla separadas a puntos, como un listado impreso. */
+	[data-style='retro'] .t,
+	[data-style='retro'] .mini {
+		--border: var(--hair) dashed var(--line);
+	}
+
+	/* ── Subidas y bajadas: brillo y flecha (el color no basta: todo es verde) ─────────────────────── */
+	/* El :not() deja fuera las vistas previas de otras estéticas que haya dentro de esta. */
+	[data-style='retro'] :where(span, b, strong, td, small, em, li, p, dd).up:not([data-style='retro'] [data-style]:not([data-style='retro']) *)::before {
+		content: '▲';
+		margin-right: 0.3em;
+		font-size: 0.75em;
+	}
+	[data-style='retro'] :where(span, b, strong, td, small, em, li, p, dd).down:not([data-style='retro'] [data-style]:not([data-style='retro']) *)::before {
+		content: '▼';
+		margin-right: 0.3em;
+		font-size: 0.75em;
+	}
+	[data-style='retro'] .up:not([data-style='retro'] [data-style]:not([data-style='retro']) *) {
+		font-weight: var(--fw-bold);
+	}
+
+	/* ── Barra de comandos: cursor de bloque que parpadea ─────────────────────────────────────────── */
+	[data-style='retro'] .cmd input {
+		caret-color: var(--amber);
+		caret-shape: block;
+	}
+	[data-style='retro'] .cmd .prompt {
+		grid-auto-flow: column;
+		column-gap: var(--sp-4);
+	}
+	[data-style='retro'] .cmd:not(:focus-within) .prompt::after {
+		content: '';
+		width: 0.6em;
+		height: 1.1em;
+		background: var(--amber);
+	}
+	[data-style='retro'] .cmd .go {
+		font-family: var(--pixel);
+		--fs-s: 20px;
+	}
+	[data-style='retro'] ::selection {
+		background: var(--amber);
+		color: var(--on-amber);
+	}
+
+	/* ── Gráficos: un solo color, trazo de vector; la 2.ª y 3.ª serie, a rayas ─────────────────────── */
+	[data-style='retro'] .chart line.grid {
+		stroke-dasharray: 1 3;
+	}
+	[data-style='retro'] .chart svg path:nth-of-type(2) {
+		stroke-dasharray: 6 3;
+	}
+	[data-style='retro'] .chart svg path:nth-of-type(3) {
+		stroke-dasharray: 2 2;
+	}
+
+	/* ── Efectos de tubo: solo si no se pide menos movimiento ni menos transparencia ──────────────── */
+	@media (prefers-reduced-motion: no-preference) {
+		[data-style='retro'] .cmd:not(:focus-within) .prompt::after {
+			animation: retro-blink 1.06s steps(1, end) infinite;
+		}
+		/* Brillo leve del fósforo en lo grande; en el texto corrido no, para que se lea limpio. */
+		[data-style='retro'] :is(.vh h1, .tile b, .panel h2, .brand) {
+			text-shadow: 0 0 var(--sp-6) var(--glow);
+		}
+		[data-style='retro'] .chart svg path {
+			filter: drop-shadow(0 0 var(--sp-2) var(--glow));
+		}
+	}
+	@media (prefers-reduced-motion: no-preference) and (not (prefers-reduced-transparency: reduce)) {
+		/* Líneas de escaneo (3 px) y viñeta del cristal, por encima de todo y sin capturar el ratón. */
+		:root[data-style='retro'] body::after {
+			content: '';
+			position: fixed;
+			inset: 0;
+			z-index: calc(var(--z-modal) + 1);
+			pointer-events: none;
+			background:
+				repeating-linear-gradient(to bottom, transparent 0, transparent 2px, var(--scan) 2px, var(--scan) 3px),
+				radial-gradient(ellipse at 50% 50%, transparent 60%, var(--vignette) 100%);
+		}
+	}
+	@media print {
+		:root[data-style='retro'] body::after {
+			display: none;
+		}
+	}
+	@keyframes retro-blink {
+		50% {
+			opacity: 0;
+		}
+	}
+}
