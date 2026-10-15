@@ -265,16 +265,20 @@
 		}
 	}
 
-	/* Con esquinas redondeadas (cualquier estética menos Terminal), lo de dentro se recorta con la forma del panel:
-	   filas, cabeceras y tablas con scroll no asoman por las esquinas. clip y no hidden: no crea un contenedor de
-	   scroll, así las cabeceras fijas siguen funcionando. El panel ampliado y el de «encajar» ya hacen scroll (auto). El foco
-	   va hacia dentro para que el recorte no lo corte. */
-	:global(:root:not([data-style='terminal'])) .panel:not(.max) {
-		overflow: clip;
+	/* Con esquinas redondeadas, lo de dentro se recorta con la forma del panel: filas, cabeceras y tablas con scroll no
+	   asoman por las esquinas. Lo decide el token --panel-clip (clip en las estéticas, visible en Terminal; una estética
+	   sin esquinas puede volver a visible). clip y no hidden: no crea un contenedor de scroll, así las cabeceras fijas
+	   siguen funcionando. El panel ampliado y el de «encajar» ya hacen scroll (auto). El margen de recorte deja ver
+	   entero el anillo de foco de lo que va pegado al borde; Safari no lo tiene, así que allí el foco va hacia dentro. */
+	.panel:not(.max) {
+		overflow: var(--panel-clip);
+		overflow-clip-margin: calc(var(--focus-w) + var(--sp-2));
 	}
 
-	:global(:root:not([data-style='terminal'])) .panel :global(:focus-visible) {
-		outline-offset: calc(-1 * var(--focus-w));
+	@supports not (overflow-clip-margin: 1px) {
+		:global(:root:not([data-style='terminal'])) .panel :global(:focus-visible) {
+			outline-offset: calc(-1 * var(--focus-w));
+		}
 	}
 
 	/* M47: el panel al que lleva la barra se marca con el borde del acento, que se apaga solo. */
@@ -436,7 +440,7 @@
 		position: sticky;
 		top: 0;
 		z-index: var(--z-sticky);
-		background: var(--panel);
+		background-color: var(--panel);
 	}
 
 	/* ── Ampliar el panel ─────────────────────────────────────────────────────────────────── */
@@ -502,7 +506,7 @@
 		position: sticky;
 		top: 0;
 		z-index: var(--z-sticky);
-		background: var(--panel);
+		background-color: var(--panel);
 	}
 
 	.close {
@@ -536,6 +540,7 @@
 			inset: 0;
 			max-height: 100dvh;
 			border: 0;
+			border-radius: 0;
 		}
 	}
 

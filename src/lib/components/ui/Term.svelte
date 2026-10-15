@@ -169,7 +169,9 @@
 		max-width: min(40ch, calc(100vw - 2 * var(--gutter)));
 		padding: var(--sp-6) var(--sp-8);
 		background: var(--raise);
-		border: var(--border);
+		border: var(--hair) solid var(--line);
+		border-radius: var(--radius-s);
+		box-shadow: var(--shadow-pop);
 		color: var(--fg);
 		font-family: var(--sans);
 		font-size: var(--fs-s);

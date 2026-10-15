@@ -534,13 +534,15 @@
 		left: calc(-1 * var(--hair));
 		right: calc(-1 * var(--hair));
 		top: 100%;
-		z-index: 20;
+		z-index: calc(var(--z-bar) + 1); /* por encima del índice de paneles del móvil */
 		margin: 0;
 		padding: var(--sp-4) 0;
 		list-style: none;
 		background: var(--raise);
 		border: var(--hair) solid var(--amber);
 		border-top-color: var(--line);
+		border-radius: 0 0 var(--radius-s) var(--radius-s);
+		box-shadow: var(--shadow-pop);
 		max-height: 320px;
 		overflow: auto;
 	}

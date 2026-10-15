@@ -142,6 +142,7 @@
 	--bg-image: none; /* dibujo de fondo de la página (rejilla, degradado…) */
 	--panel-blur: none; /* backdrop-filter de los paneles (cristal) */
 	--focus-w: var(--hair); /* grosor del contorno de foco con teclado */
+	--panel-clip: visible; /* ¿recorta el panel su contenido? (clip en las estéticas con esquinas: ver [data-style]) */
 	--scroll-w: 8px; /* ancho de las barras de desplazamiento (escritorio; en el móvil son las del sistema) */
 	--scroll-thumb: var(--neutral); /* la parte que se arrastra */
 	--scroll-track: transparent; /* el carril: transparente, así no asoma ninguna esquina cuadrada */
@@ -205,7 +206,11 @@
 /* ── Vistas previas de estéticas (HELP, ESTILO) ──────────────────────────────────────────────
  * Un elemento con data-style dentro de la página se pinta con esa estética. Los tokens que dependen de otros se
  * vuelven a calcular en él (si no, heredaría el valor ya calculado en <html>). Cada estilo puede pisarlos. */
+[data-style]:not([data-style='terminal']) {
+	--panel-clip: clip;
+}
 [data-style] {
+	--scroll-thumb: var(--neutral);
 	--bg-image: none;
 	--panel-blur: none;
 	--border: var(--hair) solid var(--line);

@@ -54,7 +54,7 @@ Colores (`--bg`, `--panel`, `--raise`, `--line`, `--fg`, `--muted`, `--faint`, `
 `--hair`, `--border`, `--panel-edge`, `--panel-blur`), rejillas (`--grid-gap`, `--grid-fill`, `--grid-edge`,
 `--grid-join`, `--col-fill`, `--stack-gap`, `--stack-edge`), títulos (`--fs-title`, `--title-case`, `--title-track`,
 `--title-color`), espaciado (`--sp-*`, `--pad-x`, `--row-y`, `--head-y`, `--gutter`), fondo (`--bg-image`) y
-movimiento (`--dur-ui`, `--dur-fast`, `--ease`), foco (`--focus-w`) y barras de desplazamiento (`--scroll-w`, `--scroll-thumb`, `--scroll-track`). Ejemplo completo: `static/estilos/grafito.css`.
+movimiento (`--dur-ui`, `--dur-fast`, `--ease`), foco (`--focus-w`) barras de desplazamiento (`--scroll-w`, `--scroll-thumb`, `--scroll-track`) y recorte del panel (`--panel-clip`). Ejemplo completo: `static/estilos/grafito.css`.
 
 ## Estructura: mover cosas de sitio
 Una estética puede cambiar la estructura, no solo los colores, **solo con CSS** de su archivo: rejillas con áreas,
@@ -100,6 +100,17 @@ Reglas:
   con foco visible. Nada de `display: none` en la barra de comandos ni en la navegación sin dar otro camino.
 - En el móvil (≤720 px) la barra de pestañas y el índice de paneles ya existen: aprovéchalos.
 - `prefers-reduced-motion`: sin animaciones de estructura.
+- El panel recorta lo que se sale de él (`--panel-clip: clip`, para que las esquinas redondeadas no enseñen
+  rectángulos): un `::before`/`::after` por fuera del panel no se ve. Las marcas de esquina, los marcos dobles y
+  los adornos, dentro del panel o pintados en su fondo. Una estética sin esquinas puede volver a `--panel-clip: visible`.
+- No pongas `transform`, `rotate`, `translate`, `filter` ni `backdrop-filter` en un panel ni en sus contenedores:
+  convierten el panel en el marco de lo que va `position: fixed` dentro (las burbujas ⓘ) y las descolocan o recortan.
+  Un desenfoque, en un `::before` detrás; un giro, quitado mientras haya una burbuja abierta. Las animaciones de
+  entrada, con `animation-fill-mode: backwards`, no `both`.
+- Barras de desplazamiento: solo con los tokens `--scroll-*`. No pongas `scrollbar-color` ni `scrollbar-width`: con
+  ellos Chrome ignora `::-webkit-scrollbar` y dibuja sus flechas en las esquinas.
+- Svelte 5 da poca especificidad a sus selectores: si cambias `top` en las sugerencias (`.suggest`), pon también
+  `top: auto` en la hoja del móvil (`[data-ui='cmd'].sheet .suggest`).
 - Haz capturas también con «encajar en pantalla» (botón ⤢, ≥1280 px) y con un panel ampliado.
 
 ## Comprobar

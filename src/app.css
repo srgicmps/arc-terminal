@@ -50,6 +50,13 @@ select {
 	font: inherit;
 	color: inherit;
 }
+/* Campos y desplegables sueltos: con las esquinas de la estética (0 en Terminal). Un componente que necesite otra
+   forma (la barra de comandos) la pone en su <style>, que manda sobre esto. */
+input:not([type='checkbox'], [type='radio'], [type='range']),
+select,
+textarea {
+	border-radius: var(--radius-s);
+}
 
 /* Foco con teclado: contorno ámbar fino. Solo con :focus-visible, para que el ratón y el dedo no lo muestren.
    Si un componente quita el outline, tiene que poner otra señal (borde ámbar, fondo…). */
