@@ -2,7 +2,7 @@
 // escuchan la barra de comandos y el modo TV: si cambia una tecla, se cambia aquí y cambia en todas partes.
 // Lógica pura, sin Svelte, para probarla con Vitest.
 
-export type ShortcutGroup = 'Barra' | 'Paneles' | 'Listas' | 'Pantalla' | 'TV';
+export type ShortcutGroup = 'Barra' | 'Paneles' | 'Listas' | 'Pantalla' | 'TV' | 'Arc OS';
 
 export interface Shortcut {
 	id: string;
@@ -41,7 +41,14 @@ export const SHORTCUTS = [
 	{ id: 'fullscreen', group: 'Pantalla', keys: ['⇧', 'F'], combo: true, action: 'Pantalla completa', match: { key: 'F', shift: true } },
 	{ id: 'exp', group: 'Pantalla', keys: ['⇧', 'X'], combo: true, how: 'o el botón ✦', action: 'Saltar a otra experiencia (periódico, radio, muro…)', match: { key: 'X', shift: true } },
 	{ id: 'tv-pause', group: 'TV', keys: ['Espacio'], how: 'en modo TV', action: 'Pausar o seguir', match: { key: ' ' } },
-	{ id: 'tv-exit', group: 'TV', keys: ['Esc'], how: 'en modo TV', action: 'Salir', match: { key: 'Escape' } }
+	{ id: 'tv-exit', group: 'TV', keys: ['Esc'], how: 'en modo TV', action: 'Salir', match: { key: 'Escape' } },
+	// Arc OS (src/lib/components/os/WindowLayer.svelte, handleKey): todos con Alt, también con el foco dentro de una ventana.
+	{ id: 'os-next', group: 'Arc OS', keys: ['Alt', 'º'], combo: true, how: 'con ⇧, la anterior', action: 'Siguiente ventana' },
+	{ id: 'os-max', group: 'Arc OS', keys: ['Alt', '↑'], combo: true, action: 'Maximizar o restaurar la ventana' },
+	{ id: 'os-min', group: 'Arc OS', keys: ['Alt', '↓'], combo: true, action: 'Desencajar o minimizar la ventana' },
+	{ id: 'os-half', group: 'Arc OS', keys: ['Alt', '⇧', '←', '→'], combo: true, action: 'Ventana a media pantalla' },
+	{ id: 'os-close', group: 'Arc OS', keys: ['Alt', 'W'], combo: true, action: 'Cerrar la ventana' },
+	{ id: 'os-desk', group: 'Arc OS', keys: ['Alt', '1…6'], combo: true, action: 'Ir a un escritorio' }
 ] as const satisfies readonly Shortcut[];
 
 export type ShortcutId = (typeof SHORTCUTS)[number]['id'];

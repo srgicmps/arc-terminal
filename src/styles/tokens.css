@@ -141,6 +141,18 @@
 	--title-color: var(--amber); /* color de los títulos de panel (tamaño, letra y mayúsculas: --fs-title, --title-*) */
 	--bg-image: none; /* dibujo de fondo de la página (rejilla, degradado…) */
 	--panel-blur: none; /* backdrop-filter de los paneles (cristal) */
+	/* Arc OS (/os): ventanas y escritorio. Por defecto salen de los de arriba; una estética puede afinarlos. */
+	--os-desk: var(--bg); /* fondo del escritorio (el fondo de pantalla, si lo hay, va encima) */
+	--os-win-bg: var(--panel); /* fondo de una ventana */
+	--os-win-edge: var(--border); /* borde de una ventana */
+	--os-win-edge-active: var(--hair) solid var(--amber-dim); /* borde de la ventana con el foco */
+	--os-win-radius: var(--radius); /* esquinas de una ventana */
+	--os-win-shadow: var(--shadow-pop); /* sombra de una ventana */
+	--os-title-h: 28px; /* alto de la barra de título */
+	--os-title-bg: var(--raise); /* fondo de la barra de título */
+	--os-title-fg: var(--muted); /* texto de la barra de título */
+	--os-title-fg-active: var(--fg); /* texto de la barra de título con el foco */
+	--os-snap: var(--amber-soft); /* zona donde va a encajar la ventana al soltarla */
 	--focus-w: var(--hair); /* grosor del contorno de foco con teclado */
 	--scroll-w: 8px; /* ancho de las barras de desplazamiento (escritorio; en el móvil son las del sistema) */
 	--scroll-thumb: var(--neutral); /* la parte que se arrastra */
