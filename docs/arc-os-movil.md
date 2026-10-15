@@ -48,6 +48,7 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
   que se ajustan a su hueco (`@container`).
 - [x] Widgets en franjas de 2 filas (`layout` + `rowsOf` de `home.ts`): con 4 pequeños el último se salía de la rejilla.
 - [x] «−» de los widgets, redondo. En horizontal (8 × 3 de QA OS 3) un widget pequeño ocupa 2 × 1 (no cabían).
+- [x] Arrastrando, el dedo quieto en el borde sigue pasando páginas (antes, una o ninguna).
 - [x] Mantener un widget entra en el modo edición; tocar un hueco vacío lo termina. Carpetas: miniaturas 3×3 desde
   arriba a la izquierda.
 

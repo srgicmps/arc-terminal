@@ -300,13 +300,28 @@
 			if (r && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) openFolder = null;
 		}
 		drag.to = targetAt(e.clientX, e.clientY);
-		// Cerca del borde, pasa de página.
-		const side = e.clientX < 24 ? -1 : e.clientX > innerWidth - 24 ? 1 : 0;
-		clearTimeout(edge);
-		if (side && !openFolder) edge = setTimeout(() => toPage(Math.max(0, Math.min(pages.length - 1, page + side))), 600);
+		// Cerca del borde, pasa de página; y, si el dedo sigue ahí, otra cada 0,6 s. Moverse sin salir del borde no
+		// vuelve a empezar la cuenta (antes, con el pulso del dedo, no pasaba nunca o solo una).
+		const side = openFolder ? 0 : e.clientX < 24 ? -1 : e.clientX > innerWidth - 24 ? 1 : 0;
+		if (side !== edgeSide) {
+			clearTimeout(edge);
+			edgeSide = side;
+			if (side) flip();
+		}
+	}
+	let edgeSide = 0;
+	function flip() {
+		edge = setTimeout(() => {
+			if (!drag || !edgeSide) return;
+			const to = Math.max(0, Math.min(pages.length - 1, page + edgeSide));
+			if (to === page) return;
+			toPage(to);
+			flip();
+		}, 600);
 	}
 	function onrelease() {
 		clearTimeout(edge);
+		edgeSide = 0;
 		if (press) clearTimeout(press.timer);
 		press = null;
 		if (!drag) return;
@@ -320,6 +335,7 @@
 	}
 	function oncancel() {
 		clearTimeout(edge);
+		edgeSide = 0;
 		if (press) clearTimeout(press.timer);
 		press = null;
 		drag = null;
