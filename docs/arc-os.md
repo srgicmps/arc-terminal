@@ -102,20 +102,29 @@ nada en los traspasos entre sesiones.
 - [x] Centro de registros: fuentes, avisos y sesión, con filtros y CSV [OS 4] #522
 - [x] Visor de imágenes y PDF del dispositivo [OS 4] #518
 - [x] Terminal (la barra de comandos como consola) [OS 3] #478
-- [ ] Apps de análisis: mapa operacional, grafo de entidades, expedientes, línea de tiempo y vigilancia [OS 6]
+- [x] Apps de análisis: mapa operacional, grafo de entidades, expedientes, línea de tiempo y vigilancia [OS 6] #513–#516 (detalle abajo)
 
 ## Móvil (≤ 900 px, al estilo iOS)
 - [ ] Pantalla de inicio con páginas, dock, widgets e insignias [OS 3] (#494)
 - [ ] Multitarea, centro de control, buscador y gestos [OS 3]
 - [x] Cambiar entre «Terminal clásico» y «Modo OS» (`mode.svelte.ts`) [OS 3] #478
 
-## OS 6 · Centro de mando (detalle de #503)
+## OS 6 · Centro de mando (detalle de #503 y #513–#516)
 Aspecto «Mando» y apps de análisis inspiradas en las plataformas de inteligencia, sin marcas ni logos de nadie y
 sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - [x] Aspecto «Mando» (`data-os-skin='mando'`, 5.º de `skins.ts`): pizarra con rejilla técnica tenue, letra mono, acento frío (`--cmd-*` en `tokens.css`) y ámbar, bordes de 1 px y esquinas casi rectas [OS 6] #503
 - [x] Barra de arriba (`MandoBar.svelte`): menú de apps, pestañas de ventanas, nivel de alerta global de 1 a 5 y relojes UTC y Madrid con segundos [OS 6] #503
 - [x] Nivel de alerta (`mando.ts → alertLevel`): avisos graves del muro (los P1) y el tema más cubierto de IMP; el porqué en el título [OS 6] #503
 - [x] Franja de abajo (`MandoStrip.svelte`): «ARC · USO PRIVADO», pilotos de fuentes en vivo por grupo (IMP, GEO, MERC, MACRO), fuentes que van y fecha [OS 6] #503
+- [x] Paleta, letra y formas fijas en `[data-os-skin='mando']` (no cambian con la estética ni el tema de la web); cada app añade sus `--cmd-*` en un bloque `[data-os-skin]` sin redefinir los de base [OS 6] #503
+- [x] **Mapa operacional** (`mapa-op`): las capas de GEO y de la Sala en un mapa plano (zoom y arrastre) o globo, filtros por capa con recuento, periodo de 6 h a Todo y línea de tiempo para rebobinar (histograma, ▶/❚❚, «Ahora»); ficha del suceso con PAIS/GEO en ventana. `openApp('mapa-op', '?capas=quakes&periodo=24h')` [OS 6] #513
+- [x] **Vigilancia** (`vigilancia`): tus objetivos (valores, países, líderes, temas) con nivel 0–4, «desde tu visita» y «Avisarme al móvil» con las alertas de AVISOS; clave portable `arc-os-watch` [OS 6] #514
+- [x] **Línea de tiempo** (`cronologia`): 6 carriles de sucesos y 7 de mercados sobre un eje común, 24 h–1 año, zoom, cursor común, carriles a elegir [OS 6] #515
+- [x] **Grafo de entidades** (`grafo`): países, líderes, bancos, valores, sanciones, sucesos y temas de IMP con aristas por co-mención y relación; fuerzas propias, expandir, filtrar, buscar [OS 6] #516
+- [x] **Expediente** (`expediente`): ficha de cualquier entidad (resumen, datos, mapa, relaciones, cronología), exportar a Markdown/JSON e imprimir. API: `openDossier(kind, key)`, `openDossierFor('Lagarde')`, `openGraph()` (`apps/intel/open.ts`) [OS 6] #516
+- [ ] Iconos SVG de las cinco apps con el set de OS 2 (`OsIcon`) [OS 6, cuando esté el set]
+- [ ] Título de ventana: no enseñar el path en las herramientas sin `href` («Expediente · /expediente#country:CN») [núcleo]
+- [x] Contraste AA en /os: `--muted` de Mando a 4,5:1 también sobre el fondo con acento [OS 6] #533
 
 ## OS 4 · Cómo están hechas las apps del sistema
 - Cada app es un archivo `src/lib/os/apps/<id>.ts` (registro, `load` diferido) y su carpeta. Marco común
