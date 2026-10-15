@@ -37,9 +37,9 @@ nada en los traspasos entre sesiones.
 «El escritorio no tiene un estilo a elegir: tiene SU estilo y no puede cambiar; solo cambian las apps».
 - [x] Hubo cuatro aspectos a elegir: Arc DSM, Windows, Mac y Linux [OS 2] #500. Se puede conservar el código
       (`data-os-skin`), pero ya **sin interfaz** para elegirlo.
-- [ ] **Un único aspecto fijo, propio de Arc**: identidad «Centro de mando» (estilo de plataforma de inteligencia,
+- [x] **Un único aspecto fijo, propio de Arc**: identidad «Centro de mando» (estilo de plataforma de inteligencia,
       el que diseña OS 6) con estructura tipo DSM: barra superior fina, menú de apps, iconos grandes y widgets a la
-      derecha [OS 6 diseño + OS 2 estructura]
+      derecha [OS 6 diseño + OS 2 estructura] #503
 - [ ] Quitar el selector de aspectos del asistente y del Panel de control. El asistente queda en fondo, widgets y
       nombre [OS 2]
 - [ ] Las estéticas de la web (Apariencia: `data-style`, acento y densidad) solo afectan al **contenido de las
@@ -103,3 +103,11 @@ nada en los traspasos entre sesiones.
 - [ ] Pantalla de inicio con páginas, dock, widgets e insignias [OS 3] (#494)
 - [ ] Multitarea, centro de control, buscador y gestos [OS 3]
 - [x] Cambiar entre «Terminal clásico» y «Modo OS» (`mode.svelte.ts`) [OS 3] #478
+
+## OS 6 · Centro de mando (detalle de #503)
+Aspecto «Mando» y apps de análisis inspiradas en las plataformas de inteligencia, sin marcas ni logos de nadie y
+sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
+- [x] Aspecto «Mando» (`data-os-skin='mando'`, 5.º de `skins.ts`): pizarra con rejilla técnica tenue, letra mono, acento frío (`--cmd-*` en `tokens.css`) y ámbar, bordes de 1 px y esquinas casi rectas [OS 6] #503
+- [x] Barra de arriba (`MandoBar.svelte`): menú de apps, pestañas de ventanas, nivel de alerta global de 1 a 5 y relojes UTC y Madrid con segundos [OS 6] #503
+- [x] Nivel de alerta (`mando.ts → alertLevel`): avisos graves del muro (los P1) y el tema más cubierto de IMP; el porqué en el título [OS 6] #503
+- [x] Franja de abajo (`MandoStrip.svelte`): «ARC · USO PRIVADO», pilotos de fuentes en vivo por grupo (IMP, GEO, MERC, MACRO), fuentes que van y fecha [OS 6] #503
