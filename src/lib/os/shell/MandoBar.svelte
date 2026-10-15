@@ -9,6 +9,8 @@
 	import * as os from './bridge.ts';
 	import { alertLevel, hms } from './mando.ts';
 	import NoticeCenter from './NoticeCenter.svelte';
+	import OsIcon from '../icons/OsIcon.svelte';
+	import UiIcon from '../icons/UiIcon.svelte';
 	import { shell, toggle } from './shell.svelte.ts';
 	import { wdata } from './widgetdata.svelte.ts';
 
@@ -26,13 +28,13 @@
 
 <nav class="mando" aria-label="Barra del centro de mando">
 	<span class="brand" aria-hidden="true"><b>◆</b> ARC<span class="sep">·</span>MANDO</span>
-	<button type="button" class="tool" aria-label="Todas las apps" aria-expanded={shell.open === 'launchpad'} onclick={() => toggle('launchpad')}>▦</button>
-	<button type="button" class="tool" title="Mostrar escritorio" aria-label="Mostrar escritorio" onclick={os.showDesktop}>▭</button>
+	<button type="button" class="tool" aria-label="Todas las apps" aria-expanded={shell.open === 'launchpad'} onclick={() => toggle('launchpad')}><UiIcon id="apps" size={16} /></button>
+	<button type="button" class="tool" title="Mostrar escritorio" aria-label="Mostrar escritorio" onclick={os.showDesktop}><UiIcon id="desktop" size={16} /></button>
 	<ul class="tabs" aria-label="Apps abiertas">
 		{#each wins as w (w.id)}
 			<li>
 				<button type="button" class:on={w.focused} class:min={w.minimized} aria-pressed={w.focused} title={w.title} onclick={() => os.activate(w.id)}>
-					<span class="ico" aria-hidden="true">{w.icon ?? '·'}</span><span class="t">{w.title}</span>
+					<OsIcon id={w.appId} size={14} /><span class="t">{w.title}</span>
 				</button>
 			</li>
 		{/each}
@@ -44,12 +46,12 @@
 		<span class="sr">nivel {alert.level} de 5: {alert.reasons.join('. ')}</span>
 	</div>
 	<div class="tray">
-		<button type="button" class="tray-btn" aria-label="Buscar (Ctrl+Espacio)" aria-expanded={shell.open === 'spotlight'} onclick={() => toggle('spotlight')}>⌕</button>
+		<button type="button" class="tray-btn" aria-label="Buscar (Ctrl+Espacio)" aria-expanded={shell.open === 'spotlight'} onclick={() => toggle('spotlight')}><UiIcon id="search" size={16} /></button>
 		<NoticeCenter onnavigate={os.navigate} />
 		<span class="clk" title="Hora universal coordinada"><span class="k">UTC</span>{hms('UTC', now)}</span>
 		<span class="clk" title="Hora de Madrid"><span class="k">MAD</span>{hms('Europe/Madrid', now)}</span>
-		<button type="button" class="tray-btn" aria-label="Panel de control" aria-expanded={shell.open === 'control'} onclick={() => toggle('control')}>⚙</button>
-		<span class="user" class:warn={account.warn} title={account.text}>{cloud.user ? cloud.user.slice(0, 1).toUpperCase() : '·'}</span>
+		<button type="button" class="tray-btn" aria-label="Panel de control" aria-expanded={shell.open === 'control'} onclick={() => toggle('control')}><UiIcon id="gear" size={16} /></button>
+		<span class="user" class:warn={account.warn} title={account.text}>{#if cloud.user}{cloud.user.slice(0, 1).toUpperCase()}{:else}<UiIcon id="user" size={12} />{/if}</span>
 	</div>
 </nav>
 
@@ -145,10 +147,6 @@
 	}
 	.tabs button.min {
 		opacity: 0.6;
-	}
-	.ico {
-		flex: none;
-		color: var(--cmd-cold);
 	}
 	.t {
 		overflow: hidden;

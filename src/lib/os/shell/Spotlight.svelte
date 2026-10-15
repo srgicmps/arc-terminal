@@ -28,7 +28,9 @@
 		shell.open = null;
 		runHit(hit);
 	}
-	const appOf = (h: Hit) => ('app' in h.action ? h.action.app : null);
+	// Los resultados que no son apps llevan el icono de su clase (mismo set SVG que las apps).
+	const KIND_ICON: Record<string, string> = { País: 'pais', Líder: 'lider', Valor: 'g', Comando: 'terminal', Ajuste: 'ajustes' };
+	const appOf = (h: Hit) => ('app' in h.action ? h.action.app : (KIND_ICON[h.kind] ?? null));
 	function key(e: KeyboardEvent) {
 		if (e.key === 'Escape') shell.open = null;
 		else if (e.key === 'ArrowDown') (e.preventDefault(), (sel = Math.min(sel + 1, found.length - 1)));
@@ -107,6 +109,10 @@
 		font-size: var(--fs-l);
 		outline: none;
 	}
+	/* Sin la ✕ del navegador (cada uno la dibuja a su manera): Escape o clic fuera cierran. */
+	input::-webkit-search-cancel-button {
+		appearance: none;
+	}
 	ul {
 		margin: 0;
 		padding: var(--sp-4);
@@ -123,9 +129,10 @@
 		border-radius: var(--radius-s);
 		text-align: left;
 	}
+	/* Elegido: velo del acento y filo a la izquierda, como el menú contextual (sin bloque macizo). */
 	li[aria-selected='true'] button {
-		background: var(--amber);
-		color: var(--on-amber);
+		background: var(--amber-soft);
+		box-shadow: inset var(--sp-2) 0 0 var(--amber);
 	}
 	.t {
 		flex: 1;

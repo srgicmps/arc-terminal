@@ -8,6 +8,8 @@
 	no se recargan.
 -->
 <script lang="ts">
+	import OsIcon from '#lib/os/icons/OsIcon.svelte';
+	import UiIcon from '#lib/os/icons/UiIcon.svelte';
 	import { untrack } from 'svelte';
 	import type { OsApp } from '#lib/os/apps.ts';
 	import { embedSrc } from '#lib/os/apps.ts';
@@ -188,12 +190,12 @@
 			onmenu(e.clientX, e.clientY);
 		}}
 	>
-		<span class="icon" data-ui="os-icon" aria-hidden="true">{app.icon}</span>
+		<span class="icon" data-ui="os-icon" aria-hidden="true"><OsIcon id={app.id} size={14} /></span>
 		<span class="name" data-ui="os-name" {title}>{title}</span>
 		<span class="btns" data-ui="os-btns">
-			<button type="button" data-ui="os-btn" data-btn="min" onclick={() => minimize(win.uid)} aria-label="Minimizar {app.name}" title="Minimizar"><span class="glyph" aria-hidden="true">–</span></button>
-			<button type="button" data-ui="os-btn" data-btn="max" onclick={() => maximize(win.uid)} aria-label={win.snap === 'max' ? `Restaurar ${app.name}` : `Maximizar ${app.name}`} title={win.snap === 'max' ? 'Restaurar' : 'Maximizar'}><span class="glyph" aria-hidden="true">{win.snap === 'max' ? '❐' : '□'}</span></button>
-			<button type="button" data-ui="os-btn" data-btn="close" onclick={() => close(win.uid)} aria-label="Cerrar {app.name}" title="Cerrar"><span class="glyph" aria-hidden="true">×</span></button>
+			<button type="button" data-ui="os-btn" data-btn="min" onclick={() => minimize(win.uid)} aria-label="Minimizar {app.name}" title="Minimizar"><span class="glyph" aria-hidden="true"><UiIcon id="min" /></span></button>
+			<button type="button" data-ui="os-btn" data-btn="max" onclick={() => maximize(win.uid)} aria-label={win.snap === 'max' ? `Restaurar ${app.name}` : `Maximizar ${app.name}`} title={win.snap === 'max' ? 'Restaurar' : 'Maximizar'}><span class="glyph" aria-hidden="true"><UiIcon id={win.snap === 'max' ? 'restore' : 'max'} /></span></button>
+			<button type="button" data-ui="os-btn" data-btn="close" onclick={() => close(win.uid)} aria-label="Cerrar {app.name}" title="Cerrar"><span class="glyph" aria-hidden="true"><UiIcon id="close" /></span></button>
 		</span>
 	</header>
 	<div class="body">
@@ -314,7 +316,7 @@
 
 	.icon {
 		display: var(--os-icon-display);
-		color: var(--amber);
+		line-height: 0;
 	}
 
 	.name {
@@ -365,8 +367,17 @@
 		background: var(--os-btn-close-bg, var(--os-btn-bg));
 	}
 
+	/* Símbolo SVG (ui.ts) del tamaño de la letra del título, y nunca mayor que el botón (los círculos del Mac). */
 	.glyph {
+		display: grid;
+		place-items: center;
+		width: min(var(--sp-12), 100%);
+		height: min(var(--sp-12), 100%);
 		opacity: var(--os-btn-glyph);
+	}
+	.glyph :global(svg) {
+		width: 100%;
+		height: 100%;
 	}
 
 	.btns button:focus-visible .glyph {
