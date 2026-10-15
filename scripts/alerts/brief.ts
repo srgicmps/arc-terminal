@@ -6,7 +6,8 @@
 import type { AlertConfig, GroupId } from '../../src/lib/alertconfig.ts';
 import { BANKS, decisionTime, MEETINGS } from '../../src/lib/meetings.ts';
 import { SITE } from '../site.ts';
-import { madrid, type Alert, type Inputs, type NotifyLog } from './rules.ts';
+import { cheapWindows, hourLabel, hourly, madridNow } from '../../src/lib/power.ts';
+import { figures, madrid, num, type Alert, type Inputs, type NotifyLog } from './rules.ts';
 
 /** El tiempo de hoy en su sitio. */
 export interface Weather {
@@ -68,9 +69,27 @@ export function weatherLine(name: string, w: Weather): string {
 }
 
 /** Las líneas del resumen, por orden de importancia para él. Como mucho BRIEF_LINES. */
-export function briefLines(config: AlertConfig, d: Inputs, today: string, base: Set<string>, weather: Weather | null): string[] {
+export function briefLines(
+	config: AlertConfig,
+	d: Inputs,
+	today: string,
+	base: Set<string>,
+	weather: Weather | null,
+	/** Ahora (para la luz que queda hoy). */
+	now = Date.parse(`${today}T08:00:00+02:00`)
+): string[] {
 	const lines: string[] = [];
 	if (weather && config.brief.place) lines.push(weatherLine(config.brief.place.name, weather));
+	// La luz (si tiene los avisos de casa de la luz): la mejor franja de 2 h que queda hoy.
+	if (config.home.luz) {
+		const [w] = cheapWindows(hourly(d.power?.pvpc ?? []), today, 2, 1, madridNow(now));
+		if (w) lines.push(`Luz más barata hoy: de ${hourLabel(w.first)} a ${hourLabel(w.after)} (${num(w.avg, 3)} €/kWh).`);
+	}
+	// Los mercados, si los sigue.
+	if (config.groups.includes('mercados')) {
+		const m = figures(d, ['S&P 500', 'Nasdaq', 'BTC']);
+		if (m) lines.push(`Mercados: ${m}.`);
+	}
 
 	// Sus valores: los que más se movieron en la última sesión.
 	const mine = new Set([...config.mis, ...(config.baseStocks && !config.mis.length ? base : [])]);
@@ -93,6 +112,8 @@ export function briefLines(config: AlertConfig, d: Inputs, today: string, base: 
 	const sections = new Set(config.groups.flatMap((g) => SECTIONS[g] ?? []));
 	const top = d.imp?.current ?? [];
 	const theirs = top.filter((t) => (t.sections ?? []).some((s) => sections.has(s)));
+	// Al menos dos titulares: lo personal ocupa como mucho BRIEF_LINES − 2.
+	lines.splice(BRIEF_LINES - 2);
 	for (const t of [...theirs, ...top.filter((t) => !theirs.includes(t))]) {
 		if (lines.length >= BRIEF_LINES) break;
 		lines.push(t.title.endsWith('.') ? t.title : `${t.title}.`);

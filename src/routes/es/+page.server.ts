@@ -4,10 +4,11 @@ import type { FuelSpainData } from '#lib/fuel.ts';
 import type { BoeData, NewsData, PowerData, Quake, SeriesData, ReleaseCalData } from '#lib/types.ts';
 import { nextMap } from '#lib/nextrelease.ts';
 import type { ParoData } from '#lib/paro.ts';
+import type { TrafficData } from '#lib/traffic.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, gov, boe, power, eurostat, ecb, fuel, quakes, ine, cal, afiliacion, paro] = await Promise.all([
+	const [news, gov, boe, power, eurostat, ecb, fuel, quakes, ine, cal, afiliacion, paro, traffic] = await Promise.all([
 		dataset<NewsData>('news-es'),
 		dataset<NewsData>('news-gov'),
 		dataset<BoeData>('boe'),
@@ -19,7 +20,8 @@ export const load: PageServerLoad = async () => {
 		dataset<SeriesData>('ine'),
 		dataset<ReleaseCalData>('releases-cal'),
 		dataset<SeriesData>('afiliacion'),
-		dataset<ParoData>('paro')
+		dataset<ParoData>('paro'),
+		dataset<TrafficData>('traffic')
 	]);
 	return {
 		news,
@@ -39,6 +41,8 @@ export const load: PageServerLoad = async () => {
 		ine,
 		afiliacion,
 		paro,
+		// Tráfico (F4): solo el resumen por provincia; las incidencias de cada una las pide el panel.
+		traffic,
 		// Próximo dato de cada serie, calculado aquí: al navegador solo le llega la fecha y el título.
 		next: nextMap(
 			[eurostat, ine].flatMap((d) => d?.data.series.map((s) => s.id) ?? []),
