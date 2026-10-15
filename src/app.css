@@ -19,7 +19,7 @@ body {
 }
 
 body {
-	font-family: var(--mono);
+	font-family: var(--font-ui);
 	font-size: var(--fs-m);
 	line-height: var(--lh);
 	font-variant-numeric: tabular-nums;
@@ -86,6 +86,7 @@ kbd {
 	background: var(--raise);
 	border: var(--border);
 	border-bottom-width: var(--key-edge);
+	border-radius: var(--radius-s);
 	padding: 0 var(--sp-5);
 }
 
@@ -94,18 +95,19 @@ kbd {
 .grid {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
-	gap: var(--hair);
-	background: var(--line);
-	border: var(--border);
+	gap: var(--grid-gap);
+	background: var(--grid-fill);
+	border: var(--grid-edge);
 }
 .col {
-	background: var(--panel);
+	background: var(--col-fill);
 	min-width: 0;
 	display: flex;
 	flex-direction: column;
+	gap: var(--stack-gap);
 }
 .col > .panel + .panel {
-	border-top: var(--border);
+	border-top: var(--stack-edge);
 }
 /* Columnas que se reparten todo el ancho: caben tantas como permita la pantalla (mínimo 340 px). */
 .grid-2,
@@ -126,7 +128,7 @@ kbd {
 }
 /* Rejillas seguidas, pegadas: su borde se solapa y queda una sola línea de 1 px, sin hueco. */
 .grid + .grid {
-	margin-top: calc(-1 * var(--hair));
+	margin-top: var(--grid-join);
 }
 
 /* Subcolumnas: en una rejilla de varias columnas, una columna con varios paneles que mide más del doble
@@ -139,14 +141,14 @@ kbd {
 	:root:not([data-fit]) :is(.grid-2, .grid-2e, .grid-3) > .col:has(> .panel + .panel) {
 		display: block;
 		columns: var(--col-split) 2;
-		column-gap: 0;
-		column-rule: var(--border);
+		column-gap: var(--stack-gap);
+		column-rule: var(--stack-edge);
 	}
 	:root:not([data-fit]) :is(.grid-2, .grid-2e, .grid-3) > .col:has(> .panel + .panel) > .panel {
 		break-inside: avoid;
 		border-top: 0;
-		border-bottom: var(--border);
-		margin-bottom: calc(-1 * var(--hair));
+		border-bottom: var(--stack-edge);
+		margin-bottom: var(--grid-join);
 	}
 }
 
@@ -193,6 +195,7 @@ kbd {
 	background: var(--amber);
 	color: var(--on-amber);
 	border: 0;
+	border-radius: var(--radius-s);
 	min-height: var(--control-h);
 	padding: 0 var(--sp-16);
 	font-weight: var(--fw-medium);

@@ -132,6 +132,10 @@ Un cambio de estética se hace en un solo sitio.
   mismo archivo). Para una web más densa o más aireada: `--pad-x` y `--row-y`, o la escala `--sp-*`.
   Sergi también puede elegir cian o azul en HELP, «A tu gusto» (`src/lib/taste.svelte.ts`): son bloques
   `[data-accent]` al final de `tokens.css` que redefinen `--amber*`; nada lleva el acento escrito a mano.
+  **Dos estéticas** (`ESTILO` y «A tu gusto»): `<html data-style="terminal|modern">`. «Moderna» es un bloque al final de
+  `tokens.css` que redefine solo tokens (sección «Estética» de `:root`: `--radius*`, `--shadow*`, `--grid-*`,
+  `--stack-*`, `--title-*`, `--font-ui`, `--dur-ui`). Clave `arc-style`, que se sincroniza con la cuenta. Sin nada
+  guardado, `src/app.html` decide al arrancar: «Terminal» si el navegador ya usaba la web, «Moderna» si es nuevo.
   Lo único fuera de los tokens son los iconos (`static/favicon.svg` y los PNG de la PWA): llevan el ámbar
   escrito y hay que rehacerlos si cambia el acento.
 
@@ -169,6 +173,7 @@ vista `HELP`. Resumen:
 | `TV` | Modo TV: las vistas rotan solas, encajadas y a pantalla completa | — |
 | `FONDOS` | Carteras 13F de grandes fondos: mayores posiciones, compras y ventas | SEC* |
 | `HDS` | Qué fondos de FONDOS tienen un valor (13F al revés, con 45 días de retraso) | SEC* |
+| `ESTILO` | Estética: «Terminal» (la de siempre) o «Moderna» (tarjetas, esquinas suaves, Inter) | — |
 | `AVISOS` | Tus avisos al móvil: temas, nivel, tope, valores y silencio (solo con cuenta, en arcterminal.dev) | ntfy |
 | `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
 

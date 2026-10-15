@@ -16,6 +16,24 @@ export const DENSITIES: { value: Density; label: string }[] = [
 	{ value: 'comoda', label: 'Cómoda' }
 ];
 
+/**
+ * Estética: «Terminal» (la de siempre, al estilo Bloomberg) o «Moderna» (tarjetas, esquinas suaves, Inter).
+ * Va en <html data-style> y tokens.css la redefine. Sin nada guardado: «Terminal» si este navegador ya usaba
+ * la web antes de que hubiera elección; «Moderna» si es nuevo (lo decide src/app.html al arrancar).
+ */
+export type Style = 'terminal' | 'modern';
+export const STYLES: { value: Style; label: string }[] = [
+	{ value: 'terminal', label: 'Terminal' },
+	{ value: 'modern', label: 'Moderna' }
+];
+/** El nombre que se escribe en la barra («ESTILO moderna»), sin tildes ni mayúsculas. */
+export function parseStyle(text: string | null | undefined): Style | null {
+	const t = (text ?? '').trim().toLowerCase();
+	if (t === 'terminal' || t === 'clasica' || t === 'clásica') return 'terminal';
+	if (t === 'modern' || t === 'moderna') return 'modern';
+	return null;
+}
+
 /** Lo que trae la web: la fila de arriba con los comandos fijados y cuatro abajo. */
 export const DEFAULT_TOP = COMMANDS.filter((c) => c.pinned).map((c) => c.code);
 export const DEFAULT_THUMB = ['TOP', 'ECO', 'WS', 'FUEL'];

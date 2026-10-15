@@ -116,6 +116,29 @@
 	--scrim: rgba(8, 10, 13, 0.72); /* fondo atenuado detrás del panel maximizado */
 	--dur-fast: 120ms; /* aparición breve (se quita con prefers-reduced-motion) */
 
+	/* ── Estética («Terminal», la de por defecto; «Moderna» los redefine abajo, en [data-style='modern']) ──
+	 * Solo forma: esquinas, sombras, cómo se separan los paneles, títulos y la letra base. Los colores van
+	 * arriba; la densidad, en su bloque. Un componente usa estos tokens y no sabe en qué estética está. */
+	--font-ui: var(--mono); /* letra base de la página (body) */
+	--radius: 0; /* esquinas de paneles y tarjetas */
+	--radius-s: 0; /* esquinas de controles: botones, segmentados, campos, chips */
+	--shadow: none; /* sombra de un panel */
+	--shadow-pop: none; /* sombra de lo que flota: desplegables, burbujas, panel maximizado */
+	--grid-gap: var(--hair); /* separación entre columnas de una rejilla */
+	--grid-fill: var(--line); /* lo que se ve en esa separación (la línea de 1 px) */
+	--grid-edge: var(--border); /* borde exterior de la rejilla */
+	--grid-join: calc(-1 * var(--hair)); /* margen entre dos rejillas seguidas (negativo: una sola línea) */
+	--col-fill: var(--panel); /* fondo de una columna */
+	--stack-gap: 0px; /* separación entre paneles de una misma columna */
+	--stack-edge: var(--border); /* la línea entre ellos */
+	--panel-edge: 0; /* borde propio de cada panel */
+	--title-size: var(--fs-xs); /* títulos de panel */
+	--title-case: uppercase;
+	--title-track: var(--track-label);
+	--title-color: var(--amber);
+	--dur-ui: 0ms; /* transición de botones y filas al pasar el ratón */
+	--ease: cubic-bezier(0.2, 0, 0, 1);
+
 	/*
 	 * Puntos de corte (las @media no aceptan variables, así que se documentan aquí):
 	 *   720 px  móvil: una columna, barra inferior, cabecera compacta
@@ -221,4 +244,50 @@
 	--amber-edge: rgba(31, 99, 168, 0.4);
 	--on-amber: #ffffff;
 	--series-2: #9a5a00;
+}
+
+/* ── Estética «Moderna» (HELP, «A tu gusto», o ESTILO; src/lib/taste.svelte.ts) ─────────────────────────
+ * <html data-style="modern">: paneles como tarjetas separadas, esquinas suaves, sombra muy leve, Inter para
+ * todo (cifras tabulares) y algo más de aire. Sin data-style o con «terminal», lo de arriba. No toca el
+ * acento (bloques [data-accent]) ni la densidad: se combinan con cualquiera. */
+:root[data-style='modern'] {
+	--bg: #0b0d10;
+	--panel: #13161b;
+	--raise: #1b1f26;
+	--line: #232831;
+	--muted: #8c95a1;
+	--faint: #7d8693;
+	--scrim: rgba(6, 8, 10, 0.6);
+	--sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	--mono: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	--font-ui: var(--sans);
+	--track-label: 0.01em;
+	--track-caps: 0.04em;
+	--radius: 10px;
+	--radius-s: 6px;
+	--shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 0 0 var(--hair) rgba(255, 255, 255, 0.04);
+	--shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 0 var(--hair) rgba(255, 255, 255, 0.06);
+	--grid-gap: var(--sp-12);
+	--grid-fill: transparent;
+	--grid-edge: 0;
+	--grid-join: var(--sp-12);
+	--col-fill: transparent;
+	--stack-gap: var(--sp-12);
+	--stack-edge: 0;
+	--title-size: var(--fs-m);
+	--title-case: none;
+	--title-track: 0;
+	--title-color: var(--fg);
+	--dur-ui: 150ms;
+}
+:root[data-style='modern'][data-theme='light'] {
+	--bg: #f4f5f7;
+	--panel: #ffffff;
+	--raise: #f0f2f5;
+	--line: #e4e7ec;
+	--muted: #5d6673;
+	--faint: #646d79;
+	--scrim: rgba(16, 24, 40, 0.35);
+	--shadow: 0 1px 3px rgba(16, 24, 40, 0.08), 0 0 0 var(--hair) rgba(16, 24, 40, 0.05);
+	--shadow-pop: 0 12px 32px rgba(16, 24, 40, 0.16), 0 0 0 var(--hair) rgba(16, 24, 40, 0.06);
 }

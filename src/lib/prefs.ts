@@ -32,6 +32,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-thresholds', storage: 'local', what: 'Umbrales «resáltame si pasa de X» de las tablas de series', where: 'Tocar la cifra «Último» de una serie', kind: 'ajuste' },
 	{ key: 'arc-pins', storage: 'local', what: 'Paneles fijados en TOP y su ancho', where: 'Botón 📌 de cada panel', kind: 'ajuste' },
 	{ key: 'arc-folded', storage: 'local', what: 'Paneles plegados de cada vista', where: 'Título de cada panel', kind: 'ajuste' },
+	{ key: 'arc-style', storage: 'local', what: 'Estética: Terminal o Moderna', where: 'HELP, «A tu gusto», o ESTILO', kind: 'ajuste' },
 	{ key: 'arc-accent', storage: 'local', what: 'Color de acento: ámbar, cian o azul', where: 'HELP, «A tu gusto»', kind: 'ajuste' },
 	{ key: 'arc-density', storage: 'local', what: 'Densidad: compacta o cómoda', where: 'HELP, «A tu gusto»', kind: 'ajuste' },
 	{ key: 'arc-keys', storage: 'local', what: 'Secciones de la fila de arriba', where: 'HELP, «A tu gusto»', kind: 'ajuste' },

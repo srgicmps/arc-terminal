@@ -35,6 +35,26 @@
 				// Y la densidad (compacta, si no hay nada).
 				if (localStorage.getItem('arc-density') === 'comoda') document.documentElement.dataset.density = 'comoda';
 			} catch (e) {}
+			// Estética (src/lib/taste.svelte.ts). La primera vez se decide y se guarda: «Terminal» si este
+			// navegador ya usaba la web (tiene claves arc-), «Moderna» si es nuevo. Con «Moderna», también Inter.
+			var s = 'modern';
+			try {
+				s = localStorage.getItem('arc-style');
+				if (s !== 'terminal' && s !== 'modern') {
+					var old = false;
+					for (var i = 0; i < localStorage.length; i++) if ((localStorage.key(i) || '').indexOf('arc-') === 0) old = true;
+					s = old ? 'terminal' : 'modern';
+					localStorage.setItem('arc-style', s);
+				}
+			} catch (e) {}
+			document.documentElement.dataset.style = s;
+			if (s === 'modern') {
+				var f = document.createElement('link');
+				f.id = 'font-modern';
+				f.rel = 'stylesheet';
+				f.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap';
+				document.head.append(f);
+			}
 		</script>
 		%sveltekit.head%
 	</head>

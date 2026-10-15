@@ -257,6 +257,9 @@
 	/* container-type: lo de dentro se adapta al ancho del panel con @container, no al de la pantalla. */
 	.panel {
 		background: var(--panel);
+		border: var(--panel-edge);
+		border-radius: var(--radius);
+		box-shadow: var(--shadow);
 		min-width: 0;
 		container-type: inline-size;
 	}
@@ -273,11 +276,11 @@
 
 	h2 {
 		margin: 0;
-		font-size: var(--fs-xs);
+		font-size: var(--title-size);
 		font-weight: var(--fw-bold);
-		letter-spacing: var(--track-label);
-		text-transform: uppercase;
-		color: var(--amber);
+		letter-spacing: var(--title-track);
+		text-transform: var(--title-case);
+		color: var(--title-color);
 	}
 
 	.ph-r {
@@ -301,6 +304,7 @@
 		font-size: var(--fs-xs);
 		line-height: 1;
 		cursor: pointer;
+		transition: color var(--dur-ui) var(--ease);
 	}
 
 	.tool:hover {
@@ -452,6 +456,7 @@
 		flex-direction: column;
 		overflow: auto;
 		border: var(--border);
+		box-shadow: var(--shadow-pop);
 	}
 
 	/* Lo de dentro mide lo que necesita (no se encoge para caber): el que desplaza es el panel. */
