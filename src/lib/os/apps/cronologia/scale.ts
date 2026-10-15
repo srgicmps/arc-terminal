@@ -77,7 +77,14 @@ export interface Tick {
 	major: boolean;
 }
 
-const fmt = (opts: Intl.DateTimeFormatOptions, timeZone?: string) => new Intl.DateTimeFormat('es-ES', { ...opts, timeZone });
+/** Formateadores en caché: crear un Intl.DateTimeFormat es caro y las marcas piden muchos. */
+const fmts = new Map<string, Intl.DateTimeFormat>();
+const fmt = (opts: Intl.DateTimeFormatOptions, timeZone?: string) => {
+	const key = JSON.stringify(opts) + (timeZone ?? '');
+	let f = fmts.get(key);
+	if (!f) fmts.set(key, (f = new Intl.DateTimeFormat('es-ES', { ...opts, timeZone })));
+	return f;
+};
 
 /**
  * Marcas del eje para el dominio, como mucho `max`. Se alinean con la hora local (o la de `timeZone`):
@@ -97,32 +104,34 @@ export function ticks(domain: Domain, max: number, timeZone?: string): Tick[] {
 		const p = Object.fromEntries(parts.formatToParts(t).map((x) => [x.type, Number(x.value)]));
 		return { y: p.year, m: p.month, d: p.day, h: p.hour };
 	};
-	// Primer candidato: el inicio de la unidad que contiene d0 (se ajusta por la zona horaria con `offset`).
 	const out: Tick[] = [];
 	const push = (t: number, label: string, major: boolean) => {
 		if (t >= d0 && t <= d1) out.push({ t, label: label.replace('.', ''), major });
 	};
-	if (step.unit === 'h' || step.unit === 'd') {
-		// Recorre hora a hora (o día a día) desde una hora antes de d0; vale con cambios de horario.
-		const unit = step.unit === 'h' ? HOUR : DAY;
-		let t = Math.floor(d0 / HOUR) * HOUR - HOUR;
-		if (step.unit === 'd') t -= DAY;
-		const end = d1 + unit;
-		for (; t <= end; t += HOUR) {
+	if (step.unit === 'h') {
+		// Recorre hora a hora desde una hora antes de d0; vale con cambios de horario.
+		for (let t = Math.floor(d0 / HOUR) * HOUR - HOUR; t <= d1 + HOUR; t += HOUR) {
 			const p = get(t);
-			if (step.unit === 'h') {
-				if (p.h % step.n !== 0) continue;
-				push(t, p.h === 0 ? dm.format(t) : hm.format(t), p.h === 0);
-			} else {
-				if (p.h !== 0) continue;
-				const dayOfEpoch = Math.round(Date.UTC(p.y, p.m - 1, p.d) / DAY);
-				if (step.n === 7 || step.n === 14) {
-					// Semanas: los lunes (y uno de cada dos, si son de 14 días).
-					const dow = new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay();
-					if (dow !== 1 || (step.n === 14 && Math.floor(dayOfEpoch / 7) % 2)) continue;
-				} else if (dayOfEpoch % step.n) continue;
-				push(t, dm.format(t), p.d === 1);
-			}
+			if (p.h % step.n !== 0) continue;
+			push(t, p.h === 0 ? dm.format(t) : hm.format(t), p.h === 0);
+			if (out.length > max * 2) break;
+		}
+		return out;
+	}
+	if (step.unit === 'd') {
+		// Día a día desde la medianoche local del día anterior a d0 (no hora a hora: son 24 veces menos vueltas).
+		const s0 = get(d0 - DAY);
+		let day = Date.UTC(s0.y, s0.m - 1, s0.d);
+		for (let i = 0; i < 1000; i++, day += DAY) {
+			const date = new Date(day);
+			const t = dayMidnight(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate(), timeZone);
+			if (t > d1) break;
+			const dayOfEpoch = Math.round(day / DAY);
+			if (step.n === 7 || step.n === 14) {
+				// Semanas: los lunes (y uno de cada dos, si son de 14 días).
+				if (date.getUTCDay() !== 1 || (step.n === 14 && Math.floor(dayOfEpoch / 7) % 2)) continue;
+			} else if (dayOfEpoch % step.n) continue;
+			push(t, dm.format(t), date.getUTCDate() === 1);
 			if (out.length > max * 2) break;
 		}
 		return out;
@@ -152,6 +161,13 @@ export function localMidnight(y: number, m: number, timeZone?: string): number {
 	return guess - offsetMs(guess, timeZone);
 }
 
+/** Medianoche (hora local o de `timeZone`) del día `d` del mes `m` (1–12) del año `y`. */
+export function dayMidnight(y: number, m: number, d: number, timeZone?: string): number {
+	const guess = Date.UTC(y, m - 1, d);
+	// Dos pasadas, como `zoned`: la segunda corrige si el desfase cambia entre la estimación y el resultado.
+	return guess - offsetMs(guess - offsetMs(guess, timeZone), timeZone);
+}
+
 /** Diferencia entre la hora de la zona y UTC en el instante `t` (en ms; +2 h en Madrid en verano). */
 export function offsetMs(t: number, timeZone?: string): number {
 	const p = Object.fromEntries(
@@ -170,6 +186,34 @@ export function zoned(date: string, hm: string, timeZone: string): number {
 	// Dos pasadas: la primera estima el desfase; la segunda lo corrige si cae al otro lado de un cambio de hora.
 	const first = guess - offsetMs(guess, timeZone);
 	return guess - offsetMs(first, timeZone);
+}
+
+/** Columnas del gráfico según el ancho (px): etiquetas a la izquierda, valores a la derecha y, en medio, el área. */
+export interface Columns {
+	/** Ancho estrecho (teléfono o ventana pequeña): columnas y textos más cortos. */
+	narrow: boolean;
+	/** Borde izquierdo y derecho del área del gráfico. */
+	x0: number;
+	x1: number;
+	/** Separación mínima entre marcas del eje. */
+	tickGap: number;
+}
+
+/** Por debajo de este ancho, columnas estrechas. */
+export const NARROW_W = 600;
+
+/**
+ * Reparte el ancho: 150/92 px de columnas en ancho y 80/56 en estrecho. Si ni así queda un área de 60 px,
+ * cede la columna de etiquetas. El área nunca invade la de valores (x1 ≤ ancho − valores).
+ */
+export function columns(width: number): Columns {
+	const w = Math.max(0, width);
+	const narrow = w < NARROW_W;
+	const value = narrow ? 56 : 92;
+	let label = narrow ? 80 : 150;
+	const MIN_AREA = 60;
+	if (w - label - value < MIN_AREA) label = Math.max(0, Math.min(label, w - value - MIN_AREA));
+	return { narrow, x0: label, x1: Math.max(label, w - value), tickGap: narrow ? 64 : 84 };
 }
 
 /** Texto corto de un instante para la etiqueta del cursor: «15 oct 14:05» o «15 oct 2025». */
