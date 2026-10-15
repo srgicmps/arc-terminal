@@ -11,7 +11,7 @@
 
 	let query = $state('');
 	let input = $state<HTMLInputElement>();
-	const groups = $derived(query.trim() ? [{ category: 'Resultados', apps: searchApps(os.apps, query) }] : byCategory(os.apps));
+	const groups = $derived(query.trim() ? [{ category: 'Resultados', apps: searchApps(os.installed(), query) }] : byCategory(os.installed()));
 
 	$effect(() => {
 		tick().then(() => input?.focus());

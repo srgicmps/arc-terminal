@@ -14,7 +14,7 @@
 	let input = $state<HTMLInputElement>();
 	const wins = $derived(os.windows());
 	const desks = $derived(os.desks());
-	const found = $derived(searchApps(os.apps, query).slice(0, 12));
+	const found = $derived(searchApps(os.installed(), query).slice(0, 12));
 	const byId = new Map(os.apps.map((a) => [a.id, a]));
 	const dash = $derived(shell.pinned.map((id) => byId.get(id)).filter((a): a is StartApp => !!a));
 

@@ -1,6 +1,6 @@
 <!--
-	Escritorio de Arc OS: el fondo (el de la estética activa, o liso, rejilla o degradado, siempre con sus
-	tokens), los iconos de las apps ancladas (DesktopIcons) y los widgets movibles. Las ventanas del
+	Escritorio de Arc OS: el fondo (el del aspecto, liso, rejilla o degradado, siempre con los tokens
+	del aspecto), los iconos de las apps ancladas (DesktopIcons) y los widgets movibles. Las ventanas del
 	núcleo van encima (children).
 -->
 <script lang="ts">
@@ -13,7 +13,7 @@
 	import type { StartApp } from './start.ts';
 	import Widget from './Widget.svelte';
 	import WidgetBody from './WidgetBody.svelte';
-	import { refreshWidgets } from './widgetdata.svelte.ts';
+	import { REFRESH_MS, refreshWidgets } from './widgetdata.svelte.ts';
 	import { defaultWidgets, removeWidget, type Placed } from './widgets.ts';
 
 	interface Props {
@@ -37,7 +37,7 @@
 	onMount(() => {
 		const go = () => refreshWidgets(place.current);
 		go();
-		const id = setInterval(go, 300_000);
+		const id = setInterval(go, REFRESH_MS);
 		return () => clearInterval(id);
 	});
 
@@ -46,7 +46,8 @@
 	}
 </script>
 
-<div class="desktop" data-wallpaper={shell.wallpaper} bind:clientWidth={w} bind:clientHeight={h}>
+<!-- data-fs-drop: aquí se pueden soltar iconos de las ventanas de carpeta; sobre otra ventana, no («none»). -->
+<div class="desktop" data-wallpaper={shell.wallpaper} data-fs-drop="desktop" bind:clientWidth={w} bind:clientHeight={h}>
 	<!-- El fondo (app «Fondo de pantalla» de «OS 5»): uno por escritorio, imagen propia, vivos y presentación. -->
 	<WallLayer />
 	<DesktopIcons {apps} {w} {h} />
@@ -58,7 +59,7 @@
 		{/each}
 	</div>
 	<!-- Las ventanas del núcleo, encima; lo vacío deja pasar el ratón a los widgets y los iconos. -->
-	{#if children}<div class="wins">{@render children()}</div>{/if}
+	{#if children}<div class="wins" data-fs-drop="none">{@render children()}</div>{/if}
 </div>
 
 <style>
@@ -67,9 +68,8 @@
 		height: 100%;
 		overflow: hidden;
 		background: var(--os-desk);
-		background-image: var(--bg-image, none);
 	}
-	/* «El del aspecto»: un fondo propio de cada uno, hecho con los colores de la estética. */
+	/* «El del aspecto»: un fondo propio de cada uno, hecho con sus colores. */
 	:global([data-os-skin='windows']) .desktop[data-wallpaper='sistema'] {
 		background-image: radial-gradient(ellipse 80% 60% at 50% 110%, var(--amber-soft), transparent 70%), radial-gradient(ellipse 60% 50% at 80% 0%, var(--raise), transparent 70%);
 	}

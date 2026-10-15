@@ -1,18 +1,20 @@
 <!--
-	Buscador al centro de la pantalla (Ctrl+Espacio, o la lupa de la barra): escribe y abre cualquier app.
-	↑ ↓ eligen, Intro abre, Escape cierra. Sirve en los tres aspectos.
+	Buscador al centro de la pantalla (Ctrl+Espacio, o la lupa de la barra): apps, lo que entiende la barra de
+	comandos («NEWS inflación», «NVDA GP»), valores, países, líderes y ajustes (searchAll de «OS 5»). Solo las apps
+	instaladas (Centro de paquetes). ↑ ↓ eligen, Intro abre, Escape cierra.
 -->
 <script lang="ts">
 	import OsIcon from '../icons/OsIcon.svelte';
 	import { tick } from 'svelte';
-	import * as os from './bridge.ts';
+	import { installedApps } from '../packages.svelte.ts';
+	import { searchAll, type Hit } from '../system/search.ts';
+	import { runHit } from '../system/search.svelte.ts';
 	import { shell } from './shell.svelte.ts';
-	import { categoryOf, searchApps } from './start.ts';
 
 	let query = $state('');
 	let sel = $state(0);
 	let input = $state<HTMLInputElement>();
-	const found = $derived(searchApps(os.apps, query).slice(0, 8));
+	const found = $derived(searchAll(query, installedApps(), 10));
 
 	$effect(() => {
 		tick().then(() => input?.focus());
@@ -22,15 +24,16 @@
 		sel = 0;
 	});
 
-	function go(id: string) {
+	function go(hit: Hit) {
 		shell.open = null;
-		os.open(id);
+		runHit(hit);
 	}
+	const appOf = (h: Hit) => ('app' in h.action ? h.action.app : null);
 	function key(e: KeyboardEvent) {
 		if (e.key === 'Escape') shell.open = null;
 		else if (e.key === 'ArrowDown') (e.preventDefault(), (sel = Math.min(sel + 1, found.length - 1)));
 		else if (e.key === 'ArrowUp') (e.preventDefault(), (sel = Math.max(sel - 1, 0)));
-		else if (e.key === 'Enter' && found[sel]) go(found[sel].id);
+		else if (e.key === 'Enter' && found[sel]) go(found[sel]);
 	}
 </script>
 
@@ -41,8 +44,8 @@
 		bind:this={input}
 		bind:value={query}
 		type="search"
-		placeholder="Buscar apps: luz, bolsa, NVDA…"
-		aria-label="Buscar apps"
+		placeholder="Buscar: apps, NVDA, NEWS inflación, Francia…"
+		aria-label="Buscar"
 		role="combobox"
 		aria-expanded={found.length > 0}
 		aria-controls="os-spot-list"
@@ -50,12 +53,13 @@
 	/>
 	{#if found.length}
 		<ul id="os-spot-list" role="listbox" aria-label="Resultados">
-			{#each found as a, i (a.id)}
-				<li id={`os-spot-${a.id}`} role="option" aria-selected={i === sel}>
-					<button type="button" tabindex="-1" onclick={() => go(a.id)} onmouseenter={() => (sel = i)}>
-						<OsIcon id={a.id} size={28} />
-						<span class="t">{a.title}</span>
-						<span class="c">{a.code ?? categoryOf(a)}</span>
+			{#each found as h, i (h.id)}
+				{@const app = appOf(h)}
+				<li id={`os-spot-${h.id}`} role="option" aria-selected={i === sel}>
+					<button type="button" tabindex="-1" onclick={() => go(h)} onmouseenter={() => (sel = i)}>
+						{#if app}<OsIcon id={app} size={28} />{:else}<span class="glyph" aria-hidden="true">{h.icon}</span>{/if}
+						<span class="t">{h.title}<small>{h.detail}</small></span>
+						<span class="c">{h.kind}</span>
 					</button>
 				</li>
 			{/each}
@@ -125,6 +129,25 @@
 	}
 	.t {
 		flex: 1;
+		min-width: 0;
+		display: grid;
+	}
+	.t small {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: var(--fs-xs);
+		opacity: 0.7;
+	}
+	.glyph {
+		display: grid;
+		place-items: center;
+		width: 28px;
+		height: 28px;
+		flex: none;
+		border: var(--hair) solid var(--line);
+		border-radius: var(--os-icon-radius, var(--radius));
+		font-size: var(--fs-l);
 	}
 	.c {
 		font-family: var(--mono);
