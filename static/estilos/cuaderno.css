@@ -88,9 +88,6 @@
 	[data-style='cuaderno'] ::selection {
 		background: var(--highlight);
 	}
-	:root[data-style='cuaderno'] {
-		scrollbar-color: var(--line) var(--bg);
-	}
 
 	/* ── Noche: pizarra con tiza y tinta clara ───────────────────────────────────────────────── */
 	:root[data-style='cuaderno'],
@@ -159,6 +156,10 @@
 		--stack-edge: 0;
 		--dur-ui: 160ms;
 		--ease: cubic-bezier(0.3, 0, 0.2, 1);
+		/* Barras de desplazamiento: del azul de las rayas del cuaderno, sobre el papel. */
+		--scroll-w: 10px;
+		--scroll-thumb: var(--rule);
+		--scroll-track: transparent;
 
 		/* Dibujos: la cuadrícula de la página, la de cada hoja y el margen rojo (a 6 px del borde izquierdo). */
 		--bg-image:
@@ -207,5 +208,45 @@
 		--title-color: #1a3a9c;
 		--shadow: 0 1px 0 rgba(30, 38, 64, 0.06), 0 2px 8px rgba(30, 38, 64, 0.07);
 		--shadow-pop: 0 12px 30px rgba(30, 38, 64, 0.18);
+	}
+}
+
+/* ── Fuera de la capa: retoques que tienen que ganar al CSS de los componentes ───────────────────── */
+
+/* Un panel con scroll («encajar», ampliado): la cuadrícula y el margen rojo se mueven con lo escrito, como en una
+   hoja de verdad, en vez de quedarse quietos debajo. */
+[data-style='cuaderno'][data-style] [data-ui='panel'] {
+	background-attachment: local;
+}
+
+/* Sugerencias de la barra de comandos y burbujas del glosario: hojas sueltas, con su esquina y su sombra. */
+[data-style='cuaderno'][data-style] [data-ui='cmd'] [role='listbox'] {
+	border-radius: 0 0 var(--radius) var(--radius);
+	box-shadow: var(--shadow-pop);
+}
+[data-style='cuaderno'][data-style] [data-ui='cmd'].sheet [role='listbox'] {
+	border-radius: var(--radius) var(--radius) 0 0;
+}
+[data-style='cuaderno'][data-style] [role='tooltip'] {
+	border-radius: var(--radius-s);
+	box-shadow: var(--shadow-pop);
+}
+
+/* Dentro de un panel el foco va hacia dentro (no lo corta el recorte del panel): en la opción marcada de un
+   segmentado, que ya es del color del acento, se pinta con el color de su texto para que se vea. */
+[data-style='cuaderno'][data-style] [data-ui='panel'] :is([aria-checked='true'], [aria-pressed='true']):focus-visible {
+	outline-color: var(--on-amber);
+}
+
+/* Sugerencias de la barra de comandos por encima del índice de paneles del móvil (fijo, con --z-bar), que si no
+   las tapa al bajar. */
+[data-style='cuaderno'][data-style] [data-ui='cmd'] [role='listbox'] {
+	z-index: calc(var(--z-bar) + 1);
+}
+/* Fila de secciones e índice de paneles del móvil: se desplazan de lado y recortan lo que asoma; el foco va por
+   dentro de la tecla para que no se corte. */
+@media (max-width: 720px) {
+	[data-style='cuaderno'][data-style] :is([data-ui='keys'], [data-ui='panel-index']) :focus-visible {
+		outline-offset: calc(-1 * var(--focus-w));
 	}
 }
