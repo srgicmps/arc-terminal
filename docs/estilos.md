@@ -67,10 +67,12 @@ Engánchate SIEMPRE a estos atributos `data-ui` (son la API estable; las clases 
 | `top` | Cabecera: marca, barra de comandos, sitio, relojes, botones |
 | `brand` | Logotipo y nombre |
 | `place` | Chip «Tu sitio» |
-| `clocks` | Relojes de las bolsas |
+| `clocks` | Relojes de las bolsas (dos a la vista; al pulsar, todos en un `menu`) |
+| `more` | Botón «⋯» de la cabecera (portada modular, encajar, tema) |
+| `menu` | Lista desplegable de `ui/Menu.svelte` («⋯», «Más ▾» de las secciones, relojes) |
 | `cmd` | Barra de comandos (en el móvil, hoja con `.sheet`) |
 | `keys` | Fila de secciones (teclas) |
-| `key` | Cada tecla de sección (código y, en un `<span>`, el nombre; la actual lleva `aria-current`). Lleva `data-code` (TOP, ECO…), como los enlaces de `tabs`: sirve para poner iconos por sección |
+| `key` | Cada tecla de sección (código y, en un `<span>`, el nombre; la actual lleva `aria-current`). «Más ▾» también es `key` (un `<button>`). Lleva `data-code` (TOP, ECO…), como los enlaces de `tabs`: sirve para poner iconos por sección |
 | `tape` | Cinta de cotizaciones |
 | `panel-index` | Índice de paneles del móvil |
 | `main` | Contenido de la vista |

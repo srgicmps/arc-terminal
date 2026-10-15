@@ -402,6 +402,12 @@
 	</Panel>
 {/snippet}
 
+<!-- Hoy, en una línea: el resumen de riesgo (src/lib/summary.ts; TOP no tiene ViewHeader), titulares nuevos y la luz de
+	mañana (la de hoy ya está en «Mi mañana»). Va dentro de la franja de «Mi mañana»: una franja y no dos. -->
+{#snippet hoy()}
+	{#if summary}<span class="sum">{summary}</span>{#if fresh || luzManana}{' · '}{/if}{/if}{fresh}{#if fresh && luzManana}{' · '}{/if}{#if luzManana && cheapWindow}Luz más barata mañana: <b class="cheap">{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)}</b> · {nf(cheapWindow.avg, 3)} €/kWh{/if}
+{/snippet}
+
 <!-- «Mi mañana»: el tiempo de «Tu sitio», la luz, la agenda y los avisos de hoy (se pliega a partir de las 11).
 	La luz (PVPC) solo si «Tu sitio» está en España, y los avisos de MeteoAlarm (son los de Menorca) solo en Menorca. -->
 <Morning
@@ -412,13 +418,8 @@
 	alerts={inMenorca(place.current) ? data.alerts?.data : null}
 	releases={data.releases}
 	city={place.current.name}
+	tail={hoy}
 />
-
-<!-- Hoy, en una línea: el resumen de riesgo (src/lib/summary.ts; TOP no tiene ViewHeader), titulares nuevos y la luz de mañana (la de hoy ya está en «Mi mañana»). Siempre ocupa su
-	sitio para que nada salte al cargar. -->
-<p class="today">
-	{#if summary}<span class="sum">{summary}</span>{#if fresh || luzManana}{' · '}{/if}{/if}{fresh}{#if fresh && luzManana}{' · '}{/if}{#if luzManana && cheapWindow}Luz más barata mañana: <b>{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)}</b> · {nf(cheapWindow.avg, 3)} €/kWh{/if}
-</p>
 
 <PinnedPanels />
 
@@ -461,18 +462,11 @@
 		border-bottom: var(--border);
 	}
 
-	.today {
-		min-height: calc(var(--fs-xs) * var(--lh));
-		margin: 0 0 var(--sp-8);
-		font-size: var(--fs-xs);
-		color: var(--faint);
-	}
-
-	.today .sum {
+	.sum {
 		color: var(--fg);
 	}
 
-	.today b {
+	.cheap {
 		color: var(--up);
 		font-weight: var(--fw-medium);
 	}

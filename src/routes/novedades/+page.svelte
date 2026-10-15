@@ -4,7 +4,9 @@
 -->
 <script lang="ts">
 	import { clock } from '#lib/clock.svelte.ts';
-	import { byDay, changeCommand } from '#lib/changes.ts';
+	import { byDay, changeCommand, changeExperience } from '#lib/changes.ts';
+	import { EXPERIENCES, expHref } from '#lib/experiences.ts';
+	import { resolve } from '$app/paths';
 	import Panel from '#lib/components/Panel.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -16,6 +18,7 @@
 
 	const items = $derived(data.changes?.data.items ?? []);
 	// «Hoy» y «Ayer» dependen de la fecha: hasta que arranca el reloj, la de cuando se construyó la página.
+	const xHref = (path: string) => (resolve as (r: string) => string)(path);
 	const days = $derived(byDay(items, clock.now || Date.parse(data.changes?.fetchedAt ?? '') || Date.now()));
 </script>
 
@@ -24,6 +27,20 @@
 	title="Novedades"
 	sub="Lo que ha cambiado en Arc Terminal esta semana · {items.length} cambios"
 />
+
+<!-- Las experiencias, a la vista: otras formas de usar Arc que conviene descubrir. -->
+{#if EXPERIENCES.length}
+	<div class="grid exps-row">
+		<Panel title="Prueba las experiencias" meta="{EXPERIENCES.length} · ✦ o Mayús + X">
+			<div class="exps">
+				{#each EXPERIENCES as e (e.id)}
+					<a href={xHref(expHref(e))} title={e.desc}><span aria-hidden="true">{e.icon}</span> {e.name}</a>
+				{/each}
+				<a class="all" href={xHref('/x')}>Ver todas →</a>
+			</div>
+		</Panel>
+	</div>
+{/if}
 
 {#if !days.length}
 	<div class="grid">
@@ -51,11 +68,13 @@
 					<ul class="mini">
 						{#each d.items as c (c.number)}
 							{@const cmd = changeCommand(c.title)}
+							{@const exp = cmd ? null : changeExperience(c.title)}
 							<li>
 								<a class="l" href={c.url} target="_blank" rel="noopener"
 									>{c.title}<small>#{c.number} · {hm(c.mergedAt)}</small></a
 								>
-								{#if cmd}<a class="cmd" href={routeHref(cmd.route)}>{cmd.code}</a>{/if}
+								{#if cmd}<a class="cmd" href={routeHref(cmd.route)}>{cmd.code}</a>
+								{:else if exp}<a class="cmd" href={xHref(expHref(exp))} title="Abrir {exp.name}">{exp.icon} {exp.name}</a>{/if}
 							</li>
 						{/each}
 					</ul>
@@ -75,5 +94,41 @@
 
 	.cmd:hover {
 		text-decoration: underline;
+	}
+	.exps-row {
+		margin-bottom: var(--gutter);
+	}
+
+	.exps {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--sp-6);
+		padding: var(--sp-10) var(--pad-x);
+	}
+
+	.exps a {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--sp-4);
+		min-height: var(--control-h);
+		padding: 0 var(--sp-10);
+		border: var(--border);
+		color: var(--fg);
+		font-size: var(--fs-s);
+		text-decoration: none;
+	}
+
+	.exps a span {
+		color: var(--amber);
+	}
+
+	.exps a:hover,
+	.exps a:focus-visible {
+		border-color: var(--amber-edge);
+	}
+
+	.exps a.all {
+		border-color: var(--amber-edge);
+		color: var(--amber);
 	}
 </style>

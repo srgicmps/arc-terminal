@@ -8,6 +8,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { setModular, type ViewLayout } from '#lib/layout.svelte.ts';
+	import { maxCols, packGrid } from '#lib/layout.ts';
 
 	interface Props {
 		layout: ViewLayout;
@@ -19,6 +20,11 @@
 
 	// svelte-ignore state_referenced_locally
 	setModular(layout);
+
+	// Columnas según los paneles que hay y el ancho de la ventana (layout.ts): sin columnas vacías ni huecos.
+	let width = $state(0);
+	const shown = $derived(layout.visible.filter((id) => panels[id]));
+	const grid = $derived(packGrid(shown.map((id) => layout.span(id)), maxCols(width)));
 
 	/** Panel sobre el que se va a soltar el que se arrastra. */
 	let over = $state<string | null>(null);
@@ -52,21 +58,22 @@
 	<button type="button" class="reset" onclick={() => layout.reset()}>Restablecer</button>
 </div>
 
-<div class="mgrid">
-	{#each layout.visible as id (id)}
-		{#if panels[id]}
-			<div
-				class="cell s{layout.span(id)}"
-				class:over={over === id}
-				role="group"
-				aria-label={layout.title(id)}
-				ondragover={(e) => dragover(e, id)}
-				ondragleave={() => over === id && (over = null)}
-				ondrop={(e) => drop(e, id)}
-			>
-				{@render panels[id]()}
-			</div>
-		{/if}
+<svelte:window bind:innerWidth={width} />
+
+<div class="mgrid" style:grid-template-columns="repeat({grid.cols}, minmax(0, 1fr))">
+	{#each shown as id, i (id)}
+		<div
+			class="cell"
+			style:grid-column="span {grid.spans[i]}"
+			class:over={over === id}
+			role="group"
+			aria-label={layout.title(id)}
+			ondragover={(e) => dragover(e, id)}
+			ondragleave={() => over === id && (over = null)}
+			ondrop={(e) => drop(e, id)}
+		>
+			{@render panels[id]()}
+		</div>
 	{/each}
 </div>
 
@@ -81,17 +88,16 @@
 		color: var(--faint);
 	}
 
+	/* Una línea discreta: «Modular» y «Restablecer» en gris; solo se encienden al pasar el ratón. */
 	.lbl {
-		color: var(--amber);
-		letter-spacing: var(--track-caps);
-		text-transform: uppercase;
+		color: var(--muted);
 	}
 
 	button {
 		background: none;
 		border: 0;
 		padding: 0;
-		color: var(--muted);
+		color: var(--faint);
 		font-size: var(--fs-xs);
 		cursor: pointer;
 	}
@@ -106,50 +112,34 @@
 
 	.mgrid {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		grid-auto-flow: dense;
-		gap: var(--hair);
-		background: var(--line);
-		border: var(--border);
+		gap: var(--grid-gap);
+		background: var(--grid-fill);
+		border: var(--grid-edge);
 	}
 
+	/* Cada panel llena su celda: en una fila, todos acaban a la misma altura. */
+	/* Como las columnas de app.css: fondo y separación según la estética (tokens --grid-* y --col-fill). */
 	.cell {
-		background: var(--panel);
+		display: flex;
+		flex-direction: column;
+		background: var(--col-fill);
 		min-width: 0;
 	}
 
-	.s2 {
-		grid-column: span 2;
+	.cell > :global(.panel) {
+		flex: 1;
 	}
 
-	.s3 {
-		grid-column: span 3;
+	/* «Encajar en pantalla»: la rejilla llena el alto que queda (si no cabe, hace scroll la vista). */
+	@media (min-width: 1280px) {
+		:global(html[data-fit]) .mgrid:last-child {
+			flex: 1 0 auto;
+		}
 	}
 
 	/* Donde se soltará el panel: un contorno ámbar fino por dentro. */
 	.over {
 		outline: var(--hair) solid var(--amber);
 		outline-offset: calc(-1 * var(--hair));
-	}
-
-	@media (max-width: 1100px) {
-		.mgrid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-
-		.s3 {
-			grid-column: span 2;
-		}
-	}
-
-	@media (max-width: 720px) {
-		.mgrid {
-			grid-template-columns: minmax(0, 1fr);
-		}
-
-		.s2,
-		.s3 {
-			grid-column: auto;
-		}
 	}
 </style>

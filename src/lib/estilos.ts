@@ -10,6 +10,8 @@ export interface Estilo {
 	label: string;
 	/** Una línea para el selector y el MANUAL. */
 	desc: string;
+	/** Su color de acento es parte del diseño: el acento de «A tu gusto» no se aplica (src/styles/ajustes.css). */
+	fixedAccent?: true;
 }
 
 export const ESTILOS: readonly Estilo[] = [
@@ -19,21 +21,24 @@ export const ESTILOS: readonly Estilo[] = [
 	{ id: 'papel', label: 'Papel', desc: 'Plana, sin sombras, bordes finos y mucho aire.' },
 	{ id: 'calido', label: 'Cálido', desc: 'Crema y terracota, títulos en serif y calma editorial.' },
 	{ id: 'cupertino', label: 'Cupertino', desc: 'Letra del sistema, títulos grandes, materiales sutiles y azul.' },
-	{ id: 'retro', label: 'Fósforo', desc: 'Monitor de los 80: fósforo verde, letra de píxeles y líneas de escaneo.' },
+	{ id: 'retro', label: 'Fósforo', desc: 'Monitor de los 80: fósforo verde, letra de píxeles y líneas de escaneo.', fixedAccent: true },
 	{ id: 'neon', label: 'Neón', desc: 'Synthwave: magenta y cian con brillo y rejilla de horizonte.' },
-	{ id: 'brutal', label: 'Brutalista', desc: 'Blanco y negro puro, letra enorme y bordes gruesos.' },
-	{ id: 'bauhaus', label: 'Bauhaus', desc: 'Rojo, amarillo y azul primarios, geometría y bloques de color.' },
+	{ id: 'brutal', label: 'Brutalista', desc: 'Blanco y negro puro, letra enorme y bordes gruesos.', fixedAccent: true },
+	{ id: 'bauhaus', label: 'Bauhaus', desc: 'Rojo, amarillo y azul primarios, geometría y bloques de color.', fixedAccent: true },
 	{ id: 'suizo', label: 'Suizo', desc: 'Rejilla estricta, neogrotesca, rojo como único acento.' },
 	{ id: 'cuaderno', label: 'Cuaderno', desc: 'Papel cuadriculado, tinta azul y títulos a mano.' },
 	{ id: 'nordico', label: 'Nórdico', desc: 'Arena, madera clara y piedra; redondeada y con aire.' },
 	{ id: 'lujo', label: 'Lujo', desc: 'Negro y dorado, serif de alto contraste y filetes finos.' },
 	{ id: 'oceano', label: 'Océano', desc: 'Azules profundos y turquesa, degradados y transiciones fluidas.' },
 	{ id: 'plano', label: 'Plano técnico', desc: 'Azul de plano con rejilla, líneas blancas y letra técnica.' },
-	{ id: 'contraste', label: 'Alto contraste', desc: 'Máxima legibilidad: AAA, letra grande, foco muy visible, sin efectos.' },
+	{ id: 'contraste', label: 'Alto contraste', desc: 'Máxima legibilidad: AAA, letra grande, foco muy visible, sin efectos.', fixedAccent: true },
 	{ id: 'zen', label: 'Zen', desc: 'Calma y aire: tarjetas suaves, títulos grandes y centrados, IBM Plex y entradas lentas.' }
 ];
 
 export type StyleId = string;
+
+/** ¿Usa esta estética el acento elegido en «A tu gusto»? */
+export const takesAccent = (id: StyleId) => !ESTILOS.find((e) => e.id === id)?.fixedAccent;
 
 const sheets = import.meta.glob('/static/estilos/*.css', { query: '?raw', import: 'default' });
 /** Las estéticas que ya tienen archivo (y Terminal, que es tokens.css). Solo esas salen en el selector. */
