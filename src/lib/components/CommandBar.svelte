@@ -25,6 +25,8 @@
 		type Option
 	} from '#lib/cmdline.ts';
 	import { argOptions } from '#lib/argcomplete.ts';
+	import { actionOption, parseAction } from '#lib/actions.ts';
+	import { runAction } from '#lib/runaction.svelte.ts';
 	import { parseConversion } from '#lib/calc.ts';
 	import { fxLive, loadFxRates } from '#lib/fxlive.svelte.ts';
 	import type { Dataset } from '#lib/data.ts';
@@ -85,7 +87,15 @@
 
 	// Con la barra vacía, el historial; al escribir, las sugerencias y debajo los resultados de búsqueda.
 	// Tras un comando y un espacio («LIDER », «PAIS ale»), las opciones de su argumento.
-	const suggestions = $derived(value.trim() ? (argOptions(value) ?? suggest(value, ALL, 8, fxLive)) : historyOptions(recent));
+	// «compartir WS», «+NVDA»…: una acción (27-B), como única sugerencia.
+	const action = $derived(parseAction(value));
+	const suggestions = $derived(
+		!value.trim()
+			? historyOptions(recent)
+			: action
+				? [actionOption(action, value, ALL)]
+				: (argOptions(value) ?? suggest(value, ALL, 8, fxLive))
+	);
 	// M46: al escribir «100 USD EUR», se descargan los cambios del BCE (una sola vez).
 	$effect(() => {
 		if (parseConversion(value)) loadFxRates();
@@ -107,7 +117,22 @@
 		input.blur();
 	}
 
+	// Aviso breve en la barra tras una acción («Enlace copiado»): ocupa el sitio del texto de ayuda.
+	let notice = $state('');
+	let noticeTimer: ReturnType<typeof setTimeout> | undefined;
+	function flash(text: string) {
+		notice = text;
+		clearTimeout(noticeTimer);
+		noticeTimer = setTimeout(() => (notice = ''), 2500);
+	}
+
 	function run(raw: string) {
+		// Acciones (27-B): «compartir WS», «+NVDA», «vigila aranceles», «alerta NVDA > 150».
+		if (parseAction(raw)) {
+			close();
+			runAction(raw, ALL, flash);
+			return;
+		}
 		// M46: una cuenta o una conversión no abren nada; la cuenta deja su resultado para seguir calculando.
 		const calc = calcInput(raw, fxLive);
 		if (calc) {
@@ -229,7 +254,7 @@
 		spellcheck="false"
 		autocapitalize="characters"
 		enterkeyhint="go"
-		placeholder="Escribe un comando o un valor: NVDA, ECO, BOE…"
+		placeholder={notice || 'Escribe un comando o un valor: NVDA, ECO, BOE…'}
 		role="combobox"
 		aria-autocomplete="list"
 		aria-expanded={open && options.length > 0}
