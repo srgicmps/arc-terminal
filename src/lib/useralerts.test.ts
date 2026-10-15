@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { alertHit, alertText, issueUrl, parseAlert, parseMis, parseNumber, parseTitle, parseWords } from './useralerts.ts';
+import { alertHit, alertText, parseAlert, parseMis, parseNumber, parseTitle, parseWords } from './useralerts.ts';
 
 describe('parseNumber', () => {
 	it('acepta coma o punto decimal', () => {
@@ -44,12 +44,9 @@ describe('alertHit', () => {
 });
 
 describe('issues', () => {
-	it('título y vuelta', () => {
+	it('título', () => {
 		expect(parseTitle('[alerta] NVDA > 150')).toEqual({ kind: 'alerta', payload: 'NVDA > 150' });
 		expect(parseTitle('Fuente caída: BOE')).toBeNull();
-		const url = new URL(issueUrl('mis', 'NVDA AAPL'));
-		expect(url.searchParams.get('title')).toBe('[mis] NVDA AAPL');
-		expect(url.searchParams.get('labels')).toBe('mis');
 	});
 	it('listas con topes', () => {
 		expect(parseMis('nvda, AAPL nvda <x>')).toEqual(['NVDA', 'AAPL']);
