@@ -18,7 +18,9 @@ export interface Experience {
 }
 
 // Añade cada experiencia nueva al final del array (así dos ramas a la vez no chocan en la misma línea).
-const LIST: Experience[] = [];
+const LIST: Experience[] = [
+	{ id: 'periodico', name: 'Periódico', desc: 'Arc como un diario: portada a columnas, breves con las cifras del día y ediciones de mañana y de tarde.', icon: '📰', order: 10, aliases: ['diario', 'prensa'] },
+];
 
 export const EXPERIENCES: Experience[] = [...LIST].sort((a, b) => a.order - b.order);
 
