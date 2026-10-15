@@ -62,8 +62,9 @@
 	const pinned = $derived(pin ? isPinned(pin) : false);
 
 	// Modo Sencillo (modo.ts): los paneles que no son esenciales en esta vista no se pintan (salvo los fijados
-	// en TOP y con «Ver todos»), y el título se lee en español claro. Los ocultos se apuntan para ViewHeader.
-	const essential = $derived(!!pinArea || isEssential(page.route.id, title, id));
+	// en TOP, los que dejaste a la vista en la modular y con «Ver todos»), y el título se lee en español claro.
+	// Los ocultos se apuntan para ViewHeader.
+	const essential = $derived(!!pinArea || !!tools || isEssential(page.route.id, title, id));
 	const gone = $derived(trimming() && !essential && !tv.on);
 	$effect(() => {
 		if (!isSimple() || essential || tv.on) return;
@@ -262,6 +263,18 @@
 		.panel {
 			scroll-margin-top: calc(var(--index-chip) + var(--sp-16));
 		}
+	}
+
+	/* Con esquinas redondeadas (cualquier estética menos Terminal), lo de dentro se recorta con la forma del panel:
+	   filas, cabeceras y tablas con scroll no asoman por las esquinas. clip y no hidden: no crea un contenedor de
+	   scroll, así las cabeceras fijas siguen funcionando. El panel ampliado y el de «encajar» ya hacen scroll (auto). El foco
+	   va hacia dentro para que el recorte no lo corte. */
+	:global(:root:not([data-style='terminal'])) .panel:not(.max) {
+		overflow: clip;
+	}
+
+	:global(:root:not([data-style='terminal'])) .panel :global(:focus-visible) {
+		outline-offset: calc(-1 * var(--focus-w));
 	}
 
 	/* M47: el panel al que lleva la barra se marca con el borde del acento, que se apaga solo. */

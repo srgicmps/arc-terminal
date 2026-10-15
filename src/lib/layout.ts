@@ -76,3 +76,29 @@ export function show(layout: Layout, id: string): Layout {
 export function setSpan(layout: Layout, id: string, span: Span): Layout {
 	return { ...layout, span: { ...layout.span, [id]: span } };
 }
+
+/** Columnas que caben a este ancho de ventana: los mismos cortes que el CSS de las rejillas (720 y 1100 px). */
+export function maxCols(width: number): Span {
+	return width && width <= 720 ? 1 : width && width <= 1100 ? 2 : 3;
+}
+
+/**
+ * Columnas y anchos reales de una rejilla de paneles para que no quede ningún hueco: con pocos paneles, tantas
+ * columnas como hagan falta (2 → dos mitades); si un panel no cabe en lo que queda de fila, el anterior se
+ * estira hasta el final, y el último también. Los paneles se colocan en orden (sin `dense`).
+ */
+export function packGrid(spans: readonly Span[], max: Span): { cols: Span; spans: Span[] } {
+	const out = spans.map((s) => Math.min(s, max) as Span);
+	const total = out.reduce((a, s) => a + s, 0);
+	const cols = Math.max(1, Math.min(total, max)) as Span;
+	let pos = 0;
+	for (let i = 0; i < out.length; i++) {
+		if (pos + out[i] > cols) {
+			out[i - 1] = (out[i - 1] + cols - pos) as Span;
+			pos = 0;
+		}
+		pos = (pos + out[i]) % cols;
+	}
+	if (pos && out.length) out[out.length - 1] = (out[out.length - 1] + cols - pos) as Span;
+	return { cols, spans: out };
+}

@@ -49,6 +49,20 @@
 		--cu-hover: rgba(255, 255, 255, 0.04);
 		--cu-spring: cubic-bezier(0.34, 1.32, 0.64, 1); /* muelle: se pasa un poco y vuelve */
 		--cu-title: 34px; /* «título grande» de la vista */
+		--cu-title-small: 17px; /* el mismo título, encogido en la barra al bajar */
+		--cu-title-line: 40px; /* alto de su línea: no cambia al encogerse, así nada salta */
+		--cu-title-hide: 26px; /* lo que queda escondido arriba al pegarse: margen y la línea del código */
+		--cu-code-line: 16px;
+		--cu-side: 220px; /* barra lateral de secciones (escritorio ancho) */
+		--cu-top-h: 56px; /* barra de herramientas fija (escritorio ancho) */
+		--cu-group-title: 19px; /* título de cada grupo (panel) */
+		--cu-sheet: #121214; /* fondo de la hoja modal (panel ampliado) */
+		--cu-sheet-r: 14px;
+		--cu-grabber: #5a5a5e;
+		--cu-tab-w: 72px; /* cada pestaña de la barra flotante */
+		--cu-icon: 22px;
+		--cu-stick: 0px; /* lo que ya hay pegado arriba en el móvil (índice de paneles) */
+		--tabbar-h: 56px;
 
 		/* ── Letras: las del sistema, en todo (las cifras ya van tabulares) ── */
 		--sans: -apple-system, system-ui, 'Segoe UI', Roboto, 'Inter', sans-serif;
@@ -85,12 +99,12 @@
 		--shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.05);
 		--shadow-pop: 0 18px 48px rgba(0, 0, 0, 0.55), 0 0 0 0.5px rgba(255, 255, 255, 0.1);
 		--panel-edge: 0;
-		--grid-gap: var(--sp-12);
+		--grid-gap: var(--sp-24);
 		--grid-fill: transparent;
 		--grid-edge: 0;
-		--grid-join: var(--sp-12);
+		--grid-join: var(--sp-24);
 		--col-fill: transparent;
-		--stack-gap: var(--sp-12);
+		--stack-gap: var(--sp-24);
 		--stack-edge: 0;
 
 		/* ── Ritmo: algo más de aire que la terminal, cabeceras de panel más altas ── */
@@ -148,6 +162,8 @@
 		--cu-bar: rgba(249, 249, 251, 0.78);
 		--cu-bar-solid: rgba(249, 249, 251, 0.95);
 		--cu-hover: rgba(0, 0, 0, 0.025);
+		--cu-sheet: #f2f2f7;
+		--cu-grabber: #c7c7cc;
 		--shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.05);
 		--shadow-pop: 0 18px 48px rgba(0, 0, 0, 0.16), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
 	}
@@ -163,26 +179,18 @@
 		box-shadow: 0 0 0 var(--sp-4) var(--amber-soft);
 	}
 
-	/* ── Título grande: el código de la vista encima, pequeño y azul; el título, grande y en negrita ── */
-	:root[data-style='cupertino'] .vh h1 {
-		--fs-xl: var(--cu-title);
-		--fw-medium: 700;
-		--sp-12: var(--sp-2); /* el hueco entre código y título */
-		flex-direction: column;
-		line-height: 1.1;
-		letter-spacing: 0.011em;
-	}
-	:root[data-style='cupertino'] .vh .code {
-		--fs-l: var(--fs-s);
-		letter-spacing: 0.02em;
-	}
-	:root[data-style='cupertino'] .vh p {
-		--fs-xs: var(--fs-s);
-	}
 	@media (max-width: 720px) {
 		:root[data-style='cupertino'] {
 			--cu-title: 30px;
+			--cu-group-title: 18px;
+			--grid-gap: var(--sp-20);
+			--stack-gap: var(--sp-20);
+			--grid-join: var(--sp-20);
 		}
+	}
+	/* Modo Sencillo: los títulos de grupo, un punto más grandes, como el resto de la letra. */
+	:root[data-style='cupertino'][data-modo='sencillo'] {
+		--cu-group-title: 20px;
 	}
 
 	/* ── Cabecera: accesos en píldora, botones redondos, cinta como tarjeta ─────────────────────── */
@@ -354,5 +362,714 @@
 			opacity: 0;
 			transform: translateY(var(--sp-8)) scale(0.995);
 		}
+	}
+}
+
+/* ══ Estructura: otra app ══════════════════════════════════════════════════════════════════════════
+ * Fuera de la capa y con el prefijo [data-style='cupertino'][data-style] (docs/estilos.md, «Estructura»).
+ * - Escritorio ancho (≥1100 px): barra de herramientas fija y translúcida arriba, barra lateral de secciones a la
+ *   izquierda con iconos y barra de pestañas flotante abajo (desde 721 px).
+ * - Móvil: barra de pestañas con icono y etiqueta; la barra de comandos es un campo de búsqueda.
+ * - Título grande de la vista que, al bajar, se encoge y se queda pegado arriba como barra translúcida. El alto de
+ *   su línea no cambia (solo la letra), así que nada salta.
+ * - Paneles como listas agrupadas: el título va fuera de la tarjeta, las filas con líneas finas sangradas y la
+ *   nota como pie del grupo.
+ * - Panel ampliado: hoja modal que sube desde abajo, con esquinas redondeadas arriba y asa.
+ * Nada se quita: lo que cambia de sitio sigue pulsable y con foco visible. */
+
+/* ── Iconos de secciones (pestañas y barra lateral): máscaras con el color del texto ── */
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='4' width='6.5' height='6.5' rx='1.6'/><rect x='13.5' y='4' width='6.5' height='6.5' rx='1.6'/><rect x='4' y='13.5' width='6.5' height='6.5' rx='1.6'/><rect x='13.5' y='13.5' width='6.5' height='6.5' rx='1.6'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a[href$='/'] {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M3.5 11 12 4l8.5 7'/><path d='M5.5 9.5V19a1 1 0 0 0 1 1H10v-5.5h4V20h3.5a1 1 0 0 0 1-1V9.5'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a[href$='/imp'] {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8z'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a[href$='/eco'] {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 20h16'/><path d='M7 16.5v-5M12 16.5V6M17 16.5v-8'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a[href$='/geo'] {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='8.5'/><path d='M3.5 12h17M12 3.5c2.6 2.6 2.6 14.4 0 17M12 3.5c-2.6 2.6-2.6 14.4 0 17'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a[href$='/es'] {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M5.5 21V4'/><path d='M5.5 4.5h12l-2.5 4 2.5 4h-12'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a[href$='/ws'] {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='m3.5 16.5 5.5-5.5 4 4 7-7'/><path d='M15 8h5v5'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a[href$='/tech'] {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='6.5' y='6.5' width='11' height='11' rx='2'/><path d='M9.5 3.5v3M14.5 3.5v3M9.5 17.5v3M14.5 17.5v3M3.5 9.5h3M3.5 14.5h3M17.5 9.5h3M17.5 14.5h3'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a[href$='/ai'] {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M11 4.5 12.8 9.2 17.5 11l-4.7 1.8L11 17.5l-1.8-4.7L4.5 11l4.7-1.8z'/><path d='M18 15.5v4M16 17.5h4'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a:is([href$='/boe'], [href$='/usgov']) {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M6.5 3.5h7.5l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20V4a.5.5 0 0 1 .5-.5z'/><path d='M13.5 3.5v4.5h4.5M9 12.5h6M9 16h6'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a[href$='/luz'] {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M13 3 5.5 13.5h6L10.5 21 18.5 10h-6z'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a[href$='/mis'] {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M7 3.5h10a.5.5 0 0 1 .5.5v16.5L12 17l-5.5 3.5V4a.5.5 0 0 1 .5-.5z'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a[href$='/fuel'] {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h6A1.5 1.5 0 0 1 14 5v15.5M3.5 20.5h12M5 10h9'/><path d='M14 8.5h1.5a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 0 3 0V8.5L17.5 6'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a[href$='/wx'] {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M7.5 18.5h9.5a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.6-1.2A4.2 4.2 0 0 0 7.5 18.5z'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a[href$='/cal'] {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='5.5' width='16' height='14.5' rx='2'/><path d='M4 10h16M8.5 3.5v4M15.5 3.5v4'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a[href$='/help'] {
+	--cu-i: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='8.5'/><path d='M8 12h.01M12 12h.01M16 12h.01' stroke-width='2.6'/></svg>");
+}
+[data-style='cupertino'][data-style] :is([data-ui='tabs'], [data-ui='keys']) a::before {
+	content: '';
+	flex: none;
+	width: var(--cu-icon);
+	height: var(--cu-icon);
+	background: currentColor;
+	-webkit-mask: var(--cu-i) center / contain no-repeat;
+	mask: var(--cu-i) center / contain no-repeat;
+}
+
+/* ── Barra de pestañas: icono encima y etiqueta debajo ──────────────────────────────────────────── */
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] :is(a, button) {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--sp-3);
+	height: var(--tabbar-h);
+	background: none;
+	border: 0;
+	color: var(--muted);
+	font-family: var(--sans);
+	font-size: var(--fs-xxs);
+	font-weight: var(--fw-medium);
+	letter-spacing: 0.01em;
+	text-decoration: none;
+	cursor: pointer;
+}
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] svg {
+	width: var(--cu-icon);
+	height: var(--cu-icon);
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.5;
+	stroke-linecap: round;
+}
+/* La lupa también lleva su etiqueta, como las demás pestañas (el nombre accesible ya lo da aria-label). */
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] button::after {
+	content: 'Buscar' / '';
+}
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] :is([aria-current='page'], [aria-pressed='true']) {
+	color: var(--amber);
+	text-decoration: none;
+}
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] :is(a, button):focus-visible {
+	outline-offset: calc(-1 * var(--sp-4));
+	border-radius: var(--radius-s);
+}
+@media (max-width: 720px) {
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] {
+		background: var(--cu-bar-solid);
+		border-top: var(--hair) solid var(--line);
+	}
+}
+/* Desde 721 px, flotante: una cápsula de material translúcido centrada abajo. */
+@media screen and (min-width: 721px) {
+	[data-style='cupertino'][data-style]:not([data-tv]) [data-ui='app'] [data-ui='tabs'] {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: max(var(--sp-16), env(safe-area-inset-bottom, 0px));
+		z-index: 35;
+		display: flex;
+		gap: var(--sp-2);
+		width: max-content;
+		margin-inline: auto;
+		padding: var(--sp-4);
+		border-radius: calc(var(--tabbar-h) / 2 + var(--sp-4));
+		background: var(--cu-material-solid);
+		box-shadow: var(--shadow-pop);
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] :is(a, button) {
+		width: var(--cu-tab-w);
+		border-radius: calc(var(--tabbar-h) / 2);
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] :is([aria-current='page'], [aria-pressed='true']) {
+		background: var(--amber-soft);
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] {
+		padding-bottom: calc(var(--tabbar-h) + 3 * var(--sp-16));
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] .fresh {
+		bottom: calc(var(--tabbar-h) + 3 * var(--sp-16));
+	}
+}
+@media (hover: hover) {
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] :is(a, button):hover {
+		color: var(--fg);
+	}
+}
+
+/* ── Escritorio ancho: barra de herramientas, barra lateral y contenido ─────────────────────────── */
+@media screen and (min-width: 1100px) {
+	[data-style='cupertino'][data-style] body {
+		padding-top: 0;
+	}
+	[data-style='cupertino'][data-style]:not([data-tv]) [data-ui='app'] {
+		display: grid;
+		grid-template-columns: var(--cu-side) minmax(0, 1fr);
+		grid-template-rows: auto auto auto 1fr auto;
+		grid-template-areas: 'top top' 'side tape' 'side idx' 'side main' 'side foot';
+		column-gap: var(--sp-24);
+		min-height: 100dvh;
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] > [data-ui='top'] {
+		grid-area: top;
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] > [data-ui='keys'] {
+		grid-area: side;
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] > [data-ui='tape'] {
+		grid-area: tape;
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] > [data-ui='panel-index'] {
+		grid-area: idx;
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] > [data-ui='main'] {
+		grid-area: main;
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] > [data-ui='foot'] {
+		grid-area: foot;
+	}
+
+	/* Barra de herramientas: de lado a lado, fija y transparente; al bajar, material translúcido y una línea. */
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='top'] {
+		position: sticky;
+		top: 0;
+		z-index: 30;
+		flex-wrap: nowrap;
+		height: var(--cu-top-h);
+		margin: 0 calc(-1 * var(--gutter)) var(--sp-8);
+		padding: 0 var(--gutter);
+		column-gap: var(--sp-20);
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='top']::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
+	}
+	[data-style='cupertino'][data-style][data-scrolled] [data-ui='app'] [data-ui='top']::before {
+		background: var(--cu-bar-solid);
+		box-shadow: inset 0 calc(-1 * var(--hair)) 0 var(--line);
+	}
+	/* El buscador empieza donde empieza el contenido: la marca ocupa el ancho de la barra lateral. */
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='brand'] {
+		flex: none;
+		width: calc(var(--cu-side) + var(--sp-4));
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='top'] > [data-ui='cmd']:not(.sheet) {
+		flex: 0 1 560px;
+		margin-right: auto;
+	}
+
+	/* Barra lateral: lista de secciones con icono, nombre y código; la actual, rellena del acento. */
+	[data-style='cupertino'][data-style]:not([data-tv]) [data-ui='app'] [data-ui='keys'] {
+		position: sticky;
+		top: var(--cu-top-h);
+		align-self: start;
+		display: flex;
+		flex-direction: column;
+		flex-wrap: nowrap;
+		gap: var(--sp-1);
+		max-height: calc(100dvh - var(--cu-top-h));
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		scrollbar-width: thin;
+		padding: var(--sp-4) 0 var(--sp-24);
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='keys']::before {
+		content: 'Secciones' / '';
+		padding: var(--sp-4) var(--sp-10) var(--sp-6);
+		color: var(--faint);
+		font-size: var(--fs-xs);
+		font-weight: var(--fw-bold);
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='keys'] a {
+		display: grid;
+		grid-template-columns: var(--cu-icon) minmax(0, 1fr) auto;
+		align-items: center;
+		column-gap: var(--sp-10);
+		padding: var(--sp-6) var(--sp-10);
+		border: 0;
+		border-radius: var(--radius-s);
+		background: transparent;
+		color: var(--faint);
+		font-size: var(--fs-xxs);
+		letter-spacing: var(--track-code);
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='keys'] a::before {
+		order: -2;
+		color: var(--amber);
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='keys'] a > span {
+		order: -1;
+		margin: 0;
+		color: var(--fg);
+		font-size: var(--fs-m);
+		font-weight: var(--fw-medium);
+		letter-spacing: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='keys'] a:hover {
+		background: var(--cu-hover);
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='keys'] a[aria-current='page'] {
+		background: var(--cu-fill);
+		color: var(--cu-on-fill);
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='keys'] a[aria-current='page'] > span,
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='keys'] a[aria-current='page']::before {
+		color: var(--cu-on-fill);
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='keys'] a:focus-visible {
+		outline-offset: calc(-1 * var(--focus-w));
+	}
+
+	/* Encajar en pantalla: la rejilla mide la ventana; la barra lateral y la vista hacen scroll por dentro. */
+	[data-style='cupertino'][data-style][data-fit]:not([data-tv]) [data-ui='app'] [data-ui='keys'] {
+		position: static;
+		align-self: stretch;
+		max-height: none;
+		contain: size;
+	}
+
+	/* Las pestañas flotantes, centradas sobre el contenido (no sobre la barra lateral). */
+	[data-style='cupertino'][data-style]:not([data-tv]) [data-ui='app'] [data-ui='tabs'] {
+		left: calc(var(--cu-side) + var(--sp-24));
+	}
+}
+
+/* ── Barra de comandos: campo de búsqueda redondeado con lupa ───────────────────────────────────── */
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='cmd'] {
+	border: var(--hair) solid transparent;
+	border-radius: 10px;
+	background: var(--cu-track);
+	box-shadow: none;
+}
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='cmd']:focus-within {
+	border-color: var(--amber);
+	box-shadow: 0 0 0 var(--sp-3) var(--amber-soft);
+}
+/* El campo ya marca el foco con su anillo: el halo del input sobra. */
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='cmd'] input:focus-visible {
+	box-shadow: none;
+}
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='cmd'] .caret {
+	display: none;
+}
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='cmd'] .lens {
+	display: block;
+}
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='cmd'] .prompt {
+	color: var(--muted);
+	padding-inline: var(--sp-10) var(--sp-6);
+}
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='cmd'] .go {
+	margin: var(--sp-3);
+	padding-inline: var(--sp-12);
+	border-radius: 7px;
+	font-size: var(--fs-xs);
+}
+/* Hoja de búsqueda (la lupa de las pestañas). En el móvil, un campo flotante sobre las pestañas. */
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='cmd'].sheet {
+	left: var(--gutter);
+	right: var(--gutter);
+	bottom: calc(var(--tabbar-h) + var(--sp-10) + env(safe-area-inset-bottom, 0px));
+	border-radius: var(--radius);
+	background: var(--cu-field);
+	box-shadow:
+		var(--shadow-pop),
+		0 0 0 100vmax var(--scrim);
+}
+/* Desde 721 px, como un buscador de sistema: centrado arriba, grande, con el resto atenuado. */
+@media (min-width: 721px) {
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='cmd'].sheet {
+		top: 16vh;
+		bottom: auto;
+		left: 0;
+		right: 0;
+		width: min(680px, 100vw - 2 * var(--gutter));
+		height: 52px;
+		margin-inline: auto;
+		border: var(--hair) solid var(--amber-edge);
+		border-radius: var(--cu-sheet-r);
+		font-size: var(--fs-l);
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='cmd'].sheet .suggest {
+		top: 100%;
+		bottom: auto;
+		max-height: 56vh;
+	}
+}
+
+/* ── Título grande ───────────────────────────────────────────────────────────────────────────────
+ * La cabecera de la vista se deshace (display: contents) para que el título se pueda pegar arriba mientras se
+ * recorre toda la vista. Arriba del todo: el código pequeño en azul y el título grande. Al bajar (html[data-scrolled])
+ * la letra pasa a 17 px en la misma línea de 40 px y la franja de arriba (margen y código) queda escondida: en el
+ * móvil, por encima de la pantalla; en el escritorio ancho, bajo la barra de herramientas. */
+[data-style='cupertino'][data-style] [data-ui='main'] [data-ui='view-head'],
+[data-style='cupertino'][data-style] [data-ui='main'] [data-ui='view-head'] > div:first-child {
+	display: contents;
+}
+[data-style='cupertino'][data-style] [data-ui='main'] [data-ui='view-head'] h1 {
+	position: sticky;
+	top: calc(var(--cu-stick) - var(--cu-title-hide));
+	z-index: 15;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--sp-2);
+	margin: 0 calc(-1 * var(--gutter));
+	padding: var(--sp-8) var(--gutter) var(--sp-4);
+	overflow: hidden;
+	font-family: var(--sans);
+	font-size: var(--cu-title);
+	font-weight: 700;
+	line-height: var(--cu-title-line);
+	letter-spacing: 0.004em;
+}
+[data-style='cupertino'][data-style] [data-ui='main'] [data-ui='view-head'] h1 .code {
+	font-family: var(--sans);
+	font-size: var(--fs-s);
+	font-weight: var(--fw-bold);
+	line-height: var(--cu-code-line);
+	letter-spacing: 0.02em;
+}
+[data-style='cupertino'][data-style][data-scrolled] [data-ui='main'] [data-ui='view-head'] h1 {
+	font-size: var(--cu-title-small);
+	font-weight: var(--fw-bold);
+	white-space: nowrap;
+	background: var(--cu-bar-solid);
+	box-shadow: inset 0 calc(-1 * var(--hair)) 0 var(--line);
+}
+@media (max-width: 720px) {
+	[data-style='cupertino'][data-style][data-scrolled] [data-ui='main'] [data-ui='view-head'] h1 {
+		background-color: var(--bg);
+	}
+}
+[data-style='cupertino'][data-style][data-scrolled] [data-ui='main'] [data-ui='view-head'] h1 .code {
+	opacity: 0;
+}
+/* Fuentes, resumen y aparte, debajo del título y con su aire. */
+[data-style='cupertino'][data-style] [data-ui='main'] [data-ui='view-head'] :is(p, .plain, .vh-r) {
+	margin-top: var(--sp-4);
+}
+[data-style='cupertino'][data-style] [data-ui='main'] [data-ui='view-head'] + * {
+	margin-top: var(--sp-16);
+}
+/* Modo Sencillo: las frases clave, como un grupo de ajustes; «Ver todos», como pie del grupo. */
+[data-style='cupertino'][data-style] [data-ui='main'] [data-ui='view-head'] .plain {
+	gap: 0;
+	margin-top: var(--sp-12);
+	border-radius: var(--radius);
+	background: var(--panel);
+	box-shadow: var(--shadow);
+}
+[data-style='cupertino'][data-style] [data-ui='main'] [data-ui='view-head'] .plain li {
+	padding: var(--sp-10) var(--pad-x);
+}
+[data-style='cupertino'][data-style] [data-ui='main'] [data-ui='view-head'] .plain li + li {
+	background: linear-gradient(var(--line), var(--line)) no-repeat right top / calc(100% - var(--pad-x)) var(--hair);
+}
+[data-style='cupertino'][data-style] [data-ui='main'] [data-ui='view-head'] .more {
+	padding-inline: var(--pad-x);
+	color: var(--faint);
+}
+/* Lo que ya va pegado arriba en el móvil (el índice de paneles) empuja el título hacia abajo. */
+@media (max-width: 720px) {
+	[data-style='cupertino'][data-style] [data-ui='app']:has([data-ui='panel-index']) {
+		--cu-stick: calc(var(--index-chip) + var(--sp-10) + var(--hair));
+	}
+}
+@media (min-width: 1100px) {
+	[data-style='cupertino'][data-style]:not([data-tv]) [data-ui='app'] {
+		--cu-stick: var(--cu-top-h);
+	}
+	[data-style='cupertino'][data-style] [data-ui='main'] [data-ui='view-head'] h1 {
+		margin-inline: 0;
+		padding-inline: 0;
+	}
+}
+/* Encajar en pantalla: la página no baja, así que el título se queda grande y en su sitio. La vista es ahí una
+   columna flexible: las piezas de la cabecera no se encogen. */
+[data-style='cupertino'][data-style][data-fit] [data-ui='main'] [data-ui='view-head'] h1 {
+	position: static;
+}
+[data-style='cupertino'][data-style] [data-ui='main'] [data-ui='view-head'] :is(h1, p, ul, .vh-r) {
+	flex-shrink: 0;
+}
+/* Al saltar a un panel (índice, barra de comandos), que quede debajo del título pegado. */
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='panel'] {
+	scroll-margin-top: calc(var(--cu-stick) + var(--cu-title-line) + var(--sp-16));
+}
+
+/* ── Paneles como listas agrupadas ───────────────────────────────────────────────────────────────
+ * El panel deja de ser una caja: su cabecera es el título del grupo, sobre el fondo; lo de dentro es la tarjeta
+ * redondeada; la nota (fuente) queda debajo como pie del grupo, en gris. */
+[data-style='cupertino'][data-style] [data-ui='panel'] {
+	background: transparent;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+}
+[data-style='cupertino'][data-style] [data-ui='panel'] > :not([data-ui='panel-head'], [data-ui='tiles'], .pnote) {
+	background-color: var(--panel);
+}
+[data-style='cupertino'][data-style] [data-ui='panel'] > :nth-child(1 of :not([data-ui='panel-head'], .pnote)) {
+	border-top-left-radius: var(--radius);
+	border-top-right-radius: var(--radius);
+}
+[data-style='cupertino'][data-style] [data-ui='panel'] > :nth-last-child(1 of :not([data-ui='panel-head'], .pnote)) {
+	border-bottom-left-radius: var(--radius);
+	border-bottom-right-radius: var(--radius);
+}
+[data-style='cupertino'][data-style] [data-ui='panel'] > [data-ui='panel-head'] {
+	align-items: baseline;
+	padding: 0 var(--sp-4) var(--sp-8);
+	border-bottom: 0;
+	background: transparent;
+}
+[data-style='cupertino'][data-style] [data-ui='panel'] > [data-ui='panel-head'] h2 {
+	font-size: var(--cu-group-title);
+	font-weight: 700;
+	letter-spacing: -0.012em;
+	line-height: 1.25;
+}
+[data-style='cupertino'][data-style] [data-ui='panel'] > [data-ui='panel-head'] .fold {
+	width: var(--sp-16);
+	color: var(--amber);
+	font-size: 0.7em;
+	vertical-align: 0.12em;
+}
+[data-style='cupertino'][data-style] [data-ui='panel'] > [data-ui='panel-head'] .jump {
+	color: var(--amber);
+	font-size: var(--fs-s);
+	letter-spacing: 0;
+}
+/* Ampliar y cerrar: botones redondos grises, como los del sistema. */
+[data-style='cupertino'][data-style] [data-ui='panel'] > [data-ui='panel-head'] :is(.grow, .close) {
+	display: inline-grid;
+	place-items: center;
+	width: 26px;
+	height: 26px;
+	margin-block: calc(-1 * var(--sp-4));
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: var(--cu-track);
+	color: var(--muted);
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-bold);
+}
+@media (pointer: coarse) {
+	[data-style='cupertino'][data-style] [data-ui='panel'] > [data-ui='panel-head'] :is(.grow, .close) {
+		position: relative;
+		min-height: 0;
+	}
+	[data-style='cupertino'][data-style] [data-ui='panel'] > [data-ui='panel-head'] :is(.grow, .close)::after {
+		content: '';
+		position: absolute;
+		inset: calc(-1 * var(--sp-9));
+	}
+}
+/* La nota, pie del grupo: fuera de la tarjeta, sin línea, en gris. */
+[data-style='cupertino'][data-style] [data-ui='panel'] > .pnote {
+	padding: var(--sp-8) var(--pad-x) 0;
+	border-top: 0;
+	background: none;
+	font-size: var(--fs-xs);
+	line-height: var(--lh-snug);
+}
+/* Encajar en pantalla: el título del grupo se queda arriba sobre el fondo, no sobre la tarjeta. */
+[data-style='cupertino'][data-style][data-fit] [data-ui='panel'] > [data-ui='panel-head'] {
+	padding-top: var(--sp-4);
+	background: var(--cu-bar-solid);
+}
+
+/* Filas con líneas finas sangradas (empiezan donde empieza el texto, como en los ajustes del sistema). Se dibujan
+   con un fondo de 1 px: así la línea puede empezar más adentro que la celda. */
+[data-style='cupertino'][data-style] .t :is(th, td):first-child {
+	padding-left: var(--pad-x);
+}
+[data-style='cupertino'][data-style] .t :is(th, td):last-child {
+	padding-right: var(--pad-x);
+}
+[data-style='cupertino'][data-style] .t td {
+	padding-block: var(--row-y);
+	border-bottom: 0;
+	background-image: linear-gradient(var(--line), var(--line));
+	background-repeat: no-repeat;
+	background-position: right bottom;
+	background-size: 100% var(--hair);
+}
+[data-style='cupertino'][data-style] .t td:first-child {
+	background-size: calc(100% - var(--pad-x)) var(--hair);
+}
+[data-style='cupertino'][data-style] .t tbody tr:last-child td {
+	background-image: none;
+}
+[data-style='cupertino'][data-style] .t th {
+	border-bottom: var(--hair) solid var(--line);
+	letter-spacing: 0.01em;
+	text-transform: none;
+}
+[data-style='cupertino'][data-style] .mini li + li {
+	border-top: 0;
+	background: linear-gradient(var(--line), var(--line)) no-repeat right top / calc(100% - var(--pad-x)) var(--hair);
+}
+[data-style='cupertino'][data-style] .news li {
+	border-bottom: 0;
+}
+[data-style='cupertino'][data-style] .news li:not(:last-child) {
+	background: linear-gradient(var(--line), var(--line)) no-repeat right bottom / calc(100% - var(--pad-x)) var(--hair);
+}
+
+/* ── Panel ampliado: hoja modal desde abajo ─────────────────────────────────────────────────────── */
+[data-style='cupertino'][data-style] [data-ui='panel'].max {
+	inset: max(var(--sp-24), env(safe-area-inset-top, 0px)) 0 0 0;
+	height: auto;
+	max-height: none;
+	margin-inline: auto;
+	padding-bottom: calc(var(--sp-24) + env(safe-area-inset-bottom, 0px));
+	border: 0;
+	border-radius: var(--cu-sheet-r) var(--cu-sheet-r) 0 0;
+	background: var(--cu-sheet);
+	box-shadow: var(--shadow-pop);
+	overscroll-behavior: contain;
+}
+@media (min-width: 721px) {
+	[data-style='cupertino'][data-style] [data-ui='panel'].max {
+		top: 5vh;
+		width: min(1120px, 100vw - 2 * var(--gutter));
+	}
+}
+[data-style='cupertino'][data-style] [data-ui='panel'].max > :not([data-ui='panel-head']) {
+	margin-inline: var(--sp-16);
+}
+[data-style='cupertino'][data-style] [data-ui='panel'].max > [data-ui='panel-head'] {
+	padding: var(--sp-24) var(--sp-20) var(--sp-12);
+	background: var(--cu-sheet);
+}
+/* El asa: una barrita gris arriba, en el centro (solo dibujo: se cierra con ✕, Esc o tocando fuera). */
+[data-style='cupertino'][data-style] [data-ui='panel'].max > [data-ui='panel-head']::before {
+	content: '';
+	position: absolute;
+	top: var(--sp-7);
+	left: 0;
+	right: 0;
+	width: 36px;
+	height: 5px;
+	margin-inline: auto;
+	border-radius: 3px;
+	background: var(--cu-grabber);
+}
+
+/* ── Controles tipo sistema ─────────────────────────────────────────────────────────────────────── */
+[data-style='cupertino'][data-style] {
+	accent-color: var(--amber);
+}
+[data-style='cupertino'][data-style] .go {
+	border-radius: 999px;
+	font-weight: var(--fw-bold);
+}
+[data-style='cupertino'][data-style] [data-ui='top'] .place {
+	flex: none;
+}
+[data-style='cupertino'][data-style] [data-ui='top'] .place .chip {
+	border-color: transparent;
+	border-radius: 999px;
+	background: var(--cu-track);
+	white-space: nowrap;
+}
+[data-style='cupertino'][data-style] [data-ui='app'] .theme {
+	border: var(--hair) solid transparent;
+	border-radius: 50%;
+	background: var(--cu-track);
+}
+[data-style='cupertino'][data-style] :is(.search, .chip-input) input {
+	border-color: transparent;
+	border-radius: 10px;
+	background: var(--cu-track);
+}
+[data-style='cupertino'][data-style] :is(.search, .chip-input) input:focus-visible {
+	border-color: var(--amber);
+}
+[data-style='cupertino'][data-style] [data-ui='foot'] {
+	border-top: 0;
+}
+
+/* ── Materiales y movimiento ─────────────────────────────────────────────────────────────────────
+ * Desenfoque solo desde 721 px y si el navegador sabe; nunca con «reducir transparencia». Movimiento: el título se
+ * encoge con suavidad y la hoja sube con la curva del sistema; sin nada de eso con «reducir movimiento». */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+	@media (min-width: 721px) and (prefers-reduced-transparency: no-preference) {
+		[data-style='cupertino'][data-style][data-scrolled] [data-ui='app'] [data-ui='top']::before,
+		[data-style='cupertino'][data-style][data-scrolled] [data-ui='main'] [data-ui='view-head'] h1 {
+			background-color: var(--cu-bar);
+			-webkit-backdrop-filter: saturate(180%) blur(20px);
+			backdrop-filter: saturate(180%) blur(20px);
+		}
+		[data-style='cupertino'][data-style]:not([data-tv]) [data-ui='app'] [data-ui='tabs'] {
+			background: var(--cu-material);
+			-webkit-backdrop-filter: saturate(180%) blur(24px);
+			backdrop-filter: saturate(180%) blur(24px);
+		}
+	}
+}
+@media (prefers-reduced-motion: no-preference) {
+	[data-style='cupertino'][data-style] [data-ui='main'] [data-ui='view-head'] h1 {
+		transition:
+			font-size 280ms var(--ease),
+			background-color 200ms linear,
+			box-shadow 200ms linear;
+	}
+	[data-style='cupertino'][data-style] [data-ui='main'] [data-ui='view-head'] h1 .code {
+		transition: opacity 160ms linear;
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='top']::before {
+		transition:
+			background-color 200ms linear,
+			box-shadow 200ms linear;
+	}
+	[data-style='cupertino'][data-style] [data-ui='panel'].max {
+		animation: cu-sheet-up 460ms var(--ease) both;
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] :is(a, button) {
+		transition:
+			color var(--dur-ui) var(--ease),
+			background-color var(--dur-ui) var(--ease),
+			transform 320ms var(--cu-spring);
+	}
+	[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] :is(a, button):active {
+		transform: scale(0.92);
+		transition-duration: 90ms;
+	}
+}
+@keyframes cu-sheet-up {
+	from {
+		transform: translateY(100%);
 	}
 }
