@@ -49,7 +49,7 @@ nada en los traspasos entre sesiones.
 ## Escritorio
 - [x] Fondo por aspecto y fondos de tokens (sistema, estética, liso, rejilla, degradado) [OS 2] #476/#500
 - [x] Fondo propio: galería (9 incluidos, día y noche con tokens), 2 vivos (el mundo ahora, tu cielo), color, degradado, tus imágenes (IndexedDB, comprimidas, solo este navegador; rellenar, ajustar, centrar, mosaico y punto focal), por escritorio, presentación y fondo de bloqueo (`src/lib/os/system/wall/`) [OS 5] #511
-- [ ] Fondo en la pantalla de inicio del móvil con `<WallLayer />` [OS 3]
+- [x] Fondo en la pantalla de inicio del móvil con `<WallLayer />` [OS 3 2] #530
 - [x] «Cambiar fondo…» conectado en el clic derecho del escritorio y en el Panel de control [OS 2] #529
 - [x] Widgets movibles: reloj mundial, cotizaciones, tiempo, titulares, luz barata, Tu mañana [OS 2] #476
 - [x] Widgets del sistema (estilo DSM): estado de las fuentes, registro, datos [OS 2] #500
@@ -68,7 +68,7 @@ nada en los traspasos entre sesiones.
 - [x] «5 abiertas» se leía como ventanas: ahora dice «5 bolsas abiertas» [OS 2] #501
 - [x] Iconos todavía como glifos (▦ ★ % $): va con el set SVG de «Escritorio» [OS 2] #526
 - [x] Widgets vacíos en local: comprobar que en la web real se llenan y, si una fuente falla, poner un mensaje útil (qué falla y cuándo se vuelve a intentar) [OS 2] #529 (mensaje hecho; en local salen «responde 404» porque no hay /data)
-- [ ] A 390 px sigue saliendo el escritorio de PC: lo resuelve la versión móvil (#494) [OS 3]
+- [x] A 390 px sigue saliendo el escritorio de PC: lo resuelve la versión móvil [OS 3] #494
 
 ## Barra, Inicio y bandeja
 - [x] Barra de tareas: clic para enfocar o minimizar, vista previa al pasar, ancladas [OS 2] #495
@@ -105,8 +105,10 @@ nada en los traspasos entre sesiones.
 - [ ] Apps de análisis: mapa operacional, grafo de entidades, expedientes, línea de tiempo y vigilancia [OS 6]
 
 ## Móvil (≤ 900 px, al estilo iOS)
-- [ ] Pantalla de inicio con páginas, dock, widgets e insignias [OS 3] (#494)
-- [ ] Multitarea, centro de control, buscador y gestos [OS 3]
+- [x] Pantalla de inicio con páginas, dock, widgets e insignias [OS 3] #494
+- [x] Carpetas y orden editable; widgets elegibles; insignias del centro de notificaciones [OS 3 2] #519 #528
+- [x] Estilo único «Mando» e iconos SVG en el teléfono [OS 3 2] #521 #534
+- [x] Multitarea, centro de control, buscador y gestos [OS 3] #494; Spotlight universal y «atrás» [OS 3 2] #528 #534
 - [x] Cambiar entre «Terminal clásico» y «Modo OS» (`mode.svelte.ts`) [OS 3] #478
 
 ## OS 6 · Centro de mando (detalle de #503)
