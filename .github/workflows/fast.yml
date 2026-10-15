@@ -64,7 +64,6 @@ jobs:
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
-          RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
 
       # Avisos al móvil con ntfy, como en deploy.yml y con la misma caché del historial (las cachés son por
