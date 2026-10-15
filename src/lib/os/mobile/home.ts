@@ -219,6 +219,23 @@ export const dockApps = (apps: PhoneApp[], dock: readonly string[] = DOCK) =>
 // ---- Multitarea: las apps abiertas, de la última a la primera ----
 
 /** Apps que se quedan vivas a la vez (cada una es un iframe: más pesaría demasiado en un móvil). */
+/**
+ * Una ruta de la web que no es de ninguna app (la ficha de un valor, «/s?sym=NVDA»): se abre igual, a pantalla
+ * completa, con una app de paso que no está en inicio. Su id empieza por «web:».
+ */
+export function webApp(path: string, name?: string): PhoneApp {
+	const sym = /^\/s\?sym=([^&#]+)/.exec(path);
+	return { id: `web:${path}`, name: name ?? (sym ? decodeURIComponent(sym[1]) : path), icon: '◆', href: path };
+}
+
+/**
+ * Con el teclado en pantalla, el hueco visible (visualViewport) que debe ocupar el teléfono; null sin teclado o con
+ * zoom de pellizco (entonces manda el navegador).
+ */
+export function keyboardFit(vv: { height: number; offsetTop: number; scale: number }, innerHeight: number): { top: number; h: number } | null {
+	return Math.abs(vv.scale - 1) < 0.01 && innerHeight - vv.height > 120 ? { top: vv.offsetTop, h: vv.height } : null;
+}
+
 export const MAX_OPEN = 4;
 
 export function touch(list: string[], id: string, max = MAX_OPEN): string[] {
@@ -260,21 +277,23 @@ export const badgeText = (n: number) => (n > 99 ? '99+' : String(n));
 export type Edge = 'notif' | 'control' | 'spot' | 'home' | 'switch' | null;
 
 /**
- * Qué hace un deslizamiento. Desde arriba, a la izquierda, notificaciones; a la derecha, centro de control. En la
- * pantalla de inicio, hacia abajo por el medio, Spotlight. Desde la barra de abajo de una app: corto, a inicio;
- * largo (más de un cuarto de pantalla), multitarea.
+ * Qué hace un deslizamiento. Desde arriba (la barra de estado: `top`, su borde de abajo, con la zona segura del
+ * iPhone), a la izquierda, notificaciones; a la derecha, centro de control. En la pantalla de inicio, hacia abajo
+ * por el medio, Spotlight. Desde la barra de abajo de una app: corto, a inicio; largo (más de un 35 % de la
+ * pantalla) o parando el dedo antes de soltar (`paused`, como en iOS), multitarea.
  */
 export function gesture(
 	start: { x: number; y: number },
 	end: { x: number; y: number },
 	size: { w: number; h: number },
-	inApp: boolean
+	inApp: boolean,
+	{ top = 48, paused = false }: { top?: number; paused?: boolean } = {}
 ): Edge {
 	const dx = end.x - start.x;
 	const dy = end.y - start.y;
 	if (Math.abs(dy) < 50 || Math.abs(dx) > Math.abs(dy)) return null;
-	if (start.y < 48 && dy > 0) return start.x < size.w / 2 ? 'notif' : 'control';
-	if (inApp && start.y > size.h - 40 && dy < 0) return -dy > size.h / 4 ? 'switch' : 'home';
-	if (!inApp && dy > 0 && start.y > 48) return 'spot';
+	if (start.y < top && dy > 0) return start.x < size.w / 2 ? 'notif' : 'control';
+	if (inApp && start.y > size.h - 40 && dy < 0) return -dy > size.h * 0.35 || (paused && -dy > size.h / 10) ? 'switch' : 'home';
+	if (!inApp && dy > 0 && start.y >= top) return 'spot';
 	return null;
 }
