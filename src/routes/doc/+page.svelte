@@ -81,8 +81,9 @@
 			<ul class="mini">
 				<li>
 					<span class="l">
-						GitHub Pages sirve la web ya construida: HTML, JS, CSS y los JSON de datos. No hay servidor.
-						<small>Por eso <code>paths.base</code> es <code>/arc-terminal</code> en <code>vite.config.ts</code>.</small>
+						Cloudflare Pages sirve la web ya construida: HTML, JS, CSS y los JSON de datos, con Cloudflare Access
+						delante (solo entra Sergi).
+						<small>Las Actions la publican con <code>wrangler</code>; la URL está en <code>scripts/site.ts</code>.</small>
 					</span>
 					<b>Pages</b>
 				</li>
@@ -105,7 +106,7 @@
 				</li>
 				<li>
 					<span class="l">
-						Se instala en el móvil y funciona sin conexión. Al instalar solo guarda la build, los iconos y TOP; cada vista se guarda al abrirla (las últimas 40 copias, que sobreviven a las publicaciones). Páginas y datos: primero la red y, si no hay, la copia guardada; una vista nunca abierta cae en TOP.
+						Se instala en el móvil y funciona sin conexión. Al instalar solo guarda la build, los iconos y TOP; cada vista se guarda al abrirla (las últimas 40 copias, que sobreviven a las publicaciones). Páginas y datos: primero la red y, si no hay, la copia guardada; una vista nunca abierta cae en TOP. Con Cloudflare Access, /cdn-cgi/ no pasa por el service worker y, si la sesión caduca, no sirve copias viejas: recarga y lleva al login.
 						<small><code>src/service-worker/index.ts</code> · <code>static/manifest.webmanifest</code></small>
 					</span>
 					<b>PWA</b>
