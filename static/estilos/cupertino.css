@@ -285,6 +285,12 @@
 		--on-amber: var(--cu-thumb-fg);
 		box-shadow: var(--cu-thumb-shadow);
 	}
+	/* Con varios encendidos, también tarjeta: el azul sobre la pista gris no llegaba a 4,5:1. */
+	[data-style='cupertino'] .seg button[aria-pressed='true'] {
+		--amber: var(--cu-thumb-fg);
+		--amber-soft: var(--cu-thumb);
+		box-shadow: var(--cu-thumb-shadow);
+	}
 
 	/* ── Tablas y tarjetas de cifras ────────────────────────────────────────────────────────── */
 	:root[data-style='cupertino'] .t th {
@@ -694,6 +700,7 @@
 }
 [data-style='cupertino'][data-style] [data-ui='app'] [data-ui='cmd'] .go {
 	margin: var(--sp-3);
+	min-height: 0; /* en el táctil, los 44 px de todo botón más el margen se salían de la barra */
 	padding-inline: var(--sp-12);
 	border-radius: 7px;
 	font-size: var(--fs-xs);

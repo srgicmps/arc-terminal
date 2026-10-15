@@ -432,6 +432,7 @@
 /* «GO» deja de ser un botón relleno: una píldora tenue en el acento, que se llena al pasar por encima. */
 [data-style='calido'][data-style] [data-ui='cmd'] .go {
 	margin: var(--sp-5);
+	min-height: 0; /* en el táctil, los 44 px de todo botón más el margen se salían de la píldora */
 	border-radius: 999px;
 	background: var(--amber-soft);
 	color: var(--amber);
