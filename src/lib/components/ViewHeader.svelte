@@ -13,9 +13,11 @@
 		aside?: Snippet;
 		/** Resumen en una línea con los datos de la vista («Inflación euro baja al 2,1 % · …»). */
 		summary?: string;
+		/** Modo Sencillo: los datos clave contados en frases (src/lib/plain.ts). Ahí sustituyen al resumen. */
+		plain?: string[];
 	}
 
-	let { code, title, sub, aside, summary }: Props = $props();
+	let { code, title, sub, aside, summary, plain }: Props = $props();
 
 	// Modo Sencillo: «Ver todos» vuelve a enseñar los paneles que el modo oculta en esta vista. Al cambiar de
 	// vista, se vuelve a lo esencial.
@@ -33,7 +35,11 @@
 	<div>
 		<h1><span class="code">{code}</span>{title}</h1>
 		{#if sub}<p>{sub}</p>{/if}
-		{#if summary}<p class="sum">{summary}</p>{/if}
+		{#if isSimple() && plain?.length}
+			<ul class="plain">
+				{#each plain as line (line)}<li>{line}</li>{/each}
+			</ul>
+		{:else if summary}<p class="sum">{summary}</p>{/if}
 		{#if isSimple() && hiddenPanels.size}
 			<p class="more">
 				{modo.all ? 'Ves todos los paneles.' : `Ves lo esencial: ${hiddenPanels.size} ${hiddenPanels.size === 1 ? 'panel más' : 'paneles más'} en el modo completo.`}
@@ -84,6 +90,20 @@
 		color: var(--fg);
 		font-size: var(--fs-s);
 		line-height: var(--lh-snug);
+	}
+
+	/* Modo Sencillo: los datos clave en frases, en el color del texto y con la letra de los textos. */
+	.plain {
+		margin: var(--sp-8) 0 0;
+		padding: 0;
+		list-style: none;
+		display: grid;
+		gap: var(--sp-4);
+		max-width: 72ch;
+		font-family: var(--sans);
+		font-size: var(--fs-m);
+		line-height: var(--lh-text);
+		color: var(--fg);
 	}
 
 	/* Modo Sencillo: cuántos paneles quedan fuera y el botón para verlos, discreto, como un enlace. */
