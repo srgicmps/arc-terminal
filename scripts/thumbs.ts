@@ -9,11 +9,11 @@
 import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from 'node:fs';
 import { launch } from './browser.ts';
 import { accessHeaders } from './lib.ts';
-import { LEGACY_SITE, SITE } from './site.ts';
+import { SITE } from './site.ts';
 
-// La web privada, si hay service token de Access; si no, la de GitHub Pages mientras conviva.
+// La web privada, con el service token de Access (sin él, Access no deja pasar).
 const ACCESS = accessHeaders();
-const ROOT = (process.argv[2] ?? (Object.keys(ACCESS).length ? SITE : LEGACY_SITE)).replace(/\/$/, '');
+const ROOT = (process.argv[2] ?? SITE).replace(/\/$/, '');
 const DIR = 'static/manual';
 /** 1280 px × 0,375 = 480 px de ancho. */
 const SCALE = 0.375;

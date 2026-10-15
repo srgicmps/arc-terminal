@@ -47,7 +47,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 ## Arquitectura
 - **La web es privada**: **Cloudflare Pages** la sirve en https://arcterminal.dev (dominio propio; también en https://arc-terminal.pages.dev), en la raíz, con
   **Cloudflare Access** delante (login por código al email de Sergi). La URL está en un solo sitio, `scripts/site.ts`,
-  y se cambia sin tocar código con la Variable de GitHub `SITE_URL` (p. ej. al pasar a un dominio propio).
+  y se cambia sin tocar código con la Variable de GitHub `SITE_URL`. GitHub Pages está apagado.
   Las Actions publican con `wrangler` (Secrets `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`) y leen la copia
   anterior con el service token de Access (`CF_ACCESS_CLIENT_ID`/`CF_ACCESS_CLIENT_SECRET`, `fetchPublished` en
   `scripts/lib.ts`).
@@ -61,11 +61,8 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   lo rellena al publicar con la API de Cloudflare (crea la base si no está, lee el AUD de la app de Access y el dominio
   del equipo; el token necesita D1 · Edit y Access: Apps and Policies y Organizations · Read). Las Variables
   `D1_DATABASE_ID`, `ACCESS_TEAM_DOMAIN` y `ACCESS_AUD` son opcionales y mandan. Sin nada, /api/* responde 503 y la web
-  va igual, solo en local. En GitHub Pages no hay API: todo sigue en el navegador.
-- **Transición**: GitHub Pages sigue publicando la misma web en https://srgicmps.github.io/arc-terminal/ (por eso
-  `paths.base` es `/arc-terminal` salvo con `BASE_PATH` vacío, que usa el build de Cloudflare) hasta que Sergi
-  confirme que la nueva va bien; luego se apaga en otro PR.
-- Pages no tiene servidor, así que **GitHub Actions hace de servidor**: cada 15–30 min un script de Node
+  va igual, solo en local.
+- La web es estática, así que **GitHub Actions hace de servidor**: cada 15–30 min un script de Node
   descarga los datos, los guarda como JSON y vuelve a publicar la web. Así tampoco hay problemas de CORS.
 - **Dos velocidades**: `deploy.yml` (cada 15 min y en cada push a main) refresca todo lo caducado según el
   `maxAgeMinutes` de cada fuente; `fast.yml` (cada 5 min) fuerza solo las urgentes (lista `URGENT`: terremotos,
@@ -82,6 +79,9 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   (`/api/alerts?all=1`, sin emails) y `scripts/alerts/users.ts` reparte los avisos de la pasada según cada uno. Su
   historial va SOLO en la caché de Actions (`.notify-cache/notify-users.json`, por uid aleatorio), nunca en static/data.
   Los de Sergi siguen saliendo por `NTFY_TOPIC`.
+- **Sugerencias** (pie de cada vista, `Feedback.svelte`): `/api/feedback` (`cloud/feedback.ts`) las guarda en D1
+  (tabla `feedback`) y avisa a Sergi por ntfy si Pages tiene el Secret `NTFY_TOPIC`. Leerlas, solo el admin
+  (Secret de Pages `ADMIN_EMAIL`, nunca en el repo).
 - **Órdenes desde la barra** (D41): «alerta NVDA > 150», «+NVDA», «vigila aranceles» abren un issue ya escrito
   (`src/lib/useralerts.ts`); `notify.ts` lee con `scripts/requests.ts` solo los issues abiertos **del dueño**,
   los aplica (`scripts/alerts/user.ts`) y cierra la alerta al avisar. Los issues son públicos.
@@ -128,14 +128,17 @@ Un cambio de estética se hace en un solo sitio.
 - **`app.css`** solo tiene el reset, la tipografía base y lo que comparten todas las vistas: rejillas (`.grid`,
   `.grid-2`, `.grid-2e`, `.grid-3`, `.col`), listas `.mini`, `.empty` y los colores `.up`, `.down`, `.mut`.
   El resto va en el `<style>` de su componente.
+- **Modo Sencillo** (`src/lib/modo.ts`, `<html data-modo>`, clave `arc-modo`): bloque `[data-modo='sencillo']` de
+  `tokens.css` (letra, aire, títulos de panel), paneles esenciales por vista y títulos claros en `src/lib/simple.ts`.
+  `Panel` oculta solo lo que no es esencial y `ViewHeader` ofrece «Ver todos». Una vista nueva sin lista se ve entera.
 - **Cambiar la estética**, por ejemplo el acento: `--amber` en `tokens.css` (y su versión de día, abajo en el
   mismo archivo). Para una web más densa o más aireada: `--pad-x` y `--row-y`, o la escala `--sp-*`.
   Sergi también puede elegir cian o azul en HELP, «A tu gusto» (`src/lib/taste.svelte.ts`): son bloques
   `[data-accent]` al final de `tokens.css` que redefinen `--amber*`; nada lleva el acento escrito a mano.
-  **Dos estéticas** (`ESTILO` y «A tu gusto»): `<html data-style="terminal|modern">`. «Moderna» es un bloque al final de
-  `tokens.css` que redefine solo tokens (sección «Estética» de `:root`: `--radius*`, `--shadow*`, `--grid-*`,
-  `--stack-*`, `--title-*`, `--font-ui`, `--dur-ui`). Clave `arc-style`, que se sincroniza con la cuenta. Sin nada
-  guardado, `src/app.html` decide al arrancar: «Terminal» si el navegador ya usaba la web, «Moderna» si es nuevo.
+  **Estéticas** (`ESTILO` y «A tu gusto»): `<html data-style="<id>">`, una por archivo en `src/styles/estilos/<id>.css`
+  (registro en `src/lib/estilos.ts`; cómo se hace una, en `docs/estilos.md`). Capas CSS: `tokens` < `estilos` <
+  `ajustes` (`src/styles/ajustes.css`: densidad y modo Sencillo). Clave `arc-style`, sincronizada con la cuenta. Sin
+  nada guardado, `src/app.html` decide: «Terminal» si el navegador ya usaba la web, «Grafito» si es nuevo.
   Lo único fuera de los tokens son los iconos (`static/favicon.svg` y los PNG de la PWA): llevan el ámbar
   escrito y hay que rehacerlos si cambia el acento.
 
@@ -170,10 +173,11 @@ vista `HELP`. Resumen:
 | `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica, Comisión Europea (Weekly Oil Bulletin) |
 | `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
 | `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista, análisis y problema del día | Stockfish, chess.js, Lichess |
+| `MODO` | Modo Sencillo (lo esencial, letra mayor, explicaciones; por defecto para usuarios nuevos) o Terminal (todo) | — |
 | `TV` | Modo TV: las vistas rotan solas, encajadas y a pantalla completa | — |
 | `FONDOS` | Carteras 13F de grandes fondos: mayores posiciones, compras y ventas | SEC* |
 | `HDS` | Qué fondos de FONDOS tienen un valor (13F al revés, con 45 días de retraso) | SEC* |
-| `ESTILO` | Estética: «Terminal» (la de siempre) o «Moderna» (tarjetas, esquinas suaves, Inter) | — |
+| `ESTILO` | Estética: Terminal, Grafito, Cristal, Fósforo… (17), con vista previa | — |
 | `AVISOS` | Tus avisos al móvil: temas, nivel, tope, valores y silencio (solo con cuenta, en arcterminal.dev) | ntfy |
 | `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
 

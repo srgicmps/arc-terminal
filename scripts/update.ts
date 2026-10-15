@@ -1,6 +1,6 @@
 /// <reference types="node" />
 // Descarga todas las fuentes y las guarda en static/data/<nombre>.json. Lo ejecuta GitHub Actions
-// antes de construir la web; la web publicada sirve esos mismos archivos en /arc-terminal/data/.
+// antes de construir la web; la web publicada sirve esos mismos archivos en /data/.
 //
 // Uso: `pnpm data` (todas) o `pnpm data fuel boe` (solo esas).
 //

@@ -1,0 +1,52 @@
+/* ── Estética «Grafito» (src/lib/estilos.ts) ──────────────────────────────────────────────────────────
+ * <html data-style="grafito">: paneles como tarjetas separadas, esquinas suaves, sombra muy leve, Inter para
+ * todo (cifras tabulares) y algo más de aire. No toca el
+ * acento (bloques [data-accent]) ni la densidad: se combinan con cualquiera. */
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	:root[data-style='grafito'],
+	[data-style='grafito'] {
+		--bg: #0b0d10;
+		--panel: #13161b;
+		--raise: #1b1f26;
+		--line: #232831;
+		--muted: #8c95a1;
+		--faint: #7d8693;
+		--scrim: rgba(6, 8, 10, 0.6);
+		--sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		--mono: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		--font-ui: var(--sans);
+		--border: var(--hair) solid var(--line);
+		--track-label: 0.01em;
+		--track-caps: 0.04em;
+		--radius: 10px;
+		--radius-s: 6px;
+		--shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 0 0 var(--hair) rgba(255, 255, 255, 0.04);
+		--shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 0 var(--hair) rgba(255, 255, 255, 0.06);
+		--grid-gap: var(--sp-12);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-12);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-12);
+		--stack-edge: 0;
+		--fs-title: var(--fs-m);
+		--title-case: none;
+		--title-track: 0;
+		--title-font: var(--sans);
+		--title-color: var(--fg);
+		--dur-ui: 150ms;
+	}
+	:root[data-theme='light'][data-style='grafito'],
+	:root[data-theme='light'] [data-style='grafito'] {
+		--bg: #f4f5f7;
+		--panel: #ffffff;
+		--raise: #f0f2f5;
+		--line: #e4e7ec;
+		--muted: #5d6673;
+		--faint: #646d79;
+		--scrim: rgba(16, 24, 40, 0.35);
+		--shadow: 0 1px 3px rgba(16, 24, 40, 0.08), 0 0 0 var(--hair) rgba(16, 24, 40, 0.05);
+		--shadow-pop: 0 12px 32px rgba(16, 24, 40, 0.16), 0 0 0 var(--hair) rgba(16, 24, 40, 0.06);
+	}
+}

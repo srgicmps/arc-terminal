@@ -2,14 +2,15 @@
 // inferior del móvil. Se guarda en este navegador; sin nada guardado, todo queda como siempre.
 // El acento va en <html data-accent> (lo pone ya src/app.html antes de pintar, para que no parpadee) y
 // tokens.css redefine --amber y compañía: ningún componente sabe de qué color es el acento.
-import { ACCENTS, cleanCodes, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, STYLES, THUMB_MAX, type Accent, type Density, type Style } from './taste.ts';
+import { ACCENTS, cleanCodes, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, THUMB_MAX, type Accent, type Density } from './taste.ts';
+import { fontsUrl, isStyle, STYLE_KEY, type StyleId } from './estilos.ts';
 
-export { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, STYLES, THUMB_MAX, type Accent, type Density, type Style };
+export { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, THUMB_MAX, type Accent, type Density };
 
-const KEYS = { style: 'arc-style', accent: 'arc-accent', density: 'arc-density', top: 'arc-keys', thumb: 'arc-thumb' };
+const KEYS = { style: STYLE_KEY, accent: 'arc-accent', density: 'arc-density', top: 'arc-keys', thumb: 'arc-thumb' };
 
 export const taste = $state({
-	style: 'terminal' as Style,
+	style: 'terminal' as StyleId,
 	accent: 'amber' as Accent,
 	density: 'compacta' as Density,
 	top: [...DEFAULT_TOP],
@@ -42,7 +43,8 @@ function json(key: string): unknown {
 /** Se llama al arrancar en el navegador (desde el layout). */
 export function initTaste() {
 	// src/app.html ya ha elegido y guardado la estética antes de pintar: aquí solo se lee.
-	taste.style = document.documentElement.dataset.style === 'modern' ? 'modern' : 'terminal';
+	const style = document.documentElement.dataset.style;
+	taste.style = isStyle(style) ? style : 'terminal';
 	const accent = read(KEYS.accent);
 	if (accent === 'cyan' || accent === 'blue') taste.accent = accent;
 	if (read(KEYS.density) === 'comoda') taste.density = 'comoda';
@@ -51,21 +53,26 @@ export function initTaste() {
 }
 
 /** Estética: siempre se guarda (también «Terminal»), para que src/app.html no la vuelva a decidir. */
-export function setStyle(style: Style) {
+export function setStyle(style: StyleId) {
+	if (!isStyle(style)) return;
 	taste.style = style;
 	document.documentElement.dataset.style = style;
 	write(KEYS.style, style);
-	if (style === 'modern') loadModernFont();
+	loadFonts([style], 'font-style');
 }
 
-/** Inter solo se descarga con «Moderna» (src/app.html hace lo mismo al arrancar). */
-function loadModernFont() {
-	if (document.getElementById('font-modern')) return;
-	const link = document.createElement('link');
-	link.id = 'font-modern';
-	link.rel = 'stylesheet';
-	link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap';
-	document.head.append(link);
+/** Pone (o cambia) la hoja de Google Fonts con las letras de esas estéticas. */
+export function loadFonts(ids: StyleId[], id: string) {
+	const href = fontsUrl(ids);
+	let link = document.getElementById(id) as HTMLLinkElement | null;
+	if (!href) return;
+	if (!link) {
+		link = document.createElement('link');
+		link.id = id;
+		link.rel = 'stylesheet';
+		document.head.append(link);
+	}
+	if (link.href !== href) link.href = href;
 }
 
 export function setAccent(accent: Accent) {

@@ -3,7 +3,10 @@
  * vistas (rejillas, listas .mini, colores de subida y bajada). Los tokens están en styles/tokens.css;
  * lo demás vive en su componente (src/lib/components y src/lib/components/ui).
  */
-@import './styles/tokens.css';
+/* Capas: los tokens, encima la estética elegida y encima los ajustes (densidad, modo). El orden lo fija esta
+   línea, venga primero la hoja que venga; cada archivo de estética la repite. */
+@layer tokens, estilos, ajustes;
+@import './styles/tokens.css' layer(tokens);
 
 *,
 *::before,
@@ -16,6 +19,14 @@ body {
 	margin: 0;
 	background: var(--bg);
 	color: var(--fg);
+}
+/* Dibujo de fondo de la estética (rejilla, degradado…); sin él, nada. */
+html {
+	background-image: var(--bg-image);
+	background-attachment: fixed;
+}
+body {
+	background: transparent;
 }
 
 body {

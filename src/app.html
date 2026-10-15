@@ -35,25 +35,63 @@
 				// Y la densidad (compacta, si no hay nada).
 				if (localStorage.getItem('arc-density') === 'comoda') document.documentElement.dataset.density = 'comoda';
 			} catch (e) {}
-			// Estética (src/lib/taste.svelte.ts). La primera vez se decide y se guarda: «Terminal» si este
-			// navegador ya usaba la web (tiene claves arc-), «Moderna» si es nuevo. Con «Moderna», también Inter.
-			var s = 'modern';
+			// Modo Sencillo o Terminal (src/lib/modo.ts, decideModo: misma regla). Sin nada guardado, quien ya tenía
+			// otras claves arc-… sigue en Terminal y quien llega nuevo empieza en Sencillo; se guarda la decisión.
+			var m = 'terminal';
 			try {
-				s = localStorage.getItem('arc-style');
-				if (s !== 'terminal' && s !== 'modern') {
-					var old = false;
-					for (var i = 0; i < localStorage.length; i++) if ((localStorage.key(i) || '').indexOf('arc-') === 0) old = true;
-					s = old ? 'terminal' : 'modern';
-					localStorage.setItem('arc-style', s);
+				m = localStorage.getItem('arc-modo');
+				if (m !== 'sencillo' && m !== 'terminal') {
+					m = 'sencillo';
+					for (var i = 0; i < localStorage.length; i++) {
+						var k = localStorage.key(i);
+						if (k && k.indexOf('arc-') === 0 && k !== 'arc-modo') m = 'terminal';
+					}
+					localStorage.setItem('arc-modo', m);
 				}
 			} catch (e) {}
-			document.documentElement.dataset.style = s;
-			if (s === 'modern') {
-				var f = document.createElement('link');
-				f.id = 'font-modern';
-				f.rel = 'stylesheet';
-				f.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap';
-				document.head.append(f);
+			document.documentElement.dataset.modo = m;
+			// Estética (src/lib/estilos.ts, decideStyle: misma regla). Sin nada guardado, quien ya tenía otras claves
+			// arc-… sigue en Terminal y quien llega nuevo empieza en Grafito; se guarda. Luego, las letras del estilo.
+			var FONTS = {
+				terminal: '',
+				grafito: 'family=Inter:wght@400;500;600;700',
+				cristal: 'family=Inter:wght@400;500;600;700',
+				papel: 'family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500',
+				calido: 'family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;500;600',
+				cupertino: 'family=Inter:wght@400;500;600;700',
+				retro: 'family=VT323&family=IBM+Plex+Mono:wght@400;500',
+				neon: 'family=Orbitron:wght@500;700&family=Share+Tech+Mono',
+				brutal: 'family=Archivo:wght@400;600;800;900&family=Space+Mono:wght@400;700',
+				bauhaus: 'family=Jost:wght@400;500;600;700',
+				suizo: 'family=Inter+Tight:wght@400;500;600;700;800',
+				cuaderno: 'family=Caveat:wght@500;700&family=Nunito+Sans:wght@400;600;700',
+				nordico: 'family=Nunito:wght@400;500;600;700',
+				lujo: 'family=Playfair+Display:wght@500;600;700&family=Lato:wght@400;700',
+				oceano: 'family=Manrope:wght@400;500;600;700',
+				plano: 'family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@500;600',
+				contraste: 'family=Atkinson+Hyperlegible:wght@400;700'
+			};
+			var st = 'grafito';
+			try {
+				st = localStorage.getItem('arc-style');
+				if (st === 'modern') st = 'grafito';
+				if (!(st in FONTS)) {
+					st = 'grafito';
+					for (var j = 0; j < localStorage.length; j++) {
+						var q = localStorage.key(j);
+						if (q && q.indexOf('arc-') === 0 && q !== 'arc-modo' && q !== 'arc-style') st = 'terminal';
+					}
+					localStorage.setItem('arc-style', st);
+				}
+			} catch (e) {}
+			if (!(st in FONTS)) st = 'grafito';
+			document.documentElement.dataset.style = st;
+			if (FONTS[st]) {
+				var fl = document.createElement('link');
+				fl.id = 'font-style';
+				fl.rel = 'stylesheet';
+				fl.href = 'https://fonts.googleapis.com/css2?' + FONTS[st] + '&display=swap';
+				document.head.append(fl);
 			}
 		</script>
 		%sveltekit.head%

@@ -16,10 +16,12 @@
 	// Vista de inicio (home.ts): la que se abre al entrar, guardada en este navegador.
 	const home = persisted(HOME_KEY, 'TOP', isHomeCode);
 	import Seg from '#lib/components/ui/Seg.svelte';
+	import { modo, MODOS, setModo } from '#lib/modo.svelte.ts';
 	import Share from '#lib/components/ui/Share.svelte';
 	import { collect, decode, encode, HASH } from '#lib/transfer.ts';
 	import { cloud } from '#lib/cloud.svelte.ts';
-	import { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, resetTaste, setAccent, setDensity, setStyle, setThumb, setTop, STYLES, taste, THUMB_MAX } from '#lib/taste.svelte.ts';
+	import StylePicker from '#lib/components/StylePicker.svelte';
+	import { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, resetTaste, setAccent, setDensity, setThumb, setTop, taste, THUMB_MAX } from '#lib/taste.svelte.ts';
 
 	// «A tu gusto»: todas las vistas que se abren sin texto detrás pueden ir en la fila de arriba o abajo.
 	const sections = COMMANDS.map((c) => ({ value: c.code, label: c.code }));
@@ -97,8 +99,10 @@
 				</div>
 			{/if}
 			<dl class="taste">
+				<dt>Modo</dt>
+				<dd><Seg label="Modo" options={MODOS} bind:value={() => modo.value, setModo} /></dd>
 				<dt>Estética</dt>
-				<dd><Seg label="Estética" options={STYLES} bind:value={() => taste.style, setStyle} /></dd>
+				<dd><StylePicker /></dd>
 				<dt>Acento</dt>
 				<dd><Seg label="Color de acento" options={ACCENTS} bind:value={() => taste.accent, setAccent} /></dd>
 				<dt>Densidad</dt>
