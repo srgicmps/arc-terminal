@@ -353,6 +353,8 @@
 	}
 	function itemClick(e: MouseEvent, i: ex.Item) {
 		if (held) return void (held = false);
+		// Tocar el campo de renombrar (para mover el cursor) no abre lo que se está renombrando.
+		if (editing === i.key) return;
 		if ((e as PointerEvent).pointerType === 'touch' && !e.ctrlKey && !e.shiftKey) open(i);
 	}
 
@@ -704,7 +706,7 @@
 							onpointerup={itemUp}
 							onpointercancel={itemUp}
 							onclick={(e) => itemClick(e, i)}
-							ondblclick={() => open(i)}
+							ondblclick={() => editing !== i.key && open(i)}
 						>
 							<span class="name">
 								<OsIcon id={i.icon} size={shownView === 'list' ? 18 : 48} />
@@ -864,10 +866,15 @@
 		text-overflow: ellipsis;
 		max-width: 18ch;
 	}
-	.crumb:hover,
 	.crumb.drop {
 		color: var(--fg);
 		background: var(--amber-soft);
+	}
+	@media (hover: hover) {
+		.crumb:hover {
+			color: var(--fg);
+			background: var(--amber-soft);
+		}
 	}
 	.crumb[aria-current='page'] {
 		color: var(--fg);
@@ -936,8 +943,10 @@
 		padding-left: calc(var(--sp-4) + var(--sp-12) * var(--depth));
 		border: var(--hair) solid transparent;
 	}
-	.row:hover {
-		background: var(--amber-soft);
+	@media (hover: hover) {
+		.row:hover {
+			background: var(--amber-soft);
+		}
 	}
 	.row.cur {
 		background: var(--amber-soft);
@@ -1019,8 +1028,10 @@
 		font-size: var(--fs-xs);
 		letter-spacing: var(--track-label);
 	}
-	.sorter:hover {
-		color: var(--fg);
+	@media (hover: hover) {
+		.sorter:hover {
+			color: var(--fg);
+		}
 	}
 	.arrow {
 		margin-left: var(--sp-4);
@@ -1035,8 +1046,10 @@
 		touch-action: manipulation;
 		-webkit-touch-callout: none;
 	}
-	.it:hover {
-		background: var(--amber-soft);
+	@media (hover: hover) {
+		.it:hover {
+			background: var(--amber-soft);
+		}
 	}
 	.it.sel {
 		background: var(--amber-soft);
@@ -1116,6 +1129,12 @@
 		border: var(--hair) solid var(--amber);
 		border-radius: var(--radius-s);
 		outline: none;
+	}
+	/* En táctil, 16 px: con menos, Safari del iPhone acerca la página al escribir. */
+	@media (pointer: coarse) {
+		.rename {
+			font-size: var(--fs-field);
+		}
 	}
 	.hint,
 	.empty p {
@@ -1212,8 +1231,10 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-	.choices button:hover {
-		background: var(--amber-soft);
+	@media (hover: hover) {
+		.choices button:hover {
+			background: var(--amber-soft);
+		}
 	}
 	.btns {
 		display: flex;

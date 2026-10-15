@@ -263,9 +263,11 @@
 		cursor: pointer;
 	}
 
-	.side button:hover {
-		color: var(--fg);
-		background: var(--raise);
+	@media (hover: hover) {
+		.side button:hover {
+			color: var(--fg);
+			background: var(--raise);
+		}
 	}
 
 	.side button.on {
@@ -306,8 +308,10 @@
 		background: var(--bg);
 	}
 
-	.card:hover {
-		border-color: var(--amber-edge);
+	@media (hover: hover) {
+		.card:hover {
+			border-color: var(--amber-edge);
+		}
 	}
 
 	.open {
@@ -379,9 +383,11 @@
 		border-color: var(--amber-edge);
 	}
 
-	.row button:hover,
-	.back:hover {
-		background: var(--amber-soft);
+	@media (hover: hover) {
+		.row button:hover,
+		.back:hover {
+			background: var(--amber-soft);
+		}
 	}
 
 	.tag {
