@@ -48,7 +48,9 @@ export const SHORTCUTS = [
 	{ id: 'os-min', group: 'Arc OS', keys: ['Alt', '↓'], combo: true, action: 'Desencajar o minimizar la ventana' },
 	{ id: 'os-half', group: 'Arc OS', keys: ['Alt', '⇧', '←', '→'], combo: true, action: 'Ventana a media pantalla' },
 	{ id: 'os-close', group: 'Arc OS', keys: ['Alt', 'W'], combo: true, action: 'Cerrar la ventana' },
-	{ id: 'os-terminal', group: 'Arc OS', keys: ['Alt', 'T'], combo: true, action: 'Abrir una Terminal (la barra de comandos como consola)' },
+	{ id: 'os-tile', group: 'Arc OS', keys: ['Alt', 'T'], combo: true, action: 'Mosaico: todas las ventanas en rejilla' },
+	{ id: 'os-keys', group: 'Arc OS', keys: ['←', '↑', '→', '↓'], how: 'con el foco en la barra de título (con ⇧, cambia el tamaño)', action: 'Mover la ventana' },
+	{ id: 'os-terminal', group: 'Arc OS', keys: ['Ctrl', 'Alt', 'T'], combo: true, action: 'Abrir una Terminal (la barra de comandos como consola)' },
 	{ id: 'os-desk', group: 'Arc OS', keys: ['Alt', '1…6'], combo: true, action: 'Ir a un escritorio' }
 ] as const satisfies readonly Shortcut[];
 

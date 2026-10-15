@@ -166,6 +166,32 @@
 	--os-badge-bg: var(--down); /* insignia con número */
 	--os-badge-fg: var(--bg);
 	--os-radius-l: 22px; /* esquinas de widgets, dock y tarjetas */
+	/* Decoración de ventana: cada aspecto (data-os-skin: Windows, Mac, Linux…) la cambia aquí, sin tocar Window.svelte. */
+	--os-win-shadow-active: var(--os-win-shadow); /* sombra de la ventana con el foco */
+	--os-win-radius-snapped: 0; /* esquinas encajada o maximizada */
+	--os-title-bg-active: var(--os-title-bg); /* barra de título con el foco */
+	--os-title-edge: var(--border); /* línea bajo la barra de título */
+	--os-title-font: inherit; /* letra del título */
+	--os-title-align: start; /* título a la izquierda (start) o centrado (center) */
+	--os-icon-display: inline; /* icono de la app en el título (none para quitarlo) */
+	--os-btns-order: 2; /* botones a la derecha (2) o a la izquierda (-1) */
+	--os-btns-pad: 0px; /* aire a los lados del grupo de botones */
+	--os-btn-gap: 0px; /* separación entre botones */
+	--os-btn-w: var(--os-title-h); /* ancho de cada botón (con alto y radio iguales salen círculos) */
+	--os-btn-h: 100%;
+	--os-btn-radius: 0;
+	--os-btn-bg: transparent; /* fondo de los botones (--os-btn-min-bg, -max-bg y -close-bg, opcionales, uno a uno) */
+	--os-btn-hover: var(--amber-soft); /* velo al pasar el ratón */
+	--os-btn-glyph: 1; /* opacidad del símbolo (0: solo se ve al pasar el ratón, como en Mac) */
+	--os-btn-min-order: 1; /* orden de los botones: Windows y Linux minimizar, maximizar, cerrar; Mac cerrar primero */
+	--os-btn-max-order: 2;
+	--os-btn-close-order: 3;
+	--os-anim-open: 0ms; /* animación al abrir una ventana */
+	--os-open-scale: 0.96;
+	--os-anim-min: 0ms; /* al minimizar */
+	--os-min-shift: 24px;
+	--os-min-scale: 0.9;
+	--os-anim-max: var(--dur-ui); /* al maximizar, encajar o en mosaico */
 	--focus-w: var(--hair); /* grosor del contorno de foco con teclado */
 	--scroll-w: 8px; /* ancho de las barras de desplazamiento (escritorio; en el móvil son las del sistema) */
 	--scroll-thumb: var(--neutral); /* la parte que se arrastra */
@@ -183,6 +209,79 @@
 	 *   2500 px al encajar, subcolumnas en la de 3
 	 * Los paneles se adaptan además a su propio ancho con @container (300–480 px).
 	 */
+}
+
+/*
+ * Aspectos del Modo OS (data-os-skin en el contenedor de /os; lo elige el Panel de control): solo decoración de
+ * ventana. Sin marcas: dibujos propios. Los colores de los semáforos de Mac son los únicos fijos de las ventanas.
+ */
+[data-os-skin] {
+	--os-light-close: #ec6a5e;
+	--os-light-min: #f4bf4f;
+	--os-light-max: #61c554;
+	--os-close-red: #c42b1c;
+}
+
+[data-os-skin='windows'] {
+	--os-title-h: 32px;
+	--os-btn-w: 46px;
+	--os-btn-hover: var(--amber-soft);
+	--os-btn-close-hover: var(--os-close-red);
+	--os-btn-close-hover-fg: #fff;
+	--os-win-radius: var(--radius-s);
+	--os-win-radius-snapped: 0;
+	--os-anim-open: 160ms;
+	--os-anim-min: 180ms;
+	--os-anim-max: 160ms;
+}
+
+[data-os-skin='mac'] {
+	--os-title-h: 30px;
+	--os-title-align: center;
+	--os-icon-display: none;
+	--os-btns-order: -1;
+	--os-btns-pad: 12px;
+	--os-btn-gap: 8px;
+	--os-btn-w: 12px;
+	--os-btn-h: 12px;
+	--os-btn-radius: 50%;
+	--os-btn-hover: transparent;
+	--os-btn-glyph: 0;
+	--os-btn-close-order: 1;
+	--os-btn-min-order: 2;
+	--os-btn-max-order: 3;
+	--os-btn-close-bg: var(--os-light-close);
+	--os-btn-min-bg: var(--os-light-min);
+	--os-btn-max-bg: var(--os-light-max);
+	--os-title-edge: var(--hair) solid transparent;
+	--os-win-radius: 10px;
+	--os-win-radius-snapped: 10px;
+	--os-anim-open: 220ms;
+	--os-open-scale: 0.9;
+	--os-anim-min: 300ms;
+	--os-min-shift: 40vh;
+	--os-min-scale: 0.2;
+	--os-anim-max: 220ms;
+}
+
+[data-os-skin='linux'] {
+	--os-title-h: 36px;
+	--os-title-align: center;
+	--os-icon-display: none;
+	--os-btns-pad: 8px;
+	--os-btn-gap: 6px;
+	--os-btn-w: 24px;
+	--os-btn-h: 24px;
+	--os-btn-radius: 50%;
+	--os-btn-bg: var(--line);
+	--os-btn-hover: var(--amber-soft);
+	--os-title-edge: var(--hair) solid transparent;
+	--os-win-radius: 12px;
+	--os-win-radius-snapped: 0;
+	--os-anim-open: 200ms;
+	--os-open-scale: 0.94;
+	--os-anim-min: 200ms;
+	--os-anim-max: 200ms;
 }
 
 /* Pantallas táctiles: todos los controles a la zona pulsable mínima. */

@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest';
 import {
 	clampLat,
 	invert,
+	isDark,
 	landDots,
 	lonDelta,
 	parseRings,
 	pick,
+	pulseOf,
+	rgbOf,
 	rotate,
 	styleOf,
+	subsolar,
 	uniqueIds,
+	withAlpha,
 	wrapLon,
 	type GlobePoint
 } from './globe.ts';
@@ -95,5 +100,28 @@ describe('globo', () => {
 		const b = { ...pt('n-1', 1, 1), layer: 'maritime' };
 		const ids = uniqueIds([a, b, a]).map((p) => p.id);
 		expect(ids).toEqual(['conflict:n-1', 'maritime:n-1']);
+	});
+
+	it('el Sol está sobre Greenwich a las 12 UTC y al norte en junio', () => {
+		const s = subsolar(new Date('2026-06-21T12:00:00Z'));
+		expect(s.lon).toBeCloseTo(0);
+		expect(s.lat).toBeGreaterThan(23);
+		expect(subsolar(new Date('2026-12-21T18:00:00Z')).lat).toBeLessThan(-23);
+		expect(subsolar(new Date('2026-12-21T18:00:00Z')).lon).toBeCloseTo(-90);
+	});
+
+	it('lee colores del navegador y les pone transparencia', () => {
+		expect(rgbOf('rgb(255, 176, 0)')).toEqual([255, 176, 0]);
+		expect(rgbOf('color(srgb 1 0.5 0)')).toEqual([255, 128, 0]);
+		expect(withAlpha('rgb(10, 20, 30)', 0.5)).toBe('rgba(10, 20, 30, 0.5)');
+		expect(isDark('rgb(12, 12, 14)')).toBe(true);
+		expect(isDark('rgb(245, 245, 240)')).toBe(false);
+	});
+
+	it('late más lo grave', () => {
+		expect(pulseOf({ layer: 'straits', strong: true })).toBe(2);
+		expect(pulseOf({ layer: 'quakes' })).toBe(1);
+		expect(pulseOf({ layer: 'straits' })).toBe(0);
+		expect(pulseOf({ layer: 'straits' }, true)).toBe(1);
 	});
 });
