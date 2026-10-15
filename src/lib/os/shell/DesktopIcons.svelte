@@ -9,6 +9,7 @@
 	Usa el ContextMenu común del núcleo.
 -->
 <script lang="ts">
+	import OsIcon from '../icons/OsIcon.svelte';
 	import ContextMenu, { type MenuEntry } from '#lib/components/os/ContextMenu.svelte';
 	import * as os from './bridge.ts';
 	import { arrange, cellSize, cellToPx, inRect, moveGroup, pxToCell, rectOf, type Cell, type Rect } from './icons.ts';
@@ -194,7 +195,7 @@
 			onclick={(e) => (e as unknown as PointerEvent).pointerType === 'touch' && open(a.id)}
 			onkeydown={(e) => iconKey(e, a.id)}
 		>
-			<span class="ico" aria-hidden="true">{a.icon ?? a.code?.slice(0, 3) ?? '·'}</span>
+			<OsIcon id={a.id} size={shell.skin === 'dsm' ? 56 : 48} />
 			<span class="name">{a.title}</span>
 		</button>
 	{/each}
@@ -240,23 +241,6 @@
 	.icon.moving {
 		opacity: 0.8;
 		z-index: 1;
-	}
-	.ico {
-		display: grid;
-		place-items: center;
-		width: 40px;
-		height: 40px;
-		background: var(--panel);
-		border: var(--hair) solid var(--panel-edge);
-		border-radius: var(--os-icon-radius, var(--radius));
-		color: var(--amber);
-		font-family: var(--mono);
-		font-size: var(--fs-s);
-	}
-	:global([data-os-skin='dsm']) .ico {
-		width: 64px;
-		height: 64px;
-		font-size: var(--fs-xl);
 	}
 	.name {
 		max-width: 100%;

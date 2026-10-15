@@ -4,6 +4,7 @@
 	escribir, cambia el mosaico por las apps que coinciden. Escape o tocar el fondo, vuelve.
 -->
 <script lang="ts">
+	import OsIcon from '../icons/OsIcon.svelte';
 	import { tick } from 'svelte';
 	import * as os from './bridge.ts';
 	import { shell } from './shell.svelte.ts';
@@ -44,7 +45,7 @@
 		{#if query.trim()}
 			<ul class="apps" aria-label="Apps">
 				{#each found as a (a.id)}
-					<li><button type="button" onclick={() => launch(a.id)}><span class="ico" aria-hidden="true">{a.icon ?? '·'}</span><span>{a.title}</span></button></li>
+					<li><button type="button" onclick={() => launch(a.id)}><OsIcon id={a.id} size={32} /><span>{a.title}</span></button></li>
 				{:else}
 					<li class="none">Nada con «{query}».</li>
 				{/each}
@@ -54,7 +55,7 @@
 				{#each wins as w (w.id)}
 					<li>
 						<button type="button" class="card" class:min={w.minimized} onclick={() => pick(w.id)}>
-							<span class="big" aria-hidden="true">{w.icon ?? '·'}</span>
+							<OsIcon id={w.appId} size={64} />
 						</button>
 						<span class="label">
 							<span>{w.title}{w.minimized ? ' · minimizada' : ''}</span>
@@ -78,10 +79,10 @@
 	<ul class="dash" aria-label="Apps favoritas">
 		{#each dash as a (a.id)}
 			{@const open = wins.some((w) => w.appId === a.id)}
-			<li><button type="button" title={a.title} aria-label={a.title} onclick={() => launch(a.id)}><span class="ico" aria-hidden="true">{a.icon ?? '·'}</span></button>{#if open}<i class="dot"></i>{/if}</li>
+			<li><button type="button" title={a.title} aria-label={a.title} onclick={() => launch(a.id)}><OsIcon id={a.id} size={44} /></button>{#if open}<i class="dot"></i>{/if}</li>
 		{/each}
 		<li class="sep" aria-hidden="true"></li>
-		<li><button type="button" title="Mostrar aplicaciones" aria-label="Mostrar aplicaciones" onclick={() => (shell.open = 'launchpad')}><span class="ico" aria-hidden="true">⣿</span></button></li>
+		<li><button type="button" title="Mostrar aplicaciones" aria-label="Mostrar aplicaciones" onclick={() => (shell.open = 'launchpad')}><OsIcon id="launchpad" size={44} /></button></li>
 	</ul>
 </div>
 
@@ -155,9 +156,6 @@
 	}
 	.card.min {
 		opacity: 0.6;
-	}
-	.big {
-		font-size: var(--fs-xxl);
 	}
 	.label {
 		display: flex;
@@ -235,16 +233,6 @@
 		position: relative;
 		display: grid;
 		justify-items: center;
-	}
-	.ico {
-		display: grid;
-		place-items: center;
-		width: 44px;
-		height: 44px;
-		border-radius: var(--os-icon-radius, var(--radius));
-		background: var(--panel);
-		color: var(--amber);
-		font-size: var(--fs-l);
 	}
 	.dot {
 		position: absolute;
