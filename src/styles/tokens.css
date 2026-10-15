@@ -523,6 +523,34 @@
 	--os-anim-close: 140ms;
 }
 
+/* Centro de mando: línea de tiempo */
+/* App «Línea de tiempo» de Arc OS (src/lib/os/apps/cronologia/). Sale de los tokens base de «Mando»
+   (--cmd-deck, --cmd-cold, --cmd-grid…, en [data-os-skin]); aquí solo se añade lo propio: carril alterno,
+   rejilla del eje y un color frío por carril de sucesos (ámbar solo para lo importante y para «ahora»). */
+[data-os-skin] {
+	--cmd-tl-bg: var(--cmd-deck); /* fondo de la pizarra */
+	--cmd-tl-alt: color-mix(in srgb, var(--cmd-deck) 92%, var(--cmd-cold)); /* carril alterno */
+	--cmd-tl-edge: var(--cmd-cold-dim); /* bordes de 1 px */
+	--cmd-tl-grid: color-mix(in srgb, var(--cmd-cold) 9%, transparent); /* líneas del eje */
+	--cmd-tl-grid-major: color-mix(in srgb, var(--cmd-cold) 22%, transparent);
+	--cmd-tl-row: var(--cmd-grid); /* separación de filas en listas */
+	--cmd-tl-cursor: color-mix(in srgb, var(--fg) 55%, transparent);
+	--cmd-tl-now: var(--amber);
+	--cmd-tl-future: color-mix(in srgb, var(--cmd-cold) 5%, transparent); /* lo que aún no ha pasado */
+	--cmd-tl-series: var(--cmd-cold);
+	--cmd-tl-dot-fill: 0.35; /* opacidad del relleno de un punto */
+	--cmd-tl-dot-hover: 0.7; /* al pasar por encima */
+	--cmd-tl-dot-sel: 0.85; /* el elegido */
+	--cmd-tl-disabled: 0.35; /* botones sin efecto (subir el primero) */
+	--cmd-tl-dash: 3 3; /* línea de «ahora», discontinua */
+	--cmd-ev-imp: var(--amber);
+	--cmd-ev-tierra: color-mix(in srgb, var(--cmd-cold) 60%, var(--fg));
+	--cmd-ev-avisos: color-mix(in srgb, var(--cmd-cold) 45%, #a48fe6);
+	--cmd-ev-datos: color-mix(in srgb, var(--cmd-cold) 50%, #4f86e0);
+	--cmd-ev-agenda: color-mix(in srgb, var(--cmd-cold) 35%, var(--muted));
+	--cmd-ev-bancos: color-mix(in srgb, var(--cmd-cold) 55%, #5fe0e0);
+}
+
 /* Centro de mando: mapa (herramienta «Mapa operacional», src/lib/os/apps/mapa-op/). Sobre la paleta fija de
    «Mando» (--cmd-slate, --cmd-cold, --cmd-grid… arriba); aquí solo lo propio del mapa. */
 [data-os-skin] {
