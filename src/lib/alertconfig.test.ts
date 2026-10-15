@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CONFIG, groupOf, GROUPS, inQuiet, parseConfig, wants } from './alertconfig.ts';
+import { DEFAULT_CONFIG, groupOf, GROUPS, inQuiet, parseBrief, parseConfig, wants } from './alertconfig.ts';
 
 describe('alertconfig', () => {
 	it('parseConfig: por defecto, el básico; limpia lo que no vale', () => {
@@ -14,6 +14,13 @@ describe('alertconfig', () => {
 		});
 		expect(c).toEqual({ ...DEFAULT_CONFIG, on: true, groups: ['mercados'], daily: 100, mis: ['NVDA'], quiet: null });
 	});
+	it('parseBrief: el sitio, en una línea y sin caracteres de control (sale en el aviso)', () => {
+		const b = parseBrief({ on: true, place: { name: 'Maó\n\u0000Línea falsa\u202e', lat: 39.889, lon: 4.264 } });
+		expect(b.place).toEqual({ name: 'Maó Línea falsa', lat: 39.89, lon: 4.26 });
+		expect(parseBrief({ place: { name: '\n\t', lat: 1, lon: 1 } }).place).toBeNull();
+		expect(parseBrief({ place: { name: 'X', lat: Number.NaN, lon: 1 } }).place).toBeNull();
+	});
+
 	it('silencio que cruza la medianoche', () => {
 		const q = { from: '23:00', until: '07:30' };
 		expect(inQuiet('23:30', q)).toBe(true);
