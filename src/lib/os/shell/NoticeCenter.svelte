@@ -149,7 +149,7 @@
 		list-style: none;
 		margin: 0;
 		padding: 0;
-		max-height: 60vh;
+		max-height: 60dvh;
 		overflow: auto;
 	}
 	li + li {

@@ -147,15 +147,16 @@ export const DEFAULT_BRIEF: Brief = { on: false, at: '08:00', email: false, plac
 export function parseBrief(raw: unknown): Brief {
 	const o = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
 	const p = o.place as { name?: unknown; lat?: unknown; lon?: unknown } | null | undefined;
+	// En una línea y sin caracteres de control: sale en el aviso de «Tu mañana» y en el del polen.
+	const name = typeof p?.name === 'string' ? p.name.replace(/[\p{Cc}\p{Cf}\s]+/gu, ' ').trim().slice(0, 60) : '';
 	const place =
 		p &&
-		typeof p.name === 'string' &&
-		p.name.trim() &&
+		name &&
 		typeof p.lat === 'number' &&
 		typeof p.lon === 'number' &&
 		Math.abs(p.lat) <= 90 &&
 		Math.abs(p.lon) <= 180
-			? { name: p.name.trim().slice(0, 60), lat: Math.round(p.lat * 100) / 100, lon: Math.round(p.lon * 100) / 100 }
+			? { name, lat: Math.round(p.lat * 100) / 100, lon: Math.round(p.lon * 100) / 100 }
 			: null;
 	return {
 		on: o.on === true,
