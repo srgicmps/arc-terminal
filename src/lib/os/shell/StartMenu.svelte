@@ -12,9 +12,8 @@
 	interface Props {
 		apps: StartApp[];
 		onopen: (id: string) => void;
-		onleave: () => void;
 	}
-	let { apps, onopen, onleave }: Props = $props();
+	let { apps, onopen }: Props = $props();
 
 	let query = $state('');
 	let input = $state<HTMLInputElement>();
