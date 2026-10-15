@@ -22,13 +22,13 @@ const LIST: Experience[] = [
 	{ id: 'periodico', name: 'Periódico', desc: 'Arc como un diario: portada a columnas, breves con las cifras del día y ediciones de mañana y de tarde.', icon: '📰', order: 10, aliases: ['diario', 'prensa'] },
 	{ id: 'zen', name: 'Zen', desc: 'Una sola cosa cada vez, en grande y explicada con palabras sencillas. Deslizar o flechas para la siguiente.', icon: '○', order: 30, aliases: ['tranquilo', 'calma'] },
 	{ id: 'cabina', name: 'Cabina', desc: 'Relojes con aguja y zonas (riesgo, inflación, tipos, VIX, petróleo, euríbor, luz, paro) y el semáforo: todo de un vistazo.', icon: '◔', order: 40, aliases: ['relojes', 'salpicadero', 'indicadores'] },
-	{ id: 'feed', name: 'Feed', desc: 'Todo lo que pasa en una línea de tiempo: titulares, datos publicados, avisos, mercados y récords, con filtros y «solo lo mío».', icon: '☰', order: 50, aliases: ['timeline', 'linea de tiempo', 'muro'] },
+	{ id: 'feed', name: 'Feed', desc: 'Todo lo que pasa en una línea de tiempo: titulares, datos publicados, avisos, mercados y récords, con filtros y «solo lo mío».', icon: '☰', order: 50, aliases: ['timeline', 'linea de tiempo'] },
 	{ id: 'sala', name: 'Sala de control', desc: 'El mundo en un mapa a pantalla completa: conflictos, terremotos, avisos, elecciones, cortes de internet y estrechos; lo nuevo destella.', icon: '◎', order: 20, aliases: ['control', 'mapa', 'mundo'] },
 	{ id: 'bitacora', name: 'Bitácora', desc: 'Tu diario privado: notas por valor, país o tema, ideas con precio de entrada que se siguen solas y recordatorios.', icon: '✎', order: 100, aliases: ['notas', 'journal', 'apuntes'] },
 	{ id: 'muro', name: 'Muro', desc: 'Para una tele o un segundo monitor: hora enorme, bolsas abiertas o cerradas, titulares que rotan, cinta de cotizaciones y avisos a pantalla completa.', icon: '▣', order: 70, aliases: ['pared', 'tele', 'monitor'] },
 	{ id: 'radio', name: 'Radio', desc: 'Un informativo hablado con lo de hoy (titulares, mercados, economía, agenda y tus valores), a manos libres.', icon: '♪', order: 60, aliases: ['informativo', 'escuchar', 'briefing'] },
 	{ id: 'predicciones', name: 'Predicciones', desc: 'Juego: adivina el próximo IPC, paro o tipo del BCE antes de que salga, con rachas y clasificación.', icon: '◎', order: 80, aliases: ['juego', 'pred', 'apuestas'] },
-	{ id: 'constelacion', name: 'Constelación', desc: 'Un mapa de quién sale con quién en las noticias: países, líderes, bancos centrales, empresas y temas. Toca un punto y ve sus titulares.', icon: '✦', order: 90, aliases: ['mapa', 'relaciones', 'red', 'grafo'] },
+	{ id: 'constelacion', name: 'Constelación', desc: 'Un mapa de quién sale con quién en las noticias: países, líderes, bancos centrales, empresas y temas. Toca un punto y ve sus titulares.', icon: '✦', order: 90, aliases: ['relaciones', 'red', 'grafo'] },
 ];
 
 export const EXPERIENCES: Experience[] = [...LIST].sort((a, b) => a.order - b.order);
@@ -46,7 +46,13 @@ const fold = (s: string) =>
 export function findExperience(text: string | null | undefined, list = EXPERIENCES): Experience | null {
 	const q = fold(text ?? '');
 	if (!q) return null;
-	return list.find((e) => [e.id, e.name, ...(e.aliases ?? [])].some((k) => fold(k) === q)) ?? list.find((e) => fold(e.name).startsWith(q) || e.id.startsWith(q)) ?? null;
+	// Primero el id o el nombre exactos, luego los alias: «muro» es la experiencia Muro aunque Feed lo tenga de alias.
+	return (
+		list.find((e) => [e.id, e.name].some((k) => fold(k) === q)) ??
+		list.find((e) => (e.aliases ?? []).some((k) => fold(k) === q)) ??
+		list.find((e) => fold(e.name).startsWith(q) || e.id.startsWith(q)) ??
+		null
+	);
 }
 
 /** «Al entrar» (arc-home) guarda las experiencias como «x:<id>». */

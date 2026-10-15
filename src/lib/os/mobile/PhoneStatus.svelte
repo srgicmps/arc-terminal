@@ -1,6 +1,7 @@
 <!--
-	Barra de estado del teléfono: hora a la izquierda (toca para las notificaciones) y, a la derecha, cobertura, wifi
-	y batería decorativos (toca para el centro de control). Los dibujos son propios y aria-hidden.
+	Barra de estado del teléfono: hora a la izquierda (toca para las notificaciones) y, a la derecha, el centro de
+	control. Sin cobertura, wifi ni batería: eran de adorno y en un iPhone de verdad duplicaban (con datos falsos) los
+	de la barra del sistema, justo encima. El dibujo es propio y aria-hidden.
 -->
 <script lang="ts">
 	let { time, onnotif, oncontrol }: { time: string; onnotif: () => void; oncontrol: () => void } = $props();
@@ -9,9 +10,7 @@
 <div class="sb">
 	<button class="t" onclick={onnotif} aria-label="Notificaciones · {time}">{time}</button>
 	<button class="ic" onclick={oncontrol} aria-label="Centro de control">
-		<svg viewBox="0 0 17 11" aria-hidden="true"><rect x="0" y="7" width="3" height="4" rx="1" /><rect x="4.5" y="5" width="3" height="6" rx="1" /><rect x="9" y="2.5" width="3" height="8.5" rx="1" /><rect x="13.5" y="0" width="3" height="11" rx="1" /></svg>
-		<svg viewBox="0 0 15 11" aria-hidden="true"><path d="M7.5 10.5 5.2 8.1a3.3 3.3 0 0 1 4.6 0zM2.9 5.8a6.5 6.5 0 0 1 9.2 0l-1.2 1.2a4.8 4.8 0 0 0-6.8 0zM.6 3.5a9.8 9.8 0 0 1 13.8 0l-1.2 1.2a8 8 0 0 0-11.4 0z" /></svg>
-		<svg viewBox="0 0 26 12" aria-hidden="true" class="bat"><rect x="0.5" y="0.5" width="22" height="11" rx="3" fill="none" stroke="currentColor" opacity=".45" /><rect x="2" y="2" width="16" height="8" rx="1.6" /><rect x="23.5" y="4" width="1.6" height="4" rx=".8" opacity=".45" /></svg>
+		<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h7M12 4.5h2M2 11.5h2M7 11.5h7" /><circle cx="10.5" cy="4.5" r="1.6" /><circle cx="5.5" cy="11.5" r="1.6" /></svg>
 	</button>
 </div>
 
@@ -40,11 +39,11 @@
 		cursor: pointer;
 	}
 	svg {
-		height: 11px;
-		width: auto;
-		fill: currentColor;
-	}
-	.bat {
-		height: 12px;
+		width: 16px;
+		height: 16px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.6;
+		stroke-linecap: round;
 	}
 </style>

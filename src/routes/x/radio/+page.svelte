@@ -161,7 +161,7 @@
 							{/each}
 						</ul>
 					{/if}
-					<p class="caption" aria-live="polite">{started ? caption : 'Pulsa «Empezar» y escucha. No hace falta tocar nada más.'}</p>
+					<p class="caption" aria-live="polite">{started ? caption : can ? 'Pulsa «Empezar» y escucha. No hace falta tocar nada más.' : 'Aquí tienes el guion del informativo para leerlo.'}</p>
 				{/if}
 			</div>
 			<div class="controls">

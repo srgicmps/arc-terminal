@@ -68,7 +68,7 @@
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Próximas rondas" meta={open.length ? `${open.length} abiertas` : ''}>
+		<Panel title="Próximas rondas" meta={open.length ? `${open.length} ${open.length === 1 ? 'abierta' : 'abiertas'}` : ''}>
 			{#if game.phase === 'loading'}
 				<p class="empty">Cargando…</p>
 			{:else if !open.length}
