@@ -121,6 +121,7 @@ vista `HELP`. Resumen:
 | `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5), Wikidata, SIPRI, Cloudflare Radar* |
 | `ES` | España en cifras, paro registrado por comunidad, BOE, luz | INE, SEPE, Seguridad Social, BOE, REE, RSS |
 | `WS` | Wall Street, mapa de calor, curva de tipos, divisas, cripto, materias primas | TradingView, Tesoro de EE. UU., BCE, CoinGecko, Banco Mundial (Pink Sheet), EIA* (inventarios de petróleo) |
+| `MOST` | Los que más suben, bajan y se negocian hoy (EE. UU., Alemania, España) | TradingView |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |
 | `MIS` | Tu lista de valores (en el navegador) | TradingView |
 | `TECH` / `AI` | Tecnología e IA | Hacker News, Hugging Face, OpenRouter, Epoch AI (CC BY 4.0), Cloudflare Radar*, RSS |
