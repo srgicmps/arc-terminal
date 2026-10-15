@@ -105,7 +105,7 @@
 				</li>
 				<li>
 					<span class="l">
-						Se instala en el móvil y funciona sin conexión. Al instalar solo guarda la build, los iconos y TOP; cada vista se guarda al abrirla (las últimas 40 copias, que sobreviven a las publicaciones). Páginas y datos: primero la red y, si no hay, la copia guardada; una vista nunca abierta cae en TOP.
+						Se instala en el móvil y funciona sin conexión. Al instalar solo guarda la build, los iconos y TOP; cada vista se guarda al abrirla (las últimas 40 copias, que sobreviven a las publicaciones). Páginas y datos: primero la red y, si no hay, la copia guardada; una vista nunca abierta cae en TOP. Con Cloudflare Access, /cdn-cgi/ no pasa por el service worker y, si la sesión caduca, no sirve copias viejas: recarga y lleva al login.
 						<small><code>src/service-worker/index.ts</code> · <code>static/manifest.webmanifest</code></small>
 					</span>
 					<b>PWA</b>
