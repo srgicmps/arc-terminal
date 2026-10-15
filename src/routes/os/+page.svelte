@@ -6,16 +6,25 @@
 <script lang="ts">
 	import Taskbar from '#lib/components/os/Taskbar.svelte';
 	import WindowLayer from '#lib/components/os/WindowLayer.svelte';
+	import MobileHome from '#lib/os/mobile/MobileHome.svelte';
+	import { MediaQuery } from 'svelte/reactivity';
+
+	// En el móvil (≤ 900 px), pantalla de inicio de teléfono (OS 3); sin WindowLayer, así no carga sus iframes.
+	const phone = new MediaQuery('max-width: 900px', false);
 </script>
 
 <svelte:head>
 	<title>Arc OS</title>
 </svelte:head>
 
-<div class="os" data-ui="os">
-	<div class="desk"><WindowLayer /></div>
-	<Taskbar />
-</div>
+{#if phone.current}
+	<MobileHome />
+{:else}
+	<div class="os" data-ui="os">
+		<div class="desk"><WindowLayer /></div>
+		<Taskbar />
+	</div>
+{/if}
 
 <style>
 	.os {

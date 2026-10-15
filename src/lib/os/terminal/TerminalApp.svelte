@@ -1,9 +1,12 @@
 <!-- La Terminal dentro de una ventana de Arc OS: lo que abre va a otra ventana (openPath del núcleo). -->
 <script lang="ts">
-	import { base } from '$app/paths';
+	import { routeHref } from '#lib/routes.ts';
 	import type { AppProps } from '../apps.ts';
 	import { openPath } from '../os.svelte.ts';
 	import Terminal from './Terminal.svelte';
+
+	/** La base de la web (vacía si se publica en la raíz), como en Window.svelte. */
+	const base = routeHref('/').replace(/\/$/, '');
 
 	let { win }: AppProps = $props();
 	const open = (href: string) => {

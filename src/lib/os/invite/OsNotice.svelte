@@ -6,11 +6,13 @@
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { enterOS, isOS } from '../mode.svelte.ts';
+	import { isEmbedded } from '../embed.ts';
 	import { OS_INVITE_KEY, OS_KEY, shouldInvite } from '../mode.ts';
 	import OsPreview from './OsPreview.svelte';
 
 	let open = $state(false);
 	$effect(() => {
+		if (isEmbedded()) return;
 		try {
 			const keys = Object.keys(localStorage);
 			if (!shouldInvite(localStorage.getItem(OS_KEY), localStorage.getItem(OS_INVITE_KEY), keys)) return;
@@ -30,7 +32,8 @@
 		if (go) enterOS();
 	}
 
-	const inOsApp = $derived(isOS() && !(page.route.id as string | null)?.startsWith('/os'));
+	// Dentro de una app del Modo OS (iframe) ya está la barra de abajo del teléfono: la píldora, solo fuera.
+	const inOsApp = $derived(!isEmbedded() && isOS() && !(page.route.id as string | null)?.startsWith('/os'));
 </script>
 
 {#if open}
