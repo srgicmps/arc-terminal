@@ -19,6 +19,7 @@
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import { summaryLine, trend } from '#lib/summary.ts';
 	import { compact, dm, nf, period, signed } from '#lib/format.ts';
 	import { change, diffDays, last, seriesMap, spread } from '#lib/series.ts';
 	import type { PageProps } from './$types';
@@ -105,9 +106,18 @@
 		})
 	);
 	const fedNow = $derived(last(get('fedfunds-us')));
+	// Resumen en una línea (src/lib/summary.ts): inflación y paro de la zona euro y de EE. UU.
+	const summary = $derived(
+		summaryLine([
+			trend('Inflación euro', get('inflation-ea')?.points),
+			trend('paro euro', get('unemployment-ea')?.points),
+			trend('IPC EE. UU.', get('cpi-us')?.points),
+			trend('paro EE. UU.', get('unemployment-us')?.points)
+		])
+	);
 </script>
 
-<ViewHeader code="ECO" title="Economía y macro" sub="Eurostat, Banco Central Europeo, BLS, Tesoro de EE. UU. y FRED" />
+<ViewHeader code="ECO" title="Economía y macro" sub="Eurostat, Banco Central Europeo, BLS, Tesoro de EE. UU. y FRED" {summary} />
 
 {#if strip.length}
 	<Tiles cols={3}>

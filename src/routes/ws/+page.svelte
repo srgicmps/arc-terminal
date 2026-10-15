@@ -22,6 +22,7 @@
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import { pctPhrase, riskPhrase, summaryLine, trend } from '#lib/summary.ts';
 	import RiskGauge from '#lib/components/RiskGauge.svelte';
 	import VixCurve from '#lib/components/VixCurve.svelte';
 	import YieldCurve from '#lib/components/YieldCurve.svelte';
@@ -46,6 +47,15 @@
 	const fxPct = $derived(eurusd.length > 1 ? (eurusd.at(-1)!.v / eurusd.at(-2)!.v - 1) * 100 : null);
 	const btc = $derived(data.crypto?.data.coins.find((c) => c.id === 'bitcoin'));
 	const tone = (v: number | null | undefined) => (v == null ? 'mut' : v > 0 ? 'up' : v < 0 ? 'down' : 'flat');
+	// Resumen en una línea (src/lib/summary.ts): el termómetro, el bono a 10 años, el euro y el bitcoin.
+	const summary = $derived(
+		summaryLine([
+			riskPhrase(data.risk.parts.length ? data.risk.score : null),
+			us10 !== null && trend('bono EE. UU. 10 años', [...(us10prev !== null ? [{ t: '', v: us10prev }] : []), { t: '', v: us10 }], 2),
+			trend('EUR/USD', eurusd, 4, ''),
+			pctPhrase('bitcoin', btc?.change24h, 'en 24 h')
+		])
+	);
 	const fx = ['eurusd', 'eurgbp', 'eurjpy', 'eurchf', 'eurcny', 'eurmxn'];
 
 	// Resumen de mercados en directo (TradingView), con pestañas.
@@ -153,7 +163,7 @@
 	const map = $derived(MAPS.find((m) => m.key === mapSel.value) ?? MAPS[0]);
 </script>
 
-<ViewHeader code="WS" title="Wall Street e inversión" sub="TradingView, Tesoro de EE. UU., BCE, CoinGecko y titulares de mercados" />
+<ViewHeader code="WS" title="Wall Street e inversión" sub="TradingView, Tesoro de EE. UU., BCE, CoinGecko y titulares de mercados" {summary} />
 
 <Tiles cols={3}>
 	<Tile
