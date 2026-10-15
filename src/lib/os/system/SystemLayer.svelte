@@ -7,6 +7,7 @@
 	import { onMount } from 'svelte';
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import { startAlerts } from './alerts.svelte.ts';
+	import { shell } from '../shell/shell.svelte.ts';
 	import Boot from './Boot.svelte';
 	import Lock from './Lock.svelte';
 	import Switcher from './Switcher.svelte';
@@ -32,10 +33,19 @@
 
 <svelte:window onkeydown={key} onkeyup={(e) => sw.open && e.key === 'Alt' && commit()} onblur={commit} />
 
-{#if sys.phase === 'boot'}
-	<Boot ondone={bootDone} />
-{:else if sys.phase === 'lock'}
-	<Lock onunlock={unlock} />
-{:else if sw.open}
-	<Switcher />
-{/if}
+<!-- Va fuera del escritorio (por encima de todo): lleva el aspecto de Arc OS para tener sus tokens. -->
+<div class="sys" data-os-skin={shell.skin}>
+	{#if sys.phase === 'boot'}
+		<Boot ondone={bootDone} />
+	{:else if sys.phase === 'lock'}
+		<Lock onunlock={unlock} />
+	{:else if sw.open}
+		<Switcher />
+	{/if}
+</div>
+
+<style>
+	.sys {
+		display: contents;
+	}
+</style>
