@@ -40,7 +40,7 @@ export const BAR: GuideSection = {
 	],
 	items: [
 		'↑ con la barra vacía: tu comando anterior, como en un terminal (guarda los 50 últimos); ↓ vuelve hacia los más recientes.',
-		'Varios a la vez, separados por punto y coma: «ECO; WS CURVA; NVDA 1a». Abre el primero; con la barra vacía, Intro abre el siguiente (la barra dice cuál), y atrás y adelante del navegador van entre ellos. Cualquier otro comando vacía la cola.',
+		'Varios a la vez, separados por punto y coma: «ECO; WS CURVA; NVDA 1a». Abre el primero y la barra dice «1/3 · Alt+→ siguiente: WS CURVA»; Alt+→ (o Intro con la barra vacía) abre el siguiente, y atrás y adelante del navegador van entre ellos. Cualquier otro comando vacía la cola.',
 		'«fav ECO TIPOS»: lo guarda como favorito (hasta 9). Luego «1», «2», «3»… lo abren. «fav» los enseña y «fav -2» quita el segundo.',
 		'Respuesta al momento, sin cambiar de vista (Intro abre la vista del dato): «euribor», «euribor 3m», «prima», «bund», «bono», «tipos bce», «fed», «estr», «dolar», «wti», «btc», «eth», «us10y», «paro es» (o it, de, fr, pt, ue, ea, us), «ipc», «inflación it».',
 		'Periodos: «NVDA 1a», «IBEX 5d», «AAPL 6m», «BTC ytd», «NVDA max»: el gráfico del valor con ese rango. En las series, «paro es 10a» o «euribor 1a» da el cambio en ese tiempo si hay datos (si no llegan tan atrás, lo dice).',

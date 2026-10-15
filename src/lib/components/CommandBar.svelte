@@ -125,7 +125,7 @@
 					: chart
 						? [{ code: chart.code, desc: chart.desc, kind: 'Gráfico', run: value.trim() }]
 						: multi
-							? [{ code: `${multi.length} VISTAS`, desc: `${multi.join(' → ')} · Intro con la barra vacía abre la siguiente`, kind: 'Varios', run: value.trim() }]
+							? [{ code: `${multi.length} VISTAS`, desc: `${multi.join(' → ')} · Alt+→ abre la siguiente`, kind: 'Varios', run: value.trim() }]
 					: (favOptions(value, favs) ?? argOptions(value) ?? suggest(value, ALL, 8, fxLive))
 	);
 	// M46: al escribir «100 USD EUR», se descargan los cambios del BCE (una sola vez).
@@ -318,6 +318,12 @@
 
 	/** Atajos de teclado en toda la página (como un listener en window en Vue, pero declarativo). */
 	function onWindowKeydown(e: KeyboardEvent) {
+		// Alt+→ con una cola de «ECO; WS CURVA»: la siguiente vista (también con el foco en la barra).
+		if (queue.length && isShortcut(e, 'queue')) {
+			e.preventDefault();
+			run('');
+			return;
+		}
 		const tag = (document.activeElement?.tagName ?? '').toUpperCase();
 		if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || e.ctrlKey || e.metaKey || e.altKey) return;
 		if (isShortcut(e, 'bar')) {
@@ -373,7 +379,7 @@
 		enterkeyhint="go"
 		placeholder={notice ||
 			(queue.length
-				? `Intro: ${queue[0]} (${queueTotal - queue.length + 1} de ${queueTotal})`
+				? `${queueTotal - queue.length}/${queueTotal} · Alt+→ siguiente: ${queue[0]}`
 				: 'Escribe un comando o un valor: NVDA, ECO, BOE…')}
 		role="combobox"
 		aria-autocomplete="list"
