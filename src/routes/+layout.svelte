@@ -292,7 +292,9 @@
 		{#each thumb as c (c.code)}
 			<a href={routeHref(c.route)} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
 		{/each}
-		<button type="button" aria-label="Abrir la barra de comandos" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>/</button>
+		<button type="button" aria-label="Buscar o escribir un comando" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>
+			<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5 14 14" /></svg>
+		</button>
 	</nav>
 
 	{#if tv.on}
@@ -593,7 +595,35 @@
 
 		.thumb button {
 			color: var(--amber);
-			font-size: var(--fs-l);
+		}
+
+		.thumb svg {
+			width: var(--sp-18);
+			height: var(--sp-18);
+			fill: none;
+			stroke: currentColor;
+			stroke-width: 1.6;
+			stroke-linecap: round;
+		}
+
+		/* La cabecera del móvil en una línea: logo a la izquierda; tu sitio y los botones, a la derecha. */
+		.top {
+			column-gap: var(--sp-10);
+		}
+
+		.top :global(.place .caret) {
+			display: none;
+		}
+
+		/* Accesos de arriba: se ven igual, pero la zona pulsable llega a --touch de alto. */
+		.key {
+			position: relative;
+		}
+
+		.key::after {
+			content: '';
+			position: absolute;
+			inset: calc((var(--touch) - 100%) / -2) 0;
 		}
 
 		/* Que el contenido no quede tapado por la barra. */
