@@ -9,8 +9,10 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { dm, hm, longDay, nf, signed } from '#lib/format.ts';
-	import { cheapestWindow, days, dayStats, hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
+	import { cheapestWindow, cheapWindows, days, dayStats, hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
 	import { luzShare, relativeDay, type ShareInfo } from '#lib/share.ts';
+	import { cheapPhrase, phrases, powerPhrase } from '#lib/plain.ts';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import type { PageProps } from './$types';
@@ -73,9 +75,33 @@
 	const todayBlock = $derived(now ? blocks.find((b) => b.day === now.day) : blocks[0]);
 	const nextBlock = $derived(todayBlock ? blocks.find((b) => b.day > todayBlock.day) : undefined);
 	const best2 = $derived(todayBlock?.windows.find((w) => w.n === 2));
+
+	// Horas baratas (F1): las 3 mejores franjas que quedan hoy y las de mañana, de 1, 2 o 3 horas seguidas.
+	const LENGTHS = [
+		{ value: '1', label: '1 h' },
+		{ value: '2', label: '2 h' },
+		{ value: '3', label: '3 h' }
+	] as const;
+	let length = $state<'1' | '2' | '3'>('2');
+	const cheap = $derived(
+		[todayBlock, nextBlock].flatMap((b, i) =>
+			b
+				? [{ b, when: i ? ('mañana' as const) : ('hoy' as const), list: cheapWindows(b.prices, b.day, Number(length), 3, i ? null : now) }]
+				: []
+		)
+	);
+	// Modo Sencillo: la media de hoy y la mejor franja de hoy y de mañana, en frases (src/lib/plain.ts).
+	const plain = $derived(
+		phrases([
+			powerPhrase(todayBlock?.stats.avg),
+			...cheap.map((c) =>
+				c.list[0] ? cheapPhrase(c.when, Number(length), hourLabel(c.list[0].first), hourLabel(c.list[0].after), c.list[0].avg) : null
+			)
+		])
+	);
 </script>
 
-<ViewHeader code="LUZ" title="Precio de la luz" sub="PVPC (tarifa regulada) y mercado mayorista · Red Eléctrica">
+<ViewHeader code="LUZ" title="Precio de la luz" sub="PVPC (tarifa regulada) y mercado mayorista · Red Eléctrica" {plain}>
 	{#snippet aside()}
 		{#if currentPrice}Ahora: <b class="now">{nf(currentPrice.kwh, 3)} €/kWh</b>{/if}
 	{/snippet}
@@ -106,6 +132,45 @@
 
 {#if !blocks.length}
 	<p class="empty">Sin datos todavía.</p>
+{/if}
+
+{#if cheap.length}
+	<div class="grid">
+		<div class="col">
+			<Panel title="Horas baratas" meta="Las 3 mejores franjas · €/kWh">
+				<div class="pick"><Seg label="Horas seguidas" options={LENGTHS} bind:value={length} /></div>
+				<div class="cheap">
+					{#each cheap as c (c.when)}
+						<div>
+							<h4>{c.when === 'hoy' ? 'Lo que queda de hoy' : 'Mañana'}{c.b.kind === 'Mayorista' ? ' · mayorista' : ''}</h4>
+							{#if c.list.length}
+								<ol class="mini">
+									{#each c.list as w, i (i)}
+										<li>
+											<b>{hourLabel(w.first)}–{hourLabel(w.after)}</b>
+											<span
+												>{nf(w.avg, 3)}
+												{#if c.b.stats.avg}{@const pct = ((w.avg - c.b.stats.avg) / c.b.stats.avg) * 100}<span class="mut"
+														>· {pct > 0 ? '+' : '−'}{nf(Math.abs(pct), 0)} %</span
+													>{/if}</span
+											>
+										</li>
+									{/each}
+								</ol>
+							{:else}
+								<p class="empty">Ya no quedan franjas hoy.</p>
+							{/if}
+						</div>
+					{/each}
+				</div>
+				{#snippet note()}
+					Horas seguidas, con al menos una hora entre franja y franja, su precio medio y cuánto más baratas son que
+					la media del día. Para poner la lavadora, el lavavajillas o cargar el coche.
+					{#if !nextBlock}Las de mañana salen hacia las 20:30.{/if}
+				{/snippet}
+			</Panel>
+		</div>
+	</div>
 {/if}
 
 <div class="grid" class:grid-2e={blocks.length > 1}>
@@ -213,6 +278,25 @@
 </div>
 
 <style>
+	.pick {
+		padding: var(--sp-8) var(--pad-x);
+	}
+	.cheap {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: var(--sp-16);
+	}
+	h4 {
+		margin: 0;
+		padding: var(--sp-4) var(--pad-x) 0;
+		font-size: var(--fs-s);
+		font-weight: var(--fw-medium);
+		color: var(--muted);
+	}
+	ol {
+		margin: 0;
+		padding: 0;
+	}
 	.now {
 		color: var(--amber);
 		font-weight: var(--fw-medium);

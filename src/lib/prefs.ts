@@ -27,7 +27,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-ref-country', storage: 'local', what: 'País de referencia para paro, inflación y deuda', where: 'TOP, panel «Macro»', kind: 'ajuste' },
 	{ key: 'arc-leaders', storage: 'local', what: 'Los líderes que salen en LIDER y su orden', where: 'LIDER, «Tus líderes»', kind: 'ajuste' },
 	{ key: 'arc-countries', storage: 'local', what: 'Tus países favoritos (hasta 8)', where: 'PAIS, botón ☆ Seguir', kind: 'dato' },
-	{ key: 'arc-home', storage: 'local', what: 'Vista que se abre al entrar', where: 'HELP, «Vista de inicio»', kind: 'ajuste' },
+	{ key: 'arc-home', storage: 'local', what: 'Vista o experiencia que se abre al entrar', where: 'HELP, «Al entrar»', kind: 'ajuste' },
 	{ key: 'arc-home-done', storage: 'session', what: 'Esta pestaña ya ha abierto la vista de inicio (luego TOP es la portada)', where: 'Al entrar', kind: 'dato' },
 	{ key: 'arc-chart-period', storage: 'local', what: 'Último periodo elegido en los gráficos de línea', where: 'Botones 1M · 6M · 1A · 5A · Máx', kind: 'ajuste' },
 	{ key: 'arc-thresholds', storage: 'local', what: 'Umbrales «resáltame si pasa de X» de las tablas de series', where: 'Tocar la cifra «Último» de una serie', kind: 'ajuste' },
