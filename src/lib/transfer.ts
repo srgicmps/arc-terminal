@@ -26,8 +26,12 @@ export function collect(store: Store): Record<string, string> {
 	return out;
 }
 
-const toBase64Url = (bytes: Uint8Array) =>
-	btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+/** Por trozos: `fromCharCode(...bytes)` con muchos datos (notas, cartera) pasa del tope de argumentos (RangeError). */
+function toBase64Url(bytes: Uint8Array): string {
+	let bin = '';
+	for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+	return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
 const fromBase64Url = (s: string) => {
 	const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/'));
