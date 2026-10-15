@@ -138,8 +138,9 @@
 			inset: 0;
 		}
 
-		/* «+3 medios» y sus enlaces quedan por encima de esa capa para poder tocarlos. */
-		.also {
+		/* «+3 medios», sus enlaces y los nombres con ficha quedan por encima de esa capa para poder tocarlos. */
+		.also,
+		.ent {
 			position: relative;
 			z-index: 1;
 		}
