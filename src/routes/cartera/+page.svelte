@@ -72,10 +72,11 @@
 		const v = toNum(raw);
 		const p = { ...positions[i] };
 		if (v > 0) p.price = v;
-		// Solo un campo vacío borra el precio: lo que no se entiende no lo pierde.
+		// Solo un campo vacío borra el precio: lo que no se entiende no lo pierde (y el campo vuelve a enseñarlo).
 		else if (!raw.trim()) delete p.price;
-		else return;
+		else return false;
 		positions = positions.map((x, j) => (j === i ? p : x));
+		return true;
 	}
 
 	const rates = $derived(fxRates(data.fx));
@@ -123,7 +124,9 @@
 										aria-label="Precio de {r.sym} a mano"
 										placeholder="a mano"
 										value={r.price?.toLocaleString('es-ES', { maximumFractionDigits: 6 }) ?? ''}
-										onchange={(e) => setPrice(i, e.currentTarget.value)}
+										onchange={(e) => {
+											if (!setPrice(i, e.currentTarget.value)) e.currentTarget.value = r.price?.toLocaleString('es-ES', { maximumFractionDigits: 6 }) ?? '';
+										}}
 									/>
 								{/if}
 							</td>
