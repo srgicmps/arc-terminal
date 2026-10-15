@@ -18,7 +18,7 @@
 	import { madridDate } from '#lib/meetings.ts';
 	import { earningsLine, myEarnings } from '#lib/myearnings.ts';
 	import { fxRates } from '#lib/fx.ts';
-	import { cleanPosition, MAX_POSITIONS, parsePortfolio, PORTFOLIO_KEY, summarize, type Position } from '#lib/portfolio.ts';
+	import { cleanPosition, MAX_POSITIONS, parseDecimal, parsePortfolio, PORTFOLIO_KEY, summarize, type Position } from '#lib/portfolio.ts';
 
 	let { data } = $props();
 
@@ -42,11 +42,12 @@
 		} catch {}
 	});
 
-	const CURRENCIES = ['USD', 'EUR', 'GBP', 'CHF', 'JPY', 'CAD', 'DKK', 'SEK', 'NOK'];
+	/** Divisas con cambio del BCE (sin él, la posición no se podría pasar a euros). */
+	const CURRENCIES = ['USD', 'EUR', 'GBP', 'CHF', 'JPY', 'CNY', 'MXN'];
 	let draft = $state({ sym: '', qty: '', cost: '', cur: 'USD', price: '', sector: '' });
 	let error = $state('');
 
-	const toNum = (s: string) => (s.trim() ? Number(s.replace(',', '.')) : NaN);
+	const toNum = parseDecimal;
 
 	function add(e: SubmitEvent) {
 		e.preventDefault();
@@ -71,12 +72,16 @@
 		const v = toNum(raw);
 		const p = { ...positions[i] };
 		if (v > 0) p.price = v;
-		else delete p.price;
+		// Solo un campo vacío borra el precio: lo que no se entiende no lo pierde.
+		else if (!raw.trim()) delete p.price;
+		else return;
 		positions = positions.map((x, j) => (j === i ? p : x));
 	}
 
 	const rates = $derived(fxRates(data.fx));
 	const s = $derived(summarize(positions, data.quotes, rates));
+	/** Divisas de tus posiciones sin cambio del BCE: esas no se pueden pasar a euros. */
+	const noRate = $derived([...new Set(positions.map((p) => p.cur))].filter((c) => c !== 'EUR' && !rates.has(c)));
 	const today = $derived(madridDate(clock.now || Date.now()));
 	const upcoming = $derived(myEarnings(data.earnings, positions.map((p) => p.sym), today));
 	const tone = (v: number | null) => (v === null ? 'mut' : v > 0 ? 'up' : v < 0 ? 'down' : 'flat');
@@ -113,13 +118,11 @@
 									{nf(r.now)}<span class="sub">Finnhub</span>
 								{:else}
 									<input
-										type="number"
+										type="text"
 										inputmode="decimal"
-										min="0"
-										step="any"
 										aria-label="Precio de {r.sym} a mano"
 										placeholder="a mano"
-										value={r.price ?? ''}
+										value={r.price?.toLocaleString('es-ES', { maximumFractionDigits: 6 }) ?? ''}
 										onchange={(e) => setPrice(i, e.currentTarget.value)}
 									/>
 								{/if}
@@ -133,7 +136,10 @@
 				</tbody>
 			</Table>
 			{#if s.missing.length}
-				<Note>Sin precio: {s.missing.join(', ')}. Escríbelo a mano y cuenta en el total.</Note>
+				<Note>
+					Sin valorar: {s.missing.join(', ')}.
+					{noRate.length ? `No hay cambio del BCE para ${noRate.join(', ')}: esas posiciones no se pueden pasar a euros.` : 'Escribe el precio a mano y cuenta en el total.'}
+				</Note>
 			{/if}
 		{:else}
 			<p class="empty">Aún no tienes posiciones. Añade la primera abajo.</p>
@@ -155,7 +161,7 @@
 		{#if error}<p class="err">{error}</p>{/if}
 		<Note>
 			Precios: Finnhub (con retraso) solo para los valores de EE. UU. que descarga Arc{data.quotesAt ? `, ${when(data.quotesAt, Date.now())}` : ''}.
-			Para el resto (bolsas europeas, fondos…) no hay precio gratis: escríbelo a mano. Se pasa a euros con el cambio del BCE.
+			Para el resto (bolsas europeas, fondos…) no hay precio gratis: escríbelo a mano. Se pasa a euros con el cambio del BCE de hoy, también lo invertido: la ganancia no cuenta lo que haya ganado o perdido la divisa.
 			Tus posiciones se guardan solo en tu navegador y, con cuenta, en tus ajustes privados.
 		</Note>
 	</Panel>
