@@ -58,6 +58,9 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - **Avisos al móvil** con ntfy (`scripts/notify.ts`, tras `pnpm data`): reglas P1–P4 en la lista `RULES` de
   `scripts/alerts/rules.ts`, umbrales y cupos en `scripts/alerts/config.ts`. El tema
   va en el Secret `NTFY_TOPIC` y es la única protección: nunca en el repo, en registros ni en JSON.
+- **Órdenes desde la barra** (D41): «alerta NVDA > 150», «+NVDA», «vigila aranceles» abren un issue ya escrito
+  (`src/lib/useralerts.ts`); `notify.ts` lee con `scripts/requests.ts` solo los issues abiertos **del dueño**,
+  los aplica (`scripts/alerts/user.ts`) y cierra la alerta al avisar. Los issues son públicos.
 
 ## Stack
 - SvelteKit con `adapter-static` + TypeScript, Svelte 5 (runes).
