@@ -114,9 +114,11 @@ https://data.europa.eu/api/hub/search/search?q=frontex%20illegal%20border%20cros
 # 28.7 BTMM: tipos de referencia de la Fed de Nueva York (sin clave)
 https://markets.newyorkfed.org/api/rates/secured/sofr/last/2.json
 https://markets.newyorkfed.org/api/rates/unsecured/effr/last/2.json
-# Lote F-D (F21, ronda 2): alternativas a UKMTO/MARAD (403). NGA MSI (EE. UU.): avisos NAVAREA y ASAM
-https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=active&navArea=9
-https://msi.nga.mil/api/publications/asam?output=json&sort=date&maxOccurDate=2026-10-15&minOccurDate=2026-08-01
-https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=active&navArea=4
+# Lote F-D (F21, ronda 3): NGA MSI. HYDROPAC (P) cubre el Índico, Mar Rojo y Golfo; HYDROLANT (A), el Atlántico y el Mediterráneo
+https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=active&navArea=P ~ RED SEA|GULF OF ADEN|HORMUZ|PERSIAN GULF|ARABIAN SEA|BAB EL|YEMEN|HOUTHI|ATTACK|PIRACY
+https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=active&navArea=A ~ MEDITERRANEAN|BLACK SEA|ATTACK|HAZARD|MISSILE|LIBYA|GAZA|ISRAEL
+https://msi.nga.mil/api/publications/asam?output=json
+https://msi.nga.mil/api/publications/asams?output=json&sort=date
+https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=active ~ "navArea":"[^4]
 # Lote F-D (F22): ficha de un CZIB (para el enlace y las fechas)
 https://www.easa.europa.eu/en/domains/air-operations/czibs/czib-2022-01r14 ~ .{0,200}(Valid|Issued|Recommendation).{0,300}
