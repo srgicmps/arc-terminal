@@ -177,14 +177,21 @@
 	--os-icon-radius: 27%; /* esquinas «squircle» de los iconos */
 	--os-icon-bg: linear-gradient(160deg, var(--raise), var(--panel)); /* fondo de un icono */
 	--os-icon-fg: var(--amber); /* dibujo de un icono */
+	--os-icon-edge: var(--line); /* filo de un icono */
+	--os-icon-name-case: none; /* nombres bajo los iconos: tal cual o en mayúsculas */
+	--os-icon-name-track: 0; /* espaciado de esos nombres */
 	--os-badge-bg: var(--down); /* insignia con número */
 	--os-badge-fg: var(--bg);
 	--os-radius-l: 22px; /* esquinas de widgets, dock y tarjetas */
+	--os-radius-xl: calc(var(--os-radius-l) + var(--sp-8)); /* dock y carpeta abierta del móvil */
+	--os-radius-pill: 15px; /* «Buscar» del móvil */
 	--os-bar-h: calc(var(--control-h) + var(--sp-12)); /* alto de la barra de tareas (crece sola en pantallas táctiles) */
 	--os-dock-h: 64px; /* alto del dock del aspecto Mac (iconos de 40 px y su lupa) */
 	--os-font: var(--sans); /* letra de la barra, los menús y los títulos de ventana; cada aspecto pone la suya */
 	--os-menu-radius: var(--radius); /* esquinas de menús, buscador y dock */
 	--os-icon-radius: var(--radius); /* esquinas de los iconos de app */
+	--os-icon-shadow: 0 1px 2px rgb(0 0 0 / 0.28); /* sombra de los iconos de app (una sola, de drop-shadow) */
+	--os-icon-ring: none; /* filo de los iconos de app (box-shadow; Mando lo usa como borde de 1 px) */
 	--os-topbar-bg: var(--panel); /* barra de arriba y vista Actividades del aspecto Linux */
 	--os-topbar-fg: var(--fg);
 	--os-topbar-hover: var(--raise);
@@ -395,11 +402,28 @@
 	--os-menu-bg: var(--cmd-deck);
 	--os-menu-radius: 2px;
 	--os-icon-radius: 2px;
+	--os-icon-ring: inset 0 0 0 var(--hair) var(--cmd-cold-dim);
+	--os-icon-shadow: 0 0 0 transparent;
 	--os-anim-open: 120ms;
 	--os-open-scale: 0.985;
 	--os-anim-min: 140ms;
 	--os-anim-max: 140ms;
 	--os-anim-close: 100ms;
+	/* Móvil: la misma pizarra con rejilla, iconos como placas de consola (casi rectas, filo frío) y nombres en mono. */
+	--os-phone-font: var(--mono);
+	--os-phone-wall: var(--bg-image), var(--cmd-slate);
+	--os-glass: color-mix(in srgb, var(--cmd-deck) 88%, transparent);
+	--os-glass-blur: blur(14px);
+	--os-glass-strong: color-mix(in srgb, var(--cmd-slate) 94%, transparent);
+	--os-icon-radius: 4px;
+	--os-icon-bg: linear-gradient(180deg, var(--raise), var(--cmd-deck));
+	--os-icon-edge: var(--cmd-cold-dim);
+	--os-icon-fg: var(--cmd-cold);
+	--os-icon-name-case: uppercase;
+	--os-icon-name-track: 0.04em;
+	--os-radius-l: 4px;
+	--os-radius-xl: 4px;
+	--os-radius-pill: 4px;
 }
 
 /* Pantallas táctiles: todos los controles a la zona pulsable mínima. */
@@ -466,16 +490,19 @@
 	--os-font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
 	--os-menu-radius: 8px;
 	--os-icon-radius: 4px;
+	--os-icon-shadow: 0 1px 1px rgb(0 0 0 / 0.3);
 }
 [data-os-skin='mac'] {
 	--os-font: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
 	--os-bar-h: max(28px, var(--control-h));
 	--os-icon-radius: 22%;
+	--os-icon-shadow: 0 3px 5px rgb(0 0 0 / 0.35);
 }
 [data-os-skin='linux'] {
 	--os-font: Cantarell, 'Noto Sans', Ubuntu, system-ui, sans-serif;
 	--os-bar-h: max(32px, var(--control-h));
 	--os-icon-radius: 50%;
+	--os-icon-shadow: 0 0 0 transparent;
 	--os-topbar-bg: #121214; /* barra negra, de día y de noche */
 	--os-topbar-fg: #f2f2f3;
 	--os-topbar-hover: color-mix(in srgb, var(--os-topbar-fg) 14%, transparent);
@@ -485,6 +512,7 @@
 	--os-font: 'Segoe UI', system-ui, 'Noto Sans', sans-serif;
 	--os-bar-h: max(36px, var(--control-h));
 	--os-icon-radius: 14px;
+	--os-icon-shadow: 0 0 6px rgb(255 255 255 / 0.12);
 	--os-topbar-bg: color-mix(in srgb, var(--panel) 78%, transparent);
 	--os-topbar-fg: var(--fg);
 	--os-topbar-hover: var(--raise);
@@ -503,6 +531,34 @@
 	--os-anim-min: 180ms;
 	--os-anim-max: 160ms;
 	--os-anim-close: 140ms;
+}
+
+/* Centro de mando: línea de tiempo */
+/* App «Línea de tiempo» de Arc OS (src/lib/os/apps/cronologia/). Sale de los tokens base de «Mando»
+   (--cmd-deck, --cmd-cold, --cmd-grid…, en [data-os-skin]); aquí solo se añade lo propio: carril alterno,
+   rejilla del eje y un color frío por carril de sucesos (ámbar solo para lo importante y para «ahora»). */
+[data-os-skin] {
+	--cmd-tl-bg: var(--cmd-deck); /* fondo de la pizarra */
+	--cmd-tl-alt: color-mix(in srgb, var(--cmd-deck) 92%, var(--cmd-cold)); /* carril alterno */
+	--cmd-tl-edge: var(--cmd-cold-dim); /* bordes de 1 px */
+	--cmd-tl-grid: color-mix(in srgb, var(--cmd-cold) 9%, transparent); /* líneas del eje */
+	--cmd-tl-grid-major: color-mix(in srgb, var(--cmd-cold) 22%, transparent);
+	--cmd-tl-row: var(--cmd-grid); /* separación de filas en listas */
+	--cmd-tl-cursor: color-mix(in srgb, var(--fg) 55%, transparent);
+	--cmd-tl-now: var(--amber);
+	--cmd-tl-future: color-mix(in srgb, var(--cmd-cold) 5%, transparent); /* lo que aún no ha pasado */
+	--cmd-tl-series: var(--cmd-cold);
+	--cmd-tl-dot-fill: 0.35; /* opacidad del relleno de un punto */
+	--cmd-tl-dot-hover: 0.7; /* al pasar por encima */
+	--cmd-tl-dot-sel: 0.85; /* el elegido */
+	--cmd-tl-disabled: 0.35; /* botones sin efecto (subir el primero) */
+	--cmd-tl-dash: 3 3; /* línea de «ahora», discontinua */
+	--cmd-ev-imp: var(--amber);
+	--cmd-ev-tierra: color-mix(in srgb, var(--cmd-cold) 60%, var(--fg));
+	--cmd-ev-avisos: color-mix(in srgb, var(--cmd-cold) 45%, #a48fe6);
+	--cmd-ev-datos: color-mix(in srgb, var(--cmd-cold) 50%, #4f86e0);
+	--cmd-ev-agenda: color-mix(in srgb, var(--cmd-cold) 35%, var(--muted));
+	--cmd-ev-bancos: color-mix(in srgb, var(--cmd-cold) 55%, #5fe0e0);
 }
 
 /* Centro de mando: mapa (herramienta «Mapa operacional», src/lib/os/apps/mapa-op/). Sobre la paleta fija de

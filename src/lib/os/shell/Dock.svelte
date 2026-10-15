@@ -4,6 +4,7 @@
 	Tocar una app abierta la trae al frente (o la minimiza si ya estaba delante); una cerrada, la abre.
 -->
 <script lang="ts">
+	import OsIcon from '../icons/OsIcon.svelte';
 	import ContextMenu, { type MenuEntry } from '#lib/components/os/ContextMenu.svelte';
 	import * as os from './bridge.ts';
 	import { appMenu, winMenu } from './menus.ts';
@@ -56,7 +57,7 @@
 			{@const open = wins.some((w) => w.appId === a.id)}
 			<li style:--s={scale(i)}>
 				<button type="button" aria-label={`${a.title}${open ? ' (abierta)' : ''}`} onclick={() => press(a)} oncontextmenu={(e) => ctx(e, a)}>
-					<span class="ico" aria-hidden="true">{a.icon ?? '·'}</span>
+					<span class="ico"><OsIcon id={a.id} size={40} /></span>
 					<span class="tip" aria-hidden="true">{a.title}</span>
 				</button>
 				{#if open}<i class="dot" aria-hidden="true"></i>{/if}
@@ -65,7 +66,7 @@
 		<li class="sep" aria-hidden="true"></li>
 		<li style:--s={scale(items.length + 1)}>
 			<button type="button" aria-label="Launchpad: todas las apps" aria-expanded={shell.open === 'launchpad'} onclick={() => toggle('launchpad')}>
-				<span class="ico grid" aria-hidden="true">⊞</span>
+				<span class="ico"><OsIcon id="launchpad" size={40} /></span>
 				<span class="tip" aria-hidden="true">Launchpad</span>
 			</button>
 		</li>
@@ -109,12 +110,6 @@
 	.ico {
 		display: grid;
 		place-items: center;
-		width: 40px;
-		height: 40px;
-		border-radius: var(--os-icon-radius, var(--radius));
-		background: var(--raise);
-		color: var(--amber);
-		font-size: var(--fs-l);
 		transform: scale(var(--s, 1));
 		transform-origin: bottom center;
 		transition: transform var(--dur-fast) var(--ease);
