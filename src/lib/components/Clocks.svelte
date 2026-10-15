@@ -21,7 +21,7 @@
 		r.isOpen ? 'abierta' : r.holiday ? `cerrada · festivo (${r.holiday})` : 'cerrada';
 </script>
 
-<div class="clocks" aria-label="Hora y estado de las bolsas">
+<div class="clocks" data-ui="clocks" aria-label="Hora y estado de las bolsas">
 	{#if showSite}
 		<span class="clock site" title="Hora en {place.current.name}">{place.current.name} <b>{siteTime}</b></span>
 	{/if}

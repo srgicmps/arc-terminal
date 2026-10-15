@@ -189,3 +189,36 @@ describe('runNotify con usuarios', () => {
 		}
 	});
 });
+
+describe('alertas de precio por usuario (F14)', () => {
+	const nvda = { id: 'aaaa0001', asset: 'NVDA', name: 'NVDA', unit: '$', op: '>', value: 150 };
+	it('la cuenta del administrador llega aunque no tenga avisos (sin tema) y no recibe nada aquí', async () => {
+		const users = parseUsers({ users: [{ uid: '1'.repeat(16), topic: null, admin: true, config: { on: false, prices: [nvda] } }] });
+		expect(users).toMatchObject([{ admin: true, topic: null }]);
+		const { e, sent } = engine();
+		await runUsers(users, {}, new Set(), {}, NOW, e, () => {}, TEST_RULES);
+		expect(sent).toEqual([]);
+	});
+	it('a cada usuario le salta la suya, por su tema y una sola vez', async () => {
+		const ana = user('a'.repeat(16), T_ANA, { groups: [], prices: [nvda] });
+		const luis = user('b'.repeat(16), T_LUIS, { groups: [] });
+		const d = { alertQuotes: [{ symbol: 'NVDA', price: 151, changePct: 1 }] };
+		const { e, sent } = engine();
+		const first = await runUsers([ana, luis], {}, new Set(), {}, NOW, e, () => {}, TEST_RULES);
+		sent.splice(0);
+		const logs = await runUsers([ana, luis], d as never, new Set(), first, NOW + 900_000, e, () => {}, TEST_RULES);
+		expect(sent).toEqual([{ topic: T_ANA, id: 'user-alert:aaaa0001' }]);
+		await runUsers([ana, luis], d as never, new Set(), logs, NOW + 1_800_000, e, () => {}, TEST_RULES);
+		expect(sent).toHaveLength(1);
+	});
+});
+
+describe('publicLog (F14)', () => {
+	it('no publica las alertas ni las palabras de la cuenta de Sergi', async () => {
+		const { publicLog } = await import('../notify.ts');
+		const log = { ...emptyLog(), entries: [{ k: 'user-alert:aaaa0001', t: 'x', s: 'sent' as const }, { k: 'quake:1', t: 'x', s: 'sent' as const }], last: { 'vigila:palabras': '["aranceles"]', 'rate:fed': '4' } };
+		const out = publicLog(log);
+		expect(out.entries.map((e) => e.k)).toEqual(['quake:1']);
+		expect(Object.keys(out.last)).toEqual(['rate:fed']);
+	});
+});
