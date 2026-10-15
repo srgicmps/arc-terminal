@@ -412,7 +412,7 @@
 							{@const s = sky(d.code)}
 							<tr class:hl={d.date === pick.day}>
 								<td>{weekday(d.date)}</td>
-								<td class="l"><span class="i" aria-hidden="true">{s.icon}</span> {s.label}</td>
+								<td class="l sky"><span class="i" aria-hidden="true">{s.icon}</span>&nbsp;{s.label}</td>
 								<td>{nf(d.max, 0)}°</td>
 								<td class="mut">{nf(d.min, 0)}°</td>
 								<td class:rain={d.rain >= 50}>{nf(d.rain, 0)} %</td>
@@ -469,6 +469,11 @@
 
 	.i {
 		color: var(--amber);
+	}
+
+	/* El cielo puede partirse en dos líneas: así caben la lluvia y el viento sin scroll lateral (móvil y tres columnas). */
+	.sky {
+		white-space: normal;
 	}
 
 	.rain {
