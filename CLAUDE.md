@@ -102,6 +102,9 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   Al avisar, la Action las borra (`?fired=1`). Los issues que queden se pasan a la cuenta de Sergi y se cierran
   (`?migrate=1`, `scripts/requests.ts`); nada privado en `notify-log.json`.
 
+- **Arc OS** (`/os`, comando `OS`): modo opcional que funciona como un sistema operativo (núcleo en `src/lib/os/`, shell en
+  `src/lib/os/shell/`). Lista de comprobación y dueños en `docs/arc-os.md`: cada PR marca ahí sus casillas.
+
 - **Experiencias** (`EXP`): cada una es una ruta `src/routes/x/<id>` que reutiliza datos y componentes; se apuntan en
   `src/lib/experiences.ts` (de ahí salen el índice `/x`, «EXP <nombre>», el selector de `ExpHeader` y «Al entrar» de
   HELP, que guarda `x:<id>` en `arc-home`). Sin tokens propios: funcionan con cualquier estilo y con el modo Sencillo.

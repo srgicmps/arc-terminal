@@ -498,3 +498,19 @@
 	--os-anim-max: 160ms;
 	--os-anim-close: 140ms;
 }
+/* Centro de mando: vigilancia (app Vigilancia de Arc OS). Pizarra fría sobre el panel, nivel de cada objetivo
+   de frío a cálido. Sobre la paleta fija de «Mando» (--cmd-slate y --cmd-cold, arriba). */
+[data-os-skin] {
+	--cmd-card: color-mix(in srgb, var(--panel) 95%, var(--cmd-cold)); /* fondo de una tarjeta */
+	--cmd-edge: color-mix(in srgb, var(--line) 70%, var(--cmd-cold)); /* borde de 1 px, frío */
+	--cmd-new: var(--amber); /* lo nuevo desde tu última visita */
+	--cmd-new-soft: var(--amber-soft);
+	--cmd-l0: var(--faint); /* calma */
+	--cmd-l1: var(--cmd-cold); /* normal */
+	--cmd-l2: var(--amber-dim); /* atención */
+	--cmd-l3: var(--amber); /* alto */
+	--cmd-l4: var(--down); /* crítico */
+	--cmd-pip-w: 10px; /* cada rayita del nivel */
+	--cmd-pip-h: 4px;
+	--cmd-card-min: 300px; /* ancho mínimo de una tarjeta */
+}
