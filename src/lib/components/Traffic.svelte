@@ -60,6 +60,8 @@
 	const name = (id: string) => provinces.find((p) => p.id === id)?.name ?? id;
 	function add(text: string) {
 		const t = provinceId(text);
+		// Sin letras que sirvan («-», «?») no se añade nada: startsWith('') daría la primera provincia.
+		if (t.length < 2) return;
 		const p = provinces.find((x) => x.id === t) ?? provinces.find((x) => x.id.startsWith(t) || x.id.includes(t));
 		if (p && !chosen.includes(p.id)) save([...chosen, p.id].slice(-5));
 	}
@@ -75,7 +77,7 @@
 	const since = (iso: string) => (iso ? `desde el ${dm(iso)}${Date.now() - Date.parse(iso) < 86_400_000 ? ` a las ${hm(iso)}` : ''}` : '');
 </script>
 
-<Panel title="Tráfico" meta="Incidencias de la DGT · {chosen.map(name).join(', ')}">
+<Panel title="Tráfico" meta={chosen.length ? `Incidencias de la DGT · ${chosen.map(name).join(', ')}` : 'Incidencias de la DGT'}>
 	<ChipInput label="Añadir una provincia" placeholder="Provincia" items={chosen.map(name)} onadd={add} onremove={remove} />
 	{#if !provinces.length}
 		<p class="empty">Sin datos de la DGT todavía.</p>
