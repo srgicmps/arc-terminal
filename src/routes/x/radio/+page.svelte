@@ -8,13 +8,16 @@
 	import { asset } from '$app/paths';
 	import { onDestroy, onMount } from 'svelte';
 	import Panel from '#lib/components/Panel.svelte';
-	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import ExpHeader from '#lib/components/ExpHeader.svelte';
+	import { EXPERIENCES } from '#lib/experiences.ts';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { persisted } from '#lib/persisted.svelte.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
 	import { buildProgram, OUTRO, personalSegment, RATES, type ProgramInput, type Segment } from '#lib/exp/radio.ts';
 	import type { Earnings, Quote } from '#lib/types.ts';
+
+	const exp = EXPERIENCES.find((e) => e.id === 'radio')!;
 
 	type RadioData = Omit<ProgramInput, 'now'> & { earnings: Earnings[]; quotes: Quote[] };
 
@@ -137,7 +140,7 @@
 	});
 </script>
 
-<ViewHeader code="RADIO" title="Arc Radio" sub="Lo de hoy, leído en voz alta: titulares, mercados, economía, agenda y tus valores" />
+<ExpHeader {exp} sub="Lo de hoy, leído en voz alta: titulares, mercados, economía, agenda y tus valores" />
 
 <div class="grid grid-2">
 	<div class="col">

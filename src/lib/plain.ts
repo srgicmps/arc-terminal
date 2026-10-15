@@ -89,6 +89,28 @@ export function powerPhrase(kwh: number | null | undefined): string | null {
 	return kwh == null ? null : `La luz (tarifa regulada) cuesta hoy de media ${nf(kwh, 3)} € el kWh.`;
 }
 
+/** «El sol (índice UV) llega hoy a 7, alto: protégete de 12:00 a 17:00.» */
+export function uvPhrase(uv: number | null | undefined, level: string | undefined, window: { from: string; to: string } | null): string | null {
+	if (uv == null || !level) return null;
+	const tail = window ? `: protégete de ${window.from} a ${window.to}` : '';
+	return `El sol (índice UV) llega hoy a ${nf(uv, 0)}, ${level.toLowerCase()}${tail}.`;
+}
+
+/** «Polen hoy: olivo alto y gramíneas moderado.» o «Hoy apenas hay polen.» */
+export function pollenPhrase(when: 'hoy' | 'mañana', high: { name: string; level: { label: string } }[]): string {
+	if (!high.length) return when === 'hoy' ? 'Hoy apenas hay polen.' : 'Mañana apenas habrá polen.';
+	const list = high.map((h) => `${h.name.toLowerCase()} ${h.level.label.toLowerCase()}`);
+	const joined = list.length > 1 ? `${list.slice(0, -1).join(', ')} y ${list.at(-1)}` : list[0];
+	return `Polen ${when}: ${joined}.`;
+}
+
+/** «La franja de 2 horas más barata que queda hoy es de 14:00 a 16:00, a 0,052 € el kWh.» */
+export function cheapPhrase(when: 'hoy' | 'mañana', hours: number, from: string, to: string, kwh: number): string {
+	const span = hours === 1 ? 'La hora' : `La franja de ${hours} horas`;
+	const left = when === 'hoy' ? 'que queda hoy' : 'de mañana';
+	return `${span} más barata ${left} es de ${from} a ${to}, a ${nf(kwh, 3)} € el kWh.`;
+}
+
 /** «La gasolina 95 cuesta de media 1,52 € el litro en España.» */
 export function fuelPhrase(place: string, eurPerLitre: number | null | undefined, fuel = 'La gasolina 95'): string | null {
 	return eurPerLitre == null ? null : `${fuel} cuesta de media ${nf(eurPerLitre, 3)} € el litro en ${place}.`;
