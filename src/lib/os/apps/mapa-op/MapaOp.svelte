@@ -28,6 +28,7 @@
 		OP_LAYERS,
 		parseParams,
 		PERIODS,
+		reaspect,
 		timeRange,
 		visible,
 		zoomAt,
@@ -63,12 +64,14 @@
 	const max = $derived(fitView(sw / Math.max(1, sh)));
 	// $state.raw: el encuadre siempre se sustituye entero (como un ref de Vue con un objeto que no se muta).
 	let view = $state.raw<ViewBox>(fitView(2));
-	// Al cambiar el tamaño de la ventana, si se veía el mundo entero, se sigue viendo entero.
+	// Al cambiar el tamaño de la ventana, si se veía el mundo entero, se sigue viendo entero; si había zoom, el
+	// mismo encuadre con la proporción nueva (si no, el mapa se deformaba y arrastrar o la rueda iban desfasados).
 	let lastMax: ViewBox | null = null;
 	$effect(() => {
 		const m = max;
 		untrack(() => {
 			if (!lastMax || (view.w >= lastMax.w - 0.01 && view.h >= lastMax.h - 0.01)) view = m;
+			else view = reaspect(view, m.w / m.h);
 		});
 		lastMax = m;
 	});
@@ -823,9 +826,18 @@
 			border-color: var(--cmd-coast);
 		}
 
-		.lh,
-		.note {
+		.note,
+		.lh > span {
 			display: none;
+		}
+
+		/* «Todas» y «Ninguna» se quedan, al principio de la fila: en táctil no hay doble clic para «solo esta capa». */
+		.lh {
+			flex: none;
+		}
+
+		.lnk {
+			min-height: var(--control-h);
 		}
 
 		.side {

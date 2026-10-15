@@ -474,6 +474,13 @@ export function fitView(aspect: number): ViewBox {
 	return { x: WORLD.x, y: WORLD.y + (WORLD.h - h) / 2, w: WORLD.w, h };
 }
 
+/** El mismo encuadre (centro y ancho) con otra proporción: al girar el móvil o cambiar la ventana con zoom puesto. */
+export function reaspect(v: ViewBox, aspect: number): ViewBox {
+	if (!(Number.isFinite(aspect) && aspect > 0)) return v;
+	const h = v.w / aspect;
+	return { x: v.x, y: v.y + (v.h - h) / 2, w: v.w, h };
+}
+
 /** Que no se salga del mundo más de media pantalla. */
 export function clampView(v: ViewBox): ViewBox {
 	const cx = Math.min(360, Math.max(0, v.x + v.w / 2));

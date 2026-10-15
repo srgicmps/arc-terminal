@@ -16,6 +16,7 @@ import {
 	parseParams,
 	parseT,
 	playStep,
+	reaspect,
 	timeRange,
 	visible,
 	WORLD,
@@ -219,6 +220,11 @@ describe('línea de tiempo', () => {
 });
 
 describe('mapa plano', () => {
+	it('al cambiar la proporción con zoom, mantiene centro y ancho', () => {
+		const v = reaspect({ x: 100, y: 50, w: 40, h: 20 }, 1);
+		expect(v).toEqual({ x: 100, y: 40, w: 40, h: 40 });
+		expect(reaspect(v, 0)).toBe(v);
+	});
 	it('encaja el mundo en la proporción de la ventana', () => {
 		const v = fitView(4);
 		expect(v.h).toBe(WORLD.h);
