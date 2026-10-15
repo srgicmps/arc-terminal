@@ -36,6 +36,8 @@ export interface Globe {
 	focus(p: { lat: number; lon: number }): void;
 	/** Gira o acerca con el teclado: grados y factor de zoom. */
 	nudge(dLon: number, dLat: number, zoom?: number): void;
+	/** Para o reanuda el giro solo (WCAG 2.2.2: lo que se mueve solo se puede pausar). */
+	setSpin(on: boolean): void;
 	destroy(): void;
 }
 
@@ -335,11 +337,15 @@ export function createGlobe(canvas: HTMLCanvasElement, opts: GlobeOptions): Glob
 		}
 	}
 
+	/** Giro solo: nunca con «reducir movimiento»; el botón de pausa lo apaga. */
+	let spin = !opts.reduced;
+
 	// Bucle de animación: solo corre si hay algo que mover y el globo se ve.
 	const moving = (now: number) =>
 		!!fly ||
 		Math.abs(vLon) + Math.abs(vLat) > 0.0005 ||
-		(!opts.reduced && ((now - lastTouch > IDLE && !selected) || flash.size > 0 || pulsing));
+		(spin && now - lastTouch > IDLE && !selected) ||
+		(!opts.reduced && (flash.size > 0 || pulsing));
 
 	function frame(now: number) {
 		raf = 0;
@@ -357,7 +363,7 @@ export function createGlobe(canvas: HTMLCanvasElement, opts: GlobeOptions): Glob
 			const decay = Math.pow(0.94, dt / 16);
 			vLon *= decay;
 			vLat *= decay;
-		} else if (!opts.reduced && dragging === null && !selected && now - lastTouch > IDLE) {
+		} else if (spin && dragging === null && !selected && now - lastTouch > IDLE) {
 			view.lon = wrapLon(view.lon + AUTO * dt);
 		}
 		draw(now);
@@ -372,7 +378,7 @@ export function createGlobe(canvas: HTMLCanvasElement, opts: GlobeOptions): Glob
 			last = 0;
 			// Vuelve a mirar cuando toque arrancar el giro solo.
 			clearTimeout(timer);
-			if (!opts.reduced && !selected) timer = setTimeout(schedule, Math.max(50, IDLE - (now - lastTouch)));
+			if (spin && !selected) timer = setTimeout(schedule, Math.max(50, IDLE - (now - lastTouch)));
 		}
 	}
 	const kick = () => {
@@ -503,6 +509,10 @@ export function createGlobe(canvas: HTMLCanvasElement, opts: GlobeOptions): Glob
 			view.lon = wrapLon(view.lon + dLon);
 			view.lat = clampLat(view.lat + dLat);
 			setZoom(zoom * z);
+		},
+		setSpin(on) {
+			spin = on && !opts.reduced;
+			kick();
 		},
 		destroy() {
 			cancelAnimationFrame(raf);
