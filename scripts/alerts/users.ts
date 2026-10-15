@@ -15,6 +15,8 @@ import { briefAlert, briefDue, briefLines, type Weather } from './brief.ts';
 import { QUOTAS } from './config.ts';
 import { madrid, RULES, type Alert, type Inputs, type NotifyLog, type Rule } from './rules.ts';
 import { ordersOf, userRules } from './user.ts';
+import { homeRules } from './home.ts';
+import type { AirData } from '../../src/lib/weather.ts';
 
 export interface RemoteUser {
 	uid: string;
@@ -175,6 +177,8 @@ export interface Engine {
 	minute: (ms: number) => string;
 	/** El tiempo de hoy en un sitio (brief.ts → weatherAt). Sin él, «Tu mañana» va sin tiempo. */
 	weather?: (lat: number, lon: number) => Promise<Weather | null>;
+	/** Aire y polen de un sitio (home.ts → airAt). Sin él, no hay aviso de polen. */
+	air?: (lat: number, lon: number) => Promise<AirData | null>;
 }
 
 /** Un «Tu mañana» que también va por email: la web busca el email por el uid (cloud/brief.ts). */
@@ -208,10 +212,21 @@ export async function runUsers(
 		if (!skies.has(key)) skies.set(key, engine.weather?.(p.lat, p.lon) ?? Promise.resolve(null));
 		return skies.get(key)!;
 	};
+	const airs = new Map<string, Promise<AirData | null>>();
+	const airOf = (p: { lat: number; lon: number }) => {
+		const key = `${p.lat},${p.lon}`;
+		if (!airs.has(key)) airs.set(key, engine.air?.(p.lat, p.lon) ?? Promise.resolve(null));
+		return airs.get(key)!;
+	};
 	for (const u of users) {
 		if (!u.topic || !u.config.on) continue;
 		const topic = u.topic;
-		const rules = [...rulesFor(u.config, now, all), ...ownRulesFor(u, now)];
+		// Avisos de casa: fuera de su silencio. El polen, del sitio de «Tu mañana».
+		const place = u.config.brief.place;
+		const air = u.config.home.pollen && place ? await airOf(place) : null;
+		const tomorrow = air?.days[1] ?? null;
+		const home = inQuiet(madrid(now).hm, u.config.quiet) ? [] : homeRules(u.config, tomorrow);
+		const rules = [...rulesFor(u.config, now, all), ...ownRulesFor(u, now), ...home];
 		const input = inputsFor(d, u.config, base);
 		const who = `usuario ${u.uid.slice(0, 4)}`;
 		const send = async (alert: Alert, log: NotifyLog) => {
@@ -248,7 +263,7 @@ export async function runUsers(
 		if (briefDue(u.config, log, now)) {
 			const place = u.config.brief.place;
 			const weather = place ? await weatherOf(place) : null;
-			const alert = briefAlert(briefLines(u.config, input, madrid(now).date, base, weather), now);
+			const alert = briefAlert(briefLines(u.config, input, madrid(now).date, base, weather, now), now);
 			const ok = await send(alert, log);
 			if (u.config.brief.email) mails.push({ uid: u.uid, subject: alert.title, text: alert.body });
 			say(`ntfy · ${who}: «Tu mañana» ${ok ? 'enviado' : 'no enviado'}${u.config.brief.email ? ' (y por email)' : ''}`);
