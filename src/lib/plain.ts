@@ -104,6 +104,13 @@ export function pollenPhrase(when: 'hoy' | 'mañana', high: { name: string; leve
 	return `Polen ${when}: ${joined}.`;
 }
 
+/** «La franja de 2 horas más barata que queda hoy es de 14:00 a 16:00, a 0,052 € el kWh.» */
+export function cheapPhrase(when: 'hoy' | 'mañana', hours: number, from: string, to: string, kwh: number): string {
+	const span = hours === 1 ? 'La hora' : `La franja de ${hours} horas`;
+	const left = when === 'hoy' ? 'que queda hoy' : 'de mañana';
+	return `${span} más barata ${left} es de ${from} a ${to}, a ${nf(kwh, 3)} € el kWh.`;
+}
+
 /** «La gasolina 95 cuesta de media 1,52 € el litro en España.» */
 export function fuelPhrase(place: string, eurPerLitre: number | null | undefined, fuel = 'La gasolina 95'): string | null {
 	return eurPerLitre == null ? null : `${fuel} cuesta de media ${nf(eurPerLitre, 3)} € el litro en ${place}.`;
