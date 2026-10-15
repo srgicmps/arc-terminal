@@ -43,6 +43,14 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
   de SvelteKit (`pushState`, `page.state.phone`); en inicio, sale de /os como siempre.
 - [ ] Probarlo en un iPhone de verdad (safe-area, PWA instalada): solo puede Sergi; probado en Chromium a 390×844.
 
+## QA OS 1 (inicio del móvil)
+- [x] Iconos que encogen con el alto de la pantalla (iPhone SE y 320 px: el nombre pisaba el icono de abajo) y widgets
+  que se ajustan a su hueco (`@container`).
+- [x] Widgets en franjas de 2 filas (`layout` + `rowsOf` de `home.ts`): con 4 pequeños el último se salía de la rejilla.
+- [x] «−» de los widgets, redondo. En horizontal (8 × 3 de QA OS 3) un widget pequeño ocupa 2 × 1 (no cabían).
+- [x] Mantener un widget entra en el modo edición; tocar un hueco vacío lo termina. Carpetas: miniaturas 3×3 desde
+  arriba a la izquierda.
+
 ## iPhone, iPad y PWA (QA OS 3)
 - [x] `viewport-fit=cover` solo dentro de /os (`src/lib/os/mobile/viewport.ts`): sin él, Safari dejaba a 0 todas las
   zonas seguras y el dock y la barra de las apps quedaban bajo la barra de inicio del iPhone.
