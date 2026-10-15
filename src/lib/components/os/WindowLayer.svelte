@@ -144,6 +144,12 @@
 		content-visibility: hidden;
 	}
 
+	/* El escritorio (Desktop.svelte) pone esta capa sin puntero para que los iconos de debajo reciban los clics, y
+	   pointer-events se hereda: sin esto, el menú de la ventana no se podía pulsar (el clic iba al escritorio). */
+	.layer > :global([data-ui='os-menu']) {
+		pointer-events: auto;
+	}
+
 	.preview {
 		position: absolute;
 		z-index: 9999;
