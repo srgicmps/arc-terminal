@@ -7,9 +7,14 @@ import { COUNTRIES } from '../countries.ts';
 import { LEADERS } from '../leaders.ts';
 
 /** Países y líderes por su nombre o alias: «trump», «rusia» no son valores aunque lo parezcan. */
-const NAMES = new Set(
-	[...COUNTRIES.flatMap((c) => [c.name, ...(c.aliases ?? [])]), ...LEADERS.flatMap((l) => [l.id, l.name, ...l.aliases])].map(norm)
-);
+// Se calcula al usarlo por primera vez: cmdline.ts importa este archivo y este usa norm() de cmdline.ts.
+let names: Set<string> | null = null;
+const NAMES = {
+	has: (q: string) =>
+		(names ??= new Set(
+			[...COUNTRIES.flatMap((c) => [c.name, ...(c.aliases ?? [])]), ...LEADERS.flatMap((l) => [l.id, l.name, ...l.aliases])].map(norm)
+		)).has(q)
+};
 
 /** Un rango del gráfico de TradingView: su código, cómo se dice y cuántos días cubre (aprox.). */
 export interface Range {
