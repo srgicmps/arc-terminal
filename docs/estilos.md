@@ -66,6 +66,8 @@ Engánchate SIEMPRE a estos atributos `data-ui` (son la API estable; las clases 
 | `app` | Contenedor de toda la página (cabecera, navegación, cinta, main, pestañas, pie) |
 | `top` | Cabecera: marca, barra de comandos, sitio, relojes, botones |
 | `brand` | Logotipo y nombre |
+| `place` | Chip «Tu sitio» |
+| `clocks` | Relojes de las bolsas |
 | `cmd` | Barra de comandos (en el móvil, hoja con `.sheet`) |
 | `keys` | Fila de secciones (teclas) |
 | `tape` | Cinta de cotizaciones |
@@ -76,11 +78,13 @@ Engánchate SIEMPRE a estos atributos `data-ui` (son la API estable; las clases 
 | `view-head` | Cabecera de vista (código, título, fuentes, resumen) |
 | `panel` | Panel (`.max`: ampliado, como hoja modal; `.folded`: plegado) |
 | `panel-head` | Cabecera del panel (título, datos, botones) |
+| `panel-meta` | El dato de la derecha de la cabecera del panel |
 | `table` | Tabla densa |
 | `tiles` | Fila de cifras grandes |
 | `chart` | Gráfico de líneas |
 
-Además, `<html data-scrolled>` cuando la página ha bajado (títulos que se encogen, barras con sombra).
+Las rejillas de las vistas usan las clases globales de `app.css`, también estables: `.grid` (y `.grid-2`, `.grid-2e`,
+`.grid-3`) y `.col` (una columna de paneles). Además, `<html data-scrolled>` cuando la página ha bajado (títulos que se encogen, barras con sombra).
 
 Reglas:
 - Estos retoques van **fuera** de `@layer` y con el prefijo `[data-style='id'][data-style]` (ver la plantilla), para

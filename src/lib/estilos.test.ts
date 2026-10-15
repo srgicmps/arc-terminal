@@ -120,9 +120,11 @@ describe('estéticas', () => {
 	it('los ganchos data-ui de docs/estilos.md siguen en su componente (las estéticas se enganchan a ellos)', () => {
 		const hooks: Record<string, string> = {
 			'src/routes/+layout.svelte': 'app top brand keys tape main tabs foot',
+			'src/lib/components/Clocks.svelte': 'clocks',
+			'src/lib/components/PlacePicker.svelte': 'place',
 			'src/lib/components/CommandBar.svelte': 'cmd',
 			'src/lib/components/PanelIndex.svelte': 'panel-index',
-			'src/lib/components/Panel.svelte': 'panel panel-head',
+			'src/lib/components/Panel.svelte': 'panel panel-head panel-meta',
 			'src/lib/components/ViewHeader.svelte': 'view-head',
 			'src/lib/components/ui/Table.svelte': 'table',
 			'src/lib/components/ui/Tiles.svelte': 'tiles',
