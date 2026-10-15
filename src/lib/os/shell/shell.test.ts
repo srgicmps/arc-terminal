@@ -88,3 +88,26 @@ describe('reloj', () => {
 		expect(openMarkets(now)).toBe(3);
 	});
 });
+
+import { isSkin, isSpotlightKey, layoutOf, magnify } from './skins.ts';
+
+describe('aspectos', () => {
+	it('colocan cada pieza en su sitio', () => {
+		expect(layoutOf('windows', 'bottom')).toEqual({ top: null, bottom: 'taskbar' });
+		expect(layoutOf('windows', 'top')).toEqual({ top: 'taskbar', bottom: null });
+		expect(layoutOf('mac', 'top')).toEqual({ top: 'menubar', bottom: 'dock' });
+		expect(layoutOf('linux', 'bottom')).toEqual({ top: 'topbar', bottom: null });
+		expect(isSkin('mac')).toBe(true);
+		expect(isSkin('beos')).toBe(false);
+	});
+	it('la lupa del dock crece cerca y se queda en 1 lejos', () => {
+		expect(magnify(0)).toBeCloseTo(1.6);
+		expect(magnify(200)).toBe(1);
+		expect(magnify(60)).toBeGreaterThan(1);
+		expect(magnify(60)).toBeLessThan(1.6);
+	});
+	it('Ctrl+Espacio abre el buscador', () => {
+		expect(isSpotlightKey({ code: 'Space', ctrlKey: true, metaKey: false, altKey: false })).toBe(true);
+		expect(isSpotlightKey({ code: 'Space', ctrlKey: false, metaKey: false, altKey: false })).toBe(false);
+	});
+});

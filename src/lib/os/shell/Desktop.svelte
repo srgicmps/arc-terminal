@@ -84,6 +84,16 @@
 		background: var(--os-desk);
 		background-image: var(--bg-image, none);
 	}
+	/* «El del aspecto»: un fondo propio de cada uno, hecho con los colores de la estética. */
+	:global([data-os-skin='windows']) .desktop[data-wallpaper='sistema'] {
+		background-image: radial-gradient(ellipse 80% 60% at 50% 110%, var(--amber-soft), transparent 70%), radial-gradient(ellipse 60% 50% at 80% 0%, var(--raise), transparent 70%);
+	}
+	:global([data-os-skin='mac']) .desktop[data-wallpaper='sistema'] {
+		background-image: linear-gradient(160deg, var(--raise) 0%, var(--amber-soft) 55%, var(--panel) 100%);
+	}
+	:global([data-os-skin='linux']) .desktop[data-wallpaper='sistema'] {
+		background-image: radial-gradient(circle at 70% 30%, var(--amber-soft), transparent 45%), linear-gradient(var(--panel), var(--bg));
+	}
 	.desktop[data-wallpaper='liso'] {
 		background-image: none;
 	}

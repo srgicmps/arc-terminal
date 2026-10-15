@@ -171,6 +171,9 @@
 	:global([data-os-bar='top']) .toasts {
 		bottom: var(--sp-12);
 	}
+	:global([data-os-skin='mac']) .toasts {
+		bottom: calc(var(--os-dock-h) + var(--sp-12));
+	}
 	.toast {
 		display: flex;
 		align-items: flex-start;

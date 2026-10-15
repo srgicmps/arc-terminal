@@ -154,6 +154,15 @@
 	--os-title-fg-active: var(--fg); /* texto de la barra de título con el foco */
 	--os-snap: var(--amber-soft); /* zona donde va a encajar la ventana al soltarla */
 	--os-bar-h: calc(var(--control-h) + var(--sp-12)); /* alto de la barra de tareas (crece sola en pantallas táctiles) */
+	--os-dock-h: 64px; /* alto del dock del aspecto Mac (iconos de 40 px y su lupa) */
+	--os-font: var(--sans); /* letra de la barra, los menús y los títulos de ventana; cada aspecto pone la suya */
+	--os-menu-radius: var(--radius); /* esquinas de menús, buscador y dock */
+	--os-icon-radius: var(--radius); /* esquinas de los iconos de app */
+	--os-topbar-bg: var(--panel); /* barra de arriba y vista Actividades del aspecto Linux */
+	--os-topbar-fg: var(--fg);
+	--os-topbar-hover: var(--raise);
+	--os-blur: blur(24px); /* desenfoque del fondo bajo Launchpad y el primer arranque */
+	--os-veil: color-mix(in srgb, var(--bg) 82%, transparent); /* velo de Launchpad y del primer arranque */
 	--focus-w: var(--hair); /* grosor del contorno de foco con teclado */
 	--scroll-w: 8px; /* ancho de las barras de desplazamiento (escritorio; en el móvil son las del sistema) */
 	--scroll-thumb: var(--neutral); /* la parte que se arrastra */
@@ -229,4 +238,27 @@
 	background-image: var(--bg-image);
 	color: var(--fg);
 	font-family: var(--font-ui);
+}
+
+/* ---------- Aspectos de Arc OS (data-os-skin en /os, src/lib/os/shell/skins.ts) ----------
+   Solo letra y formas: los colores siguen siendo los de la estética activa. Letras del sistema: no se descarga nada. */
+[data-os-skin='windows'] {
+	--os-font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+	--os-menu-radius: 8px;
+	--os-icon-radius: 4px;
+}
+[data-os-skin='mac'] {
+	--os-font: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+	--os-bar-h: max(28px, var(--control-h));
+	--os-menu-radius: 10px;
+	--os-icon-radius: 22%;
+}
+[data-os-skin='linux'] {
+	--os-font: Cantarell, 'Noto Sans', Ubuntu, system-ui, sans-serif;
+	--os-bar-h: max(32px, var(--control-h));
+	--os-menu-radius: 12px;
+	--os-icon-radius: 50%;
+	--os-topbar-bg: #121214; /* barra negra, de día y de noche */
+	--os-topbar-fg: #f2f2f3;
+	--os-topbar-hover: color-mix(in srgb, var(--os-topbar-fg) 14%, transparent);
 }

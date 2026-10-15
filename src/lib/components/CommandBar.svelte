@@ -334,6 +334,8 @@
 			run('');
 			return;
 		}
+		// En Arc OS (/os) la barra queda debajo del escritorio: sus teclas (Esc → portada, letras → barra) no valen.
+		if (document.querySelector('[data-ui="os"]')) return;
 		const tag = (document.activeElement?.tagName ?? '').toUpperCase();
 		if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || e.ctrlKey || e.metaKey || e.altKey) return;
 		if (isShortcut(e, 'bar')) {
