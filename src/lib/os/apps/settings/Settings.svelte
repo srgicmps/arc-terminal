@@ -17,9 +17,10 @@
 	import { setTitleLang, titles, type TitleLang } from '../../../titles.svelte.ts';
 	import { leaveOS } from '../../mode.svelte.ts';
 	import { APPS, newDesk, openApp, os } from '../../os.svelte.ts';
+	import { lock, setSettings, sys } from '../../system/system.svelte.ts';
 	import { setBar, setWallpaper, setWidgets, shell, WALLPAPERS, type Wallpaper } from '../../shell/shell.svelte.ts';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from '../../shell/widgets.ts';
-	import type { AppProps } from '../../apps.ts';
+	import { findApp, type AppProps } from '../../apps.ts';
 	import Tool from '../kit/Tool.svelte';
 
 	let { win }: AppProps = $props();
@@ -27,6 +28,7 @@
 	const SECTIONS = [
 		['apariencia', 'Apariencia', '◐'],
 		['escritorio', 'Escritorio', '▦'],
+		['sistema', 'Sistema', '⏻'],
 		['avisos', 'Avisos', '◬'],
 		['cuenta', 'Cuenta y modo', '◉'],
 		['region', 'Idioma y región', '◍'],
@@ -53,6 +55,9 @@
 	let perm = $state<NotificationPermission | 'none'>('none');
 	onMount(() => (perm = 'Notification' in window ? Notification.permission : 'none'));
 	const ask = async () => (perm = await Notification.requestPermission());
+
+	/** Ajustes de sistema de OS 5 (system.svelte.ts): salen los que existan. */
+	const SYS_LABELS: Record<string, string> = { boot: 'Pantalla de inicio la primera vez del día', sounds: 'Sonidos del sistema (muy bajos)' };
 
 	const groups = [...new Set(SHORTCUTS.map((s) => s.group))];
 	const tools = APPS.filter((a) => a.kind === 'herramienta').length;
@@ -97,6 +102,18 @@
 					</div>
 					<h3>Escritorios virtuales</h3>
 					<p>{os.state.desks.length} · <button type="button" class="link" onclick={() => newDesk()}>Añadir escritorio</button></p>
+				{:else if section === 'sistema'}
+					<h2>Sistema</h2>
+					{#each Object.entries(SYS_LABELS) as [k, label] (k)}
+						{#if k in sys.settings}
+							<label class="check"
+								><input type="checkbox" checked={!!(sys.settings as unknown as Record<string, boolean>)[k]} onchange={(e) => setSettings({ [k]: e.currentTarget.checked } as Parameters<typeof setSettings>[0])} />
+								{label}</label
+							>
+						{/if}
+					{/each}
+					<p><button type="button" onclick={lock}>Bloquear la pantalla</button></p>
+					{#if findApp('wallpaper')}<p><button type="button" onclick={() => openApp('wallpaper')}>Fondo de pantalla…</button></p>{/if}
 				{:else if section === 'avisos'}
 					<h2>Avisos</h2>
 					<h3>Al móvil</h3>
@@ -265,6 +282,13 @@
 		background: var(--raise);
 		font-family: var(--mono);
 		font-size: var(--fs-s);
+	}
+
+	.check {
+		display: flex;
+		align-items: center;
+		gap: var(--sp-8);
+		margin: var(--sp-6) 0;
 	}
 
 	.chips {

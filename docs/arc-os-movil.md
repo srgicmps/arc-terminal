@@ -24,7 +24,9 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
 - [ ] **Estilo único de Arc OS** («Centro de mando», de OS 6): sin aspectos; dentro de /os no se aplican las estéticas
   de la web. Estructura tipo iOS, pero sin imitar a Apple. Cambiar los tokens `--os-phone-*`, `--os-glass*`, `--os-icon-*`.
 - [ ] **Iconos SVG** de OS 2b (`src/lib/os/icons/`, `<OsIcon id size />`) en `PhoneIcon.svelte` en lugar del carácter.
-- [ ] **Carpetas** al arrastrar un icono sobre otro (mismo modelo que OS 2/OS 4); orden de iconos editable y guardado.
+- [x] **Carpetas** al arrastrar un icono sobre otro; orden de iconos y dock editables y guardados (`arc-os-phone`, en la
+  cuenta). Modelo propio del teléfono, de un nivel como en iOS (`place`, `takeOut`, `arrange` de `home.ts`), no el árbol
+  de archivos de OS 2.
 - [ ] Spotlight con `searchAll()` de OS 5 (`src/lib/os/system/search.ts`) cuando esté en main.
 - [ ] Pantalla de bloqueo/arranque de OS 5 en el móvil (le pedí aspecto de teléfono, por encima de `--z-modal`+4).
 - [ ] Apps de OS 4 (Calculadora, Reloj, Notas, Monitor, Calendario, Ajustes, Archivos) a pantalla completa: comprobar a 390 px.
