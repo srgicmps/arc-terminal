@@ -40,10 +40,10 @@ nada en los traspasos entre sesiones.
 - [x] **Un único aspecto fijo, propio de Arc**: identidad «Centro de mando» (estilo de plataforma de inteligencia,
       el que diseña OS 6) con estructura tipo DSM: barra superior fina, menú de apps, iconos grandes y widgets a la
       derecha [OS 6 diseño + OS 2 estructura] #503
-- [ ] Quitar el selector de aspectos del asistente y del Panel de control. El asistente queda en fondo, widgets y
-      nombre [OS 2]
-- [ ] Las estéticas de la web (Apariencia: `data-style`, acento y densidad) solo afectan al **contenido de las
-      apps** dentro de las ventanas, nunca al escritorio, la barra, los menús ni la decoración de ventana [OS 2]
+- [x] Quitar el selector de aspectos del asistente y del Panel de control. El asistente queda en fondo, widgets y
+      nombre [OS 2] #527
+- [x] Las estéticas de la web (Apariencia: `data-style`, acento y densidad) solo afectan al **contenido de las
+      apps** dentro de las ventanas, nunca al escritorio, la barra, los menús ni la decoración de ventana [OS 2] #527
 - [x] El fondo de pantalla sí se puede cambiar: app «Fondo de pantalla», `openApp('wallpaper')` [OS 5] #511
 
 ## Escritorio
@@ -56,9 +56,9 @@ nada en los traspasos entre sesiones.
 - [x] Iconos en rejilla: arrastrar (solos o en grupo), casilla libre más cercana, guardados en la cuenta [OS 2] #501
 - [x] Selección rectangular y Ctrl o ⌘ + clic [OS 2] #501
 - [x] Clic derecho en el escritorio y en los iconos [OS 2] #501
-- [ ] **Iconos de verdad**: un set SVG propio a color (48–64 px, sombra o brillo según el aspecto) para cada app,
+- [x] **Iconos de verdad**: un set SVG propio a color (48–64 px, sombra o brillo según el aspecto) para cada app,
       vista, carpeta y archivo. Se usa en el escritorio, Inicio, la barra, el dock, el explorador y el móvil
-      (pasarlo a OS 3, OS 4 y OS 6) [OS 2]
+      (pasarlo a OS 3, OS 4 y OS 6) [OS 2] #526
 - [ ] **Carpetas** en el escritorio: nueva carpeta (clic derecho), renombrar, arrastrar iconos dentro y fuera,
       abrir carpeta en una ventana con sus iconos, carpetas dentro de carpetas, eliminar a la papelera. Se guardan
       en la cuenta. Mismo modelo que el explorador [OS 2 + OS 4]
@@ -66,7 +66,7 @@ nada en los traspasos entre sesiones.
 ## Revisión de Decisiones 2 (main a 1440 y 390 px)
 - [x] El reloj de la bandeja salía en UTC: ahora usa la zona del navegador, y Madrid si no hay ninguna [OS 2] #501
 - [x] «5 abiertas» se leía como ventanas: ahora dice «5 bolsas abiertas» [OS 2] #501
-- [ ] Iconos todavía como glifos (▦ ★ % $): va con el set SVG de «Escritorio» [OS 2]
+- [x] Iconos todavía como glifos (▦ ★ % $): va con el set SVG de «Escritorio» [OS 2] #526
 - [ ] Widgets vacíos en local: comprobar que en la web real se llenan y, si una fuente falla, poner un mensaje útil (qué falla y cuándo se vuelve a intentar) [OS 2]
 - [ ] A 390 px sigue saliendo el escritorio de PC: lo resuelve la versión móvil (#494) [OS 3]
 
