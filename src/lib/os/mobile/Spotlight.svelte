@@ -31,6 +31,8 @@
 		...TICKERS.map((t) => ({ code: t.code, desc: t.name, kind: 'Valor' }))
 	];
 
+	const PLURAL: Record<string, string> = { Valor: 'Valores', País: 'Países', Líder: 'Líderes', Ajuste: 'Ajustes' };
+
 	let q = $state('');
 	let input: HTMLInputElement;
 	$effect(() => input.focus());
@@ -84,7 +86,7 @@
 			<button class="card row" onclick={() => onpath(go.path)}><span class="v">{go.label}</span><span class="k">↵</span></button>
 		{/if}
 		{#each groups as [kind, list] (kind)}
-			<h3>{kind === 'País' ? 'Países' : kind === 'Líder' ? 'Líderes' : kind + 's'}</h3>
+			<h3>{PLURAL[kind] ?? kind}</h3>
 			<div class="list">
 				{#each list.slice(0, 5) as h (h.id)}
 					<button class="card row" onclick={() => onhit(h)}>

@@ -18,7 +18,8 @@
 	import { MediaQuery } from 'svelte/reactivity';
 
 	// En el móvil (≤ 900 px), pantalla de inicio de teléfono (OS 3); sin el escritorio, así no carga sus iframes.
-	const phone = new MediaQuery('max-width: 900px', false);
+	// También un teléfono grande girado (932 × 430): si no, al girarlo salía el escritorio y se cerraban las apps.
+	const phone = new MediaQuery('(max-width: 900px), (pointer: coarse) and (max-height: 500px)', false);
 
 	// La shell de «OS 2» (aspecto, barras, escritorio con iconos y widgets) alrededor de las ventanas del núcleo.
 	// Luego, las carpetas del escritorio (la primera vez, con las apps ancladas y en las casillas que tenían).
