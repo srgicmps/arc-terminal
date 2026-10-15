@@ -14,7 +14,9 @@ const PAGE = 'https://www.bde.es/webbe/es/estadisticas/otras-clasificaciones/pub
 const WANTED = [
 	{ code: 'DPUG0B1F0ZPD', id: 'premium-es-d', label: 'Prima de riesgo de España', unit: 'pb', geo: 'ES', factor: 100 },
 	{ code: 'DPUG0B1F0ZP', id: 'bond10-es-d', label: 'Bono español a 10 años', unit: '%', geo: 'ES', factor: 1 },
-	{ code: 'DPUDNBBN308', id: 'bond10-de-d', label: 'Bono alemán a 10 años', unit: '%', geo: 'DE', factor: 1 }
+	{ code: 'DPUDNBBN308', id: 'bond10-de-d', label: 'Bono alemán a 10 años', unit: '%', geo: 'DE', factor: 1 },
+	// Letras del Tesoro a 12 meses, mercado secundario (AHORRO).
+	{ code: 'DPUDTES00U7', id: 'letras12-es-d', label: 'Letras del Tesoro a 12 meses', unit: '%', geo: 'ES', factor: 1 }
 ];
 
 const MONTHS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
@@ -52,7 +54,7 @@ export function parseBde(text: string): Series[] {
 
 export const bde: Source<SeriesData> = {
 	name: 'bde',
-	label: 'Prima de riesgo diaria · Banco de España',
+	label: 'Prima de riesgo y letras del Tesoro, diarias · Banco de España',
 	// El BdE publica el dato del día anterior por la mañana: con mirar cada 3 h basta.
 	maxAgeMinutes: 175,
 	async fetch() {

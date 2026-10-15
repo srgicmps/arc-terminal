@@ -2,10 +2,10 @@
 // inferior del móvil. Se guarda en este navegador; sin nada guardado, todo queda como siempre.
 // El acento va en <html data-accent> (lo pone ya src/app.html antes de pintar, para que no parpadee) y
 // tokens.css redefine --amber y compañía: ningún componente sabe de qué color es el acento.
-import { ACCENTS, cleanCodes, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, THUMB_MAX, type Accent, type Density } from './taste.ts';
+import { ACCENTS, cleanCodes, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, THUMB_MAX, VISIBLE_KEYS, type Accent, type Density } from './taste.ts';
 import { useSheet } from './estilos-css.ts';
 
-export { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, THUMB_MAX, type Accent, type Density };
+export { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, THUMB_MAX, VISIBLE_KEYS, type Accent, type Density };
 
 const KEYS = { style: 'arc-style', accent: 'arc-accent', density: 'arc-density', top: 'arc-keys', thumb: 'arc-thumb' };
 
