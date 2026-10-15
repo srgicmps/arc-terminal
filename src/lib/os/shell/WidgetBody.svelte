@@ -5,13 +5,14 @@
 -->
 <script lang="ts">
 	import { clock } from '#lib/clock.svelte.ts';
-	import { nf, signed } from '#lib/format.ts';
+	import { nf, signed, when } from '#lib/format.ts';
 	import { MARKETS, marketStatus, until } from '#lib/markets.ts';
 	import { place } from '#lib/place.svelte.ts';
 	import { cheapestNow, hourLabel } from '#lib/power.ts';
 	import { sky } from '#lib/weather.ts';
+	import { shell } from './shell.svelte.ts';
 	import { wdata } from './widgetdata.svelte.ts';
-	import type { WidgetKind } from './widgets.ts';
+	import { statusSummary, type WidgetKind } from './widgets.ts';
 	import { timeIn, ZONES } from './zones.ts';
 
 	interface Props {
@@ -28,6 +29,9 @@
 	const hour = $derived(clock.now ? Number(timeIn(Intl.DateTimeFormat().resolvedOptions().timeZone, clock.now).slice(0, 2)) : 12);
 	const hello = $derived(hour < 6 ? 'Buenas noches' : hour < 14 ? 'Buenos días' : hour < 21 ? 'Buenas tardes' : 'Buenas noches');
 	const luzLine = $derived(luz ? `${hourLabel(luz.first)}–${hourLabel(luz.after)} ${luz.tomorrow ? 'mañana' : 'hoy'} · ${nf(luz.avg, 3)} €/kWh` : null);
+
+	const sys = $derived(statusSummary(wdata.status));
+	const health = $derived(sys.total ? Math.round((sys.ok / sys.total) * 100) : null);
 
 	function go(e: MouseEvent, href: string) {
 		e.preventDefault();
@@ -70,6 +74,30 @@
 		<p>Lo más barato: <b>{luzLine}</b></p>
 		<a href="/luz" onclick={(e) => go(e, '/luz')}>Luz →</a>
 	{:else}<p class="mut">Aún no hay precios de la luz.</p>{/if}
+{:else if kind === 'sistema'}
+	{#if sys.total}
+		<p class="gauge"><b class="big">{health}%</b> <span class="mut">fuentes al día</span></p>
+		<span class="meter" aria-hidden="true"><i style:width={`${health}%`}></i></span>
+		<ul class="rows small">
+			<li><span>Al día</span><b>{sys.ok}</b><span></span></li>
+			<li><span>Con copia anterior</span><b class:warn={sys.stale}>{sys.stale}</b><span></span></li>
+			<li><span>Sin datos</span><b class:bad={sys.error}>{sys.error}</b><span></span></li>
+			<li><span>Sin clave</span><b>{sys.off}</b><span></span></li>
+		</ul>
+		<a href="/status" onclick={(e) => go(e, '/status')}>Estado de las fuentes →</a>
+	{:else}<p class="mut">Sin estado de las fuentes.</p>{/if}
+{:else if kind === 'registro'}
+	{#if shell.notices.length || sys.failing.length}
+		<ul class="lines small">
+			{#each sys.failing.slice(0, 3) as f (f)}<li><span class="warn">●</span> {f}: falla, se usa la copia anterior</li>{/each}
+			{#each shell.notices.slice(0, 5) as n (n.id)}<li><span class:warn={n.kind === 'aviso'}>●</span> {n.title} <span class="mut">· {when(n.time, clock.now)}</span></li>{/each}
+		</ul>
+	{:else}<p class="mut">Nada que contar.</p>{/if}
+{:else if kind === 'datos'}
+	{#if sys.total}
+		<p><b class="big">{sys.total}</b> <span class="mut">fuentes de datos</span></p>
+		<p class="mut">Última descarga: {when(sys.last, clock.now)}. Se refrescan cada 5–30 min con GitHub Actions.</p>
+	{:else}<p class="mut">Sin datos.</p>{/if}
 {:else if kind === 'manana'}
 	<p><b>{hello}.</b></p>
 	<ul class="lines">
@@ -111,6 +139,33 @@
 		height: var(--dot);
 		border-radius: 50%;
 		background: var(--faint);
+	}
+	.small {
+		font-size: var(--fs-xs);
+	}
+	.gauge {
+		display: flex;
+		align-items: baseline;
+		gap: var(--sp-6);
+	}
+	.meter {
+		display: block;
+		height: var(--sp-4);
+		margin: var(--sp-4) 0 var(--sp-8);
+		border-radius: var(--radius-s);
+		background: var(--raise);
+		overflow: hidden;
+	}
+	.meter i {
+		display: block;
+		height: 100%;
+		background: var(--up);
+	}
+	.warn {
+		color: var(--amber);
+	}
+	.bad {
+		color: var(--down);
 	}
 	.dot.on {
 		background: var(--up);
