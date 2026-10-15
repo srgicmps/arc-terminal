@@ -4,6 +4,7 @@
 	derecha, que se va solo a los 8 s (o con ✕). Tus avisos al móvil se configuran en AVISOS.
 -->
 <script lang="ts">
+	import UiIcon from '../icons/UiIcon.svelte';
 	import { resolve } from '$app/paths';
 	import { clock } from '#lib/clock.svelte.ts';
 	import { when } from '#lib/format.ts';
@@ -45,7 +46,7 @@
 		aria-label={count ? `Notificaciones: ${count} sin leer` : 'Notificaciones'}
 		onclick={toggleCenter}
 	>
-		<span aria-hidden="true">◬</span>
+		<UiIcon id="bell" size={16} />
 		{#if count}<span class="badge">{count}</span>{/if}
 	</button>
 	{#if isOpen}
@@ -80,7 +81,7 @@
 				<b>{t.title}</b>
 				<span class="mut">{t.detail}</span>
 			</button>
-			<button type="button" class="x" aria-label="Cerrar aviso" onclick={() => dismissToast(t.id)}>✕</button>
+			<button type="button" class="x" aria-label="Cerrar aviso" onclick={() => dismissToast(t.id)}><UiIcon id="close" size={12} /></button>
 		</div>
 	{/each}
 </div>
@@ -191,6 +192,8 @@
 		font-size: var(--fs-s);
 	}
 	.toast .x {
+		display: grid;
+		place-items: center;
 		padding: var(--sp-8);
 		color: var(--muted);
 	}

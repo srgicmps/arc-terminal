@@ -77,6 +77,11 @@
 		font: inherit;
 		text-align: center;
 	}
+	/* El foco pisa el borde, en vez de un segundo marco separado. */
+	input:focus-visible {
+		outline: var(--hair) solid var(--amber);
+		outline-offset: calc(-1 * var(--hair));
+	}
 	.scroll {
 		width: min(1100px, 100%);
 		overflow: auto;
