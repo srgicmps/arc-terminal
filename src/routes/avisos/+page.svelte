@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
 	import { asset } from '$app/paths';
+	import FamilyPanel from '#lib/components/FamilyPanel.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import ButtonRow from '#lib/components/ui/ButtonRow.svelte';
@@ -316,6 +317,7 @@
 				{#snippet note()}Tu canal es secreto: quien lo sepa puede leer tus avisos. No lo compartas; si se escapa, «Canal
 					nuevo».{/snippet}
 			</Panel>
+			<FamilyPanel />
 		</div>
 	</div>
 {/if}

@@ -11,6 +11,7 @@
 	import { FUNCTIONS } from '#lib/functions.ts';
 	import Select from '#lib/components/ui/Select.svelte';
 	import { HOME_KEY, homeChoices, isHomeCode } from '#lib/home.ts';
+	import { EXPERIENCES, homeValue } from '#lib/experiences.ts';
 	import { persisted } from '#lib/persisted.svelte.ts';
 
 	// Vista de inicio (home.ts): la que se abre al entrar, guardada en este navegador.
@@ -115,7 +116,14 @@
 				<dt>Al entrar</dt>
 				<dd>
 					<Select label="Vista" bind:value={() => home.value, (v) => (home.value = v)}>
-						{#each homeChoices() as c (c.code)}<option value={c.code}>{c.code} · {c.key}</option>{/each}
+						<optgroup label="Vistas">
+							{#each homeChoices() as c (c.code)}<option value={c.code}>{c.code} · {c.key}</option>{/each}
+						</optgroup>
+						{#if EXPERIENCES.length}
+							<optgroup label="Experiencias">
+								{#each EXPERIENCES as e (e.id)}<option value={homeValue(e)}>{e.icon} {e.name}</option>{/each}
+							</optgroup>
+						{/if}
 					</Select>
 				</dd>
 				<dt>Primeros pasos</dt>
