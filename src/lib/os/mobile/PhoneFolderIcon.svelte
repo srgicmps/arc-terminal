@@ -46,7 +46,7 @@
 		background: var(--os-glass);
 		backdrop-filter: var(--os-glass-blur);
 		-webkit-backdrop-filter: var(--os-glass-blur);
-		box-shadow: inset 0 0 0 var(--hair) var(--line);
+		box-shadow: inset 0 0 0 var(--hair) var(--os-icon-edge);
 		color: var(--os-icon-fg);
 		transition: transform var(--dur-fast) var(--ease);
 	}
@@ -77,6 +77,8 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		font-size: var(--fs-xs);
+		text-transform: var(--os-icon-name-case);
+		letter-spacing: var(--os-icon-name-track);
 		text-shadow: 0 var(--hair) var(--sp-2) var(--bg);
 	}
 	@media (prefers-reduced-motion: reduce) {
