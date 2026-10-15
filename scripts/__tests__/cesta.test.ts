@@ -31,4 +31,15 @@ describe('cesta (Eurostat)', () => {
 		expect(d.groups.find((g) => g.code === 'CP07')).toMatchObject({ weight: 120, rate: null });
 		expect(d.groups).toHaveLength(13);
 	});
+
+	it('se salta el mes de la estimación rápida (solo el total) y usa el último con los grupos', () => {
+		const codes = ['TOTAL', 'CP01', 'CP02', 'CP03', 'CP04', 'CP05', 'CP06', 'CP07', 'CP08', 'CP09', 'CP10', 'CP11', 'CP12', 'CP13'];
+		// Tiempo es la última dimensión: el valor del código i en el mes j va en i * 2 + j.
+		const values = codes.flatMap((c, i) => [i + 1, c === 'TOTAL' ? 9 : null]);
+		const rates = stat(codes, ['2026-08', '2026-09'], values);
+		const d = build(stat(['TOTAL'], ['2026-08'], [100]), rates, stat(['CP01'], ['2026'], [100]));
+		expect(d.month).toBe('2026-08');
+		expect(d.total).toBe(1);
+		expect(d.groups[0].rate).toBe(2);
+	});
 });

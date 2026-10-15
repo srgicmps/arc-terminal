@@ -63,7 +63,10 @@ export function build(index: JsonStat, rates: JsonStat, weights: JsonStat): Cest
 	const points = times(index)
 		.map((t) => ({ t, v: cell(index, { time: t }) }))
 		.filter((p): p is { t: string; v: number } => p.v !== null);
-	const month = times(rates).at(-1) ?? '';
+	// El último mes suele ser la estimación rápida, solo con el total: se usa el último con casi todos los grupos.
+	const count = (t: string) => Object.keys(GROUPS).filter((code) => cell(rates, { coicop18: code, time: t }) !== null).length;
+	const most = Math.max(0, ...times(rates).map(count));
+	const month = most ? (times(rates).reverse().find((t) => count(t) >= Math.ceil(most * 0.75)) ?? '') : '';
 	const year = times(weights).at(-1) ?? '';
 	const groups: CpiGroup[] = Object.entries(GROUPS).map(([code, label]) => ({
 		code,
@@ -83,11 +86,11 @@ export const cesta: Source<CestaData> = {
 		const codes = ['TOTAL', ...Object.keys(GROUPS)].map((c): [string, string] => ['coicop18', c]);
 		const [index, rates, weights] = await Promise.all([
 			query('prc_hicp_minr', [['coicop18', 'TOTAL'], ['unit', 'I15'], ['sinceTimePeriod', '2002-01']]),
-			query('prc_hicp_minr', [...codes, ['unit', 'RCH_A'], ['lastTimePeriod', '1']]),
+			query('prc_hicp_minr', [...codes, ['unit', 'RCH_A'], ['lastTimePeriod', '4']]),
 			query('prc_hicp_iw', [...codes.slice(1), ['lastTimePeriod', '1']])
 		]);
 		const data = build(index, rates, weights);
-		if (data.index.points.length < 12 || data.groups.every((g) => g.rate === null)) throw new Error('Eurostat no da el IPCA de España');
+		if (data.index.points.length < 12 || !data.month) throw new Error('Eurostat no da el IPCA de España');
 		return data;
 	}
 };
