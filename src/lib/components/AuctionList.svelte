@@ -30,11 +30,11 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#each data.upcoming as a (a.date + a.term)}
+			{#each data.upcoming as a (a.date + a.term + a.kind)}
 				<tr>
 					<td class="l">{period(a.date)}</td>
 					<td class="l name">{term(a)}{#if a.reopening}<span class="sub">reapertura</span>{/if}</td>
-					<td>{compact(a.offering)} $</td>
+					<td>{a.offering === null ? '—' : `${compact(a.offering)} $`}</td>
 				</tr>
 			{/each}
 		</tbody>
@@ -54,7 +54,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#each data.recent as a (a.date + a.term)}
+			{#each data.recent as a (a.date + a.term + a.kind)}
 				<tr>
 					<td class="l">{period(a.date)}</td>
 					<td class="l name">{term(a)}</td>
