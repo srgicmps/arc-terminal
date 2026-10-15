@@ -1,7 +1,7 @@
 import type { Command } from '../commands.ts';
 
 export default {
-	order: 62, code: 'MOST', route: '/most', key: 'Más activos', desc: 'Los que más suben, bajan y se negocian hoy en EE. UU., Alemania y España', sources: 'TradingView', aliases: ['más negociados', 'mas negociados', 'suben', 'bajan', 'movers'],
+	order: 66, code: 'MOST', route: '/most', key: 'Más activos', desc: 'Los que más suben, bajan y se negocian hoy en EE. UU., Alemania y España', sources: 'TradingView', aliases: ['más negociados', 'mas negociados', 'suben', 'bajan', 'movers'],
 	manual: {
 		section: 'Economía y mercados',
 		what: 'Los valores que más suben, más bajan y más se negocian hoy, con las tres bolsas a la vista: EE. UU., Alemania y España.',
