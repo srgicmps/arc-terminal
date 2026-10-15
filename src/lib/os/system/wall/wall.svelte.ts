@@ -28,7 +28,8 @@ let timer: ReturnType<typeof setInterval> | undefined;
 export function loadWall() {
 	if (wall.ready) return;
 	wall.cfg = parseConfig(read(WALL_KEY), read(KEYS.wallpaper));
-	written = read(KEYS.wallpaper);
+	// Sin nada guardado, la shell usa «sistema»: si no, followShell creería que se acaba de elegir y pisaría el fondo.
+	written = read(KEYS.wallpaper) ?? 'sistema';
 	wall.ready = true;
 	timer ??= setInterval(() => (wall.now = Date.now()), 60_000);
 }

@@ -422,6 +422,7 @@
 	--os-radius-l: 4px;
 	--os-radius-xl: 4px;
 	--os-radius-pill: 4px;
+	--os-sys-bg: var(--cmd-slate); /* arranque y bloqueo (en :root sale de --bg de la web) */
 }
 
 /* Pantallas táctiles: todos los controles a la zona pulsable mínima. */

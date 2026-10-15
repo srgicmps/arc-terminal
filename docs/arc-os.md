@@ -87,19 +87,20 @@ nada en los traspasos entre sesiones.
 - [x] Alt+Tab visual con miniaturas [OS 5] #509
 - [x] Avisos de Arc (mercados, valores, macro…) como toasts con `notify()` [OS 5] #512
 - [x] Sonidos opcionales (Web Audio, apagados por defecto: `setSettings({ sounds })`) [OS 5] #511
-- [ ] Interruptores de «Pantalla de inicio» y «Sonidos» en Ajustes [OS 4]
+- [x] Interruptores de «Pantalla de inicio» y «Sonidos» en Ajustes [OS 4] #520
 - [x] Atajos del sistema en `shortcuts.ts` (salen en HELP) [OS 5] #499/#509
 
 ## Apps del sistema
-- [ ] Explorador de archivos al estilo de un gestor web de archivos, con papelera (mismo modelo de carpetas que el escritorio) [OS 4]
-- [ ] Panel de control en ventana, estilo DSM (reutiliza `ControlPanel.svelte`) [OS 4]
-- [ ] Centro de paquetes (activar y quitar apps y experiencias) [OS 4]
-- [ ] Notas [OS 4]
-- [ ] Calculadora [OS 4]
-- [ ] Reloj [OS 4]
-- [ ] Calendario [OS 4]
-- [ ] Monitor (recursos y fuentes) [OS 4]
-- [ ] Registros [OS 4]
+- [ ] Explorador de archivos al estilo de un gestor web de archivos, con papelera (mismo modelo de carpetas que el escritorio) [OS 4]: #517 se porta al modelo `src/lib/os/fs/` de OS 2b cuando entre
+- [x] Panel de control en ventana, estilo DSM: Ajustes con portada por categorías, lista lateral y `openApp('ajustes', '<sección>')`; el ⚙ de la barra queda como panel rápido [OS 4] #520/#531
+- [x] Centro de paquetes: instalar y quitar apps, vistas, experiencias y widgets (`arc-os-packages`, `installedApps()`) [OS 4] #524. Falta que la shell filtre con `installedApps()` [OS 2]
+- [x] Notas [OS 4] #504
+- [x] Calculadora (normal, financiera, divisas del BCE) [OS 4] #498
+- [x] Reloj (mundo, alarmas que suenan sin abrirlo, cronómetro, temporizador) [OS 4] #498
+- [x] Calendario [OS 4] #506
+- [x] Monitor: ventanas, fuentes y gráficas de recursos en directo [OS 4] #505/#523
+- [x] Centro de registros: fuentes, avisos y sesión, con filtros y CSV [OS 4] #522
+- [x] Visor de imágenes y PDF del dispositivo [OS 4] #518
 - [x] Terminal (la barra de comandos como consola) [OS 3] #478
 - [x] Apps de análisis: mapa operacional, grafo de entidades, expedientes, línea de tiempo y vigilancia [OS 6] #513–#516 (detalle abajo)
 
@@ -124,3 +125,12 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - [ ] Iconos SVG de las cinco apps con el set de OS 2 (`OsIcon`) [OS 6, cuando esté el set]
 - [ ] Título de ventana: no enseñar el path en las herramientas sin `href` («Expediente · /expediente#country:CN») [núcleo]
 - [x] Contraste AA en /os: `--muted` de Mando a 4,5:1 también sobre el fondo con acento [OS 6] #533
+
+## OS 4 · Cómo están hechas las apps del sistema
+- Cada app es un archivo `src/lib/os/apps/<id>.ts` (registro, `load` diferido) y su carpeta. Marco común
+  `kit/Tool.svelte` y `kit/store.ts` (JSON en localStorage; si la clave está en `prefs.ts`, se sincroniza con D1).
+- Lógica pura en un `.ts` con tests al lado; el estado del navegador en `.svelte.ts`.
+- Probar en local: `pnpm build`, `vite preview` y Playwright con `localStorage` `arc-shell=os`; Intro pasa la
+  pantalla de bloqueo.
+- Pendiente: la ficha de un valor (`/s?sym=`) no es una app del núcleo (`openPath` devuelve null). La prueba de humo
+  falla a veces con «Failed to fetch dynamically imported module …/nodes/0.*.js» a 390 px; al relanzar pasa.
