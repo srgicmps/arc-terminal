@@ -114,7 +114,3 @@ https://data.europa.eu/api/hub/search/search?q=frontex%20illegal%20border%20cros
 # 28.7 BTMM: tipos de referencia de la Fed de Nueva York (sin clave)
 https://markets.newyorkfed.org/api/rates/secured/sofr/last/2.json
 https://markets.newyorkfed.org/api/rates/unsecured/effr/last/2.json
-# ES, tráfico (F4): incidencias de la DGT en DATEX II (NAP)
-https://nap.dgt.es/datex2/v3/dgt/SituationPublication/datex2_v37.xml ~ xsi:type="sit:(?!RoadOrCarriagewayOrLaneManagement|MaintenanceWorks)[A-Za-z]+" id.{0,2600}
-https://nap.dgt.es/datex2/v3/dgt/SituationPublication/datex2_v37.xml ~ xsi:type="sit:MaintenanceWorks" id.{0,600}
-https://nap.dgt.es/datex2/v3/dgt/SituationPublication/datex2_v37.xml ~ (?:ManagementType|abnormalTrafficType|accidentType|poorEnvironmentType|obstructionType|severity|overallEndTime|trafficConstrictionType|Comment)>[^<]{1,30}

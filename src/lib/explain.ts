@@ -70,6 +70,7 @@ export const EXTRA: (GlossaryEntry & { why: string; how: string })[] = [
 	{ id: 'map', term: 'Mapa', match: ['mapa'], def: 'Lo que está pasando en el mundo, situado en el mapa.', why: 'Ayuda a ver dónde se concentran los conflictos y las noticias.', how: 'Toca un punto para ver qué ha pasado allí.' },
 	{ id: 'headlines', term: 'Titulares', match: ['titulares', 'en las noticias'], def: 'Las últimas noticias de medios de confianza sobre este tema.', why: 'Te pone al día en un minuto.', how: 'Las más recientes van arriba; toca una para leerla entera.' },
 	{ id: 'cheap-hours', term: 'Horas baratas', match: ['horas baratas'], def: 'Los ratos del día en que la luz con tarifa regulada (PVPC) cuesta menos.', why: 'Poner la lavadora, el lavavajillas o cargar el coche en esas horas te ahorra dinero sin hacer nada más.', how: 'La primera franja es la más barata; el porcentaje dice cuánto menos cuesta que la media del día.' },
+	{ id: 'traffic', term: 'Tráfico', match: ['trafico'], def: 'Cortes, accidentes, retenciones y obras en las carreteras de las provincias que elijas, según la DGT.', why: 'Antes de salir de viaje te dice si hay algo en tu camino.', how: 'En rojo, las carreteras cortadas del todo; el km y el municipio dicen dónde está.' },
 	{ id: 'elections', term: 'Próximas elecciones', match: ['proximas elecciones'], def: 'Las elecciones que vienen en el mundo, con su fecha.', why: 'Un cambio de gobierno puede mover mercados y relaciones entre países.', how: 'Las más cercanas van primero.' }
 ];
 
