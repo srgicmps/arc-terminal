@@ -3,6 +3,7 @@
 	import { asset } from '$app/paths';
 	import { page } from '$app/state';
 	import LineChart from '#lib/components/LineChart.svelte';
+	import MyFuel from '#lib/components/MyFuel.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -18,7 +19,9 @@
 	import { dm, nf } from '#lib/format.ts';
 	import { fuelShare, type ShareInfo } from '#lib/share.ts';
 	import { distanceKm, findProvince, FUELS, taxShare, zoneFor, type FuelKey, type FuelProvinceDay, type FuelStation } from '#lib/fuel.ts';
+	import { logPrices, MY_FUEL_KEY, parseMyStation, type MyStation } from '#lib/myfuel.ts';
 	import { place } from '#lib/place.svelte.ts';
+	import { madridNow } from '#lib/power.ts';
 	import { sortBy } from '#lib/sort.ts';
 	import { Sorter } from '#lib/sorter.svelte.ts';
 	import { urlState, writeParams } from '#lib/urlstate.svelte.ts';
@@ -60,6 +63,11 @@
 		} catch {}
 		if (id === MENORCA || loaded[id]) return;
 		message = 'Cargando…';
+		message = (await loadZone(id)) ? '' : 'No se han podido cargar las gasolineras de esa provincia.';
+	}
+
+	/** Descarga las gasolineras de una provincia (y su historial). false si falla. */
+	async function loadZone(id: string): Promise<boolean> {
 		loadHistory(id);
 		try {
 			// El archivo existe tras `pnpm data`; su ruta no se conoce al comprobar tipos.
@@ -67,11 +75,44 @@
 			const res = await fetch(url);
 			if (!res.ok) throw new Error(String(res.status));
 			loaded = { ...loaded, [id]: await res.json() };
-			message = '';
+			return true;
 		} catch {
-			message = 'No se han podido cargar las gasolineras de esa provincia.';
+			return false;
 		}
 	}
+
+	// «Mi gasolinera» (F3, src/lib/myfuel.ts): la favorita, guardada en localStorage (viaja con tu cuenta).
+	let mine = $state<MyStation | null>(null);
+	const today = $derived(madridNow(Date.now()).day);
+	onMount(() => {
+		try {
+			mine = parseMyStation(localStorage.getItem(MY_FUEL_KEY));
+		} catch {}
+		if (mine && mine.zone !== MENORCA && !loaded[mine.zone]) loadZone(mine.zone);
+	});
+	function saveMine(next: MyStation | null) {
+		mine = next;
+		try {
+			if (next) localStorage.setItem(MY_FUEL_KEY, JSON.stringify(next));
+			else localStorage.removeItem(MY_FUEL_KEY);
+		} catch {}
+	}
+	function toggleMine(s: FuelStation) {
+		saveMine(mine?.id === s.id ? null : logPrices({ id: s.id, zone, name: s.name, town: s.town, log: [] }, today, s.prices));
+	}
+	const myStations = $derived(mine ? (mine.zone === MENORCA ? (data.fuel?.data.stations ?? null) : (loaded[mine.zone] ?? null)) : null);
+	const myZoneName = $derived(mine?.zone === MENORCA ? 'Menorca' : (provinces.find((p) => p.id === mine?.zone)?.name ?? ''));
+	const myHistory = $derived(
+		mine ? (mine.zone === MENORCA ? (data.fuel?.data.history ?? []) : (histories[mine.zone] ?? [])) : []
+	);
+	// Apunta el precio de hoy de la favorita (una vez por día; logPrices sustituye el de hoy si cambia).
+	$effect(() => {
+		const st = myStations?.find((x) => x.id === mine?.id);
+		if (!st || !mine) return;
+		const last = mine.log.at(-1);
+		if (last?.d === today && JSON.stringify(last.p) === JSON.stringify(st.prices)) return;
+		untrack(() => saveMine(logPrices(mine!, today, st.prices)));
+	});
 
 	/** El historial no es imprescindible: si falla, el gráfico enseña solo la media de España. */
 	async function loadHistory(id: string) {
@@ -233,6 +274,21 @@
 
 <ViewHeader code="FUEL" title="Gasolineras" sub="Las más baratas de tu provincia o de cualquier otra · API del Ministerio" />
 
+{#if mine}
+	<div class="grid">
+		<MyFuel
+			{mine}
+			stations={myStations}
+			zoneHistory={myHistory}
+			zoneName={myZoneName}
+			{fuel}
+			{fuelLabel}
+			{today}
+			onclear={() => saveMine(null)}
+		/>
+	</div>
+{/if}
+
 <div class="grid">
 	<Panel
 		title="{fuelLabel} · {zoneName}"
@@ -315,6 +371,14 @@
 							<tr class:best={rank === 1}>
 								<td class="mut">{rank}</td>
 								<td class="l">
+									<button
+										type="button"
+										class="fav"
+										class:on={mine?.id === s.id}
+										aria-pressed={mine?.id === s.id}
+										title={mine?.id === s.id ? 'Quitar de «Mi gasolinera»' : 'Marcar como «Mi gasolinera»'}
+										onclick={() => toggleMine(s)}>{mine?.id === s.id ? '★' : '☆'}</button
+									>
 									<a class="name" href={mapUrl(s)} target="_blank" rel="noopener">{s.name}</a>
 									<span class="sub">{s.address}</span>
 								</td>
@@ -341,7 +405,7 @@
 			<Note>
 				Fuente: <a href="https://geoportalgasolineras.es/" target="_blank" rel="noopener"
 					>Ministerio para la Transición Ecológica y el Reto Demográfico</a
-				>. Datos del {sourceDate}. Toca una estación para abrirla en el mapa.
+				>. Datos del {sourceDate}. Toca una estación para abrirla en el mapa y ☆ para hacerla «Mi gasolinera».
 			</Note>
 		{/if}
 	</Panel>
@@ -499,6 +563,20 @@
 		color: var(--amber);
 		font-size: var(--fs-s);
 		cursor: pointer;
+	}
+
+	.fav {
+		background: none;
+		border: 0;
+		padding: 0 var(--sp-4) 0 0;
+		color: var(--faint);
+		font-size: var(--fs-m);
+		cursor: pointer;
+	}
+
+	.fav.on,
+	.fav:hover {
+		color: var(--amber);
 	}
 
 	.link {
