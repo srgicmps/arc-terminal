@@ -205,7 +205,7 @@
 			</div>
 			<TvWidget widget={map.widget} config={map.config} height={520} />
 		</Panel>
-		<Panel title="Los que más se mueven" meta="Suben, bajan y más negociados · hoy">
+		<Panel title="Los que más se mueven" meta="Suben, bajan y más negociados · hoy" jump={{ code: 'MOST', href: resolve('/most') }}>
 			<HotLists />
 		</Panel>
 	</div>

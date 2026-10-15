@@ -128,6 +128,7 @@ vista `HELP`. Resumen:
 | `BTMM` | Mercado monetario de EE. UU. y zona euro: SOFR, EFFR, €STR, euríbor, letras | Fed de Nueva York, FRED*, Tesoro de EE. UU., BCE |
 | `G` | Gráfico de cualquier serie de la terminal (`G US10, BUND`); catálogo en `/data/g/series.json` y atajos en `src/lib/gseries.ts` | Todas |
 | `SEAS` | Estacionalidad mensual de una serie, con el historial que haya | Todas |
+| `MOST` | Los que más suben, bajan y se negocian hoy (EE. UU., Alemania, España) | TradingView |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |
 | `MIS` | Tu lista de valores (en el navegador) | TradingView |
 | `TECH` / `AI` | Tecnología e IA | Hacker News, Hugging Face, OpenRouter, Epoch AI (CC BY 4.0), Cloudflare Radar*, RSS |
