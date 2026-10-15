@@ -62,8 +62,9 @@
 	const pinned = $derived(pin ? isPinned(pin) : false);
 
 	// Modo Sencillo (modo.ts): los paneles que no son esenciales en esta vista no se pintan (salvo los fijados
-	// en TOP y con «Ver todos»), y el título se lee en español claro. Los ocultos se apuntan para ViewHeader.
-	const essential = $derived(!!pinArea || isEssential(page.route.id, title, id));
+	// en TOP, los que dejaste a la vista en la modular y con «Ver todos»), y el título se lee en español claro.
+	// Los ocultos se apuntan para ViewHeader.
+	const essential = $derived(!!pinArea || !!tools || isEssential(page.route.id, title, id));
 	const gone = $derived(trimming() && !essential && !tv.on);
 	$effect(() => {
 		if (!isSimple() || essential || tv.on) return;

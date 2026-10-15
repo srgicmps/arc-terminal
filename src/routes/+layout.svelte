@@ -15,6 +15,7 @@
 	import Logo from '#lib/components/Logo.svelte';
 	import Menu from '#lib/components/ui/Menu.svelte';
 	import CommandBar from '#lib/components/CommandBar.svelte';
+	import ExpLauncher from '#lib/components/ExpLauncher.svelte';
 	import Feedback from '#lib/components/Feedback.svelte';
 	import PlacePicker from '#lib/components/PlacePicker.svelte';
 	import InstallHint from '#lib/components/InstallHint.svelte';
@@ -271,6 +272,7 @@
 				<a href={resolve('/help')} onclick={close} aria-current={page.route.id === '/help' ? 'page' : undefined}>Todos los comandos <small>HELP</small></a>
 			{/snippet}
 		</Menu>
+		<ExpLauncher hotkey />
 	</nav>
 
 	<div class="tape" data-ui="tape">
@@ -302,6 +304,7 @@
 		{#each thumb as c (c.code)}
 			<a href={routeHref(c.route)} data-code={c.code} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
 		{/each}
+		<ExpLauncher variant="thumb" />
 		<button type="button" aria-label="Buscar o escribir un comando" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>
 			<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5 14 14" /></svg>
 		</button>
@@ -581,7 +584,8 @@
 			bottom: 0;
 			z-index: 35;
 			display: grid;
-			grid-template-columns: repeat(5, minmax(0, 1fr));
+			grid-auto-flow: column;
+			grid-auto-columns: minmax(0, 1fr);
 			background: var(--panel);
 			border-top: var(--border);
 			padding-bottom: env(safe-area-inset-bottom, 0px);
