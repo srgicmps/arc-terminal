@@ -70,14 +70,24 @@
 		color: var(--faint);
 	}
 
-	.chip:hover,
 	.chip:focus-visible {
 		border-color: var(--amber);
 	}
 
-	.chip:hover span,
+	@media (hover: hover) {
+		.chip:hover {
+			border-color: var(--amber);
+		}
+	}
+
 	.chip:focus-visible span {
 		color: var(--amber);
+	}
+
+	@media (hover: hover) {
+		.chip:hover span {
+			color: var(--amber);
+		}
 	}
 
 	input {
@@ -110,8 +120,13 @@
 		cursor: pointer;
 	}
 
-	.add:hover,
 	.add:focus-visible {
 		border-color: var(--amber);
+	}
+
+	@media (hover: hover) {
+		.add:hover {
+			border-color: var(--amber);
+		}
 	}
 </style>

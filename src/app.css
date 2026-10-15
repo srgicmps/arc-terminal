@@ -221,12 +221,25 @@ kbd {
 	color: inherit;
 	text-decoration: none;
 }
-.mini a:hover {
-	color: var(--amber);
+@media (hover: hover) {
+	.mini a:hover {
+		color: var(--amber);
+	}
 }
 .mini b {
 	font-weight: var(--fw-medium);
 	white-space: nowrap;
+}
+
+/* Filas que se deslizan en horizontal (src/lib/edgefade.ts): un fundido leve en el lado por el que sigue. */
+[data-fade='end'] {
+	mask-image: linear-gradient(to right, var(--bg) calc(100% - var(--sp-24)), transparent);
+}
+[data-fade='start'] {
+	mask-image: linear-gradient(to left, var(--bg) calc(100% - var(--sp-24)), transparent);
+}
+[data-fade='both'] {
+	mask-image: linear-gradient(to right, transparent, var(--bg) var(--sp-24), var(--bg) calc(100% - var(--sp-24)), transparent);
 }
 
 /* Botón de acción principal (ámbar): «Empezar» en TV, «Comparar» en CMP. Mide lo mismo en todas las vistas. */

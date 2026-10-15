@@ -50,8 +50,10 @@
 		cursor: pointer;
 	}
 
-	.share:hover {
-		color: var(--amber);
+	@media (hover: hover) {
+		.share:hover {
+			color: var(--amber);
+		}
 	}
 
 	svg {

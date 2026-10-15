@@ -148,10 +148,15 @@
 		cursor: help;
 	}
 
-	.i:hover,
 	.i:focus-visible,
 	.i[aria-expanded='true'] {
 		color: var(--amber);
+	}
+
+	@media (hover: hover) {
+		.i:hover {
+			color: var(--amber);
+		}
 	}
 
 	/* En pantallas táctiles, la zona que se puede tocar crece sin mover nada. */

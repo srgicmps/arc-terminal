@@ -54,6 +54,29 @@
 		if (open && !root.contains(e.target as Node)) open = false;
 	}
 
+	// Mientras está abierto: Esc lo cierra aunque el foco no esté dentro (en Safari, un clic no enfoca el botón) y no
+	// llega a nadie más (la barra no vuelve a la portada). También se cierra con cualquier scroll de fuera, como el
+	// horizontal de la fila de pestañas del móvil, que no es el de la ventana.
+	$effect(() => {
+		if (!open) return;
+		const key = (e: KeyboardEvent) => {
+			if (e.key !== 'Escape') return;
+			e.preventDefault();
+			e.stopImmediatePropagation();
+			open = false;
+			btn.focus();
+		};
+		const scroll = (e: Event) => {
+			if (!root.contains(e.target as Node)) open = false;
+		};
+		window.addEventListener('keydown', key, true);
+		window.addEventListener('scroll', scroll, { capture: true, passive: true });
+		return () => {
+			window.removeEventListener('keydown', key, true);
+			window.removeEventListener('scroll', scroll, { capture: true });
+		};
+	});
+
 	function onKey(e: KeyboardEvent) {
 		if (!open) return;
 		if (e.key === 'Escape') {
@@ -82,7 +105,7 @@
 	}
 </script>
 
-<svelte:window onclick={onWindowClick} onscroll={close} onresize={close} />
+<svelte:window onclick={onWindowClick} onresize={close} />
 
 <div class="menu-root" bind:this={root} onkeydowncapture={onKey} onfocusout={onFocusOut}>
 	<button
@@ -150,11 +173,18 @@
 		cursor: pointer;
 	}
 
-	.pop :global(:is(a, button):hover),
 	.pop :global(:is(a, button):focus-visible) {
 		background: var(--amber-soft);
 		color: var(--amber);
 		outline: none;
+	}
+
+	@media (hover: hover) {
+		.pop :global(:is(a, button):hover) {
+			background: var(--amber-soft);
+			color: var(--amber);
+			outline: none;
+		}
 	}
 
 	.pop :global([aria-current='page']),

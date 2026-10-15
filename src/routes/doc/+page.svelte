@@ -153,7 +153,7 @@
 				<li>
 					<span class="l">
 						La función <code>load</code> elige lo que la vista pinta (y nada más): ese recorte va dentro del HTML y en <code>__data.json</code>, así el móvil no descarga los JSON enteros.
-						{#if s.load}<small><code>{s.load.file}:{s.load.line}</code></small><pre><code>{s.load.code}</code></pre>{/if}
+						{#if s.load}<small><code>{s.load.file}:{s.load.line}</code></small><!-- svelte-ignore a11y_no_noninteractive_tabindex (se puede desplazar con el teclado) --><pre tabindex="0" role="region" aria-label="Código de {s.load.file}"><code>{s.load.code}</code></pre>{/if}
 					</span>
 					<b>6</b>
 				</li>
@@ -214,7 +214,8 @@
 							{ex.title}
 							{#each ex.parts as part (part!.line)}
 								<small><code>{part!.file}:{part!.line}</code></small>
-								<pre><code>{part!.code}</code></pre>
+								<!-- svelte-ignore a11y_no_noninteractive_tabindex (se puede desplazar con el teclado) -->
+								<pre tabindex="0" role="region" aria-label="Código"><code>{part!.code}</code></pre>
 							{/each}
 						</span>
 					</li>
@@ -234,7 +235,8 @@
 							<small><code>{p.file}</code></small>
 							{#each [p.code, p.extra].filter(Boolean) as part (part!.file + part!.line)}
 								<small><code>{part!.file}:{part!.line}</code></small>
-								<pre><code>{part!.code}</code></pre>
+								<!-- svelte-ignore a11y_no_noninteractive_tabindex (se puede desplazar con el teclado) -->
+								<pre tabindex="0" role="region" aria-label="Código"><code>{part!.code}</code></pre>
 							{/each}
 						</span>
 						<b>{p.tag}</b>

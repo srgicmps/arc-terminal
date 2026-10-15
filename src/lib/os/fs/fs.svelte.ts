@@ -1,12 +1,11 @@
 // Archivos de Arc OS en el navegador: el árbol (fs.ts) guardado en localStorage «arc-os-fs» (en prefs.ts como dato,
-// así se sincroniza con la cuenta) y las acciones que usan el escritorio, las ventanas de carpeta y los menús.
+// así se sincroniza con la cuenta) y las acciones que usan el escritorio, Archivos y los menús.
 // Como un store de Pinia: un objeto reactivo (files) y unas funciones que cambian y guardan.
 import { untrack } from 'svelte';
-import { findApp as findOsApp } from '../apps.ts';
-import { openApp, os, focus } from '../os.svelte.ts';
+import { openApp } from '../os.svelte.ts';
 import * as bridge from '../shell/bridge.ts';
 import { setIcons, shell } from '../shell/shell.svelte.ts';
-import { folderPath, folderOf, migrateSpots, setFolderNamer, withoutSpots } from './desk.ts';
+import { folderPath, migrateSpots, setFolderNamer, withoutSpots } from './desk.ts';
 import * as fs from './fs.ts';
 import { openRef } from '../apps/files/open.ts';
 export const FS_KEY = 'arc-os-fs';
@@ -99,18 +98,9 @@ export function addToDesktop(appId: string) {
 }
 export const onDesktop = (appId: string) => !!fs.findApp(files.tree, appId);
 
-/**
- * Abre una carpeta. Con el explorador (app «archivos»), en él; si no está, en una ventana de carpeta: la que ya la
- * enseña, al frente, o una nueva.
- */
+/** Abre una carpeta en Archivos (la ventana que ya la enseña, al frente, o una nueva). */
 export function openFolder(id: string) {
-	if (findOsApp('archivos')) {
-		openApp('archivos', folderPath(id));
-		return;
-	}
-	const win = os.state.desks.flatMap((d) => d.wins).find((w) => w.app === 'carpeta' && folderOf(w.path) === id);
-	if (win) focus(win.uid);
-	else openApp('carpeta', folderPath(id), true);
+	openApp('archivos', folderPath(id));
 }
 
 export function openNode(node: fs.FsNode) {

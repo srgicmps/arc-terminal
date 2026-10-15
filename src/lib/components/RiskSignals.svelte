@@ -16,7 +16,7 @@
 </script>
 
 <Tiles cols={4}>
-	<Tile label="Catástrofes" value={nf(c.red + c.orange, 0)} tone={c.red ? 'down' : undefined} sub="{c.red} rojas · {c.orange} naranjas" />
+	<Tile label="Catástrofes" value={nf(c.red + c.orange, 0)} tone={c.red ? 'down' : undefined} sub="{c.red} {c.red === 1 ? 'roja' : 'rojas'} · {c.orange} {c.orange === 1 ? 'naranja' : 'naranjas'}" />
 	<Tile label="Sin internet" value={nf(c.outages, 0)} tone={c.outages ? 'down' : undefined} sub="países con caídas" />
 	<Tile label="Brotes" value={nf(c.outbreaks, 0)} sub="partes de la OMS en 30 días" />
 	<Tile label="No viajar" value={c.level4 === null ? '—' : nf(c.level4, 0)} tone={c.level4 === null ? 'mut' : undefined} sub="países en nivel 4" />

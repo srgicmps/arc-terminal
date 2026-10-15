@@ -254,7 +254,7 @@
 		{#each shortcuts as g (g.group)}
 			<div class="col">
 				<Panel title={g.group}>
-					<ul class="mini">
+					<ul class="mini keys">
 						{#each g.items as s (s.id)}
 							<li>
 								<span class="l">{#each s.keys as k, i (i)}{#if i}{keyJoin(s)}{/if}<kbd>{k}</kbd>{/each}{#if 'how' in s}{s.keys.length ? ' ' : ''}{s.how}{/if}</span><b>{s.action}</b>
@@ -555,5 +555,15 @@
 		.sec[open] {
 			padding-bottom: var(--sp-12);
 		}
+	}
+
+	/* Atajos, como en HELP: la acción larga baja de línea en vez de salirse del panel. */
+	.keys li {
+		/* Las teclas, como mucho el 60 %: si no, una explicación larga deja la acción sin sitio y se sale. */
+		grid-template-columns: fit-content(60%) minmax(0, 1fr);
+	}
+	.keys b {
+		white-space: normal;
+		text-align: right;
 	}
 </style>

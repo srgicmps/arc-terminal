@@ -44,9 +44,14 @@
 		cursor: pointer;
 	}
 
-	button:hover,
 	button:focus-visible {
 		color: var(--fg);
+	}
+
+	@media (hover: hover) {
+		button:hover {
+			color: var(--fg);
+		}
 	}
 
 	button:focus-visible {

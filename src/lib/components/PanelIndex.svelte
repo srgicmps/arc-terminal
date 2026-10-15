@@ -4,6 +4,7 @@
 	para «deslizar entre vistas» (data-noswipe).
 -->
 <script lang="ts">
+	import { edgeFade } from '#lib/edgefade.ts';
 	import { getPanelIndex } from '#lib/panelindex.svelte.ts';
 
 	const MIN = 7;
@@ -17,7 +18,7 @@
 </script>
 
 {#if items.length >= MIN}
-	<nav class="pidx" data-ui="panel-index" aria-label="Paneles de esta vista" data-noswipe>
+	<nav class="pidx" data-ui="panel-index" aria-label="Paneles de esta vista" data-noswipe use:edgeFade>
 		{#each items as item (item.id)}
 			<button type="button" onclick={() => go(item.el)}><span>{item.title}</span></button>
 		{/each}
@@ -41,7 +42,6 @@
 			margin-bottom: var(--sp-8);
 			background: var(--bg);
 			border-bottom: var(--border);
-			mask-image: linear-gradient(to right, var(--bg) calc(100% - var(--sp-24)), transparent);
 		}
 
 		.pidx::-webkit-scrollbar {

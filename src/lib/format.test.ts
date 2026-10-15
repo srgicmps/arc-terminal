@@ -52,6 +52,8 @@ describe('números', () => {
 		expect(compact(1.9e9)).toBe('1,9 mil M');
 		expect(compact(2.4e6)).toBe('2,4 M');
 		expect(compact(15_300)).toBe('15,3 mil');
+		expect(compact(182_000)).toBe('182 mil');
+		expect(compact(3e6)).toBe('3 M');
 		expect(compact(-2.4e6)).toBe('-2,4 M');
 		expect(compact(999)).toBe('999');
 	});
@@ -84,6 +86,7 @@ describe('fechas (hora de Madrid)', () => {
 		expect(when('2026-10-14T11:59:40Z', now)).toBe('ahora');
 		expect(when('2026-10-14T11:55:00Z', now)).toBe('hace 5 min');
 		expect(when('2026-10-14T09:00:00Z', now)).toBe('hace 3 h');
+		expect(when('2026-10-14', now)).toBe('14 oct');
 		expect(when('2026-10-12T09:30:00Z', now)).toBe('12 oct 11:30');
 		// Fechas en el futuro (relojes desajustados): fecha absoluta.
 		expect(when('2026-10-14T12:30:00Z', now)).toBe('14 oct 14:30');

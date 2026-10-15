@@ -119,8 +119,10 @@
 		cursor: pointer;
 	}
 
-	.more button:hover {
-		color: var(--amber);
+	@media (hover: hover) {
+		.more button:hover {
+			color: var(--amber);
+		}
 	}
 
 	.vh-r {

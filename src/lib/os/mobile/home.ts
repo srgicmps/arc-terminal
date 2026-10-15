@@ -273,6 +273,30 @@ export function keyboardFit(vv: { height: number; offsetTop: number; scale: numb
 	return Math.abs(vv.scale - 1) < 0.01 && innerHeight - vv.height > 120 ? { top: vv.offsetTop, h: vv.height } : null;
 }
 
+/** Apps abiertas del teléfono en esta pestaña (sessionStorage): sobreviven a una recarga, como en el escritorio. */
+export const SESSION_KEY = 'arc-os-phone-session';
+/** `entry`: había algo abierto (app, hoja o carpeta), así que la entrada actual del historial es del teléfono. */
+export type PhoneSession = { open: string[]; current: string | null; paths: Record<string, string>; names: Record<string, string>; entry: boolean };
+
+/** Lee la sesión guardada: solo apps que existen (`known`) o rutas de paso («web:/s?sym=X»), como mucho MAX_OPEN. */
+export function readSession(raw: string | null, known: (id: string) => boolean): PhoneSession {
+	const none: PhoneSession = { open: [], current: null, paths: {}, names: {}, entry: false };
+	let v: unknown;
+	try {
+		v = JSON.parse(raw ?? 'null');
+	} catch {
+		return none;
+	}
+	if (!v || typeof v !== 'object') return none;
+	const o = v as Record<string, unknown>;
+	const ok = (id: unknown): id is string => typeof id === 'string' && (known(id) || /^web:\//.test(id));
+	const open = (Array.isArray(o.open) ? o.open.filter(ok) : []).filter((id, i, a) => a.indexOf(id) === i).slice(0, MAX_OPEN);
+	const strings = (x: unknown) =>
+		Object.fromEntries(Object.entries(x && typeof x === 'object' ? x : {}).filter(([k, p]) => open.includes(k) && typeof p === 'string')) as Record<string, string>;
+	const paths = Object.fromEntries(Object.entries(strings(o.paths)).filter(([, p]) => p.startsWith('/')));
+	return { open, current: ok(o.current) && open.includes(o.current) ? o.current : null, paths, names: strings(o.names), entry: o.entry === true };
+}
+
 export const MAX_OPEN = 4;
 
 export function touch(list: string[], id: string, max = MAX_OPEN): string[] {
