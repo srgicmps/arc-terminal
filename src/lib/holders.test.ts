@@ -28,6 +28,11 @@ describe('HDS: invertir las carteras 13F', () => {
 		expect(ark).toMatchObject({ rank: 2, change: 'new', pct: null });
 		expect(issuers[1].holders[0]).toMatchObject({ change: 'add', pct: 1 });
 	});
+
+	it('con el total de la cartera (opciones incluidas), el peso es el de FONDOS', () => {
+		const [apple] = buildHolders([{ fund: 'BW', current: [line('A', 'Apple Inc', 50)], previous: null, total: 200 }]);
+		expect(apple.holders[0].weight).toBe(0.25);
+	});
 });
 
 describe('HDS: de un código de la barra a su emisor', () => {
@@ -48,6 +53,13 @@ describe('HDS: de un código de la barra a su emisor', () => {
 		expect(issuersFor('GOOGL', list).map((e) => e.cusip)).toEqual(['1', '2']);
 		expect(issuersFor('JPM', list).map((e) => e.cusip)).toEqual(['3']);
 		expect(issuersFor('META', list).map((e) => e.cusip)).toEqual(['5']);
+	});
+
+	it('RTX y los ETF, cuyo nombre en el 13F no se parece al de la barra', () => {
+		const list = [line('1', 'RTX Corporation', 1), line('2', 'SPDR S&P 500 ETF TR', 1), line('3', 'Invesco QQQ TR', 1)].map((l) => ({ ...l, total: 1, holders: [] }));
+		expect(issuersFor('RTX', list).map((e) => e.cusip)).toEqual(['1']);
+		expect(issuersFor('SPY', list).map((e) => e.cusip)).toEqual(['2']);
+		expect(issuersFor('QQQ', list).map((e) => e.cusip)).toEqual(['3']);
 	});
 });
 
