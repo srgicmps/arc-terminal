@@ -152,6 +152,7 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - [x] Flechas para ir de un icono a otro del escritorio (Mayús: añadir a la selección) [QA 5] #PR2
 - [x] Launchpad: clic derecho en una app (abrir otra ventana, anclar, añadir al escritorio) [QA 5] #PR2
 - [x] Añadir una app al escritorio desde fuera (Launchpad, barra) ya no corre los iconos que no se habían movido [QA 5] #PR2
+- [x] Un icono soltado encima de un widget ya no se esconde debajo: va a la casilla libre más cercana [QA 5] #PR2
 
 ## OS 4 · Cómo están hechas las apps del sistema
 - Cada app es un archivo `src/lib/os/apps/<id>.ts` (registro, `load` diferido) y su carpeta. Marco común

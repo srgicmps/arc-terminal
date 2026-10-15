@@ -90,10 +90,24 @@
 	};
 	/** Pone esos iconos en la casilla libre más cercana a `cell`. */
 	function placeAt(ids: string[], cell: Cell) {
-		const out: Spots = Object.fromEntries(Object.entries(spots).filter(([id]) => !ids.includes(id)));
+		const out: Spots = Object.fromEntries(Object.entries({ ...spots, ...underWidgets() }).filter(([id]) => !ids.includes(id)));
 		for (const id of ids) out[id] = nearestFree(cell, out, [], cols, rows);
-		setIcons({ ...shell.icons, ...out });
+		setIcons({ ...shell.icons, ...real(out) });
 	}
+	/** Las casillas que tapa un widget, como si las ocupara un icono «#col,row»: ahí no se suelta nada (se escondería). */
+	function underWidgets(): Spots {
+		if (!layer || shell.widgetsHidden) return {};
+		const base = layer.getBoundingClientRect();
+		const all: Spots = {};
+		for (let col = 0; col < cols; col++) for (let row = 0; row < rows; row++) all[`#${col},${row}`] = { col, row };
+		const out: Spots = {};
+		for (const el of layer.parentElement?.querySelectorAll('.widget') ?? []) {
+			const r = el.getBoundingClientRect();
+			for (const k of inRect({ x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height }, all, size)) out[k] = all[k];
+		}
+		return out;
+	}
+	const real = (s: Spots): Spots => Object.fromEntries(Object.entries(s).filter(([id]) => !id.startsWith('#')));
 	/**
 	 * Apunta la casilla de todos los iconos tal y como se ven ahora. Se hace antes de añadir o quitar uno: los que no
 	 * tenían casilla guardada se colocan por orden, y sin esto se correrían todos al entrar o salir otro.
@@ -131,7 +145,7 @@
 			if (plan.kind === 'desk') {
 				const p = cellToPx(drag.from, size);
 				const to = pxToCell(p.x + drag.dx, p.y + drag.dy, size, cols, rows);
-				setIcons({ ...shell.icons, ...moveGroup(spots, ids, drag.from, to, cols, rows) });
+				setIcons({ ...shell.icons, ...real(moveGroup({ ...spots, ...underWidgets() }, ids, drag.from, to, cols, rows)) });
 			} else if (plan.kind === 'move') {
 				freeze();
 				move(plan.ids, plan.to);
