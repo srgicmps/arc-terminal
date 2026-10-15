@@ -52,8 +52,35 @@ export const MACRO = [
 	{ id: 'ipc-es', file: 'ine', name: 'IPC de España', unit: '%', source: 'INE' },
 	{ id: 'gdp-us', file: 'fred', name: 'PIB de EE. UU. (anualizado)', unit: '%', source: 'BEA vía FRED' },
 	{ id: 'gdp-ea', file: 'eurostat', name: 'PIB de la zona euro (trimestral)', unit: '%', source: 'Eurostat' },
-	{ id: 'euribor-12m', file: 'ecb', name: 'Euríbor a 12 meses', unit: '%', source: 'BCE' }
+	{ id: 'euribor-12m', file: 'ecb', name: 'Euríbor a 12 meses', unit: '%', source: 'BCE' },
+	{ id: 'core-cpi-us', file: 'bls', name: 'IPC subyacente de EE. UU.', unit: '%', source: 'BLS' },
+	{ id: 'core-pce-us', file: 'fred', name: 'PCE subyacente de EE. UU.', unit: '%', source: 'BEA vía FRED' },
+	{ id: 'claims-us', file: 'fred', name: 'Peticiones de paro en EE. UU.', unit: 'miles', digits: 0, source: 'Departamento de Trabajo vía FRED' },
+	{ id: 'unemployment-ea', file: 'eurostat', name: 'Paro de la zona euro', unit: '%', source: 'Eurostat' },
+	{ id: 'unemployment-es', file: 'eurostat', name: 'Paro de España', unit: '%', source: 'Eurostat' },
+	{ id: 'esi-ea', file: 'eurostat', name: 'Sentimiento económico de la zona euro', unit: 'puntos', source: 'Comisión Europea vía Eurostat' },
+	{ id: 'consumer-conf-ea', file: 'eurostat', name: 'Confianza del consumidor de la zona euro', unit: 'puntos', source: 'Comisión Europea vía Eurostat' },
+	{ id: 'epa-es', file: 'ine', name: 'Paro de España (EPA)', unit: '%', source: 'INE' },
+	{ id: 'ipv-es', file: 'ine', name: 'Precio de la vivienda en España', unit: '%', source: 'INE' }
 ] as const;
+
+/** Récord en un dato macro: se dice si el nuevo es el máximo o el mínimo de al menos tantos años de historial. */
+export const RECORD = { minYears: 2 };
+
+/** Inventarios de petróleo de EE. UU. (eia.json): aviso cada semana nueva, si el dato tiene menos de `days` días. */
+export const EIA = { days: 8 };
+
+/**
+ * VIX (vix.json, Cboe): sube al menos `jump` % en el día, o la curva se invierte (el VIX a 1 mes pasa por
+ * encima del de 3 meses: el mercado teme más lo inmediato).
+ */
+export const VIX = { jump: 15 };
+
+/**
+ * Subastas del Tesoro de EE. UU. (auctions.json): floja si el bid-to-cover queda al menos `gap` por debajo
+ * de la media de las anteriores del mismo plazo. Solo las de `days` días como mucho.
+ */
+export const AUCTIONS = { gap: 0.15, days: 3 };
 
 /**
  * Riesgo macro (fred.json; 'hy-us' llega con el #213 y 'fed-net-liquidity' con el #179: sin ellas, no hay aviso).
@@ -146,6 +173,71 @@ export const CONFLICT = {
 		/\b(ataque|bombardeo|invasi[óo]n|misil(es)?|ofensiva|alto el fuego|tregua|movilizaci[óo]n|art[íi]culo 5|OTAN|NATO|nuclear|escalada|guerra|attack|strike|invasion|missiles?|ceasefire|war)\b/i,
 	media: 4,
 	waitHours: 6
+};
+
+/**
+ * Guerras (P1, siempre llegan): un tema de IMP cuyo título cuenta un hecho grave de una de estas clases (cada
+ * una, una o dos expresiones que tienen que estar las dos), en español o inglés, y que dan al menos `media`
+ * medios de la lista `trusted`. Un aviso por tema cada `waitHours`, salvo escalada: una clase más grave que la
+ * del último aviso o el doble de medios fiables. Los temas que avisa no salen además como conflicto (P2).
+ */
+export const WAR = {
+	media: 3,
+	waitHours: 4,
+	/** De más grave a menos: el orden decide qué es una escalada. */
+	kinds: [
+		{
+			key: 'nuclear',
+			name: 'Amenaza nuclear',
+			all: [/\b(nuclear|nucleares|at[óo]mic[ao]s?|atomic)\b/i, /\b(ataque|arma|armas|bomba|amenaza|detona|attack|strike|weapons?|bomb|threat(ens?|s)?|detonat\w*)\b/i]
+		},
+		{
+			key: 'war',
+			name: 'Declaración de guerra',
+			all: [/\b(declara(ci[óo]n de)? (la )?guerra|declares? war|declaration of war|state of war|estado de guerra)\b/i]
+		},
+		{
+			key: 'invasion',
+			name: 'Invasión',
+			all: [/\b(invade[ns]?|invadi[óo]|invadieron|invasi[óo]n|invasion|invades|invaded|ofensiva terrestre|ground (offensive|invasion)|cruzan la frontera|cross(es|ed)? the border)\b/i]
+		},
+		{
+			key: 'nato',
+			name: 'Ataque a la OTAN o la UE',
+			all: [
+				/\b(OTAN|NATO|art[íi]culo 5|article 5|Polonia|Poland|Lituania|Lithuania|Letonia|Latvia|Estonia|Ruman[íi]a|Romania|Finlandia|Finland|Suecia|Sweden|Alemania|Germany|Moldavia|Moldova)\b/,
+				/\b(ataque|ataca|atacan|bombardeo|bombardea|misil(es)?|dron(es)?|derriba|invade|attack(s|ed)?|airstrikes?|missiles?|drones?|shot down|airspace|espacio a[ée]reo)\b/i
+			]
+		},
+		{
+			key: 'missiles',
+			name: 'Misiles contra una capital o infraestructuras',
+			all: [
+				/\b(misil(es)?|bal[íi]stic[oa]s?|dron(es)?|bombardeo|missiles?|ballistic|drones?|airstrikes?|bombing)\b/i,
+				/\b(capital|Kiev|Kyiv|Mosc[úu]|Moscow|Tel Aviv|Jerusal[ée]n|Jerusalem|Teher[áa]n|Tehran|Taip[ée]i|Se[úu]l|Seoul|Beirut|Damasco|Damascus|Riad|Riyadh|central nuclear|nuclear (power )?plant|central el[ée]ctrica|power (plant|grid)|red el[ée]ctrica|refiner[íi]a|refinery|oleoducto|gasoducto|pipeline|aeropuerto|airport|puerto|port)\b/i
+			]
+		},
+		{
+			key: 'mobilization',
+			name: 'Movilización general',
+			all: [/\b(movilizaci[óo]n (general|total|militar)|general mobili[sz]ation|mobili[sz]ation|ley marcial|martial law)\b/i]
+		},
+		{
+			key: 'ceasefire',
+			name: 'Alto el fuego',
+			all: [
+				/\b(alto el fuego|tregua|armisticio|acuerdo de paz|ceasefire|cease-fire|truce|armistice|peace (deal|agreement))\b/i,
+				/\b(firma|firman|firmado|acuerdan|entra en vigor|rompe|rompen|roto|viola|violan|colapsa|signs?|signed|agree[ds]?|takes effect|breaks?|broken|violat\w*|collaps\w*)\b/i
+			]
+		}
+	],
+	/** Medios que cuentan como fiables (nombres de las fuentes de scripts/sources/news.ts). */
+	trusted: [
+		'BBC', 'Al Jazeera', 'DW', 'France 24', 'The Guardian', 'Financial Times', 'WSJ', 'The Economist',
+		'El País', 'El Mundo', 'El Confidencial', 'elDiario.es', 'RTVE', 'Europa Press', 'Nikkei Asia',
+		'South China Morning Post', 'The Japan Times', 'Kyiv Independent', 'Noticias ONU', 'ONU', 'Crisis Group',
+		'CNBC', 'Africanews'
+	]
 };
 
 /**

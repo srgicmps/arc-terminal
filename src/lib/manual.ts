@@ -17,6 +17,8 @@ import {
 	STOCKS,
 	STRAITS,
 	SUMMARIES,
+	VIX,
+	WAR,
 	WEEK,
 	type Level
 } from '../../scripts/alerts/config.ts';
@@ -141,12 +143,14 @@ const LEVEL_WHAT: Record<Level, string[]> = {
 		`Terremotos de magnitud ${QUAKE.mag} o más (${QUAKE.magTsunami} si hay aviso de tsunami).`,
 		`Cambios de tipos oficiales: ${RATES.map((r) => r.bank).join(', ')}.`,
 		`Temas muy grandes de IMP: ${IMP_BIG.media} medios o más en ${IMP_BIG.sections} secciones.`,
+		`Guerras, con ${WAR.media} medios fiables: ${WAR.kinds.map((k) => k.name.toLowerCase()).join(', ')}. Un aviso por tema cada ${WAR.waitHours} h, salvo escalada.`,
 		`Conflictos y escaladas de ese tamaño (los menores van en P2).`,
 		`Tránsito por ${STRAITS.names.join(', ')} que cae un ${pct(STRAITS.drop)} o más.`,
 		'Catástrofes en alerta roja (GDACS), un apagón en España y caídas de internet de un país.'
 	],
 	2: [
-		'Datos macro nuevos: IPC, paro, PIB, euríbor…, con la diferencia frente al anterior.',
+		'Datos macro nuevos: IPC, paro, PIB, euríbor, sentimiento económico, peticiones de paro…, con la diferencia frente al anterior y si es un máximo o mínimo de varios años.',
+		`Inventarios de petróleo de EE. UU. cada semana, el VIX si sube un ${VIX.jump} % o su curva se invierte, y subastas flojas del Tesoro de EE. UU.`,
 		'Mercados que se mueven más que su umbral (bolsas, bonos, primas de riesgo, divisas, cripto, petróleo).',
 		`Valores seguidos que se mueven un ${STOCKS.threshold} % o más.`,
 		'Sanciones y aranceles del Federal Register, elecciones del G20 y la UE, y gas almacenado en la UE.',
