@@ -12,7 +12,7 @@ export const KIND_TOKEN: Record<Kind, string> = {
 	story: 'cmd-story'
 };
 
-const BASE = ['cmd-bg', 'cmd-grid', 'cmd-edge', 'cmd-edge-hot', 'cmd-halo', 'cmd-label', 'cmd-label-bg', 'muted', 'faint', 'line', 'amber'];
+const BASE = ['cmd-bg', 'cmd-grid', 'cmd-link', 'cmd-edge-hot', 'cmd-halo', 'cmd-label', 'cmd-label-bg', 'muted', 'faint', 'line', 'amber'];
 
 export interface Palette {
 	color: Record<string, string>;

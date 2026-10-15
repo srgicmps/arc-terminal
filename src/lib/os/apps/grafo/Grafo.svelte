@@ -240,7 +240,7 @@
 			const p = bodies[index.get(e.a)!];
 			const q = bodies[index.get(e.b)!];
 			const hot = selected !== null && (e.a === selected || e.b === selected);
-			ctx.strokeStyle = hot ? c['cmd-edge-hot'] : c['cmd-edge'];
+			ctx.strokeStyle = hot ? c['cmd-edge-hot'] : c['cmd-link'];
 			ctx.globalAlpha = hot ? 0.85 : selected ? 0.25 : Math.min(1, 0.45 + Math.log1p(e.w) / 4);
 			ctx.lineWidth = (0.5 + Math.min(2.5, Math.log1p(e.w) * 0.7)) / view.k;
 			ctx.beginPath();

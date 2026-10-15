@@ -6,6 +6,7 @@ import type { WallData } from '../../exp/muro.ts';
 import type { ChangesData } from '../../types.ts';
 import { buildNotices, markSeen, toastsFor, unread, type Notice } from './notices.ts';
 import { parseIds, pushRecent, togglePin } from './start.ts';
+import { parseSpots, type Spots } from './icons.ts';
 import { DEFAULT_SKIN, isSkin, type Skin } from './skins.ts';
 import { parseWidgets, type Placed } from './widgets.ts';
 
@@ -16,7 +17,8 @@ export const KEYS = {
 	bar: 'arc-os-bar',
 	seen: 'arc-os-seen',
 	wallpaper: 'arc-os-wallpaper',
-	skin: 'arc-os-skin'
+	skin: 'arc-os-skin',
+	icons: 'arc-os-icons'
 } as const;
 
 /** Fondos del escritorio: «estilo» sigue la estética activa; los demás, sobre sus colores. */
@@ -25,7 +27,14 @@ export const WALLPAPERS = [
 	{ id: 'estilo', label: 'El de la estética' },
 	{ id: 'liso', label: 'Liso' },
 	{ id: 'rejilla', label: 'Rejilla' },
-	{ id: 'degradado', label: 'Degradado' }
+	{ id: 'degradado', label: 'Degradado' },
+	// De «OS 5»: los pinta src/lib/os/system/wall/WallLayer.svelte (lista completa en wall.ts → PRESETS).
+	{ id: 'aurora', label: 'Aurora' },
+	{ id: 'horizonte', label: 'Horizonte' },
+	{ id: 'duna', label: 'Duna' },
+	{ id: 'puntos', label: 'Puntos' },
+	{ id: 'globo', label: 'Vivo: el mundo ahora' },
+	{ id: 'cielo', label: 'Vivo: tu cielo' }
 ] as const;
 export type Wallpaper = (typeof WALLPAPERS)[number]['id'];
 
@@ -56,6 +65,8 @@ export const shell = $state({
 	seen: [] as string[],
 	notices: [] as Notice[],
 	toasts: [] as Notice[],
+	/** Casilla de cada icono del escritorio (los que no tienen, van a la primera libre). */
+	icons: {} as Spots,
 	/** Widgets ocultos (botón ◫ de DSM); solo en esta visita. */
 	widgetsHidden: false,
 	/** Qué está desplegado: solo uno a la vez. */
@@ -75,6 +86,7 @@ export function loadShell(defaultPinned: string[]) {
 	shell.skin = isSkin(skin) ? skin : DEFAULT_SKIN;
 	shell.skinChosen = isSkin(skin);
 	shell.seen = parseIds(read(KEYS.seen));
+	shell.icons = parseSpots(read(KEYS.icons));
 	shell.ready = true;
 }
 
@@ -89,6 +101,10 @@ export function pin(id: string) {
 export function setWidgets(list: Placed[]) {
 	shell.widgets = list;
 	write(KEYS.widgets, JSON.stringify(list));
+}
+export function setIcons(spots: Spots) {
+	shell.icons = spots;
+	write(KEYS.icons, JSON.stringify(spots));
 }
 export function setBar(pos: 'bottom' | 'top') {
 	shell.bar = pos;

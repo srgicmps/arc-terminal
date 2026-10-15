@@ -49,8 +49,8 @@
 	}
 
 	.land {
-		fill: var(--cmd-land);
-		stroke: var(--cmd-edge);
+		fill: var(--cmd-dossier-land);
+		stroke: var(--cmd-link);
 		stroke-width: var(--hair);
 		vector-effect: non-scaling-stroke;
 	}

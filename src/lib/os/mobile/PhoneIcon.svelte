@@ -41,7 +41,7 @@
 		height: var(--os-icon-size);
 		border-radius: var(--os-icon-radius);
 		background: var(--os-icon-bg);
-		box-shadow: var(--shadow), inset 0 0 0 var(--hair) var(--line);
+		box-shadow: inset 0 0 0 var(--hair) var(--os-icon-edge);
 		color: var(--os-icon-fg);
 		font-size: var(--fs-xxl);
 		line-height: 1;
@@ -74,6 +74,8 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		font-size: var(--fs-xs);
+		text-transform: var(--os-icon-name-case);
+		letter-spacing: var(--os-icon-name-track);
 		text-shadow: 0 var(--hair) var(--sp-2) var(--bg);
 	}
 	@media (prefers-reduced-motion: reduce) {

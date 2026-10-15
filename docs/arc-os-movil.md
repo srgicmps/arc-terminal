@@ -21,8 +21,9 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
   - [x] Gestos (`gesture()` de `home.ts`, con tests)
 
 ## Pendiente (órdenes de Sergi vía Decisiones 2)
-- [ ] **Estilo único de Arc OS** («Centro de mando», de OS 6): sin aspectos; dentro de /os no se aplican las estéticas
-  de la web. Estructura tipo iOS, pero sin imitar a Apple. Cambiar los tokens `--os-phone-*`, `--os-glass*`, `--os-icon-*`.
+- [x] **Estilo único de Arc OS** («Mando», de OS 6): el teléfono y todo lo que se abre encima llevan
+  `data-os-skin="mando"`; sus `--os-phone-*`, `--os-glass*`, `--os-icon-*` y `--os-radius-*` están en el bloque Mando de
+  `tokens.css`. Las estéticas de la web solo cambian lo de dentro de las apps.
 - [ ] **Iconos SVG** de OS 2b (`src/lib/os/icons/`, `<OsIcon id size />`) en `PhoneIcon.svelte` en lugar del carácter.
 - [x] **Carpetas** al arrastrar un icono sobre otro; orden de iconos y dock editables y guardados (`arc-os-phone`, en la
   cuenta). Modelo propio del teléfono, de un nivel como en iOS (`place`, `takeOut`, `arrange` de `home.ts`), no el árbol
