@@ -43,7 +43,8 @@
 	const options = $derived([{ value: 'ES', label: 'España' }, ...(myCc ? [{ value: myCc, label: name(myCc) }] : [])]);
 	let region = $state<string>('');
 	$effect(() => {
-		if (!region) region = (place.current.cc === 'ES' && esRegion(place.current.admin1)) || 'ES-MD';
+		// Hasta que se lee Tu sitio (place.ready), place.current es Madrid: al recargar se quedaba ES-MD.
+		if (!region && place.ready) region = (place.current.cc === 'ES' && esRegion(place.current.admin1)) || 'ES-MD';
 	});
 	const items = $derived(data?.countries[country === 'ES' || country === myCc ? country : 'ES'] ?? []);
 	const breaks = $derived(upcomingBreaks(holidaysFor(items, country === 'ES' ? region : null), today).slice(0, 10));
