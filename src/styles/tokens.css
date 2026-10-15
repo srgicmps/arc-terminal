@@ -158,6 +158,7 @@
 	--os-logo-big: 56px; /* logo de la pantalla de inicio */
 	--fs-clock: 72px; /* hora de la pantalla de bloqueo */
 	--os-boot-bar: 160px; /* ancho de la barra de progreso del arranque */
+	--os-bar-h: calc(var(--control-h) + var(--sp-12)); /* alto de la barra de tareas (crece sola en pantallas táctiles) */
 	/* Decoración de ventana: cada aspecto (data-os-skin: Windows, Mac, Linux…) la cambia aquí, sin tocar Window.svelte. */
 	--os-win-shadow-active: var(--os-win-shadow); /* sombra de la ventana con el foco */
 	--os-win-radius-snapped: 0; /* esquinas encajada o maximizada */
