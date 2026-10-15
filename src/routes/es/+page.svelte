@@ -5,6 +5,7 @@
 	import Panel from '#lib/components/Panel.svelte';
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
 	import Updated from '#lib/components/Updated.svelte';
+	import { euriborPhrase, fuelPhrase, gdpPhrase, inflationPhrase, phrases, powerPhrase, premiumPhrase, unemploymentPhrase } from '#lib/plain.ts';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
@@ -33,10 +34,23 @@
 	const paroPct = (now: number, before: number | undefined) => (before ? ((now - before) / before) * 100 : null);
 	const strongestQuake = $derived([...(data.quakes?.data ?? [])].sort((a, b) => b.mag - a.mag)[0]);
 
+	// Modo Sencillo: los datos clave de España contados en frases (src/lib/plain.ts).
+	const plain = $derived(
+		phrases([
+			inflationPhrase('España', get('ipc-es')?.points),
+			unemploymentPhrase('España', get('unemployment-es')?.points),
+			gdpPhrase('España', get('gdp-es')?.points),
+			premiumPhrase('España', premium?.points.at(-1)?.v),
+			euriborPhrase(get('euribor-12m')?.points),
+			powerPhrase(luzHoy),
+			fuelPhrase('España', fuelAvg?.g95)
+		])
+	);
+
 	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
 </script>
 
-<ViewHeader code="ES" title="España" sub={sources} />
+<ViewHeader code="ES" title="España" sub={sources} {plain} />
 
 <div class="grid grid-2">
 	<div class="col">

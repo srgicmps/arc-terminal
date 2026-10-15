@@ -1,16 +1,24 @@
 <!--
-	ⓘ con la definición de un término (src/lib/glossary.ts). Se pone detrás del texto: {label}<Term of={label} />.
+	ⓘ con la definición de un término (src/lib/glossary.ts; en modo Sencillo, la explicación de src/lib/explain.ts). Se pone detrás del texto: {label}<Term of={label} />.
 	`of` es el texto que se ve («Euríbor a 12 meses») o el id de la entrada («euribor»); si el glosario no lo
 	conoce, no pinta nada. La definición sale al pasar el ratón, al enfocar con el teclado o al tocar el ⓘ, y
 	se cierra con Esc, tocando fuera o al desplazar. Va con posición fija para que no la recorte una tabla con
 	desplazamiento.
 -->
 <script lang="ts">
+	import { explain } from '#lib/explain.ts';
 	import { lookup } from '#lib/glossary.ts';
+	import { isSimple } from '#lib/modo.svelte.ts';
 
 	let { of }: { of: string | null | undefined } = $props();
 
-	const entry = $derived(lookup(of));
+	// En Sencillo, la explicación completa (qué es, por qué importa, cómo leerlo; src/lib/explain.ts) y para más
+	// términos; en Terminal, solo la definición del glosario, como siempre.
+	const entry = $derived.by(() => {
+		if (isSimple()) return explain(of);
+		const g = lookup(of);
+		return g && { term: g.term, what: g.def, why: undefined, how: undefined };
+	});
 	const id = $props.id();
 
 	let button = $state<HTMLButtonElement>();
@@ -108,7 +116,9 @@
 			style:left="{pos.left}px"
 		>
 			<b>{entry.term}</b>
-			{entry.def}
+			{entry.what}
+			{#if entry.why}<span class="more"><em>Por qué importa:</em> {entry.why}</span>{/if}
+			{#if entry.how}<span class="more"><em>Cómo leerlo:</em> {entry.how}</span>{/if}
 		</span>
 	{/if}
 {/if}
@@ -156,7 +166,7 @@
 		position: fixed;
 		z-index: var(--z-popover);
 		width: max-content;
-		max-width: min(32ch, calc(100vw - 2 * var(--gutter)));
+		max-width: min(40ch, calc(100vw - 2 * var(--gutter)));
 		padding: var(--sp-6) var(--sp-8);
 		background: var(--raise);
 		border: var(--border);
@@ -169,6 +179,17 @@
 		text-align: left;
 		text-transform: none;
 		white-space: normal;
+	}
+
+	.more {
+		display: block;
+		margin-top: var(--sp-4);
+		color: var(--muted);
+	}
+
+	.more em {
+		font-style: normal;
+		color: var(--fg);
 	}
 
 	.tip.above {
