@@ -45,6 +45,8 @@
 	}
 
 	const close = () => {
+		// Si el foco estaba dentro de la lista, vuelve al botón: si no, se quedaría en <body>.
+		if (open && root?.contains(document.activeElement) && document.activeElement !== btn) btn.focus();
 		open = false;
 	};
 
@@ -53,23 +55,41 @@
 	}
 
 	function onKey(e: KeyboardEvent) {
-		if (open && e.key === 'Escape') {
+		if (!open) return;
+		if (e.key === 'Escape') {
 			e.stopPropagation();
+			e.preventDefault();
 			open = false;
 			btn.focus();
+			return;
 		}
+		// Flechas, Inicio y Fin recorren las opciones (y no desplazan la página, que cerraría el menú).
+		const items = [...root.querySelectorAll<HTMLElement>('.pop a[href], .pop button:not([disabled]), .pop input, .pop select')];
+		if (!items.length || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
+		if ((e.target as HTMLElement).closest('input, select, textarea, [role="radiogroup"]')) return;
+		e.preventDefault();
+		const at = items.indexOf(document.activeElement as HTMLElement);
+		const next =
+			e.key === 'Home' ? 0 : e.key === 'End' ? items.length - 1 : e.key === 'ArrowDown' ? (at + 1) % items.length : (at - 1 + items.length) % items.length;
+		items[next].focus();
+	}
+
+	// Al salir con Tab (el foco se va a otro elemento, fuera del botón y de la lista), se cierra. Sin destino (un
+	// toque en Safari, que no enfoca los botones) no se toca: lo cierran el clic fuera o la opción elegida.
+	function onFocusOut(e: FocusEvent) {
+		const to = e.relatedTarget as Node | null;
+		if (open && to && !root.contains(to)) open = false;
 	}
 </script>
 
 <svelte:window onclick={onWindowClick} onscroll={close} onresize={close} />
 
-<div class="menu-root" bind:this={root} onkeydowncapture={onKey}>
+<div class="menu-root" bind:this={root} onkeydowncapture={onKey} onfocusout={onFocusOut}>
 	<button
 		bind:this={btn}
 		type="button"
 		class={cls}
 		data-ui={ui}
-		aria-haspopup="true"
 		aria-expanded={open}
 		aria-label={label}
 		aria-current={current ? 'page' : undefined}

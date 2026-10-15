@@ -25,8 +25,24 @@ export function startTv(codes: string[], seconds: number) {
 	if (!document.fullscreenElement) {
 		document.documentElement
 			.requestFullscreen?.()
-			.then(() => (ownFullscreen = true))
+			.then(() => {
+				ownFullscreen = true;
+				document.addEventListener('fullscreenchange', onFullscreenChange);
+			})
 			.catch(() => {});
+	}
+}
+
+/**
+ * El primer Esc en pantalla completa lo usa el navegador para salir de ella y la página no lo ve: si quien sale es
+ * la pantalla completa que puso el modo TV, se sale también del modo TV.
+ */
+function onFullscreenChange() {
+	if (document.fullscreenElement) return;
+	document.removeEventListener('fullscreenchange', onFullscreenChange);
+	if (ownFullscreen && tv.on) {
+		ownFullscreen = false;
+		stopTv();
 	}
 }
 
@@ -35,6 +51,7 @@ export function stopTv() {
 	tv.paused = false;
 	delete document.documentElement.dataset.tv;
 	applyFit();
+	document.removeEventListener('fullscreenchange', onFullscreenChange);
 	if (ownFullscreen && document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
 	ownFullscreen = false;
 }
