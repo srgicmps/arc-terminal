@@ -19,7 +19,7 @@
 	let { label, value, tone, sub, children }: Props = $props();
 </script>
 
-<div class="tile">
+<div class="tile" data-ui="tile">
 	<span class="lbl">{label}<Term of={label} /></span>
 	<b class={tone}>{value}</b>
 	{#if children}<span class="sub">{@render children()}</span>{:else if sub !== undefined}<span class="sub">{sub}</span>{/if}
