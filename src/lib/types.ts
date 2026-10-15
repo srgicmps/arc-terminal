@@ -1217,3 +1217,37 @@ export interface FoodInsecurity {
 	/** Frente a hace un año: «Higher», «Similar», «Lower»… si lo da. */
 	vsYear: string | null;
 }
+
+// ---------- Cloudflare Radar: cortes de internet y ataques DDoS (scripts/sources/radar.ts) ----------
+
+/** Un corte de internet que Cloudflare Radar ha verificado y anotado (con su causa). */
+export interface RadarOutage {
+	id: string;
+	/** Códigos ISO de los países afectados (p. ej. «IR»). */
+	codes: string[];
+	/** Causa y alcance, ya en español («corte de cable», «nacional»…). */
+	cause: string;
+	scope: string;
+	/** Operadores afectados, si el corte es de una red concreta. */
+	networks: string[];
+	/** Inicio y fin en ISO (UTC); sin fin, sigue en curso. */
+	start: string;
+	end: string | null;
+	/** Enlace a la explicación (suele ser el blog o la cuenta de Cloudflare Radar). */
+	url: string | null;
+}
+
+/** País en el ranking de destinos de ataques DDoS: su parte del total, en %. */
+export interface RadarTarget {
+	code: string;
+	name: string;
+	pct: number;
+}
+
+export interface RadarData {
+	/** Cortes de los últimos 7 días, los que siguen en curso primero. */
+	outages: RadarOutage[];
+	/** Países más atacados en 7 días: capa 3 (red) y capa 7 (aplicación, HTTP). */
+	l3: RadarTarget[];
+	l7: RadarTarget[];
+}

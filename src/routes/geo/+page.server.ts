@@ -21,6 +21,7 @@ import type {
 	OutbreakNews,
 	PredictionsData,
 	Quake,
+	RadarData,
 	SwpcData,
 	TradeDoc,
 	UnhcrData
@@ -28,7 +29,7 @@ import type {
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, intl, analysis, world, quakes, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex, unhcr, food] = await Promise.all([
+	const [news, intl, analysis, world, quakes, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex, unhcr, food, radar] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-intl'),
 		dataset<NewsData>('news-analysis'),
@@ -50,7 +51,8 @@ export const load: PageServerLoad = async () => {
 		dataset<TradeDoc[]>('sanctions-uk'),
 		dataset<EuLexDoc[]>('eurlex'),
 		dataset<UnhcrData>('unhcr'),
-		dataset<FoodInsecurity[]>('fewsnet')
+		dataset<FoodInsecurity[]>('fewsnet'),
+		dataset<RadarData>('radar')
 	]);
 	// Sanciones y aranceles: EE. UU. (Federal Register), Reino Unido (OFSI) y UE (actos de la serie L con el tema
 	// «Sanciones»), juntos y de lo más reciente a lo más antiguo (M41).
@@ -89,10 +91,13 @@ export const load: PageServerLoad = async () => {
 		advisories: advisories && advisorySummary(advisories.data, Date.parse(advisories.fetchedAt), advisories.fetchedAt),
 		// Señales de riesgo: solo las cifras y lo más grave de cada fuente, con la hora de cada descarga.
 		signals:
-			gdacs || ioda || who
+			gdacs || ioda || radar || who
 				? {
-						...riskSignals({ gdacs: gdacs?.data, ioda: ioda?.data, who: who?.data, advisories: advisories?.data }, Date.now()),
-						fetchedAt: { gdacs: gdacs?.fetchedAt, ioda: ioda?.fetchedAt, who: who?.fetchedAt }
+						...riskSignals(
+							{ gdacs: gdacs?.data, ioda: ioda?.data, radar: radar?.data.outages, who: who?.data, advisories: advisories?.data },
+							Date.now()
+						),
+						fetchedAt: { gdacs: gdacs?.fetchedAt, ioda: ioda?.fetchedAt, radar: radar?.fetchedAt, who: who?.fetchedAt }
 					}
 				: null,
 		// Refugiados (ACNUR): los 8 países de los que más gente huye y los 8 que más acogen.

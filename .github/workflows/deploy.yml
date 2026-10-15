@@ -87,6 +87,8 @@ jobs:
           RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
           # aisstream.io (barcos en los puertos, AIS en directo).
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          # Cloudflare Radar (cortes de internet y DDoS): token con permiso de lectura de Radar.
+          CLOUDFLARE_RADAR_TOKEN: ${{ secrets.CLOUDFLARE_RADAR_TOKEN }}
           # MyMemory (titulares en inglés → español, scripts/translate.ts). Este job no corre en los PR.
           MYMEMORY_EMAIL: ${{ secrets.MYMEMORY_EMAIL }}
 
@@ -102,6 +104,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          CLOUDFLARE_RADAR_TOKEN: ${{ secrets.CLOUDFLARE_RADAR_TOKEN }}
           MYMEMORY_EMAIL: ${{ secrets.MYMEMORY_EMAIL }}
 
       # Avisos al móvil con ntfy (scripts/notify.ts y scripts/alerts/): niveles P1–P4 con cupos y un tope
@@ -216,6 +219,7 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          CLOUDFLARE_RADAR_TOKEN: ${{ secrets.CLOUDFLARE_RADAR_TOKEN }}
       - run: pnpm build --logLevel warn
       - run: pnpm smoke
 
@@ -281,6 +285,7 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          CLOUDFLARE_RADAR_TOKEN: ${{ secrets.CLOUDFLARE_RADAR_TOKEN }}
       - run: pnpm build --logLevel warn
       - run: node scripts/tv-shots.ts
         continue-on-error: true
@@ -315,6 +320,7 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          CLOUDFLARE_RADAR_TOKEN: ${{ secrets.CLOUDFLARE_RADAR_TOKEN }}
       - run: pnpm build --logLevel warn
       - run: node scripts/compare-views.ts
         continue-on-error: true
@@ -356,5 +362,6 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           RELIEFWEB_APPNAME: ${{ secrets.RELIEFWEB_APPNAME }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          CLOUDFLARE_RADAR_TOKEN: ${{ secrets.CLOUDFLARE_RADAR_TOKEN }}
       - run: node scripts/probe.ts
         continue-on-error: true

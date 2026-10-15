@@ -1,5 +1,5 @@
 <!--
-	GEO, «Señales de riesgo»: cifras del día (catástrofes de GDACS, países sin internet según IODA, brotes de la
+	GEO, «Señales de riesgo»: cifras del día (catástrofes de GDACS, países sin internet según IODA y Cloudflare Radar, brotes de la
 	OMS y países con aviso de viaje de nivel 4) y, debajo, lo más grave de cada una. Los datos llegan ya
 	ordenados y recortados de riskSignals() (src/lib/risk-signals.ts).
 -->
@@ -47,6 +47,20 @@
 				<span class:mut={o.level !== 'critical'}
 					>{o.drop === null ? LEVEL[o.level] : `−${nf(o.drop, 0)} %`}</span
 				>
+			</li>
+		{/each}
+	</ul>
+{/if}
+
+{#if signals.verified.length}
+	<ul class="mini">
+		{#each signals.verified as o (o.id)}
+			<li>
+				<a class="l" href={o.url ?? 'https://radar.cloudflare.com/outage-center'} target="_blank" rel="noopener">
+					Internet · {o.country}
+					<small>{[o.cause, o.scope].filter(Boolean).join(' · ')} · Cloudflare Radar</small>
+				</a>
+				<span class:mut={!!o.end}>{o.end ? `Hasta el ${dm(o.end)}` : 'En curso'}</span>
 			</li>
 		{/each}
 	</ul>
