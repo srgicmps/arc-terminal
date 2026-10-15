@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cheapestNow, cheapestWindow, days, dayStats, hourLabel, hourly, isHour, madridNow } from './power.ts';
+import { cheapestNow, cheapestWindow, cheapWindows, days, dayStats, hourLabel, hourly, isHour, madridNow } from './power.ts';
 
 const t = (day: string, h: number, m = 0) => `${day}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00.000+02:00`;
 
@@ -144,5 +144,36 @@ describe('cheapestWindow: etiqueta de la franja el día del cambio de hora', () 
 	it('acaba en la segunda 02:00 si la franja termina justo antes', () => {
 		const w = cheapestWindow(hours.map((h, i) => ({ ...h, kwh: i === 1 || i === 2 ? 0.01 : 0.3 })), '2026-10-25', 2)!;
 		expect(`${hourLabel(w.first)}–${hourLabel(w.after)}`).toBe('01:00–02:00 ²');
+	});
+});
+
+describe('cheapWindows', () => {
+	const day = (d: string, kwh: number[]) => kwh.map((v, hour) => ({ day: d, hour, repeat: false, kwh: v }));
+	// Barata de 2 a 5, de 14 a 16 y a las 22.
+	const kwh = Array.from({ length: 24 }, (_, h) => (h >= 2 && h < 5 ? 0.04 : h >= 14 && h < 16 ? 0.05 : h === 22 ? 0.07 : 0.15));
+	const prices = day('2026-10-16', kwh);
+
+	it('las tres mejores franjas, separadas y de la más barata a la más cara', () => {
+		const w = cheapWindows(prices, '2026-10-16', 2);
+		expect(w.map((x) => [x.first.hour, x.after.hour])).toEqual([
+			[2, 4],
+			[14, 16],
+			[21, 23]
+		]);
+		expect(w[0].avg).toBeCloseTo(0.04);
+	});
+
+	it('con la hora actual, solo las que aún no han empezado', () => {
+		const w = cheapWindows(prices, '2026-10-16', 2, 3, { day: '2026-10-16', hour: 13, repeat: false });
+		expect(w[0].first.hour).toBe(14);
+		expect(w.every((x) => x.first.hour >= 14)).toBe(true);
+		expect(cheapWindows(prices, '2026-10-16', 2, 3, { day: '2026-10-16', hour: 23, repeat: false })).toEqual([]);
+		expect(cheapWindows(prices, '2026-10-16', 2, 3, { day: '2026-10-17', hour: 1, repeat: false })).toEqual([]);
+		expect(cheapWindows(prices, '2026-10-16', 2, 3, { day: '2026-10-15', hour: 20, repeat: false })).toHaveLength(3);
+	});
+
+	it('de una hora y sin datos', () => {
+		expect(cheapWindows(prices, '2026-10-16', 1, 2).map((x) => x.first.hour)).toEqual([2, 4]);
+		expect(cheapWindows([], '2026-10-16')).toEqual([]);
 	});
 });
