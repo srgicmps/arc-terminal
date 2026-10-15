@@ -153,6 +153,7 @@
 	--os-title-fg: var(--muted); /* texto de la barra de título */
 	--os-title-fg-active: var(--fg); /* texto de la barra de título con el foco */
 	--os-snap: var(--amber-soft); /* zona donde va a encajar la ventana al soltarla */
+	--os-bar-h: calc(var(--control-h) + var(--sp-12)); /* alto de la barra de tareas (crece sola en pantallas táctiles) */
 	--focus-w: var(--hair); /* grosor del contorno de foco con teclado */
 	--dur-ui: 0ms; /* transición de botones y filas al pasar el ratón */
 	--ease: cubic-bezier(0.2, 0, 0, 1);

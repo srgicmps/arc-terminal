@@ -6,7 +6,13 @@
 <script lang="ts">
 	import Taskbar from '#lib/components/os/Taskbar.svelte';
 	import WindowLayer from '#lib/components/os/WindowLayer.svelte';
-	import { loadShell, setShell } from '#lib/os/os.svelte.ts';
+	import { APPS, openApp, openPath, loadShell, setShell } from '#lib/os/os.svelte.ts';
+	import Desktop from '#lib/os/shell/Desktop.svelte';
+	import { loadShell as loadDesk, shell as desk } from '#lib/os/shell/shell.svelte.ts';
+
+	// Escritorio (fondo, iconos y widgets) de «OS 2»: los iconos son las apps ancladas en la barra.
+	const icons = APPS.map((a) => ({ id: a.id, title: a.name, code: a.code, icon: a.icon, desc: a.desc }));
+	$effect(() => loadDesk(['top', 'imp', 'eco', 'ws', 'geo']));
 
 	// Entrar en /os es elegir Arc OS: la próxima vez que abras la web, vuelve aquí.
 	$effect(() => {
@@ -19,8 +25,12 @@
 	<title>Arc OS</title>
 </svelte:head>
 
-<div class="os" data-ui="os">
-	<div class="desk"><WindowLayer /></div>
+<div class="os" class:top={desk.bar === 'top'} data-ui="os" data-os-bar={desk.bar}>
+	<div class="desk">
+		<Desktop apps={icons} onopen={(id) => openApp(id)} onnavigate={openPath}>
+			<WindowLayer />
+		</Desktop>
+	</div>
 	<Taskbar />
 </div>
 
@@ -33,6 +43,10 @@
 		grid-template-rows: 1fr auto;
 		background: var(--os-desk);
 		background-image: var(--bg-image);
+	}
+
+	.os.top {
+		grid-template-rows: auto 1fr;
 	}
 
 	.desk {
