@@ -42,3 +42,19 @@ describe('fichas de NEWS', () => {
 		expect(entitiesIn('La meta de déficit')).toEqual([]);
 	});
 });
+
+describe('findEntity con upperCodes (NEWS)', () => {
+	it('los códigos cortos solo en mayúsculas', () => {
+		expect(findEntity('es', { upperCodes: true })).toBeNull();
+		expect(findEntity('us', { upperCodes: true })).toBeNull();
+		expect(findEntity('ES', { upperCodes: true })).toMatchObject({ kind: 'country', country: { code: 'ES' } });
+		expect(findEntity('nvda', { upperCodes: true })).toMatchObject({ kind: 'ticker', ticker: { code: 'NVDA' } });
+		expect(findEntity('España', { upperCodes: true })).toMatchObject({ kind: 'country', country: { code: 'ES' } });
+	});
+});
+
+describe('entitiesIn sin repetir etiqueta', () => {
+	it('«S&P 500» sale una sola vez', () => {
+		expect(entitiesIn('S&P 500 closes at record').filter((e) => e.label === 'S&P 500')).toHaveLength(1);
+	});
+});

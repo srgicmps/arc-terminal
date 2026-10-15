@@ -160,6 +160,18 @@
 		border-left: var(--border);
 	}
 
+	/* En un panel estrecho (el móvil), compras encima de ventas: a dos columnas se cortaba «Vende todo» o «+16 % acciones». */
+	@container (max-width: 520px) {
+		.moves {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.moves > div + div {
+			border-left: 0;
+			border-top: var(--border);
+		}
+	}
+
 	h3 {
 		margin: 0;
 		padding: var(--sp-8) var(--pad-x) 0;

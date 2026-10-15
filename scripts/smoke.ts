@@ -16,7 +16,7 @@ import { gzipSync } from 'node:zlib';
 import { launch, preview, viewPaths } from './browser.ts';
 import { osChecks } from './smoke-os.ts';
 
-const PATHS = [...viewPaths(), '/s?sym=NVDA'];
+const PATHS = process.env.SMOKE_ONLY ? process.env.SMOKE_ONLY.split(',') : [...viewPaths(), '/s?sym=NVDA'];
 const WIDTHS = [390, 1280];
 /** Los dos modos (src/lib/modo.ts): Sencillo enseña menos paneles y letra mayor; Terminal, todo. */
 const MODES = ['sencillo', 'terminal'] as const;
@@ -86,6 +86,14 @@ try {
 			await page.waitForTimeout(300);
 			const check = await page.evaluate(() => ({
 				scroll: document.documentElement.scrollWidth - window.innerWidth,
+				// Campos con letra de menos de 16 px: Safari del iPhone amplía la página al tocarlos (app.css lo evita).
+				zoom: [...document.querySelectorAll<HTMLElement>('input, select, textarea')]
+					.filter((e) => !/^(checkbox|radio|range|color|button|submit|hidden)$/.test((e as HTMLInputElement).type) && e.offsetParent)
+					.filter((e) => parseFloat(getComputedStyle(e).fontSize) < 16)
+					.map((e) => e.id || e.getAttribute('aria-label') || e.tagName.toLowerCase()),
+				// Pestañas de arriba (TOP, ECO… y «Más»): todas del mismo alto. Un botón estirado por el mínimo táctil
+				// de app.css descolocaba la fila entera.
+				keys: [...new Set([...document.querySelectorAll('.keys .key')].map((e) => Math.round(e.getBoundingClientRect().height)))],
 				panels: document.querySelectorAll('section.panel').length,
 				missing: [...document.querySelectorAll('.empty')]
 					.map((e) => e.textContent?.trim() ?? '')
@@ -103,6 +111,8 @@ try {
 				})()
 			}));
 			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px`);
+			if (width < 600) for (const f of new Set(check.zoom)) failures.push(`${where}: el campo «${f}» tiene letra de menos de 16 px (el iPhone amplía al tocarlo)`);
+			if (check.keys.length > 1) failures.push(`${where}: pestañas de arriba de alturas distintas (${check.keys.join(', ')} px)`);
 			if (!NO_PANELS.has(path) && !check.panels) failures.push(`${where}: sin paneles`);
 			for (const text of check.missing) failures.push(`${where}: panel sin datos («${text}»)`);
 			for (const text of check.glitches) failures.push(`${where}: «${text}» en la vista`);
@@ -126,11 +136,51 @@ try {
 	}
 	// Arc OS en el escritorio, con 12 ventanas (scripts/smoke-os.ts).
 	failures.push(...(await osChecks(browser, ROOT)));
+	await keyboard(browser);
 	await browser.close();
 } catch (error) {
 	failures.push(String(error));
 } finally {
 	server.kill();
+}
+
+/**
+ * Teclado (una vez, a 1280 px en modo Sencillo): el primer Tab va a «Saltar al contenido», Esc con un ⓘ abierto solo
+ * lo cierra (antes también llevaba a la portada) y saltar a un panel que Sencillo oculta lo enseña y baja hasta él.
+ */
+async function keyboard(browser: Awaited<ReturnType<typeof launch>>) {
+	const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+	await context.addInitScript(() => {
+		localStorage.setItem('arc-modo', 'sencillo');
+		localStorage.setItem('arc-welcome', JSON.stringify({ v: 1, profile: null, interests: [], alerts: { groups: [], level: 2, daily: 10, mis: [] }, at: '' }));
+	});
+	await context.route('**/*', (route) => {
+		const url = new URL(route.request().url());
+		return url.hostname === 'localhost' && !url.pathname.startsWith('/api/') ? route.continue() : route.fulfill({ status: 200, body: '' });
+	});
+	const page = await context.newPage();
+	page.on('pageerror', (e) => failures.push(`teclado: excepción: ${e.message}`));
+	await page.goto(ROOT + '/eco', { waitUntil: 'networkidle' });
+	await page.keyboard.press('Tab');
+	const first = await page.evaluate(() => document.activeElement?.textContent?.trim());
+	if (first !== 'Saltar al contenido') failures.push(`teclado: el primer Tab va a «${first}», no a «Saltar al contenido»`);
+	const term = page.locator('button.i').first();
+	if (await term.count()) {
+		await term.focus();
+		await page.keyboard.press('Enter');
+		await page.keyboard.press('Escape');
+		await page.waitForTimeout(300);
+		if (new URL(page.url()).pathname !== '/eco') failures.push(`teclado: Esc con un ⓘ abierto lleva a ${new URL(page.url()).pathname}`);
+		if ((await term.getAttribute('aria-expanded')) !== 'false') failures.push('teclado: Esc no cierra el ⓘ');
+	}
+	await page.goto(ROOT + '/eco#panel=Paro%20juvenil', { waitUntil: 'networkidle' });
+	await page.waitForTimeout(800);
+	const top = await page.evaluate(() => {
+		const panel = [...document.querySelectorAll('section.panel')].find((s) => /paro juvenil/i.test(s.querySelector('h2')?.textContent ?? ''));
+		return panel ? Math.round(panel.getBoundingClientRect().top) : null;
+	});
+	if (top === null || Math.abs(top) > 200) failures.push(`teclado: /eco#panel=Paro juvenil en Sencillo no enseña ni baja al panel (${top})`);
+	await context.close();
 }
 
 // ::warning:: hace que GitHub muestre el aviso en el resumen de la Action.

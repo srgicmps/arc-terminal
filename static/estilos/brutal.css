@@ -80,6 +80,7 @@
 	}
 	[data-style='brutal'] .key,
 	[data-style='brutal'] .theme,
+	[data-style='brutal'] [data-ui='appearance'],
 	[data-style='brutal'] .seg,
 	[data-style='brutal'] select,
 	[data-style='brutal'] input[type='search'],
@@ -94,7 +95,7 @@
 		box-shadow: inset var(--thin) 0 0 0 var(--fg);
 	}
 	/* Pulsar hunde el botón lo que mide su sombra: sin animación, de golpe. */
-	[data-style='brutal'] :is(.go, .key, .theme, .seg button, .card):active {
+	[data-style='brutal'] :is(.go, .key, .theme, [data-ui='appearance'], .seg button, .card):active {
 		translate: var(--sp-2) var(--sp-2);
 	}
 
@@ -536,6 +537,12 @@
 	}
 	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] .col > [data-ui='panel']:not(.max) {
 		position: relative;
+	}
+	/* Un panel girado en la columna de la derecha asomaba 2 px fuera de la página y daba scroll de lado: se recorta
+	   en el borde de la pantalla (clip no crea caja de scroll, así que lo pegajoso sigue pegado). */
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] {
+		overflow-x: clip;
+		overflow-clip-margin: var(--gutter);
 	}
 	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] .col > [data-ui='panel']:not(.max):nth-child(3n + 1) {
 		rotate: -0.6deg;

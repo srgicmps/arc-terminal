@@ -59,8 +59,11 @@ export function toEarnings(body: RawEarnings): Earnings[] {
 			revenueEstimate: num(e.revenueEstimate),
 			revenueActual: num(e.revenueActual)
 		}))
-		.sort((a, b) => a.date.localeCompare(b.date) || (b.revenueEstimate ?? 0) - (a.revenueEstimate ?? 0))
-		.slice(0, MAX_EARNINGS);
+		// Con el tope, se quedan los valores vigilados y las mayores ventas (antes, por fecha: en plena temporada de
+		// resultados los primeros días llenaban las 150 filas y la segunda semana no salía).
+		.sort((a, b) => Number(WATCH.has(b.symbol)) - Number(WATCH.has(a.symbol)) || (b.revenueEstimate ?? 0) - (a.revenueEstimate ?? 0))
+		.slice(0, MAX_EARNINGS)
+		.sort((a, b) => a.date.localeCompare(b.date) || (b.revenueEstimate ?? 0) - (a.revenueEstimate ?? 0));
 }
 
 type RawIpos = {

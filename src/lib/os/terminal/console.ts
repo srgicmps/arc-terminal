@@ -21,7 +21,14 @@ export interface Result {
 	next?: string;
 	/** Lo que se guarda en el historial compartido con la barra (arc-cmd-history), si es algo que abre. */
 	history?: string;
+	/** La respuesta aún se está descargando («Cargando…»): la consola la vuelve a pedir y cambia esas líneas. */
+	pending?: boolean;
 }
+
+const LOADING = /Cargando/;
+
+/** «2+2», «(1250-200)*1,21»: una cuenta escrita sin «=» (con al menos un número y un operador). */
+export const looksLikeMath = (text: string) => /^[-+(]*\d[\d\s.,+\-*/()%^]*$/.test(text) && /\d\s*[-+*/%^]\s*[\d(]/.test(text);
 
 export const PROMPT = 'arc>';
 
@@ -67,10 +74,15 @@ export function execLine(raw: string, ctx: ExecCtx): Result {
 	}
 
 	// «=1250*1,21», «100 USD EUR»: el resultado; la cuenta se queda en el prompt para seguir calculando.
-	const calc = calcInput(text, ctx.fx);
+	// Una cuenta sin «=» también vale (en la consola no hay nada que se llame «2+2»).
+	const calc = calcInput(looksLikeMath(text) ? `=${text}` : text, ctx.fx);
 	if (calc) {
 		const bad = calc.text === '= ?';
-		return { lines: [echo, { kind: bad ? 'err' : 'out', text: bad ? calc.desc : `${calc.text}   ${calc.desc}` }] };
+		return {
+			lines: [echo, { kind: bad ? 'err' : 'out', text: bad ? calc.desc : `${calc.text}   ${calc.desc}` }],
+			next: calc.next,
+			pending: LOADING.test(calc.desc) || undefined
+		};
 	}
 
 	// «euribor», «hora tokio», «hipoteca 150000 25a»: el dato, como texto. No se abre la vista: se sugiere.
@@ -78,7 +90,7 @@ export function execLine(raw: string, ctx: ExecCtx): Result {
 	if (ans) {
 		const lines: Line[] = [echo, { kind: 'out', text: `${ans.code}   ${ans.desc}` }];
 		if (ans.open) lines.push({ kind: 'dim', text: `Para verlo entero: ${ans.open}` });
-		return { lines };
+		return { lines, pending: LOADING.test(ans.desc) || undefined };
 	}
 
 	// Lo demás, como la barra: un comando, un panel, un valor…
@@ -111,13 +123,15 @@ export function complete(raw: string, all: Option[]): { value: string; list: Opt
 	const words: Option[] = BUILTINS.filter((b) => b.code.startsWith(text.toLowerCase())).map((b) => ({ code: b.code, desc: b.desc, kind: 'Consola' }));
 	const list = [...words, ...suggest(text, all, 8)].filter((o) => !o.url);
 	if (!list.length) return { value: raw, list: [] };
-	if (list.length === 1) {
-		const code = list[0].run ?? list[0].code;
+	// Se completa con lo que empieza por lo escrito («lim» → «limpiar» aunque «clima» también salga en la lista).
+	const starts = list.filter((o) => (o.run ?? o.code).toUpperCase().startsWith(text.toUpperCase()));
+	const one = starts.length === 1 ? starts[0] : list.length === 1 ? list[0] : null;
+	if (one) {
+		const code = one.run ?? one.code;
 		const cmd = findCommand(code);
 		return { value: cmd?.arg && code === cmd.code ? `${code} ` : code, list: [] };
 	}
-	const codes = list.map((o) => o.run ?? o.code);
-	const prefix = commonPrefix(codes);
+	const prefix = commonPrefix((starts.length ? starts : list).map((o) => o.run ?? o.code));
 	return { value: prefix.length > text.length && prefix.toUpperCase().startsWith(text.toUpperCase()) ? prefix : raw, list };
 }
 

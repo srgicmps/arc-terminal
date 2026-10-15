@@ -70,11 +70,11 @@ export function travelPoints(data: AdvisoriesData | undefined): SalaPoint[] {
 
 /** Elecciones de los próximos `days` días. */
 export function electionPoints(items: Election[] | undefined, now: number, days = 30): SalaPoint[] {
-	return (items ?? []).flatMap((e) => {
+	return (items ?? []).flatMap((e, i) => {
 		const at = e.iso ? center(e.iso) : undefined;
 		const t = Date.parse(`${e.date}T12:00:00Z`);
 		if (!at || !(t >= now - 86_400_000 && t <= now + days * 86_400_000)) return [];
-		return [{ id: `el-${e.iso}-${e.date}`, layer: 'elections' as const, lat: at[0], lon: at[1], r: 1.6, title: e.name, sub: `${e.country} · ${e.date}`, url: e.url, t: null, region: regionOf(e.iso!) ?? regionAt(at[0], at[1]), country: e.iso! }];
+		return [{ id: `el-${e.iso}-${e.date}-${i}` /* con el índice: dos elecciones el mismo día (presidenciales y legislativas) */, layer: 'elections' as const, lat: at[0], lon: at[1], r: 1.6, title: e.name, sub: `${e.country} · ${e.date}`, url: e.url, t: null, region: regionOf(e.iso!) ?? regionAt(at[0], at[1]), country: e.iso! }];
 	});
 }
 

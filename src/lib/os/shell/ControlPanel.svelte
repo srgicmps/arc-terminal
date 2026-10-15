@@ -31,7 +31,7 @@
 	const current = $derived(shell.widgets ?? defaultWidgets(deskW, shell.skin));
 	const has = (k: WidgetKind) => current.some((w) => w.kind === k);
 	function flip(k: WidgetKind) {
-		setWidgets(has(k) ? removeWidget(current, k) : addWidget(current, k, deskW));
+		setWidgets(has(k) ? removeWidget(current, k) : addWidget(current, k, deskW, os.deskH()));
 	}
 	function app(id: string) {
 		shell.open = null;
@@ -43,7 +43,18 @@
 	}
 	// Qué pasa con tu cuenta: sincronizada, sin conexión, sesión caducada… (cloud.svelte.ts → account.ts).
 	const account = $derived(accountLine(cloud.state, cloud.user, cloud.frozen));
+	// Escape o un clic fuera lo cierran (el botón ⚙ de la barra ya hace de interruptor).
+	function key(e: KeyboardEvent) {
+		if (e.key === 'Escape') shell.open = null;
+	}
+	function outside(e: PointerEvent) {
+		const t = e.target as Element | null;
+		if (t?.closest('#os-control, [aria-controls="os-control"], [role="menu"]')) return;
+		shell.open = null;
+	}
 </script>
+
+<svelte:window onkeydown={key} onpointerdown={outside} />
 
 <div id="os-control" class="control" role="dialog" aria-label="Panel de control">
 	<header>

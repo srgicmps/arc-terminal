@@ -8,11 +8,11 @@
 	import Basic from './Basic.svelte';
 	import Currency from './Currency.svelte';
 	import Finance from './Finance.svelte';
+	import { calc } from './state.svelte.ts';
 	import type { AppProps } from '../../apps.ts';
 
 	let { win }: AppProps = $props();
 
-	let tab = $state<'normal' | 'fin' | 'fx'>('normal');
 	const TABS = [
 		{ value: 'normal', label: 'Normal' },
 		{ value: 'fin', label: 'Financiera' },
@@ -21,6 +21,6 @@
 </script>
 
 <Tool {win}>
-	{#snippet bar()}<Seg label="Tipo de calculadora" options={TABS} bind:value={tab} />{/snippet}
-	{#if tab === 'normal'}<Basic />{:else if tab === 'fin'}<Finance />{:else}<Currency />{/if}
+	{#snippet bar()}<Seg label="Tipo de calculadora" options={TABS} bind:value={calc.tab} />{/snippet}
+	{#if calc.tab === 'normal'}<Basic />{:else if calc.tab === 'fin'}<Finance />{:else}<Currency />{/if}
 </Tool>

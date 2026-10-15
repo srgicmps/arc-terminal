@@ -1,6 +1,6 @@
 // Finnhub: calendario de resultados, noticias y cotizaciones. La clave va en la cabecera X-Finnhub-Token.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { finnhub } from '../sources/finnhub.ts';
+import { finnhub, toEarnings } from '../sources/finnhub.ts';
 import { mockFetch } from './mock.ts';
 
 const KEY = 'clave-finnhub-123';
@@ -174,5 +174,16 @@ describe('finnhub', () => {
 		const error = await finnhub.fetch(undefined).catch((e: Error) => e);
 		expect((error as Error).message).toMatch(/^Finnhub no ha devuelto datos: HTTP 401 en https:\/\/finnhub\.io/);
 		expect((error as Error).message).not.toContain(KEY);
+	});
+});
+
+describe('toEarnings', () => {
+	it('con más de 150, se queda con las mayores ventas y no solo con los primeros días', () => {
+		const early = Array.from({ length: 150 }, (_, i) => ({ date: '2026-10-14', symbol: `E${i}`, revenueEstimate: 3e9 }));
+		const late = { date: '2026-10-27', symbol: 'BIG', revenueEstimate: 90e9 };
+		const out = toEarnings({ earningsCalendar: [...early, late] });
+		expect(out).toHaveLength(150);
+		expect(out.at(-1)?.symbol).toBe('BIG');
+		expect(out.map((e) => e.date)).toEqual([...out.map((e) => e.date)].sort());
 	});
 });

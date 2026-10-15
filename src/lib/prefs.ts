@@ -86,6 +86,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-os-wall', storage: 'local', what: 'Fondo de Arc OS: el general, uno por escritorio, presentación y pantalla de bloqueo (las imágenes propias van aparte, solo en este navegador)', where: 'Arc OS, app Fondo de pantalla', kind: 'ajuste' },
 	{ key: 'arc-os-images', storage: 'idb', what: 'Tus imágenes de fondo de Arc OS, comprimidas (no se sincronizan: no caben en la cuenta)', where: 'Arc OS, app Fondo de pantalla', kind: 'dato' },
 	{ key: 'arc-os-boot', storage: 'local', what: 'Día del último arranque de Arc OS (la pantalla de inicio sale una vez al día)', where: 'Arc OS, al entrar', kind: 'dato' },
+	{ key: 'arc-os-locked', storage: 'session', what: 'Si Arc OS se quedó bloqueado en esta pestaña (al recargar sigue bloqueado)', where: 'Arc OS, al bloquear', kind: 'dato' },
 	{ key: 'arc-os-system', storage: 'local', what: 'Ajustes del sistema de Arc OS: pantalla de inicio, sonidos', where: 'Arc OS, Panel de control', kind: 'ajuste' },
 	{ key: 'arc-os-skin', storage: 'local', what: 'Que ya has pasado el primer arranque de Arc OS (y su aspecto, que es uno solo)', where: 'Arc OS, primer arranque', kind: 'ajuste' },
 	{ key: 'arc-os-name', storage: 'local', what: 'Cómo quieres que te llame Arc OS', where: 'Arc OS, primer arranque y Panel de control', kind: 'ajuste' },

@@ -116,7 +116,7 @@
 		--muted: #6a5c4f;
 		--faint: #6e6052;
 		--amber: #a54a29;
-		--amber-dim: #96583d;
+		--amber-dim: #8c5034;
 		--amber-soft: rgba(165, 74, 41, 0.09);
 		--amber-edge: rgba(165, 74, 41, 0.4);
 		--on-amber: #ffffff;
@@ -432,6 +432,7 @@
 /* «GO» deja de ser un botón relleno: una píldora tenue en el acento, que se llena al pasar por encima. */
 [data-style='calido'][data-style] [data-ui='cmd'] .go {
 	margin: var(--sp-5);
+	min-height: 0; /* en el táctil, los 44 px de todo botón más el margen se salían de la píldora */
 	border-radius: 999px;
 	background: var(--amber-soft);
 	color: var(--amber);

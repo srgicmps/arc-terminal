@@ -114,7 +114,13 @@
 	$effect(() => {
 		void page.route.id;
 		if (!matchMedia('(max-width: 720px)').matches) return;
-		document.querySelector('.keys [aria-current="page"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+		// Solo se mueve la fila: scrollIntoView movía también la página entera en Safari (logo y «⋯» cortados).
+		const row = document.querySelector<HTMLElement>('.keys');
+		const key = row?.querySelector<HTMLElement>('[aria-current="page"]');
+		if (!row || !key) return;
+		const r = row.getBoundingClientRect();
+		const k = key.getBoundingClientRect();
+		row.scrollLeft += k.left - r.left - (r.width - k.width) / 2;
 	});
 
 	// Deslizar entre vistas en el móvil (lote 22): a izquierda o derecha, a la vista de al lado de la fila de
@@ -164,9 +170,9 @@
 		if (next) goto(routeHref(next.route));
 	}
 
-	/** En modo TV, tocar la pantalla pausa o sigue (menos en los botones del aviso de pausa). */
+	/** En modo TV, tocar la pantalla pausa o sigue (menos en los botones del aviso de pausa, enlaces y controles). */
 	function onTvTap(e: PointerEvent) {
-		if (tv.on && !(e.target as Element | null)?.closest('.tv-chip')) togglePause();
+		if (tv.on && !(e.target as Element | null)?.closest('.tv-chip, a, button, input, select, textarea, label, summary')) togglePause();
 	}
 
 	const wide = new MediaQuery('min-width: 1280px');
@@ -177,6 +183,8 @@
 	const isOn = (route: string) => isOnRoute(page.route.id, route);
 	const visibleKeys = $derived(keys.slice(0, VISIBLE_KEYS));
 	const hiddenKeys = $derived(keys.slice(VISIBLE_KEYS));
+	/** En /os el escritorio tapa la web: el atajo de Experiencias (⇧X) no debe abrir su diálogo encima ni sacarte de /os. */
+	const inOs = $derived(page.route.id === '/os');
 	const hiddenCurrent = $derived(hiddenKeys.find((k) => isOn(k.route)));
 	const thumb = $derived(COMMANDS.filter((c) => taste.thumb.includes(c.code)));
 
@@ -215,6 +223,8 @@
 </svelte:head>
 
 <div class="app" data-ui="app">
+	<!-- Para el teclado y los lectores de pantalla: sin pasar por la cabecera y las pestañas. Solo se ve con el foco. -->
+	<a class="skip" href="#contenido">Saltar al contenido</a>
 	<header class="top" data-ui="top">
 		<a class="brand" data-ui="brand" href={resolve('/')}>
 			<Logo />
@@ -285,7 +295,7 @@
 				<a href={resolve('/help')} onclick={close} aria-current={page.route.id === '/help' ? 'page' : undefined}>Todos los comandos <small>HELP</small></a>
 			{/snippet}
 		</Menu>
-		<ExpLauncher hotkey />
+		<ExpLauncher hotkey={!inOs} />
 	</nav>
 
 	{#if tapeState.on}
@@ -304,6 +314,8 @@
 	{#if !tv.on}<PanelIndex /><InstallHint /><OsNotice />{/if}
 
 	<main
+		id="contenido"
+		tabindex="-1"
 		data-ui="main"
 		class:nudged={shift !== 0}
 		style:translate={shift ? `${shift}px 0` : undefined}
@@ -346,6 +358,25 @@
 </div>
 
 <style>
+	.skip {
+		position: absolute;
+		top: var(--sp-4);
+		left: var(--sp-4);
+		z-index: var(--z-modal);
+		padding: var(--sp-6) var(--sp-10);
+		background: var(--panel);
+		border: var(--hair) solid var(--amber-edge);
+		color: var(--amber);
+		font-size: var(--fs-m);
+		text-decoration: none;
+		translate: 0 -200%;
+	}
+	.skip:focus-visible {
+		translate: none;
+	}
+	main:focus {
+		outline: none;
+	}
 	.top {
 		display: flex;
 		flex-wrap: wrap;
@@ -385,17 +416,57 @@
 		border-color: var(--amber-edge);
 	}
 
-	/* En pantallas táctiles se ve igual (28 px), pero la zona pulsable llega a 44 × 44 px. */
+	/* En pantallas táctiles se ven igual (28 px), pero la zona pulsable llega a 44 × 44 px. Vale para «⋯»,
+	   Apariencia y el chip de tu sitio: sin esto, el mínimo de 44 px de app.css los estira y la línea del
+	   logo mezcla botones de dos alturas. */
 	@media (pointer: coarse) {
-		.top :global(.theme) {
+		.top :global(:is(.theme, [data-ui='appearance'], .place .chip)) {
 			position: relative;
 			min-height: var(--btn-sm);
 		}
 
-		.top :global(.theme::after) {
+		.top :global(:is(.theme, [data-ui='appearance'], .place .chip)::after) {
 			content: '';
 			position: absolute;
 			inset: calc(-1 * var(--sp-8));
+		}
+
+		/* El logo lleva a la portada: 44 px de alto pulsable sin que la línea crezca. */
+		.brand {
+			position: relative;
+		}
+
+		.brand::after {
+			content: '';
+			position: absolute;
+			inset: calc((var(--touch) - 100%) / -2) 0;
+		}
+
+		/* Accesos de arriba (móvil y tableta): se ven igual, pero la zona pulsable llega a --touch de alto. */
+		.keys :global(.key) {
+			position: relative;
+			/* Sin la mancha gris de Safari al tocar: cubría la zona pulsable entera, desplazada de la pestaña. */
+			-webkit-tap-highlight-color: transparent;
+		}
+
+		.keys :global(.key::after) {
+			content: '';
+			position: absolute;
+			inset: calc((var(--touch) - 100%) / -2) 0;
+		}
+
+		/* «Más ▾» es un botón: sin esto, el mínimo de 44 px de app.css lo estira y, con él, a toda la fila
+		   (el texto de las demás pestañas se quedaba arriba). Su zona pulsable es el ::after, como las demás. */
+		.keys :global(button.key) {
+			min-height: 0;
+		}
+
+		/* «Estado de las fuentes», en el pie: la fila entera de 44 px. */
+		.status a {
+			display: inline-flex;
+			align-items: center;
+			min-height: var(--touch);
+			margin-block: calc((var(--touch) - 1lh) / -2);
 		}
 	}
 
@@ -426,6 +497,8 @@
 	.keys {
 		display: flex;
 		flex-wrap: wrap;
+		/* Sin estirar: todas las pestañas miden lo mismo, también «Más», que es un botón. */
+		align-items: center;
 		gap: var(--sp-6);
 		padding-block: var(--sp-2) var(--sp-10);
 	}
@@ -665,17 +738,6 @@
 			display: none;
 		}
 
-		/* Accesos de arriba: se ven igual, pero la zona pulsable llega a --touch de alto. */
-		.keys :global(.key) {
-			position: relative;
-		}
-
-		.keys :global(.key::after) {
-			content: '';
-			position: absolute;
-			inset: calc((var(--touch) - 100%) / -2) 0;
-		}
-
 		/* Que el contenido no quede tapado por la barra. */
 		.app {
 			padding-bottom: calc(var(--tabbar-h) + var(--hair) + env(safe-area-inset-bottom, 0px));
@@ -734,6 +796,14 @@
 			order: -1;
 			margin-left: auto;
 			margin-block: calc((var(--logo) - var(--control-h)) / 2);
+		}
+	}
+
+	/* Móviles de 360 px (Android, iPhone mini con zoom): logo, reloj, sitio y dos botones no caben y «⋯» bajaba
+	   a otra línea. El reloj sobra: el teléfono ya da la hora en su barra de estado. */
+	@media (max-width: 380px) {
+		.top :global(.clocks) {
+			display: none;
 		}
 	}
 

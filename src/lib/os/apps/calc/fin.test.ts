@@ -24,5 +24,11 @@ describe('Calculadora financiera', () => {
 		expect(parseNum('1250.5')).toBe(1250.5);
 		expect(parseNum('3 %')).toBe(3);
 		expect(parseNum('')).toBeNaN();
+		// Los valores de partida de la financiera: «10.000» son diez mil, no diez.
+		expect(parseNum('10.000')).toBe(10000);
+		expect(parseNum('150.000')).toBe(150000);
+		expect(parseNum('1.000.000')).toBe(1000000);
+		expect(parseNum('1.5')).toBe(1.5);
+		expect(parseNum('2.25')).toBe(2.25);
 	});
 });

@@ -30,7 +30,7 @@ export const os = $state({
 });
 
 export const desk = () => wm.activeDesk(os.state);
-export const focusedWin = () => wm.focused(desk());
+export const focusedWin = () => wm.focused(desk(), os.closing);
 export const appOf = (w: wm.Win): OsApp | undefined => findApp(w.app);
 export { APPS };
 
@@ -43,6 +43,7 @@ export function loadOs() {
 	} catch {
 		os.state = wm.emptyState();
 	}
+	if (sized) wm.relayout(os.state, os.area);
 	os.loaded = true;
 }
 
@@ -65,6 +66,8 @@ const done = <T>(v: T): T => (persist(), v);
 export function openApp(id: string, path?: string, fresh = false): wm.Win | null {
 	const app = findApp(id);
 	if (!app) return null;
+	// Si la que había se está cerrando, se quita ya: si no, «abrir» la traería al frente y desaparecería.
+	for (const w of desk().wins) if (w.app === id && os.closing.includes(w.uid)) closeNow(w.uid);
 	const r = wm.openWin(os.state, app, os.area, path, fresh);
 	if (!r.win) {
 		say(`Hay ${wm.MAX_WINS} ventanas en este escritorio: cierra alguna o abre otro escritorio.`);
@@ -124,9 +127,12 @@ export function sendToDesk(uid: string, id: string) {
 	persist();
 }
 
-/** El escritorio ha cambiado de tamaño (lo llama WindowLayer). */
+let sized = false;
+/** El escritorio ha cambiado de tamaño (lo llama WindowLayer). La primera medida recoloca siempre, aunque coincida
+ *  con la de por defecto: lo guardado en otra pantalla puede haber quedado fuera. */
 export function setArea(w: number, h: number) {
-	if (w < 1 || h < 1 || (w === os.area.w && h === os.area.h)) return;
+	if (w < 1 || h < 1 || (sized && w === os.area.w && h === os.area.h)) return;
+	sized = true;
 	os.area = { w, h };
 	wm.relayout(os.state, os.area);
 	persist();

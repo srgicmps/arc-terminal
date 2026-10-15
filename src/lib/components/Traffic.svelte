@@ -36,6 +36,12 @@
 
 	async function load(id: string) {
 		if (items[id]) return;
+		// Solo hay archivo de las provincias con incidencias: sin ninguna (Madrid un día tranquilo), no se pide y sale
+		// «Sin incidencias». Antes daba un 404 y «No se han podido cargar».
+		if (!provinces.some((p) => p.id === id)) {
+			items = { ...items, [id]: [] };
+			return;
+		}
 		try {
 			const res = await fetch(asset(`data/traffic/${id}.json` as Parameters<typeof asset>[0]));
 			if (!res.ok) throw new Error(String(res.status));

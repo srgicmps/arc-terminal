@@ -61,6 +61,14 @@ describe('Tu mañana', () => {
 		expect(lines.join(' ')).not.toContain('MSFT');
 	});
 
+	it('con MIS vacía y los valores base, «Tus valores» sale con los base; los titulares, en español si los hay', () => {
+		const c = config({}, { mis: [], baseStocks: true, groups: [] });
+		const es = { ...d, imp: { current: [{ k: '1', title: 'Summit in Brussels', titleEs: 'Cumbre en Bruselas', sections: ['world'], score: 9 }] } } as Inputs;
+		const lines = briefLines(c, es, '2026-10-14', new Set(['MSFT']), null);
+		expect(lines).toContain('Tus valores ayer: MSFT +9 %.');
+		expect(lines).toContain('Cumbre en Bruselas.');
+	});
+
 	it('sin nada suyo, titulares; el aviso dice el día', () => {
 		const lines = briefLines(config({}), d, '2026-10-14', new Set(), null);
 		expect(lines[0]).toBe('Cumbre en Bruselas.');

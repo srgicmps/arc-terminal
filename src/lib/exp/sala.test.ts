@@ -26,6 +26,9 @@ describe('Sala de control', () => {
 		const now = Date.parse('2026-10-15T12:00:00Z');
 		const e = (date: string) => ({ date, country: 'España', iso: 'ES', kind: 'general' as never, name: 'Generales', url: 'u' });
 		expect(electionPoints([e('2026-10-20'), e('2027-03-01'), e('2026-09-01')], now)).toHaveLength(1);
+		// Dos el mismo día y en el mismo país: ids distintos, para que GLOBO no descarte la segunda.
+		const ids = electionPoints([e('2026-10-20'), e('2026-10-20')], now).map((p) => p.id);
+		expect(new Set(ids).size).toBe(2);
 	});
 
 	it('cuenta lo nuevo por región desde la última visita', () => {

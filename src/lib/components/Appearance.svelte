@@ -38,7 +38,8 @@
 	<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" /><path d="M8 2a6 6 0 0 1 0 12z" /></svg>
 </button>
 
-<dialog bind:this={dialog} class="sheet" aria-labelledby="appearance-title" onclose={() => (open = false)} onclick={onBackdrop}>
+<!-- Clase propia, no «sheet»: las estéticas ya usan .sheet para la barra de comandos abierta como hoja. -->
+<dialog bind:this={dialog} class="ap-sheet" aria-labelledby="appearance-title" onclose={() => (open = false)} onclick={onBackdrop}>
 	<div class="in">
 		<header>
 			<h2 id="appearance-title">Apariencia</h2>
@@ -101,6 +102,7 @@
 	@media (pointer: coarse) {
 		.trigger {
 			position: relative;
+			min-height: 0; /* la regla de app.css (44 px) lo estiraba: quedaba más alto que «⋯» */
 		}
 
 		.trigger::after {
@@ -111,7 +113,7 @@
 	}
 
 	/* La hoja: a la derecha en escritorio, desde abajo en el móvil. */
-	.sheet {
+	.ap-sheet {
 		margin: 0 0 0 auto;
 		width: min(560px, 100vw);
 		max-width: 100vw;
@@ -125,12 +127,12 @@
 		box-shadow: var(--shadow-pop);
 	}
 
-	.sheet::backdrop {
+	.ap-sheet::backdrop {
 		background: var(--scrim);
 	}
 
 	@media (max-width: 720px) {
-		.sheet {
+		.ap-sheet {
 			margin: auto 0 0;
 			width: 100vw;
 			height: auto;
@@ -213,7 +215,7 @@
 	}
 
 	@media (prefers-reduced-motion: no-preference) {
-		.sheet[open] {
+		.ap-sheet[open] {
 			animation: enter var(--dur-fast) var(--ease);
 		}
 

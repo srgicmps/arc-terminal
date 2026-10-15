@@ -452,6 +452,8 @@ export function createGlobe(canvas: HTMLCanvasElement, opts: GlobeOptions): Glob
 	}
 
 	function wheel(e: WheelEvent) {
+		// En el tope del zoom, la rueda sigue moviendo la página: el globo no la atrapa (en GLOBO ocupa casi todo).
+		if ((e.deltaY > 0 && zoom <= 1) || (e.deltaY < 0 && zoom >= 4)) return;
 		e.preventDefault();
 		lastTouch = performance.now();
 		setZoom(zoom * Math.exp(-e.deltaY * 0.0015));

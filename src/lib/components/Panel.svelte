@@ -19,7 +19,7 @@
 	import { getPanelIndex } from '#lib/panelindex.svelte.ts';
 	import { hashPanel, samePanel } from '#lib/panelhash.ts';
 	import type { ShareSource } from '#lib/share.ts';
-	import { hiddenPanels, isSimple, trimming } from '#lib/modo.svelte.ts';
+	import { hiddenPanels, isSimple, modo, trimming } from '#lib/modo.svelte.ts';
 	import { isEssential, plainTitle } from '#lib/simple.ts';
 	import Note from './ui/Note.svelte';
 	import Term from './ui/Term.svelte';
@@ -51,7 +51,8 @@
 	const modular = getModular();
 	// Índice de paneles del móvil: el panel se apunta mientras está en la página.
 	const index = getPanelIndex();
-	$effect(() => (gone ? undefined : index?.add(title, section)));
+	// `section` llega con bind:this, que puede ir después de este efecto (al pasar de oculto a visible en Sencillo).
+	$effect(() => (gone || !section ? undefined : index?.add(title, section)));
 	const tools = $derived(modular && id ? modular : null);
 	/** Menú del asa: subir, bajar y ancho. */
 	let menu = $state(false);
@@ -101,9 +102,14 @@
 	$effect(() => {
 		const want = hashPanel(page.url.hash);
 		if (!want || !samePanel(want, title)) return;
+		// En el modo Sencillo un panel no esencial no se pinta: para ir a él, se enseñan todos («Ver todos»).
+		if (gone) {
+			modo.all = true;
+			return;
+		}
 		untrack(() => isFolded(fkey) && toggleFold(fkey));
 		const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-		const frame = requestAnimationFrame(() => section.scrollIntoView({ block: 'start', behavior: smooth ? 'smooth' : 'auto' }));
+		const frame = requestAnimationFrame(() => section?.scrollIntoView({ block: 'start', behavior: smooth ? 'smooth' : 'auto' }));
 		flash = true;
 		const timer = setTimeout(() => (flash = false), 2000);
 		return () => {
@@ -197,7 +203,12 @@
 					aria-expanded={pinArea ? pinMenu : undefined}
 					aria-label={pinArea ? `Ancho o quitar ${title} de TOP` : `Fijar ${title} en TOP`}
 					title={pinArea ? 'Ancho o quitar de TOP' : pinned ? 'Fijado en TOP · toca para soltarlo' : 'Fijar en TOP'}
-					onclick={() => (pinArea ? (pinMenu = !pinMenu) : togglePinned(pin))}>📌</button
+					onclick={() => (pinArea ? (pinMenu = !pinMenu) : togglePinned(pin))}
+					><!-- Chincheta en línea (no el emoji 📌, que en el iPhone sale grande, en color y descuadrado). --><svg
+						viewBox="0 0 16 16"
+						aria-hidden="true"
+						><path d="M5.5 1.5h5M6.5 1.5v5L4 9.5h8L9.5 6.5v-5M8 9.5v5" /></svg
+					></button
 				>
 			{/if}
 			{#if max}
@@ -315,6 +326,8 @@
 	}
 
 	.ph-r {
+		/* Si no cabe junto al título y pasa a otra línea, sigue pegada a la derecha, como en una sola línea. */
+		margin-left: auto;
 		display: flex;
 		align-items: center;
 		gap: var(--sp-12);
@@ -342,16 +355,19 @@
 		color: var(--amber);
 	}
 
-	/* El 📌 en gris y medio apagado; en color cuando el panel está fijado. */
-	.pin {
-		filter: grayscale(1);
-		opacity: 0.5;
+	/* La chincheta mide lo mismo que ⤢ (1 em de la letra de la cabecera); en ámbar cuando el panel está fijado. */
+	.pin svg {
+		width: 1em;
+		height: 1em;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.4;
+		stroke-linecap: round;
+		stroke-linejoin: round;
 	}
 
-	.pin:hover,
 	.pin.on {
-		filter: none;
-		opacity: 1;
+		color: var(--amber);
 	}
 
 	/* Menos ruido: con ratón, ampliar, compartir, fijar, mover y ocultar solo aparecen al pasar por el panel o
@@ -377,8 +393,17 @@
 		letter-spacing: calc(-1 * var(--track-code));
 	}
 
-	/* En pantallas táctiles, 44 px pulsables sin que la cabecera crezca (como el enlace .jump). */
+	/* En pantallas táctiles, 44 px pulsables sin que la cabecera crezca (como el enlace .jump). El título
+	   (pliega el panel) también: si no, la zona que se toca es solo la línea de texto, unos 16 px. */
 	@media (pointer: coarse) {
+		/* h2 delante: la regla base de .ttl va más abajo y, si no, ganaría. */
+		h2 .ttl {
+			display: inline-flex;
+			align-items: center;
+			min-height: var(--touch);
+			margin-block: calc((var(--touch) - 1lh) / -2);
+		}
+
 		.tool {
 			display: inline-flex;
 			align-items: center;

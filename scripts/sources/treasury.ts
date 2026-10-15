@@ -103,7 +103,8 @@ const AUCTION_FIELDS = [
 	'bid_to_cover_ratio',
 	'indirect_bidder_accepted',
 	'comp_accepted',
-	'floating_rate'
+	'floating_rate',
+	'inflation_index_security'
 ];
 
 /** Cuántas subastas anteriores del mismo plazo hacen la media del bid-to-cover. */
@@ -116,8 +117,9 @@ export function toAuction(r: RawAuction): Auction | null {
 	if (!r.auction_date || !r.security_term) return null;
 	const comp = num(r.comp_accepted);
 	const indirect = num(r.indirect_bidder_accepted);
-	// Las de tipo flotante (FRN) se marcan aparte: su bid-to-cover no se compara con el de las notas.
-	const kind = r.floating_rate === 'Yes' ? 'FRN' : (r.security_type ?? '');
+	// Las de tipo flotante (FRN) y las ligadas a la inflación (TIPS, que llegan como Note o Bond) se marcan aparte:
+	// su rentabilidad y su bid-to-cover no se comparan con los de las notas.
+	const kind = r.floating_rate === 'Yes' ? 'FRN' : r.inflation_index_security === 'Yes' ? 'TIPS' : (r.security_type ?? '');
 	return {
 		date: r.auction_date,
 		term: r.security_term,

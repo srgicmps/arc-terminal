@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { APPS } from '../apps.ts';
-import { addWidget, arrange, badgesFor, badgeText, CELLS, dockApps, drop, folderName, gesture, layout, noticesOf, place, removeWidget, rename, ROWS, rowsOf, takeOut, touch, used, WIDGETS, type Cell, type WidgetId } from './home.ts';
+import { addWidget, arrange, badgesFor, badgeText, CELLS, dockApps, drop, folderName, gesture, keyboardFit, layout, webApp, noticesOf, place, removeWidget, rename, ROWS, rowsOf, takeOut, touch, used, WIDGETS, type Cell, type WidgetId } from './home.ts';
 
 describe('Modo OS en el móvil', () => {
 	it('dock de 4 con la Terminal y sin repetir en las páginas', () => {
@@ -44,6 +44,15 @@ describe('Modo OS en el móvil', () => {
 		expect(used(layout(APPS, a)[0])).toBe(CELLS);
 		expect(arrange(JSON.stringify({ ...a, widgets: ['x', 'macro'] }), ['eco']).widgets).toEqual(['macro']);
 	});
+	it('una ruta sin app (la ficha de un valor) se abre con una app de paso', () => {
+		expect(webApp('/s?sym=NVDA')).toMatchObject({ id: 'web:/s?sym=NVDA', name: 'NVDA', href: '/s?sym=NVDA' });
+		expect(webApp('/modo', 'Modo').name).toBe('Modo');
+	});
+	it('teclado en pantalla: el teléfono ocupa lo visible; sin teclado o con zoom, nada', () => {
+		expect(keyboardFit({ height: 500, offsetTop: 40, scale: 1 }, 844)).toEqual({ top: 40, h: 500 });
+		expect(keyboardFit({ height: 800, offsetTop: 0, scale: 1 }, 844)).toBeNull();
+		expect(keyboardFit({ height: 400, offsetTop: 0, scale: 2 }, 844)).toBeNull();
+	});
 	it('gestos', () => {
 		const size = { w: 390, h: 844 };
 		expect(gesture({ x: 50, y: 10 }, { x: 55, y: 200 }, size, false)).toBe('notif');
@@ -52,6 +61,12 @@ describe('Modo OS en el móvil', () => {
 		expect(gesture({ x: 200, y: 830 }, { x: 200, y: 760 }, size, true)).toBe('home');
 		expect(gesture({ x: 200, y: 830 }, { x: 200, y: 500 }, size, true)).toBe('switch');
 		expect(gesture({ x: 100, y: 400 }, { x: 300, y: 420 }, size, false)).toBeNull();
+		// Un tirón corto desde la barra (un cuarto largo de pantalla) va a inicio; si paras el dedo, a la multitarea.
+		expect(gesture({ x: 200, y: 838 }, { x: 200, y: 600 }, size, true)).toBe('home');
+		expect(gesture({ x: 200, y: 838 }, { x: 200, y: 700 }, size, true, { paused: true })).toBe('switch');
+		// Con la zona segura del iPhone, la barra de estado baja: tirar desde ella sigue abriendo notificaciones.
+		expect(gesture({ x: 50, y: 80 }, { x: 50, y: 300 }, size, false, { top: 103 })).toBe('notif');
+		expect(gesture({ x: 50, y: 80 }, { x: 50, y: 300 }, size, false)).toBe('spot');
 	});
 	it('carpetas: juntar, añadir, sacar y deshacer', () => {
 		let a = arrange(null, ['a', 'b', 'c', 'd', 'top'], ['top']);

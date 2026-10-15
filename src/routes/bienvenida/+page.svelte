@@ -30,6 +30,7 @@
 	import OsInvite from '#lib/os/invite/OsInvite.svelte';
 	import { isOS } from '#lib/os/mode.svelte.ts';
 	import { startTour, tour } from '#lib/onboarding/tour.svelte.ts';
+	import { TOUR } from '#lib/onboarding/tour.ts';
 
 	const STEPS = ['Qué te interesa', 'Tu ciudad', 'Cómo lo quieres', 'Listo'];
 	let step = $state(0);
@@ -235,7 +236,7 @@
 				<dt>Modo</dt>
 				<dd>{simple === '1' ? 'Sencillo' : 'Terminal'}</dd>
 			</dl>
-			<p class="lead">Después, un recorrido de cinco pasos (te lo puedes saltar).</p>
+			<p class="lead">Después, un recorrido de {TOUR.length} pasos (te lo puedes saltar).</p>
 			<div class="actions">
 				<button type="button" class="ghost" onclick={() => (step = 2)}>Atrás</button>
 				<button type="button" class="go" onclick={finish}>Montar mi Arc</button>

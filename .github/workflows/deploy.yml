@@ -253,6 +253,32 @@ jobs:
       - run: pnpm build --logLevel warn
       - run: pnpm smoke
 
+  # PR: recorridos de punta a punta de Arc OS en el escritorio (scripts/e2e-os.ts), sin datos ni red. Chromium manda;
+  # Firefox y WebKit (los de Playwright) de momento solo avisan, hasta que se vea que van estables.
+  e2e-os:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    continue-on-error: ${{ matrix.browser != 'chromium' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - if: matrix.browser != 'chromium'
+        run: pnpm exec playwright-core install --with-deps ${{ matrix.browser }}
+      - run: pnpm build --logLevel warn
+      - run: pnpm e2e:os
+        env:
+          E2E_BROWSER: ${{ matrix.browser }}
+
   # PR: si toca scripts/, para lanzar el sondeo solo cuando hace falta.
   changes:
     if: github.event_name == 'pull_request'

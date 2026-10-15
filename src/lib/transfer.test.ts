@@ -25,4 +25,10 @@ describe('llevar ajustes', () => {
 		expect(decode('no-es-base64!!')).toBeNull();
 		expect(decode(encode({ 'otra-cosa': '1' }))).toBeNull();
 	});
+	it('con muchos datos no lanza RangeError (QA T7)', () => {
+		let big = '';
+		for (let i = 0; i < 300_000; i++) big += String.fromCharCode(33 + ((i * 7919) % 90));
+		const prefs = { 'arc-watchwords': big };
+		expect(decode(encode(prefs))).toEqual(prefs);
+	});
 });

@@ -13,7 +13,7 @@
 	/** «10-Year» → «10A», «29-Year 10-Month» → «29A 10M», «8-Week» → «8 sem.»; las de tipo flotante, con «FRN». */
 	function term(a: Auction): string {
 		const t = a.term.replace(/(\d+)-Year/g, '$1A').replace(/(\d+)-Month/g, '$1M').replace(/(\d+)-Week/g, '$1 sem.');
-		return a.kind === 'FRN' ? `${t} FRN` : t;
+		return a.kind === 'FRN' || a.kind === 'TIPS' ? `${t} ${a.kind}` : t;
 	}
 
 	const weak = (a: Auction) => a.bidToCover !== null && a.avgBidToCover != null && a.bidToCover < a.avgBidToCover;
