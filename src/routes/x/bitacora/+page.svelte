@@ -5,7 +5,8 @@
 -->
 <script lang="ts">
 	import Panel from '#lib/components/Panel.svelte';
-	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import ExpHeader from '#lib/components/ExpHeader.svelte';
+	import { EXPERIENCES } from '#lib/experiences.ts';
 	import Change from '#lib/components/ui/Change.svelte';
 	import Search from '#lib/components/ui/Search.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
@@ -16,6 +17,8 @@
 	import { dueReminders, filterEntries, ideaMove, MAX_TEXT, topics, type Entry, type Kind } from '#lib/exp/bitacora.ts';
 	import { addToJournal, deleteFromJournal, initJournal, journal, toggleJournalDone } from '#lib/exp/bitacora.svelte.ts';
 	import { priceOf, type Price } from '#lib/exp/prices.ts';
+
+	const exp = EXPERIENCES.find((e) => e.id === 'bitacora')!;
 
 	$effect(initJournal);
 
@@ -114,7 +117,7 @@
 	const daysSince = (iso: string) => Math.max(0, Math.round(((clock.now || Date.now()) - Date.parse(iso)) / 86_400_000));
 </script>
 
-<ViewHeader code="BITÁCORA" title="Bitácora" sub="Tu diario: notas, ideas que se siguen solas y recordatorios. Solo lo ves tú" />
+<ExpHeader {exp} sub="Notas, ideas que se siguen solas y recordatorios. Solo lo ves tú" />
 
 <div class="grid grid-2">
 	<div class="col">

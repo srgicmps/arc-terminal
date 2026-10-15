@@ -4,13 +4,13 @@ import type { Mention } from '#lib/news.ts';
 import { summarize, type FinraData } from '#lib/shortvol.ts';
 import { holdersFromTop, issuersFor } from '#lib/holders.ts';
 import { TICKERS } from '#lib/tickers.ts';
-import type { AnalystsData, FundsData, PeersData, PerfData, SecData } from '#lib/types.ts';
+import type { AnalystsData, FinnhubData, FundsData, PeersData, PerfData, Quote, SecData } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
 // Los documentos de la SEC y los titulares de todos los valores (dos archivos pequeños); la vista
 // elige los suyos.
 export const load: PageServerLoad = async () => {
-	const [sec, news, analysts, finra, perf, peers, funds] = await Promise.all([
+	const [sec, news, analysts, finra, perf, peers, funds, finnhub, alertQuotes] = await Promise.all([
 		dataset<SecData>('sec'),
 		dataset<Record<string, Mention[]>>('news-index'),
 		// Analistas, resultados y directivos (Finnhub): solo valores de EE. UU., unos pocos KB cada uno.
@@ -21,7 +21,10 @@ export const load: PageServerLoad = async () => {
 		dataset<PerfData>('perf'),
 		dataset<PeersData>('peers'),
 		// Fondos de FONDOS que tienen cada valor de la barra (HDS): solo los de EE. UU. que salen en el índice.
-		dataset<FundsData>('funds')
+		dataset<FundsData>('funds'),
+		// «Por qué se mueve» (F19): la variación del día de Finnhub. De finnhub.json solo se pasan las cotizaciones.
+		dataset<FinnhubData>('finnhub'),
+		dataset<Quote[]>('alert-quotes')
 	]);
 	const rv = perf?.data.metrics && peers && {
 		fetchedAt: perf.fetchedAt,
@@ -41,6 +44,7 @@ export const load: PageServerLoad = async () => {
 		analysts,
 		finra: finra && { ...finra, data: summarize(finra.data) },
 		rv,
-		hds: funds && { fetchedAt: funds.fetchedAt, holders, fundNames }
+		hds: funds && { fetchedAt: funds.fetchedAt, holders, fundNames },
+		quotes: [...(finnhub?.data.quotes ?? []), ...(alertQuotes?.data ?? [])]
 	};
 };
