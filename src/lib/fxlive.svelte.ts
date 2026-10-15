@@ -1,15 +1,13 @@
 // Cambios del BCE para el conversor de la barra (M46: «100 USD EUR»). La barra está en todas las vistas, así
 // que no puede llevarlos en el HTML: se descargan una sola vez (static/data/ecb.json), al escribir la primera
-// conversión. Como un store de Pinia con una acción de carga perezosa.
+// conversión (CommandBar llama a loadFxRates y pasa fxLive a suggest). Como un store de Pinia con una acción
+// de carga perezosa.
 import { asset } from '$app/paths';
 import type { Dataset } from './data.ts';
-import { fxRates, type FxRate } from './fx.ts';
+import { fxRates, type FxState } from './fx.ts';
 import type { Series } from './types.ts';
 
-export const fxLive = $state({
-	rates: null as Map<string, FxRate> | null,
-	status: 'idle' as 'idle' | 'loading' | 'ready' | 'error'
-});
+export const fxLive: FxState = $state({ rates: null, status: 'idle' });
 
 /** Descarga los cambios si aún no están (solo en el navegador). */
 export function loadFxRates() {

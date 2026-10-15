@@ -1,6 +1,7 @@
 // Barra de comandos: sugerencias y qué se abre al pulsar Intro.
 import { describe, expect, it } from 'vitest';
 import {
+	calcInput,
 	canonical,
 	commandDay,
 	exampleTarget,
@@ -367,5 +368,33 @@ describe('fechas en los comandos (M49)', () => {
 		expect(commandDay('WX Tokio', NOW)).toBeNull();
 		expect(commandDay('ECO mañana', NOW)).toBeNull();
 		expect(open('WX Tokio')).toBe('/wx?buscar=Tokio');
+	});
+});
+
+describe('calculadora y conversor (M46)', () => {
+	const fx = {
+		status: 'ready' as const,
+		rates: new Map([
+			['EUR', { perEur: 1, date: '2026-10-14' }],
+			['USD', { perEur: 1.25, date: '2026-10-14' }]
+		])
+	};
+
+	it('«=1250*1.21» da la cuenta y deja el resultado para seguir', () => {
+		expect(calcInput('=1250*1.21')).toEqual({ text: '= 1512,5', desc: '1250*1.21', next: '=1512.5' });
+		expect(calcInput('=2+')?.text).toBe('= ?');
+		expect(suggest('=1250*1.21', ALL)[0]).toMatchObject({ code: '= 1512,5', kind: 'Calculadora', run: '=1250*1.21' });
+	});
+
+	it('«100 USD EUR» con los cambios del BCE', () => {
+		expect(calcInput('100 USD EUR', fx)?.text).toBe('100 USD = 80 EUR');
+		expect(calcInput('100 eur a usd', fx)?.desc).toBe('Cambio de referencia del BCE · 2026-10-14');
+		expect(calcInput('100 USD EUR')?.desc).toBe('Cargando los cambios del BCE…');
+		expect(calcInput('100 USD XYZ', fx)?.desc).toBe('Divisas con cambio del BCE: EUR, USD');
+	});
+
+	it('lo demás no es cuenta', () => {
+		expect(calcInput('NVDA')).toBeNull();
+		expect(calcInput('CMP NVDA AMD')).toBeNull();
 	});
 });

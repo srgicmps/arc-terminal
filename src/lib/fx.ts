@@ -10,6 +10,12 @@ export interface FxRate {
 	date: string;
 }
 
+/** Los cambios para la barra (M46): null hasta que se descargan (ver fxlive.svelte.ts). */
+export interface FxState {
+	rates: Map<string, FxRate> | null;
+	status: 'idle' | 'loading' | 'ready' | 'error';
+}
+
 /** Tipos por código de divisa («USD», «GBP»…), con el euro a 1. Las series se llaman «eur» + código. */
 export function fxRates(series: (Series | undefined)[]): Map<string, FxRate> {
 	const rates = new Map<string, FxRate>();

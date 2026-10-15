@@ -12,6 +12,7 @@
 	import { COMMANDS } from '#lib/commands.ts';
 	import { TICKERS } from '#lib/tickers.ts';
 	import {
+		calcInput,
 		canonical,
 		findCommand,
 		historyOptions,
@@ -24,6 +25,8 @@
 		type Option
 	} from '#lib/cmdline.ts';
 	import { argOptions } from '#lib/argcomplete.ts';
+	import { parseConversion } from '#lib/calc.ts';
+	import { fxLive, loadFxRates } from '#lib/fxlive.svelte.ts';
 	import type { Dataset } from '#lib/data.ts';
 	import { leaderEntries, prepare, searchOptions, type Indexed } from '#lib/search.ts';
 	import type { SearchEntry } from '#lib/types.ts';
@@ -80,7 +83,11 @@
 
 	// Con la barra vacía, el historial; al escribir, las sugerencias y debajo los resultados de búsqueda.
 	// Tras un comando y un espacio («LIDER », «PAIS ale»), las opciones de su argumento.
-	const suggestions = $derived(value.trim() ? (argOptions(value) ?? suggest(value, ALL)) : historyOptions(recent));
+	const suggestions = $derived(value.trim() ? (argOptions(value) ?? suggest(value, ALL, 8, fxLive)) : historyOptions(recent));
+	// M46: al escribir «100 USD EUR», se descargan los cambios del BCE (una sola vez).
+	$effect(() => {
+		if (parseConversion(value)) loadFxRates();
+	});
 	const results = $derived(searchOptions(value, suggestions, index));
 	const options = $derived([...suggestions, ...results]);
 
@@ -99,6 +106,12 @@
 	}
 
 	function run(raw: string) {
+		// M46: una cuenta o una conversión no abren nada; la cuenta deja su resultado para seguir calculando.
+		const calc = calcInput(raw, fxLive);
+		if (calc) {
+			if (calc.next) value = calc.next;
+			return;
+		}
 		// Se calcula antes de vaciar la barra: las sugerencias dependen de lo escrito.
 		const target = resolveInput(raw, suggest(raw, ALL));
 		close();
