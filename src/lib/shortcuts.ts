@@ -23,6 +23,7 @@ export const SHORTCUTS = [
 	{ id: 'bar', group: 'Barra', keys: ['/'], how: 'o empieza a escribir', action: 'Ir a la barra', match: { key: '/' } },
 	{ id: 'history', group: 'Barra', keys: ['↑', '↓'], how: 'con la barra vacía', action: 'Recorrer tus últimos comandos, como en un terminal' },
 	{ id: 'move', group: 'Barra', keys: ['↑', '↓'], how: 'mientras escribes', action: 'Moverte por las sugerencias' },
+	{ id: 'queue', group: 'Barra', keys: ['Intro'], how: 'con la barra vacía, tras «ECO; WS CURVA»', action: 'Abrir la siguiente vista de la cola' },
 	{ id: 'favs', group: 'Barra', keys: ['1', '9'], how: 'tras «fav ECO TIPOS»', action: 'Abrir un favorito (del 1 al 9)' },
 	{ id: 'complete', group: 'Barra', keys: ['Tab'], how: 'tras un comando y un espacio salen sus opciones', action: 'Completar con la sugerencia (comando, líder, país, provincia…)', match: { key: 'Tab' } },
 	{ id: 'open', group: 'Barra', keys: ['Intro'], action: 'Abrir' },

@@ -29,6 +29,7 @@
 	import { answerFor, answerNeeds } from '#lib/bar/answers.ts';
 	import { barData, loadBarData } from '#lib/bar/bardata.svelte.ts';
 	import { compareInput, symbolRange } from '#lib/bar/ranges.ts';
+	import { parseMulti } from '#lib/bar/multi.ts';
 	import { addFav, favOptions, parseFav, readFavs, removeFav, writeFavs } from '#lib/bar/favs.ts';
 	import { actionOption, parseAction } from '#lib/actions.ts';
 	import { runAction } from '#lib/runaction.svelte.ts';
@@ -69,6 +70,9 @@
 	let recent = $state<string[]>([]);
 	// ↑ con la barra vacía recorre el historial como en un terminal: posición actual (−1, sin recorrerlo).
 	let histIdx = $state(-1);
+	// «ECO; WS CURVA»: lo que queda por abrir y cuántos eran (Intro con la barra vacía abre el siguiente).
+	let queue = $state<string[]>([]);
+	let queueTotal = $state(0);
 	// Favoritos («fav ECO TIPOS», «1»), también de localStorage.
 	let favs = $state<string[]>([]);
 	// Última zona de FUEL (para «llenar 50L» y «diésel»); se lee al enfocar la barra.
@@ -78,6 +82,7 @@
 
 	// «euribor», «hipoteca 150000 25a», «hora tokio»…: el dato, como primera sugerencia (lote 27-A).
 	const answer = $derived(value.trim() ? answerFor(value, { get: (n) => barData[n], now: now || Date.now(), fuelZone }) : null);
+	const multi = $derived(parseMulti(value));
 	// «NVDA 1a», «NVDA vs AMD»: la ficha o CMP con ese rango.
 	const chart = $derived(value.trim() ? (compareInput(value) ?? symbolRange(value)) : null);
 	$effect(() => {
@@ -119,6 +124,8 @@
 					? [{ code: answer.code, desc: answer.desc, kind: 'Dato', run: answer.open ?? value.trim() }]
 					: chart
 						? [{ code: chart.code, desc: chart.desc, kind: 'Gráfico', run: value.trim() }]
+						: multi
+							? [{ code: `${multi.length} VISTAS`, desc: `${multi.join(' → ')} · Intro con la barra vacía abre la siguiente`, kind: 'Varios', run: value.trim() }]
 					: (favOptions(value, favs) ?? argOptions(value) ?? suggest(value, ALL, 8, fxLive))
 	);
 	// M46: al escribir «100 USD EUR», se descargan los cambios del BCE (una sola vez).
@@ -181,8 +188,32 @@
 		return true;
 	}
 
-	function run(raw: string) {
-		// Acciones (27-B): «compartir WS», «+NVDA», «vigila aranceles», «alerta NVDA > 150».
+	/** `fromQueue`: lo abre la cola de «ECO; WS CURVA»; cualquier otro comando la vacía. */
+	function run(raw: string, fromQueue = false) {
+		// «ECO; WS CURVA»: abre el primero y deja los demás en cola. Con la barra vacía, Intro abre el siguiente.
+		const many = parseMulti(raw);
+		if (many) {
+			run(many[0], true);
+			queue = many.slice(1);
+			queueTotal = many.length;
+			recent = pushHistory(readHistory(), raw.trim());
+			writeHistory(recent);
+			return;
+		}
+		if (!raw.trim() && queue.length) {
+			const [next, ...rest] = queue;
+			queue = rest;
+			// Una respuesta sin vista («hora tokio») se escribe en la barra para que se vea.
+			const ans = answerFor(next, { get: (n) => barData[n], now: Date.now(), fuelZone });
+			if (ans && !ans.open) {
+				value = next;
+				open = true;
+				return;
+			}
+			run(next, true);
+			return;
+		}
+		if (!fromQueue) queue = [];
 		if (parseAction(raw)) {
 			close();
 			runAction(raw, ALL, flash);
@@ -192,7 +223,7 @@
 		// Una respuesta abre su vista (Intro en «euribor» → ECO); sin vista («hora tokio»), no hace nada.
 		const ans = answerFor(raw, { get: (n) => barData[n], now: Date.now(), fuelZone });
 		if (ans) {
-			if (ans.open) run(ans.open);
+			if (ans.open) run(ans.open, true);
 			return;
 		}
 		const ct = compareInput(raw) ?? symbolRange(raw);
@@ -340,7 +371,10 @@
 		spellcheck="false"
 		autocapitalize="characters"
 		enterkeyhint="go"
-		placeholder={notice || 'Escribe un comando o un valor: NVDA, ECO, BOE…'}
+		placeholder={notice ||
+			(queue.length
+				? `Intro: ${queue[0]} (${queueTotal - queue.length + 1} de ${queueTotal})`
+				: 'Escribe un comando o un valor: NVDA, ECO, BOE…')}
 		role="combobox"
 		aria-autocomplete="list"
 		aria-expanded={open && options.length > 0}
