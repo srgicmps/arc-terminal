@@ -21,6 +21,7 @@
 	import { followPlaceUrl, initPlace } from '#lib/place.svelte.ts';
 	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
 	import { initFolded } from '#lib/folded.svelte.ts';
+	import { initCloud } from '#lib/cloud.svelte.ts';
 	import PanelIndex from '#lib/components/PanelIndex.svelte';
 	import { setPanelIndex } from '#lib/panelindex.svelte.ts';
 	import { tvSymbol } from '#lib/tickers.ts';
@@ -48,6 +49,8 @@
 	$effect(initFit);
 	$effect(initMode);
 	$effect(loadPins);
+	// Tus ajustes en tu cuenta (arcterminal.dev): los sube y trae los de tus otros dispositivos.
+	$effect(initCloud);
 
 	// Modo TV: cualquier URL con ?tv=TOP,WS…&s=30 lo arranca y salta a la primera vista.
 	$effect(() => {

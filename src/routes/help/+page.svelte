@@ -18,6 +18,7 @@
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Share from '#lib/components/ui/Share.svelte';
 	import { collect, decode, encode, HASH } from '#lib/transfer.ts';
+	import { cloud } from '#lib/cloud.svelte.ts';
 	import { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, resetTaste, setAccent, setDensity, setThumb, setTop, taste, THUMB_MAX } from '#lib/taste.svelte.ts';
 
 	// «A tu gusto»: todas las vistas que se abren sin texto detrás pueden ir en la fila de arriba o abajo.
@@ -110,6 +111,10 @@
 						{#each homeChoices() as c (c.code)}<option value={c.code}>{c.code} · {c.key}</option>{/each}
 					</Select>
 				</dd>
+				{#if cloud.user}
+					<dt>Tu cuenta</dt>
+					<dd>Todo esto se guarda en tu cuenta ({cloud.user}) y llega solo a tus otros dispositivos.</dd>
+				{/if}
 				<dt>Otro dispositivo</dt>
 				<dd class="send"><Share source={transferLink} /> Enlace con todo lo tuyo: estos ajustes, MIS, palabras vigiladas, tu sitio…</dd>
 			</dl>
