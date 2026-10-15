@@ -1,5 +1,6 @@
 import { dataset, type SourceStatus } from '#lib/data.ts';
 import type { FaoData } from '#lib/fao.ts';
+import type { MtsData } from '#lib/mts.ts';
 import type { UncertaintyData } from '#lib/uncertainty.ts';
 import { missingNote } from '#lib/missing.ts';
 import { headlines, pickSeries } from '#lib/trim.ts';
@@ -9,11 +10,13 @@ import { SEP_IDS } from '#lib/sep.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [eurostat, ecb, bls, usdebt, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal, fao, bde, eupower, uncertainty, g4, indeed] = await Promise.all([
+	const [eurostat, ecb, bls, usdebt, usbudget, fred, bis, gie, housing, imf, g20, news, predictions, status, speeches, cal, fao, bde, eupower, uncertainty, g4, indeed] = await Promise.all([
 		dataset<SeriesData>('eurostat'),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('bls'),
 		dataset<SeriesData>('usdebt'),
+		// Déficit del año fiscal y aranceles (Monthly Treasury Statement): unas pocas cifras.
+		dataset<MtsData>('usbudget'),
 		dataset<SeriesData>('fred'),
 		dataset<SeriesData>('bis'),
 		// Gas almacenado: la tabla compara con hace un año, así que necesita todo el historial.
@@ -49,6 +52,7 @@ export const load: PageServerLoad = async () => {
 		ecb: pickSeries(ecb, rest),
 		bls,
 		usdebt,
+		usbudget,
 		fred,
 		fredMissing,
 		// Señales de recesión (provisional): solo sus tres series y los puntos del minigráfico.

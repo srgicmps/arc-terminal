@@ -107,7 +107,3 @@ https://www.worldbank.org/en/research/commodity-markets ~ CMO-Historical-Data-Mo
 # LIDER: quién preside ahora la Fed y quién forma el Comité Ejecutivo del BCE
 https://www.federalreserve.gov/aboutthefed/bios/board/default.htm ~ .{0,120}(Chair|Powell).{0,60}
 https://www.ecb.europa.eu/ecb/orga/decisions/eb/html/index.en.html ~ .{0,100}(Vice-President|Member of the Executive Board).{0,20}
-# 26B.2 Monthly Treasury Statement: déficit del año fiscal (tabla 1) y aranceles (tabla 4)
-https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/mts/mts_table_1?filter=classification_desc:eq:Year-to-Date&sort=-record_date&page[size]=14
-https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/mts/mts_table_4?filter=classification_desc:in:(Customs Duties,Total -- Customs Duties,Total Receipts)&sort=-record_date&page[size]=10
-https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/mts/mts_table_4?filter=record_date:eq:2026-08-31&page[size]=200&fields=classification_desc,current_month_gross_rcpt_amt,current_fytd_gross_rcpt_amt,prior_fytd_gross_rcpt_amt,sequence_level_nbr

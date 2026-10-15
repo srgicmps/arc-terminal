@@ -21,6 +21,7 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { compact, dm, nf, period, signed } from '#lib/format.ts';
 	import { change, diffDays, last, seriesMap, spread } from '#lib/series.ts';
+	import type { MtsData } from '#lib/mts.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -76,6 +77,9 @@
 		}))
 	);
 	const debtUs = $derived(last(get('debt-us')));
+	const mts = $derived(data.usbudget?.data);
+	// «AF26 hasta ago.»: el año fiscal de EE. UU. va de octubre a septiembre.
+	const fy = (m: MtsData) => `AF${String(m.fiscalYear).slice(2)} hasta ${period(m.asOf.slice(0, 7)).split(' ')[0]}`;
 
 	// Prima de España a diario (Banco de España): último día hábil y cambio en una semana.
 	const daily = $derived(seriesMap(data.bde));
@@ -325,15 +329,40 @@
 					{ series: get('payrolls-us'), name: 'Empleo creado (miles)', decimals: 0 }
 				]}
 			/>
-			{#if debtUs}
+			{#if debtUs || mts}
 				<ul class="mini">
-					<li>
-						<span class="l">Deuda pública total<small>{period(debtUs.t)}</small></span>
-						<b>{compact(debtUs.v)} $</b>
-					</li>
+					{#if debtUs}
+						<li>
+							<span class="l">Deuda pública total<small>{period(debtUs.t)}</small></span>
+							<b>{compact(debtUs.v)} $</b>
+						</li>
+					{/if}
+					{#if mts}
+						<li>
+							<span class="l">Déficit del año fiscal<small>{fy(mts)}</small></span>
+							<b>{compact(mts.deficit)} $</b>
+						</li>
+						{#if mts.deficitPrior !== null}
+							<li><span class="l mut">Un año antes</span><span class="mut">{compact(mts.deficitPrior)} $</span></li>
+						{/if}
+						<li>
+							<span class="l">Aranceles cobrados<small>{fy(mts)} · bruto</small></span>
+							<b>{compact(mts.customsGross)} $</b>
+						</li>
+						<li>
+							<span class="l mut">Neto de devoluciones</span>
+							<span class="mut">{compact(mts.customsNet)} $</span>
+						</li>
+						{#if mts.customsGrossPrior !== null}
+							<li><span class="l mut">Bruto un año antes</span><span class="mut">{compact(mts.customsGrossPrior)} $</span></li>
+						{/if}
+					{/if}
 				</ul>
 			{/if}
-			{#snippet note()}Fuentes: BLS y Tesoro de EE. UU. · <Updated at={data.bls?.fetchedAt} source="bls" />{/snippet}
+			{#snippet note()}
+				Fuentes: BLS y Tesoro de EE. UU.{mts ? ' (déficit y aranceles: Monthly Treasury Statement; el año fiscal empieza en octubre)' : ''} ·
+				<Updated at={data.bls?.fetchedAt} source="bls" />
+			{/snippet}
 		</Panel>
 		<Panel title="Fed y mercados" meta="EE. UU. · FRED">
 			{#if data.fred}
