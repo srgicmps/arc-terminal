@@ -11,6 +11,7 @@
 import { DAILY_MAX, parseConfig, wants, type AlertConfig } from '../../src/lib/alertconfig.ts';
 import { accessHeaders } from '../lib.ts';
 import { PAGES_SITE, SITE } from '../site.ts';
+import { briefAlert, briefDue, briefLines, type Weather } from './brief.ts';
 import { QUOTAS } from './config.ts';
 import { madrid, RULES, type Alert, type Inputs, type NotifyLog, type Rule } from './rules.ts';
 
@@ -54,6 +55,35 @@ export async function loadUsers(fetcher: typeof fetch = fetch): Promise<RemoteUs
 	return null;
 }
 
+/**
+ * Manda los «Tu mañana» con email a la web (/api/brief), que busca cada email por su uid y lo envía con Brevo.
+ * Devuelve una línea para el registro (sin uids ni emails).
+ */
+export async function postMails(mails: BriefMail[], fetcher: typeof fetch = fetch): Promise<string> {
+	const headers = accessHeaders();
+	if (!mails.length || !Object.keys(headers).length) return '';
+	for (const site of [...new Set([SITE, PAGES_SITE])]) {
+		try {
+			const res = await fetcher(`${site}/api/brief`, {
+				method: 'POST',
+				headers: { ...headers, 'content-type': 'application/json' },
+				body: JSON.stringify({ mails }),
+				redirect: 'manual',
+				signal: AbortSignal.timeout(30_000)
+			});
+			if (res.headers.get('content-type')?.includes('application/json')) {
+				const body = (await res.json()) as { sent?: number; error?: string };
+				return res.ok
+					? `email · «Tu mañana»: ${body.sent ?? 0} de ${mails.length} enviados`
+					: `email · «Tu mañana»: no se envían (${body.error ?? res.status})`;
+			}
+		} catch {
+			// La siguiente dirección.
+		}
+	}
+	return 'email · «Tu mañana»: la web no responde';
+}
+
 /** Las reglas de un usuario: solo las de sus grupos, y de lo que saquen, lo que quiere a esta hora. */
 export function rulesFor(config: AlertConfig, now: number, rules: Rule[] = RULES): Rule[] {
 	const hm = madrid(now).hm;
@@ -88,6 +118,15 @@ export interface Engine {
 	post: (topic: string, alert: Alert) => Promise<{ status: number | null }>;
 	hello: (now: number) => Alert;
 	minute: (ms: number) => string;
+	/** El tiempo de hoy en un sitio (brief.ts → weatherAt). Sin él, «Tu mañana» va sin tiempo. */
+	weather?: (lat: number, lon: number) => Promise<Weather | null>;
+}
+
+/** Un «Tu mañana» que también va por email: la web busca el email por el uid (cloud/brief.ts). */
+export interface BriefMail {
+	uid: string;
+	subject: string;
+	text: string;
 }
 
 /**
@@ -102,9 +141,18 @@ export async function runUsers(
 	now: number,
 	engine: Engine,
 	say: (line: string) => void,
-	all: Rule[] = RULES
+	all: Rule[] = RULES,
+	/** Aquí se dejan los «Tu mañana» que van por email. */
+	mails: BriefMail[] = []
 ): Promise<Record<string, NotifyLog>> {
 	const out: Record<string, NotifyLog> = {};
+	// Un sitio, una consulta del tiempo por pasada (aunque lo compartan varios).
+	const skies = new Map<string, Promise<Weather | null>>();
+	const weatherOf = (p: { lat: number; lon: number }) => {
+		const key = `${p.lat},${p.lon}`;
+		if (!skies.has(key)) skies.set(key, engine.weather?.(p.lat, p.lon) ?? Promise.resolve(null));
+		return skies.get(key)!;
+	};
 	for (const u of users) {
 		const rules = rulesFor(u.config, now, all);
 		const input = inputsFor(d, u.config, base);
@@ -139,6 +187,15 @@ export async function runUsers(
 			say(
 				`ntfy · ${who}: ${sent} de ${picked.send.length} enviados${picked.skipped.length ? `, ${picked.skipped.length} no caben` : ''}`
 			);
+		// «Tu mañana»: lo ha pedido él a esa hora, así que no cuenta el silencio ni el tope.
+		if (briefDue(u.config, log, now)) {
+			const place = u.config.brief.place;
+			const weather = place ? await weatherOf(place) : null;
+			const alert = briefAlert(briefLines(u.config, input, madrid(now).date, base, weather), now);
+			const ok = await send(alert, log);
+			if (u.config.brief.email) mails.push({ uid: u.uid, subject: alert.title, text: alert.body });
+			say(`ntfy · ${who}: «Tu mañana» ${ok ? 'enviado' : 'no enviado'}${u.config.brief.email ? ' (y por email)' : ''}`);
+		}
 		out[u.uid] = log;
 	}
 	return out;

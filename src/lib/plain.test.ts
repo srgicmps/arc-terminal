@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { euriborPhrase, gdpPhrase, inflationPhrase, movePhrase, phrases, policyPhrase, premiumPhrase, unemploymentPhrase } from './plain.ts';
+import { cheapPhrase, euriborPhrase, gdpPhrase, inflationPhrase, movePhrase, phrases, policyPhrase, premiumPhrase, unemploymentPhrase } from './plain.ts';
 
 const pts = (...vs: [string, number][]) => vs.map(([t, v]) => ({ t, v }));
 
@@ -30,5 +30,12 @@ describe('frases del modo Sencillo', () => {
 		expect(premiumPhrase('España', 64.6)).toMatch(/65 puntos: tranquilidad/);
 		expect(movePhrase('El bitcoin', -2.13, 'en las últimas 24 horas')).toBe('El bitcoin baja un 2,1 % en las últimas 24 horas.');
 		expect(phrases([null, 'a', undefined, false])).toEqual(['a']);
+	});
+});
+
+describe('cheapPhrase (LUZ, F1)', () => {
+	it('la franja más barata de hoy y de mañana', () => {
+		expect(cheapPhrase('hoy', 2, '14:00', '16:00', 0.0523)).toBe('La franja de 2 horas más barata que queda hoy es de 14:00 a 16:00, a 0,052 € el kWh.');
+		expect(cheapPhrase('mañana', 1, '03:00', '04:00', 0.04)).toBe('La hora más barata de mañana es de 03:00 a 04:00, a 0,040 € el kWh.');
 	});
 });

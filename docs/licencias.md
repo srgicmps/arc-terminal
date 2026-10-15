@@ -47,4 +47,8 @@ Lo que dicen los términos está resumido de su página pública; no es asesorí
    el tipo medio del Tesoro a 10 años ya está; (c) mostrarlas solo a Sergi. Recomendación: **(c)**, que no quita
    nada a Sergi, y si se complica, (b).
 
-Nada se ha quitado: queda a la espera de la decisión de Sergi.
+## Decisión del dueño (15-10-2026)
+
+Sergi elige **(a) en los dos casos** (D42 Finnhub, D43 series de FRED con copyright): se quedan para todos. Motivo: es un
+grupo privado de familia y amigos, sin ánimo de lucro, y no lo considera redistribución. Si el grupo cambia (pública,
+comercial o mucho más grande), hay que revisar estas dos.
