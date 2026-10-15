@@ -195,6 +195,9 @@
 			</div>
 			<TvWidget widget={map.widget} config={map.config} height={520} />
 		</Panel>
+		<Panel title="Los que más se mueven" meta="Suben, bajan y más negociados · hoy">
+			<HotLists />
+		</Panel>
 	</div>
 	<div class="col">
 		<Panel title="Mercados" meta="En directo">
@@ -203,44 +206,11 @@
 		<Panel title="Materias primas" meta="Precio en dólares · en directo">
 			<TvWidget widget="market-quotes" config={quotes('Materias primas', COMMODITIES)} height={quotesHeight(COMMODITIES.length)} />
 		</Panel>
-		{#if data.pinksheet?.data.rows.length}
-			{@const last = data.pinksheet.data.rows.map((r) => r.points.at(-1)?.t ?? '').sort().at(-1) ?? ''}
-			<Panel title="Más materias primas" meta="Media mensual · {period(last)} · en dólares">
-				<PinkSheetTable rows={data.pinksheet.data.rows} />
-				{#snippet note()}
-					Lo que no sale en directo arriba: gas europeo, alimentos, fertilizantes y metales industriales. Precio medio
-					del mes; se publica a primeros del siguiente. Fuente:
-					<a href="https://www.worldbank.org/en/research/commodity-markets" target="_blank" rel="noopener">Banco Mundial, Pink Sheet</a>
-					· <Updated at={data.pinksheet?.fetchedAt} source="pinksheet" />
-				{/snippet}
-			</Panel>
-		{/if}
-		{#if data.eia?.data.stocks.length}
-			{@const week = data.eia.data.stocks[0].points.at(-1)?.t}
-			<Panel title="Inventarios de petróleo" meta="EE. UU. · semana al {week ? dm(`${week}T12:00:00Z`) : '—'}">
-				<EiaStocks stocks={data.eia.data.stocks} />
-				{#snippet note()}
-					Millones de barriles. «Semana»: variación frente a la anterior; «vs 5 años»: frente a la media de esa misma
-					semana en los cinco años previos. Sale los miércoles. Fuente:
-					<a href="https://www.eia.gov/petroleum/supply/weekly/" target="_blank" rel="noopener">EIA</a>
-					· <Updated at={data.eia?.fetchedAt} source="eia" />
-				{/snippet}
-			</Panel>
-		{/if}
-		<DefenseQuotes />
 	</div>
 </div>
 
-<div class="grid grid-2">
-	<div class="col">
-		<Panel title="Los que más se mueven" meta="Suben, bajan y más negociados · hoy">
-			<HotLists />
-		</Panel>
-		<Panel title="Titulares" meta="Mercados" jump={{ code: 'NEWS', href: `${resolve('/news')}?s=ws` }}>
-			<NewsList items={data.news?.data.items ?? []} />
-			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-ws" />{/snippet}
-		</Panel>
-	</div>
+<!-- Por debajo de 1100 px, la columna central (titulares) sube primero, a todo el ancho. -->
+<div class="grid grid-3">
 	<div class="col">
 		<RiskGauge risk={data.risk} />
 		<Panel title="VIX y su curva" meta="Volatilidad esperada del S&P 500 · por plazo">
@@ -277,6 +247,19 @@
 				{/snippet}
 			</Panel>
 		{/if}
+		<Panel title="Subastas del Tesoro" meta="EE. UU. · próximas y resultados de bonos y notas">
+			{#if data.auctions}<AuctionList data={data.auctions.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
+			{#snippet note()}
+				B/C (bid-to-cover): demanda frente a lo adjudicado; en ámbar, por debajo de la media de sus 6 subastas anteriores ·
+				Fuente: Tesoro de EE. UU. · <Updated at={data.auctions?.fetchedAt} source="auctions" />
+			{/snippet}
+		</Panel>
+	</div>
+	<div class="col">
+		<Panel title="Titulares" meta="Mercados" jump={{ code: 'NEWS', href: `${resolve('/news')}?s=ws` }}>
+			<NewsList items={data.news?.data.items ?? []} />
+			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-ws" />{/snippet}
+		</Panel>
 		<Panel title="Divisas" meta="Frente al euro · cambio de referencia del BCE">
 			<FxTable rows={fx.map((id) => ({ series: get(id), week: data.fxChange[id]?.week ?? null, year: data.fxChange[id]?.year ?? null }))} />
 			{#snippet note()}Si el par sube, el euro se aprecia frente a esa moneda · <Updated at={data.ecb?.fetchedAt} source="ecb" />{/snippet}
@@ -285,6 +268,33 @@
 			<FxConvert series={fx.map(get)} />
 			{#snippet note()}Tipo de referencia del BCE, no de cambio en ventanilla · <Updated at={data.ecb?.fetchedAt} source="ecb" />{/snippet}
 		</Panel>
+	</div>
+	<div class="col">
+		{#if data.pinksheet?.data.rows.length}
+			{@const last = data.pinksheet.data.rows.map((r) => r.points.at(-1)?.t ?? '').sort().at(-1) ?? ''}
+			<Panel title="Más materias primas" meta="Media mensual · {period(last)} · en dólares">
+				<PinkSheetTable rows={data.pinksheet.data.rows} />
+				{#snippet note()}
+					Lo que no sale en directo arriba: gas europeo, alimentos, fertilizantes y metales industriales. Precio medio
+					del mes; se publica a primeros del siguiente. Fuente:
+					<a href="https://www.worldbank.org/en/research/commodity-markets" target="_blank" rel="noopener">Banco Mundial, Pink Sheet</a>
+					· <Updated at={data.pinksheet?.fetchedAt} source="pinksheet" />
+				{/snippet}
+			</Panel>
+		{/if}
+		{#if data.eia?.data.stocks.length}
+			{@const week = data.eia.data.stocks[0].points.at(-1)?.t}
+			<Panel title="Inventarios de petróleo" meta="EE. UU. · semana al {week ? dm(`${week}T12:00:00Z`) : '—'}">
+				<EiaStocks stocks={data.eia.data.stocks} />
+				{#snippet note()}
+					Millones de barriles. «Semana»: variación frente a la anterior; «vs 5 años»: frente a la media de esa misma
+					semana en los cinco años previos. Sale los miércoles. Fuente:
+					<a href="https://www.eia.gov/petroleum/supply/weekly/" target="_blank" rel="noopener">EIA</a>
+					· <Updated at={data.eia?.fetchedAt} source="eia" />
+				{/snippet}
+			</Panel>
+		{/if}
+		<DefenseQuotes />
 		<Panel title="Cripto" meta="Por capitalización">
 			<CryptoTable coins={data.crypto?.data.coins ?? []} />
 			{#snippet note()}Fuente: CoinGecko · <Updated at={data.crypto?.fetchedAt} source="crypto" />{/snippet}
@@ -316,13 +326,6 @@
 			{#snippet note()}
 				«Dinero»: respaldadas con dólares y deuda pública; «cripto»: con otras criptomonedas. En ámbar, el precio que se
 				separa medio céntimo o más del dólar. Fuente: DefiLlama · <Updated at={data.stables?.fetchedAt} source="stablecoins" />
-			{/snippet}
-		</Panel>
-		<Panel title="Subastas del Tesoro" meta="EE. UU. · próximas y resultados de bonos y notas">
-			{#if data.auctions}<AuctionList data={data.auctions.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
-			{#snippet note()}
-				B/C (bid-to-cover): demanda frente a lo adjudicado; en ámbar, por debajo de la media de sus 6 subastas anteriores ·
-				Fuente: Tesoro de EE. UU. · <Updated at={data.auctions?.fetchedAt} source="auctions" />
 			{/snippet}
 		</Panel>
 		{#if data.cot}
