@@ -36,7 +36,9 @@ try {
 		const context = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width < 600, hasTouch: width < 600 });
 		await context.route('**/*', (route) => {
 			const url = new URL(route.request().url());
-			return url.hostname === 'localhost' ? route.continue() : route.fulfill({ status: 200, body: '' });
+			// /api/* son Pages Functions: en vite preview no existen. Una respuesta vacía (sin JSON) es «sin cuenta».
+			const local = url.hostname === 'localhost' && !url.pathname.startsWith('/api/');
+			return local ? route.continue() : route.fulfill({ status: 200, body: '' });
 		});
 		for (const path of PATHS) {
 			const where = `${path} a ${width} px`;
