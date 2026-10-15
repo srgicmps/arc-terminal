@@ -524,6 +524,13 @@
 	--cmd-side: 300px; /* ancho del panel lateral del grafo */
 	--cmd-map-h: 160px; /* alto del mapa del expediente */
 	--cmd-results: 260px; /* alto máximo de la lista de resultados del buscador */
+
+/* Centro de mando: mapa (herramienta «Mapa operacional», src/lib/os/apps/mapa-op/). Sobre la paleta fija de
+   «Mando» (--cmd-slate, --cmd-cold, --cmd-grid… arriba); aquí solo lo propio del mapa. */
+[data-os-skin] {
+	--cmd-land: color-mix(in srgb, var(--raise), var(--cmd-cold) 10%); /* tierra */
+	--cmd-coast: color-mix(in srgb, var(--line), var(--cmd-cold) 28%); /* costas y bordes de 1 px */
+	--cmd-grid-step: 32px; /* paso de la rejilla del fondo */
 }
 
 /* Centro de mando: vigilancia (app Vigilancia de Arc OS). Pizarra fría sobre el panel, nivel de cada objetivo
