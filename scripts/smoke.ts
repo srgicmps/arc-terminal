@@ -3,6 +3,7 @@
 // cada vista de build/ y la ficha de NVDA a 390 y 1280 px con Chromium, y falla si:
 // - hay errores en la consola o excepciones sin capturar;
 // - a 390 px la página es más ancha que la pantalla (scroll horizontal);
+// - sale «NaN», «undefined», «Infinity» o «[object Object]» en el texto de la vista;
 // - la vista no tiene paneles o alguno dice «… todavía» (le faltan sus datos). Una fuente que ha respondido
 //   sin nada que contar (hoy no hay terremotos ni avisos) tiene que decirlo con otro aviso, sin «todavía».
 // Además avisa (sin fallar) si una vista pesa más de WEIGHT_LIMIT: lo que descarga de la propia web
@@ -61,11 +62,14 @@ try {
 				panels: document.querySelectorAll('section.panel').length,
 				missing: [...document.querySelectorAll('.empty')]
 					.map((e) => e.textContent?.trim() ?? '')
-					.filter((t) => /todav[ií]a/i.test(t))
+					.filter((t) => /todav[ií]a/i.test(t)),
+				// Restos de un fallo técnico que no deben llegar nunca a la vista.
+				glitches: [...new Set(document.body.innerText.match(/\b(?:NaN|undefined|Infinity)\b|\[object Object\]/g) ?? [])]
 			}));
 			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px`);
 			if (!NO_PANELS.has(path) && !check.panels) failures.push(`${where}: sin paneles`);
 			for (const text of check.missing) failures.push(`${where}: panel sin datos («${text}»)`);
+			for (const text of check.glitches) failures.push(`${where}: «${text}» en la vista`);
 			if (width < 600) {
 				await page.addScriptTag({ path: AXE });
 				const found = await page.evaluate(async (rules) => {

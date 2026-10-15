@@ -62,11 +62,16 @@ jobs:
           FORCE_REFRESH=1 pnpm data "${names[@]}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Las mismas claves que deploy.yml: sin ellas, STATUS daba esas fuentes por «sin clave» cada 5 min.
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          CLOUDFLARE_RADAR_TOKEN: ${{ secrets.CLOUDFLARE_RADAR_TOKEN }}
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+          MYMEMORY_EMAIL: ${{ secrets.MYMEMORY_EMAIL }}
           # Service token de Cloudflare Access: para leer la copia anterior de la web privada (scripts/lib.ts).
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
