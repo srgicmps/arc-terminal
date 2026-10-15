@@ -156,7 +156,7 @@
 		gap: var(--sp-8);
 		width: min(100%, var(--os-lock-card));
 		padding: var(--sp-24) var(--sp-20);
-		background: var(--os-glass, var(--panel));
+		background: color-mix(in srgb, var(--panel) 72%, transparent); /* como --os-glass, calculado aquí */
 		backdrop-filter: var(--os-glass-blur, none);
 		border: var(--border);
 		border-radius: var(--os-win-radius);
@@ -245,7 +245,9 @@
 		.lock {
 			justify-content: flex-start;
 			padding-top: calc(var(--sp-24) * 3);
-			background: var(--os-phone-wall, var(--os-desk));
+			/* Como --os-phone-wall, pero calculado aquí: así coge los colores del aspecto de Arc OS. */
+			background: var(--os-desk);
+			background-image: radial-gradient(120% 70% at 20% 0%, var(--amber-soft), transparent 60%);
 			font-family: var(--os-phone-font, var(--sans));
 		}
 		.card {
@@ -272,7 +274,7 @@
 			padding: var(--sp-10) var(--sp-12);
 			border: 0;
 			border-radius: var(--os-win-radius);
-			background: var(--os-glass, var(--panel));
+			background: color-mix(in srgb, var(--panel) 72%, transparent); /* como --os-glass, calculado aquí */
 			backdrop-filter: var(--os-glass-blur, none);
 		}
 		.t {
