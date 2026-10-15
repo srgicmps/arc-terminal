@@ -131,3 +131,25 @@ describe('Intro', () => {
 		}
 	});
 });
+
+describe('periodos y comparaciones de series', () => {
+	it('«paro es 1a» compara con hace un año; si no hay tanto, lo dice', () => {
+		expect(ask('paro es 1a')?.desc).toBe('11,4 % (ago 25) → 10,5 % (ago 26) · −0,9 pp · Eurostat');
+		expect(ask('paro es 10a')?.desc).toBe('10,5 % · ago 26 · aquí solo hay datos desde ago 25 (11,4 %, −0,9 pp)');
+		expect(answerNeeds('paro es 10a')).toEqual(['eurostat']);
+	});
+
+	it('«paro es vs it» y «es vs it paro»', () => {
+		const want = { code: 'PARO', desc: 'España 10,5 % · Italia 6,0 % · diferencia +4,5 pp · ago 26 · Eurostat', open: 'ECO Paro' };
+		expect(ask('paro es vs it')).toEqual(want);
+		expect(ask('ES vs IT paro')).toEqual(want);
+		expect(answerNeeds('inflacion es vs de')).toEqual(['eurostat']);
+	});
+
+	it('«NVDA desde 2024-01-01»: sin cierres, lo dice y da lo que hay', () => {
+		const perf = { symbols: { NVDA: { '5Day': 1.5, '52Week': 80.12 } } };
+		const a = answerFor('NVDA desde 2024-01-01', { get: (n) => (n === 'perf' ? perf : undefined), now: NOW });
+		expect(a).toEqual({ code: 'NVDA', desc: 'Sin histórico de cierres para calcular desde 2024-01-01. Rentabilidad: 5 días +1,5 % · 1 año +80,1 %', open: 'NVDA 60M' });
+		expect(answerFor('NVDA desde 2024-01-01', { get: () => null, now: NOW })?.desc).toMatch(/Intro abre el gráfico \(5 años\)$/);
+	});
+});

@@ -28,6 +28,7 @@
 	import { argOptions } from '#lib/argcomplete.ts';
 	import { answerFor, answerNeeds } from '#lib/bar/answers.ts';
 	import { barData, loadBarData } from '#lib/bar/bardata.svelte.ts';
+	import { compareInput, symbolRange } from '#lib/bar/ranges.ts';
 	import { addFav, favOptions, parseFav, readFavs, removeFav, writeFavs } from '#lib/bar/favs.ts';
 	import { actionOption, parseAction } from '#lib/actions.ts';
 	import { runAction } from '#lib/runaction.svelte.ts';
@@ -77,6 +78,8 @@
 
 	// «euribor», «hipoteca 150000 25a», «hora tokio»…: el dato, como primera sugerencia (lote 27-A).
 	const answer = $derived(value.trim() ? answerFor(value, { get: (n) => barData[n], now: now || Date.now(), fuelZone }) : null);
+	// «NVDA 1a», «NVDA vs AMD»: la ficha o CMP con ese rango.
+	const chart = $derived(value.trim() ? (compareInput(value) ?? symbolRange(value)) : null);
 	$effect(() => {
 		loadBarData(answerNeeds(value, fuelZone));
 	});
@@ -114,6 +117,8 @@
 				? [actionOption(action, value, ALL)]
 				: answer
 					? [{ code: answer.code, desc: answer.desc, kind: 'Dato', run: answer.open ?? value.trim() }]
+					: chart
+						? [{ code: chart.code, desc: chart.desc, kind: 'Gráfico', run: value.trim() }]
 					: (favOptions(value, favs) ?? argOptions(value) ?? suggest(value, ALL, 8, fxLive))
 	);
 	// M46: al escribir «100 USD EUR», se descargan los cambios del BCE (una sola vez).
@@ -188,6 +193,14 @@
 		const ans = answerFor(raw, { get: (n) => barData[n], now: Date.now(), fuelZone });
 		if (ans) {
 			if (ans.open) run(ans.open);
+			return;
+		}
+		const ct = compareInput(raw) ?? symbolRange(raw);
+		if (ct) {
+			close();
+			recent = pushHistory(readHistory(), raw.trim());
+			writeHistory(recent);
+			goto(routeHref(ct.route) + ct.search);
 			return;
 		}
 		// M46: una cuenta o una conversión no abren nada; la cuenta deja su resultado para seguir calculando.

@@ -8,6 +8,9 @@ import { last } from '../series.ts';
 import type { FuelData, FuelPrices, FuelSpainData } from '../fuel.ts';
 import type { CryptoData, Series, SeriesData, YieldCurveData } from '../types.ts';
 import { clockAnswer } from './clock.ts';
+import { parsePeriod, rangeSince, sinceInput } from './ranges.ts';
+import { PERF_PERIODS } from '../cmp.ts';
+import type { PerfData } from '../types.ts';
 
 /** Una respuesta: código y texto, como una sugerencia. Sin `open`, Intro no hace nada. */
 export interface Answer {
@@ -82,31 +85,49 @@ const GEOS: Record<string, { id: string; name: string }> = {
 };
 
 /** «paro es», «inflación it»: el tema, el país y de dónde sale. null si no lo es. */
-export function geoTopic(q: string): SeriesTopic | null {
+export function geoTopic(q: string, harmonized = false): SeriesTopic | null {
 	const m = q.match(/^(paro|desempleo|ipc|inflacion)(?: (?:de |en )?(.+))?$/);
 	if (!m) return null;
 	const geo = GEOS[m[2] ?? 'es'];
 	if (!geo) return null;
+	const name = geo.name;
 	if (m[1] === 'paro' || m[1] === 'desempleo') {
 		const set = geo.id === 'us' ? 'bls' : 'eurostat';
 		return { keys: [], set, id: `unemployment-${geo.id}`, label: `Paro ${geo.name}`, dec: 1, open: 'ECO Paro' };
 	}
 	if (geo.id === 'us') return null; // el IPC de EE. UU. del BLS es un índice, no una tasa
-	if (geo.id === 'es') return { keys: [], set: 'ine', id: 'ipc-es', label: 'IPC España', dec: 1, open: 'ES' };
-	return { keys: [], set: 'eurostat', id: `inflation-${geo.id}`, label: `Inflación ${geo.name}`, dec: 1, open: 'ECO' };
+	// Para comparar países, la inflación armonizada de Eurostat de todos (también la de España).
+	if (geo.id === 'es' && !harmonized) return { keys: [], set: 'ine', id: 'ipc-es', label: 'IPC España', dec: 1, open: 'ES' };
+	return { keys: [], set: 'eurostat', id: `inflation-${geo.id}`, label: `Inflación ${name}`, dec: 1, open: 'ECO' };
 }
 
-/** Los archivos que necesita lo escrito (para descargarlos), vacío si no es una respuesta. */
-export function answerNeeds(raw: string, fuelZone?: string | null): string[] {
-	const q = plain(raw);
-	const topic = SERIES.find((t) => t.keys.includes(q)) ?? geoTopic(q);
-	if (topic) return [topic.set];
-	if (/^(btc|bitcoin|eth|ether|ethereum)$/.test(q)) return ['crypto'];
-	if (q.startsWith('hipoteca')) return ['ecb'];
-	if (FUEL_WORDS.test(q) || q.startsWith('llenar') || q.startsWith('repostar'))
-		return fuelZone === 'menorca' || !fuelZone ? ['fuel', 'fuel-es'] : ['fuel-es'];
-	if (/^(us10y|10a us|bono us|bono ee ?uu|treasury)$/.test(q)) return ['uscurve'];
-	return [];
+/** «euribor», «paro es»: la serie de la que se habla. */
+const seriesTopic = (q: string) => SERIES.find((t) => t.keys.includes(q)) ?? geoTopic(q);
+
+/** «paro es vs it», «es vs it paro», «inflación de vs fr»: las dos series que se comparan. */
+export function compareSeries(q: string): [SeriesTopic, SeriesTopic] | null {
+	const VS = '(?:vs\\.?|versus|contra|frente a)';
+	const TOPIC = '(paro|desempleo|ipc|inflacion)';
+	let parts = q.match(new RegExp(`^${TOPIC} (?:de |en )?(.+?) ${VS} (.+)$`))?.slice(1);
+	if (!parts) {
+		const n = q.match(new RegExp(`^(.+?) ${VS} (.+?) ${TOPIC}$`));
+		parts = n ? [n[3], n[1], n[2]] : undefined;
+	}
+	if (!parts) return null;
+	const [topic, g1, g2] = parts;
+	const a = geoTopic(`${topic} ${g1}`, true);
+	const b = geoTopic(`${topic} ${g2}`, true);
+	return a && b && a.id !== b.id ? [a, b] : null;
+}
+
+/**
+ * Los archivos que necesita lo escrito (para descargarlos), vacío si no es una respuesta. Se averigua
+ * preguntando: cada respuesta pide sus archivos con `get` antes de mirar si han llegado.
+ */
+export function answerNeeds(raw: string, fuelZone?: string | null, now = Date.now()): string[] {
+	const names = new Set<string>();
+	answerFor(raw, { get: (n) => void names.add(n), now, fuelZone });
+	return [...names];
 }
 
 const FUEL_WORDS = /^(diesel|gasoil|gasoleo|gasolina|gasolina 95|g95|sin plomo)$/;
@@ -117,8 +138,17 @@ export function answerFor(raw: string, ctx: AnswerCtx): Answer | null {
 	if (!q) return null;
 	const clock = clockAnswer(q, ctx.now);
 	if (clock) return clock;
-	const topic = SERIES.find((t) => t.keys.includes(q)) ?? geoTopic(q);
+	const topic = seriesTopic(q);
 	if (topic) return seriesAnswer(topic, ctx);
+	// «paro es 10a», «euribor 1a»: el dato y cuánto ha cambiado en ese periodo.
+	const pm = q.match(/^(.+) (\S+)$/);
+	const period = pm ? parsePeriod(pm[2]) : null;
+	const ptopic = period && pm ? seriesTopic(pm[1]) : null;
+	if (ptopic && period) return seriesAnswer(ptopic, ctx, period.days);
+	const versus = compareSeries(q);
+	if (versus) return versusAnswer(versus, ctx);
+	const since = sinceInput(raw);
+	if (since) return sinceAnswer(since.sym, since.date, ctx);
 	if (/^(btc|bitcoin|eth|ether|ethereum)$/.test(q)) return cryptoAnswer(q.startsWith('b') ? 'bitcoin' : 'ethereum', ctx);
 	if (/^(us10y|10a us|bono us|bono ee ?uu|treasury)$/.test(q)) return treasuryAnswer(ctx);
 	if (q.startsWith('hipoteca')) return mortgageAnswer(q, ctx);
@@ -133,17 +163,87 @@ function pending(code: string, value: unknown, open?: string): Answer {
 	return { code, desc: value === undefined ? 'Cargando…' : 'No se ha podido cargar el dato', open };
 }
 
-function seriesAnswer(t: SeriesTopic, ctx: AnswerCtx): Answer {
+/** La serie de un tema, o la respuesta de «cargando» / «sin dato». */
+function topicSeries(t: SeriesTopic, ctx: AnswerCtx): Series | Answer {
 	const code = t.label.toUpperCase();
 	const data = ctx.get(t.set) as SeriesData | null | undefined;
 	if (!data) return pending(code, data, t.open);
 	const s = data.series?.find((x) => x.id === t.id);
-	const p = last(s);
-	if (!s || !p) return { code, desc: 'Sin dato ahora mismo', open: t.open };
-	const unit = s.unit === '%' ? ' %' : ` ${s.unit}`;
+	return s && s.points.length ? s : { code, desc: 'Sin dato ahora mismo', open: t.open };
+}
+
+const unitOf = (s: Series) => (s.unit === '%' ? ' %' : ` ${s.unit}`);
+
+/** Con `days`, compara con el dato de hace ese tiempo (si la serie llega tan atrás; si no, lo dice). */
+function seriesAnswer(t: SeriesTopic, ctx: AnswerCtx, days?: number): Answer {
+	const code = t.label.toUpperCase();
+	const s = topicSeries(t, ctx);
+	if (!('points' in s)) return s;
+	const p = s.points[s.points.length - 1];
+	const unit = unitOf(s);
+	if (days !== undefined) {
+		const first = s.points[0];
+		const from = days === Infinity ? first : pointBefore(s, p.t, days);
+		const pp = s.unit === '%' ? ' pp' : '';
+		if (!from) return { code, desc: `${nf(p.v, t.dec)}${unit} · ${period(p.t)} · aquí solo hay datos desde ${period(first.t)} (${nf(first.v, t.dec)}${unit}, ${signed(p.v - first.v, t.dec)}${pp})`, open: t.open };
+		return { code, desc: `${nf(from.v, t.dec)}${unit} (${period(from.t)}) → ${nf(p.v, t.dec)}${unit} (${period(p.t)}) · ${signed(p.v - from.v, t.dec)}${pp} · ${s.source}`, open: t.open };
+	}
 	const before = t.daily ? weekAgo(s, p.t) : yearAgo(s, p.t);
 	const diff = before ? ` · ${signed(p.v - before.v, t.dec)}${s.unit === '%' ? ' pp' : ''} ${t.daily ? 'en una semana' : 'en un año'}` : '';
 	return { code, desc: `${nf(p.v, t.dec)}${unit} · ${period(p.t)}${diff} · ${s.source}`, open: t.open };
+}
+
+/** El último punto de hace al menos `days` días respecto a `t`; undefined si la serie no llega tan atrás. */
+function pointBefore(s: Series, t: string, days: number) {
+	const end = Date.parse(`${toDay(t)}T12:00:00Z`);
+	const limit = new Date(end - days * 86_400_000).toISOString().slice(0, 10);
+	const p = s.points.findLast((x) => toDay(x.t) <= limit);
+	return p === s.points[s.points.length - 1] ? undefined : p;
+}
+
+/** «2026-09» → «2026-09-01», «2026-Q2» → «2026-04-01», «2026-10-14» igual: para comparar fechas. */
+function toDay(t: string): string {
+	const q = t.match(/^(\d{4})-Q(\d)$/);
+	if (q) return `${q[1]}-${String((Number(q[2]) - 1) * 3 + 1).padStart(2, '0')}-01`;
+	return /^\d{4}-\d{2}$/.test(t) ? `${t}-01` : t.slice(0, 10);
+}
+
+/** «paro es vs it»: los dos últimos datos y la diferencia. */
+function versusAnswer([a, b]: [SeriesTopic, SeriesTopic], ctx: AnswerCtx): Answer {
+	const sa = topicSeries(a, ctx);
+	const sb = topicSeries(b, ctx);
+	if (!('points' in sa)) return sa;
+	if (!('points' in sb)) return sb;
+	const pa = sa.points[sa.points.length - 1];
+	const pb = sb.points[sb.points.length - 1];
+	const name = (t: SeriesTopic) => t.label.replace(/^(Paro|Inflación) /, '');
+	const topic = a.label.split(' ')[0];
+	const pp = sa.unit === '%' ? ' pp' : '';
+	const when = pa.t === pb.t ? period(pa.t) : `${period(pa.t)} y ${period(pb.t)}`;
+	return {
+		code: `${topic.toUpperCase()}`,
+		desc: `${name(a)} ${nf(pa.v, a.dec)}${unitOf(sa)} · ${name(b)} ${nf(pb.v, b.dec)}${unitOf(sb)} · diferencia ${signed(pa.v - pb.v, a.dec)}${pp} · ${when} · ${sa.source}`,
+		open: a.open
+	};
+}
+
+/**
+ * «NVDA desde 2024-01-01». Arc Terminal no guarda cierres diarios de los valores: lo dice, enseña las
+ * rentabilidades fijas de Finnhub que haya (perf.json) e Intro abre el gráfico con el rango que cubre ese día.
+ */
+function sinceAnswer(sym: string, date: string, ctx: AnswerCtx): Answer {
+	const range = rangeSince(date, ctx.now);
+	const open = `${sym} ${range.tv}`;
+	const data = ctx.get('perf') as PerfData | null | undefined;
+	const r = data?.symbols?.[sym];
+	const fixed = r
+		? PERF_PERIODS.filter(([k]) => typeof r[k] === 'number')
+				.map(([k, label]) => `${label} ${signed(r[k], 1)} %`)
+				.join(' · ')
+		: '';
+	const head = `Sin histórico de cierres para calcular desde ${date}`;
+	if (data === undefined) return { code: sym, desc: `${head} · Cargando rentabilidades…`, open };
+	return { code: sym, desc: fixed ? `${head}. Rentabilidad: ${fixed}` : `${head}. Intro abre el gráfico (${range.label})`, open };
 }
 
 /** El punto de hace un año (series mensuales o trimestrales). */
