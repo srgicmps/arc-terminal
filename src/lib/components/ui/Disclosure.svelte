@@ -56,9 +56,14 @@
 		margin-right: calc(-1 * var(--sp-10));
 	}
 
-	details:not(.inline) > summary:hover,
 	details:not(.inline)[open] > summary {
 		background: var(--raise);
+	}
+
+	@media (hover: hover) {
+		details:not(.inline) > summary:hover {
+			background: var(--raise);
+		}
 	}
 
 	/* En línea: texto pequeño en --faint que se aclara al pasar o abrir. */
@@ -71,9 +76,14 @@
 		margin-right: var(--sp-4);
 	}
 
-	.inline > summary:hover,
 	.inline[open] > summary {
 		color: var(--muted);
+	}
+
+	@media (hover: hover) {
+		.inline > summary:hover {
+			color: var(--muted);
+		}
 	}
 
 	/* En táctil, una capa invisible da al texto la altura de una zona táctil (--touch), sin mover nada. */

@@ -410,10 +410,16 @@
 		cursor: pointer;
 	}
 
-	.top :global(.theme:hover),
 	.top :global(.theme[aria-expanded='true']) {
 		color: var(--amber);
 		border-color: var(--amber-edge);
+	}
+
+	@media (hover: hover) {
+		.top :global(.theme:hover) {
+			color: var(--amber);
+			border-color: var(--amber-edge);
+		}
 	}
 
 	/* En pantallas táctiles se ven igual (28 px), pero la zona pulsable llega a 44 × 44 px. Vale para «⋯»,
@@ -530,8 +536,10 @@
 		cursor: pointer;
 	}
 
-	.keys :global(.key:hover) {
-		border-color: var(--amber-edge);
+	@media (hover: hover) {
+		.keys :global(.key:hover) {
+			border-color: var(--amber-edge);
+		}
 	}
 
 	.keys :global(.key[aria-current='page']) {
@@ -662,9 +670,11 @@
 		cursor: pointer;
 	}
 
-	.tv-chip button:hover {
-		color: var(--amber);
-		border-color: var(--amber-edge);
+	@media (hover: hover) {
+		.tv-chip button:hover {
+			color: var(--amber);
+			border-color: var(--amber-edge);
+		}
 	}
 
 	@media (pointer: coarse) {

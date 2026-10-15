@@ -150,11 +150,18 @@
 		cursor: pointer;
 	}
 
-	.pop :global(:is(a, button):hover),
 	.pop :global(:is(a, button):focus-visible) {
 		background: var(--amber-soft);
 		color: var(--amber);
 		outline: none;
+	}
+
+	@media (hover: hover) {
+		.pop :global(:is(a, button):hover) {
+			background: var(--amber-soft);
+			color: var(--amber);
+			outline: none;
+		}
 	}
 
 	.pop :global([aria-current='page']),

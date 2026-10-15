@@ -54,10 +54,16 @@
 		font-size: var(--fs-xs);
 	}
 
-	.listen:hover,
 	.listen:focus-visible {
 		text-decoration: underline var(--hair);
 		text-underline-offset: var(--sp-3);
+	}
+
+	@media (hover: hover) {
+		.listen:hover {
+			text-decoration: underline var(--hair);
+			text-underline-offset: var(--sp-3);
+		}
 	}
 
 	@media (pointer: coarse) {

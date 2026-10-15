@@ -92,9 +92,14 @@
 		cursor: pointer;
 	}
 
-	.csv:hover,
 	.csv:focus-visible {
 		color: var(--amber);
+	}
+
+	@media (hover: hover) {
+		.csv:hover {
+			color: var(--amber);
+		}
 	}
 
 	/* Con ratón, solo al pasar por encima de la tabla (o al llegar con el teclado). */
