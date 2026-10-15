@@ -126,6 +126,7 @@ describe('estéticas', () => {
 			'src/lib/components/PanelIndex.svelte': 'panel-index',
 			'src/lib/components/Panel.svelte': 'panel panel-head panel-meta fold panel-grow panel-close',
 			'src/lib/components/ViewHeader.svelte': 'view-head view-title view-code view-sub view-sum',
+			'src/lib/components/ui/Menu.svelte': 'menu',
 			'src/lib/components/ui/Tile.svelte': 'tile',
 			'src/lib/components/ui/Note.svelte': 'note',
 			'src/lib/components/ui/Table.svelte': 'table',
@@ -138,5 +139,13 @@ describe('estéticas', () => {
 				expect(readFileSync(file, 'utf8'), `${file} ${n}`).toContain(`data-ui="${n}"`);
 				expect(doc, n).toContain(`\`${n}\``);
 			}
+	});
+
+	it('el acento de «A tu gusto» no se aplica justo en las estéticas con color fijo (ajustes.css = registro)', () => {
+		const css = readFileSync('src/styles/ajustes.css', 'utf8');
+		const fixed = ESTILOS.filter((e) => e.fixedAccent).map((e) => e.id).sort();
+		const blocks = [...css.matchAll(/:root(?:\[data-theme='light'\])?\[data-accent='\w+'\]:not\(([^)]*)\)/g)];
+		expect(blocks.length).toBe(6);
+		for (const b of blocks) expect([...b[1].matchAll(/data-style='(\w+)'/g)].map((m) => m[1]).sort()).toEqual(fixed);
 	});
 });
