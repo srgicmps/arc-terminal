@@ -189,6 +189,33 @@ export function cycleWin(s: OsState, dir: 1 | -1 = 1): Win | undefined {
 	return next;
 }
 
+/** Mosaico: las ventanas a la vista del escritorio activo, repartidas en una rejilla que llena el escritorio. */
+export function tileDesk(s: OsState, area: { w: number; h: number }): void {
+	const wins = activeDesk(s).wins.filter((w) => !w.min).sort((a, b) => a.z - b.z);
+	if (!wins.length) return;
+	const cols = Math.ceil(Math.sqrt(wins.length));
+	const rows = Math.ceil(wins.length / cols);
+	wins.forEach((w, i) => {
+		const r = Math.floor(i / cols);
+		// La última fila, si va incompleta, reparte su ancho entre las que tiene.
+		const inRow = r === rows - 1 ? wins.length - r * cols : cols;
+		const c = i - r * cols;
+		const x = Math.round((c * area.w) / inRow);
+		const y = Math.round((r * area.h) / rows);
+		Object.assign(w, { x, y, w: Math.round(((c + 1) * area.w) / inRow) - x, h: Math.round(((r + 1) * area.h) / rows) - y });
+		delete w.snap;
+		delete w.restore;
+	});
+}
+
+/** Teclado: mueve (o, con resize, agranda) la ventana un paso de la rejilla. */
+export function nudgeWin(s: OsState, uid: string, dx: number, dy: number, resize: boolean, area: { w: number; h: number }): void {
+	const w = findWin(s, uid);
+	if (!w) return;
+	const r = resize ? { x: w.x, y: w.y, w: w.w + dx * GRID, h: w.h + dy * GRID } : { x: w.x + dx * GRID, y: w.y + dy * GRID, w: w.w, h: w.h };
+	placeWin(s, uid, r, area);
+}
+
 // ── Escritorios ──
 
 export function addDesk(s: OsState, name?: string): Desk | null {

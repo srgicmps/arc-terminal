@@ -78,6 +78,33 @@ describe('ventanas', () => {
 	});
 });
 
+describe('mosaico y teclado', () => {
+	it('reparte las ventanas a la vista en una rejilla que llena el escritorio', () => {
+		const s = wm.emptyState();
+		for (const id of ['a', 'b', 'c']) wm.openWin(s, app(id), area);
+		wm.minimizeWin(s, wm.activeDesk(s).wins[2].uid);
+		wm.openWin(s, app('d'), area);
+		wm.tileDesk(s, area);
+		const r = (id: string) => {
+			const w = wm.activeDesk(s).wins.find((x) => x.app === id)!;
+			return [w.x, w.y, w.w, w.h];
+		};
+		expect(r('a')).toEqual([0, 0, 800, 450]);
+		expect(r('b')).toEqual([800, 0, 800, 450]);
+		expect(r('d')).toEqual([0, 450, 1600, 450]);
+	});
+
+	it('mueve y agranda un paso de la rejilla', () => {
+		const s = wm.emptyState();
+		const a = wm.openWin(s, app('a'), area).win!;
+		const { x, w } = a;
+		wm.nudgeWin(s, a.uid, 1, 0, false, area);
+		expect(a.x).toBe(x + wm.GRID);
+		wm.nudgeWin(s, a.uid, 1, 0, true, area);
+		expect(a.w).toBe(w + wm.GRID);
+	});
+});
+
 describe('escritorios', () => {
 	it('añade, renombra, cambia y quita sin perder ventanas', () => {
 		const s = wm.emptyState();

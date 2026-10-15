@@ -7,7 +7,7 @@ export default {
 		what: 'Modo OS: Arc como un sistema operativo, junto al Terminal clásico: cada vista y cada experiencia se abre en una ventana que se mueve, se redimensiona, se encaja a una mitad o un cuarto y se minimiza. Varios escritorios con nombre, guardados en tu cuenta.',
 		tips: [
 			'Arrastra una ventana contra un borde para encajarla a una mitad; contra una esquina, a un cuarto; arriba, a pantalla entera.',
-			'Atajos: Alt+º siguiente ventana, Alt+↑ maximizar, Alt+↓ minimizar, Alt+⇧+← / → media pantalla, Alt+W cerrar, Alt+1…6 escritorio.',
+			'Atajos: Alt+º siguiente ventana, Alt+↑ maximizar, Alt+↓ minimizar, Alt+⇧+← / → media pantalla, Alt+W cerrar, Alt+T mosaico, Alt+1…6 escritorio. Con el foco en el título, las flechas la mueven.',
 			'«Terminal clásico», en la barra de abajo, vuelve a la web de siempre.'
 		],
 		panels: [{ name: 'Escritorio', what: 'Las ventanas abiertas y la barra de tareas con las apps, los escritorios y una tecla por ventana.' }]

@@ -8,7 +8,7 @@
 //   desk()              el escritorio que se ve · focusedWin() la ventana con el foco
 //   openApp(id, path?)  abre (o trae al frente) una app; null si hay MAX_WINS ventanas (os.notice lo explica)
 //   openPath('/eco')    abre la app de una ruta de la web, con esa ruta
-//   focus · close · minimize · maximize · snap · place · cycle
+//   focus · close · minimize · maximize · snap · place · cycle · tile (mosaico) · nudge (teclado)
 //   newDesk · rename · removeDesk · goDesk · sendToDesk
 // El modo (Terminal clásico ↔ Modo OS, clave arc-shell) lo lleva src/lib/os/mode.svelte.ts (OS 3).
 import { APPS, appOfPath, findApp, type OsApp } from './apps.ts';
@@ -82,6 +82,9 @@ export const maximize = (uid: string) => done(wm.toggleMax(os.state, uid, os.are
 export const snap = (uid: string, to: wm.Snap | null) => done(wm.snapWin(os.state, uid, to, os.area));
 export const place = (uid: string, r: wm.Rect) => done(wm.placeWin(os.state, uid, r, os.area));
 export const cycle = (dir: 1 | -1 = 1) => done(wm.cycleWin(os.state, dir));
+/** Mosaico: todas las ventanas a la vista, en rejilla (el «escritorio en rejilla» de DASH). */
+export const tile = () => done(wm.tileDesk(os.state, os.area));
+export const nudge = (uid: string, dx: number, dy: number, resize = false) => done(wm.nudgeWin(os.state, uid, dx, dy, resize, os.area));
 /** La ruta que enseña ahora una ventana (la apunta la propia ventana al navegar dentro). */
 export function setPath(uid: string, path: string) {
 	const w = wm.findWin(os.state, uid);
