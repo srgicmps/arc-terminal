@@ -99,9 +99,9 @@
 		{/each}
 	</div>
 	<form class="prompt" onsubmit={submit}>
-		<label for="arc-term-input">{PROMPT}</label>
+		<label for="term-input">{PROMPT}</label>
 		<input
-			id="arc-term-input"
+			id="term-input"
 			bind:this={input}
 			bind:value
 			{onkeydown}
@@ -109,9 +109,9 @@
 			autocapitalize="off"
 			spellcheck="false"
 			enterkeyhint="go"
-			aria-describedby="arc-term-help"
+			aria-describedby="term-help"
 		/>
-		<span id="arc-term-help" class="sr">{helpLines().at(-1)?.text}</span>
+		<span id="term-help" class="sr">{helpLines().at(-1)?.text}</span>
 	</form>
 </div>
 
