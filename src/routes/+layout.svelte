@@ -21,7 +21,8 @@
 	import { fit, initFit, toggleFit } from '#lib/fit.svelte.ts';
 	import { initMode, mode, toggleMode } from '#lib/layout.svelte.ts';
 	import { loadPins } from '#lib/pins.svelte.ts';
-	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
+	import { initTheme } from '#lib/theme.svelte.ts';
+	import Appearance from '#lib/components/Appearance.svelte';
 	import { followPlaceUrl, initPlace } from '#lib/place.svelte.ts';
 	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
 	import { initFolded } from '#lib/folded.svelte.ts';
@@ -157,8 +158,6 @@
 		if (tv.on && !(e.target as Element | null)?.closest('.tv-chip')) togglePause();
 	}
 
-	const THEME_LABEL = { auto: 'Tema automático (sigue al sistema)', light: 'Tema de día', dark: 'Tema de noche' };
-	const THEME_ICON = { auto: '◐', light: '☀', dark: '☾' };
 
 	// Fila de arriba y barra inferior del móvil (a mano del pulgar): las de la web o las de «A tu gusto».
 	const keys = $derived(COMMANDS.filter((c) => taste.top.includes(c.code)));
@@ -237,15 +236,8 @@
 		>
 			<span aria-hidden="true">⤢</span>
 		</button>
-		<button
-			class="theme"
-			type="button"
-			onclick={cycleTheme}
-			title="{THEME_LABEL[theme.mode]} · toca para cambiar"
-			aria-label="{THEME_LABEL[theme.mode]}. Cambiar tema"
-		>
-			<span aria-hidden="true">{THEME_ICON[theme.mode]}</span>
-		</button>
+		<!-- Estética, tema, acento y densidad: un solo botón (src/lib/components/Appearance.svelte). -->
+		<Appearance />
 	</header>
 
 	<nav class="keys" data-ui="keys" aria-label="Secciones">
@@ -661,12 +653,13 @@
 		}
 
 		/* Como antes del tema: logo, relojes y barra de comandos, cada uno en su línea. El chip de tu sitio y el
-		   botón del tema van en la línea del logo, a la derecha; sus márgenes negativos evitan que esa línea crezca. */
+		   botón de Apariencia van en la línea del logo, a la derecha; sus márgenes negativos evitan que esa línea crezca. */
 		.brand {
 			order: -2;
 		}
 
-		.theme {
+		.theme,
+		.top :global([data-ui='appearance']) {
 			order: -1;
 			margin-block: calc((var(--logo) - var(--btn-sm)) / 2);
 		}
@@ -678,8 +671,8 @@
 			margin-block: calc((var(--logo) - var(--btn-sm)) / 2);
 		}
 
-		/* Con el botón de la portada modular delante, el del tema va pegado a él. */
-		.mode + .fit + .theme {
+		/* Con el botón de la portada modular delante, el de Apariencia va pegado a él. */
+		.mode + .fit + :global([data-ui='appearance']) {
 			margin-left: 0;
 		}
 	}

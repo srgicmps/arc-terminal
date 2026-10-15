@@ -49,11 +49,16 @@ export function initTheme() {
 	};
 }
 
-/** Auto → Día → Noche → Auto. */
-export function cycleTheme() {
-	theme.mode = theme.mode === 'auto' ? 'light' : theme.mode === 'light' ? 'dark' : 'auto';
+/** Elegir el tema directamente (Apariencia). */
+export function setTheme(mode: ThemeMode) {
+	theme.mode = mode;
 	try {
 		localStorage.setItem(KEY, theme.mode);
 	} catch {}
 	apply();
+}
+
+/** Auto → Día → Noche → Auto. */
+export function cycleTheme() {
+	setTheme(theme.mode === 'auto' ? 'light' : theme.mode === 'light' ? 'dark' : 'auto');
 }
