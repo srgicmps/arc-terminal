@@ -124,9 +124,10 @@ describe('estéticas', () => {
 			'src/lib/components/PlacePicker.svelte': 'place',
 			'src/lib/components/CommandBar.svelte': 'cmd',
 			'src/lib/components/PanelIndex.svelte': 'panel-index',
-			'src/lib/components/Panel.svelte': 'panel panel-head panel-meta fold',
+			'src/lib/components/Panel.svelte': 'panel panel-head panel-meta fold panel-grow panel-close',
 			'src/lib/components/ViewHeader.svelte': 'view-head view-title view-code view-sub view-sum',
 			'src/lib/components/ui/Tile.svelte': 'tile',
+			'src/lib/components/ui/Note.svelte': 'note',
 			'src/lib/components/ui/Table.svelte': 'table',
 			'src/lib/components/ui/Tiles.svelte': 'tiles',
 			'src/lib/components/LineChart.svelte': 'chart'

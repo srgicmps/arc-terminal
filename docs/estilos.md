@@ -70,7 +70,7 @@ Engánchate SIEMPRE a estos atributos `data-ui` (son la API estable; las clases 
 | `clocks` | Relojes de las bolsas |
 | `cmd` | Barra de comandos (en el móvil, hoja con `.sheet`) |
 | `keys` | Fila de secciones (teclas) |
-| `key` | Cada tecla de sección (código y, en un `<span>`, el nombre; la actual lleva `aria-current`) |
+| `key` | Cada tecla de sección (código y, en un `<span>`, el nombre; la actual lleva `aria-current`). Lleva `data-code` (TOP, ECO…), como los enlaces de `tabs`: sirve para poner iconos por sección |
 | `tape` | Cinta de cotizaciones |
 | `panel-index` | Índice de paneles del móvil |
 | `main` | Contenido de la vista |
@@ -84,6 +84,8 @@ Engánchate SIEMPRE a estos atributos `data-ui` (son la API estable; las clases 
 | `panel-head` | Cabecera del panel (título, datos, botones) |
 | `panel-meta` | El dato de la derecha de la cabecera del panel |
 | `fold` | El ▾/▸ de plegar del título del panel |
+| `panel-grow` / `panel-close` | El ⤢ de ampliar el panel y el ✕ del panel ampliado |
+| `note` | Nota al pie de un panel (fuente, aclaraciones) |
 | `table` | Tabla densa |
 | `tiles` / `tile` | Fila de cifras grandes y cada cifra |
 | `chart` | Gráfico de líneas |

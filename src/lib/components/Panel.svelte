@@ -200,9 +200,9 @@
 				>
 			{/if}
 			{#if max}
-				<button bind:this={closeButton} class="close" type="button" aria-label="Cerrar el panel ampliado" onclick={close}>✕</button>
+				<button bind:this={closeButton} class="close" data-ui="panel-close" type="button" aria-label="Cerrar el panel ampliado" onclick={close}>✕</button>
 			{:else}
-				<button class="tool grow" type="button" aria-label="Ampliar {title}" title="Ampliar (M)" onclick={open}>⤢</button>
+				<button class="tool grow" data-ui="panel-grow" type="button" aria-label="Ampliar {title}" title="Ampliar (M)" onclick={open}>⤢</button>
 			{/if}
 			{#if tools && id && !max}
 				<button

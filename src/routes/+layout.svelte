@@ -253,6 +253,7 @@
 			<a
 				class="key"
 				data-ui="key"
+				data-code={key.code}
 				href={routeHref(key.route)}
 				aria-current={page.route.id === key.route ? 'page' : undefined}
 			>
@@ -291,7 +292,7 @@
 
 	<nav class="thumb" data-ui="tabs" aria-label="Accesos rápidos">
 		{#each thumb as c (c.code)}
-			<a href={routeHref(c.route)} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
+			<a href={routeHref(c.route)} data-code={c.code} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
 		{/each}
 		<button type="button" aria-label="Buscar o escribir un comando" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>
 			<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5 14 14" /></svg>
