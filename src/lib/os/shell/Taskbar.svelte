@@ -6,7 +6,6 @@
 <script lang="ts">
 	import Logo from '#lib/components/Logo.svelte';
 	import { cloud } from '#lib/cloud.svelte.ts';
-	import ControlPanel from './ControlPanel.svelte';
 	import NoticeCenter from './NoticeCenter.svelte';
 	import { shell, toggle } from './shell.svelte.ts';
 	import StartMenu from './StartMenu.svelte';
@@ -22,15 +21,10 @@
 		onactivate: (winId: string) => void;
 		ondesk: (deskId: string) => void;
 		onnavigate: (href: string) => void;
-		onadddesk?: () => void;
-		/** Volver a la web clásica. */
-		onleave: () => void;
-		/** Ancho del escritorio (para colocar widgets nuevos). */
-		deskW: number;
 		/** Aviso del núcleo («Hay 12 ventanas…»). */
 		status?: string | null;
 	}
-	let { apps, windows, desks, onopen, onactivate, ondesk, onnavigate, onadddesk, onleave, deskW, status = null }: Props = $props();
+	let { apps, windows, desks, onopen, onactivate, ondesk, onnavigate, status = null }: Props = $props();
 
 	const byId = $derived(new Map(apps.map((a) => [a.id, a])));
 	// Ancladas sin ventana abierta (las abiertas ya salen como ventana).
@@ -43,7 +37,7 @@
 		<button type="button" class="startbtn" aria-expanded={shell.open === 'start'} aria-controls="os-start" aria-label="Inicio" onclick={() => toggle('start')}>
 			<Logo />
 		</button>
-		{#if shell.open === 'start'}<StartMenu {apps} {onopen} {onleave} />{/if}
+		{#if shell.open === 'start'}<StartMenu {apps} {onopen} />{/if}
 	</div>
 
 	<ul class="tasks">
@@ -90,7 +84,6 @@
 		<span class="user mut" title={cloud.user || 'Sin cuenta (solo en este navegador)'}>{cloud.user ? cloud.user.slice(0, 1).toUpperCase() : '·'}</span>
 	</div>
 </nav>
-{#if shell.open === 'control'}<ControlPanel {desks} {deskW} {onnavigate} {onadddesk} {onleave} />{/if}
 
 <style>
 	/* Botones de la shell sin el borde ni el fondo que algunas estéticas dan a todos los botones. */
