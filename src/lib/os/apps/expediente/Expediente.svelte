@@ -5,7 +5,7 @@
 	imprime. La entidad va en el path de la ventana: «/expediente#country:ES» (openDossier de intel/open.ts).
 -->
 <script lang="ts">
-		import { madridDate } from '#lib/meetings.ts';
+	import { madridDate } from '#lib/meetings.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import type { AppProps } from '../../apps.ts';
 	import { openApp, openPath, os, setPath } from '../../os.svelte.ts';
@@ -24,7 +24,10 @@
 
 	const ALL = KINDS.map((k) => k.value) as Kind[];
 	const graph = $derived(getGraph());
-	const path = $derived(os.state.desks.flatMap((d) => d.wins).find((w) => w.uid === win)?.path);
+	const osWin = $derived(os.state.desks.flatMap((d) => d.wins).find((w) => w.uid === win));
+	/** Sin ventana del escritorio (en el móvil, la app va a pantalla completa): la entidad se guarda aquí. */
+	let ownPath = $state<string | undefined>();
+	const path = $derived(osWin ? osWin.path : ownPath);
 	const target = $derived(targetOf(path));
 
 	let extra = $state<DossierExtra>({});
@@ -51,7 +54,11 @@
 	const suggestions = $derived(graph ? [...overview(graph, ['country', 'leader', 'bank', 'ticker'], 12)].map((id) => graph.nodes.get(id)!) : []);
 	const timeline = $derived(d ? (full ? d.timeline : d.timeline.slice(0, 20)) : []);
 
-	const go = (id: string) => setPath(win, pathTo('expediente', id));
+	function go(id: string) {
+		const p = pathTo('expediente', id);
+		if (osWin) setPath(win, p);
+		else ownPath = p;
+	}
 
 	const when = (t: string | null) => {
 		if (!t) return '';
@@ -82,8 +89,16 @@
 		frame.style.border = '0';
 		frame.srcdoc = printHtml(d, stamp(), { sans: v('sans'), mono: v('mono'), s: v('fs-s'), m: v('fs-m'), xl: v('fs-xl') });
 		frame.onload = () => {
-			frame.contentWindow?.print();
-			setTimeout(() => frame.remove(), 1000);
+			// Se quita al cerrar el diálogo (afterprint); en algunos navegadores print() no espera, así que no vale
+			// un plazo corto. Si afterprint no llega nunca, se quita igual al minuto.
+			const w = frame.contentWindow;
+			const done = () => {
+				clearTimeout(timer);
+				frame.remove();
+			};
+			const timer = setTimeout(done, 60_000);
+			w?.addEventListener('afterprint', done, { once: true });
+			w?.print();
 		};
 		document.body.appendChild(frame);
 	}
@@ -311,9 +326,14 @@
 	}
 
 	.nav a {
+		display: inline-flex;
+		align-items: center;
+		min-height: var(--control-h);
 		color: var(--amber-dim);
-		text-decoration: none;
-		border-bottom: var(--hair) solid var(--amber-edge);
+		text-decoration: underline;
+		text-decoration-color: var(--amber-edge);
+		text-decoration-thickness: var(--hair);
+		text-underline-offset: var(--sp-4);
 	}
 
 	.nav a:hover {
