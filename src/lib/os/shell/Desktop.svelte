@@ -50,7 +50,7 @@
 		{#each icons as a (a.id)}
 			<li>
 				<!-- Con ratón, doble clic (como en un escritorio); con el dedo o el teclado (Intro), un toque. -->
-				<button type="button" ondblclick={() => onopen(a.id)} onclick={(e) => (e as PointerEvent).pointerType !== 'mouse' && onopen(a.id)} title={a.desc}>
+				<button type="button" ondblclick={() => onopen(a.id)} onclick={(e) => (e as unknown as PointerEvent).pointerType !== 'mouse' && onopen(a.id)} title={a.desc}>
 					<span class="ico" aria-hidden="true">{a.icon ?? a.code?.slice(0, 3) ?? '·'}</span>
 					<span class="name">{a.title}</span>
 				</button>
