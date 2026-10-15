@@ -1,7 +1,9 @@
 // Barra de comandos: sugerencias y qué se abre al pulsar Intro.
 import { describe, expect, it } from 'vitest';
 import {
+	calcInput,
 	canonical,
+	commandDay,
 	exampleTarget,
 	findCommand,
 	HISTORY_KEY,
@@ -338,5 +340,61 @@ describe('códigos de Bloomberg (M45)', () => {
 	it('salen en las sugerencias al escribir el código', () => {
 		expect(suggest('FXC', ALL)[0]).toMatchObject({ code: 'FXC', kind: 'Bloomberg' });
 		expect(suggest('YCR', ALL).some((o) => o.code === 'YCRV')).toBe(true);
+	});
+});
+
+describe('fechas en los comandos (M49)', () => {
+	// Jueves, 15 de octubre de 2026, a mediodía en Madrid.
+	const NOW = Date.parse('2026-10-15T10:00:00Z');
+
+	it('«CAL viernes» y «WX sábado» pasan el día en ?dia=', () => {
+		const cal = commandDay('CAL viernes', NOW);
+		expect(cal && targetPath({ kind: 'command', ...cal }).search).toBe('?dia=2026-10-16');
+		const wx = commandDay('wx sábado', NOW);
+		expect(wx && targetPath({ kind: 'command', ...wx }).search).toBe('?dia=2026-10-17');
+	});
+
+	it('«LUZ mañana» va al panel de ese día', () => {
+		const luz = commandDay('LUZ mañana', NOW);
+		expect(luz && targetPath({ kind: 'command', ...luz })).toEqual({ route: '/luz', search: '#panel=viernes%2C%2016%20de%20octubre%20de%202026' });
+	});
+
+	it('el historial guarda lo escrito, no la fecha', () => {
+		const t = resolveInput('LUZ mañana', []);
+		expect(t && canonical(t)).toBe('LUZ mañana');
+	});
+
+	it('si no es una fecha, el texto sigue siendo del comando', () => {
+		expect(commandDay('WX Tokio', NOW)).toBeNull();
+		expect(commandDay('ECO mañana', NOW)).toBeNull();
+		expect(open('WX Tokio')).toBe('/wx?buscar=Tokio');
+	});
+});
+
+describe('calculadora y conversor (M46)', () => {
+	const fx = {
+		status: 'ready' as const,
+		rates: new Map([
+			['EUR', { perEur: 1, date: '2026-10-14' }],
+			['USD', { perEur: 1.25, date: '2026-10-14' }]
+		])
+	};
+
+	it('«=1250*1.21» da la cuenta y deja el resultado para seguir', () => {
+		expect(calcInput('=1250*1.21')).toEqual({ text: '= 1512,5', desc: '1250*1.21', next: '=1512.5' });
+		expect(calcInput('=2+')?.text).toBe('= ?');
+		expect(suggest('=1250*1.21', ALL)[0]).toMatchObject({ code: '= 1512,5', kind: 'Calculadora', run: '=1250*1.21' });
+	});
+
+	it('«100 USD EUR» con los cambios del BCE', () => {
+		expect(calcInput('100 USD EUR', fx)?.text).toBe('100 USD = 80 EUR');
+		expect(calcInput('100 eur a usd', fx)?.desc).toBe('Cambio de referencia del BCE · 2026-10-14');
+		expect(calcInput('100 USD EUR')?.desc).toBe('Cargando los cambios del BCE…');
+		expect(calcInput('100 USD XYZ', fx)?.desc).toBe('Divisas con cambio del BCE: EUR, USD');
+	});
+
+	it('lo demás no es cuenta', () => {
+		expect(calcInput('NVDA')).toBeNull();
+		expect(calcInput('CMP NVDA AMD')).toBeNull();
 	});
 });

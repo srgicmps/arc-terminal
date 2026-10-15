@@ -119,11 +119,11 @@ vista `HELP`. Resumen:
 | `SEMANA` | Resumen de la semana: top de IMP en 7 días, mercados, datos publicados y agenda | IMP, FRED*, BCE, Tesoro de EE. UU., CoinGecko, calendarios de publicaciones |
 | `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FAO, FRED*, RSS |
 | `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5), Wikidata, SIPRI, Cloudflare Radar* |
-| `ES` | España en cifras, BOE, luz | INE, BOE, REE, RSS |
+| `ES` | España en cifras, paro registrado por comunidad, BOE, luz | INE, SEPE, Seguridad Social, BOE, REE, RSS |
 | `WS` | Wall Street, mapa de calor, curva de tipos, divisas, cripto, materias primas | TradingView, Tesoro de EE. UU., BCE, CoinGecko, Banco Mundial (Pink Sheet), EIA* (inventarios de petróleo) |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |
 | `MIS` | Tu lista de valores (en el navegador) | TradingView |
-| `TECH` / `AI` | Tecnología e IA | Hacker News, Hugging Face, Cloudflare Radar*, RSS |
+| `TECH` / `AI` | Tecnología e IA | Hacker News, Hugging Face, OpenRouter, Epoch AI (CC BY 4.0), Cloudflare Radar*, RSS |
 | `BOE` / `USGOV` | Boletines oficiales | BOE, Federal Register |
 | `LUZ` | Precio de la luz y mix de generación | REE |
 | `WX` | Tiempo, mar, aire, avisos, sol y luna | Open-Meteo, MeteoAlarm, Copernicus (ERA5), NOAA (CO₂) |
@@ -163,7 +163,8 @@ Cuando termine una fase, actualiza esta lista.
 - Festivos locales de Menorca: Sergi ha decidido no añadirlos.
 - Formato y lint en CI (Prettier + ESLint): un PR propio, cuando haya pocas ramas abiertas.
 - Descartadas: GDELT (429 desde Actions), RSS de la CNMV (no responde) y RSS del Parlamento Europeo (todo
-  europarl.europa.eu responde 202 vacío desde Actions: muro anti-robots).
+  europarl.europa.eu responde 202 vacío desde Actions: muro anti-robots), datos abiertos del Congreso y Frontex (lote 26-B: congreso.es y
+  frontex.europa.eu dan 403 a todo desde Actions, robots.txt incluido; data.europa.eu solo enlaza a Frontex).
 - Bonos a 10 años de Reino Unido, Japón y China: TradingView no da rentabilidades en sus widgets; hacen falta
   fuentes oficiales (BoE, MOF de Japón, ChinaBond). De momento no se hacen.
 - «Próximo dato» de Eurostat (M10): el .ics `cache/RELEASE_CALENDAR/calendar_EN.ics` da 404 y no se ha encontrado el nuevo. El de INE y EE. UU. (fechas de FRED; el .ics del BLS prohíbe robots) sí funcionan.

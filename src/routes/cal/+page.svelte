@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { clock } from '#lib/clock.svelte.ts';
+	import { dayParam } from '#lib/dayparam.svelte.ts';
 	import Panel from '#lib/components/Panel.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -63,6 +64,8 @@
 	// Fecha de hoy en Madrid. Hasta que arranca el reloj en el navegador se usa la fecha en la que se
 	// construyó la página.
 	const today = $derived(madridDate(clock.now || Date.now()));
+	// «CAL viernes» (M49): las filas de ese día, resaltadas.
+	const pick = dayParam();
 
 	// Próximas decisiones de tipos de los grandes bancos centrales (src/lib/cb-calendar.ts).
 	const decisions = $derived(cbUpcoming(today).slice(0, 10));
@@ -125,7 +128,7 @@
 				<thead><tr><th>Día</th><th>Hora</th><th class="l">Banco</th><th class="l"></th></tr></thead>
 				<tbody>
 					{#each decisions as m (m.bank + m.date)}
-						<tr>
+						<tr class:hl={m.date === pick.day}>
 							<td class="mut">{weekday(m.date)} {dm(`${m.date}T12:00:00Z`).split(' ')[1]}</td>
 							<td class="mut">{m.at ? hm(m.at) : '—'}</td>
 							<td class="l name"
@@ -147,7 +150,7 @@
 					<thead><tr><th>Día</th><th>Hora</th><th class="l">Dato</th><th class="l">Fuente</th></tr></thead>
 					<tbody>
 						{#each releases as e (e.source + e.date + e.title)}
-							<tr>
+							<tr class:hl={madridDate(Date.parse(e.date)) === pick.day}>
 								<td class="mut">{weekday(madridDate(Date.parse(e.date)))} {dm(e.date).split(' ')[1]}</td>
 								<td class="mut">{e.allDay ? '—' : hm(e.date)}</td>
 								<td class="l name wrap"
@@ -186,7 +189,7 @@
 					</thead>
 					<tbody>
 						{#each days as d (d.date)}
-							<tr>
+							<tr class:hl={d.date === pick.day}>
 								<td class="mut">{weekday(d.date)} {dm(`${d.date}T12:00:00Z`).split(' ')[1]}</td>
 								<td class="l name wrap">{d.names.join(' · ')}</td>
 								<td class="l mut">{d.tags.join(' ')}</td>
@@ -219,7 +222,7 @@
 					</thead>
 					<tbody>
 						{#each earnings as e, i (e.symbol + e.date)}
-							<tr>
+							<tr class:hl={e.date === pick.day}>
 								<td class="mut">{i === 0 || earnings[i - 1].date !== e.date ? weekday(e.date) : ''}</td>
 								<td class="l"
 									><a class="sym" href="{resolve('/s')}?sym={encodeURIComponent(e.symbol)}">{e.symbol}</a></td
@@ -260,7 +263,7 @@
 						</thead>
 						<tbody>
 							{#each ipos as i, n (i.name + i.date)}
-								<tr>
+								<tr class:hl={i.date === pick.day}>
 									<td class="mut">{n === 0 || ipos[n - 1].date !== i.date ? weekday(i.date) : ''}</td>
 									<td class="l name wrap"
 										>{i.name}{#if i.symbol}<span class="sub">{i.symbol}</span>{/if}</td

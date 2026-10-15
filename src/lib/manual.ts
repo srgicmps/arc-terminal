@@ -201,6 +201,10 @@ export const FAQ: Faq[] = [
 		a: 'Escribe su código en la barra (NVDA, SAN, BME:REP…) y pulsa Intro. Si el código no es un comando, abre su ficha con TradingView.'
 	},
 	{
+		q: '¿Puedo hacer cuentas o cambiar divisas en la barra?',
+		a: 'Sí. Empieza por «=» para calcular («=1250*1,21», «=200*21%»); Intro deja el resultado para seguir. «100 USD EUR» convierte con el cambio de referencia del BCE.'
+	},
+	{
 		q: '¿Usa inteligencia artificial?',
 		a: 'No para decidir qué es importante: IMP y los avisos usan reglas y puntos fijos. Solo se traducen titulares al español con un servicio de traducción automática o, si no, con el traductor del propio navegador.'
 	}

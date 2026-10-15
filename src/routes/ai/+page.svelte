@@ -7,8 +7,10 @@
 	import QuoteBoard from '#lib/components/QuoteBoard.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import Bar from '#lib/components/ui/Bar.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
-	import { compact, dm, nf } from '#lib/format.ts';
+	import { flopPct, flops } from '#lib/epoch.ts';
+	import { compact, dm, nf, period } from '#lib/format.ts';
 	import { hnByTopic } from '#lib/hn.ts';
 	import { BIG_TECH } from '#lib/tickers/bigtech.ts';
 	import { AI_CHAIN } from '#lib/tickers/aichain.ts';
@@ -95,6 +97,31 @@
 				{#snippet note()}
 					Modelos que han entrado en OpenRouter en los últimos 31 días, con su precio en esa plataforma ·
 					<Updated at={data.newModels?.fetchedAt} source="aimodels" />
+				{/snippet}
+			</Panel>
+		{/if}
+		{#if data.frontier?.data.models.length}
+			{@const fr = data.frontier.data}
+			<Panel title="Modelos frontera" meta="Cómputo de entrenamiento estimado, en FLOP · Epoch AI">
+				<Table>
+					<thead><tr><th>Modelo</th><th>Fecha</th><th>Cómputo</th><th class="spark"></th></tr></thead>
+					<tbody>
+						{#each fr.models as m (m.name + m.date)}
+							<tr>
+								<td class="name mname" title={m.country}
+									><a class="model" href={m.url} target="_blank" rel="noopener">{m.name}</a><span class="sub">{m.org}</span></td
+								>
+								<td class="mut">{period(m.date.slice(0, 7))}</td>
+								<td>{flops(m.flop)}</td>
+								<td class="spark"><Bar pct={flopPct(m.flop, fr.record?.flop ?? null)} tone={m.flop && m.flop === fr.record?.flop ? 'amber' : 'faint'} thin /></td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
+				{#snippet note()}
+					{#if fr.record}Récord: {fr.record.name} ({fr.record.org}), {flops(fr.record.flop)} FLOP · {/if}Barra en escala
+					logarítmica · Datos: <a href="https://epoch.ai/data/ai-models" target="_blank" rel="noopener">Epoch AI, «Data on AI models»</a>
+					(CC BY 4.0) · <Updated at={data.frontier?.fetchedAt} source="epoch" />
 				{/snippet}
 			</Panel>
 		{/if}

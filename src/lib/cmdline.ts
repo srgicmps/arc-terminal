@@ -4,6 +4,11 @@
 import { COMMANDS, type Command } from './commands.ts';
 import { FUNCTIONS, findFunction } from './functions.ts';
 import { panelHash } from './panelhash.ts';
+import { parseDay } from './cmddate.ts';
+import { evaluate, formatResult, parseConversion, plainResult } from './calc.ts';
+import { convert, type FxState } from './fx.ts';
+import { longDay, weekday } from './format.ts';
+import { madridDate } from './meetings.ts';
 import { TICKERS } from './tickers.ts';
 
 /** Una sugerencia de la barra. */
@@ -55,15 +60,50 @@ const BLOOMBERG: Option[] = COMMANDS.flatMap((c) =>
 );
 
 /**
+ * Calculadora y conversor (M46). «=1250*1.21» da la cuenta; «100 USD EUR», el cambio con los tipos del BCE
+ * con los cambios de `fx` (la barra los descarga la primera vez: mientras, «Cargando…»). `next` es lo que se deja en la barra al pulsar Intro
+ * para seguir calculando («=1512.5»); en una conversión, Intro no hace nada. Null si no es ni una cosa ni otra.
+ */
+export function calcInput(raw: string, fx?: FxState): { text: string; desc: string; next?: string } | null {
+	const text = raw.trim();
+	if (text.startsWith('=')) {
+		const expr = text.slice(1).trim();
+		if (!expr) return { text: '=', desc: 'Calculadora: escribe una cuenta, p. ej. =1250*1,21' };
+		const v = evaluate(expr);
+		return v === null
+			? { text: '= ?', desc: `No entiendo «${expr}»` }
+			: { text: `= ${formatResult(v)}`, desc: expr, next: `=${plainResult(v)}` };
+	}
+	const conv = parseConversion(text);
+	if (!conv) return null;
+	const { amount, from, to } = conv;
+	const rates = fx?.rates;
+	if (!rates) return { text: `${from} → ${to}`, desc: fx?.status === 'error' ? 'No se pudieron cargar los cambios del BCE' : 'Cargando los cambios del BCE…' };
+	const v = convert(amount, from, to, rates);
+	if (v === null) {
+		const known = [...rates.keys()].sort().join(', ');
+		return { text: `${from} → ${to}`, desc: `Divisas con cambio del BCE: ${known}` };
+	}
+	const date = rates.get(from === 'EUR' ? to : from)?.date;
+	return { text: `${formatResult(amount)} ${from} = ${formatResult(Number(v.toFixed(4)))} ${to}`, desc: `Cambio de referencia del BCE${date ? ` · ${date}` : ''}` };
+}
+
+/**
  * Sugerencias para lo escrito, por orden: el código exacto, los códigos que empiezan igual,
  * los alias que empiezan igual y, al final, los que lo contienen en un alias o en la descripción.
  */
-export function suggest(raw: string, all: Option[], limit = 8): Option[] {
+export function suggest(raw: string, all: Option[], limit = 8, fx?: FxState): Option[] {
 	const q = norm(raw);
 	if (!q) return [];
+	// «=1250*1.21», «100 USD EUR»: el resultado, como única sugerencia. Elegirla vuelve a calcular lo escrito.
+	const calc = calcInput(raw, fx);
+	if (calc) return [{ code: calc.text, desc: calc.desc, kind: 'Calculadora', run: raw.trim() }];
 	// «ECO ?»: la ayuda del comando.
 	const help = commandHelp(raw);
 	if (help) return [helpOption(help, 'Ayuda')];
+	// «LUZ mañana»: el comando en ese día.
+	const dated = commandDay(raw);
+	if (dated) return [dayOption(dated, 'Fecha')];
 	// «ECO TIP»: los paneles del comando que coinciden; «NEWS inflación»: ejecutar el comando con ese texto
 	// (y, detrás, los paneles que coincidan).
 	const panels = panelOptions(raw);
@@ -101,7 +141,7 @@ export function suggest(raw: string, all: Option[], limit = 8): Option[] {
  * («gp» en «NVDA GP», ver src/lib/functions.ts).
  */
 export type Target =
-	| { kind: 'command'; command: Command; arg?: string; panel?: string }
+	| { kind: 'command'; command: Command; arg?: string; panel?: string; day?: string }
 	| { kind: 'help'; command: Command }
 	| { kind: 'symbol'; sym: string; fn?: string };
 
@@ -196,6 +236,22 @@ function panelOption(command: Command, name: string, kind: string): Option {
 	return { code: `${command.code} ${name}`, desc: what ? `Panel · ${what}` : 'Panel', kind, run: `${command.code} ${name}` };
 }
 
+/**
+ * «LUZ mañana», «CAL viernes»: un comando que acepta días (`date`) y el día («AAAA-MM-DD»). `arg` es lo
+ * escrito, que es lo que se guarda en el historial: «LUZ mañana» sigue siendo mañana otro día.
+ */
+export function commandDay(raw: string, now = Date.now()): { command: Command; arg: string; day: string } | null {
+	const { head, arg } = splitInput(raw);
+	const command = findCommand(head);
+	const day = command?.date && arg ? parseDay(arg, madridDate(now)) : null;
+	return command && day ? { command, arg, day } : null;
+}
+
+function dayOption(target: { command: Command; arg: string; day: string }, kind: string): Option {
+	const { command, arg, day } = target;
+	return { code: `${command.code} ${arg}`, desc: `${command.key} · ${weekday(day)}`, kind, run: `${command.code} ${arg}` };
+}
+
 /** «ECO ?»: la ayuda de un comando (su ficha del MANUAL). */
 export function commandHelp(raw: string): Command | null {
 	const { head, arg } = splitInput(raw);
@@ -225,6 +281,8 @@ export function resolveInput(raw: string, suggestions: Option[]): Target | null 
 	if (bloomberg) return { kind: 'command', ...bloomberg };
 	const help = commandHelp(raw);
 	if (help) return { kind: 'help', command: help };
+	const dated = commandDay(raw);
+	if (dated) return { kind: 'command', ...dated };
 	const panel = commandPanel(raw);
 	if (panel) return { kind: 'command', ...panel };
 	const withArg = commandWithArg(raw);
@@ -258,8 +316,12 @@ export function targetPath(target: Target): { route: Command['route'] | '/s' | '
 		return { route: '/s', search: `?sym=${encodeURIComponent(target.sym)}${fn}` };
 	}
 	if (target.kind === 'help') return { route: '/manual', search: `#cmd-${target.command.code}` };
-	const { command, arg, panel } = target;
+	const { command, arg, panel, day } = target;
 	if (panel) return { route: command.route, search: panelHash(panel) };
+	if (day) {
+		const search = command.date === 'panel' ? panelHash(longDay(`${day}T12:00:00Z`)) : `?dia=${day}`;
+		return { route: command.route, search };
+	}
 	const search = arg && command.arg ? `?${command.arg.param}=${encodeURIComponent(arg)}` : '';
 	return { route: command.route, search };
 }
@@ -311,6 +373,8 @@ export function historyOptions(list: string[]): Option[] {
 	return list.map((entry) => {
 		const help = commandHelp(entry);
 		if (help) return helpOption(help, 'Reciente');
+		const dated = commandDay(entry);
+		if (dated) return dayOption(dated, 'Reciente');
 		const panel = commandPanel(entry);
 		if (panel) return panelOption(panel.command, panel.panel, 'Reciente');
 		const withArg = commandWithArg(entry);

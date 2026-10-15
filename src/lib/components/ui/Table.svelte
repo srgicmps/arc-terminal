@@ -3,7 +3,8 @@
 	Clases para las celdas: .l (alineada a la izquierda; la primera columna ya lo está), .name (nombre en
 	letra de texto; <a class="name"> enlaza sin subrayado y se pone ámbar al pasar), .sub (detalle gris tras el nombre,
 	se oculta en paneles estrechos), .mut (gris), .per (periodo, se oculta por debajo de 440 px) y .spark (columna
-	del minigráfico, 80 px, se oculta por debajo de 300 px).
+	del minigráfico, 80 px, se oculta por debajo de 300 px). Una fila con <tr class="hl"> va resaltada con el
+	fondo del acento (p. ej. el día pedido en la barra, M49).
 	Los estilos son globales (:global) porque las celdas las escribe quien usa la tabla, no este componente.
 	Debajo, un «⤓ CSV» discreto descarga la tabla tal y como se ve (en el ordenador, al pasar por encima);
 	con csv={false} no sale. El archivo se llama como el panel y la fecha.
@@ -118,6 +119,9 @@
 		}
 		.t tbody tr:last-child td {
 			border-bottom: 0;
+		}
+		.t tbody tr.hl td {
+			background: var(--amber-soft);
 		}
 		.t th {
 			padding-block: var(--sp-6);
