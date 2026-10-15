@@ -23,6 +23,9 @@
 		const next = EXPERIENCES.find((e) => e.id === id);
 		if (next && next.id !== exp.id) goto(href(expHref(next)));
 	};
+	// Con el teclado, en Windows la primera ↓ sobre el desplegable cerrado ya lo cambia: se salta al pulsar Intro o
+	// al salir de él, no con cada flecha. Con el ratón o el dedo, al elegir.
+	let keyed = false;
 </script>
 
 <svelte:head>
@@ -40,7 +43,16 @@
 		{#if EXPERIENCES.length > 1}
 			<label>
 				<span class="sr">Otra experiencia</span>
-				<select value={exp.id} onchange={(e) => jump(e.currentTarget.value)}>
+				<select
+					value={exp.id}
+					onkeydown={(e) => {
+						keyed = e.key !== 'Enter';
+						if (e.key === 'Enter' && e.currentTarget.value !== exp.id) jump(e.currentTarget.value);
+					}}
+					onpointerdown={() => (keyed = false)}
+					onchange={(e) => !keyed && jump(e.currentTarget.value)}
+					onblur={(e) => keyed && e.currentTarget.value !== exp.id && jump(e.currentTarget.value)}
+				>
 					{#each EXPERIENCES as e (e.id)}<option value={e.id}>{e.icon} {e.name}</option>{/each}
 				</select>
 			</label>

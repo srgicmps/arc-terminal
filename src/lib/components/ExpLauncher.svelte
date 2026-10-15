@@ -10,6 +10,8 @@
 	import { page } from '$app/state';
 	import { EXPERIENCES, expHref } from '#lib/experiences.ts';
 	import { isShortcut } from '#lib/shortcuts.ts';
+	import { isTyping } from '#lib/rownav.ts';
+	import { isEmbedded } from '#lib/os/embed.ts';
 
 	let { variant = 'keys', hotkey = false }: { variant?: 'keys' | 'thumb'; hotkey?: boolean } = $props();
 
@@ -29,8 +31,9 @@
 
 	function onWindowKey(e: KeyboardEvent) {
 		if (!hotkey || !isShortcut(e, 'exp')) return;
-		const tag = (document.activeElement?.tagName ?? '').toUpperCase();
-		if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || e.ctrlKey || e.metaKey || e.altKey) return;
+		// Ni escribiendo (también en un contenteditable, como Notas) ni en el Modo OS (/os o una vista en una ventana).
+		if (isTyping(document.activeElement) || e.ctrlKey || e.metaKey || e.altKey) return;
+		if (page.route.id === '/os' || isEmbedded()) return;
 		// Antes que la barra de comandos, que si no se queda la «X» como si empezaras a escribir.
 		e.preventDefault();
 		e.stopPropagation();
@@ -53,6 +56,8 @@
 	}
 
 	function go(e: MouseEvent, path: string) {
+		// Ctrl/⌘ o Mayús + clic, o el botón central: lo normal de un enlace (pestaña o ventana nueva).
+		if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
 		e.preventDefault();
 		close();
 		goto(href(path));

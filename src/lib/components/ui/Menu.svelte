@@ -52,24 +52,38 @@
 		if (open && !root.contains(e.target as Node)) open = false;
 	}
 
-	function onKey(e: KeyboardEvent) {
-		if (open && e.key === 'Escape') {
-			e.stopPropagation();
+	// Mientras está abierto: Esc lo cierra aunque el foco no esté dentro (en Safari, un clic no enfoca el botón) y no
+	// llega a nadie más (la barra no vuelve a la portada). También se cierra con cualquier scroll de fuera, como el
+	// horizontal de la fila de pestañas del móvil, que no es el de la ventana.
+	$effect(() => {
+		if (!open) return;
+		const key = (e: KeyboardEvent) => {
+			if (e.key !== 'Escape') return;
+			e.preventDefault();
+			e.stopImmediatePropagation();
 			open = false;
 			btn.focus();
-		}
-	}
+		};
+		const scroll = (e: Event) => {
+			if (!root.contains(e.target as Node)) open = false;
+		};
+		window.addEventListener('keydown', key, true);
+		window.addEventListener('scroll', scroll, { capture: true, passive: true });
+		return () => {
+			window.removeEventListener('keydown', key, true);
+			window.removeEventListener('scroll', scroll, { capture: true });
+		};
+	});
 </script>
 
-<svelte:window onclick={onWindowClick} onscroll={close} onresize={close} />
+<svelte:window onclick={onWindowClick} onresize={close} />
 
-<div class="menu-root" bind:this={root} onkeydowncapture={onKey}>
+<div class="menu-root" bind:this={root}>
 	<button
 		bind:this={btn}
 		type="button"
 		class={cls}
 		data-ui={ui}
-		aria-haspopup="true"
 		aria-expanded={open}
 		aria-label={label}
 		aria-current={current ? 'page' : undefined}

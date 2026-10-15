@@ -299,7 +299,8 @@
 
 	/* Atajos: la acción puede ser larga; en el móvil baja de línea en vez de salirse del panel. */
 	.keys li {
-		grid-template-columns: auto minmax(0, 1fr);
+		/* Las teclas, como mucho el 60 %: si no, una explicación larga deja la acción sin sitio y se sale. */
+		grid-template-columns: fit-content(60%) minmax(0, 1fr);
 	}
 
 	.keys b {

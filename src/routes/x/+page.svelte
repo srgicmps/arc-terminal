@@ -7,6 +7,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import ExpPreview from '#lib/components/ExpPreview.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -20,7 +21,11 @@
 	let home = $state<string | null>(null);
 	$effect(() => {
 		home = readSaved(HOME_KEY, isHomeCode);
-		const q = new URLSearchParams(location.search).get('e');
+	});
+	// page.url y no location: así «EXP zen» también salta estando ya en /x (la página no se vuelve a montar).
+	$effect(() => {
+		const q = page.url.searchParams.get('e');
+		missing = '';
 		if (!q) return;
 		const exp = findExperience(q);
 		if (exp) goto(href(expHref(exp)), { replaceState: true });
