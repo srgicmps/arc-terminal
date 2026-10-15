@@ -114,11 +114,8 @@ https://data.europa.eu/api/hub/search/search?q=frontex%20illegal%20border%20cros
 # 28.7 BTMM: tipos de referencia de la Fed de Nueva York (sin clave)
 https://markets.newyorkfed.org/api/rates/secured/sofr/last/2.json
 https://markets.newyorkfed.org/api/rates/unsecured/effr/last/2.json
-# Lote F-D (F21, ronda 3): NGA MSI. HYDROPAC (P) cubre el Índico, Mar Rojo y Golfo; HYDROLANT (A), el Atlántico y el Mediterráneo
-https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=active&navArea=P ~ RED SEA|GULF OF ADEN|HORMUZ|PERSIAN GULF|ARABIAN SEA|BAB EL|YEMEN|HOUTHI|ATTACK|PIRACY
-https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=active&navArea=A ~ MEDITERRANEAN|BLACK SEA|ATTACK|HAZARD|MISSILE|LIBYA|GAZA|ISRAEL
-https://msi.nga.mil/api/publications/asam?output=json
-https://msi.nga.mil/api/publications/asams?output=json&sort=date
-https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=active ~ "navArea":"[^4]
+# Lote F-D (F21, ronda 4): campos completos de un aviso de HYDROPAC y HYDROLANT (objeto entero)
+https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=active&navArea=P ~ \{"msgYear":[^{}]{0,1500}?(RED SEA|HORMUZ|GULF OF ADEN|PERSIAN GULF)[^{}]{0,900}\}
+https://msi.nga.mil/api/publications/broadcast-warn?output=json&status=active&navArea=A ~ \{"msgYear":[^{}]{0,1500}?(BLACK SEA|EASTERN MEDITERRANEAN)[^{}]{0,900}\}
 # Lote F-D (F22): ficha de un CZIB (para el enlace y las fechas)
 https://www.easa.europa.eu/en/domains/air-operations/czibs/czib-2022-01r14 ~ .{0,200}(Valid|Issued|Recommendation).{0,300}
