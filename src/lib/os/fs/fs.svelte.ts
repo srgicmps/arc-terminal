@@ -8,6 +8,7 @@ import * as bridge from '../shell/bridge.ts';
 import { setIcons, shell } from '../shell/shell.svelte.ts';
 import { folderPath, folderOf, migrateSpots, setFolderNamer, withoutSpots } from './desk.ts';
 import * as fs from './fs.ts';
+import { openRef } from '../apps/files/open.ts';
 export const FS_KEY = 'arc-os-fs';
 
 export const files = $state({
@@ -82,6 +83,13 @@ export function purge(ids: string[]) {
 }
 export const emptyTrash = () => set(fs.emptyTrash(files.tree));
 
+/** Añade un nodo (un acceso que el explorador crea en una carpeta). Devuelve su id (null si no cabe). */
+export function addNode(node: Omit<fs.FsNode, 'id' | 'at'>): string | null {
+	const r = fs.add(files.tree, node);
+	if (r.id) set(r.tree);
+	return r.id;
+}
+
 /** Un acceso a la app en el escritorio (si ya lo hay, nada). */
 export function addToDesktop(appId: string) {
 	if (fs.findApp(files.tree, appId)) return;
@@ -97,7 +105,7 @@ export const onDesktop = (appId: string) => !!fs.findApp(files.tree, appId);
  */
 export function openFolder(id: string) {
 	if (findOsApp('archivos')) {
-		openApp('archivos', id);
+		openApp('archivos', folderPath(id));
 		return;
 	}
 	const win = os.state.desks.flatMap((d) => d.wins).find((w) => w.app === 'carpeta' && folderOf(w.path) === id);
@@ -108,7 +116,7 @@ export function openFolder(id: string) {
 export function openNode(node: fs.FsNode) {
 	if (node.kind === 'folder') openFolder(node.id);
 	else if (node.kind === 'app' && node.app) bridge.open(node.app);
-	else if (node.kind === 'file' && node.file) openApp(node.file.app, node.file.ref);
+	else if (node.kind === 'file' && node.file) openRef(node.file.ref);
 }
 export const openTrash = () => openFolder(fs.TRASH);
 
