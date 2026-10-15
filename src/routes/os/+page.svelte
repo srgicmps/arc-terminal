@@ -4,16 +4,27 @@
 	(src/lib/os/, src/lib/components/os/WindowLayer.svelte). Ocupa toda la pantalla, por encima de la cabecera de la web.
 -->
 <script lang="ts">
-	import Taskbar from '#lib/components/os/Taskbar.svelte';
 	import WindowLayer from '#lib/components/os/WindowLayer.svelte';
+	import { APPS, openApp, openPath } from '#lib/os/os.svelte.ts';
+	import Desktop from '#lib/os/shell/Desktop.svelte';
+	import Taskbar from '#lib/os/shell/OsTaskbar.svelte';
+	import { loadShell, shell } from '#lib/os/shell/shell.svelte.ts';
+
+	// Escritorio de «OS 2» (fondo, iconos y widgets): los iconos son las apps ancladas en la barra.
+	const icons = APPS.map((a) => ({ id: a.id, title: a.name, code: a.code, icon: a.icon, desc: a.desc }));
+	$effect(() => loadShell(['top', 'imp', 'eco', 'ws', 'geo']));
 </script>
 
 <svelte:head>
 	<title>Arc OS</title>
 </svelte:head>
 
-<div class="os" data-ui="os">
-	<div class="desk"><WindowLayer /></div>
+<div class="os" class:top={shell.bar === 'top'} data-ui="os" data-os-bar={shell.bar}>
+	<div class="desk">
+		<Desktop apps={icons} onopen={(id) => openApp(id)} onnavigate={openPath}>
+			<WindowLayer />
+		</Desktop>
+	</div>
 	<Taskbar />
 </div>
 
@@ -26,6 +37,10 @@
 		grid-template-rows: 1fr auto;
 		background: var(--os-desk);
 		background-image: var(--bg-image);
+	}
+
+	.os.top {
+		grid-template-rows: auto 1fr;
 	}
 
 	.desk {

@@ -18,8 +18,9 @@
 		deskW: number;
 		onnavigate: (href: string) => void;
 		onadddesk?: () => void;
+		onleave: () => void;
 	}
-	let { desks, deskW, onnavigate, onadddesk }: Props = $props();
+	let { desks, deskW, onnavigate, onadddesk, onleave }: Props = $props();
 
 	let admin = $state(false);
 	onMount(async () => {
@@ -85,6 +86,11 @@
 				<p class="mut">Sin cuenta: los ajustes se quedan en este navegador.</p>
 			{/if}
 		</section>
+		<section>
+			<h3>Arc OS</h3>
+			<p class="mut">Es opcional: puedes volver a la web de siempre cuando quieras (y entrar otra vez con OS).</p>
+			<button type="button" class="link" onclick={onleave}>Volver a la web clásica</button>
+		</section>
 		{#if admin}
 			<section>
 				<h3>Administración</h3>
@@ -95,6 +101,14 @@
 </div>
 
 <style>
+	/* Botones de la shell sin el borde ni el fondo que algunas estéticas dan a todos los botones. */
+	button {
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
 	.control {
 		position: fixed;
 		right: var(--sp-12);
@@ -109,7 +123,7 @@
 		border-radius: var(--radius);
 		box-shadow: var(--shadow-pop);
 	}
-	:global(.os-top) .control {
+	:global([data-os-bar='top']) .control {
 		top: calc(var(--os-bar-h) + var(--sp-12));
 		bottom: var(--sp-12);
 	}

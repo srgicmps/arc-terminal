@@ -36,6 +36,14 @@
 </div>
 
 <style>
+	/* Botones de la shell sin el borde ni el fondo que algunas estéticas dan a todos los botones. */
+	button {
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
 	.clock {
 		position: relative;
 	}
