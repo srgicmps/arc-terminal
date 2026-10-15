@@ -153,6 +153,13 @@
 	--os-title-fg: var(--muted); /* texto de la barra de título */
 	--os-title-fg-active: var(--fg); /* texto de la barra de título con el foco */
 	--os-snap: var(--amber-soft); /* zona donde va a encajar la ventana al soltarla */
+	--z-system: 120; /* Arc OS: arranque, bloqueo y Alt+Tab, por encima de todo el escritorio */
+	--os-sys-bg: var(--bg); /* fondo de la pantalla de inicio y de bloqueo */
+	--os-logo-big: 56px; /* logo de la pantalla de inicio */
+	--fs-clock: 72px; /* hora de la pantalla de bloqueo */
+	--os-boot-bar: 160px; /* ancho de la barra de progreso del arranque */
+	--os-lock-card: 360px; /* tarjeta de la pantalla de bloqueo */
+	--os-avatar: 56px; /* inicial del usuario en la pantalla de bloqueo */
 	/* Arc OS en el móvil (≤ 900 px): pantalla de inicio de teléfono. */
 	--os-phone-font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; /* letra del sistema del teléfono */
 	--os-phone-wall: radial-gradient(120% 70% at 20% 0%, var(--amber-soft), transparent 60%), var(--os-desk); /* fondo de pantalla */
