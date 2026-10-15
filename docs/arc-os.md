@@ -50,7 +50,7 @@ nada en los traspasos entre sesiones.
 - [x] Fondo por aspecto y fondos de tokens (sistema, estética, liso, rejilla, degradado) [OS 2] #476/#500
 - [x] Fondo propio: galería (9 incluidos, día y noche con tokens), 2 vivos (el mundo ahora, tu cielo), color, degradado, tus imágenes (IndexedDB, comprimidas, solo este navegador; rellenar, ajustar, centrar, mosaico y punto focal), por escritorio, presentación y fondo de bloqueo (`src/lib/os/system/wall/`) [OS 5] #511
 - [ ] Fondo en la pantalla de inicio del móvil con `<WallLayer />` [OS 3]
-- [ ] «Cambiar fondo…» conectado en el clic derecho del escritorio y en el Panel de control [OS 2, cuando OS 5 tenga el selector]
+- [x] «Cambiar fondo…» conectado en el clic derecho del escritorio y en el Panel de control [OS 2] #529
 - [x] Widgets movibles: reloj mundial, cotizaciones, tiempo, titulares, luz barata, Tu mañana [OS 2] #476
 - [x] Widgets del sistema (estilo DSM): estado de las fuentes, registro, datos [OS 2] #500
 - [x] Iconos en rejilla: arrastrar (solos o en grupo), casilla libre más cercana, guardados en la cuenta [OS 2] #501
@@ -59,15 +59,15 @@ nada en los traspasos entre sesiones.
 - [x] **Iconos de verdad**: un set SVG propio a color (48–64 px, sombra o brillo según el aspecto) para cada app,
       vista, carpeta y archivo. Se usa en el escritorio, Inicio, la barra, el dock, el explorador y el móvil
       (pasarlo a OS 3, OS 4 y OS 6) [OS 2] #526
-- [ ] **Carpetas** en el escritorio: nueva carpeta (clic derecho), renombrar, arrastrar iconos dentro y fuera,
+- [x] **Carpetas** en el escritorio: nueva carpeta (clic derecho), renombrar, arrastrar iconos dentro y fuera,
       abrir carpeta en una ventana con sus iconos, carpetas dentro de carpetas, eliminar a la papelera. Se guardan
-      en la cuenta. Mismo modelo que el explorador [OS 2 + OS 4]
+      en la cuenta. Mismo modelo que el explorador [OS 2 + OS 4] #529 (`src/lib/os/fs/`)
 
 ## Revisión de Decisiones 2 (main a 1440 y 390 px)
 - [x] El reloj de la bandeja salía en UTC: ahora usa la zona del navegador, y Madrid si no hay ninguna [OS 2] #501
 - [x] «5 abiertas» se leía como ventanas: ahora dice «5 bolsas abiertas» [OS 2] #501
 - [x] Iconos todavía como glifos (▦ ★ % $): va con el set SVG de «Escritorio» [OS 2] #526
-- [ ] Widgets vacíos en local: comprobar que en la web real se llenan y, si una fuente falla, poner un mensaje útil (qué falla y cuándo se vuelve a intentar) [OS 2]
+- [x] Widgets vacíos en local: comprobar que en la web real se llenan y, si una fuente falla, poner un mensaje útil (qué falla y cuándo se vuelve a intentar) [OS 2] #529 (mensaje hecho; en local salen «responde 404» porque no hay /data)
 - [ ] A 390 px sigue saliendo el escritorio de PC: lo resuelve la versión móvil (#494) [OS 3]
 
 ## Barra, Inicio y bandeja
@@ -78,7 +78,7 @@ nada en los traspasos entre sesiones.
 - [x] Panel de control: aspecto, estética, fondo, barra, widgets, avisos, cuenta y admin [OS 2] #476/#500
 - [x] Buscador (Ctrl+Espacio) con las apps [OS 2] #500
 - [x] `searchAll(q)` + `runHit(hit)`: vistas, valores, países, líderes, comandos y ajustes [OS 5] #510
-- [ ] Conectado en el buscador del escritorio [OS 2]
+- [x] Conectado en el buscador del escritorio [OS 2] #529
 
 ## Sistema
 - [x] Arranque breve (la primera vez del día) y pantalla de bloqueo, también en el móvil; Ctrl+Alt+L [OS 5] #499
@@ -87,19 +87,20 @@ nada en los traspasos entre sesiones.
 - [x] Alt+Tab visual con miniaturas [OS 5] #509
 - [x] Avisos de Arc (mercados, valores, macro…) como toasts con `notify()` [OS 5] #512
 - [x] Sonidos opcionales (Web Audio, apagados por defecto: `setSettings({ sounds })`) [OS 5] #511
-- [ ] Interruptores de «Pantalla de inicio» y «Sonidos» en Ajustes [OS 4]
+- [x] Interruptores de «Pantalla de inicio» y «Sonidos» en Ajustes [OS 4] #520
 - [x] Atajos del sistema en `shortcuts.ts` (salen en HELP) [OS 5] #499/#509
 
 ## Apps del sistema
-- [ ] Explorador de archivos al estilo de un gestor web de archivos, con papelera (mismo modelo de carpetas que el escritorio) [OS 4]
-- [ ] Panel de control en ventana, estilo DSM (reutiliza `ControlPanel.svelte`) [OS 4]
-- [ ] Centro de paquetes (activar y quitar apps y experiencias) [OS 4]
-- [ ] Notas [OS 4]
-- [ ] Calculadora [OS 4]
-- [ ] Reloj [OS 4]
-- [ ] Calendario [OS 4]
-- [ ] Monitor (recursos y fuentes) [OS 4]
-- [ ] Registros [OS 4]
+- [ ] Explorador de archivos al estilo de un gestor web de archivos, con papelera (mismo modelo de carpetas que el escritorio) [OS 4]: #517 se porta al modelo `src/lib/os/fs/` de OS 2b cuando entre
+- [x] Panel de control en ventana, estilo DSM: Ajustes con portada por categorías, lista lateral y `openApp('ajustes', '<sección>')`; el ⚙ de la barra queda como panel rápido [OS 4] #520/#531
+- [x] Centro de paquetes: instalar y quitar apps, vistas, experiencias y widgets (`arc-os-packages`, `installedApps()`) [OS 4] #524. La shell filtra Inicio, Launchpad, Actividades y buscador [OS 2] #529
+- [x] Notas [OS 4] #504
+- [x] Calculadora (normal, financiera, divisas del BCE) [OS 4] #498
+- [x] Reloj (mundo, alarmas que suenan sin abrirlo, cronómetro, temporizador) [OS 4] #498
+- [x] Calendario [OS 4] #506
+- [x] Monitor: ventanas, fuentes y gráficas de recursos en directo [OS 4] #505/#523
+- [x] Centro de registros: fuentes, avisos y sesión, con filtros y CSV [OS 4] #522
+- [x] Visor de imágenes y PDF del dispositivo [OS 4] #518
 - [x] Terminal (la barra de comandos como consola) [OS 3] #478
 - [ ] Apps de análisis: mapa operacional, grafo de entidades, expedientes, línea de tiempo y vigilancia [OS 6]
 
@@ -115,3 +116,12 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - [x] Barra de arriba (`MandoBar.svelte`): menú de apps, pestañas de ventanas, nivel de alerta global de 1 a 5 y relojes UTC y Madrid con segundos [OS 6] #503
 - [x] Nivel de alerta (`mando.ts → alertLevel`): avisos graves del muro (los P1) y el tema más cubierto de IMP; el porqué en el título [OS 6] #503
 - [x] Franja de abajo (`MandoStrip.svelte`): «ARC · USO PRIVADO», pilotos de fuentes en vivo por grupo (IMP, GEO, MERC, MACRO), fuentes que van y fecha [OS 6] #503
+
+## OS 4 · Cómo están hechas las apps del sistema
+- Cada app es un archivo `src/lib/os/apps/<id>.ts` (registro, `load` diferido) y su carpeta. Marco común
+  `kit/Tool.svelte` y `kit/store.ts` (JSON en localStorage; si la clave está en `prefs.ts`, se sincroniza con D1).
+- Lógica pura en un `.ts` con tests al lado; el estado del navegador en `.svelte.ts`.
+- Probar en local: `pnpm build`, `vite preview` y Playwright con `localStorage` `arc-shell=os`; Intro pasa la
+  pantalla de bloqueo.
+- Pendiente: la ficha de un valor (`/s?sym=`) no es una app del núcleo (`openPath` devuelve null). La prueba de humo
+  falla a veces con «Failed to fetch dynamically imported module …/nodes/0.*.js» a 390 px; al relanzar pasa.

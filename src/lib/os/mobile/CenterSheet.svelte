@@ -1,5 +1,6 @@
 <!--
-	Lo que baja desde arriba en el teléfono. «notif»: notificaciones (lo nuevo de NOVEDADES y los avisos del núcleo).
+	Lo que baja desde arriba en el teléfono. «notif»: notificaciones (las del centro de Arc OS: avisos gordos y
+	novedades; sin leer, marcadas) y los avisos del núcleo.
 	«control»: centro de control con baldosas (tema, modo Sencillo, pantalla completa, estética y volver al Terminal
 	clásico). Se cierra deslizando hacia arriba, con Esc o tocando fuera.
 -->
@@ -8,18 +9,20 @@
 	import { modo, setModo } from '#lib/modo.svelte.ts';
 	import { toggleFullscreen } from '#lib/fit.svelte.ts';
 	import { leaveOS } from '../mode.svelte.ts';
-	import type { Change } from '#lib/types.ts';
+	import type { Notice } from '../shell/notices.ts';
 
 	let {
 		kind,
-		changes = [],
+		notices = [],
+		unread = new Set<string>(),
 		notice = null,
 		now,
 		onclose,
 		onpath
 	}: {
 		kind: 'notif' | 'control';
-		changes?: Change[];
+		notices?: Notice[];
+		unread?: Set<string>;
 		notice?: string | null;
 		now: number;
 		onclose: () => void;
@@ -43,10 +46,10 @@
 	{#if kind === 'notif'}
 		<h2>Notificaciones</h2>
 		{#if notice}<div class="note"><b>Arc OS</b><span>{notice}</span></div>{/if}
-		{#each changes.slice(0, 8) as c (c.number)}
-			<button class="note" onclick={() => onpath('/novedades')}>
-				<b>Novedades <small>{ago(c.mergedAt)}</small></b>
-				<span>{c.title}</span>
+		{#each notices.slice(0, 12) as n (n.id)}
+			<button class="note" class:new={unread.has(n.id)} onclick={() => n.href && onpath(n.href)}>
+				<b>{n.kind === 'aviso' ? 'Aviso' : 'Novedad'} <small>{ago(n.time)}</small></b>
+				<span>{n.title}</span>
 			</button>
 		{:else}
 			{#if !notice}<p class="empty">No hay notificaciones.</p>{/if}
@@ -186,5 +189,15 @@
 		.sheet {
 			animation: none;
 		}
+	}
+	.note.new b::before {
+		content: '';
+		display: inline-block;
+		width: var(--sp-6);
+		height: var(--sp-6);
+		margin-right: var(--sp-6);
+		border-radius: 50%;
+		background: var(--amber);
+		vertical-align: middle;
 	}
 </style>

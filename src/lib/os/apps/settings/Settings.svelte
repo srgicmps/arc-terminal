@@ -1,190 +1,259 @@
 <!--
-	Ajustes de Arc OS: todo lo que se puede cambiar, en un sitio, con las secciones a la izquierda (arriba, en
-	estrecho). No duplica nada: usa los mismos selectores y funciones que la cabecera de la web (Apariencia, Tu sitio,
-	MODO) y que el Panel de control de Arc OS (aspecto, fondo, barra y widgets, de OS 2). Todo se guarda en la cuenta.
+	Ajustes de Arc OS, como el Panel de control de un NAS: en la portada, iconos por categorías y un buscador que
+	encuentra secciones y ajustes sueltos; al entrar en una, la lista de todas a la izquierda y su contenido.
+	En estrecho (≤ 600 px) son dos pantallas: la lista y la sección, con «‹» para volver. Esc vuelve a la portada.
+	Las secciones están en sections.ts y su contenido en Pane.svelte. openApp('ajustes', '<id>') abre una directa.
 -->
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import PlacePicker from '../../../components/PlacePicker.svelte';
-	import StylePicker from '../../../components/StylePicker.svelte';
-	import Seg from '../../../components/ui/Seg.svelte';
-	import { cloud } from '../../../cloud.svelte.ts';
-	import { takesAccent } from '../../../estilos.ts';
-	import { MODOS, modo, setModo } from '../../../modo.svelte.ts';
-	import { keyJoin, SHORTCUTS, type Shortcut } from '../../../shortcuts.ts';
-	import { ACCENTS, DENSITIES, setAccent, setDensity, taste } from '../../../taste.svelte.ts';
-	import { setTheme, theme, type ThemeMode } from '../../../theme.svelte.ts';
-	import { setTitleLang, titles, type TitleLang } from '../../../titles.svelte.ts';
-	import { leaveOS } from '../../mode.svelte.ts';
-	import { APPS, newDesk, openApp, os } from '../../os.svelte.ts';
-	import { lock, setSettings, sys } from '../../system/system.svelte.ts';
-	import { setBar, setWallpaper, setWidgets, shell, WALLPAPERS, type Wallpaper } from '../../shell/shell.svelte.ts';
-	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from '../../shell/widgets.ts';
-	import { findApp, type AppProps } from '../../apps.ts';
+	import { tick, untrack } from 'svelte';
+	import Search from '../../../components/ui/Search.svelte';
+	import { isShortcut } from '../../../shortcuts.ts';
+	import type { AppProps } from '../../apps.ts';
+	import { os, persist } from '../../os.svelte.ts';
+	import { findWin } from '../../wm.ts';
 	import Tool from '../kit/Tool.svelte';
+	import Pane from './Pane.svelte';
+	import { CATEGORIES, findSection, parseSection, searchSettings, SECTIONS, type SectionId } from './sections.ts';
 
 	let { win }: AppProps = $props();
 
-	const SECTIONS = [
-		['apariencia', 'Apariencia', '◐'],
-		['escritorio', 'Escritorio', '▦'],
-		['sistema', 'Sistema', '⏻'],
-		['avisos', 'Avisos', '◬'],
-		['cuenta', 'Cuenta y modo', '◉'],
-		['region', 'Idioma y región', '◍'],
-		['atajos', 'Atajos de teclado', '⌨'],
-		['acerca', 'Acerca de', 'ⓘ']
-	] as const;
-	type Section = (typeof SECTIONS)[number][0];
-	let section = $state<Section>('apariencia');
+	/** null: la portada. */
+	let section = $state<SectionId | null>(null);
+	let query = $state('');
+	let root: HTMLDivElement;
 
-	const THEMES: { value: ThemeMode; label: string }[] = [
-		{ value: 'auto', label: 'Automático' },
-		{ value: 'light', label: 'Día' },
-		{ value: 'dark', label: 'Noche' }
-	];
-	const LANGS: { value: TitleLang; label: string }[] = [
-		{ value: 'es', label: 'Español (traducidos)' },
-		{ value: 'en', label: 'Idioma original' }
-	];
+	// La ruta de la ventana (openApp('ajustes', 'apariencia')) dice a qué sección ir; se lee y se borra, para que
+	// abrirla otra vez con la misma sección vuelva a funcionar.
+	$effect(() => {
+		const path = findWin(os.state, win)?.path;
+		if (!path) return;
+		untrack(() => {
+			const s = parseSection(path);
+			if (s) go(s);
+			const w = findWin(os.state, win);
+			if (w) delete w.path;
+			persist();
+		});
+	});
 
-	const current = $derived(shell.widgets ?? defaultWidgets(os.area.w, shell.skin));
-	const has = (k: WidgetKind) => current.some((w) => w.kind === k);
-	const flip = (k: WidgetKind) => setWidgets(has(k) ? removeWidget(current, k) : addWidget(current, k, os.area.w));
+	const bySection = (cat: string) => SECTIONS.filter((s) => s.cat === cat);
+	const hits = $derived(searchSettings(query));
+	const current = $derived(section ? findSection(section) : undefined);
 
-	let perm = $state<NotificationPermission | 'none'>('none');
-	onMount(() => (perm = 'Notification' in window ? Notification.permission : 'none'));
-	const ask = async () => (perm = await Notification.requestPermission());
+	async function go(s: SectionId | null) {
+		const from = section;
+		section = s;
+		await tick();
+		// Al volver a la portada, el foco al icono de donde venías; al entrar, al título de la sección.
+		const target = s ? root?.querySelector<HTMLElement>('.detail h2') : from ? root?.querySelector<HTMLElement>(`[data-sec='${from}']`) : null;
+		target?.focus({ preventScroll: true });
+		root?.closest('[data-ui="os-tool"]')?.querySelector('.main')?.scrollTo(0, 0);
+	}
 
-	/** Ajustes de sistema de OS 5 (system.svelte.ts): salen los que existan. */
-	const SYS_LABELS: Record<string, string> = { boot: 'Pantalla de inicio la primera vez del día', sounds: 'Sonidos del sistema (muy bajos)' };
-
-	const groups = [...new Set(SHORTCUTS.map((s) => s.group))];
-	const tools = APPS.filter((a) => a.kind === 'herramienta').length;
+	function onkeydown(e: KeyboardEvent) {
+		if (e.defaultPrevented || !section || !isShortcut(e, 'os-settings-home')) return;
+		const t = e.target as HTMLElement;
+		if (t.closest('input, textarea, select, [role="radiogroup"]')) return;
+		e.preventDefault();
+		go(null);
+	}
 </script>
 
 <Tool {win}>
-	<div class="wrap">
-		<div class="set">
-			<nav aria-label="Secciones de los ajustes">
-				{#each SECTIONS as [id, label, icon] (id)}
-					<button type="button" aria-current={section === id} onclick={() => (section = id)}><span aria-hidden="true">{icon}</span> {label}</button>
-				{/each}
-			</nav>
-			<div class="pane">
-				{#if section === 'apariencia'}
-					<h2>Apariencia</h2>
-					<dl>
-						<dt>Tema</dt>
-						<dd><Seg label="Tema" options={THEMES} bind:value={() => theme.mode, setTheme} /></dd>
-						<dt>Acento</dt>
-						<dd>
-							{#if takesAccent(taste.style)}<Seg label="Color de acento" options={ACCENTS} bind:value={() => taste.accent, setAccent} />
-							{:else}<span class="mut">Esta estética lleva su propio color.</span>{/if}
-						</dd>
-						<dt>Densidad</dt>
-						<dd><Seg label="Densidad" options={DENSITIES} bind:value={() => taste.density, setDensity} /></dd>
-					</dl>
-					<h3>Estética</h3>
-					<p class="mut">Colores y letra del contenido de las apps (el escritorio de Arc OS tiene su propio aspecto).</p>
-					<StylePicker />
-				{:else if section === 'escritorio'}
-					<h2>Escritorio</h2>
-					<h3>Fondo</h3>
-					<Seg label="Fondo del escritorio" options={WALLPAPERS.map((w) => ({ value: w.id, label: w.label }))} bind:value={() => shell.wallpaper, (v: Wallpaper) => setWallpaper(v)} />
-					{#if shell.skin === 'windows'}
-						<h3>Barra de tareas</h3>
-						<Seg label="Barra de tareas" options={[{ value: 'bottom', label: 'Abajo' }, { value: 'top', label: 'Arriba' }]} bind:value={() => shell.bar, setBar} />
-					{/if}
-					<h3>Widgets</h3>
-					<div class="chips" role="group" aria-label="Widgets del escritorio">
-						{#each WIDGET_KINDS as k (k)}<button type="button" aria-pressed={has(k)} onclick={() => flip(k)}>{WIDGET_LABEL[k]}</button>{/each}
-					</div>
-					<h3>Escritorios virtuales</h3>
-					<p>{os.state.desks.length} · <button type="button" class="link" onclick={() => newDesk()}>Añadir escritorio</button></p>
-				{:else if section === 'sistema'}
-					<h2>Sistema</h2>
-					{#each Object.entries(SYS_LABELS) as [k, label] (k)}
-						{#if k in sys.settings}
-							<label class="check"
-								><input type="checkbox" checked={!!(sys.settings as unknown as Record<string, boolean>)[k]} onchange={(e) => setSettings({ [k]: e.currentTarget.checked } as Parameters<typeof setSettings>[0])} />
-								{label}</label
-							>
-						{/if}
-					{/each}
-					<p><button type="button" onclick={lock}>Bloquear la pantalla</button></p>
-					{#if findApp('wallpaper')}<p><button type="button" onclick={() => openApp('wallpaper')}>Fondo de pantalla…</button></p>{/if}
-				{:else if section === 'avisos'}
-					<h2>Avisos</h2>
-					<h3>Al móvil</h3>
-					<p class="mut">Temas, nivel, tope diario, tus valores, silencio y «Tu mañana».</p>
-					<p><button type="button" onclick={() => openApp('avisos')}>Abrir AVISOS</button></p>
-					<h3>En este ordenador</h3>
-					<p class="mut">Las alarmas del Reloj y el temporizador avisan también con una notificación del sistema.</p>
-					{#if perm === 'granted'}<p>Notificaciones del sistema: permitidas.</p>
-					{:else if perm === 'denied'}<p class="mut">Notificaciones del sistema bloqueadas: se cambian en los ajustes del navegador.</p>
-					{:else if perm === 'default'}<p><button type="button" onclick={ask}>Permitir notificaciones del sistema</button></p>
-					{:else}<p class="mut">Este navegador no tiene notificaciones del sistema.</p>{/if}
-				{:else if section === 'cuenta'}
-					<h2>Cuenta y modo</h2>
-					{#if cloud.user}
-						<p>Tu cuenta: <b>{cloud.user}</b>. Tus ajustes, notas, alarmas y escritorios se sincronizan entre tus dispositivos.</p>
-					{:else}
-						<p class="mut">Sin cuenta: todo se queda en este navegador. En HELP puedes llevarte los ajustes a otro dispositivo con un enlace.</p>
-					{/if}
-					<h3>Modo</h3>
-					<Seg label="Modo" options={MODOS} bind:value={() => modo.value, setModo} />
-					<p class="mut">Sencillo: lo esencial, letra mayor y explicaciones. Terminal: todo, denso.</p>
-					<h3>Arc OS</h3>
-					<p class="mut">Es opcional: puedes volver a la web de siempre cuando quieras.</p>
-					<p><button type="button" onclick={leaveOS}>Volver a la web clásica</button></p>
-				{:else if section === 'region'}
-					<h2>Idioma y región</h2>
-					<h3>Tu sitio</h3>
-					<p class="mut">Para el tiempo, la hora local y «Tu mañana».</p>
-					<PlacePicker />
-					<h3>Titulares</h3>
-					<Seg label="Idioma de los titulares" options={LANGS} bind:value={() => titles.lang, setTitleLang} />
-					<p class="mut">La web está en español; las cifras y fechas, con el formato de España.</p>
-				{:else if section === 'atajos'}
-					<h2>Atajos de teclado</h2>
-					{#each groups as g (g)}
-						<h3>{g}</h3>
-						<dl class="keys">
-							{#each (SHORTCUTS as readonly Shortcut[]).filter((s) => s.group === g) as s (s.id)}
-								<dt>{#each s.keys as k, i (i)}{#if i}{keyJoin(s)}{/if}<kbd>{k}</kbd>{/each}{#if s.how} <span class="mut">{s.how}</span>{/if}</dt>
-								<dd>{s.action}</dd>
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="wrap" bind:this={root} {onkeydown}>
+		{#if !section}
+			<div class="home">
+				<Search label="Buscar en los ajustes" placeholder="Buscar: tema, widgets, sonidos…" bind:value={query} />
+				{#if query.trim()}
+					{#if hits.length}
+						<ul class="hits">
+							{#each hits as h, i (i)}
+								<li>
+									<button type="button" onclick={() => go(h.section.id as SectionId)}>
+										<span class="ico" aria-hidden="true">{h.section.icon}</span>
+										<span class="txt"><b>{h.item ?? h.section.label}</b><span class="sub">{h.item ? h.section.label : h.section.desc}</span></span>
+									</button>
+								</li>
 							{/each}
-						</dl>
-					{/each}
+						</ul>
+					{:else}
+						<p class="empty">Nada con «{query}».</p>
+					{/if}
 				{:else}
-					<h2>Acerca de Arc OS</h2>
-					<p>Arc Terminal como un sistema operativo: escritorios, ventanas y {APPS.length} apps ({tools} del sistema).</p>
-					<p class="mut">Inspirado en OS.js y en los escritorios de siempre. Todo funciona en el navegador; tus datos van solo a tu cuenta.</p>
-					<p><button type="button" onclick={() => openApp('novedades')}>Novedades</button> <button type="button" onclick={() => openApp('help')}>Ayuda</button></p>
+					{#each CATEGORIES as c (c.id)}
+						<section aria-labelledby="cat-{win}-{c.id}">
+							<h3 id="cat-{win}-{c.id}">{c.label}</h3>
+							<ul class="tiles">
+								{#each bySection(c.id) as s (s.id)}
+									<li>
+										<button type="button" class="tile" data-sec={s.id} title={s.desc} onclick={() => go(s.id)}>
+											<span class="ico" aria-hidden="true">{s.icon}</span>
+											<span class="txt"><b>{s.label}</b><span class="sub">{s.desc}</span></span>
+										</button>
+									</li>
+								{/each}
+							</ul>
+						</section>
+					{/each}
 				{/if}
 			</div>
-		</div>
+		{:else}
+			<div class="set">
+				<nav aria-label="Secciones de los ajustes">
+					<button type="button" class="home-btn" onclick={() => go(null)}><span aria-hidden="true">‹</span> Panel de control</button>
+					{#each CATEGORIES as c (c.id)}
+						<span class="cat">{c.label}</span>
+						{#each bySection(c.id) as s (s.id)}
+							<button type="button" aria-current={section === s.id} onclick={() => go(s.id)}><span class="g" aria-hidden="true">{s.icon}</span> {s.label}</button>
+						{/each}
+					{/each}
+				</nav>
+				<div class="detail">
+					<button type="button" class="back" onclick={() => go(null)} aria-label="Volver a todos los ajustes"><span aria-hidden="true">‹</span> Ajustes</button>
+					{#if current}<span class="crumb">{CATEGORIES.find((c) => c.id === current.cat)?.label}</span>{/if}
+					<Pane {section} />
+				</div>
+			</div>
+		{/if}
 	</div>
 </Tool>
 
 <style>
 	.wrap {
 		container-type: inline-size;
-		height: 100%;
+		min-height: 100%;
 	}
 
+	/* Portada */
+	.home {
+		display: grid;
+		gap: var(--sp-8);
+		align-content: start;
+	}
+
+	h3,
+	.cat,
+	.crumb {
+		font-size: var(--fs-title);
+		letter-spacing: var(--track-caps);
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	h3 {
+		margin: var(--sp-12) 0 var(--sp-4);
+		padding-bottom: var(--sp-4);
+		border-bottom: var(--border);
+	}
+
+	ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.tiles {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+		gap: var(--sp-4);
+	}
+
+	button {
+		font: inherit;
+		color: var(--fg);
+		cursor: pointer;
+	}
+
+	.tile,
+	.hits button {
+		display: flex;
+		align-items: center;
+		gap: var(--sp-10);
+		width: 100%;
+		min-height: var(--touch);
+		padding: var(--sp-8);
+		text-align: left;
+		background: none;
+		border: var(--hair) solid transparent;
+		border-radius: var(--radius-s);
+	}
+
+	.tile {
+		flex-direction: column;
+		text-align: center;
+		padding: var(--sp-12) var(--sp-8);
+	}
+
+	.tile:hover,
+	.hits button:hover,
+	.tile:focus-visible,
+	.hits button:focus-visible {
+		background: var(--raise);
+		border-color: var(--line);
+	}
+
+	.ico {
+		display: grid;
+		place-items: center;
+		flex: none;
+		width: 40px;
+		height: 40px;
+		font-size: var(--fs-xl);
+		color: var(--os-icon-fg, var(--amber));
+		background: var(--os-icon-bg, var(--raise));
+		border: var(--border);
+		border-radius: var(--os-icon-radius, var(--radius-s));
+	}
+
+	.hits .ico {
+		width: 28px;
+		height: 28px;
+		font-size: var(--fs-l);
+	}
+
+	.txt {
+		display: grid;
+		gap: var(--sp-2);
+		min-width: 0;
+	}
+
+	.txt b {
+		font-family: var(--sans);
+		font-weight: var(--fw-medium);
+	}
+
+	.sub {
+		font-family: var(--sans);
+		font-size: var(--fs-s);
+		color: var(--muted);
+	}
+
+	.tile .sub {
+		display: none;
+	}
+
+	.hits {
+		display: grid;
+		gap: var(--sp-2);
+	}
+
+	.empty {
+		color: var(--muted);
+	}
+
+	/* Una sección: lista lateral + contenido */
 	.set {
 		display: grid;
-		grid-template-columns: 190px 1fr;
+		grid-template-columns: 210px 1fr;
 		gap: var(--sp-16);
-		height: 100%;
+		min-height: 100%;
 	}
 
 	nav {
 		display: grid;
 		align-content: start;
-		gap: var(--sp-2);
+		gap: var(--sp-1);
 		border-right: var(--border);
 		padding-right: var(--sp-12);
 	}
@@ -193,9 +262,23 @@
 		height: var(--control-h);
 		padding: 0 var(--sp-8);
 		text-align: left;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 		background: none;
 		border: 0;
 		border-radius: var(--radius-s);
+	}
+
+	nav button:hover {
+		background: var(--raise);
+	}
+
+	nav .g {
+		display: inline-block;
+		width: var(--sp-16);
+		color: var(--amber);
+		text-align: center;
 	}
 
 	nav [aria-current='true'] {
@@ -203,128 +286,75 @@
 		color: var(--amber);
 	}
 
-	.pane {
+	.home-btn {
+		color: var(--amber);
+		margin-bottom: var(--sp-4);
+	}
+
+	.cat {
+		margin: var(--sp-10) 0 var(--sp-2);
+		padding: 0 var(--sp-8);
+	}
+
+	.detail {
 		min-width: 0;
 	}
 
-	h2 {
-		margin: 0 0 var(--sp-12);
-		font-family: var(--sans);
-		font-size: var(--fs-xl);
-		font-weight: var(--fw-medium);
+	.detail :global(h2) {
+		outline: none;
 	}
 
-	h3 {
-		margin: var(--sp-16) 0 var(--sp-6);
-		font-size: var(--fs-title);
-		letter-spacing: var(--track-caps);
-		text-transform: uppercase;
-		color: var(--muted);
-	}
-
-	p {
-		margin: var(--sp-6) 0;
-	}
-
-	.mut {
-		color: var(--muted);
-		font-family: var(--sans);
-	}
-
-	button {
+	.back {
+		display: none;
 		height: var(--control-h);
-		padding: 0 var(--sp-10);
-		font: inherit;
-		color: var(--fg);
-		background: var(--raise);
-		border: var(--border);
-		border-radius: var(--radius-s);
-		cursor: pointer;
-	}
-
-	.link {
-		height: auto;
 		padding: 0;
-		border: 0;
+		margin-bottom: var(--sp-8);
 		background: none;
+		border: 0;
 		color: var(--amber);
 	}
 
-	dl {
-		display: grid;
-		grid-template-columns: auto 1fr;
-		gap: var(--sp-8) var(--sp-16);
-		align-items: center;
-		margin: 0;
+	.crumb {
+		display: block;
+		margin-bottom: var(--sp-4);
 	}
 
-	dt {
-		color: var(--muted);
-	}
+	/* Estrecho: la portada es una lista y la sección, otra pantalla con «‹ Ajustes» */
+	@container (max-width: 600px) {
+		.tiles {
+			grid-template-columns: 1fr;
+			gap: 0;
+		}
 
-	dd {
-		margin: 0;
-	}
+		.tile {
+			flex-direction: row;
+			text-align: left;
+			padding: var(--sp-8);
+			border-bottom-color: var(--line);
+		}
 
-	.keys {
-		grid-template-columns: minmax(140px, auto) 1fr;
-		align-items: baseline;
-	}
+		.tile .sub {
+			display: block;
+		}
 
-	.keys dt {
-		color: var(--fg);
-	}
+		.ico {
+			width: 32px;
+			height: 32px;
+			font-size: var(--fs-l);
+		}
 
-	kbd {
-		padding: 0 var(--sp-4);
-		border: var(--border);
-		border-radius: var(--radius-s);
-		background: var(--raise);
-		font-family: var(--mono);
-		font-size: var(--fs-s);
-	}
-
-	.check {
-		display: flex;
-		align-items: center;
-		gap: var(--sp-8);
-		margin: var(--sp-6) 0;
-	}
-
-	.chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--sp-4);
-	}
-
-	[aria-pressed='true'] {
-		color: var(--amber);
-		border-color: var(--amber-dim);
-		background: var(--amber-soft);
-	}
-
-	@container (max-width: 560px) {
 		.set {
 			grid-template-columns: 1fr;
-			grid-template-rows: auto 1fr;
-			height: auto;
 		}
 
 		nav {
-			display: flex;
-			overflow-x: auto;
-			border-right: 0;
-			border-bottom: var(--border);
-			padding: 0 0 var(--sp-6);
+			display: none;
 		}
 
-		nav button {
-			flex: none;
-			white-space: nowrap;
-		}
-
-		.keys {
-			grid-template-columns: 1fr;
+		.back {
+			display: inline-flex;
+			align-items: center;
+			gap: var(--sp-4);
 		}
 	}
 </style>

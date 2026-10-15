@@ -1,21 +1,34 @@
 <!--
 	Widgets de la pantalla de inicio, entre los iconos: «Hoy» (grande: fecha, hora y dos datos), «Mundo» (relojes) y
-	«Mercados» (dos cifras). Los datos son las respuestas rápidas de la barra (src/lib/bar/answers.ts): se descargan
+	«Mercados», «Cripto», «Bonos», «Macro» y «Gasolina» (dos cifras cada uno) y «Avisos» (lo último del centro de
+	notificaciones). Los datos son las respuestas rápidas de la barra (src/lib/bar/answers.ts): se descargan
 	solos. Tocar un dato abre su vista.
 -->
 <script lang="ts">
 	import { answerFor, answerNeeds, type Answer } from '#lib/bar/answers.ts';
 	import { barData, loadBarData } from '#lib/bar/bardata.svelte.ts';
-	import type { WidgetId } from './home.ts';
+	import { WIDGETS, type WidgetId } from './home.ts';
+	import type { Notice } from '../shell/notices.ts';
 
-	let { id, now, onopen }: { id: WidgetId; now: number; onopen: (code: string) => void } = $props();
+	let {
+		id,
+		now,
+		notices = [],
+		onopen,
+		onpath
+	}: { id: WidgetId; now: number; notices?: Notice[]; onopen: (code: string) => void; onpath?: (path: string) => void } = $props();
 
 	const ASK: Record<WidgetId, string[]> = {
 		hoy: ['euribor', 'prima'],
 		mundo: ['hora nueva york', 'hora tokio'],
-		mercados: ['btc', 'prima']
+		mercados: ['btc', 'prima'],
+		cripto: ['btc', 'eth'],
+		bonos: ['us10y', 'prima'],
+		macro: ['paro', 'ipc'],
+		gasolina: ['gasolina', 'diesel'],
+		avisos: []
 	};
-	const TITLE: Record<WidgetId, string> = { hoy: 'Hoy', mundo: 'Mundo', mercados: 'Mercados' };
+	const TITLE = $derived(WIDGETS.find((w) => w.id === id)?.name ?? id);
 
 	$effect(() => loadBarData(ASK[id].flatMap((q) => answerNeeds(q))));
 	const items = $derived(ASK[id].map((q) => answerFor(q, { get: (n) => barData[n], now })).filter((a): a is Answer => !!a));
@@ -30,7 +43,7 @@
 	};
 </script>
 
-<section class="w {id}" aria-label={TITLE[id]}>
+<section class="w {id}" aria-label={TITLE}>
 	{#if id === 'hoy'}
 		<div class="head">
 			<span class="day">{day}</span>
@@ -44,8 +57,18 @@
 				</button>
 			{/each}
 		</div>
+	{:else if id === 'avisos'}
+		<h3>{TITLE}</h3>
+		{#each notices.slice(0, 2) as n (n.id)}
+			<button class="row s" onclick={() => n.href && onpath?.(n.href)}>
+				<span class="k">{n.kind === 'aviso' ? 'Aviso' : 'Novedad'}</span>
+				<span class="v note">{n.title}</span>
+			</button>
+		{:else}
+			<p class="none">Nada nuevo.</p>
+		{/each}
 	{:else}
-		<h3>{TITLE[id]}</h3>
+		<h3>{TITLE}</h3>
 		{#each items as a (a.code)}
 			<button class="row s" disabled={!a.open} onclick={() => a.open && onopen(a.open)}>
 				<span class="k">{a.code}</span>
@@ -145,5 +168,18 @@
 	}
 	.s .v {
 		font-size: var(--fs-m);
+	}
+	.v.note {
+		display: -webkit-box;
+		font-size: var(--fs-s);
+		white-space: normal;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+	}
+	.none {
+		margin: 0;
+		color: var(--muted);
+		font-size: var(--fs-s);
 	}
 </style>

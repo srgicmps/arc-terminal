@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { APPS } from '../apps.ts';
-import { arrange, folderName, place, rename, takeOut, badges, badgeText, CELLS, dockApps, drop, findApps, gesture, layout, readSeen, touch, used } from './home.ts';
+import { addWidget, arrange, badgesFor, badgeText, CELLS, dockApps, drop, folderName, gesture, layout, noticesOf, place, removeWidget, rename, takeOut, touch, used } from './home.ts';
 
 describe('Modo OS en el móvil', () => {
 	it('dock de 4 con la Terminal y sin repetir en las páginas', () => {
@@ -16,23 +16,33 @@ describe('Modo OS en el móvil', () => {
 		expect(used(pages[0])).toBe(CELLS);
 		expect(pages[0].filter((c) => c.kind === 'widget').length).toBe(3);
 	});
-	it('Spotlight busca sin tildes, primero lo exacto', () => {
-		expect(findApps(APPS, 'eco')[0].id).toBe('eco');
-		expect(findApps(APPS, 'periodico').length).toBeGreaterThan(0);
-		expect(findApps(APPS, '')).toEqual([]);
-	});
 	it('multitarea: la última, delante, como mucho 4', () => {
 		expect(touch(['a', 'b', 'c', 'd'], 'e')).toEqual(['e', 'a', 'b', 'c']);
 		expect(touch(['a', 'b'], 'b')).toEqual(['b', 'a']);
 		expect(drop(['a', 'b'], 'a')).toEqual(['b']);
 	});
-	it('insignias de NOVEDADES desde la última vez', () => {
-		const now = Date.parse('2026-10-15T12:00:00Z');
-		const changes = [{ mergedAt: '2026-10-15T11:00:00Z' }, { mergedAt: '2026-10-13T11:00:00Z' }];
-		expect(badges(changes, {}, now)).toEqual({ novedades: 1 });
-		expect(badges(changes, { novedades: now }, now)).toEqual({});
+	it('insignias: lo no leído, en la app de su enlace, y todos los avisos en AVISOS', () => {
+		const appOf = (h: string) => h.slice(1);
+		const list = [
+			{ id: 'a', kind: 'aviso', href: '/geo' },
+			{ id: 'b', kind: 'novedad', href: '/novedades' },
+			{ id: 'c', kind: 'novedad', href: '/novedades' }
+		];
+		expect(badgesFor(list, ['c'], appOf)).toEqual({ geo: 1, avisos: 1, novedades: 1 });
+		expect(noticesOf(list, 'avisos', appOf)).toEqual(['a']);
+		expect(noticesOf(list, 'novedades', appOf)).toEqual(['b', 'c']);
 		expect(badgeText(120)).toBe('99+');
-		expect(readSeen('x')).toEqual({});
+	});
+	it('widgets: se quitan, se ponen y no pasan de 16 casillas', () => {
+		let a = arrange(null, APPS.map((x) => x.id));
+		expect(a.widgets).toEqual(['hoy', 'mundo', 'mercados']);
+		a = addWidget(a, 'cripto');
+		expect(addWidget(a, 'bonos')).toBe(a);
+		expect(layout(APPS, a).every((p) => used(p) <= CELLS)).toBe(true);
+		a = removeWidget(removeWidget(removeWidget(removeWidget(a, 'hoy'), 'mundo'), 'mercados'), 'cripto');
+		expect(layout(APPS, a)[0].every((c) => c.kind !== 'widget')).toBe(true);
+		expect(used(layout(APPS, a)[0])).toBe(CELLS);
+		expect(arrange(JSON.stringify({ ...a, widgets: ['x', 'macro'] }), ['eco']).widgets).toEqual(['macro']);
 	});
 	it('gestos', () => {
 		const size = { w: 390, h: 844 };
@@ -45,7 +55,7 @@ describe('Modo OS en el móvil', () => {
 	});
 	it('carpetas: juntar, añadir, sacar y deshacer', () => {
 		let a = arrange(null, ['a', 'b', 'c', 'd', 'top'], ['top']);
-		expect(a).toEqual({ items: ['a', 'b', 'c', 'd'], dock: ['top'] });
+		expect(a).toMatchObject({ items: ['a', 'b', 'c', 'd'], dock: ['top'] });
 		a = place(a, { id: 'c' }, { kind: 'merge', key: 'a' }, 'Mercados', 'f1');
 		expect(a.items).toEqual([{ id: 'f1', name: 'Mercados', apps: ['a', 'c'] }, 'b', 'd']);
 		a = place(a, { id: 'top' }, { kind: 'merge', key: 'f1' });
@@ -61,7 +71,7 @@ describe('Modo OS en el móvil', () => {
 		let a = arrange(null, ['a', 'b', 'c', 'w', 'x', 'y', 'z'], ['w', 'x', 'y', 'z']);
 		expect(place(a, { id: 'a' }, { kind: 'dock', index: 0 })).toBe(a);
 		a = place(a, { id: 'w' }, { kind: 'before', key: 'a' });
-		expect(a).toEqual({ items: ['w', 'a', 'b', 'c'], dock: ['x', 'y', 'z'] });
+		expect(a).toMatchObject({ items: ['w', 'a', 'b', 'c'], dock: ['x', 'y', 'z'] });
 		a = place(a, { id: 'c' }, { kind: 'dock', index: 1 });
 		expect(a.dock).toEqual(['x', 'c', 'y', 'z']);
 		a = place(a, { id: 'b' }, { kind: 'merge', key: 'w' }, 'Carpeta', 'f');
