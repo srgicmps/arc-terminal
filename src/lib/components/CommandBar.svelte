@@ -16,6 +16,7 @@
 		canonical,
 		findCommand,
 		historyOptions,
+		historyStep,
 		pushHistory,
 		readHistory,
 		resolveInput,
@@ -25,6 +26,7 @@
 		type Option
 	} from '#lib/cmdline.ts';
 	import { argOptions } from '#lib/argcomplete.ts';
+	import { addFav, favOptions, parseFav, readFavs, removeFav, writeFavs } from '#lib/bar/favs.ts';
 	import { parseConversion } from '#lib/calc.ts';
 	import { fxLive, loadFxRates } from '#lib/fxlive.svelte.ts';
 	import type { Dataset } from '#lib/data.ts';
@@ -60,6 +62,12 @@
 	let input: HTMLInputElement;
 	// Últimos comandos ejecutados: se leen de localStorage al enfocar la barra (nunca al prerenderizar).
 	let recent = $state<string[]>([]);
+	// ↑ con la barra vacía recorre el historial como en un terminal: posición actual (−1, sin recorrerlo).
+	let histIdx = $state(-1);
+	// Favoritos («fav ECO TIPOS», «1»), también de localStorage.
+	let favs = $state<string[]>([]);
+	// Una línea de respuesta bajo la barra («Guardado como favorito 2»).
+	let notice = $state('');
 
 	// Índice de búsqueda (static/data/search.json). null hasta que se enfoca la barra la primera vez: se
 	// pide en ese momento (Vite lo deja en un trozo aparte), no al cargar la página. Va con su propio
@@ -85,7 +93,9 @@
 
 	// Con la barra vacía, el historial; al escribir, las sugerencias y debajo los resultados de búsqueda.
 	// Tras un comando y un espacio («LIDER », «PAIS ale»), las opciones de su argumento.
-	const suggestions = $derived(value.trim() ? (argOptions(value) ?? suggest(value, ALL, 8, fxLive)) : historyOptions(recent));
+	const suggestions = $derived(
+		value.trim() ? (favOptions(value, favs) ?? argOptions(value) ?? suggest(value, ALL, 8, fxLive)) : historyOptions(recent)
+	);
 	// M46: al escribir «100 USD EUR», se descargan los cambios del BCE (una sola vez).
 	$effect(() => {
 		if (parseConversion(value)) loadFxRates();
@@ -104,10 +114,42 @@
 		open = false;
 		selected = -1;
 		moved = false;
+		histIdx = -1;
 		input.blur();
 	}
 
+	/** «fav …» y los números: guarda, quita o abre un favorito. true si lo ha atendido. */
+	function runFav(raw: string): boolean {
+		const a = parseFav(raw);
+		if (!a) return false;
+		favs = readFavs();
+		if (a.kind === 'open') {
+			const entry = favs[a.n - 1];
+			if (!entry) return false;
+			run(entry);
+			return true;
+		}
+		if (a.kind === 'add') {
+			const { list, n } = addFav(favs, a.entry);
+			favs = list;
+			writeFavs(list);
+			notice = n ? `Favorito ${n}: ${a.entry} · escribe ${n} para abrirlo` : `Ya tienes 9 favoritos: quita uno con «fav -1»`;
+		} else if (a.kind === 'remove') {
+			favs = removeFav(favs, a.n);
+			writeFavs(favs);
+			notice = `Quitado el favorito ${a.n}`;
+		} else {
+			// «fav» a secas: la lista se ve en las sugerencias; Intro no hace nada más.
+			return true;
+		}
+		value = '';
+		open = false;
+		return true;
+	}
+
 	function run(raw: string) {
+		notice = '';
+		if (runFav(raw)) return;
 		// M46: una cuenta o una conversión no abren nada; la cuenta deja su resultado para seguir calculando.
 		const calc = calcInput(raw, fxLive);
 		if (calc) {
@@ -126,7 +168,17 @@
 
 	function onkeydown(e: KeyboardEvent) {
 		const n = options.length;
-		if (e.key === 'ArrowDown' && n) {
+		// ↑ con la barra vacía (o recorriendo ya el historial) trae el comando anterior; ↓, el siguiente.
+		const browsing = histIdx >= 0 && value === recent[histIdx];
+		if ((e.key === 'ArrowUp' && (!value || browsing)) || (e.key === 'ArrowDown' && browsing)) {
+			e.preventDefault();
+			const step = historyStep(recent, browsing ? histIdx : -1, e.key === 'ArrowUp' ? 1 : -1);
+			histIdx = step.idx;
+			value = step.value;
+			open = false;
+			moved = false;
+			selected = -1;
+		} else if (e.key === 'ArrowDown' && n) {
 			e.preventDefault();
 			open = true;
 			moved = true;
@@ -208,6 +260,8 @@
 		bind:this={input}
 		bind:value
 		oninput={() => {
+			histIdx = -1;
+			notice = '';
 			open = true;
 			moved = false;
 			selected = options.length ? 0 : -1;
@@ -216,6 +270,7 @@
 		onfocus={() => {
 			loadIndex();
 			recent = readHistory();
+			favs = readFavs();
 			open = true;
 			moved = false;
 			selected = -1;
@@ -223,6 +278,7 @@
 		onblur={() =>
 			setTimeout(() => {
 				open = false;
+				notice = '';
 				ui.sheet = false;
 			}, 120)}
 		type="text"
@@ -276,6 +332,8 @@
 				{/if}
 			{/each}
 		</ul>
+	{:else if notice}
+		<p class="notice" role="status">{notice}</p>
 	{/if}
 </form>
 
@@ -366,6 +424,27 @@
 		border-top-color: var(--amber);
 		border-bottom-color: var(--line);
 		max-height: 50vh;
+	}
+
+	/* Respuesta de la barra: una línea, con el mismo marco que las sugerencias. */
+	.notice {
+		position: absolute;
+		left: calc(-1 * var(--hair));
+		right: calc(-1 * var(--hair));
+		top: 100%;
+		z-index: 20;
+		margin: 0;
+		padding: var(--sp-6) var(--pad-x);
+		background: var(--raise);
+		border: var(--hair) solid var(--amber);
+		border-top-color: var(--line);
+		font-family: var(--sans);
+		font-size: var(--fs-m);
+	}
+
+	.cmd.sheet .notice {
+		top: auto;
+		bottom: 100%;
 	}
 
 	li,

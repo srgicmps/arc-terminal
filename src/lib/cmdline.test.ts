@@ -7,6 +7,8 @@ import {
 	exampleTarget,
 	findCommand,
 	HISTORY_KEY,
+	HISTORY_MAX,
+	historyStep,
 	historyOptions,
 	isTickerLike,
 	norm,
@@ -169,11 +171,24 @@ describe('historial', () => {
 		};
 	};
 
-	it('guarda los 5 últimos, el más reciente primero y sin repetir', () => {
+	it('guarda los 50 últimos, el más reciente primero y sin repetir; enseña 5', () => {
 		let list: string[] = [];
 		for (const e of ['ECO', 'NVDA', 'FUEL', 'eco', 'WS', 'LUZ', 'BOE']) list = pushHistory(list, e);
-		expect(list).toEqual(['BOE', 'LUZ', 'WS', 'eco', 'FUEL']);
+		expect(list).toEqual(['BOE', 'LUZ', 'WS', 'eco', 'FUEL', 'NVDA']);
 		expect(pushHistory(list, '  ')).toBe(list);
+		for (let i = 0; i < 60; i++) list = pushHistory(list, `X${i}`);
+		expect(list).toHaveLength(HISTORY_MAX);
+		expect(historyOptions(list)).toHaveLength(5);
+	});
+
+	it('↑ y ↓ recorren el historial como en un terminal', () => {
+		const list = ['BOE', 'LUZ', 'WS'];
+		expect(historyStep(list, -1, 1)).toEqual({ idx: 0, value: 'BOE' });
+		expect(historyStep(list, 0, 1)).toEqual({ idx: 1, value: 'LUZ' });
+		expect(historyStep(list, 2, 1)).toEqual({ idx: 2, value: 'WS' });
+		expect(historyStep(list, 1, -1)).toEqual({ idx: 0, value: 'BOE' });
+		expect(historyStep(list, 0, -1)).toEqual({ idx: -1, value: '' });
+		expect(historyStep([], -1, 1)).toEqual({ idx: -1, value: '' });
 	});
 
 	it('lee y escribe en el almacenamiento', () => {
