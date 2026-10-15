@@ -105,8 +105,10 @@
 		padding: var(--sp-2) var(--sp-6);
 		color: var(--faint);
 	}
-	header button:hover {
-		color: var(--fg);
+	@media (hover: hover) {
+		header button:hover {
+			color: var(--fg);
+		}
 	}
 	.body {
 		padding: 0 var(--sp-10) var(--sp-10);
