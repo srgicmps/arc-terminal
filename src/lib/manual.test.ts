@@ -20,12 +20,13 @@ describe('comandos en el manual', () => {
 		}
 	});
 
-	it('cada vista tiene comando y cada comando, su vista (salvo la ficha de un valor, /s)', () => {
+	it('cada vista tiene comando y cada comando, su vista (salvo la ficha de un valor, /s, y las experiencias, /x/<id>)', () => {
 		const pages = Object.keys(import.meta.glob('/src/routes/**/+page.svelte')).map(
 			(path) => path.replace(/^\/src\/routes/, '').replace(/\/\+page\.svelte$/, '') || '/'
 		);
 		const routes = COMMANDS.map((c) => c.route as string);
-		for (const page of pages.filter((p) => p !== '/s')) expect(routes, `vista ${page} sin comando`).toContain(page);
+		// Las experiencias se abren con «EXP <id>» (registro en src/lib/experiences.ts, con su propio test).
+		for (const page of pages.filter((p) => p !== '/s' && !p.startsWith('/x/'))) expect(routes, `vista ${page} sin comando`).toContain(page);
 		for (const route of routes) expect(pages, `comando sin vista: ${route}`).toContain(route);
 	});
 

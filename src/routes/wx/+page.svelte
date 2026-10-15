@@ -21,14 +21,18 @@
 		POLLEN_NAMES,
 		aqiLevel,
 		compass,
+		hasPollen,
 		hoursMinutes,
 		moon,
+		pollenHigh,
 		pollenLevel,
 		seaLevel,
 		signedMinSec,
 		sky,
-		uvLevel
+		uvLevel,
+		uvWindow
 	} from '#lib/weather.ts';
+	import { phrases, pollenPhrase, uvPhrase } from '#lib/plain.ts';
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
@@ -104,6 +108,20 @@
 		air ? POLLEN_KEYS.filter((k) => air.days.some((d) => (d.pollen[k] ?? 0) >= 1)) : []
 	);
 	const aqiNow = $derived(aqiLevel(air?.now.aqi));
+	// Para alérgicos (F2): UV de hoy, cuándo protegerse y los pólenes que llegan a moderado o alto hoy y mañana.
+	const today = $derived(air?.days[0]);
+	const uvToday = $derived(uvLevel(today?.uv));
+	const uvHours = $derived(air && today ? uvWindow(air.hours, today.date) : null);
+	const pollenOk = $derived(hasPollen(air));
+	const pollenToday = $derived(pollenHigh(air?.days[0]));
+	const pollenTomorrow = $derived(pollenHigh(air?.days[1]));
+	const plain = $derived(
+		phrases([
+			uvPhrase(today?.uv, uvToday?.label, uvHours),
+			pollenOk ? pollenPhrase('hoy', pollenToday) : null,
+			pollenOk && air?.days[1] ? pollenPhrase('mañana', pollenTomorrow) : null
+		])
+	);
 	// La luna se calcula en el navegador; antes de arrancar (clock.now = 0) se usa la hora de los datos.
 	const luna = $derived(moon(clock.now || Date.parse(data.weather?.fetchedAt ?? '') || 0));
 
@@ -114,7 +132,7 @@
 	const m = (v: number | null) => (v === null ? '—' : `${nf(v, 1)} m`);
 </script>
 
-<ViewHeader code="WX" title="El tiempo" sub="{here.name} y otras ciudades · Open-Meteo, CAMS y MeteoAlarm" />
+<ViewHeader code="WX" title="El tiempo" sub="{here.name} y otras ciudades · Open-Meteo, CAMS y MeteoAlarm" {plain} />
 
 {#if localError}<p class="empty">{localError}</p>{/if}
 
@@ -286,6 +304,22 @@
 		{#if air}
 			{@const uvNow = uvLevel(air.now.uv)}
 			<Panel title="UV y polen" meta={uvNow ? `UV ahora ${nf(air.now.uv, 0)} · ${uvNow.label}` : undefined}>
+				<Tiles cols={3}>
+					<Tile
+						label="UV hoy"
+						value={uvToday ? `${nf(today?.uv ?? null, 0)} · ${uvToday.label}` : '—'}
+						tone={!uvToday ? 'mut' : uvToday.tone === 'ok' ? 'up' : uvToday.tone === 'bad' ? 'down' : undefined}
+						sub={uvHours ? `protégete de ${uvHours.from} a ${uvHours.to}` : 'no hace falta protegerse'}
+					/>
+					{#each [{ label: 'Polen hoy', high: pollenToday }, { label: 'Polen mañana', high: pollenTomorrow }] as p (p.label)}
+						<Tile
+							label={p.label}
+							value={!pollenOk ? '—' : p.high.length ? p.high[0].level.label : 'Bajo'}
+							tone={!pollenOk ? 'mut' : !p.high.length ? 'up' : p.high[0].level.tone === 'bad' ? 'down' : undefined}
+							sub={!pollenOk ? 'sin datos aquí' : p.high.length ? p.high.map((h) => h.name).join(', ') : 'nada que se note'}
+						/>
+					{/each}
+				</Tiles>
 				<Table>
 					<thead>
 						<tr>
@@ -318,7 +352,8 @@
 				</Table>
 				{#if !pollens.length}<p class="empty">Polen: nulo o sin datos estos días.</p>{/if}
 				{#snippet note()}
-					Partículas y gases en µg/m³. Polen en granos/m³, con umbrales orientativos.
+					Partículas y gases en µg/m³. Polen en granos/m³, con umbrales orientativos. El polen de CAMS solo cubre
+					Europa.
 				{/snippet}
 			</Panel>
 		{/if}
