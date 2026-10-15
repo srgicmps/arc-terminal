@@ -32,7 +32,8 @@
 		const value = JSON.stringify(form);
 		if (!loaded) return;
 		try {
-			localStorage.setItem(KEY, value);
+			// Sin borrar lo que guarda HIPOTECA en la misma clave (tipo actual, mes de revisión…).
+			localStorage.setItem(KEY, JSON.stringify({ ...JSON.parse(localStorage.getItem(KEY) ?? '{}'), ...JSON.parse(value) }));
 		} catch {}
 	});
 
