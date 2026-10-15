@@ -1,12 +1,13 @@
 <!--
 	Escritorio de Arc OS: el fondo (el de la estética activa, o liso, rejilla o degradado, siempre con sus
-	tokens), los accesos directos de las apps ancladas a la izquierda y los widgets movibles. Las ventanas del
+	tokens), los iconos de las apps ancladas (DesktopIcons) y los widgets movibles. Las ventanas del
 	núcleo van encima (children).
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { onMount } from 'svelte';
 	import { place } from '#lib/place.svelte.ts';
+	import DesktopIcons from './DesktopIcons.svelte';
 	import { setWidgets, shell } from './shell.svelte.ts';
 	import type { StartApp } from './start.ts';
 	import Widget from './Widget.svelte';
@@ -30,7 +31,6 @@
 		size = { w, h };
 	});
 
-	const icons = $derived(shell.pinned.map((id) => apps.find((a) => a.id === id)).filter((a): a is StartApp => !!a));
 	const widgets = $derived(shell.widgets ?? (w ? defaultWidgets(w, shell.skin) : []));
 
 	onMount(() => {
@@ -46,17 +46,7 @@
 </script>
 
 <div class="desktop" data-wallpaper={shell.wallpaper} bind:clientWidth={w} bind:clientHeight={h}>
-	<ul class="icons" aria-label="Accesos directos">
-		{#each icons as a (a.id)}
-			<li>
-				<!-- Con ratón, doble clic (como en un escritorio); con el dedo o el teclado (Intro), un toque. -->
-				<button type="button" ondblclick={() => onopen(a.id)} onclick={(e) => (e as unknown as PointerEvent).pointerType !== 'mouse' && onopen(a.id)} title={a.desc}>
-					<span class="ico" aria-hidden="true">{a.icon ?? a.code?.slice(0, 3) ?? '·'}</span>
-					<span class="name">{a.title}</span>
-				</button>
-			</li>
-		{/each}
-	</ul>
+	<DesktopIcons {apps} {w} {h} />
 	<div class="widgets" class:hidden={shell.widgetsHidden}>
 		{#each widgets as wd (wd.kind)}
 			<Widget w={wd} desk={{ w, h }} onmove={moveTo} onremove={() => setWidgets(removeWidget(widgets, wd.kind))}>
@@ -69,14 +59,6 @@
 </div>
 
 <style>
-	/* Botones de la shell sin el borde ni el fondo que algunas estéticas dan a todos los botones. */
-	button {
-		border: 0;
-		background: none;
-		color: inherit;
-		font: inherit;
-		cursor: pointer;
-	}
 	.desktop {
 		position: relative;
 		height: 100%;
@@ -106,51 +88,6 @@
 	.desktop[data-wallpaper='degradado'] {
 		background-image: radial-gradient(ellipse at 20% 0%, var(--amber-soft), transparent 60%), linear-gradient(var(--bg), var(--panel));
 	}
-	.icons {
-		position: absolute;
-		top: var(--sp-12);
-		left: var(--sp-12);
-		display: grid;
-		grid-auto-flow: column;
-		grid-template-rows: repeat(auto-fill, 84px);
-		gap: var(--sp-4);
-		max-height: calc(100% - 2 * var(--sp-12));
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-	.icons button {
-		display: grid;
-		justify-items: center;
-		gap: var(--sp-4);
-		width: 84px;
-		padding: var(--sp-6) var(--sp-4);
-		border-radius: var(--radius-s);
-	}
-	.icons button:hover,
-	.icons button:focus-visible {
-		background: var(--amber-soft);
-	}
-	.ico {
-		display: grid;
-		place-items: center;
-		width: 40px;
-		height: 40px;
-		background: var(--panel);
-		border: var(--hair) solid var(--panel-edge);
-		border-radius: var(--radius);
-		color: var(--amber);
-		font-family: var(--mono);
-		font-size: var(--fs-s);
-	}
-	.name {
-		max-width: 100%;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		font-size: var(--fs-xs);
-		text-shadow: 0 0 var(--sp-4) var(--bg);
-	}
 	.widgets {
 		position: absolute;
 		inset: 0;
@@ -161,19 +98,6 @@
 	}
 	.widgets.hidden {
 		display: none;
-	}
-	/* DSM: iconos grandes, en columnas desde arriba a la izquierda. */
-	:global([data-os-skin='dsm']) .icons {
-		grid-template-rows: repeat(auto-fill, 112px);
-	}
-	:global([data-os-skin='dsm']) .icons button {
-		width: 104px;
-	}
-	:global([data-os-skin='dsm']) .ico {
-		width: 64px;
-		height: 64px;
-		border-radius: var(--os-icon-radius);
-		font-size: var(--fs-xl);
 	}
 	:global([data-os-skin='dsm']) .desktop[data-wallpaper='sistema'] {
 		background-image: linear-gradient(180deg, var(--amber-soft) 0%, transparent 40%), radial-gradient(ellipse 70% 50% at 30% 100%, var(--raise), transparent 70%);
