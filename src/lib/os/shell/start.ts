@@ -22,7 +22,7 @@ const BY_CODE: Record<string, Category> = {
 	FONDOS: 'Mercados', HDS: 'Mercados', WB: 'Mercados', BTMM: 'Mercados', G: 'Mercados', SEAS: 'Mercados', CMP: 'Mercados',
 	ECO: 'Economía', ECST: 'Economía', SEMANA: 'Economía', CAL: 'Economía', IMP: 'Economía', TOP: 'Economía',
 	GEO: 'Mundo', PAIS: 'Mundo', LIDER: 'Mundo', ES: 'Mundo', BOE: 'Mundo', USGOV: 'Mundo', TECH: 'Mundo', AI: 'Mundo',
-	PORT: 'Mundo', AGUA: 'Mundo', NEWS: 'Mundo', WIKI: 'Mundo', RSS: 'Mundo',
+	PORT: 'Mundo', AGUA: 'Mundo', GLOBO: 'Mundo', NEWS: 'Mundo', WIKI: 'Mundo', RSS: 'Mundo',
 	FUEL: 'Casa', LUZ: 'Casa', WX: 'Casa', VIAJE: 'Casa', AVISOS: 'Casa', CHESS: 'Casa',
 	CARTERA: 'Dinero', HIPOTECA: 'Dinero',
 	EXP: 'Experiencias', TV: 'Experiencias'
