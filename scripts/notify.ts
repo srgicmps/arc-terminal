@@ -56,6 +56,7 @@ import { OWNER } from '../src/lib/useralerts.ts';
 import { newPrice } from '../src/lib/alertconfig.ts';
 import { firedIds, ordersOf, userRules, type Orders, type UserInputs } from './alerts/user.ts';
 import { weatherAt } from './alerts/brief.ts';
+import { airAt } from './alerts/home.ts';
 import { loadUsers, postFired, postMigration, postMails, runUsers, type BriefMail, type RemoteUser } from './alerts/users.ts';
 
 const NTFY = 'https://ntfy.sh';
@@ -243,6 +244,25 @@ export async function loadZone(raw: string | undefined, d: Inputs, dir: string):
 		// Sin el archivo de la provincia no hay «la más barata»; lo demás sigue.
 	}
 	return { id, name: provinces.find((p) => p.id === id)?.name ?? id, stations };
+}
+
+/** Lee gasolineras por zona e id para los avisos de casa (F16): fuel.json (Menorca) o fuel/<zona>.json, una vez cada zona. */
+export function stationReader(d: Inputs, dir: string): (zone: string, id: string) => Promise<FuelStation | null> {
+	const zones = new Map<string, Promise<FuelStation[]>>();
+	const load = async (zone: string): Promise<FuelStation[]> => {
+		if (zone === 'menorca') return Array.isArray(d.fuel?.stations) ? d.fuel.stations : [];
+		if (!/^\d{2}$/.test(zone)) return [];
+		try {
+			const body: unknown = JSON.parse(await readFile(`${dir}/fuel/${zone}.json`, 'utf8'));
+			return Array.isArray(body) ? (body as FuelStation[]) : [];
+		} catch {
+			return [];
+		}
+	};
+	return async (zone, id) => {
+		if (!zones.has(zone)) zones.set(zone, load(zone));
+		return (await zones.get(zone)!).find((s) => s?.id === id) ?? null;
+	};
 }
 
 /** Aviso de prueba de la primera pasada (sin historial publicado). */
@@ -496,7 +516,7 @@ export async function runNotify({
 		if (cache && users) {
 			const path = join(dirname(cache), USERS_FILE);
 			const logs = await readUserLogs(path);
-			const engine = { pickAlerts, baselineLog, trim, post, hello: HELLO, minute, weather: (lat: number, lon: number) => weatherAt(lat, lon) };
+			const engine = { pickAlerts, baselineLog, trim, post, hello: HELLO, minute, weather: (lat: number, lon: number) => weatherAt(lat, lon), air: (lat: number, lon: number) => airAt(lat, lon), station: stationReader(inputs, dir) };
 			const mails: BriefMail[] = [];
 			const next = await runUsers(users, inputs, base, logs, now, engine, say, undefined, mails);
 			await writeFile(path, JSON.stringify({ users: next }) + '\n');
