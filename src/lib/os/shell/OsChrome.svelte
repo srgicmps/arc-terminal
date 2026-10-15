@@ -8,6 +8,8 @@
 	import * as os from './bridge.ts';
 	import Dock from './Dock.svelte';
 	import DsmBar from './DsmBar.svelte';
+	import MandoBar from './MandoBar.svelte';
+	import MandoStrip from './MandoStrip.svelte';
 	import MenuBar from './MenuBar.svelte';
 	import Overlays from './Overlays.svelte';
 	import { shell } from './shell.svelte.ts';
@@ -36,6 +38,10 @@
 		onnavigate={os.navigate}
 		status={os.status()}
 	/>
+{:else if piece === 'mandobar'}
+	<MandoBar />
+{:else if piece === 'mandostrip'}
+	<MandoStrip />
 {:else if piece === 'dsmbar'}
 	<DsmBar />
 {:else if piece === 'menubar' || piece === 'topbar'}
