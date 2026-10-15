@@ -74,6 +74,14 @@ describe('bienvenida', () => {
 		expect(readWelcome(store.getItem(WELCOME_KEY))?.profile).toBe('inversor');
 	});
 
+	it('con «Todo», la portada de siempre aunque una bienvenida anterior la dejara modular', () => {
+		const store = memory({ 'arc-mode': 'modular', 'arc-layout-top': '{"order":[],"hidden":["hn"],"span":{}}' });
+		const all = buildPlan(INTERESTS.map((i) => i.id), null, MODULES, false);
+		expect(all.layout.hidden).toEqual([]);
+		applyPlan(store, all);
+		expect(store.getItem('arc-mode')).toBe('general');
+	});
+
 	it('con la lista vacía, la de ejemplo', () => {
 		const store = memory();
 		applyPlan(store, buildPlan([], 'curioso', MODULES, true));

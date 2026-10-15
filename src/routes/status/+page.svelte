@@ -71,7 +71,7 @@
 								<td class={r.state === 'ok' || r.state === 'cached' ? 'up' : r.state === 'off' ? 'mut' : 'down'}>
 									{LABEL[r.state]}
 									{#if runs.length}
-										<span class="strip" aria-label="Últimas {runs.length} pasadas">
+										<span class="strip" role="img" aria-label="Últimas {runs.length} pasadas: {runs.filter((s) => s === 'ok' || s === 'cached').length} al día">
 											{#each runs as state, i (i)}
 												<i class={TONE[state]} title={LABEL[state]}></i>
 											{/each}

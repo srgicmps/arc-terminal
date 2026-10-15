@@ -82,8 +82,13 @@
 		cursor: pointer;
 	}
 
-	.clear:hover,
 	.clear:focus-visible {
 		color: var(--amber);
+	}
+
+	@media (hover: hover) {
+		.clear:hover {
+			color: var(--amber);
+		}
 	}
 </style>

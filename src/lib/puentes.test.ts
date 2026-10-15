@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { esRegion, holidaysFor, upcomingBreaks, type WorldHoliday } from './puentes.ts';
+import { esRegion, holidaysFor, upcomingBreaks, weekendOf, type WorldHoliday } from './puentes.ts';
 
 const items: WorldHoliday[] = [
 	{ date: '2026-10-12', name: 'Fiesta Nacional de España' }, // lunes
@@ -33,5 +33,13 @@ describe('puentes (F6)', () => {
 			['2027-01-02', '2027-01-06', 5, ['2027-01-04', '2027-01-05']] // Reyes, miércoles: dos días
 		]);
 		expect(b[1].holidays).toEqual([{ date: '2026-12-08', names: ['Inmaculada Concepción'] }]);
+	});
+
+	it('con el fin de semana de cada país: en Israel el domingo es laborable', () => {
+		const sunday = new Map([['2026-10-18', ['Fiesta']]]);
+		expect(upcomingBreaks(sunday, '2026-10-15')).toEqual([]);
+		const b = upcomingBreaks(sunday, '2026-10-15', 365, weekendOf('IL'));
+		expect(b.map((x) => [x.from, x.to, x.days])).toEqual([['2026-10-16', '2026-10-18', 3]]);
+		expect(weekendOf('FR')).toEqual([0, 6]);
 	});
 });

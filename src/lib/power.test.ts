@@ -125,10 +125,14 @@ describe('franja más barata', () => {
 		expect([s.min?.hour, s.max?.hour, s.avg, s.cheap.map((p) => p.hour)]).toEqual([1, 3, 0.25, [1, 2, 0]]);
 	});
 
-	it('cheapestNow: la de hoy y, desde las 20:30 de Madrid, la de mañana si ya está', () => {
+	it('cheapestNow: la de lo que queda de hoy y, desde las 20:30 de Madrid, la de mañana si ya está', () => {
 		const prices = [...day('2026-10-14', curve), ...day('2026-10-15', [...curve].reverse())];
 		const at = (iso: string) => Date.parse(iso);
-		expect(cheapestNow(prices, at('2026-10-14T18:29:00Z'))).toMatchObject({ day: '2026-10-14', first: { hour: 14 }, tomorrow: false });
+		expect(cheapestNow(prices, at('2026-10-14T10:00:00Z'))).toMatchObject({ day: '2026-10-14', first: { hour: 14 }, tomorrow: false });
+		// A las 20:29 la de las 14:00 ya ha pasado: solo valen las que empiezan a las 20 o después.
+		expect(cheapestNow(prices, at('2026-10-14T18:29:00Z'))?.first.hour).toBeGreaterThanOrEqual(20);
+		// A las 23:00 (antes de que esté mañana) ya no cabe una franja de 2 h.
+		expect(cheapestNow(day('2026-10-14', curve), at('2026-10-14T21:00:00Z'))).toBeNull();
 		expect(cheapestNow(prices, at('2026-10-14T18:30:00Z'))).toMatchObject({ day: '2026-10-15', first: { hour: 8 }, tomorrow: true });
 		expect(cheapestNow(day('2026-10-14', curve), at('2026-10-14T19:00:00Z'))).toBeNull();
 	});

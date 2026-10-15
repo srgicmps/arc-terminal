@@ -52,6 +52,7 @@
 	// Canales de diplomacia dentro de news-intl; el resto son organismos internacionales.
 	const DIPLO = new Set(DIPLOMACY_FEEDS);
 	const diplo = $derived((data.intl?.data.items ?? []).filter((i) => DIPLO.has(i.source)).slice(0, 15));
+	const orgs = $derived((data.intl?.data.items ?? []).filter((i) => !DIPLO.has(i.source)).slice(0, 15));
 
 	// Tira de arriba: el terremoto más fuerte de la semana, los ciclones activos y las alertas de catástrofe.
 	const topQuake = $derived(strongest[0]);
@@ -78,7 +79,7 @@
 		label="Alertas de catástrofe"
 		value={alerts ? String(alerts.red + alerts.orange) : '—'}
 		tone={alerts ? undefined : 'mut'}
-		sub={alerts ? `${alerts.red} rojas · ${alerts.orange} naranjas · GDACS` : ''}
+		sub={alerts ? `${alerts.red} ${alerts.red === 1 ? 'roja' : 'rojas'} · ${alerts.orange} ${alerts.orange === 1 ? 'naranja' : 'naranjas'} · GDACS` : ''}
 	/>
 </Tiles>
 
@@ -182,7 +183,7 @@
 			{/snippet}
 		</Panel>
 		{#if data.czib?.data.items.length}
-			<Panel title="Espacio aéreo en conflicto" meta="{data.czib.data.items.length} boletines CZIB activos · EASA">
+			<Panel title="Espacio aéreo en conflicto" meta="{data.czib.data.items.length} {data.czib.data.items.length === 1 ? 'boletín CZIB activo' : 'boletines CZIB activos'} · EASA">
 				<p class="plain-czib">{czibSentence(data.czib.data.items)}</p>
 				<Table csv={false}>
 					<tbody>
@@ -190,7 +191,7 @@
 							<tr>
 								<td class="name"><a class="name" href={c.url} target="_blank" rel="noopener">{c.area}</a></td>
 								<td class="mut per">{c.id}</td>
-								<td class="mut">hasta {czibDate(c.validUntil)}</td>
+								<td class="mut">{c.validUntil ? `hasta ${czibDate(c.validUntil)}` : 'sin fecha de fin'}</td>
 							</tr>
 						{/each}
 					</tbody>
@@ -207,8 +208,9 @@
 				<ul class="mini">
 					{#each data.navwarn.data.items as w (w.id)}
 						<li>
-							<b>{w.kind}</b> · {w.region}{#if w.place}<span class="mut"> · {w.place}</span>{/if}
-							<span class="mut">· {w.issued ? new Date(w.issued).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : w.id}</span>
+							<!-- Dos columnas, como toda lista .mini: qué y dónde a la izquierda, la fecha a la derecha. -->
+							<span class="l">{w.kind}<small>{[w.region, w.place].filter(Boolean).join(' · ')}</small></span>
+							<span class="mut">{w.issued ? new Date(w.issued).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : w.id}</span>
 						</li>
 					{/each}
 				</ul>
@@ -265,10 +267,13 @@
 				{#snippet note()}Informes y artículos de fondo sobre conflictos · <Updated at={data.analysis?.fetchedAt} source="news-analysis" />{/snippet}
 			</Panel>
 		{/if}
-		<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">
-			<NewsList items={(data.intl?.data.items ?? []).filter((i) => !DIPLO.has(i.source)).slice(0, 15)} />
-			{#snippet note()}<Updated at={data.intl?.fetchedAt} source="news-intl" />{/snippet}
-		</Panel>
+		<!-- Si solo llegan los canales de diplomacia (los de la ONU y la OMC caídos), el panel no sale vacío. -->
+		{#if orgs.length}
+			<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">
+				<NewsList items={orgs} />
+				{#snippet note()}<Updated at={data.intl?.fetchedAt} source="news-intl" />{/snippet}
+			</Panel>
+		{/if}
 		{#if diplo.length}
 			<Panel title="Diplomacia" meta="Exteriores británico y OIEA · comunicados">
 				<NewsList items={diplo} />

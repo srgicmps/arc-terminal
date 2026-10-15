@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { APPS } from '../apps.ts';
-import { addWidget, arrange, badgesFor, badgeText, CELLS, dockApps, drop, folderName, gesture, layout, noticesOf, place, removeWidget, rename, takeOut, touch, used } from './home.ts';
+import { addWidget, arrange, badgesFor, badgeText, CELLS, dockApps, drop, folderName, gesture, keyboardFit, layout, readSession, webApp, noticesOf, place, removeWidget, rename, ROWS, rowsOf, takeOut, touch, used, WIDGETS, type Cell, type WidgetId } from './home.ts';
 
 describe('Modo OS en el móvil', () => {
 	it('dock de 4 con la Terminal y sin repetir en las páginas', () => {
@@ -44,6 +44,22 @@ describe('Modo OS en el móvil', () => {
 		expect(used(layout(APPS, a)[0])).toBe(CELLS);
 		expect(arrange(JSON.stringify({ ...a, widgets: ['x', 'macro'] }), ['eco']).widgets).toEqual(['macro']);
 	});
+	it('una ruta sin app (la ficha de un valor) se abre con una app de paso', () => {
+		expect(webApp('/s?sym=NVDA')).toMatchObject({ id: 'web:/s?sym=NVDA', name: 'NVDA', href: '/s?sym=NVDA' });
+		expect(webApp('/modo', 'Modo').name).toBe('Modo');
+	});
+	it('teclado en pantalla: el teléfono ocupa lo visible; sin teclado o con zoom, nada', () => {
+		expect(keyboardFit({ height: 500, offsetTop: 40, scale: 1 }, 844)).toEqual({ top: 40, h: 500 });
+		expect(keyboardFit({ height: 800, offsetTop: 0, scale: 1 }, 844)).toBeNull();
+		expect(keyboardFit({ height: 400, offsetTop: 0, scale: 2 }, 844)).toBeNull();
+	});
+	it('apps abiertas tras recargar: solo las que existen, sin rutas raras', () => {
+		const known = (id: string) => ['imp', 'eco'].includes(id);
+		const raw = JSON.stringify({ open: ['imp', 'nada', 'web:/s?sym=NVDA', 'imp', 'eco'], current: 'eco', paths: { imp: '/imp?p=semana', eco: 'javascript:x' }, names: { 'web:/s?sym=NVDA': 'NVIDIA' } });
+		expect(readSession(raw, known)).toEqual({ open: ['imp', 'web:/s?sym=NVDA', 'eco'], current: 'eco', paths: { imp: '/imp?p=semana' }, names: { 'web:/s?sym=NVDA': 'NVIDIA' }, entry: false });
+		expect(readSession('{', known)).toMatchObject({ open: [], current: null });
+		expect(readSession(JSON.stringify({ open: ['imp'], current: 'nada' }), known).current).toBeNull();
+	});
 	it('gestos', () => {
 		const size = { w: 390, h: 844 };
 		expect(gesture({ x: 50, y: 10 }, { x: 55, y: 200 }, size, false)).toBe('notif');
@@ -52,6 +68,12 @@ describe('Modo OS en el móvil', () => {
 		expect(gesture({ x: 200, y: 830 }, { x: 200, y: 760 }, size, true)).toBe('home');
 		expect(gesture({ x: 200, y: 830 }, { x: 200, y: 500 }, size, true)).toBe('switch');
 		expect(gesture({ x: 100, y: 400 }, { x: 300, y: 420 }, size, false)).toBeNull();
+		// Un tirón corto desde la barra (un cuarto largo de pantalla) va a inicio; si paras el dedo, a la multitarea.
+		expect(gesture({ x: 200, y: 838 }, { x: 200, y: 600 }, size, true)).toBe('home');
+		expect(gesture({ x: 200, y: 838 }, { x: 200, y: 700 }, size, true, { paused: true })).toBe('switch');
+		// Con la zona segura del iPhone, la barra de estado baja: tirar desde ella sigue abriendo notificaciones.
+		expect(gesture({ x: 50, y: 80 }, { x: 50, y: 300 }, size, false, { top: 103 })).toBe('notif');
+		expect(gesture({ x: 50, y: 80 }, { x: 50, y: 300 }, size, false)).toBe('spot');
 	});
 	it('carpetas: juntar, añadir, sacar y deshacer', () => {
 		let a = arrange(null, ['a', 'b', 'c', 'd', 'top'], ['top']);
@@ -89,5 +111,27 @@ describe('Modo OS en el móvil', () => {
 		const cells = layout(APPS, a).flat();
 		expect(cells.some((c) => c.kind === 'folder' && c.apps.length === 2)).toBe(true);
 		expect(layout(APPS, a).every((p) => used(p) <= CELLS)).toBe(true);
+	});
+});
+
+describe('layout: franjas de widgets', () => {
+	const ids = APPS.map((a) => a.id);
+	const smalls = WIDGETS.filter((w) => w.size === 's').map((w) => w.id);
+	// Todas las combinaciones que caben (hasta 16 casillas), en varios órdenes.
+	const combos: WidgetId[][] = [[], ['hoy'], ['mundo'], ['mundo', 'hoy'], ['hoy', 'mundo'], ['mundo', 'hoy', 'mercados'], ['mundo', 'mercados', 'hoy'], smalls.slice(0, 3), smalls.slice(0, 4), smalls.slice(3, 7)];
+	it.each(combos.map((c) => [c.join(',') || '(ninguno)', c]))('%s: la primera página cabe en 6 filas y está llena', (_, ws) => {
+		let a = arrange(null, ids);
+		a = { ...a, widgets: [] };
+		for (const w of ws as WidgetId[]) a = addWidget(a, w);
+		expect(a.widgets).toEqual(ws);
+		const pages = layout(APPS, a);
+		for (const p of pages) expect(rowsOf(p)).toBeLessThanOrEqual(ROWS);
+		expect(used(pages[0])).toBe(CELLS);
+		expect(pages[0].filter((c) => c.kind === 'widget').map((c) => (c.kind === 'widget' ? c.id : ''))).toHaveLength(ws.length);
+	});
+	it('rowsOf: 4 widgets pequeños seguidos de 8 apps sí se salían (lo que pasaba antes)', () => {
+		const w = (id: WidgetId): Cell => ({ kind: 'widget', id, size: 's' });
+		const app: Cell = { kind: 'app', app: APPS[0] };
+		expect(rowsOf([w('mundo'), ...Array(8).fill(app), w('mercados'), w('cripto'), w('bonos')])).toBe(7);
 	});
 });

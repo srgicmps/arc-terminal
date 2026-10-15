@@ -3,6 +3,7 @@
 	para ir más rápido) con ✕ para quitarlo. Al soltar se ajusta a la rejilla y no se sale del escritorio.
 -->
 <script lang="ts">
+	import UiIcon from '../icons/UiIcon.svelte';
 	import type { Snippet } from 'svelte';
 	import { nudge, snap, WIDGET_LABEL, WIDGET_W, type Placed } from './widgets.ts';
 
@@ -59,7 +60,7 @@
 		onkeydown={key}
 	>
 		<span>{WIDGET_LABEL[w.kind]}</span>
-		<button type="button" aria-label={`Quitar ${WIDGET_LABEL[w.kind]}`} onclick={onremove}>✕</button>
+		<button type="button" aria-label={`Quitar ${WIDGET_LABEL[w.kind]}`} onclick={onremove}><UiIcon id="close" size={12} /></button>
 	</header>
 	<div class="body">{@render children()}</div>
 </section>
@@ -102,7 +103,9 @@
 		cursor: grabbing;
 	}
 	header button {
-		padding: var(--sp-2) var(--sp-6);
+		display: grid;
+		place-items: center;
+		padding: var(--sp-4);
 		color: var(--faint);
 	}
 	@media (hover: hover) {

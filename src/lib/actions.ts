@@ -46,8 +46,9 @@ export function shareInfo(target: Target): ShareInfo & ReturnType<typeof targetP
 	return { title: `Arc Terminal · ${canonical(target)}`, text: name, route, search };
 }
 
-/** La lista MIS después de «+NVDA» o «-AAPL». */
+/** La lista MIS después de «+NVDA» o «-AAPL». Añadir uno que ya está no cambia el orden. */
 export function nextMis(codes: string[], action: { add: boolean; code: string }): string[] {
+	if (action.add && codes.includes(action.code)) return codes;
 	const rest = codes.filter((c) => c !== action.code);
 	return action.add ? [...rest, action.code] : rest;
 }

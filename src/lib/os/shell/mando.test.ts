@@ -7,8 +7,10 @@ const a = (title: string) => ({ kind: 'noticia' as const, title, detail: '', tim
 const s = (name: string, state: SourceStatus['state']): SourceStatus => ({ name, label: name, state, fetchedAt: '2026-10-15T10:00:00Z' });
 
 describe('alertLevel', () => {
-	it('sin datos o sin avisos, normal', () => {
-		expect(alertLevel(null).level).toBe(1);
+	it('sin muro no dice «Normal»: nivel 0, sin datos', () => {
+		expect(alertLevel(null)).toMatchObject({ level: 0, label: 'Sin datos' });
+	});
+	it('sin avisos, normal', () => {
 		expect(alertLevel({ alerts: [], headlines: [h(3)] })).toMatchObject({ level: 1, label: 'Normal' });
 	});
 	it('sube con temas grandes y avisos', () => {
@@ -21,6 +23,21 @@ describe('alertLevel', () => {
 	});
 });
 
+describe('alertLevel con la hora', () => {
+	const now = Date.parse('2026-10-15T12:00:00Z');
+	it('un muro viejo no sube el nivel: avisos de más de 3 h y temas de más de un día no cuentan', () => {
+		const old = { kind: 'terremoto' as const, title: 'M7', detail: '', time: '2026-10-12T10:00:00Z' };
+		const oldTopic = { title: 'viejo', sources: 9, first: '2026-10-13T10:00:00Z' };
+		expect(alertLevel({ alerts: [old], headlines: [oldTopic] }, now).level).toBe(1);
+		expect(alertLevel({ alerts: [old], headlines: [oldTopic] }).level).toBe(4); // sin hora, como antes
+	});
+	it('la misma historia no cuenta como aviso y como tema', () => {
+		const al = { kind: 'noticia' as const, title: 'Aranceles', detail: '', time: '2026-10-15T11:00:00Z' };
+		const top = { title: 'Aranceles', sources: 9, first: '2026-10-15T10:00:00Z' };
+		expect(alertLevel({ alerts: [al], headlines: [top] }, now).level).toBe(3);
+	});
+});
+
 describe('fuentes', () => {
 	const st = [s('imp', 'ok'), s('news', 'stale'), s('quakes', 'error'), s('gdacs', 'error'), s('fred', 'off'), s('ecb', 'cached')];
 	it('piloto por grupo', () => {
@@ -29,6 +46,17 @@ describe('fuentes', () => {
 		expect(feedHealth(st, ['ecb', 'fred'])).toBe('ok');
 		expect(feedHealth(st, ['fred'])).toBe('sin-datos');
 		expect(feeds(st).map((f) => f.id)).toEqual(['imp', 'geo', 'mkt', 'mac']);
+	});
+	it('el piloto de IMP mira los titulares (news-*), no una fuente «news» que no existe', () => {
+		const st2 = [s('imp', 'ok'), s('news-geo', 'error')];
+		expect(feeds(st2)[0].health).toBe('degradado');
+	});
+	it('con datos parados (las Actions no publican), deja de estar en verde', () => {
+		const now = Date.parse('2026-10-15T10:00:00Z');
+		const old: SourceStatus = { ...s('quakes', 'ok'), maxAgeMinutes: 15 };
+		expect(feedHealth([old], ['quakes'], now)).toBe('ok');
+		expect(feedHealth([old], ['quakes'], now + 3 * 3_600_000)).toBe('caido');
+		expect(sourcesLive([old], now + 3 * 3_600_000)).toEqual({ live: 0, total: 1 });
 	});
 	it('cuenta las que van sin las que no tienen clave', () => {
 		expect(sourcesLive(st)).toEqual({ live: 2, total: 5 });

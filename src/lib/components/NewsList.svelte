@@ -138,10 +138,22 @@
 			inset: 0;
 		}
 
-		/* «+3 medios» y sus enlaces quedan por encima de esa capa para poder tocarlos. */
-		.also {
+		/* «+3 medios», sus enlaces y los nombres con ficha quedan por encima de esa capa para poder tocarlos. */
+		.also,
+		.ent {
 			position: relative;
 			z-index: 1;
+		}
+
+		/* Los medios de «+3 medios» y los nombres con ficha, por encima de la zona táctil ampliada del botón
+		   «+3 medios» (Disclosure), que sobresale a los lados. */
+		.also a {
+			position: relative;
+			z-index: 1;
+		}
+
+		.ent {
+			z-index: 2;
 		}
 	}
 
@@ -193,6 +205,8 @@
 		font-size: var(--fs-l);
 		line-height: var(--lh-tight);
 		text-wrap: pretty;
+		/* Una palabra muy larga (una URL, un nombre pegado) se parte en vez de ensanchar la vista. */
+		overflow-wrap: anywhere;
 	}
 
 	.h:hover {
@@ -246,6 +260,7 @@
 
 	.s {
 		margin: var(--sp-4) 0 0;
+		overflow-wrap: anywhere;
 		color: var(--muted);
 		font-family: var(--sans);
 		font-size: var(--fs-m);

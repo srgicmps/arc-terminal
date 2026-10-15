@@ -121,3 +121,15 @@ export function summarize(positions: Position[], quotes: Quote[], rates: Map<str
 		byCurrency: group((r) => r.cur)
 	};
 }
+
+/**
+ * Número escrito a la española o a la inglesa: «1,5» y «1.5» → 1,5; «1.500» → 1500 (punto de miles);
+ * «1.234,56» → 1234,56. Vacío o no numérico → NaN.
+ */
+export function parseDecimal(text: string): number {
+	let t = text.trim().replace(/\s/g, '');
+	if (!t) return NaN;
+	if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+	else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+	return /^-?\d*\.?\d+$/.test(t) ? Number(t) : NaN;
+}

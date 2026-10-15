@@ -37,7 +37,7 @@
 								<span class="mut when">{time(s.time)}</span>
 							</p>
 							<p class="outlets">
-								{#each s.outlets as o, i (o.source)}{#if i}<span class="mut"> · </span>{/if}<a href={o.url} target="_blank" rel="noopener">{o.source}</a>{/each}
+								{#each s.outlets as o, i (o.source)}{#if i}<span class="mut">{' · '}</span>{/if}<a href={o.url} target="_blank" rel="noopener">{o.source}</a>{/each}
 							</p>
 						</li>
 					{/each}
@@ -54,7 +54,7 @@
 		<Panel title="Medios por región">
 			<ul class="mini">
 				{#each byRegion as r (r.key)}
-					<li><b>{r.label}</b> <span class="mut">{r.outlets.join(', ')}</span></li>
+					<li><span class="l">{r.label}<small>{r.outlets.join(', ')}</small></span></li>
 				{/each}
 			</ul>
 			{#snippet note()}Organismos (ONU, OMC, OIEA…) no cuentan para los ángulos muertos{/snippet}

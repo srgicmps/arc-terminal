@@ -33,7 +33,10 @@ export interface Dossier {
 	summary: string;
 	facts: Fact[];
 	timeline: IntelRef[];
+	/** Las más fuertes (hasta 40). */
 	related: Related[];
+	/** Con cuántas entidades se enlaza en total (puede ser más que related.length). */
+	relatedTotal: number;
 	at?: [number, number];
 	/** Vistas de Arc donde seguir: ruta interna o enlace externo. */
 	links: { label: string; href: string }[];
@@ -124,8 +127,8 @@ function linksOf(n: IntelNode): Dossier['links'] {
 	}
 }
 
-/** El resumen, en una o dos frases con los datos del grafo. */
-export function summaryOf(n: IntelNode, related: Related[], refs: number): string {
+/** El resumen, en una o dos frases con los datos del grafo. `total`: enlaces de verdad (related puede ir cortada). */
+export function summaryOf(n: IntelNode, related: Related[], refs: number, total = related.length): string {
 	const parts: string[] = [];
 	const what = n.kind === 'country' || n.kind === 'leader' || n.kind === 'bank' || n.kind === 'ticker' ? `${n.label} (${kindLabel(n.kind).toLowerCase()})` : `${kindLabel(n.kind)}: ${n.label}`;
 	if (n.mentions) parts.push(`${what} sale en ${n.mentions} ${n.mentions === 1 ? 'titular' : 'titulares'} de ahora.`);
@@ -133,8 +136,8 @@ export function summaryOf(n: IntelNode, related: Related[], refs: number): strin
 	const live = related.filter((r) => r.why.includes('titulares') || r.why.includes('IMP') || r.why.includes('sanción') || r.why.includes('suceso'));
 	if (live.length) {
 		const top = live.slice(0, 3).map((r) => r.label);
-		parts.push(`Enlazada con ${related.length} ${related.length === 1 ? 'entidad' : 'entidades'}; las más fuertes: ${top.join(', ')}.`);
-	} else if (related.length) parts.push(`Enlazada con ${related.length} ${related.length === 1 ? 'entidad' : 'entidades'}.`);
+		parts.push(`Enlazada con ${total} ${total === 1 ? 'entidad' : 'entidades'}; las más fuertes: ${top.join(', ')}.`);
+	} else if (total) parts.push(`Enlazada con ${total} ${total === 1 ? 'entidad' : 'entidades'}.`);
 	return parts.join(' ');
 }
 
@@ -142,7 +145,8 @@ export function summaryOf(n: IntelNode, related: Related[], refs: number): strin
 export function dossier(g: Graph, id: string, extra: DossierExtra = {}): Dossier | null {
 	const n = g.nodes.get(id);
 	if (!n) return null;
-	const related: Related[] = neighbors(g, id, { max: 40 }).map(({ node, edge }) => ({ id: node.id, kind: node.kind, label: node.label, w: Math.round(edge.w * 10) / 10, why: whyText(edge) }));
+	const all = neighbors(g, id);
+	const related: Related[] = all.slice(0, 40).map(({ node, edge }) => ({ id: node.id, kind: node.kind, label: node.label, w: Math.round(edge.w * 10) / 10, why: whyText(edge) }));
 	const refs = g.refs.get(id) ?? [];
 	const facts =
 		n.kind === 'country' ? countryFacts(n.key, g, extra) : n.kind === 'leader' ? leaderFacts(n.key, extra) : n.kind === 'bank' ? bankFacts(n.key as Bank, extra) : n.kind === 'ticker' ? tickerFacts(n.key) : dataFacts(n);
@@ -152,10 +156,11 @@ export function dossier(g: Graph, id: string, extra: DossierExtra = {}): Dossier
 		kindLabel: kindLabel(n.kind),
 		label: n.label,
 		sub: n.sub,
-		summary: summaryOf(n, related, refs.length),
+		summary: summaryOf(n, related, refs.length, all.length),
 		facts,
 		timeline: refs.slice(0, 60),
 		related,
+		relatedTotal: all.length,
 		at: n.at,
 		links: linksOf(n)
 	};
@@ -166,6 +171,16 @@ export const refKind = (k: IntelRef['kind']) => REF_KIND[k];
 
 /** Celdas de Markdown: sin barras ni saltos de línea que rompan la tabla. */
 const cell = (s: string) => s.replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim();
+
+/**
+ * Un enlace de Markdown que no se rompe: corchetes del texto escapados, la URL entre <> (así valen espacios y
+ * paréntesis) y, si no hay URL, solo el texto.
+ */
+export function mdLink(text: string, url: string): string {
+	const t = cell(text).replace(/[[\]]/g, (c) => `\\${c}`);
+	const u = url.trim().replace(/[<>\s]/g, (c) => encodeURIComponent(c));
+	return u ? `[${t}](<${u}>)` : t;
+}
 
 /** El Expediente en Markdown, para descargar o pegar. `site`: la web, para que los enlaces internos funcionen fuera. */
 export function toMarkdown(d: Dossier, generated: string, site = ''): string {
@@ -179,17 +194,17 @@ export function toMarkdown(d: Dossier, generated: string, site = ''): string {
 	}
 	if (d.timeline.length) {
 		out.push('## Cronología', '');
-		for (const r of d.timeline) out.push(`- ${r.time ? r.time.slice(0, 10) + ' · ' : ''}${refKind(r.kind)} · [${cell(r.title)}](${r.url}) — ${cell(r.source)}`);
+		for (const r of d.timeline) out.push(`- ${r.time ? r.time.slice(0, 10) + ' · ' : ''}${refKind(r.kind)} · ${mdLink(r.title, r.url)} — ${cell(r.source)}`);
 		out.push('');
 	}
 	if (d.related.length) {
-		out.push('## Relaciones', '', '| Entidad | Tipo | Peso | Por qué |', '|---|---|---|---|');
+		out.push('## Relaciones', '', ...(d.relatedTotal > d.related.length ? [`Las ${d.related.length} más fuertes de ${d.relatedTotal}.`, ''] : []), '| Entidad | Tipo | Peso | Por qué |', '|---|---|---|---|');
 		for (const r of d.related) out.push(`| ${cell(r.label)} | ${kindLabel(r.kind)} | ${r.w} | ${cell(r.why)} |`);
 		out.push('');
 	}
 	if (d.links.length) {
 		out.push('## En Arc', '');
-		for (const l of d.links) out.push(`- [${l.label}](${href(l.href)})`);
+		for (const l of d.links) out.push(`- ${mdLink(l.label, href(l.href))}`);
 		out.push('');
 	}
 	out.push(`---`, `Expediente de Arc Terminal · ${generated}`, '');

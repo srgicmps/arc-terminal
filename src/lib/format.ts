@@ -35,9 +35,11 @@ export function compact(n: number | null | undefined): string {
 	if (n === null || n === undefined || !Number.isFinite(n)) return '—';
 	const a = Math.abs(n);
 	if (a >= 1e12) return `${nf(n / 1e12, 2)} bill.`;
-	if (a >= 1e9) return `${nf(n / 1e9, 1)} mil M`;
-	if (a >= 1e6) return `${nf(n / 1e6, 1)} M`;
-	if (a >= 1e3) return `${nf(n / 1e3, 1)} mil`;
+	// Sin «,0» de sobra: «182 mil», no «182,0 mil».
+	const one = (x: number) => nf(x, 1).replace(/,0$/, '');
+	if (a >= 1e9) return `${one(n / 1e9)} mil M`;
+	if (a >= 1e6) return `${one(n / 1e6)} M`;
+	if (a >= 1e3) return `${one(n / 1e3)} mil`;
 	return nf(n, 0);
 }
 
@@ -82,6 +84,8 @@ export const weekday = (date: string) => fmtWd.format(new Date(`${date}T12:00:00
  */
 export function when(iso: string | null | undefined, now: number): string {
 	if (!iso) return '';
+	// Solo el día («2026-10-14», como los del Federal Register): sin hora inventada ni «hace X h».
+	if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return dm(`${iso}T12:00:00Z`);
 	const t = Date.parse(iso);
 	if (!Number.isFinite(t)) return '';
 	const mins = Math.round((now - t) / 60_000);

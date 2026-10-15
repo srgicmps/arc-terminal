@@ -4,8 +4,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/** Archivos de OS 4b aún por pasar (Archivos y Centro de paquetes). */
-const PENDING = ['fs/Folder.svelte', 'apps/packages/Packages.svelte', 'apps/files/Files.svelte'];
+/** Archivos aún por pasar a `@media (hover: hover)` (ninguno). */
+const PENDING: string[] = [];
 
 function svelteFiles(dir: string): string[] {
 	return readdirSync(dir).flatMap((f) => {
@@ -46,6 +46,15 @@ describe('Arc OS en táctil', () => {
 		const bad = files
 			.filter((f) => !PENDING.some((p) => f.endsWith(p)))
 			.flatMap((f) => looseHover(readFileSync(f, 'utf8')).map((s) => `${f.slice(root.length)}: ${s}`));
+		expect(bad).toEqual([]);
+	});
+});
+
+describe('Arc OS en Safari', () => {
+	it('sin vh: en iPad la barra de Safari tapa lo que mide 100vh; se usa dvh', () => {
+		const root = new URL('../', import.meta.url).pathname;
+		const files = [...svelteFiles(join(root, 'os')), ...svelteFiles(join(root, 'components/os'))];
+		const bad = files.filter((f) => /[\d.]vh\b/.test(readFileSync(f, 'utf8').split('<style')[1] ?? '')).map((f) => f.slice(root.length));
 		expect(bad).toEqual([]);
 	});
 });

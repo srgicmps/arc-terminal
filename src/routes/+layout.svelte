@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { edgeFade } from '#lib/edgefade.ts';
 	import { onRowKey } from '#lib/rownav.ts';
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import { routeHref } from '#lib/routes.ts';
@@ -6,7 +7,7 @@
 	import '../styles/ajustes.css';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { MediaQuery } from 'svelte/reactivity';
-	import { neighbour, nudge, SWIPE, swipeDirection } from '#lib/swipe.ts';
+	import { isOnRoute, neighbour, nudge, SWIPE, swipeDirection } from '#lib/swipe.ts';
 	import { asset, resolve } from '$app/paths';
 	import { page, updated } from '$app/state';
 	import { startClock } from '#lib/clock.svelte.ts';
@@ -114,7 +115,13 @@
 	$effect(() => {
 		void page.route.id;
 		if (!matchMedia('(max-width: 720px)').matches) return;
-		document.querySelector('.keys [aria-current="page"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+		// Solo se mueve la fila: scrollIntoView movía también la página entera en Safari (logo y «⋯» cortados).
+		const row = document.querySelector<HTMLElement>('.keys');
+		const key = row?.querySelector<HTMLElement>('[aria-current="page"]');
+		if (!row || !key) return;
+		const r = row.getBoundingClientRect();
+		const k = key.getBoundingClientRect();
+		row.scrollLeft += k.left - r.left - (r.width - k.width) / 2;
 	});
 
 	// Deslizar entre vistas en el móvil (lote 22): a izquierda o derecha, a la vista de al lado de la fila de
@@ -160,13 +167,13 @@
 		const t = e.changedTouches[0];
 		const dir = swipeDirection(t.clientX - s.x, t.clientY - s.y, Date.now() - s.t);
 		if (!dir) return;
-		const next = neighbour(keys, keys.findIndex((k) => k.route === page.route.id), dir);
+		const next = neighbour(keys, keys.findIndex((k) => isOn(k.route)), dir);
 		if (next) goto(routeHref(next.route));
 	}
 
-	/** En modo TV, tocar la pantalla pausa o sigue (menos en los botones del aviso de pausa). */
+	/** En modo TV, tocar la pantalla pausa o sigue (menos en los botones del aviso de pausa, enlaces y controles). */
 	function onTvTap(e: PointerEvent) {
-		if (tv.on && !(e.target as Element | null)?.closest('.tv-chip')) togglePause();
+		if (tv.on && !(e.target as Element | null)?.closest('.tv-chip, a, button, input, select, textarea, label, summary')) togglePause();
 	}
 
 	const wide = new MediaQuery('min-width: 1280px');
@@ -174,9 +181,12 @@
 	// Fila de arriba y barra inferior del móvil (a mano del pulgar): las de la web o las de «A tu gusto».
 	const keys = $derived(COMMANDS.filter((c) => taste.top.includes(c.code)));
 	// A la vista, solo las primeras de la fila (como mucho VISIBLE_KEYS); el resto va en «Más».
+	const isOn = (route: string) => isOnRoute(page.route.id, route);
 	const visibleKeys = $derived(keys.slice(0, VISIBLE_KEYS));
 	const hiddenKeys = $derived(keys.slice(VISIBLE_KEYS));
-	const hiddenCurrent = $derived(hiddenKeys.find((k) => k.route === page.route.id));
+	/** En /os el escritorio tapa la web: el atajo de Experiencias (⇧X) no debe abrir su diálogo encima ni sacarte de /os. */
+	const inOs = $derived(page.route.id === '/os');
+	const hiddenCurrent = $derived(hiddenKeys.find((k) => isOn(k.route)));
 	const thumb = $derived(COMMANDS.filter((c) => taste.thumb.includes(c.code)));
 
 	// navigator.onLine, enlazado como en Vue con un ref que se actualiza solo.
@@ -214,6 +224,8 @@
 </svelte:head>
 
 <div class="app" data-ui="app">
+	<!-- Para el teclado y los lectores de pantalla: sin pasar por la cabecera y las pestañas. Solo se ve con el foco. -->
+	<a class="skip" href="#contenido">Saltar al contenido</a>
 	<header class="top" data-ui="top">
 		<a class="brand" data-ui="brand" href={resolve('/')}>
 			<Logo />
@@ -259,24 +271,24 @@
 		</Menu>
 	</header>
 
-	<nav class="keys" data-ui="keys" aria-label="Secciones">
+	<nav class="keys" data-ui="keys" aria-label="Secciones" use:edgeFade>
 		{#each visibleKeys as key (key.code)}
 			<a
 				class="key"
 				data-ui="key"
 				data-code={key.code}
 				href={routeHref(key.route)}
-				aria-current={page.route.id === key.route ? 'page' : undefined}
+				aria-current={isOn(key.route) ? 'page' : undefined}
 			>
 				{key.code}<span>{key.key}</span>
 			</a>
 		{/each}
 		<!-- El resto de tu fila y la ayuda, en «Más»; si estás en una de esas vistas, el botón lo dice. -->
-		<Menu label="Más secciones" cls="key more" ui="key" current={!!hiddenCurrent || page.route.id === '/help'} title="Más secciones">
+		<Menu label={hiddenCurrent ? `${hiddenCurrent.code}, más secciones` : 'Más secciones'} cls="key more" ui="key" current={!!hiddenCurrent || page.route.id === '/help'} title="Más secciones">
 			{#snippet button()}{hiddenCurrent?.code ?? 'Más'}<span aria-hidden="true">▾</span>{/snippet}
 			{#snippet children(close)}
 				{#each hiddenKeys as key (key.code)}
-					<a href={routeHref(key.route)} onclick={close} aria-current={page.route.id === key.route ? 'page' : undefined}>
+					<a href={routeHref(key.route)} onclick={close} aria-current={isOn(key.route) ? 'page' : undefined}>
 						{key.code} <small>{key.key}</small>
 					</a>
 				{/each}
@@ -284,7 +296,7 @@
 				<a href={resolve('/help')} onclick={close} aria-current={page.route.id === '/help' ? 'page' : undefined}>Todos los comandos <small>HELP</small></a>
 			{/snippet}
 		</Menu>
-		<ExpLauncher hotkey />
+		<ExpLauncher hotkey={!inOs} />
 	</nav>
 
 	{#if tapeState.on}
@@ -303,6 +315,8 @@
 	{#if !tv.on}<PanelIndex /><InstallHint /><OsNotice />{/if}
 
 	<main
+		id="contenido"
+		tabindex="-1"
 		data-ui="main"
 		class:nudged={shift !== 0}
 		style:translate={shift ? `${shift}px 0` : undefined}
@@ -316,7 +330,7 @@
 
 	<nav class="thumb" data-ui="tabs" aria-label="Accesos rápidos">
 		{#each thumb as c (c.code)}
-			<a href={routeHref(c.route)} data-code={c.code} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
+			<a href={routeHref(c.route)} data-code={c.code} aria-current={isOn(c.route) ? 'page' : undefined}>{c.code}</a>
 		{/each}
 		<ExpLauncher variant="thumb" />
 		<button type="button" aria-label="Buscar o escribir un comando" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>
@@ -345,6 +359,25 @@
 </div>
 
 <style>
+	.skip {
+		position: absolute;
+		top: var(--sp-4);
+		left: var(--sp-4);
+		z-index: var(--z-modal);
+		padding: var(--sp-6) var(--sp-10);
+		background: var(--panel);
+		border: var(--hair) solid var(--amber-edge);
+		color: var(--amber);
+		font-size: var(--fs-m);
+		text-decoration: none;
+		translate: 0 -200%;
+	}
+	.skip:focus-visible {
+		translate: none;
+	}
+	main:focus {
+		outline: none;
+	}
 	.top {
 		display: flex;
 		flex-wrap: wrap;
@@ -378,23 +411,69 @@
 		cursor: pointer;
 	}
 
-	.top :global(.theme:hover),
 	.top :global(.theme[aria-expanded='true']) {
 		color: var(--amber);
 		border-color: var(--amber-edge);
 	}
 
-	/* En pantallas táctiles se ve igual (28 px), pero la zona pulsable llega a 44 × 44 px. */
+	@media (hover: hover) {
+		.top :global(.theme:hover) {
+			color: var(--amber);
+			border-color: var(--amber-edge);
+		}
+	}
+
+	/* En pantallas táctiles se ven igual (28 px), pero la zona pulsable llega a 44 × 44 px. Vale para «⋯»,
+	   Apariencia y el chip de tu sitio: sin esto, el mínimo de 44 px de app.css los estira y la línea del
+	   logo mezcla botones de dos alturas. */
 	@media (pointer: coarse) {
-		.top :global(.theme) {
+		.top :global(:is(.theme, [data-ui='appearance'], .place .chip)) {
 			position: relative;
 			min-height: var(--btn-sm);
 		}
 
-		.top :global(.theme::after) {
+		.top :global(:is(.theme, [data-ui='appearance'], .place .chip)::after) {
 			content: '';
 			position: absolute;
 			inset: calc(-1 * var(--sp-8));
+		}
+
+		/* El logo lleva a la portada: 44 px de alto pulsable sin que la línea crezca. */
+		.brand {
+			position: relative;
+		}
+
+		.brand::after {
+			content: '';
+			position: absolute;
+			inset: calc((var(--touch) - 100%) / -2) 0;
+		}
+
+		/* Accesos de arriba (móvil y tableta): se ven igual, pero la zona pulsable llega a --touch de alto. */
+		.keys :global(.key) {
+			position: relative;
+			/* Sin la mancha gris de Safari al tocar: cubría la zona pulsable entera, desplazada de la pestaña. */
+			-webkit-tap-highlight-color: transparent;
+		}
+
+		.keys :global(.key::after) {
+			content: '';
+			position: absolute;
+			inset: calc((var(--touch) - 100%) / -2) 0;
+		}
+
+		/* «Más ▾» es un botón: sin esto, el mínimo de 44 px de app.css lo estira y, con él, a toda la fila
+		   (el texto de las demás pestañas se quedaba arriba). Su zona pulsable es el ::after, como las demás. */
+		.keys :global(button.key) {
+			min-height: 0;
+		}
+
+		/* «Estado de las fuentes», en el pie: la fila entera de 44 px. */
+		.status a {
+			display: inline-flex;
+			align-items: center;
+			min-height: var(--touch);
+			margin-block: calc((var(--touch) - 1lh) / -2);
 		}
 	}
 
@@ -425,6 +504,8 @@
 	.keys {
 		display: flex;
 		flex-wrap: wrap;
+		/* Sin estirar: todas las pestañas miden lo mismo, también «Más», que es un botón. */
+		align-items: center;
 		gap: var(--sp-6);
 		padding-block: var(--sp-2) var(--sp-10);
 	}
@@ -456,8 +537,10 @@
 		cursor: pointer;
 	}
 
-	.keys :global(.key:hover) {
-		border-color: var(--amber-edge);
+	@media (hover: hover) {
+		.keys :global(.key:hover) {
+			border-color: var(--amber-edge);
+		}
 	}
 
 	.keys :global(.key[aria-current='page']) {
@@ -588,9 +671,11 @@
 		cursor: pointer;
 	}
 
-	.tv-chip button:hover {
-		color: var(--amber);
-		border-color: var(--amber-edge);
+	@media (hover: hover) {
+		.tv-chip button:hover {
+			color: var(--amber);
+			border-color: var(--amber-edge);
+		}
 	}
 
 	@media (pointer: coarse) {
@@ -664,17 +749,6 @@
 			display: none;
 		}
 
-		/* Accesos de arriba: se ven igual, pero la zona pulsable llega a --touch de alto. */
-		.keys :global(.key) {
-			position: relative;
-		}
-
-		.keys :global(.key::after) {
-			content: '';
-			position: absolute;
-			inset: calc((var(--touch) - 100%) / -2) 0;
-		}
-
 		/* Que el contenido no quede tapado por la barra. */
 		.app {
 			padding-bottom: calc(var(--tabbar-h) + var(--hair) + env(safe-area-inset-bottom, 0px));
@@ -689,12 +763,11 @@
 		}
 
 		/* Accesos en una sola fila que se desliza en horizontal: la cabecera ocupa una línea menos. Un fundido
-		   muy leve a la derecha avisa de que hay más; el de la vista actual se trae a la vista al cambiar. */
+		   muy leve en el lado por el que sigue (data-fade, src/lib/edgefade.ts) avisa de que hay más; el de la vista actual se trae a la vista al cambiar. */
 		.keys {
 			flex-wrap: nowrap;
 			overflow-x: auto;
 			scrollbar-width: none;
-			mask-image: linear-gradient(to right, var(--bg) calc(100% - var(--sp-24)), transparent);
 		}
 
 		.keys::-webkit-scrollbar {
@@ -733,6 +806,14 @@
 			order: -1;
 			margin-left: auto;
 			margin-block: calc((var(--logo) - var(--control-h)) / 2);
+		}
+	}
+
+	/* Móviles de 360 px (Android, iPhone mini con zoom): logo, reloj, sitio y dos botones no caben y «⋯» bajaba
+	   a otra línea. El reloj sobra: el teléfono ya da la hora en su barra de estado. */
+	@media (max-width: 380px) {
+		.top :global(.clocks) {
+			display: none;
 		}
 	}
 

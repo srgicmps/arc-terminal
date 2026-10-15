@@ -22,6 +22,7 @@ import {
 	seaTemp
 } from '../../src/lib/openmeteo.ts';
 import { appendDaily, getJson, list, madridDate, madridDay, num, plain, type Source } from '../lib.ts';
+import { quakePlace } from '../../src/lib/quakeplace.ts';
 
 type Raw = Record<string, any>;
 
@@ -46,7 +47,7 @@ export const quakes: Source<Quake[]> = {
 					{
 						id: String(f.id),
 						mag: Number(f.properties?.mag ?? 0),
-						place: plain(f.properties?.place),
+						place: quakePlace(plain(f.properties?.place)),
 						time: new Date(ms).toISOString(),
 						url: String(f.properties?.url ?? ''),
 						tsunami: Boolean(f.properties?.tsunami),

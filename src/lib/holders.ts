@@ -45,14 +45,15 @@ export const TOP_INDEXED = 100;
  * todos los fondos que lo tienen, en cualquier puesto. Ordenado por lo que suman entre todos.
  */
 export function buildHolders(
-	portfolios: { fund: string; current: Line[]; previous: Line[] | null }[],
+	/** `total`: lo que vale la cartera entera, opciones incluidas (el peso sale igual que en FONDOS). */
+	portfolios: { fund: string; current: Line[]; previous: Line[] | null; total?: number }[],
 	top = TOP_INDEXED
 ): HeldIssuer[] {
 	const byCusip = new Map<string, HeldIssuer>();
 	const chosen = new Set<string>();
 	for (const p of portfolios) {
 		const sorted = [...p.current].sort((a, b) => b.value - a.value);
-		const total = sorted.reduce((s, l) => s + l.value, 0);
+		const total = p.total ?? sorted.reduce((s, l) => s + l.value, 0);
 		const before = p.previous && new Map(p.previous.map((l) => [l.cusip, l.shares]));
 		sorted.forEach((l, i) => {
 			if (i < top) chosen.add(l.cusip);
@@ -101,7 +102,11 @@ export function issuerKey(name: string): string {
 const ISSUER_NAMES: Record<string, string> = {
 	AMD: 'advanced micro devices',
 	TSM: 'taiwan semiconductor',
-	GOOGL: 'alphabet'
+	GOOGL: 'alphabet',
+	RTX: 'rtx',
+	// ETF: «SPDR S&P 500 ETF TR», «INVESCO QQQ TR».
+	SPY: 'spdr 500 etf',
+	QQQ: 'invesco qqq'
 };
 
 /** Los nombres (el de la barra y el del 13F) con los que se busca un valor de la barra entre los emisores del 13F. */

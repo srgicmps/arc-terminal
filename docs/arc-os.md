@@ -32,6 +32,7 @@ nada en los traspasos entre sesiones.
 - [x] Doble clic en el título para maximizar [OS 1] #493/#496
 - [x] Restaurar la sesión de ventanas al volver (`arc-os-desks`) [OS 1] #477 (revisado por OS 5)
 - [x] /os sin tope de peso (`scripts/weight.ts` → `EXEMPT`) [OS 2] #497
+- [x] QA 4 (ventanas): redimensionar por los 4 bordes y las 4 esquinas (`resizeRect`), Esc cancela el arrastre, ⌘/Super+flechas a cuartos y ↓ minimiza (`superSnap`), título siempre agarrable por la izquierda (`KEEP_LEFT`), lo guardado fuera de pantalla vuelve dentro al cargar, y cerrar y reabrir al momento [QA OS 4]
 
 ## Aspecto (cambio de Sergi, manda sobre lo anterior)
 «El escritorio no tiene un estilo a elegir: tiene SU estilo y no puede cambiar; solo cambian las apps».
@@ -112,6 +113,14 @@ nada en los traspasos entre sesiones.
 - [x] Multitarea, centro de control, buscador y gestos [OS 3] #494; Spotlight universal y «atrás» [OS 3 2] #528 #534
 - [x] Cambiar entre «Terminal clásico» y «Modo OS» (`mode.svelte.ts`) [OS 3] #478
 
+## QA 9 · Vistas de Arc en ventanas
+- [x] La ficha de un valor abre ventana (buscador, Terminal, Expediente, Línea de tiempo) y en el móvil; la misma ruta no se repite
+- [x] Una app ya abierta a la que se pide otra ruta (PAIS de otro país) carga esa ruta, no solo cambia el título
+- [x] Un enlace de una vista a otra app (Portada → «LUZ ›») la abre en su ventana (`onEmbedLink` de `embed.ts`)
+- [x] Con el foco dentro de una vista llegan todos los atajos del escritorio: Ctrl+Espacio, Alt+Tab, Ctrl+Alt+L
+- [x] Títulos en claro («País · CN», «Noticias · aranceles») y HELP sin scroll horizontal en ventana estrecha
+- [x] Prueba de humo `scripts/smoke-vistas-os.ts` en el job `checks`: todas las vistas embebidas a 390 px y el escritorio
+
 ## OS 6 · Centro de mando (detalle de #503 y #513–#516)
 Aspecto «Mando» y apps de análisis inspiradas en las plataformas de inteligencia, sin marcas ni logos de nadie y
 sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
@@ -126,8 +135,24 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - [x] **Grafo de entidades** (`grafo`): países, líderes, bancos, valores, sanciones, sucesos y temas de IMP con aristas por co-mención y relación; fuerzas propias, expandir, filtrar, buscar [OS 6] #516
 - [x] **Expediente** (`expediente`): ficha de cualquier entidad (resumen, datos, mapa, relaciones, cronología), exportar a Markdown/JSON e imprimir. API: `openDossier(kind, key)`, `openDossierFor('Lagarde')`, `openGraph()` (`apps/intel/open.ts`) [OS 6] #516
 - [x] Iconos SVG de las cinco apps en `icons/glyphs.ts` (mapa, vigilancia y línea de tiempo de OS 2b; grafo y expediente de OS 6) [OS 6]
-- [ ] Título de ventana: no enseñar el path en las herramientas sin `href` («Expediente · /expediente#country:CN») [núcleo]
+- [x] Título de ventana: no enseñar el path en las herramientas sin `href` («Expediente · /expediente#country:CN») [núcleo] (QA 9, `winTitle` de `apps.ts`)
 - [x] Contraste AA en /os: `--muted` de Mando a 4,5:1 también sobre el fondo con acento [OS 6] #533
+- [x] QA del Centro de mando (QA OS 8): nivel de alerta con «Sin datos» y avisos caducados por hora, pilotos que dejan el verde si los datos se paran y con forma por estado, Mapa operacional en el móvil (pellizco, línea de tiempo táctil) [QA OS 8] #541
+
+## QA 5 · Escritorio y barra (repaso con Playwright a 1280 y 1440 px)
+- [x] Una carpeta nueva (o tirar o meter un icono) ya no corre los demás iconos de sitio (`freeze` en `DesktopIcons`) [QA 5] #546
+- [x] Tras un rectángulo de selección, Supr, Intro y F2 actúan sobre lo seleccionado; Ctrl+A selecciona todo [QA 5] #546
+- [x] Barra de Mando: iconos SVG en las pestañas, título real de la ventana (carpetas), clic derecho en pestañas y en la barra [QA 5] #546
+- [x] Escritorios virtuales visibles en la barra de Mando (1…6, «+», clic derecho para cerrar) [QA 5] #546
+- [x] La inicial de la cuenta abre su menú (cuenta y ajustes, bloquear, volver a la web clásica) [QA 5] #546
+- [x] Panel de control: se cierra con Escape o con un clic fuera [QA 5] #546
+- [x] Widgets: uno nuevo no cae fuera de la pantalla (columna siguiente) y en una pantalla más pequeña se pintan dentro (`fitWidgets`) [QA 5] #546
+- [x] Con muchas ventanas, las pestañas de Mando se estrechan en vez de pisar el nivel de alerta [QA 5] #546
+- [x] Flechas para ir de un icono a otro del escritorio (Mayús: añadir a la selección) [QA 5] #546
+- [x] Launchpad: clic derecho en una app (abrir otra ventana, anclar, añadir al escritorio) [QA 5] #546
+- [x] Añadir una app al escritorio desde fuera (Launchpad, barra) ya no corre los iconos que no se habían movido [QA 5] #546
+- [x] Un icono soltado encima de un widget ya no se esconde debajo: va a la casilla libre más cercana [QA 5] #546
+- [x] Fuera la app «Carpeta» (ventana de carpeta de OS 2b): las carpetas y la Papelera se abren en Archivos [QA 5] #599
 
 ## OS 4 · Cómo están hechas las apps del sistema
 - Cada app es un archivo `src/lib/os/apps/<id>.ts` (registro, `load` diferido) y su carpeta. Marco común
@@ -135,7 +160,7 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - Lógica pura en un `.ts` con tests al lado; el estado del navegador en `.svelte.ts`.
 - Probar en local: `pnpm build`, `vite preview` y Playwright con `localStorage` `arc-shell=os`; Intro pasa la
   pantalla de bloqueo.
-- Pendiente: la ficha de un valor (`/s?sym=`) no es una app del núcleo (`openPath` devuelve null). La prueba de humo
+- La ficha de un valor (`/s?sym=`) es la app `valor` (`src/lib/os/apps/valor.ts`): «NVDA» abre «Valor · NVDA» (QA 9). La prueba de humo
   falla a veces con «Failed to fetch dynamically imported module …/nodes/0.*.js» a 390 px; al relanzar pasa.
 
 ## QA OS 11 · Pantallas y rendimiento (escritorio, 1024–2560 px, zoom, 15–20 ventanas)
@@ -143,3 +168,9 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - [x] Una ventana minimizada o de otro escritorio seguía pintando (iframe a 60 fps, globo del mapa girando): `content-visibility: hidden`, sin recargarla [QA OS 11]
 - [x] Toasts: un temporizador por aviso y limpieza al desmontar [QA OS 11]
 - [x] Prueba de humo de /os con 12 ventanas (`scripts/smoke-os.ts`) [QA OS 11]
+
+## Recorridos de punta a punta (QA OS 13)
+`pnpm e2e:os` (tras `pnpm build`; `scripts/e2e-os.ts`): primer arranque, bienvenida, fondo propio, TOP/GEO/WS/MIS en
+ventanas, mosaico, carpeta con un icono dentro, Notas, Mapa operacional y Expediente, buscador universal, recargar y que
+todo vuelva igual, otro escritorio, y salir al Terminal clásico y volver. Job `e2e-os` de los PR: Chromium manda;
+Firefox y WebKit solo avisan. `E2E_SHOTS=<carpeta>` guarda una captura de cada paso que falla.

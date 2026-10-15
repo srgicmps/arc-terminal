@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { peopleRange, vsYearText } from './food.ts';
+import { foodCountry, peopleRange, vsYearText } from './food.ts';
 
 describe('food', () => {
+	it('países en español, con tilde', () => {
+		expect(foodCountry('ML', 'Mali')).toBe('Malí');
+	});
 	it('horquillas de personas legibles', () => {
 		expect(peopleRange(8_000_000, 8_999_999)).toBe('8–9 M');
 		expect(peopleRange(10_000_000, 10_999_999)).toBe('10–11 M');

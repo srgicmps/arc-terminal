@@ -10,6 +10,7 @@ import { convert, type FxState } from './fx.ts';
 import { longDay, weekday } from './format.ts';
 import { madridDate } from './meetings.ts';
 import { TICKERS } from './tickers.ts';
+import { compareInput, symbolRange } from './bar/ranges.ts';
 
 /** Una sugerencia de la barra. */
 export interface Option {
@@ -36,6 +37,21 @@ export function splitInput(raw: string): { head: string; arg: string } {
 	const i = text.search(/\s/);
 	return i < 0 ? { head: text, arg: '' } : { head: text.slice(0, i), arg: text.slice(i).trim() };
 }
+
+/** Las palabras de un texto, normalizadas: «Curvas de tipos» → CURVAS, DE, TIPOS. */
+const words = (s: string) => norm(s).split(/[^A-Z0-9]+/).filter(Boolean);
+
+/**
+ * ¿La sugerencia encaja de verdad con un código corto («REP», «KO»)? Su código empieza así, o un alias o una
+ * palabra de la descripción (de 3 letras o más) es eso entero. Si no, el código corto es un valor.
+ */
+const strongMatch = (o: Option, q: string) =>
+	o.code.startsWith(q) ||
+	(o.aliases ?? []).some((a) => norm(a) === q || (o.kind === 'Función' && norm(a).startsWith(q))) ||
+	(q.length >= 3 && words(o.desc).includes(q));
+
+/** ¿Es un código corto que, si nada encaja de verdad, se abre como valor? */
+const isShortCode = (q: string) => isTickerLike(q) && q.length <= 3 && /^[A-Z]/.test(q);
 
 /** El comando que corresponde a un texto: por su código o por uno de sus alias. */
 export function findCommand(raw: string): Command | undefined {
@@ -118,22 +134,31 @@ export function suggest(raw: string, all: Option[], limit = 8, fx?: FxState): Op
 	// «NVDA » o «NVDA G»: las funciones del valor (GP, DES…).
 	const fns = functionOptions(raw);
 	if (fns) return fns;
+	// «?» suelto: la ayuda.
+	if (q === '?') return all.filter((o) => o.code === 'HELP');
 	const rank = (o: Option) => {
 		const aliases = (o.aliases ?? []).map(norm);
-		if (o.code === q) return 0;
+		// Un alias entero también va primero: «españa» marca ES, que es lo que abre Intro.
+		if (o.code === q || aliases.includes(q)) return 0;
 		if (o.code.startsWith(q)) return 1;
 		if (aliases.some((a) => a.startsWith(q))) return 2;
-		if (aliases.some((a) => a.includes(q)) || norm(o.desc).includes(q)) return 3;
+		// Una palabra que empieza así («oro» → «Oro») va antes que un trozo suelto («oro» en «Morocco»).
+		const texts = [...aliases, norm(o.desc)];
+		if (texts.some((t) => words(t).some((w) => w.startsWith(q)))) return 3;
+		if (texts.some((t) => t.includes(q))) return 4;
 		return -1;
 	};
 	// Los códigos de Bloomberg solo salen al escribir el código (por el principio), no por la descripción.
 	const bloomberg = BLOOMBERG.filter((o) => o.code.startsWith(q));
-	return [...all, ...bloomberg]
+	const list = [...all, ...bloomberg]
 		.map((o) => ({ o, r: rank(o) }))
 		.filter((x) => x.r >= 0)
 		.sort((a, b) => a.r - b.r)
-		.slice(0, limit)
 		.map((x) => x.o);
+	// «REP», «KO»: si nada encaja de verdad (solo trozos de alias o de descripciones), primero la ficha del valor,
+	// que es lo que abre Intro.
+	if (list.length && isShortCode(q) && !list.some((o) => strongMatch(o, q))) list.unshift({ code: q, desc: 'Ficha del valor', kind: 'Valor' });
+	return list.slice(0, limit);
 }
 
 /**
@@ -141,9 +166,15 @@ export function suggest(raw: string, all: Option[], limit = 8, fx?: FxState): Op
  * («gp» en «NVDA GP», ver src/lib/functions.ts).
  */
 export type Target =
-	| { kind: 'command'; command: Command; arg?: string; panel?: string; day?: string }
+	| ({ kind: 'command'; command: Command; arg?: string; panel?: string; day?: string } & Chart)
 	| { kind: 'help'; command: Command }
-	| { kind: 'symbol'; sym: string; fn?: string };
+	| ({ kind: 'symbol'; sym: string; fn?: string } & Chart);
+
+/** «NVDA vs AMD», «NVDA 1a»: lo que va en la URL (con el rango) y lo escrito, que es lo que se guarda en el historial. */
+interface Chart {
+	search?: string;
+	text?: string;
+}
 
 /**
  * «NVDA GP», «bme:rep des»: un valor y una de sus funciones. Los comandos ganan: «ES GP» no llega aquí
@@ -180,13 +211,18 @@ export function functionOptions(raw: string): Option[] | null {
 /** «NEWS inflación», «gasolina Madrid»: un comando que acepta texto, seguido del texto. */
 export function commandWithArg(raw: string): { command: Command; arg: string } | null {
 	if (findCommand(raw)) return null; // «wall street» es un alias entero, no WALL + «street»
+	// Un alias de varias palabras y el texto: «quién tiene NVDA» → HDS + NVDA (el alias más largo primero, antes
+	// que QUIEN + «tiene NVDA»).
+	const parts = raw.trim().split(/\s+/);
+	for (let n = Math.min(4, parts.length - 1); n >= 2; n--) {
+		const c = findCommand(parts.slice(0, n).join(' '));
+		if (c) return c.arg ? { command: c, arg: parts.slice(n).join(' ') } : null;
+	}
 	const { head, arg } = splitInput(raw);
 	const command = findCommand(head);
 	return command?.arg && arg ? { command, arg } : null;
 }
 
-/** Las palabras de un texto, normalizadas: «Curvas de tipos» → CURVAS, DE, TIPOS. */
-const words = (s: string) => norm(s).split(/[^A-Z0-9]+/).filter(Boolean);
 
 /**
  * Los paneles de un comando a los que lleva un texto, por orden: el título o una key enteros, luego los que
@@ -279,6 +315,14 @@ export function resolveInput(raw: string, suggestions: Option[]): Target | null 
 	if (command) return { kind: 'command', command };
 	const bloomberg = findBloomberg(q);
 	if (bloomberg) return { kind: 'command', ...bloomberg };
+	// «NVDA vs AMD», «NVDA 1a»: aquí y no solo en la barra, para que la Terminal y el Spotlight de Arc OS también lo abran.
+	const chart = compareInput(raw) ?? symbolRange(raw);
+	if (chart) {
+		const text = raw.trim();
+		return chart.route === '/cmp'
+			? { kind: 'command', command: findCommand('CMP')!, search: chart.search, text }
+			: { kind: 'symbol', sym: chart.code.split(' ')[0], search: chart.search, text };
+	}
 	const help = commandHelp(raw);
 	if (help) return { kind: 'help', command: help };
 	const dated = commandDay(raw);
@@ -293,13 +337,16 @@ export function resolveInput(raw: string, suggestions: Option[]): Target | null 
 	// «NVDA GP»: la ficha del valor con esa función.
 	const fn = symbolFunction(raw);
 	if (fn) return { kind: 'symbol', ...fn };
-	const pick = (isTickerLike(q) && suggestions.find((o) => o.code === q)) || suggestions[0];
+	if (q === '?') return { kind: 'command', command: findCommand('HELP')! };
+	// Un código corto (REP, KO, DE) solo va a una sugerencia que encaje de verdad; si no, es un valor.
+	const pick = (isTickerLike(q) && suggestions.find((o) => o.code === q)) || (isShortCode(q) ? suggestions.find((o) => strongMatch(o, q)) : suggestions[0]);
 	if (pick) return resolveInput(pick.run ?? pick.code, []);
 	return { kind: 'symbol', sym: q };
 }
 
 /** Cómo se guarda en el historial: «FUEL», «NEWS inflación», «NVDA». */
 export function canonical(target: Target): string {
+	if (target.kind !== 'help' && target.text) return target.text;
 	if (target.kind === 'symbol') return target.fn ? `${target.sym} ${target.fn.toUpperCase()}` : target.sym;
 	if (target.kind === 'help') return `${target.command.code} ?`;
 	if (target.panel) return `${target.command.code} ${target.panel}`;
@@ -311,6 +358,7 @@ export function canonical(target: Target): string {
  * La base la pone el componente.
  */
 export function targetPath(target: Target): { route: Command['route'] | '/s' | '/manual'; search: string } {
+	if (target.kind !== 'help' && target.search) return { route: target.kind === 'symbol' ? '/s' : target.command.route, search: target.search };
 	if (target.kind === 'symbol') {
 		const fn = target.fn ? `&fn=${encodeURIComponent(target.fn)}` : '';
 		return { route: '/s', search: `?sym=${encodeURIComponent(target.sym)}${fn}` };

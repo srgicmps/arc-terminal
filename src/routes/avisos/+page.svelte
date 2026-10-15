@@ -26,6 +26,7 @@
 		type GroupId
 	} from '#lib/alertconfig.ts';
 	import { place } from '#lib/place.svelte.ts';
+	import { saveQueue } from '#lib/savequeue.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
 	import { readWelcome, WELCOME_KEY, type AlertSuggestion } from '#lib/onboarding/plan.ts';
 
@@ -49,17 +50,19 @@
 				if (!res.ok || !res.headers.get('content-type')?.includes('application/json'))
 					throw new Error(String(res.status));
 				const body = (await res.json()) as { config: unknown; topic: string | null };
-				config = parseConfig(body.config);
+				config = confirmed = parseConfig(body.config);
 				topic = body.topic;
 				phase = 'ready';
 			})
 			.catch(() => (phase = 'error'));
 	});
 
-	async function save(next: AlertConfig, rotate = false) {
-		saving = true;
-		saved = '';
-		try {
+	// Cada cambio se ve al momento y se guarda en orden, de uno en uno: si tocas dos cosas seguidas, la segunda
+	// parte de la primera (antes se perdía la primera, porque se guardaba sobre la configuración vieja).
+	// (src/lib/savequeue.ts, con sus tests).
+	let confirmed: AlertConfig = DEFAULT_CONFIG;
+	const queue = saveQueue(
+		async (next: AlertConfig, rotate: boolean) => {
 			const res = await fetch(url, {
 				method: 'PUT',
 				headers: { 'content-type': 'application/json' },
@@ -67,15 +70,40 @@
 				redirect: 'manual'
 			});
 			if (!res.ok) throw new Error(String(res.status));
-			const body = (await res.json()) as { config: unknown; topic: string | null };
-			config = parseConfig(body.config);
-			topic = body.topic;
-			saved = 'Guardado';
-		} catch {
-			saved = 'No se ha podido guardar. Prueba otra vez.';
-		} finally {
-			saving = false;
+			return (await res.json()) as { config: unknown; topic: string | null };
+		},
+		{
+			ok(body, more) {
+				confirmed = parseConfig(body.config);
+				topic = body.topic;
+				// Si mientras tanto has cambiado algo más, se queda lo tuyo y se guarda en la vuelta siguiente.
+				if (!more) config = confirmed;
+				saved = 'Guardado';
+			},
+			fail() {
+				config = confirmed;
+				saved = 'No se ha podido guardar. Prueba otra vez.';
+			}
 		}
+	);
+
+	async function save(next: AlertConfig, rotate = false) {
+		config = next;
+		saved = '';
+		saving = true;
+		await queue.save(next, rotate);
+		saving = queue.busy;
+	}
+
+	/** El silencio: una hora vacía o igual en los dos lados no vale (el servidor lo quitaría sin decir nada). */
+	function setQuiet(input: HTMLInputElement, side: 'from' | 'until') {
+		const q = { ...config.quiet!, [side]: input.value };
+		if (!/^\d{2}:\d{2}$/.test(q[side]) || q.from === q.until) {
+			input.value = config.quiet![side];
+			saved = 'El silencio tiene que empezar y acabar a horas distintas.';
+			return;
+		}
+		set({ quiet: q });
 	}
 
 	const set = (patch: Partial<AlertConfig>) => save({ ...config, ...patch });
@@ -190,14 +218,14 @@
 								>De <input
 									type="time"
 									value={config.quiet.from}
-									onchange={(e) => set({ quiet: { from: e.currentTarget.value, until: config.quiet!.until } })}
+									onchange={(e) => setQuiet(e.currentTarget, 'from')}
 								/></label
 							>
 							<label
 								>a <input
 									type="time"
 									value={config.quiet.until}
-									onchange={(e) => set({ quiet: { from: config.quiet!.from, until: e.currentTarget.value } })}
+									onchange={(e) => setQuiet(e.currentTarget, 'until')}
 								/></label
 							>
 						{/if}
@@ -313,7 +341,7 @@
 						<button
 							type="button"
 							class:warn={confirmOff}
-							onclick={() => (confirmOff ? set({ on: false }) : (confirmOff = true))}
+							onclick={() => (confirmOff ? ((confirmOff = false), set({ on: false })) : (confirmOff = true))}
 							>{confirmOff ? '¿Seguro?' : 'Apagar'}</button
 						>
 					</ButtonRow>

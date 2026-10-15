@@ -147,7 +147,7 @@
 			{#each profile.kpis as k (k.key)}
 				{@const d = k.prev === null ? null : k.value - k.prev}
 				<Tile label={k.label} value="{nf(k.value, 1)} %">
-					{#if d !== null}<Change value={d * better[k.key]} text="{signed(d, 1)} pp" />{' · '}{/if}{period(k.t)} · {k.source}
+					{#if d !== null}<Change value={(Math.round(d * 10) / 10) * better[k.key]} text="{signed(d, 1)} pp" />{' · '}{/if}{period(k.t)} · {k.source}
 				</Tile>
 			{/each}
 		</Tiles>

@@ -226,7 +226,7 @@ export const funds: Source<FundsData> = {
 				if (!current.length) throw new Error(`13F ${last.accession} sin posiciones`);
 				const previous = prev ? await holdingsOf(def.cik, prev).catch(() => null) : null;
 				const total = sum(current);
-				portfolios.push({ fund: def.key, current: stockLines(current), previous: previous && stockLines(previous) });
+				portfolios.push({ fund: def.key, current: stockLines(current), previous: previous && stockLines(previous), total });
 				out.push({
 					key: def.key,
 					name: def.name,

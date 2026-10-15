@@ -17,7 +17,18 @@ export const FIRST_NAME = 'Mi lista';
 /** Hasta cuántas listas: suficientes para separar por temas sin llenar el selector. */
 export const MAX_LISTS = 8;
 
-const codesOf = (v: unknown): string[] => (Array.isArray(v) ? v.filter((c): c is string => typeof c === 'string') : []);
+/** Un código válido: «NVDA», «BRK.B», «BME:REP» (la misma regla que CARTERA). */
+export const CODE = /^[A-Z0-9][A-Z0-9.\-:]{0,19}$/;
+
+/** Lo escrito en MIS («nvda, aapl bme:rep») → códigos válidos sin repetir y lo que no lo es. */
+export function splitCodes(text: string): { codes: string[]; bad: string[] } {
+	const words = text.toUpperCase().split(/[\s,;]+/).filter(Boolean);
+	return { codes: [...new Set(words.filter((w) => CODE.test(w)))], bad: words.filter((w) => !CODE.test(w)) };
+}
+
+/** Códigos guardados (localStorage, la nube o un archivo importado): en mayúsculas, válidos y sin repetir. */
+const codesOf = (v: unknown): string[] =>
+	Array.isArray(v) ? [...new Set(v.filter((c): c is string => typeof c === 'string').map((c) => c.trim().toUpperCase()))].filter((c) => CODE.test(c)) : [];
 
 /** Lo guardado (texto de localStorage) → listas válidas, siempre con al menos una. */
 export function readLists(current: string | null, legacy: string | null): WatchLists {

@@ -171,6 +171,7 @@
 	@media (prefers-reduced-motion: no-preference) {
 		[data-style='papel'] .key,
 		[data-style='papel'] .theme,
+		[data-style='papel'] [data-ui='appearance'],
 		[data-style='papel'] .cmd,
 		[data-style='papel'] select,
 		[data-style='papel'] .mini a,

@@ -8,6 +8,7 @@ import {
 	gdacsPoints,
 	outagePoints,
 	travelPoints,
+	uniqueBy,
 	type SalaPoint
 } from './sala.ts';
 import type { CzibData } from '../czib.ts';
@@ -37,7 +38,7 @@ export async function salaData() {
 		dataset<CzibData>('czib')
 	]);
 	const now = Date.parse(geo?.fetchedAt ?? quakes?.fetchedAt ?? '') || 0;
-	const news = [...(geo?.data.items ?? []), ...(world?.data.items ?? [])]
+	const news = uniqueBy([...(geo?.data.items ?? []), ...(world?.data.items ?? [])], (n) => n.url)
 		.filter((n) => n.time)
 		.sort((a, b) => b.time!.localeCompare(a.time!))
 		.slice(0, 60);
@@ -47,7 +48,7 @@ export async function salaData() {
 	);
 	const quakeTimes = Object.fromEntries((quakes?.data ?? []).map((q) => [`q-${q.id}`, q.time]));
 
-	const points: SalaPoint[] = [
+	const points: SalaPoint[] = uniqueBy([
 		...conflictPoints(news),
 		...fromGeo(quakePoints((quakes?.data ?? []).filter((q) => q.mag >= 4.5)), 'quakes', quakeTimes),
 		...gdacsPoints(gdacs?.data),
@@ -57,7 +58,7 @@ export async function salaData() {
 		...outagePoints(ioda?.data),
 		...fromGeo(airspacePoints(czib?.data.items ?? []), 'airspace', czibTimes),
 		...fromGeo(straitPoints(straits?.data ?? []), 'straits')
-	];
+	], (p) => p.id);
 
 	return {
 		fetchedAt: geo?.fetchedAt ?? null,
