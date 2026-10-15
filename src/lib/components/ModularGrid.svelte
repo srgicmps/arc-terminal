@@ -113,16 +113,17 @@
 
 	.mgrid {
 		display: grid;
-		gap: var(--hair);
-		background: var(--line);
-		border: var(--border);
+		gap: var(--grid-gap);
+		background: var(--grid-fill);
+		border: var(--grid-edge);
 	}
 
 	/* Cada panel llena su celda: en una fila, todos acaban a la misma altura. */
+	/* Como las columnas de app.css: fondo y separación según la estética (tokens --grid-* y --col-fill). */
 	.cell {
 		display: flex;
 		flex-direction: column;
-		background: var(--panel);
+		background: var(--col-fill);
 		min-width: 0;
 	}
 
