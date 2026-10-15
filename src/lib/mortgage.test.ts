@@ -1,6 +1,6 @@
 // Cuota de la hipoteca: se compara con cuotas calculadas a mano y con los casos límite.
 import { describe, expect, it } from 'vitest';
-import { amortization, balanceAfter, lastAndYearAgo, monthlyPayment, nextReview } from './mortgage.ts';
+import { amortization, balanceAfter, firstYearPaid, lastAndYearAgo, monthlyPayment, nextReview } from './mortgage.ts';
 import type { Series } from './types.ts';
 
 describe('monthlyPayment', () => {
@@ -99,5 +99,31 @@ describe('nextReview', () => {
 	});
 	it('mes no válido', () => {
 		expect(nextReview(13, 12, oct)).toBeNull();
+	});
+});
+
+describe('nextReview en hora de España', () => {
+	it('el 1 de noviembre a las 00:30 de Madrid ya es noviembre (en UTC aún es 31 de octubre)', () => {
+		const night = new Date('2026-10-31T23:30:00Z');
+		expect(nextReview(11, 12, night)).toEqual({ ym: '2026-11', months: 0 });
+	});
+	it('la Nochevieja de Madrid ya es el año nuevo', () => {
+		expect(nextReview(1, 12, new Date('2026-12-31T23:30:00Z'))).toEqual({ ym: '2027-01', months: 0 });
+	});
+});
+
+describe('firstYearPaid', () => {
+	it('con muchos años, 12 cuotas', () => {
+		const pay = monthlyPayment(150000, 25, 3)!;
+		expect(firstYearPaid(150000, 25, 3)).toBeCloseTo(pay * 12, 6);
+	});
+	it('si quedan menos de 12 cuotas, solo esas (antes salía cuota × 12)', () => {
+		// Un mes al 3 %: se paga el capital y un mes de intereses.
+		expect(firstYearPaid(150000, 1 / 12, 3)).toBeCloseTo(150375, 6);
+		const rows = amortization(150000, 0.5, 3);
+		expect(firstYearPaid(150000, 0.5, 3)).toBeCloseTo(rows[0].paid, 6);
+	});
+	it('sin datos válidos, null', () => {
+		expect(firstYearPaid(0, 25, 3)).toBeNull();
 	});
 });

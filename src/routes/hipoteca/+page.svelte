@@ -4,6 +4,7 @@
 	con cuenta, en tus ajustes privados (D1). Nunca llegan al repo ni a los JSON públicos.
 -->
 <script lang="ts">
+	import DecimalInput from '#lib/components/DecimalInput.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Note from '#lib/components/ui/Note.svelte';
@@ -12,7 +13,7 @@
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import { nf, period, signed } from '#lib/format.ts';
-	import { amortization, balanceAfter, monthlyPayment, nextReview } from '#lib/mortgage.ts';
+	import { amortization, balanceAfter, firstYearPaid, monthlyPayment, nextReview } from '#lib/mortgage.ts';
 	import { last } from '#lib/series.ts';
 
 	let { data } = $props();
@@ -51,8 +52,15 @@
 	const pay = $derived(monthlyPayment(form.capital, form.years, form.rate));
 	const rows = $derived(amortization(form.capital, form.years, form.rate));
 	const interest = $derived(rows.reduce((s, r) => s + r.interest, 0));
+	const yearPaid = $derived(firstYearPaid(form.capital, form.years, form.rate));
+	// Desde la Ley 5/2019 el interés no baja de 0: la cuota se calcula así y así se enseña.
+	const rateNow = $derived(Number.isFinite(form.rate) ? Math.max(form.rate, 0) : null);
 	const review = $derived(nextReview(form.month, form.every === 6 ? 6 : 12, new Date()));
-	const newRate = $derived(euribor ? Math.max(euribor.v + form.spread, 0) : null);
+	// ¿Acaba de pagarse antes de la revisión? Entonces no hay cuota nueva.
+	const endsBefore = $derived(review !== null && pay !== null && review.months >= Math.round(form.years * 12));
+	// Un diferencial vacío cuenta como 0.
+	const spread = $derived(Number.isFinite(form.spread) ? form.spread : 0);
+	const newRate = $derived(euribor ? Math.max(euribor.v + spread, 0) : null);
 	// En la revisión, el banco recalcula la cuota con lo que quede y los años que falten.
 	const left = $derived(review ? balanceAfter(form.capital, form.years, form.rate, review.months) : null);
 	const newPay = $derived(
@@ -70,19 +78,19 @@
 			<tbody>
 				<tr>
 					<td class="name"><label for="h-capital">Capital pendiente</label></td>
-					<td><input id="h-capital" type="number" inputmode="numeric" min="0" step="1000" bind:value={form.capital} /> €</td>
+					<td><DecimalInput id="h-capital" class="num" thousands bind:value={form.capital} /> €</td>
 				</tr>
 				<tr>
 					<td class="name"><label for="h-years">Años que quedan</label></td>
-					<td><input id="h-years" type="number" inputmode="numeric" min="1" max="40" step="1" bind:value={form.years} /> a</td>
+					<td><DecimalInput id="h-years" class="num" bind:value={form.years} /> a</td>
 				</tr>
 				<tr>
 					<td class="name"><label for="h-rate">Tipo que pagas ahora</label></td>
-					<td><input id="h-rate" type="number" inputmode="decimal" min="0" step="0.05" bind:value={form.rate} /> %</td>
+					<td><DecimalInput id="h-rate" class="num" bind:value={form.rate} /> %</td>
 				</tr>
 				<tr>
 					<td class="name"><label for="h-spread">Diferencial sobre el euríbor</label></td>
-					<td><input id="h-spread" type="number" inputmode="decimal" min="0" step="0.05" bind:value={form.spread} /> %</td>
+					<td><DecimalInput id="h-spread" class="num" bind:value={form.spread} /> %</td>
 				</tr>
 				<tr>
 					<td class="name"><label for="h-month">Mes de la revisión</label></td>
@@ -103,14 +111,18 @@
 	<Panel title="Tu próxima revisión">
 		{#if euribor && review}
 			<Tiles>
-				<Tile label="Cuota de hoy" value="{nf(pay)} €" sub="Al {nf(form.rate)} %" />
-				<Tile label="Tras la revisión" value="{nf(newPay)} €" sub="{period(review.ym)}, {when}" />
+				<Tile label="Cuota de hoy" value="{nf(pay)} €" sub="Al {nf(rateNow)} %" />
+				<Tile
+					label="Tras la revisión"
+					value="{nf(newPay)} €"
+					sub={endsBefore ? `Acabas de pagar antes de ${period(review.ym)}` : `${period(review.ym)}, ${when}`}
+				/>
 				<!-- Pagar más es una subida (rojo); pagar menos, una bajada (verde). -->
 				<Tile
 					label="Diferencia"
 					value={diff === null ? '—' : `${signed(diff, 0)} €/mes`}
 					tone={diff === null ? 'mut' : diff > 0 ? 'down' : diff < 0 ? 'up' : 'flat'}
-					sub="Al {nf(newRate)} %: euríbor {nf(euribor.v, 3)} % + {nf(form.spread)} %"
+					sub="Al {nf(newRate)} %: euríbor {nf(euribor.v, 3)} % + {nf(spread)} %"
 				/>
 			</Tiles>
 			<Note>
@@ -142,7 +154,7 @@
 				</tbody>
 			</Table>
 			<Note>
-				En euros, desde hoy y con el tipo de ahora sin cambios: cada año pagas {nf((pay ?? 0) * 12, 0)} €. En total pagarías {nf(interest, 0)} € de intereses. Al principio
+				En euros, desde hoy y con el tipo de ahora sin cambios: {rows.length > 1 ? 'cada año pagas' : 'en lo que queda pagas'} {nf(yearPaid, 0)} €. En total pagarías {nf(interest, 0)} € de intereses. Al principio
 				casi todo es interés; al final, capital.
 			</Note>
 		{:else}
@@ -152,7 +164,8 @@
 </div>
 
 <style>
-	input,
+	/* Los campos son de DecimalInput (otro componente): :global para que les lleguen estos estilos. */
+	td :global(input.num),
 	select {
 		height: var(--control-h);
 		padding: 0 var(--sp-6);
@@ -162,12 +175,12 @@
 		font: inherit;
 	}
 
-	input {
+	td :global(input.num) {
 		width: 11ch;
 		text-align: right;
 	}
 
-	input:focus,
+	td :global(input.num:focus),
 	select:focus {
 		outline: none;
 		border-color: var(--amber);
