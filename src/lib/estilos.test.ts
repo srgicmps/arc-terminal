@@ -126,6 +126,7 @@ describe('estéticas', () => {
 			'src/lib/components/PanelIndex.svelte': 'panel-index',
 			'src/lib/components/Panel.svelte': 'panel panel-head panel-meta fold panel-grow panel-close',
 			'src/lib/components/ViewHeader.svelte': 'view-head view-title view-code view-sub view-sum',
+			'src/lib/components/ui/Menu.svelte': 'menu',
 			'src/lib/components/ui/Tile.svelte': 'tile',
 			'src/lib/components/ui/Note.svelte': 'note',
 			'src/lib/components/ui/Table.svelte': 'table',

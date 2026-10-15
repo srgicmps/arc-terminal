@@ -21,6 +21,8 @@ export const DENSITIES: { value: Density; label: string }[] = [
 /** Lo que trae la web: la fila de arriba con los comandos fijados y cuatro abajo. */
 export const DEFAULT_TOP = COMMANDS.filter((c) => c.pinned).map((c) => c.code);
 export const DEFAULT_THUMB = ['TOP', 'ECO', 'WS', 'FUEL'];
+/** En la fila de arriba se ven las primeras 6 de tu lista; el resto, en «Más ▾» (menos ruido en la cabecera). */
+export const VISIBLE_KEYS = 6;
 /** La barra inferior del móvil tiene sitio para 4 (más el botón «/»). */
 export const THUMB_MAX = 4;
 
