@@ -56,6 +56,10 @@
 	--track-caps: 0.08em; /* cabeceras de tabla en mayúsculas */
 	--track-label: 0.14em; /* títulos de panel */
 	--track-brand: 0.18em; /* logotipo */
+	--title-case: uppercase; /* títulos de panel: en mayúsculas en Terminal, como se escriben en Sencillo */
+	--title-track: var(--track-label);
+	--fs-title: var(--fs-xs); /* título de panel */
+	--title-font: var(--mono);
 
 	/* ── Espaciado ───────────────────────────────────────────────────────────────────────── */
 	/* Escala: el número es su tamaño en px. Para una web más o menos densa, se ajusta aquí. */
@@ -188,6 +192,30 @@
 	--fs-big: 27px;
 	--fs-xxl: 29px;
 	--fit-panel-min: 320px;
+}
+
+/* ── Modo «Sencillo» (src/lib/modo.ts) ───────────────────────────────────────────────────────
+ * Para quien no es experto: letra algo mayor que la «Cómoda», más aire y títulos de panel como se escriben, sin
+ * mayúsculas ni espaciado de terminal. Va detrás de la densidad para mandar sobre ella; no toca --control-h. */
+:root[data-modo='sencillo'] {
+	--pad-x: var(--sp-14);
+	--row-y: var(--sp-9);
+	--head-y: var(--sp-7);
+	--gutter: var(--sp-12);
+	--gutter-touch: var(--sp-16);
+	--fs-xxs: 12px;
+	--fs-xs: 13px;
+	--fs-s: 14px;
+	--fs-m: 15px;
+	--fs-l: 16.5px;
+	--fs-xl: 22px;
+	--fs-big: 28px;
+	--fs-xxl: 30px;
+	--fs-title: var(--fs-m);
+	--title-case: none;
+	--title-track: 0;
+	--title-font: var(--sans);
+	--fit-panel-min: 340px;
 }
 
 /* ── Acento elegido («A tu gusto», src/lib/taste.svelte.ts) ─────────────────────────────────

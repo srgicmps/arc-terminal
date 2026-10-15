@@ -18,7 +18,7 @@ export function launch(): Promise<Browser> {
  * responda. Devuelve el proceso y la raíz de la web.
  */
 export async function preview(port: number, cwd?: string): Promise<{ server: ChildProcess; root: string }> {
-	const root = `http://localhost:${port}/arc-terminal`;
+	const root = `http://localhost:${port}`;
 	const server = spawn('pnpm', ['exec', 'vite', 'preview', '--port', String(port), '--strictPort'], {
 		stdio: 'ignore',
 		cwd

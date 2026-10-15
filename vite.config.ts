@@ -3,7 +3,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 // `pnpm dev` arranca en modo 'serve'; `pnpm build` y `pnpm preview`, como la web publicada.
-export default defineConfig(({ command, isPreview }) => ({
+export default defineConfig(() => ({
 	plugins: [
 		sveltekit({
 			compilerOptions: {
@@ -19,13 +19,6 @@ export default defineConfig(({ command, isPreview }) => ({
 				// Los enlaces que vienen de fuentes externas no deben tumbar la publicación.
 				handleHttpError: 'warn'
 			},
-			paths: {
-				// GitHub Pages sirve la web en https://srgicmps.github.io/arc-terminal/,
-				// así que al construir todas las rutas empiezan por /arc-terminal.
-				// Cloudflare Pages la sirve en la raíz: la Action construye con BASE_PATH vacío.
-				// En desarrollo se queda en la raíz: http://localhost:5173/
-				base: (process.env.BASE_PATH as '' | `/${string}` | undefined) ?? (command === 'build' || isPreview ? '/arc-terminal' : '')
-			}
 		})
 	]
 }));

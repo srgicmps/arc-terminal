@@ -1,5 +1,5 @@
-# Descarga los datos, construye la web y la publica en GitHub Pages.
-# - push a main, cron y lanzamiento a mano sin «fuentes»: pasada completa y publicación (job build + deploy).
+# Descarga los datos, construye la web y la publica en Cloudflare Pages (web privada tras Cloudflare Access).
+# - push a main, cron y lanzamiento a mano sin «fuentes»: pasada completa y publicación (job build).
 # - PR: comprobaciones en jobs separados que corren a la vez, para que el verde o el rojo llegue antes:
 #   checks (check, test, build, sin datos) · smoke (datos + prueba de humo) · probe (solo si el PR toca
 #   scripts/). Menos jobs a la vez = menos cola en los runners, que comparten todas las sesiones.
@@ -29,11 +29,9 @@ on:
         options: [ninguna, compare, tv-shots]
         default: ninguna
 
-# Permisos mínimos que necesita el despliegue en Pages.
+# Permisos mínimos (la publicación en Cloudflare usa sus propios Secrets).
 permissions:
   contents: read
-  pages: write
-  id-token: write
   # Para abrir y cerrar los issues «Fuente caída» (scripts/issues.ts).
   issues: write
   # NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
@@ -184,23 +182,9 @@ jobs:
 
       - run: pnpm build --logLevel warn
 
-      # Empaqueta la carpeta build/ en el formato que espera Pages.
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: build
-
-      # Cloudflare Pages (web privada, Cloudflare Access delante): la misma web, construida en la raíz.
-      # Convive con GitHub Pages: si falla, no frena la publicación. Sin los Secrets, se salta. La primera vez
-      # crea el proyecto «arc-terminal» (si ya existe, el aviso de error se ignora).
-      - id: cf
-        run: echo "on=${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}" >> "$GITHUB_OUTPUT"
-      - if: steps.cf.outputs.on == 'true'
-        id: cfbuild
-        run: BASE_PATH= pnpm build --logLevel warn
-        continue-on-error: true
-      - if: steps.cfbuild.outcome == 'success'
-        continue-on-error: true
-        run: |
+      # Publica en Cloudflare Pages (web privada, Cloudflare Access delante). Si el proyecto «arc-terminal»
+      # ya existe, el error de «project create» se ignora.
+      - run: |
           node scripts/cf-config.ts
           npx --yes wrangler@4.145.0 pages project create arc-terminal --production-branch=main || true
           npx --yes wrangler@4.145.0 pages deploy build --project-name=arc-terminal --branch=main --commit-dirty=true
@@ -213,16 +197,6 @@ jobs:
           D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}
           ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
           ACCESS_AUD: ${{ vars.ACCESS_AUD }}
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
 
   # PR: lo rápido. No descarga datos ni usa claves: check, test y build funcionan sin static/data.
   checks:
