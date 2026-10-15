@@ -199,6 +199,50 @@ clave ni registro. Comparar con el lote 26-A antes de repartir, por si algo se r
 10. **Récords y extremos**: marcar cuando un dato toca su máximo o mínimo de varios años («paro mínimo desde 2008»).
 11. **Resumen en una línea** arriba de cada vista, hecho con los datos (sin IA), pensado para el móvil.
 
+## 2g. Lote 28 (Ideas 4, 15/10): viabilidad de 21 ideas de otros terminales, aprobadas en principio
+
+Sin red en el entorno de Ideas: ninguna fuente nueva está comprobada en vivo; las marcadas «probe» se confirman con
+`scripts/probe.txt`. Esfuerzo: S (horas), M (un PR normal), L (varios PR). ✅ viable · ⚠ con pega · ❌ no viable.
+
+1. ✅ M **EQS**: widget «screener» de TradingView (sin clave; filtros de sector, PER, dividendo, subida). Probe del widget.
+2. ✅ S **MOST**: ya existe `HotLists` (TradingView hotlists, EE. UU./Alemania/España) en WS; falta solo el comando.
+3. ⚠ M **RV**: Finnhub `/stock/peers` + `/stock/metric` (gratis, ya se usa en `perf.ts`); pega: cupo de 60/min, solo
+   EE. UU. y para unos 50 valores, cada 12 h.
+4. ✅ M **HDS**: invertir los 13F que ya baja `funds.ts`: «qué fondos de FONDOS tienen NVDA». Solo esos fondos, con 45 días de retraso.
+5. ⚠ M **CACS**: dividendos y splits salen gratis de SEC (8-K) a medias; `/stock/dividend` de Finnhub es de pago
+   (probar `dividend2`/`split` con probe). Recompras: solo texto de 8-K/10-Q. Empezar por resultados + dividendos.
+6. ⚠ M **WB**: EE. UU. (Tesoro, 2/10/30), zona euro (curva del BCE, `YC`), Japón (`jgb.ts`) sí; Reino Unido y China
+   siguen aparcados. FRED da 10 años mensual de la OCDE para ~30 países. Probe de `YC` 30Y.
+7. ✅ S **BTMM**: SOFR ya en FRED; €STR (BCE), letras del Tesoro y Euríbor (BCE/FRED); NY Fed API sin clave (probe).
+8. ✅ S **NI**: filtrar los titulares ya descargados con `queryWords`/`hasWords` y temas predefinidos (CHIPS, OIL…).
+   Solapa con NEWS: mejor como argumento de NEWS («NEWS CHIPS») que como comando nuevo.
+9. ⚠ L **DASH**: ya hay paneles fijados en TOP (`pins`); ampliarlo a varios tableros con nombre. Toca el layout y el
+   modo encajar.
+10. ✅ M **G**: un registro de series (id → dataset + ruta) y `LineChart`; varias a la vez en base 100 o dos ejes.
+11. ✅ S **Estacionalidad**: cálculo propio sobre series mensuales ya guardadas (FRED, INE, luz). Sin fuente nueva.
+12. ⚠ M **Correlaciones**: hace falta historial diario de precios; FRED (S&P, petróleo, oro, euro, 10 años) sí. Acciones
+    sueltas no (Finnhub `candle` es de pago). Empezar por macroactivos de FRED.
+13. ⚠ S **Mapa de calor mundial**: ya hay S&P, Nasdaq, DAX e IBEX; el widget admite más índices (Euro Stoxx, Nikkei…).
+    Por país en una sola vista: TradingView no lo da; quedaría «índice por índice».
+14. ⚠ M **Señales técnicas**: Finnhub `/stock/metric` da máx./mín. de 52 semanas gratis; cruces de medias y RSI piden
+    velas diarias (de pago en Finnhub). Alternativa: widget «technical-analysis» de TradingView en la ficha.
+15. ❌ **Conflictos en directo**: ACLED pide registro y no deja redistribuir; UCDP pide token desde 2025 y va con
+    retraso; GDELT descartado. Lo más cercano ya está (GEO con titulares y terremotos).
+16. ⚠ M **Aviones de Estado**: adsb.lol (ODbL, `/v2/mil`, sin clave) o OpenSky (no comercial, 400 créditos/día).
+    Pegas: privacidad (solo militares/Estado, sin seguir rutas) y que bloqueen IP de Actions. Probe.
+17. ⚠ S **Ctrl/Cmd+K**: ya aprobado (lista 1, n.º 10); comprobar con Prog Barra 3/4 antes de repartir.
+18. ⚠ S **Atajos vim**: «/» ya existe; «g t», «g w» caben en `shortcuts.ts`. Mismo choque con Prog Barra 3/4.
+19. ⚠ M **Solo texto**: un `data-density` en tokens (`--row-y`, `--pad-x`) sin gráficos ni widgets. Toca el layout.
+20. ✅ S **Notas**: localStorage registrado en `prefs.ts`, en ficha de valor y PAIS. Sin datos externos.
+21. ⚠ M **Informe semanal**: PDF con la impresión del navegador (CSS de impresión en SEMANA, S); email desde Actions
+    pide un servicio de correo (cuenta/clave): decisión de Sergi. ntfy con enlace a SEMANA, gratis.
+
+**Bloques para programar, sin choques**
+- **A · Mercados (WS/ficha/FONDOS)**: 1, 2, 3, 4, 5, 13, 14. Datos: TradingView, Finnhub, SEC.
+- **B · Datos y gráficos (ECO/WS)**: 6, 7, 10, 11, 12. Fuentes: Tesoro, BCE, FRED, NY Fed.
+- **C · Interfaz (barra, layout, navegador)**: 8, 9, 17, 18, 19, 20, 21. Va tras Prog Barra 3/4; 9 y 19 en un solo PR de layout.
+- Fuera: 15 (❌). 16, aparte, si Sergi acepta la pega de privacidad.
+
 ## 3. Decisiones de Sergi que hay que respetar
 
 - Arc Terminal es **mundial**: nada nuevo centrado en Menorca, salvo los puertos AIS de Maó y Ciutadella.
