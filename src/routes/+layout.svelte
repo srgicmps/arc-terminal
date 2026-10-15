@@ -25,7 +25,8 @@
 	import { initTape, tape as tapeState, toggleTape } from '#lib/tape.svelte.ts';
 	import { initMode, mode, toggleMode } from '#lib/layout.svelte.ts';
 	import { loadPins } from '#lib/pins.svelte.ts';
-	import { cycleTheme, initTheme, theme } from '#lib/theme.svelte.ts';
+	import { initTheme } from '#lib/theme.svelte.ts';
+	import Appearance from '#lib/components/Appearance.svelte';
 	import { followPlaceUrl, initPlace } from '#lib/place.svelte.ts';
 	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
 	import { initFolded } from '#lib/folded.svelte.ts';
@@ -167,8 +168,6 @@
 	}
 
 	const wide = new MediaQuery('min-width: 1280px');
-	const THEME_ICON = { auto: '◐', light: '☀', dark: '☾' };
-	const THEME_SHORT = { auto: 'automático', light: 'día', dark: 'noche' };
 
 	// Fila de arriba y barra inferior del móvil (a mano del pulgar): las de la web o las de «A tu gusto».
 	const keys = $derived(COMMANDS.filter((c) => taste.top.includes(c.code)));
@@ -228,8 +227,10 @@
 				{crossedRules.length}<span class="sr"> {crossedRules.length === 1 ? 'umbral cruzado' : 'umbrales cruzados'}</span>
 			</span>
 		{/if}
+		<!-- Estética, tema, acento y densidad: un solo botón (src/lib/components/Appearance.svelte). -->
+		<Appearance />
 		<!-- Lo que se usa poco va en «⋯»: así la cabecera queda en logo, barra, sitio, hora y avisos. -->
-		<Menu label="Más opciones" cls="theme" ui="more" title="Más opciones: encajar, portada modular, tema">
+		<Menu label="Más opciones" cls="theme" ui="more" title="Más opciones: encajar y portada modular">
 			{#snippet button()}<span aria-hidden="true">⋯</span>{/snippet}
 			{#snippet children(close)}
 				{#if page.route.id === '/'}
@@ -244,9 +245,6 @@
 						Encajar en la pantalla <small>{fit.on ? 'sí' : 'no'} · ⤢</small>
 					</button>
 				{/if}
-				<button type="button" onclick={cycleTheme}>
-					Tema <small>{THEME_SHORT[theme.mode]} · {THEME_ICON[theme.mode]}</small>
-				</button>
 				<button type="button" aria-pressed={tapeState.on} onclick={() => (toggleTape(), close())}>
 					Cinta de cotizaciones <small>{tapeState.on ? 'sí' : 'no'}</small>
 				</button>
@@ -653,7 +651,8 @@
 
 		/* La cabecera del móvil en una línea: logo a la izquierda; tu sitio y los botones, a la derecha. */
 		.top {
-			column-gap: var(--sp-10);
+			/* 6 px: logo, reloj, sitio, Apariencia y «⋯» caben en una línea a 390 px. */
+			column-gap: var(--sp-6);
 		}
 
 		.top :global(.place .caret) {
@@ -707,12 +706,13 @@
 		}
 
 		/* Como antes del tema: logo, relojes y barra de comandos, cada uno en su línea. El chip de tu sitio y el
-		   botón del tema van en la línea del logo, a la derecha; sus márgenes negativos evitan que esa línea crezca. */
+		   botón de Apariencia van en la línea del logo, a la derecha; sus márgenes negativos evitan que esa línea crezca. */
 		.brand {
 			order: -2;
 		}
 
-		.top :global(.theme) {
+		.top :global(.theme),
+		.top :global([data-ui='appearance']) {
 			order: -1;
 			margin-block: calc((var(--logo) - var(--btn-sm)) / 2);
 		}
