@@ -136,8 +136,10 @@
 		color: var(--amber);
 		text-decoration: none;
 	}
-	header a:hover {
-		text-decoration: underline;
+	@media (hover: hover) {
+		header a:hover {
+			text-decoration: underline;
+		}
 	}
 	/* Estado vacío con la letra de la interfaz, no la de los textos de la web. */
 	.pop .empty {
