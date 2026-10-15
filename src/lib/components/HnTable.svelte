@@ -58,6 +58,8 @@
 		font-family: var(--sans);
 		font-size: var(--fs-l);
 		line-height: var(--lh-tight);
+		/* Una palabra muy larga se parte en vez de ensanchar la vista. */
+		overflow-wrap: anywhere;
 	}
 
 	.h:hover {

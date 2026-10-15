@@ -68,6 +68,8 @@
 		font-size: var(--fs-l);
 		line-height: var(--lh-tight);
 		text-wrap: pretty;
+		/* Una palabra muy larga (una URL, un nombre pegado) se parte en vez de ensanchar la vista. */
+		overflow-wrap: anywhere;
 	}
 
 	.h:hover {

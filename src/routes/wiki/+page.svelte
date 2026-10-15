@@ -93,6 +93,8 @@
 		list-style: none;
 		margin: 0;
 		padding: 0;
+		/* Una palabra muy larga se parte en vez de ensanchar la vista. */
+		overflow-wrap: anywhere;
 	}
 
 	.wl li {

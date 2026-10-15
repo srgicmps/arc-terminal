@@ -22,6 +22,7 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import { sectionLabel } from '#lib/news.ts';
+	import { hm } from '#lib/format.ts';
 	import { latestQuote, recent, whySentence, WHY_HOURS } from '#lib/why.ts';
 	import Change from '#lib/components/ui/Change.svelte';
 	import { shortStat } from '#lib/shortvol.ts';
@@ -113,7 +114,7 @@
 						{:else}
 							<p class="empty">Ningún titular la nombra en las últimas {WHY_HOURS} h.</p>
 						{/if}
-						{#snippet note()}Variación de Finnhub{#if quote?.time} a las {new Date(quote.time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}{/if}; titulares de todas las secciones · <Updated at={data.news?.fetchedAt} source="news-eco" />{/snippet}
+						{#snippet note()}Variación de Finnhub{#if quote?.time}{' '}a las {hm(quote.time)}{/if}; titulares de todas las secciones · <Updated at={data.news?.fetchedAt} source="news-eco" />{/snippet}
 					</Panel>
 				{/if}
 				<Panel title="Análisis técnico" expand={fn === 'ta'} jump={{ code: 'SIG', href: `${resolve('/sig')}?s=${encodeURIComponent(code)}` }}>
