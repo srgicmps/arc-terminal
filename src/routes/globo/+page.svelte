@@ -19,14 +19,14 @@
 	const points = $derived(data.points.filter((p) => on.includes(p.layer)));
 </script>
 
-<ViewHeader code="GLOBO" title="Globo" sub="Lo que pasa en el mundo, en 3D: arrastra para girarlo y toca un punto" />
+<ViewHeader code="GLOBO" title="Globo" sub="Lo que pasa en el mundo, en 3D" />
 
-<Panel title="Globo" meta="Arrastra para girarlo · toca un punto para ver su ficha">
+<Panel title="Globo" meta="Arrastra · toca un punto">
 	<section class="stage">
+		<Globe {points} legend={available} />
 		{#if available.length > 1}
 			<div class="layers"><Seg label="Capas del globo" options={available} bind:values={on} /></div>
 		{/if}
-		<Globe {points} legend={available} />
 		<p class="foot">
 			<a href={resolve('/geo')}>Mapa plano en GEO ›</a>
 			<a href={resolve('/x/sala')}>Sala de control ›</a>
@@ -36,10 +36,25 @@
 </Panel>
 
 <style>
+	/* El globo llena la vista: todo el ancho y el alto que dejan la barra y las cabeceras (unos 300 px). */
 	.stage {
+		--globe-max: none;
+		--globe-h: max(340px, calc(100dvh - 300px));
 		display: grid;
 		gap: var(--sp-8);
-		padding: var(--sp-8) var(--pad-x);
+		padding: var(--sp-4) var(--pad-x) var(--sp-8);
+	}
+
+	/* Móvil: de borde a borde del panel. */
+	@media (max-width: 640px) {
+		.stage {
+			padding-inline: 0;
+		}
+
+		.layers,
+		.foot {
+			padding-inline: var(--pad-x);
+		}
 	}
 
 	.layers {

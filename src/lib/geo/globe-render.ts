@@ -4,6 +4,11 @@
 // se ve o si el sistema pide menos movimiento. Las cuentas están en globe.ts.
 import { LAND } from '../world.ts';
 import {
+	isDark,
+	pulseOf,
+	rgbOf,
+	subsolar,
+	withAlpha,
 	clampLat,
 	landDots,
 	lonDelta,
@@ -38,6 +43,23 @@ export interface Globe {
 const AUTO = 360 / 120_000;
 /** Tras tocarlo, cuánto espera para volver a girar solo. */
 const IDLE = 4000;
+
+/** Lado del lienzo de la sombra: pequeño, se estira suavizado; 9.216 píxeles por fotograma. */
+const SHADE = 96;
+
+/** Estrellas del fondo oscuro: [x, y] en fracción del lienzo y brillo. Fijas (semilla), para que no bailen. */
+const STARS: [number, number, number][] = (() => {
+	let seed = 7;
+	const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+	return Array.from({ length: 160 }, () => [rnd(), rnd(), 0.15 + rnd() * 0.45] as [number, number, number]);
+})();
+
+/** Número estable a partir de un id, para que cada punto lata con su propio desfase. */
+const hash = (s: string) => {
+	let h = 0;
+	for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+	return h;
+};
 
 let dotsCache: [number, number][] | null = null;
 let ringsCache: [number, number][][] | null = null;
@@ -88,7 +110,15 @@ export function createGlobe(canvas: HTMLCanvasElement, opts: GlobeOptions): Glob
 	let last = 0;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
-	const radius = () => (Math.min(w, h) / 2) * 0.9 * zoom;
+	const radius = () => (Math.min(w, h) / 2) * 0.88 * zoom;
+	let pulsing = false;
+	// La hora del Sol, al abrir y cada minuto.
+	let sunAt = subsolar(new Date());
+	const sunTimer = setInterval(() => (sunAt = subsolar(new Date())), 60_000);
+	const shadeCanvas = document.createElement('canvas');
+	shadeCanvas.width = shadeCanvas.height = SHADE;
+	const shadeCtx = shadeCanvas.getContext('2d');
+	const shadeImg = shadeCtx?.createImageData(SHADE, SHADE);
 
 	function resize() {
 		const r = canvas.getBoundingClientRect();
@@ -122,20 +152,44 @@ export function createGlobe(canvas: HTMLCanvasElement, opts: GlobeOptions): Glob
 		const R = radius();
 		const cx = w / 2;
 		const cy = h / 2;
+		const dark = isDark(colors.bg);
 		g.setTransform(dpr, 0, 0, dpr, 0, 0);
 		g.clearRect(0, 0, w, h);
 
-		// Esfera: un relleno apenas distinto del fondo y un borde de 1 px.
+		// Estrellas, solo con fondo oscuro: fijas, se desplazan un poco al girar (paralaje).
+		if (dark) {
+			g.fillStyle = colors.fg;
+			const shift = (view.lon / 360) * w * 0.15;
+			for (const [sx, sy, a] of STARS) {
+				const x = (((sx * w + shift) % w) + w) % w;
+				const y = sy * h;
+				if (Math.hypot(x - cx, y - cy) < R * 1.12) continue;
+				g.globalAlpha = a;
+				g.fillRect(x, y, 1, 1);
+			}
+			g.globalAlpha = 1;
+		}
+
+		// Atmósfera: halo del color de acento que se apaga hacia fuera.
+		const halo = g.createRadialGradient(cx, cy, R * 0.97, cx, cy, R * 1.12);
+		halo.addColorStop(0, withAlpha(colors.amber, dark ? 0.42 : 0.3));
+		halo.addColorStop(0.35, withAlpha(colors.amber, dark ? 0.14 : 0.1));
+		halo.addColorStop(1, withAlpha(colors.amber, 0));
+		g.fillStyle = halo;
+		g.beginPath();
+		g.arc(cx, cy, R * 1.12, 0, Math.PI * 2);
+		g.fill();
+
+		// Esfera.
 		g.beginPath();
 		g.arc(cx, cy, R, 0, Math.PI * 2);
 		g.fillStyle = colors.panel;
 		g.fill();
-		g.lineWidth = 1;
-		g.strokeStyle = colors.line;
-		g.stroke();
 
 		// Meridianos y paralelos cada 30°, muy tenues.
-		g.globalAlpha = 0.45;
+		g.globalAlpha = 0.4;
+		g.lineWidth = 1;
+		g.strokeStyle = colors.line;
 		g.beginPath();
 		for (let lon = -180; lon < 180; lon += 30)
 			line(Array.from({ length: 37 }, (_, i) => [i * 5 - 90, lon] as [number, number]));
@@ -144,42 +198,73 @@ export function createGlobe(canvas: HTMLCanvasElement, opts: GlobeOptions): Glob
 		g.stroke();
 		g.globalAlpha = 1;
 
-		// Tierra: trama de puntos; los del borde, más tenues (dan volumen).
-		const ds = Math.max(1, R / 220);
-		for (const [front, color] of [
-			[false, colors.line],
-			[true, colors.muted]
-		] as const) {
-			g.beginPath();
-			for (const [lat, lon] of dots) {
-				const q = rotate(lat, lon, view);
-				if (q.z <= 0 || q.z > 0.35 !== front) continue;
-				g.rect(cx + q.x * R - ds / 2, cy - q.y * R - ds / 2, ds, ds);
-			}
-			g.fillStyle = color;
-			g.globalAlpha = front ? 0.8 : 0.5;
-			g.fill();
+		// Tierra: trama de puntos en el color de acento; los del borde, más tenues (dan volumen).
+		const ds = Math.max(1.3, R / 170);
+		const front = new Path2D();
+		const limb = new Path2D();
+		for (const [lat, lon] of dots) {
+			const q = rotate(lat, lon, view);
+			if (q.z <= 0) continue;
+			(q.z > 0.35 ? front : limb).rect(cx + q.x * R - ds / 2, cy - q.y * R - ds / 2, ds, ds);
 		}
+		g.fillStyle = colors.amber;
+		g.globalAlpha = 0.5;
+		g.fill(limb);
+		g.globalAlpha = 0.9;
+		g.fill(front);
 		g.globalAlpha = 1;
 
 		// Costas: 1 px, solo los tramos de la cara visible.
+		g.globalAlpha = 0.6;
 		g.beginPath();
 		for (const ring of rings) line(ring);
-		g.strokeStyle = colors.line;
+		g.strokeStyle = colors['amber-dim'];
+		g.stroke();
+		g.globalAlpha = 1;
+
+		// Luz y sombra: la noche de verdad (según la hora) y el borde un poco más oscuro.
+		shade();
+		g.save();
+		g.beginPath();
+		g.arc(cx, cy, R, 0, Math.PI * 2);
+		g.clip();
+		g.drawImage(shadeCanvas, cx - R, cy - R, R * 2, R * 2);
+		g.restore();
+		g.beginPath();
+		g.arc(cx, cy, R, 0, Math.PI * 2);
+		g.strokeStyle = withAlpha(colors.amber, 0.35);
 		g.stroke();
 
-		// Puntos de las capas: de detrás hacia delante, el elegido el último.
+		// Puntos de las capas: de detrás hacia delante, el elegido el último. Encima de la sombra: se ven de noche.
 		const vis = points
 			.map((p) => ({ p, q: rotate(p.lat, p.lon, view) }))
 			.filter((v) => v.q.z > 0.02)
 			.sort((a, b) => (a.p.id === selected ? 1 : b.p.id === selected ? -1 : a.q.z - b.q.z));
+		pulsing = false;
 		for (const { p, q } of vis) {
 			const st = styleOf(p.layer);
 			const x = cx + q.x * R;
 			const y = cy - q.y * R;
 			const r = pointPx(p.r, R) * (0.6 + 0.4 * q.z);
 			const on = p.id === selected;
-			g.globalAlpha = 0.35 + 0.65 * Math.min(1, q.z * 2);
+			const depth = 0.35 + 0.65 * Math.min(1, q.z * 2);
+			// Ondas que se expanden: más amplias y dobles en lo grave; sin animación si se pide menos movimiento.
+			const level = pulseOf(p, flash.has(p.id));
+			if (level && !opts.reduced) {
+				pulsing = true;
+				const period = level === 2 ? 1700 : 2600;
+				const off = hash(p.id) % period;
+				for (let n = 0; n < level; n++) {
+					const k = ((now + off + (n * period) / 2) % period) / period;
+					g.globalAlpha = depth * (1 - k) * (level === 2 ? 0.75 : 0.45);
+					g.beginPath();
+					g.arc(x, y, r + 1 + k * (level === 2 ? 18 : 10), 0, Math.PI * 2);
+					g.strokeStyle = colors.amber;
+					g.lineWidth = 1;
+					g.stroke();
+				}
+			}
+			g.globalAlpha = depth;
 			shape(st.shape, x, y, r);
 			const fill = p.strong ? 'amber-edge' : st.fill;
 			if (fill) {
@@ -191,17 +276,45 @@ export function createGlobe(canvas: HTMLCanvasElement, opts: GlobeOptions): Glob
 			g.strokeStyle = on ? colors.fg : colors[p.strong ? 'amber' : (st.stroke ?? st.fill ?? 'amber')];
 			g.stroke();
 			g.setLineDash([]);
-			// Lo nuevo (Sala de control) late con un anillo; sin animación si se pide menos movimiento.
-			if (flash.has(p.id) && !opts.reduced) {
-				const k = (now % 1800) / 1800;
-				g.globalAlpha = 1 - k;
-				g.beginPath();
-				g.arc(x, y, r + 2 + k * 10, 0, Math.PI * 2);
-				g.strokeStyle = colors.amber;
-				g.stroke();
-			}
 		}
 		g.globalAlpha = 1;
+	}
+
+	/**
+	 * Sombra de la esfera en un lienzo pequeño (96 × 96 px, se estira con suavizado): la noche según el punto
+	 * subsolar, con un crepúsculo suave, y un oscurecido leve hacia el borde. Con fondo claro, la sombra usa el
+	 * color del texto (oscuro) y más suave.
+	 */
+	function shade() {
+		const N = SHADE;
+		const sc = shadeCtx;
+		if (!sc) return;
+		const sun = rotate(sunAt.lat, sunAt.lon, view);
+		const dark = isDark(colors.bg);
+		const [r, gr, b] = rgbOf(dark ? colors.bg : colors.fg) ?? [0, 0, 0];
+		const night = dark ? 0.62 : 0.28;
+		const img = shadeImg!;
+		const d = img.data;
+		for (let j = 0; j < N; j++) {
+			const y = 1 - (2 * (j + 0.5)) / N;
+			for (let i = 0; i < N; i++) {
+				const x = (2 * (i + 0.5)) / N - 1;
+				const o = (j * N + i) * 4;
+				// Fuera del círculo, el valor del borde: al estirar no se cuela un halo claro (luego se recorta).
+				const r2 = Math.min(1, x * x + y * y);
+				const z = Math.sqrt(1 - r2);
+				const light = x * sun.x + y * sun.y + z * sun.z;
+				// 0 de día, 1 de noche cerrada; el crepúsculo ocupa unos 12°.
+				const t = Math.min(1, Math.max(0, (0.1 - light) / 0.3));
+				const nightK = t * t * (3 - 2 * t);
+				const edge = (1 - z) * (1 - z) * 0.35;
+				d[o] = r;
+				d[o + 1] = gr;
+				d[o + 2] = b;
+				d[o + 3] = Math.round(255 * Math.min(0.85, nightK * night + edge));
+			}
+		}
+		sc.putImageData(img, 0, 0);
 	}
 
 	/** Añade al trazo actual una línea de [lat, lon], cortada donde pasa por detrás del globo. */
@@ -226,7 +339,7 @@ export function createGlobe(canvas: HTMLCanvasElement, opts: GlobeOptions): Glob
 	const moving = (now: number) =>
 		!!fly ||
 		Math.abs(vLon) + Math.abs(vLat) > 0.0005 ||
-		(!opts.reduced && ((now - lastTouch > IDLE && !selected) || flash.size > 0));
+		(!opts.reduced && ((now - lastTouch > IDLE && !selected) || flash.size > 0 || pulsing));
 
 	function frame(now: number) {
 		raf = 0;
@@ -392,6 +505,7 @@ export function createGlobe(canvas: HTMLCanvasElement, opts: GlobeOptions): Glob
 		destroy() {
 			cancelAnimationFrame(raf);
 			clearTimeout(timer);
+			clearInterval(sunTimer);
 			raf = 0;
 			visible = false;
 			ro.disconnect();

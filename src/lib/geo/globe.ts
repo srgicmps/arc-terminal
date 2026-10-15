@@ -165,3 +165,43 @@ export function uniqueIds<P extends GlobePoint>(points: P[]): P[] {
 	}
 	return out;
 }
+
+/**
+ * Punto subsolar (donde el Sol está en la vertical) en una fecha: declinación por el día del año y longitud por la
+ * hora UTC. Aproximado (sin la ecuación del tiempo, ±4°), de sobra para pintar el día y la noche.
+ */
+export function subsolar(date: Date): { lat: number; lon: number } {
+	const start = Date.UTC(date.getUTCFullYear(), 0, 0);
+	const doy = (date.getTime() - start) / 86_400_000;
+	const lat = -23.44 * Math.cos(((2 * Math.PI) / 365) * (doy + 10));
+	const hours = date.getUTCHours() + date.getUTCMinutes() / 60;
+	return { lat, lon: wrapLon((12 - hours) * 15) };
+}
+
+/** Los tres canales de un color calculado del navegador («rgb(…)», «rgba(…)» o «color(srgb …)»). */
+export function rgbOf(color: string): [number, number, number] | null {
+	const rgb = color.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/);
+	if (rgb) return [+rgb[1], +rgb[2], +rgb[3]];
+	const srgb = color.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
+	if (srgb) return [+srgb[1] * 255, +srgb[2] * 255, +srgb[3] * 255].map(Math.round) as [number, number, number];
+	return null;
+}
+
+/** El mismo color con transparencia, para los degradados del canvas. */
+export const withAlpha = (color: string, a: number) => {
+	const c = rgbOf(color);
+	return c ? `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a})` : color;
+};
+
+/** ¿Fondo oscuro? (luminancia relativa aproximada por debajo de la mitad). */
+export const isDark = (bg: string) => {
+	const c = rgbOf(bg);
+	return c ? (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255 < 0.5 : true;
+};
+
+/** Capas que laten en el globo: lo que pasa ahora (conflictos, terremotos, catástrofes). */
+const PULSING = new Set(['conflict', 'quakes', 'disasters', 'storms', 'events']);
+
+/** Cuánto late un punto: 2 = fuerte (dos ondas, más amplias), 1 = suave, 0 = quieto. */
+export const pulseOf = (p: Pick<GlobePoint, 'layer' | 'strong'>, flash = false) =>
+	p.strong ? 2 : flash || PULSING.has(p.layer) ? 1 : 0;
