@@ -125,9 +125,8 @@
 				{@const rec = seriesRecord(pts)}
 				<tr class:hit={rule && crossed(rule, last.v)}>
 					<td>
-						<a class="name" href={row.series.url} target="_blank" rel="noopener">
-							{nameOf(row)}
-						</a>{#if withTerm.has(row.series.id)}<Term of={nameOf(row)} />{/if}
+						{#if row.series.url}<a class="name" href={row.series.url} target="_blank" rel="noopener">{nameOf(row)}</a
+							>{:else}<span class="name">{nameOf(row)}</span>{/if}{#if withTerm.has(row.series.id)}<Term of={nameOf(row)} />{/if}
 						{#if row.alt?.series?.points.length}
 							{@const a = row.alt.series.points[row.alt.series.points.length - 1]}
 							<small class="alt">{row.alt.label} {nf(a.v, row.alt.decimals ?? d)}{row.alt.series.unit === '%' ? ' %' : ''} · {period(a.t)}</small>
