@@ -13,6 +13,8 @@ export interface Store {
 	all(user: string): Promise<Record<string, string>>;
 	/** Aplica de una vez: pone las de `set` y borra las de `del`. */
 	patch(user: string, set: Record<string, string>, del: string[]): Promise<void>;
+	/** Apunta el último acceso (para /admin). Opcional; si falla, da igual. */
+	seen?(user: string): Promise<void>;
 }
 
 export interface Env {
@@ -61,7 +63,10 @@ export async function handlePrefs(
 	const user = token ? await verifyAccess(token, config, fetcher).catch(() => null) : null;
 	if (!user) return json(401, { error: 'sin identificar' });
 
-	if (request.method === 'GET') return json(200, { user, prefs: await store.all(user) });
+	if (request.method === 'GET') {
+		await store.seen?.(user).catch(() => null);
+		return json(200, { user, prefs: await store.all(user) });
+	}
 
 	if (request.method === 'PUT') {
 		if (request.headers.get('content-type')?.split(';')[0].trim() !== 'application/json')
