@@ -1707,7 +1707,7 @@ function agenda(d: Inputs, date: string, holidays = true): string[] {
 }
 
 /** Cifras de los activos que tengan dato, en una línea. */
-function figures(d: Inputs, names: string[]): string {
+export function figures(d: Inputs, names: string[]): string {
 	return ASSETS.filter((a) => names.includes(a.name))
 		.flatMap((a) => {
 			const r = readAsset(a, d);
