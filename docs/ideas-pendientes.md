@@ -287,6 +287,75 @@ Hecho de memoria, sin red: confirmar límites y términos con probe y en la web 
 - **E · Fuentes con clave nueva** (otra sesión): 15 (UCDP), 16 (OpenSky) y el email de la 21, cuando Sergi cree los
   Secrets. 16 solo si acepta la pega de privacidad.
 
+## 2h. Lote F (Ideas 5, 15/10): funcionalidades nuevas para el uso diario y la familia. PROPUESTO
+
+Fuentes de las ideas: Koyfin, OpenBB, Finviz, Revolut, Trade Republic, Yahoo Finance, Apple Stocks, Feedly, Ground News y
+paneles OSINT, pensando en lo que usaría una familia. Comprobado por búsqueda web (15/10), sin probe: Open-Meteo con
+polen (CAMS), DGT NAP DATEX II v3.7 (licencia libre, se actualiza cada minuto), Jolpica F1 (sin clave, unas 500
+consultas por hora) y football-data.org (gratis con registro, 10 consultas por minuto, resultados con retraso). Todo lo
+demás queda «a probar». Esfuerzo: S (horas), M (un PR) y L (varios PR). ★ = las 5 mejores.
+
+**Bloque A · Casa y día a día (LUZ, WX, FUEL y una vista VIAJE): solo datos y vistas, sin tocar avisos**
+- F1 ★ **LUZ: horas baratas**: las 3 mejores franjas de hoy y de mañana para la lavadora o el coche. Para todos. Usa
+  el PVPC de REE, que ya se descarga. S.
+- F2 ★ **WX: polen y UV**: abedul, gramíneas, olivo, aliso, ambrosía y artemisa en Tu sitio. Para alérgicos. Open-Meteo
+  Air Quality (CAMS, sin clave, CC BY). S.
+- F3 **FUEL: mi gasolinera**: una favorita por usuario con su historial y lo que ahorras frente a la media de la
+  provincia. El historial ya existe. S.
+- F4 **ES: tráfico**: cortes, obras y retenciones en las provincias que elijas. DGT NAP DATEX II v3.7 (no cubre
+  Cataluña ni el País Vasco). M.
+- F5 **VIAJE \<ciudad>**: tiempo a 7 días, cambio de moneda (BCE), aviso de viaje (`advisories`), festivos y hora
+  local. Junta datos que ya hay. M.
+- F6 **Puentes**: próximos festivos y puentes de España y del país de cada usuario (`holidays`, que ya se
+  descarga). S.
+
+**Bloque B · Dinero personal (vistas nuevas; los datos de cada usuario van en D1, privados)**
+- F7 ★ **HIPOTECA**: cuota, cuadro de amortización y «tu próxima revisión» con el euríbor a 12 meses (BCE, ya está).
+  Para la familia. S/M.
+- F8 ★ **CARTERA**: posiciones con cantidad y precio de compra, ganancia o pérdida, y reparto por sector y divisa,
+  guardadas en D1. Precios de Finnhub quote (ya se usa). M. *Duda*: fuera de EE. UU. no hay precio gratis.
+- F9 **AHORRO**: dónde rinde hoy el dinero: última subasta de letras del Tesoro (tesoro.es, a probar), €STR,
+  depósitos (BdE) y bonos. S/M.
+- F10 **MI IPC**: tu inflación con los pesos de tu cesta (INE, IPC por grupos ECOICOP) frente a la general. M.
+- F11 **Calculadoras**: interés compuesto y «cuánto valen hoy 1.000 € de 2005» (IPC del INE y HICP). S.
+- F12 **Resultados de mis valores**: CAL filtrado por MIS o CARTERA, con recordatorio la víspera. S.
+
+**Bloque C · Avisos y uso personal (`scripts/alerts/`, `cloud/`, AVISOS)**
+- F13 ★ **Resumen matinal por ntfy** a la hora que elija cada uno: 5 titulares de IMP, mercados, el tiempo de su sitio
+  y las horas baratas de la luz. M.
+- F14 **Alertas de precio privadas**: «alerta NVDA > 150» guardada en D1 del usuario, en vez de en un issue público
+  (como en D41). M.
+- F15 **Mandar a la familia**: botón en un titular o un panel que lo envía por ntfy a otro usuario de Arc. M.
+- F16 **Avisos de casa**: horas baratas mañana (F1), polen alto (F2) y la gasolinera favorita baja (F3). Llegan
+  cuando A esté fusionado. S.
+- F17 **Mis RSS** (como Feedly): cada usuario añade sus feeds; una Pages Function los lee con caché y con tope.
+  Solo se guardan titulares y enlaces. M.
+
+**Bloque D · Noticias, OSINT y deporte (fuentes y vistas nuevas)**
+- F18 **Quién lo cuenta** (como Ground News): agrupa un mismo hecho contado por varios medios y muestra su cobertura
+  por región, con los «ángulos muertos». Usa los titulares que ya hay. M.
+- F19 **Por qué se mueve**: en la ficha de un valor, su variación junto a los titulares de 24 h (Finnhub
+  company-news). S.
+- F20 **DEP**: LaLiga, Champions y Mundial (football-data.org) y F1 (Jolpica, sin clave), con resultados,
+  clasificación y calendario. M.
+- F21 **GEO: rutas marítimas**: avisos de UKMTO y MARAD (Mar Rojo, Ormuz) junto a PORT. A probar. S/M.
+- F22 **GEO: espacio aéreo en conflicto**: boletines CZIB de la EASA. A probar. S.
+- F23 **GEO: crisis activas**: ReliefWeb de la OCHA (desastres e informes). M.
+- F24 **Test de la semana**: 5 preguntas hechas con los datos y titulares de SEMANA, sin IA. Para la familia. S.
+
+**Necesitan clave, registro o tienen duda de licencia**
+- F20: token gratis de football-data.org (Secret `FOOTBALL_DATA_TOKEN`; uso no comercial). Jolpica no publica
+  términos: confirmar.
+- F23: ReliefWeb pide desde 2025 un `appname` aprobado (registro gratis).
+- F8: no hay precios gratis fuera de EE. UU. (los widgets de TradingView no entregan datos). Opción: solo EE. UU., o
+  precio puesto a mano.
+- F9 y F21: confirmar los términos de tesoro.es, UKMTO y MARAD.
+- F17: hace de proxy de RSS, así que hay que limitarla a usuarios de Access y poner tope de tamaño y de feeds.
+
+**Choques**: A y B solo añaden vistas y fuentes. C toca `scripts/alerts/` y `cloud/` (F14 y F16 dependen de A y de
+AVISOS). D añade fuentes y vistas nuevas; F18 lee `news` sin cambiarlo. Compruébalo con las sesiones Producto A–G
+(bienvenida y modo sencillo) antes de repartir C.
+
 ## 3. Decisiones de Sergi que hay que respetar
 
 - Arc Terminal es **mundial**: nada nuevo centrado en Menorca, salvo los puertos AIS de Maó y Ciutadella.
