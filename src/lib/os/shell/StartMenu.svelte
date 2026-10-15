@@ -154,9 +154,13 @@
 		align-items: center;
 		border-radius: var(--radius-s);
 	}
-	.app:hover,
 	.app:focus-within {
 		background: var(--raise);
+	}
+	@media (hover: hover) {
+		.app:hover {
+			background: var(--raise);
+		}
 	}
 	.open {
 		flex: 1;
