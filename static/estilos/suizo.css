@@ -1,0 +1,262 @@
+/* ── Estética «Suizo» (src/lib/estilos.ts) ────────────────────────────────────────────────────────────
+ * <html data-style="suizo">: el estilo tipográfico internacional. Blanco y negro con grises, Inter Tight para todo,
+ * rejilla estricta con medianiles anchos y todo alineado a su borde (sin sangría), títulos de vista enormes y en
+ * negrita, títulos de panel bajo un filete grueso, sin sombras ni esquinas. El rojo es el ÚNICO acento (vista
+ * actual, código de la vista, «Ir», foco); las bajadas van en otro tono (carmín, más frío) para no confundirse.
+ * Tokens propios (--sz-*): solo se usan en este archivo. */
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	:root[data-style='suizo'],
+	[data-style='suizo'] {
+		/* ── Noche: negro de imprenta, blanco roto y grises neutros ── */
+		--bg: #0b0b0b;
+		--panel: #0b0b0b;
+		--raise: #1a1a1a;
+		--line: #2c2c2c;
+		--fg: #f2f2f2;
+		--muted: #a6a6a6;
+		--faint: #8f8f8f;
+		--amber: #ff3b30; /* rojo señal: el único acento */
+		--amber-dim: #ff6b61;
+		--amber-soft: rgba(255, 59, 48, 0.14);
+		--amber-edge: rgba(255, 59, 48, 0.55);
+		--on-amber: #000000;
+		--up: #34c770;
+		--down: #ff7aa2; /* carmín claro: otro tono que el rojo del acento */
+		--neutral: #3d3d3d;
+		--series-2: #9a9a9a;
+		--series-3: #5e5e5e;
+		--scrim: rgba(0, 0, 0, 0.7);
+		--sq-light: #3a3a3a;
+		--sq-dark: #1f1f1f;
+		--piece-w: #f2f2f2;
+		--piece-w-edge: #0b0b0b;
+		--piece-b: #050505;
+		--piece-b-edge: #a6a6a6;
+		/* Propios: el rojo y lo que va encima, y el grosor del filete de los títulos. */
+		--sz-red: #ff3b30;
+		--sz-on-red: #000000;
+		--sz-rule: var(--sp-3);
+
+		/* ── Letras: una neogrotesca para todo, cifras tabulares (las pone body) ── */
+		--sans: 'Inter Tight', 'Inter', Arial, sans-serif;
+		--mono: var(--sans);
+		--font-ui: var(--sans);
+		--title-font: var(--sans);
+		--fs-xxs: 10px;
+		--fs-xs: 11px;
+		--fs-s: 12px;
+		--fs-m: 13.5px;
+		--fs-l: 15px;
+		--fs-xl: 24px;
+		--fs-big: 32px;
+		--fs-xxl: 40px;
+		--fw-medium: 500;
+		--fw-bold: 700;
+		--lh: 1.4;
+		--lh-tight: 1.2;
+		--track-tight: -0.005em;
+		--track-code: 0.02em;
+		--track-caps: 0.08em;
+		--track-label: 0.06em;
+		--track-brand: 0.02em;
+		--title-view: clamp(40px, 5.6vw, 76px); /* título de la vista */
+
+		/* ── Títulos de panel: negrita, como se escriben, en el color del texto, bajo el filete ── */
+		--fs-title: var(--fs-l);
+		--title-case: none;
+		--title-track: -0.015em;
+		--title-color: var(--fg);
+
+		/* ── Forma: ni sombras ni esquinas; lo que flota se recorta con un marco del color del texto ── */
+		--border: var(--hair) solid var(--line);
+		--radius: 0;
+		--radius-s: 0;
+		--shadow: none;
+		--shadow-pop: 0 0 0 var(--sp-2) var(--fg);
+		--panel-edge: 0;
+
+		/* ── Rejilla: medianiles anchos y vacíos, sin líneas entre columnas; todo alineado a su borde ── */
+		--grid-gap: var(--sp-24);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-24);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-24);
+		--stack-edge: 0;
+		--pad-x: 0px;
+		--row-y: var(--sp-7);
+		--head-y: var(--sp-8);
+		--gutter: var(--sp-24);
+		--gutter-touch: var(--sp-16);
+		--control-h-desk: 30px;
+		--btn-sm: 30px;
+		--cmd-h: 40px;
+
+		/* ── Movimiento: seco y corto ── */
+		--dur-ui: 90ms;
+		--ease: cubic-bezier(0.2, 0, 0, 1);
+	}
+	:root[data-theme='light'][data-style='suizo'],
+	:root[data-theme='light'] [data-style='suizo'] {
+		/* ── Día: papel blanco, tinta negra y rojo ── */
+		--bg: #ffffff;
+		--panel: #ffffff;
+		--raise: #f2f2f2;
+		--line: #d9d9d9;
+		--fg: #0a0a0a;
+		--muted: #595959;
+		--faint: #6b6b6b;
+		--amber: #e3000f;
+		--amber-dim: #b8000c;
+		--amber-soft: rgba(227, 0, 15, 0.08);
+		--amber-edge: rgba(227, 0, 15, 0.45);
+		--on-amber: #ffffff;
+		--up: #00703a;
+		--down: #b3124a; /* carmín: más frío y oscuro que el rojo del acento */
+		--neutral: #c4c4c4;
+		--series-2: #7a7a7a;
+		--series-3: #b0b0b0;
+		--scrim: rgba(255, 255, 255, 0.75);
+		--sq-light: #f2f2f2;
+		--sq-dark: #c4c4c4;
+		--piece-w: #ffffff;
+		--piece-w-edge: #0a0a0a;
+		--piece-b: #0a0a0a;
+		--piece-b-edge: #0a0a0a;
+		--sz-red: #e3000f;
+		--sz-on-red: #ffffff;
+	}
+	@media (max-width: 720px) {
+		:root[data-style='suizo'] {
+			--grid-gap: var(--sp-20);
+			--grid-join: var(--sp-20);
+			--stack-gap: var(--sp-20);
+		}
+	}
+
+	/* ── Página ───────────────────────────────────────────────────────────────────────────── */
+	:root[data-style='suizo'] body {
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+
+	/* ── Título de la vista: el código en rojo encima y el título enorme, negro y apretado ────────── */
+	:root[data-style='suizo'] .vh {
+		margin-bottom: var(--sp-12);
+	}
+	:root[data-style='suizo'] .vh h1 {
+		--fs-xl: var(--title-view);
+		--fw-medium: 800;
+		--sp-12: var(--sp-6); /* el hueco entre código y título */
+		flex-direction: column;
+		line-height: 0.95;
+		letter-spacing: -0.035em;
+	}
+	:root[data-style='suizo'] .vh .code {
+		--fs-l: var(--fs-s);
+		--fw-bold: 800;
+		letter-spacing: var(--track-caps);
+	}
+	:root[data-style='suizo'] .vh p {
+		--fs-xs: var(--fs-m);
+		max-width: 68ch;
+	}
+	:root[data-style='suizo'] .vh .sum {
+		--fs-s: var(--fs-l);
+		font-weight: var(--fw-medium);
+	}
+
+	/* ── Paneles: filete grueso encima del título, alineado a la rejilla (y en la vista previa, .mh) ── */
+	[data-style='suizo'] :is(.ph, .mh) {
+		border-top: var(--sz-rule) solid var(--fg);
+	}
+	:root[data-style='suizo'] .ph h2 {
+		line-height: var(--lh-tight);
+	}
+	/* Las cifras grandes de cabecera de vista: filete y cifras en negrita. */
+	:root[data-style='suizo'] main > .tiles {
+		border-top: var(--sz-rule) solid var(--fg);
+		margin-bottom: var(--grid-join);
+	}
+	:root[data-style='suizo'] .tile b {
+		--fs-xl: var(--fs-big);
+		--fw-medium: 700;
+		letter-spacing: -0.03em;
+		line-height: 1.05;
+	}
+	:root[data-style='suizo'] .tile .lbl {
+		--track-code: var(--track-caps);
+		--muted: var(--fg);
+		font-weight: var(--fw-bold);
+	}
+
+	/* ── Tablas: cabecera negra en versalitas con filete, primera y última columna a ras del borde ─── */
+	:root[data-style='suizo'] .t th {
+		--faint: var(--fg);
+		--fw-regular: 700;
+	}
+	:root[data-style='suizo'] .t thead th {
+		--border: var(--sp-2) solid var(--fg);
+	}
+	:root[data-style='suizo'] .t :is(th, td):first-child,
+	:root[data-style='suizo'] .t :is(th, td):last-child {
+		--sp-10: 0px;
+	}
+
+	/* ── Cabecera: teclas sin caja; la vista actual, en bloque rojo ─────────────────────────────── */
+	:root[data-style='suizo'] .key {
+		--amber: var(--fg);
+		--on-amber: var(--bg);
+		--border: var(--hair) solid transparent;
+		--fw-medium: 700;
+	}
+	:root[data-style='suizo'] .key[aria-current='page'] {
+		--amber: var(--sz-red);
+		--on-amber: var(--sz-on-red);
+	}
+	:root[data-style='suizo'] .brand {
+		--fw-bold: 800;
+	}
+
+	/* ── Barra de comandos: campo con marco de 2 px, «Ir» en rojo ─────────────────────────────── */
+	:root[data-style='suizo'] .cmd {
+		--border: var(--sp-2) solid var(--fg);
+	}
+	:root[data-style='suizo'] .cmd input {
+		--fs-m: var(--fs-l);
+		font-weight: var(--fw-medium);
+	}
+	:root[data-style='suizo'] .suggest {
+		--amber: var(--fg);
+		--amber-soft: var(--raise);
+		--hair: var(--sp-2);
+	}
+
+	/* ── Segmentados, desplegables y campos: marco negro; lo elegido, invertido (el rojo no se gasta) ── */
+	[data-style='suizo'] .seg {
+		--border: var(--hair) solid var(--fg);
+	}
+	[data-style='suizo'] .seg button {
+		--amber: var(--fg);
+		--on-amber: var(--bg);
+		--amber-soft: var(--raise);
+		--muted: var(--fg);
+		--fw-medium: 700;
+	}
+	:root[data-style='suizo'] select {
+		--raise: var(--panel);
+		--border: var(--hair) solid var(--fg);
+	}
+	:root[data-style='suizo'] .pidx span {
+		--muted: var(--fg);
+		font-weight: var(--fw-bold);
+	}
+
+	/* ── Gráficos: la serie principal en negro (o blanco de noche), la segunda en rojo, el resto gris ── */
+	:root[data-style='suizo'] .chart {
+		--amber: var(--fg);
+		--series-2: var(--sz-red);
+	}
+}
