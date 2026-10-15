@@ -1,9 +1,10 @@
-// Aspectos del escritorio de Arc OS: tres formas de presentar la misma lógica (ventanas, apps, escritorios),
+// Aspectos del escritorio de Arc OS: varias formas de presentar la misma lógica (ventanas, apps, escritorios),
 // inspiradas en los sistemas de siempre pero sin marcas ni iconos de nadie. Van en <div class="os"
 // data-os-skin="…">: cambian la barra, los menús, los botones de ventana (los pinta el núcleo), el fondo y la letra.
 // Lógica pura.
 
 export const SKINS = [
+	{ id: 'mando', label: 'Mando', desc: 'Centro de mando: pizarra con rejilla técnica, nivel de alerta global, relojes UTC y Madrid, y pilotos de las fuentes en vivo.' },
 	{ id: 'dsm', label: 'Arc DSM', desc: 'Como el panel web de un servidor: barra fina arriba con el menú de apps, iconos grandes y widgets del sistema a la derecha.' },
 	{ id: 'windows', label: 'Windows', desc: 'Barra de tareas abajo con botón Inicio y menú, bandeja con reloj y ventanas con _ □ ✕ a la derecha.' },
 	{ id: 'mac', label: 'Mac', desc: 'Barra de menús arriba con el nombre de la app, dock centrado abajo, semáforos a la izquierda, Launchpad y buscador con Ctrl+Espacio.' },
@@ -12,16 +13,16 @@ export const SKINS = [
 
 export type Skin = (typeof SKINS)[number]['id'];
 /** El de quien entra por primera vez (lo preselecciona el primer arranque). */
-export const DEFAULT_SKIN: Skin = 'dsm';
+export const DEFAULT_SKIN: Skin = 'mando';
 export const isSkin = (v: unknown): v is Skin => SKINS.some((s) => s.id === v);
 
 /** Dónde va cada pieza en cada aspecto. */
 export function layoutOf(skin: Skin, bar: 'top' | 'bottom') {
 	return {
-		/** Barra de arriba: la fina de DSM, menús (Mac), Actividades (Linux) o la de tareas si se ha subido (Windows). */
-		top: skin === 'dsm' ? 'dsmbar' : skin === 'mac' ? 'menubar' : skin === 'linux' ? 'topbar' : bar === 'top' ? 'taskbar' : null,
-		/** Abajo: la barra de tareas (Windows) o el dock (Mac). */
-		bottom: skin === 'mac' ? 'dock' : skin === 'windows' && bar === 'bottom' ? 'taskbar' : null
+		/** Barra de arriba: la de Mando, la fina de DSM, menús (Mac), Actividades (Linux) o la de tareas si se ha subido (Windows). */
+		top: skin === 'mando' ? 'mandobar' : skin === 'dsm' ? 'dsmbar' : skin === 'mac' ? 'menubar' : skin === 'linux' ? 'topbar' : bar === 'top' ? 'taskbar' : null,
+		/** Abajo: la franja de estado (Mando), la barra de tareas (Windows) o el dock (Mac). */
+		bottom: skin === 'mando' ? 'mandostrip' : skin === 'mac' ? 'dock' : skin === 'windows' && bar === 'bottom' ? 'taskbar' : null
 	} as const;
 }
 
