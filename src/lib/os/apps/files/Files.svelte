@@ -632,7 +632,7 @@
 				{#if shownView === 'list'}
 					<div class="head" role="presentation">
 						{#each COLS as c (c.col)}
-							<button type="button" class="col c-{c.col}" aria-label={`Ordenar por ${c.label.toLowerCase()}`} onclick={() => (sort = ex.toggleSort(sort, c.col))}>
+							<button type="button" class="sorter c-{c.col}" aria-label={`Ordenar por ${c.label.toLowerCase()}`} onclick={() => (sort = ex.toggleSort(sort, c.col))}>
 								{c.label}{#if sort.col === c.col}<span class="arrow" aria-hidden="true">{sort.dir === 1 ? '▲' : '▼'}</span>{/if}
 							</button>
 						{/each}
@@ -964,7 +964,9 @@
 		background: var(--panel);
 		border-bottom: var(--border);
 	}
-	.col {
+	.sorter {
+		display: inline-flex;
+		align-items: center;
 		height: var(--control-h);
 		padding: 0;
 		border: 0;
@@ -974,7 +976,7 @@
 		font-size: var(--fs-xs);
 		letter-spacing: var(--track-label);
 	}
-	.col:hover {
+	.sorter:hover {
 		color: var(--fg);
 	}
 	.arrow {
