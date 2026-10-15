@@ -130,6 +130,22 @@ async function getJson<T>(name: string): Promise<T | null> {
 	}
 }
 
+/** Avisos de la propia web (del sistema, de una app…): los que no vienen de muro.json ni changes.json. */
+let local: Notice[] = [];
+
+/**
+ * Para otras piezas de Arc OS (sistema, apps): un aviso que queda en el centro de notificaciones y sale como
+ * toast. Devuelve su id.
+ */
+export function notify(n: { title: string; detail?: string; href?: string; kind?: Notice['kind'] }): string {
+	const time = new Date().toISOString();
+	const notice: Notice = { id: `s:${time}:${n.title}`, kind: n.kind ?? 'aviso', title: n.title, detail: n.detail ?? '', time, href: n.href };
+	local = [notice, ...local].slice(0, 30);
+	shell.notices = [notice, ...shell.notices];
+	shell.toasts = [...shell.toasts, notice].slice(-3);
+	return notice.id;
+}
+
 let known: Set<string> | null = null;
 
 /** Pide los avisos y novedades; los avisos nuevos desde la última vuelta salen como toast. */
@@ -138,7 +154,7 @@ export async function refreshNotices() {
 	const list = buildNotices(wall, changes);
 	const fresh = toastsFor(list, known ?? new Set(), known === null);
 	known = new Set(list.map((n) => n.id));
-	shell.notices = list;
+	shell.notices = [...local, ...list].sort((a, b) => b.time.localeCompare(a.time));
 	if (fresh.length) shell.toasts = [...shell.toasts, ...fresh.filter((f) => !shell.seen.includes(f.id))].slice(-3);
 }
 
