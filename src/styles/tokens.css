@@ -392,3 +392,21 @@
 	--os-anim-max: 160ms;
 	--os-anim-close: 140ms;
 }
+/* Centro de mando: vigilancia (app Vigilancia de Arc OS). Pizarra fría sobre el panel, nivel de cada objetivo
+   de frío a cálido. Todo sale de otros tokens: sigue al tema de día, al acento y a cada estética. */
+:root {
+	--cmd-slate: color-mix(in srgb, var(--panel) 90%, var(--series-2)); /* fondo de la pizarra */
+	--cmd-card: color-mix(in srgb, var(--panel) 95%, var(--series-2)); /* fondo de una tarjeta */
+	--cmd-edge: color-mix(in srgb, var(--line) 70%, var(--series-2)); /* borde de 1 px, frío */
+	--cmd-cold: var(--series-2); /* acento frío: etiquetas y datos */
+	--cmd-new: var(--amber); /* lo nuevo desde tu última visita */
+	--cmd-new-soft: var(--amber-soft);
+	--cmd-l0: var(--faint); /* calma */
+	--cmd-l1: var(--series-2); /* normal */
+	--cmd-l2: var(--amber-dim); /* atención */
+	--cmd-l3: var(--amber); /* alto */
+	--cmd-l4: var(--down); /* crítico */
+	--cmd-pip-w: 10px; /* cada rayita del nivel */
+	--cmd-pip-h: 4px;
+	--cmd-card-min: 300px; /* ancho mínimo de una tarjeta */
+}

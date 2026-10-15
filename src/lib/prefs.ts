@@ -82,6 +82,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-os-bar', storage: 'local', what: 'Barra de tareas de Arc OS abajo o arriba', where: 'Arc OS, Panel de control', kind: 'ajuste' },
 	{ key: 'arc-os-wallpaper', storage: 'local', what: 'Fondo del escritorio de Arc OS', where: 'Arc OS, Panel de control', kind: 'ajuste' },
 	{ key: 'arc-os-skin', storage: 'local', what: 'Aspecto del escritorio de Arc OS: Windows, Mac o Linux', where: 'Arc OS, Panel de control y primer arranque', kind: 'ajuste' },
+	{ key: 'arc-os-watch', storage: 'local', what: 'Tus objetivos de Vigilancia (países, valores, líderes y temas), tu última visita y lo que ya habías visto', where: 'Arc OS, app Vigilancia', kind: 'dato' },
 	{ key: 'arc-os-seen', storage: 'local', what: 'Avisos y novedades ya vistos en el centro de notificaciones de Arc OS', where: 'Arc OS, campana de la barra', kind: 'dato' },
 	{ key: 'arc-<versión>', storage: 'cache', what: 'Los archivos de la web publicada; se renueva en cada publicación', where: 'Sin conexión', kind: 'caché' },
 	{ key: 'arc-pages', storage: 'cache', what: 'Las vistas que has abierto y sus datos (hasta 40)', where: 'Sin conexión', kind: 'caché' },
