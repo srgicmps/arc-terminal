@@ -93,8 +93,12 @@ export const paro: Source<ParoData> = {
 	deadlineMs: 180_000,
 	async fetch() {
 		const year = new Date().getUTCFullYear();
-		const [current, previous] = await Promise.all([download(year), download(year - 1)]);
-		const totals = sumCsv(previous ?? '');
+		// En enero y febrero el CSV del año aún no trae (o casi) meses: el último dato es de diciembre y, para
+		// compararlo con hace un año, hace falta también el de hace dos.
+		const early = new Date().getUTCMonth() < 2;
+		const [current, previous, older] = await Promise.all([download(year), download(year - 1), early ? download(year - 2) : null]);
+		const totals = sumCsv(older ?? '');
+		sumCsv(previous ?? '', totals);
 		sumCsv(current ?? '', totals);
 		const data = buildParo(totals);
 		if (!data || data.regions.length < 17) throw new Error('El CSV del SEPE no trae el paro por comunidades');

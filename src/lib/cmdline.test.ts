@@ -24,6 +24,7 @@ import {
 import { parseSymbols, PERF_PERIODS } from './cmp.ts';
 import { COMMANDS } from './commands.ts';
 import { TICKERS } from './tickers.ts';
+import { countryEntries, leaderEntries } from './search.ts';
 
 const ALL: Option[] = [
 	...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función', aliases: c.aliases })),
@@ -412,5 +413,49 @@ describe('calculadora y conversor (M46)', () => {
 	it('lo demás no es cuenta', () => {
 		expect(calcInput('NVDA')).toBeNull();
 		expect(calcInput('CMP NVDA AMD')).toBeNull();
+	});
+});
+
+describe('barra: QA T7', () => {
+	const all: Option[] = [...ALL, ...countryEntries(), ...leaderEntries()];
+	const open = (raw: string) => {
+		const t = resolveInput(raw, suggest(raw, all));
+		return t ? targetPath(t).route + targetPath(t).search : null;
+	};
+
+	it('una palabra entera va antes que un trozo de alias: «oro» es el oro, no Marruecos (Morocco)', () => {
+		expect(suggest('oro', all)[0].code).toBe('GOLD');
+		expect(open('oro')).toBe('/s?sym=GOLD');
+	});
+
+	it('un código corto que solo encaja a trozos es un valor, y sale el primero', () => {
+		expect(open('KO')).toBe('/s?sym=KO');
+		expect(suggest('KO', all)[0]).toMatchObject({ code: 'KO', kind: 'Valor' });
+		expect(open('ON')).toBe('/s?sym=ON');
+	});
+
+	it('el código ISO de un país abre su ficha; un alias de comando a medias sigue valiendo', () => {
+		expect(open('DE')).toBe('/pais?c=DE');
+		expect(open('FR')).toBe('/pais?c=FR');
+		expect(open('gas')).toBe('/fuel');
+	});
+
+	it('un alias entero sale el primero: lo marcado es lo que abre Intro', () => {
+		expect(suggest('españa', all)[0].code).toBe('ES');
+		expect(open('españa')).toBe('/es');
+	});
+
+	it('«?» suelto abre la ayuda', () => {
+		expect(suggest('?', all).map((o) => o.code)).toEqual(['HELP']);
+		expect(open('?')).toBe('/help');
+	});
+
+	it('un alias de varias palabras y el texto: «quién tiene NVDA» → HDS', () => {
+		expect(open('quién tiene NVDA')).toBe('/hds?s=NVDA');
+	});
+
+	it('una fecha imposible no rompe las sugerencias', () => {
+		expect(() => suggest('CAL 10/15', all)).not.toThrow();
+		expect(() => suggest('WX 2026-13-01', all)).not.toThrow();
 	});
 });

@@ -32,9 +32,12 @@ function db(): Promise<IDBDatabase> {
 async function tx<T>(mode: IDBTransactionMode, run: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
 	const d = await db();
 	return new Promise((ok, ko) => {
-		const r = run(d.transaction(STORE, mode).objectStore(STORE));
+		const t = d.transaction(STORE, mode);
+		const r = run(t.objectStore(STORE));
 		r.onsuccess = () => ok(r.result);
 		r.onerror = () => ko(r.error);
+		// Cerrar al acabar: si no, borrar la base (otro usuario entra en este navegador, cloud.svelte.ts) se queda esperando.
+		t.oncomplete = t.onabort = t.onerror = () => d.close();
 	});
 }
 

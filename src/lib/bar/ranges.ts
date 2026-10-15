@@ -3,6 +3,13 @@
 // en ?rango=; las series («paro es 10a», «paro es vs it») se contestan en answers.ts. Lógica pura.
 import { isTickerLike, norm, findCommand } from '../cmdline.ts';
 import { TICKERS } from '../tickers.ts';
+import { COUNTRIES } from '../countries.ts';
+import { LEADERS } from '../leaders.ts';
+
+/** Países y líderes por su nombre o alias: «trump», «rusia» no son valores aunque lo parezcan. */
+const NAMES = new Set(
+	[...COUNTRIES.flatMap((c) => [c.name, ...(c.aliases ?? [])]), ...LEADERS.flatMap((l) => [l.id, l.name, ...l.aliases])].map(norm)
+);
 
 /** Un rango del gráfico de TradingView: su código, cómo se dice y cuántos días cubre (aprox.). */
 export interface Range {
@@ -59,7 +66,7 @@ export function symbolOf(raw: string): string | null {
 	const q = norm(raw);
 	const known = TICKERS.find((t) => t.code === q || t.aliases?.some((a) => norm(a) === q));
 	if (known) return known.code;
-	if (findCommand(q) || !isTickerLike(q)) return null;
+	if (findCommand(q) || !isTickerLike(q) || NAMES.has(q)) return null;
 	return /[:.]/.test(q) || /^[A-Z]{1,5}$/.test(q) ? q : null;
 }
 
@@ -97,6 +104,8 @@ export function compareInput(raw: string): ChartTarget | null {
 	if (parts.length < 2) return null;
 	const syms = parts.map((p) => (p.includes(' ') ? null : symbolOf(p)));
 	if (syms.length < 2 || syms.some((s) => !s)) return null;
+	// Al menos uno tiene que ser un valor conocido (o con bolsa): «otan vs rusia» es texto, no una comparación.
+	if (!syms.some((s) => /[:.]/.test(s!) || TICKERS.some((t) => t.code === s))) return null;
 	const codes = [...new Set(syms as string[])].slice(0, 5);
 	const rango = period ? `&rango=${period.range.tv}` : '';
 	return {
