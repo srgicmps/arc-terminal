@@ -44,10 +44,11 @@ async function call(
 	fetcher: (url: string, init?: RequestInit) => Promise<Response>,
 	who: Record<string, unknown> | null,
 	method = 'GET',
-	body?: unknown
+	body?: unknown,
+	query = ''
 ) {
 	return handleAdmin(
-		new Request('https://arcterminal.dev/api/admin', {
+		new Request(`https://arcterminal.dev/api/admin${query}`, {
 			method,
 			headers: {
 				...(who ? { 'cf-access-jwt-assertion': await k.sign(who) } : {}),
@@ -76,6 +77,15 @@ describe('/api/admin', () => {
 		// Sin ADMIN_EMAIL, ni Sergi.
 		const { ADMIN_EMAIL: _, ...noAdmin } = FULL;
 		expect((await call(noAdmin, store, cf.fetcher, { email: 'jefe@x.es' })).status).toBe(403);
+	});
+
+	it('?yo=1 solo dice si eres el admin, sin la lista ni llamar a Cloudflare', async () => {
+		const cf = cloudflare();
+		const store = memoryAdminStore([{ email: 'ana@x.es', seen: 5, alerts: true }]);
+		const me = await call(FULL, store, cf.fetcher, { email: 'jefe@x.es' }, 'GET', undefined, '?yo=1');
+		expect(await me.json()).toEqual({ admin: true });
+		expect((await call(FULL, store, cf.fetcher, { email: 'ana@x.es' }, 'GET', undefined, '?yo=1')).status).toBe(403);
+		expect(cf.calls).toHaveLength(0);
 	});
 
 	it('lista: los de la política y los de D1, con último acceso y avisos', async () => {

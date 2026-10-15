@@ -149,3 +149,19 @@ export function pick<P extends GlobePoint>(
 
 /** El camino más corto de una longitud a otra (para girar hacia un punto sin dar la vuelta entera). */
 export const lonDelta = (from: number, to: number) => wrapLon(to - from);
+
+/**
+ * Ids únicos para el globo: cada capa numera los suyos («n-…» son tanto conflictos como avisos a barcos), así que
+ * se les pone la capa delante y, si aun así se repite alguno, se queda el primero.
+ */
+export function uniqueIds<P extends GlobePoint>(points: P[]): P[] {
+	const seen = new Set<string>();
+	const out: P[] = [];
+	for (const p of points) {
+		const id = `${p.layer}:${p.id}`;
+		if (seen.has(id)) continue;
+		seen.add(id);
+		out.push({ ...p, id });
+	}
+	return out;
+}

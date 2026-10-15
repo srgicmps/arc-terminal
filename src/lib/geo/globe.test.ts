@@ -8,6 +8,7 @@ import {
 	pick,
 	rotate,
 	styleOf,
+	uniqueIds,
 	wrapLon,
 	type GlobePoint
 } from './globe.ts';
@@ -87,5 +88,12 @@ describe('globo', () => {
 	it('las capas sin estilo propio se pintan igual', () => {
 		expect(styleOf('travel').shape).toBe('diamond');
 		expect(styleOf('nueva').shape).toBe('circle');
+	});
+
+	it('los ids no se repiten entre capas', () => {
+		const a = { ...pt('n-1', 0, 0), layer: 'conflict' };
+		const b = { ...pt('n-1', 1, 1), layer: 'maritime' };
+		const ids = uniqueIds([a, b, a]).map((p) => p.id);
+		expect(ids).toEqual(['conflict:n-1', 'maritime:n-1']);
 	});
 });

@@ -198,6 +198,8 @@ vista `HELP`. Resumen:
 | `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica, Comisión Europea (Weekly Oil Bulletin) |
 | `HIPOTECA` | Tu hipoteca: cuota, cuadro de amortización y próxima revisión (datos solo tuyos, en tus ajustes) | BCE (euríbor a 12 meses) |
 | `CARTERA` | Tu cartera: posiciones, ganancia o pérdida y reparto (datos solo tuyos, en tus ajustes) | Finnhub* (EE. UU.), precio a mano, BCE |
+| `AHORRO` | Dónde rinde el dinero, interés compuesto, lo que vale hoy el de otro año y tu inflación (MI IPC) | BCE, Banco de España, Eurostat (IPCA del INE) |
+| `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
 | `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
 | `TEST` | Test de la semana: cinco preguntas con titulares y datos de la semana, sin IA; puntuación en la cuenta de cada uno | IMP, FRED*, BCE, CoinGecko, USGS |
 | `CAL` | Agenda económica, resultados, festivos y puentes (`PUENTES`) | TradingView, Finnhub*, Nager.Date |

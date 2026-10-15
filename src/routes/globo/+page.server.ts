@@ -4,7 +4,7 @@ import { dataset } from '#lib/data.ts';
 import type { NavWarnData } from '#lib/navwarn.ts';
 import { salaData } from '#lib/exp/sala-data.ts';
 import { maritimePoints, sanctionPoints } from '#lib/geo/layers.ts';
-import type { GlobePoint } from '#lib/geo/globe.ts';
+import { uniqueIds, type GlobePoint } from '#lib/geo/globe.ts';
 import { mergeSanctions } from '#lib/sanctions.ts';
 import type { EuLexDoc, TradeDoc } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
@@ -17,10 +17,10 @@ export const load: PageServerLoad = async () => {
 		dataset<TradeDoc[]>('sanctions-uk'),
 		dataset<EuLexDoc[]>('eurlex')
 	]);
-	const points: GlobePoint[] = [
+	const points: GlobePoint[] = uniqueIds([
 		...sala.points.map(({ region: _r, ...p }) => p),
 		...maritimePoints(navwarn?.data.items ?? []),
 		...sanctionPoints(mergeSanctions(sanctions?.data, sanctionsUk?.data, eurlex?.data))
-	];
+	]);
 	return { fetchedAt: sala.fetchedAt, points };
 };

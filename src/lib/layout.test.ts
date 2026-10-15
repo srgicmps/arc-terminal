@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaults, hide, move, place, reconcile, setSpan, show, type ModuleDef } from './layout.ts';
+import { defaults, packGrid, hide, move, place, reconcile, setSpan, show, type ModuleDef } from './layout.ts';
 
 const MODS: ModuleDef[] = [
 	{ id: 'a', title: 'A' },
@@ -49,5 +49,20 @@ describe('cambios', () => {
 		expect(show(l, 'c').hidden).toEqual([]);
 		expect(base.hidden).toEqual([]);
 		expect(base.span.a).toBe(1);
+	});
+});
+
+describe('packGrid', () => {
+	it('pocos paneles llenan el ancho', () => {
+		expect(packGrid([1, 1], 3)).toEqual({ cols: 2, spans: [1, 1] });
+		expect(packGrid([1, 2], 3)).toEqual({ cols: 3, spans: [1, 2] });
+		expect(packGrid([1], 3)).toEqual({ cols: 1, spans: [1] });
+	});
+
+	it('sin huecos al final de fila', () => {
+		expect(packGrid([1, 1, 1, 1], 3)).toEqual({ cols: 3, spans: [1, 1, 1, 3] });
+		expect(packGrid([1, 1, 2, 1], 3)).toEqual({ cols: 3, spans: [1, 2, 2, 1] });
+		expect(packGrid([3, 1], 2)).toEqual({ cols: 2, spans: [2, 2] });
+		expect(packGrid([], 3)).toEqual({ cols: 1, spans: [] });
 	});
 });
