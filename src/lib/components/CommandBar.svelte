@@ -26,6 +26,8 @@
 		type Option
 	} from '#lib/cmdline.ts';
 	import { argOptions } from '#lib/argcomplete.ts';
+	import { answerFor, answerNeeds } from '#lib/bar/answers.ts';
+	import { barData, loadBarData } from '#lib/bar/bardata.svelte.ts';
 	import { addFav, favOptions, parseFav, readFavs, removeFav, writeFavs } from '#lib/bar/favs.ts';
 	import { parseConversion } from '#lib/calc.ts';
 	import { fxLive, loadFxRates } from '#lib/fxlive.svelte.ts';
@@ -68,6 +70,16 @@
 	let favs = $state<string[]>([]);
 	// Una línea de respuesta bajo la barra («Guardado como favorito 2»).
 	let notice = $state('');
+	// Última zona de FUEL (para «llenar 50L» y «diésel»); se lee al enfocar la barra.
+	let fuelZone = $state<string | null>(null);
+	// Hora de la respuesta: se fija al escribir, para que «hora tokio» no cambie mientras se mira.
+	let now = $state(0);
+
+	// «euribor», «hipoteca 150000 25a», «hora tokio»…: el dato, como primera sugerencia (lote 27-A).
+	const answer = $derived(value.trim() ? answerFor(value, { get: (n) => barData[n], now: now || Date.now(), fuelZone }) : null);
+	$effect(() => {
+		loadBarData(answerNeeds(value, fuelZone));
+	});
 
 	// Índice de búsqueda (static/data/search.json). null hasta que se enfoca la barra la primera vez: se
 	// pide en ese momento (Vite lo deja en un trozo aparte), no al cargar la página. Va con su propio
@@ -94,7 +106,11 @@
 	// Con la barra vacía, el historial; al escribir, las sugerencias y debajo los resultados de búsqueda.
 	// Tras un comando y un espacio («LIDER », «PAIS ale»), las opciones de su argumento.
 	const suggestions = $derived(
-		value.trim() ? (favOptions(value, favs) ?? argOptions(value) ?? suggest(value, ALL, 8, fxLive)) : historyOptions(recent)
+		value.trim()
+			? answer
+				? [{ code: answer.code, desc: answer.desc, kind: 'Dato', run: answer.open ?? value.trim() }]
+				: (favOptions(value, favs) ?? argOptions(value) ?? suggest(value, ALL, 8, fxLive))
+			: historyOptions(recent)
 	);
 	// M46: al escribir «100 USD EUR», se descargan los cambios del BCE (una sola vez).
 	$effect(() => {
@@ -150,6 +166,12 @@
 	function run(raw: string) {
 		notice = '';
 		if (runFav(raw)) return;
+		// Una respuesta abre su vista (Intro en «euribor» → ECO); sin vista («hora tokio»), no hace nada.
+		const ans = answerFor(raw, { get: (n) => barData[n], now: Date.now(), fuelZone });
+		if (ans) {
+			if (ans.open) run(ans.open);
+			return;
+		}
 		// M46: una cuenta o una conversión no abren nada; la cuenta deja su resultado para seguir calculando.
 		const calc = calcInput(raw, fxLive);
 		if (calc) {
@@ -260,6 +282,7 @@
 		bind:this={input}
 		bind:value
 		oninput={() => {
+			now = Date.now();
 			histIdx = -1;
 			notice = '';
 			open = true;
@@ -271,6 +294,9 @@
 			loadIndex();
 			recent = readHistory();
 			favs = readFavs();
+			try {
+				fuelZone = localStorage.getItem('fuel-zone');
+			} catch {}
 			open = true;
 			moved = false;
 			selected = -1;
@@ -318,6 +344,7 @@
 						role="option"
 						id="opt{i}"
 						class:hit={i >= suggestions.length}
+						class:answer={o.kind === 'Dato'}
 						class:first={i === suggestions.length && i > 0}
 						aria-selected={i === selected}
 						onmousedown={(e) => {
@@ -490,6 +517,11 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	/* Una respuesta («euribor», «hipoteca …») se lee entera: puede ocupar dos líneas. */
+	.answer .desc {
+		white-space: normal;
 	}
 
 	.kind {
