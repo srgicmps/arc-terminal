@@ -18,7 +18,7 @@
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import { dm, nf } from '#lib/format.ts';
 	import { fuelShare, type ShareInfo } from '#lib/share.ts';
-	import { distanceKm, findProvince, FUELS, taxShare, zoneFor, type FuelKey, type FuelProvinceDay, type FuelStation } from '#lib/fuel.ts';
+	import { distanceKm, findProvince, FUELS, nearestZone, taxShare, zoneFor, type FuelKey, type FuelProvinceDay, type FuelStation } from '#lib/fuel.ts';
 	import { logPrices, MY_FUEL_KEY, parseMyStation, type MyStation } from '#lib/myfuel.ts';
 	import { place } from '#lib/place.svelte.ts';
 	import { madridNow } from '#lib/power.ts';
@@ -57,13 +57,17 @@
 		zone = id;
 		town = 'ALL';
 		showAll = false;
+		// Un aviso de antes (otra provincia que no cargó, la ubicación) ya no vale para esta zona.
+		message = '';
 		writeParams({ zona: id === MENORCA ? null : id });
 		try {
 			localStorage.setItem('fuel-zone', id);
 		} catch {}
 		if (id === MENORCA || loaded[id]) return;
 		message = 'Cargando…';
-		message = (await loadZone(id)) ? '' : 'No se han podido cargar las gasolineras de esa provincia.';
+		const ok = await loadZone(id);
+		// Si mientras tanto has elegido otra zona, el resultado de esta ya no toca su aviso.
+		if (zone === id) message = ok ? '' : 'No se han podido cargar las gasolineras de esa provincia.';
 	}
 
 	/** Descarga las gasolineras de una provincia (y su historial). false si falla. */
@@ -162,15 +166,18 @@
 			async (pos) => {
 				locating = false;
 				const me = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-				here = me;
-				// Menorca es una zona aparte: si estás en la isla, se queda en Menorca.
-				const inMenorca = me.lat > 39.79 && me.lat < 40.1 && me.lon > 3.78 && me.lon < 4.35;
-				const nearest = [...provinces].sort((a, b) => distanceKm(me, a) - distanceKm(me, b))[0];
-				await choose(inMenorca || !nearest ? MENORCA : nearest.id);
+				// Menorca es una zona aparte; fuera de España no se abre una provincia a cientos de kilómetros.
+				const id = nearestZone(me, provinces);
+				here = id ? me : null;
+				if (id) await choose(id);
+				else message = 'No hay gasolineras de España cerca de ti: elige una provincia.';
 			},
-			() => {
+			(err) => {
 				locating = false;
-				message = 'No se ha podido obtener tu ubicación.';
+				message =
+					err.code === err.PERMISSION_DENIED
+						? 'Sin permiso para conocer tu ubicación: dalo en los ajustes del navegador o elige una provincia.'
+						: 'No se ha podido obtener tu ubicación.';
 			},
 			{ enableHighAccuracy: false, timeout: 15_000, maximumAge: 600_000 }
 		);

@@ -93,6 +93,23 @@ export function distanceKm(a: { lat: number; lon: number }, b: { lat: number; lo
 	return 2 * 6371 * Math.asin(Math.sqrt(h));
 }
 
+/** Más allá de esta distancia al centro de la provincia más cercana, «cerca de mí» entiende que estás fuera de España. */
+export const NEAR_MAX_KM = 300;
+
+/**
+ * «Cerca de mí»: la zona de FUEL para una posición. Menorca si está en la isla (es una zona aparte); si no, la
+ * provincia con el centro más cercano, siempre que esté a menos de `NEAR_MAX_KM`. null si no hay ninguna cerca.
+ */
+export function nearestZone(me: { lat: number; lon: number }, provinces: Pick<FuelProvince, 'id' | 'lat' | 'lon'>[]): string | null {
+	if (inMenorca(me)) return 'menorca';
+	let best: { id: string; km: number } | null = null;
+	for (const p of provinces) {
+		const km = distanceKm(me, p);
+		if (!best || km < best.km) best = { id: p.id, km };
+	}
+	return best && best.km <= NEAR_MAX_KM ? best.id : null;
+}
+
 /**
  * La zona que pide la barra con «FUEL Madrid» o «FUEL 28»: Menorca, el número de la provincia
  * o su nombre (sin tildes; exacto, por el principio o contenido). null si no la encuentra.

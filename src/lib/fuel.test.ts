@@ -1,6 +1,6 @@
 // FUEL: qué provincia abre «FUEL Madrid» o «FUEL 28», y lectura del Weekly Oil Bulletin.
 import { describe, expect, it } from 'vitest';
-import { findProvince, parseOilBulletin, taxShare, zoneFor } from './fuel.ts';
+import { findProvince, nearestZone, parseOilBulletin, taxShare, zoneFor } from './fuel.ts';
 
 // Nombres como los publica el Ministerio.
 const PROVINCES = [
@@ -77,5 +77,26 @@ describe('zoneFor', () => {
 		expect(zoneFor(at('Maó', 'Illes Balears', 39.89, 4.26), PROVINCES)).toBe('menorca');
 		expect(zoneFor(at('Tokio', undefined, 35.69, 139.69, 'JP'), PROVINCES)).toBeNull();
 		expect(zoneFor(at('Soria', 'Soria'), PROVINCES)).toBeNull();
+	});
+});
+
+describe('nearestZone', () => {
+	const provinces = [
+		{ id: '28', lat: 40.42, lon: -3.7 },
+		{ id: '07', lat: 39.57, lon: 2.65 },
+		{ id: '17', lat: 42.0, lon: 2.8 }
+	];
+	it('en Menorca, Menorca aunque Mallorca esté cerca', () => {
+		expect(nearestZone({ lat: 39.89, lon: 4.26 }, provinces)).toBe('menorca');
+	});
+	it('en España, la provincia con el centro más cercano', () => {
+		expect(nearestZone({ lat: 40.45, lon: -3.68 }, provinces)).toBe('28');
+		expect(nearestZone({ lat: 41.9, lon: 2.7 }, provinces)).toBe('17');
+	});
+	it('fuera de España (París), ninguna: antes abría Girona a 700 km', () => {
+		expect(nearestZone({ lat: 48.85, lon: 2.35 }, provinces)).toBeNull();
+	});
+	it('sin provincias, ninguna', () => {
+		expect(nearestZone({ lat: 40.45, lon: -3.68 }, [])).toBeNull();
 	});
 });
