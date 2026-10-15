@@ -40,7 +40,8 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - **Probar una fuente sin la pasada completa**: Actions → «Publicar en Pages» → Run workflow, con «fuentes»
   (p. ej. `fao climate`). Descarga solo esas fuentes, sin copia guardada, y lanza el sondeo, sin publicar.
 - En los PR, la Action va en jobs a la vez: `checks` (check, test, build y el tope de peso por vista de
-  `scripts/weight.ts`: el verde o el rojo rápido), `smoke`
+  `scripts/weight.ts`: el verde o el rojo rápido; Arc OS, `/os`, no tiene tope por decisión de Sergi, y lo que solo
+  carga dentro de `/os` tampoco), `smoke`
   (datos reales y prueba de humo) y `probe` solo si el PR toca `scripts/`. `compare` (vistas del PR frente a
   main) y `tv-shots` se lanzan a mano: Run workflow sobre la rama, con «herramienta».
 
