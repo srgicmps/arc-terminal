@@ -137,6 +137,7 @@ vista `HELP`. Resumen:
 | `SEAS` | Estacionalidad mensual de una serie, con el historial que haya | Todas |
 | `MOST` | Los que más suben, bajan y se negocian hoy (EE. UU., Alemania, España) | TradingView |
 | `EQS` | Buscador de acciones: bolsa, punto de partida y filtros de sector, PER, dividendo… | TradingView |
+| `IMAP` | Mapas de calor de más índices y países, sectores de EE. UU. y bolsas del mundo | TradingView |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |
 | `RV` | Un valor frente a sus competidores: PER, márgenes, crecimiento (unos 60 de EE. UU.) | Finnhub* |
 | `SIG` | Señales técnicas: máximos y mínimos de 52 semanas, medias y RSI | Finnhub*, TradingView |
