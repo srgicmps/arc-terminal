@@ -11,6 +11,10 @@
 	import Logo from '#lib/components/Logo.svelte';
 	import { refreshNotices, shell } from '../shell/shell.svelte.ts';
 	import { greeting, lockSummary, userName } from './boot.ts';
+	import WallLayer from './wall/WallLayer.svelte';
+	import { loadWall, wall } from './wall/wall.svelte.ts';
+
+	loadWall();
 
 	let { onunlock }: { onunlock: () => void } = $props();
 
@@ -66,6 +70,7 @@
 	onpointerup={up}
 	onkeydown={key}
 >
+	{#if wall.cfg.lock}<WallLayer />{/if}
 	<div class="when">
 		<p class="time">{time}</p>
 		<p class="date">{date}</p>
@@ -117,6 +122,12 @@
 
 	p {
 		margin: 0;
+	}
+
+	/* Por encima del fondo (WallLayer va en absoluto, detrás). */
+	.when,
+	.card {
+		position: relative;
 	}
 
 	.time {
