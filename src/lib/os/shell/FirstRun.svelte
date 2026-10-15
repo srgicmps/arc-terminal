@@ -8,16 +8,33 @@
 	import * as os from './bridge.ts';
 	import { setName, setSkin, setWallpaper, setWidgets, shell, WALLPAPERS } from './shell.svelte.ts';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from './widgets.ts';
+	import { sys } from '../system/system.svelte.ts';
+	import WallLayer from '../system/wall/WallLayer.svelte';
+	import { isPreset } from '../system/wall/wall.ts';
 
 	const STEPS = ['Fondo', 'Widgets', 'Nombre'] as const;
 	let name = $state(shell.name);
 	let step = $state(0);
 	let box = $state<HTMLElement>();
 
+	// El foco, al primer control del paso. Espera a que se quite el arranque o el bloqueo, que van encima y se lo
+	// quedarían (si no, al entrar el foco caía en <body>).
 	$effect(() => {
 		void step;
+		if (sys.phase !== 'on') return;
 		tick().then(() => box?.querySelector<HTMLElement>('[aria-checked="true"], [aria-pressed="true"], button')?.focus());
 	});
+
+	// Es un diálogo modal: Tab no sale de él y Escape es «Saltar».
+	function onkeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape') return (e.preventDefault(), finish());
+		if (e.key !== 'Tab' || !box) return;
+		const items = [...box.querySelectorAll<HTMLElement>('button, input')];
+		const first = items[0];
+		const last = items.at(-1);
+		if (e.shiftKey && document.activeElement === first) (e.preventDefault(), last?.focus());
+		else if (!e.shiftKey && document.activeElement === last) (e.preventDefault(), first?.focus());
+	}
 
 	const current = $derived(shell.widgets ?? defaultWidgets(os.deskW(), shell.skin));
 	const has = (k: WidgetKind) => current.some((w) => w.kind === k);
@@ -29,7 +46,7 @@
 	}
 </script>
 
-<div class="first" role="dialog" aria-modal="true" aria-labelledby="os-first-title" bind:this={box}>
+<div class="first" role="dialog" aria-modal="true" aria-labelledby="os-first-title" tabindex="-1" bind:this={box} {onkeydown}>
 	<div class="card">
 		<p class="kicker">Bienvenido a Arc OS · paso {step + 1} de {STEPS.length}</p>
 		<ol class="dots" aria-hidden="true">
@@ -42,7 +59,7 @@
 			<div class="walls" role="radiogroup" aria-label="Fondo del escritorio">
 				{#each WALLPAPERS as wp (wp.id)}
 					<button type="button" role="radio" aria-checked={shell.wallpaper === wp.id} class="wall" onclick={() => setWallpaper(wp.id)}>
-						<span class="sw" data-wp={wp.id} aria-hidden="true"></span>
+						<span class="sw" aria-hidden="true">{#if isPreset(wp.id)}<WallLayer source={{ kind: 'preset', id: wp.id }} preview />{/if}</span>
 						<span>{wp.label}</span>
 					</button>
 				{/each}
@@ -143,6 +160,8 @@
 	}
 	.wall {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		min-width: 0;
 		gap: var(--sp-6);
 		padding: var(--sp-6);
 		border: var(--hair) solid var(--line);
@@ -155,23 +174,14 @@
 		background: var(--amber-soft);
 	}
 	.sw {
+		position: relative;
+		overflow: hidden;
 		display: block;
+		width: 100%;
 		aspect-ratio: 16 / 10;
 		border-radius: var(--radius-s);
 		background: var(--bg);
 		border: var(--hair) solid var(--line);
-	}
-	.sw[data-wp='sistema'] {
-		background-image: linear-gradient(180deg, var(--amber-soft), transparent 60%), radial-gradient(ellipse at 30% 100%, var(--raise), transparent 70%);
-	}
-	.sw[data-wp='rejilla'] {
-		background-image:
-			linear-gradient(var(--line) var(--hair), transparent var(--hair)),
-			linear-gradient(90deg, var(--line) var(--hair), transparent var(--hair));
-		background-size: 12px 12px;
-	}
-	.sw[data-wp='degradado'] {
-		background-image: radial-gradient(ellipse at 20% 0%, var(--amber-soft), transparent 60%), linear-gradient(var(--bg), var(--panel));
 	}
 	.chips {
 		display: flex;

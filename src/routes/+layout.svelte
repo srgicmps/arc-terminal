@@ -176,6 +176,8 @@
 	// A la vista, solo las primeras de la fila (como mucho VISIBLE_KEYS); el resto va en «Más».
 	const visibleKeys = $derived(keys.slice(0, VISIBLE_KEYS));
 	const hiddenKeys = $derived(keys.slice(VISIBLE_KEYS));
+	/** En /os el escritorio tapa la web: su cabecera, pestañas y pie siguen debajo, pero sin foco ni atajos. */
+	const inOs = $derived(page.route.id === '/os');
 	const hiddenCurrent = $derived(hiddenKeys.find((k) => k.route === page.route.id));
 	const thumb = $derived(COMMANDS.filter((c) => taste.thumb.includes(c.code)));
 
@@ -214,7 +216,7 @@
 </svelte:head>
 
 <div class="app" data-ui="app">
-	<header class="top" data-ui="top">
+	<header class="top" data-ui="top" inert={inOs}>
 		<a class="brand" data-ui="brand" href={resolve('/')}>
 			<Logo />
 			<span>Arc <span class="brand-sub">Terminal</span></span>
@@ -259,7 +261,7 @@
 		</Menu>
 	</header>
 
-	<nav class="keys" data-ui="keys" aria-label="Secciones">
+	<nav class="keys" data-ui="keys" aria-label="Secciones" inert={inOs}>
 		{#each visibleKeys as key (key.code)}
 			<a
 				class="key"
@@ -284,7 +286,7 @@
 				<a href={resolve('/help')} onclick={close} aria-current={page.route.id === '/help' ? 'page' : undefined}>Todos los comandos <small>HELP</small></a>
 			{/snippet}
 		</Menu>
-		<ExpLauncher hotkey />
+		<ExpLauncher hotkey={!inOs} />
 	</nav>
 
 	{#if tapeState.on}
@@ -314,7 +316,7 @@
 		{@render children()}
 	</main>
 
-	<nav class="thumb" data-ui="tabs" aria-label="Accesos rápidos">
+	<nav class="thumb" data-ui="tabs" aria-label="Accesos rápidos" inert={inOs}>
 		{#each thumb as c (c.code)}
 			<a href={routeHref(c.route)} data-code={c.code} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
 		{/each}
@@ -336,7 +338,7 @@
 		{/if}
 	{/if}
 
-	<footer class="status" data-ui="foot">
+	<footer class="status" data-ui="foot" inert={inOs}>
 		<span>Datos públicos actualizados cada 15 min con GitHub Actions · cotizaciones de TradingView</span>
 		<a href={resolve('/status')}>Estado de las fuentes</a>
 		<Feedback />
