@@ -39,6 +39,7 @@ export const SHORTCUTS = [
 	{ id: 'row-open', group: 'Listas', keys: ['Intro'], how: 'con el foco en un titular o una fila', action: 'Abrir' },
 	{ id: 'row-open-source', group: 'Listas', keys: ['O'], how: 'con el foco en un titular o una fila', action: 'Abrir la fuente en otra pestaña', match: { key: 'o' } },
 	{ id: 'fullscreen', group: 'Pantalla', keys: ['⇧', 'F'], combo: true, action: 'Pantalla completa', match: { key: 'F', shift: true } },
+	{ id: 'exp', group: 'Pantalla', keys: ['⇧', 'X'], combo: true, how: 'o el botón ✦', action: 'Saltar a otra experiencia (periódico, radio, muro…)', match: { key: 'X', shift: true } },
 	{ id: 'tv-pause', group: 'TV', keys: ['Espacio'], how: 'en modo TV', action: 'Pausar o seguir', match: { key: ' ' } },
 	{ id: 'tv-exit', group: 'TV', keys: ['Esc'], how: 'en modo TV', action: 'Salir', match: { key: 'Escape' } },
 	// Arc OS (src/lib/components/os/WindowLayer.svelte, handleKey): todos con Alt, también con el foco dentro de una ventana.
