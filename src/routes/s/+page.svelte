@@ -13,6 +13,8 @@
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import AnalystPanel from '#lib/components/AnalystPanel.svelte';
 	import FilingList from '#lib/components/FilingList.svelte';
+	import RvTable from '#lib/components/RvTable.svelte';
+	import { compareWithPeers } from '#lib/rv.ts';
 	import HoldersTable from '#lib/components/HoldersTable.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import ShortVolume from '#lib/components/ShortVolume.svelte';
@@ -48,6 +50,8 @@
 	const news = $derived(data.news?.data[code] ?? []);
 	// Analistas, sorpresas de resultados y directivos (Finnhub; solo EE. UU. y con la clave).
 	const analysis = $derived(data.analysts?.data[code]);
+	// Frente a sus competidores (RV): solo los grandes valores de EE. UU. con cifras de Finnhub.
+	const rv = $derived(data.rv?.metrics[code] && data.rv.peers[code] ? compareWithPeers(code, data.rv.peers[code], data.rv.metrics) : null);
 	// Fondos de FONDOS que la tienen (HDS, 13F de la SEC).
 	const held = $derived(data.hds?.holders[code] ?? []);
 
@@ -110,6 +114,16 @@
 						<AnalystPanel a={analysis} />
 						{#snippet note()}Recomendaciones del último mes, BPA de los últimos trimestres y operaciones de directivos (formulario 4) ·
 							<Updated at={analysis.fetchedAt} source="analysts" />{/snippet}
+					</Panel>
+				</div>
+			</div>
+		{/if}
+		{#if rv?.peers.length}
+			<div class="grid">
+				<div class="col">
+					<Panel title="Frente a su sector" meta="{rv.peers.length} competidores · Finnhub" jump={{ code: 'RV', href: `${resolve('/rv')}?s=${encodeURIComponent(code)}` }}>
+						<RvTable rows={rv.rows} />
+						{#snippet note()}En verde, mejor que la mediana de sus competidores · <Updated at={data.rv?.fetchedAt} source="perf" />{/snippet}
 					</Panel>
 				</div>
 			</div>

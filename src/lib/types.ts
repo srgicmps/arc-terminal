@@ -1,5 +1,6 @@
 // Forma de los datos de static/data/*.json. La comparten los scripts que los descargan (scripts/sources/)
 // y las vistas que los muestran.
+import type { Metrics } from './rv.ts';
 import type { HeldIssuer } from './holders.ts';
 import type { SeaState, SunDay } from './weather.ts';
 
@@ -477,6 +478,15 @@ export interface Ipo {
  */
 export interface PerfData {
 	symbols: Record<string, Record<string, number>>;
+	/** Valoración, márgenes y máx./mín. de 52 semanas (src/lib/rv.ts). Las copias guardadas antes no lo tienen. */
+	metrics?: Record<string, Metrics>;
+}
+
+/** Competidores de cada valor (Finnhub /stock/peers), para RV. */
+export interface PeersData {
+	symbols: Record<string, { peers: string[]; fetchedAt: string }>;
+	/** Cifras de los competidores que no están en perf.json. Las copias guardadas antes no lo tienen. */
+	metrics?: Record<string, Metrics & { fetchedAt: string }>;
 }
 
 export interface FinnhubData {

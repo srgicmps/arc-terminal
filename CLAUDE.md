@@ -139,6 +139,7 @@ vista `HELP`. Resumen:
 | `EQS` | Buscador de acciones: bolsa, punto de partida y filtros de sector, PER, dividendo… | TradingView |
 | `IMAP` | Mapas de calor de más índices y países, sectores de EE. UU. y bolsas del mundo | TradingView |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |
+| `RV` | Un valor frente a sus competidores: PER, márgenes, crecimiento (unos 60 de EE. UU.) | Finnhub* |
 | `MIS` | Tu lista de valores (en el navegador) | TradingView |
 | `TECH` / `AI` | Tecnología e IA | Hacker News, Hugging Face, OpenRouter, Epoch AI (CC BY 4.0), Cloudflare Radar*, RSS |
 | `BOE` / `USGOV` | Boletines oficiales | BOE, Federal Register |
