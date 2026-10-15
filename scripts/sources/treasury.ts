@@ -2,6 +2,7 @@
 // https://fiscaldata.treasury.gov/api-documentation/ · https://home.treasury.gov/treasury-daily-interest-rate-xml-feed
 // Dominio público.
 import { XMLParser } from 'fast-xml-parser';
+import { parseMts, type MtsData, type MtsRow } from '../../src/lib/mts.ts';
 import { parseTic, type TicData } from '../../src/lib/tic.ts';
 import type { Auction, AuctionsData, SeriesData, YieldCurveData } from '../../src/lib/types.ts';
 import { getJson, getText, list, madridDay, num, type Source } from '../lib.ts';
@@ -194,6 +195,37 @@ export const tic: Source<TicData> = {
 	async fetch() {
 		const data = parseTic(await getText(TIC_TABLE5));
 		if (!data || data.holders.length < 10) throw new Error(`la tabla 5 del TIC trae ${data?.holders.length ?? 0} países`);
+		return data;
+	}
+};
+
+// Cuentas del mes (Monthly Treasury Statement): déficit acumulado del año fiscal (tabla 1) y aranceles cobrados
+// (tabla 4, «Customs Duties»). Sale hacia el octavo día hábil de cada mes con los datos del mes anterior.
+const MTS_API = 'https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/mts';
+
+export const usbudget: Source<MtsData> = {
+	name: 'usbudget',
+	label: 'Déficit y aranceles · Tesoro de EE. UU. (Monthly Treasury Statement)',
+	maxAgeMinutes: 1440,
+	async fetch() {
+		// Dos filas «Year-to-Date» por mes: con 30 hay 13 meses, para comparar con el mismo mes del año anterior.
+		const ytd = new URLSearchParams({
+			filter: 'classification_desc:eq:Year-to-Date',
+			fields: 'record_date,src_line_nbr,current_month_dfct_sur_amt',
+			sort: '-record_date',
+			'page[size]': '30'
+		});
+		const customs = new URLSearchParams({
+			filter: 'classification_desc:eq:Customs Duties',
+			sort: '-record_date',
+			'page[size]': '3'
+		});
+		const [t1, t4] = await Promise.all([
+			getJson<{ data: MtsRow[] }>(`${MTS_API}/mts_table_1?${ytd}`),
+			getJson<{ data: MtsRow[] }>(`${MTS_API}/mts_table_4?${customs}`)
+		]);
+		const data = parseMts(t1.data ?? [], t4.data ?? []);
+		if (!data) throw new Error('sin déficit o sin aranceles en el mismo mes');
 		return data;
 	}
 };
