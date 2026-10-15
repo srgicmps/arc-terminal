@@ -404,12 +404,16 @@
 			margin-block: calc((var(--touch) - 1lh) / -2);
 		}
 
+		/* 44 × 44 px pulsables (⤢ medía ~26 de ancho). El margen negativo devuelve a la cabecera el ancho de un
+		   glifo más el hueco: así no se ensancha (dos herramientas vecinas solo comparten unos px del borde). */
 		.tool {
 			display: inline-flex;
 			align-items: center;
+			justify-content: center;
+			min-width: var(--touch);
 			min-height: var(--touch);
-			padding-inline: var(--sp-8);
-			margin: calc(-1 * var(--sp-14)) calc(-1 * var(--sp-4));
+			padding-inline: 0;
+			margin: calc(-1 * var(--sp-14)) calc((1em + var(--sp-12) - var(--touch)) / 2);
 		}
 	}
 
