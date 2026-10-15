@@ -3,6 +3,7 @@
 	↑ ↓ eligen, Intro abre, Escape cierra. Sirve en los tres aspectos.
 -->
 <script lang="ts">
+	import OsIcon from '../icons/OsIcon.svelte';
 	import { tick } from 'svelte';
 	import * as os from './bridge.ts';
 	import { shell } from './shell.svelte.ts';
@@ -52,7 +53,7 @@
 			{#each found as a, i (a.id)}
 				<li id={`os-spot-${a.id}`} role="option" aria-selected={i === sel}>
 					<button type="button" tabindex="-1" onclick={() => go(a.id)} onmouseenter={() => (sel = i)}>
-						<span class="ico" aria-hidden="true">{a.icon ?? '·'}</span>
+						<OsIcon id={a.id} size={28} />
 						<span class="t">{a.title}</span>
 						<span class="c">{a.code ?? categoryOf(a)}</span>
 					</button>
@@ -121,10 +122,6 @@
 	li[aria-selected='true'] button {
 		background: var(--amber);
 		color: var(--on-amber);
-	}
-	.ico {
-		width: var(--sp-20);
-		text-align: center;
 	}
 	.t {
 		flex: 1;

@@ -4,6 +4,7 @@
 	Escape lo cierra; Intro en el buscador abre la primera que coincide.
 -->
 <script lang="ts">
+	import OsIcon from '../icons/OsIcon.svelte';
 	import { tick } from 'svelte';
 	import { leave as onleave } from './bridge.ts';
 	import { opened, pin, shell } from './shell.svelte.ts';
@@ -43,7 +44,7 @@
 {#snippet app(a: StartApp)}
 	<li class="app">
 		<button type="button" class="open" onclick={() => open(a.id)} title={a.desc}>
-			<span class="ico" aria-hidden="true">{a.icon ?? a.code?.slice(0, 2) ?? '·'}</span>
+			<OsIcon id={a.id} size={20} />
 			<span class="name">{a.title}</span>
 			{#if a.code}<span class="code">{a.code}</span>{/if}
 		</button>
@@ -166,13 +167,6 @@
 		min-height: var(--control-h);
 		padding: 0 var(--sp-6);
 		text-align: left;
-	}
-	.ico {
-		width: var(--sp-20);
-		color: var(--amber);
-		font-family: var(--mono);
-		font-size: var(--fs-xs);
-		text-align: center;
 	}
 	.name {
 		flex: 1;
