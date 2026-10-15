@@ -1036,52 +1036,6 @@
 		font-weight: var(--fw-medium);
 		cursor: pointer;
 	}
-	/* Teléfono girado: 8 columnas × 3 filas (las mismas 24 casillas), widgets arriba a la izquierda, iconos algo
-	   menores y el dock más bajo; si no, los iconos se montaban unos sobre otros. Sin pasar por la muesca. */
-	@media (orientation: landscape) and (max-height: 500px) {
-		.phone {
-			padding-left: env(safe-area-inset-left, 0px);
-			padding-right: env(safe-area-inset-right, 0px);
-		}
-		.page {
-			grid-template-columns: repeat(8, 1fr);
-			grid-template-rows: repeat(3, minmax(0, 1fr));
-			gap: var(--sp-4) var(--sp-12);
-			padding: var(--sp-4) var(--sp-20);
-			overflow-y: auto;
-		}
-		.page .icon,
-		.dock .icon {
-			zoom: 0.8;
-		}
-		.w-l,
-		.w-s {
-			order: -1;
-		}
-		.below {
-			flex-direction: row;
-			justify-content: center;
-			gap: var(--sp-16);
-			padding: var(--sp-2) 0 var(--sp-6);
-		}
-		.dock {
-			width: min(100% - 2 * var(--sp-12), 520px);
-			margin: 0 auto;
-			padding: var(--sp-6) var(--sp-12);
-		}
-		.apps {
-			left: env(safe-area-inset-left, 0px);
-			right: env(safe-area-inset-right, 0px);
-		}
-		.switching {
-			left: 0;
-			right: 0;
-		}
-		/* Las tarjetas dejan sitio al botón «Inicio» de abajo. */
-		.switching .slot {
-			height: calc(100dvh - var(--touch) - 3 * var(--sp-24));
-		}
-	}
 	@keyframes zoom {
 		from {
 			opacity: 0;

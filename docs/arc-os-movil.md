@@ -42,8 +42,8 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
 - [x] «Atrás» del navegador o gesto del sistema: cierra lo de encima (hoja, carpeta, app) con el enrutado superficial
   de SvelteKit (`pushState`, `page.state.phone`); en inicio, sale de /os como siempre.
 - [x] QA 2 (apps y gestos): notificaciones que no se abrían (bucle de efectos), tirón corto de la barra a inicio y
-  parar el dedo para la multitarea, valores del buscador a pantalla completa (`webApp`), horizontal (8×3, también
-  teléfonos grandes de 932 px), Esc en un campo no cierra la app, teclado en pantalla (`keyboardFit`).
+  parar el dedo para la multitarea, valores del buscador a pantalla completa (`webApp`), un teléfono grande girado
+  (932 px) ya no pasa al escritorio, Esc en un campo no cierra la app, teclado en pantalla (`keyboardFit`).
 - [ ] Probarlo en un iPhone de verdad (safe-area, PWA instalada): solo puede Sergi; probado en Chromium a 390×844.
 
 ## iPhone, iPad y PWA (QA OS 3)
