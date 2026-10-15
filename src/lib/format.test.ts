@@ -52,6 +52,8 @@ describe('números', () => {
 		expect(compact(1.9e9)).toBe('1,9 mil M');
 		expect(compact(2.4e6)).toBe('2,4 M');
 		expect(compact(15_300)).toBe('15,3 mil');
+		expect(compact(182_000)).toBe('182 mil');
+		expect(compact(3e6)).toBe('3 M');
 		expect(compact(-2.4e6)).toBe('-2,4 M');
 		expect(compact(999)).toBe('999');
 	});
