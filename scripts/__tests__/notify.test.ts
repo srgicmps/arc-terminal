@@ -47,53 +47,53 @@ const pick = (rules: Rule[], entries: LogEntry[] = [], now = NOW) =>
 const count = (alerts: { level: Level }[], level: Level) => alerts.filter((a) => a.level === level).length;
 
 describe('cupos y tope diario', () => {
-	it('P1 sin cupo propio, P2 hasta 25, P3 hasta 15, P4 hasta 3', () => {
-		const { send, skipped } = pick([fake('a', 1, 10), fake('b', 2, 30), fake('c', 3, 20), fake('d', 4, 3)]);
-		expect([1, 2, 3, 4].map((l) => count(send, l as Level))).toEqual([10, 25, 15, 0]);
-		// 10 + 25 + 15 = 50: el tope total deja fuera a P4 y lo que no cabía en su cupo.
-		expect(send).toHaveLength(50);
-		expect(skipped).toHaveLength(5 + 5 + 3);
+	it('P1 sin cupo propio, P2 hasta 50, P3 hasta 40, P4 hasta 12', () => {
+		const { send, skipped } = pick([fake('a', 1, 10), fake('b', 2, 60), fake('c', 3, 50), fake('d', 4, 12)]);
+		expect([1, 2, 3, 4].map((l) => count(send, l as Level))).toEqual([10, 50, 40, 0]);
+		// 10 + 50 + 40 = 100: el tope total deja fuera a P4 y lo que no cabía en su cupo.
+		expect(send).toHaveLength(100);
+		expect(skipped).toHaveLength(10 + 10 + 12);
 	});
 
-	it('tope de 50 al día: si se llega, gana el nivel más alto', () => {
-		const { send } = pick([fake('p3', 3, 10), fake('p2', 2, 10), fake('p1', 1, 45)]);
-		expect([count(send, 1), count(send, 2), count(send, 3)]).toEqual([45, 5, 0]);
-		const later = pick([fake('p1', 1, 5)], sent(50, 3, '2026-10-14T07:00Z'));
+	it('tope de 100 al día: si se llega, gana el nivel más alto', () => {
+		const { send } = pick([fake('p3', 3, 10), fake('p2', 2, 10), fake('p1', 1, 95)]);
+		expect([count(send, 1), count(send, 2), count(send, 3)]).toEqual([95, 5, 0]);
+		const later = pick([fake('p1', 1, 5)], sent(100, 3, '2026-10-14T07:00Z'));
 		expect(later.send).toEqual([]);
 	});
 
 	it('el aviso que llega justo al tope lo dice en el título; sin llegar, nada', () => {
-		// 45 ya enviados hoy + 5 ahora = 50: el quinto (el último que sale) lleva el prefijo.
-		const full = pick([fake('p2', 2, 3), fake('p1', 1, 4)], sent(45, 3));
+		// 95 ya enviados hoy + 5 ahora = 100: el quinto (el último que sale) lleva el prefijo.
+		const full = pick([fake('p2', 2, 3), fake('p1', 1, 4)], sent(95, 3));
 		expect(full.send.map((a) => a.id)).toEqual(['p1:0', 'p1:1', 'p1:2', 'p1:3', 'p2:0']);
 		expect(full.send.map((a) => a.title)).toEqual(['p1', 'p1', 'p1', 'p1', '⚠ Límite diario alcanzado · p2']);
 		expect(full.skipped.map((a) => a.id)).toEqual(['p2:1', 'p2:2']);
 		expect(LIMIT_PREFIX).toBe('⚠ Límite diario alcanzado · ');
-		// Justo 50 sin que sobre nada, también; nunca pasa de 50.
-		const exact = pick([fake('p1', 1, 5)], sent(45, 3));
+		// Justo 100 sin que sobre nada, también; nunca pasa de 100.
+		const exact = pick([fake('p1', 1, 5)], sent(95, 3));
 		expect(exact.send).toHaveLength(5);
 		expect(exact.send.at(-1)!.title).toBe('⚠ Límite diario alcanzado · p1');
-		// Con 49 de 50, ninguno lo lleva; con el tope ya lleno, no sale nada.
-		const below = pick([fake('p1', 1, 4)], sent(45, 3));
+		// Con 99 de 100, ninguno lo lleva; con el tope ya lleno, no sale nada.
+		const below = pick([fake('p1', 1, 4)], sent(95, 3));
 		expect(below.send.every((a) => !a.title.startsWith('⚠'))).toBe(true);
-		expect(pick([fake('p1', 1, 1)], sent(50, 3)).send).toEqual([]);
+		expect(pick([fake('p1', 1, 1)], sent(100, 3)).send).toEqual([]);
 	});
 
 	it('cuenta lo de hoy en Madrid: lo de ayer y lo visto sin enviar no cuentan', () => {
 		const entries = [
-			...sent(20, 2, '2026-10-14T06:00Z'),
+			...sent(45, 2, '2026-10-14T06:00Z'),
 			...sent(30, 2, '2026-10-13T21:00Z', 'ayer'), // 23:00 CEST del 13
 			{ k: 'b', t: '2026-10-14T07:00Z', s: 'baseline' as const, p: 2 as const },
 			{ k: 'f', t: '2026-10-14T08:00Z', s: 'failed' as const, p: 3 as const }
 		];
-		expect(usedToday({ ...emptyLog(), entries }, NOW)).toEqual({ total: 21, byLevel: { 1: 0, 2: 20, 3: 1, 4: 0 } });
+		expect(usedToday({ ...emptyLog(), entries }, NOW)).toEqual({ total: 46, byLevel: { 1: 0, 2: 45, 3: 1, 4: 0 } });
 		expect(count(pick([fake('x', 2, 10)], entries).send, 2)).toBe(5);
 	});
 
 	it('orden: nivel más alto primero y, a igual nivel, el más reciente', () => {
 		const { send } = pick([fake('p3', 3, 2), fake('p1', 1, 2), fake('p2', 2, 2)]);
 		expect(send.map((a) => a.id)).toEqual(['p1:0', 'p1:1', 'p2:0', 'p2:1', 'p3:0', 'p3:1']);
-		const tight = pick([fake('p3', 3, 2), fake('p1', 1, 2), fake('p2', 2, 2)], sent(47, 1));
+		const tight = pick([fake('p3', 3, 2), fake('p1', 1, 2), fake('p2', 2, 2)], sent(97, 1));
 		expect(tight.send.map((a) => a.id)).toEqual(['p1:0', 'p1:1', 'p2:0']);
 		expect(tight.skipped.map((a) => a.id)).toEqual(['p2:1', 'p3:0', 'p3:1']);
 	});
@@ -403,7 +403,7 @@ describe('runNotify', () => {
 			if (url.startsWith('https://ntfy.sh/')) return new Response('', { status: 200 });
 		});
 		const lines = await runNotify({ topic: TOPIC, dir, cache, finnhubKey: KEY, euGap: 0, now: NOW });
-		expect(lines).toContain('ntfy: 1 de 7 ADR europeos (sin dato: BAESY, RNMBY, FINMY, THLLY, SAABY, ISMAY)');
+		expect(lines).toContain('ntfy: 1 de 9 ADR europeos (sin dato: BAESY, RNMBY, FINMY, THLLY, SAABY, ISMAY, IBDRY, IDEXY)');
 		expect(lines).toContain('ntfy · P2 stock:EADSY:2026-10-14T10:00Z: enviado (200)');
 		const pub = await written();
 		const priv = await readFile(cache, 'utf8');
@@ -421,11 +421,11 @@ describe('runNotify', () => {
 		});
 		const finnhub = () => fetch.mock.calls.filter(([u]) => String(u).startsWith('https://finnhub.io/')).length;
 		await runNotify({ topic: TOPIC, dir, cache, finnhubKey: 'k', euGap: 0, now: NOW });
-		expect(finnhub()).toBe(7);
+		expect(finnhub()).toBe(9);
 		await runNotify({ topic: TOPIC, dir, cache, finnhubKey: 'k', euGap: 0, now: NOW + 15 * 60_000 });
-		expect(finnhub()).toBe(7);
+		expect(finnhub()).toBe(9);
 		await runNotify({ topic: TOPIC, dir, cache, finnhubKey: 'k', euGap: 0, now: NOW + 61 * 60_000 });
-		expect(finnhub()).toBe(14);
+		expect(finnhub()).toBe(18);
 		expect(await written()).not.toContain('adr:fetched');
 		expect(await readFile(cache, 'utf8')).toContain('adr:fetched');
 	});

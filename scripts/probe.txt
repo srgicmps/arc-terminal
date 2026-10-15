@@ -111,3 +111,6 @@ https://www.ecb.europa.eu/ecb/orga/decisions/eb/html/index.en.html ~ .{0,100}(Vi
 https://sede.sepe.gob.es/es/portaltrabaja/resources/sede/datos_abiertos/datos/Paro_por_municipios_2025_csv.csv
 # 26B.7 GEO: ¿publica Frontex sus datos en data.europa.eu con otra URL de descarga?
 https://data.europa.eu/api/hub/search/search?q=frontex%20illegal%20border%20crossings&limit=5 ~ .{0,120}(xlsx|access_url|download_url).{0,200}
+# 28.7 BTMM: tipos de referencia de la Fed de Nueva York (sin clave)
+https://markets.newyorkfed.org/api/rates/secured/sofr/last/2.json
+https://markets.newyorkfed.org/api/rates/unsecured/effr/last/2.json

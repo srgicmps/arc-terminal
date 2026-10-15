@@ -27,8 +27,8 @@
 	} from '#lib/cmdline.ts';
 	import { argOptions } from '#lib/argcomplete.ts';
 	import { addFav, favOptions, parseFav, readFavs, removeFav, writeFavs } from '#lib/bar/favs.ts';
-	import { actionOption, parseAction, shareInfo, shareTarget } from '#lib/actions.ts';
-	import { legacyCopy, shareOrCopy } from '#lib/share.ts';
+	import { actionOption, parseAction } from '#lib/actions.ts';
+	import { runAction } from '#lib/runaction.svelte.ts';
 	import { parseConversion } from '#lib/calc.ts';
 	import { fxLive, loadFxRates } from '#lib/fxlive.svelte.ts';
 	import type { Dataset } from '#lib/data.ts';
@@ -93,7 +93,7 @@
 
 	// Con la barra vacía, el historial; al escribir, las sugerencias y debajo los resultados de búsqueda.
 	// Tras un comando y un espacio («LIDER », «PAIS ale»), las opciones de su argumento.
-	// «compartir WS»: una acción (27-B), como única sugerencia.
+	// «compartir WS», «+NVDA»…: una acción (27-B), como única sugerencia.
 	const action = $derived(parseAction(value));
 	const suggestions = $derived(
 		!value.trim()
@@ -133,20 +133,6 @@
 		noticeTimer = setTimeout(() => (notice = ''), 2500);
 	}
 
-	/** «compartir WS»: el menú del sistema en el móvil; si no, copia el enlace al portapapeles. */
-	async function share(raw: string) {
-		const act = parseAction(raw);
-		if (!act) return;
-		const target = shareTarget(act, ALL);
-		close();
-		const info = target ? shareInfo(target) : null;
-		const url = info ? new URL(routeHref(info.route) + info.search, location.href).href : location.href;
-		const share = info ? { title: info.title, text: info.text, url } : { title: document.title, url };
-		const result = await shareOrCopy(share, navigator, (t) => legacyCopy(t, document));
-		if (result === 'copied') flash('Enlace copiado');
-		else if (result === 'failed') flash('No se ha podido copiar el enlace');
-	}
-
 	/** «fav …» y los números: guarda, quita o abre un favorito. true si lo ha atendido. */
 	function runFav(raw: string): boolean {
 		const a = parseFav(raw);
@@ -177,7 +163,12 @@
 	}
 
 	function run(raw: string) {
-		if (parseAction(raw)) return void share(raw);
+		// Acciones (27-B): «compartir WS», «+NVDA», «vigila aranceles», «alerta NVDA > 150».
+		if (parseAction(raw)) {
+			close();
+			runAction(raw, ALL, flash);
+			return;
+		}
 		if (runFav(raw)) return;
 		// M46: una cuenta o una conversión no abren nada; la cuenta deja su resultado para seguir calculando.
 		const calc = calcInput(raw, fxLive);
