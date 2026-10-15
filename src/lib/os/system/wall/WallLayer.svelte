@@ -9,13 +9,17 @@
 	import { place } from '#lib/place.svelte.ts';
 	import { imageUrl } from './images.ts';
 	import LiveWall from './LiveWall.svelte';
-	import { activeSource, loadWall, wall } from './wall.svelte.ts';
+	import { activeSource, followShell, loadWall, shellWallpaper, wall } from './wall.svelte.ts';
 	import { imageCss, skyPhase, sunElevation, type WallSource } from './wall.ts';
 
 	/** Un fondo concreto (vista previa de la galería); sin él, el que toca ahora. */
 	let { source = null, preview = false }: { source?: WallSource | null; preview?: boolean } = $props();
 
 	$effect(() => loadWall());
+	// El Panel de control y Ajustes eligen con setWallpaper de la shell: se sigue aquí.
+	$effect(() => {
+		if (!preview && !source) followShell(shellWallpaper());
+	});
 
 	const src = $derived(source ?? activeSource());
 	const key = $derived(JSON.stringify(src));

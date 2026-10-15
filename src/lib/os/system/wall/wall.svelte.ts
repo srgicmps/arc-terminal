@@ -2,8 +2,8 @@
 // localStorage «arc-os-wall» (ajuste, sincronizado con la cuenta: solo lleva ids, colores y opciones, nunca la
 // imagen) y las imágenes propias, en IndexedDB (images.ts). Reglas puras en wall.ts.
 import { desk } from '../../os.svelte.ts';
-import { KEYS, setWallpaper } from '../../shell/shell.svelte.ts';
-import { currentSource, defaultConfig, parseConfig, type WallConfig, type WallSource } from './wall.ts';
+import { KEYS, setWallpaper, shell } from '../../shell/shell.svelte.ts';
+import { currentSource, defaultConfig, isPreset, parseConfig, type WallConfig, type WallSource } from './wall.ts';
 
 export const WALL_KEY = 'arc-os-wall';
 
@@ -28,6 +28,7 @@ let timer: ReturnType<typeof setInterval> | undefined;
 export function loadWall() {
 	if (wall.ready) return;
 	wall.cfg = parseConfig(read(WALL_KEY), read(KEYS.wallpaper));
+	written = read(KEYS.wallpaper);
 	wall.ready = true;
 	timer ??= setInterval(() => (wall.now = Date.now()), 60_000);
 }
@@ -37,7 +38,25 @@ function save() {
 		localStorage.setItem(WALL_KEY, JSON.stringify(wall.cfg));
 	} catch {}
 	// La shell sigue sabiendo el fondo incluido elegido (su CSS y su Panel de control lo usan).
-	if (wall.cfg.main.kind === 'preset') setWallpaper(wall.cfg.main.id as Parameters<typeof setWallpaper>[0]);
+	if (wall.cfg.main.kind === 'preset') {
+		written = wall.cfg.main.id;
+		setWallpaper(wall.cfg.main.id as Parameters<typeof setWallpaper>[0]);
+	}
+}
+
+let written: string | null = null;
+/**
+ * Si otro sitio elige un fondo incluido con setWallpaper de la shell (el Panel de control, Ajustes), pasa a ser
+ * el general. Lo llama WallLayer cuando cambia shell.wallpaper.
+ */
+export function followShell(id: string) {
+	if (!wall.ready || !shell.ready || id === written || !isPreset(id)) return;
+	written = id;
+	if (wall.cfg.main.kind === 'preset' && wall.cfg.main.id === id) return;
+	wall.cfg.main = { kind: 'preset', id };
+	try {
+		localStorage.setItem(WALL_KEY, JSON.stringify(wall.cfg));
+	} catch {}
 }
 
 /** El fondo que toca ahora en el escritorio que se ve. */
@@ -98,3 +117,6 @@ export const deskHasOwn = () => {
 	const id = deskId();
 	return !!id && !!wall.cfg.desks[id];
 };
+
+/** Lo que eligió la shell ahora (para followShell). */
+export const shellWallpaper = () => shell.wallpaper;
