@@ -361,7 +361,8 @@
 		border-color: var(--amber);
 	}
 	.icon.moving {
-		opacity: 0.8;
+		/* Deja ver la carpeta de debajo, resaltada, al pasar por encima. */
+		opacity: 0.6;
 		z-index: 1;
 	}
 	.hit {
