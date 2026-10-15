@@ -5,6 +5,7 @@ import { findCommand, norm, type Option } from './cmdline.ts';
 import { COMMANDS, type Command } from './commands.ts';
 import { COUNTRIES, demonymForms } from './countries.ts';
 import { LEADERS } from './leaders.ts';
+import { SHORTCUTS } from './gseries.ts';
 import { PROVINCES } from './provinces.ts';
 import { TICKERS } from './tickers.ts';
 
@@ -46,6 +47,7 @@ const SOURCES: Record<string, { kind: string; list: () => Choice[] }> = {
 		]
 	},
 	CMP: { kind: 'Valor', list: () => TICKERS.map((t) => choice(t.code, t.name, [t.name], t.code)) },
+	G: { kind: 'Serie', list: () => SHORTCUTS.map((s) => choice(s.code, s.name, [s.name, ...(s.keys ?? [])], s.code)) },
 	TV: { kind: 'Vista', list: () => COMMANDS.map((c) => choice(c.code, c.desc, c.aliases ?? [], c.code)) }
 };
 
@@ -66,7 +68,7 @@ function parts(raw: string): { command: Command; before: string; word: string } 
 	if (!command?.arg || !SOURCES[command.code]) return null;
 	const arg = m[2];
 	const cut =
-		command.code === 'CMP' ? arg.search(/\S*$/) : command.code === 'TV' ? arg.lastIndexOf(',') + 1 : 0;
+		command.code === 'CMP' ? arg.search(/\S*$/) : command.code === 'TV' || command.code === 'G' ? arg.lastIndexOf(',') + 1 : 0;
 	return { command, before: arg.slice(0, cut), word: arg.slice(cut).trim() };
 }
 

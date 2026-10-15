@@ -117,7 +117,7 @@ interface Issue {
 	pull_request?: unknown;
 }
 
-function github(token: string) {
+export function github(token: string) {
 	return async <T = unknown>(path: string, method = 'GET', payload?: unknown): Promise<T> => {
 		const res = await fetch(`${API}${path}`, {
 			method,

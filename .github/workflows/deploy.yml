@@ -145,6 +145,9 @@ jobs:
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           # URL de la web (scripts/site.ts). Variable de GitHub opcional: p. ej. al pasar a un dominio propio.
           SITE_URL: ${{ vars.SITE_URL }}
+          # Órdenes de la barra (scripts/requests.ts): lee los issues [alerta]/[mis]/[vigila] del dueño y cierra
+          # las alertas que avisan.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - if: hashFiles('.notify-cache/notify-log.json') != ''
         uses: actions/cache/save@v4
         continue-on-error: true

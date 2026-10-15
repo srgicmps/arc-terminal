@@ -65,6 +65,9 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - **Avisos al móvil** con ntfy (`scripts/notify.ts`, tras `pnpm data`): reglas P1–P4 en la lista `RULES` de
   `scripts/alerts/rules.ts`, umbrales y cupos en `scripts/alerts/config.ts`. El tema
   va en el Secret `NTFY_TOPIC` y es la única protección: nunca en el repo, en registros ni en JSON.
+- **Órdenes desde la barra** (D41): «alerta NVDA > 150», «+NVDA», «vigila aranceles» abren un issue ya escrito
+  (`src/lib/useralerts.ts`); `notify.ts` lee con `scripts/requests.ts` solo los issues abiertos **del dueño**,
+  los aplica (`scripts/alerts/user.ts`) y cierra la alerta al avisar. Los issues son públicos.
 
 ## Stack
 - SvelteKit con `adapter-static` + TypeScript, Svelte 5 (runes).
@@ -128,6 +131,10 @@ vista `HELP`. Resumen:
 | `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5), Wikidata, SIPRI, Cloudflare Radar* |
 | `ES` | España en cifras, paro registrado por comunidad, BOE, luz | INE, SEPE, Seguridad Social, BOE, REE, RSS |
 | `WS` | Wall Street, mapa de calor, curva de tipos, divisas, cripto, materias primas | TradingView, Tesoro de EE. UU., BCE, CoinGecko, Banco Mundial (Pink Sheet), EIA* (inventarios de petróleo) |
+| `WB` | Bonos a 2, 10 y 30 años de EE. UU., zona euro (AAA) y Japón, con pendientes | Tesoro de EE. UU., BCE, MOF de Japón |
+| `BTMM` | Mercado monetario de EE. UU. y zona euro: SOFR, EFFR, €STR, euríbor, letras | Fed de Nueva York, FRED*, Tesoro de EE. UU., BCE |
+| `G` | Gráfico de cualquier serie de la terminal (`G US10, BUND`); catálogo en `/data/g/series.json` y atajos en `src/lib/gseries.ts` | Todas |
+| `SEAS` | Estacionalidad mensual de una serie, con el historial que haya | Todas |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |
 | `MIS` | Tu lista de valores (en el navegador) | TradingView |
 | `TECH` / `AI` | Tecnología e IA | Hacker News, Hugging Face, OpenRouter, Epoch AI (CC BY 4.0), Cloudflare Radar*, RSS |

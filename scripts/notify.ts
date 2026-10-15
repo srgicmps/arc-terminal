@@ -49,8 +49,10 @@ import {
 } from './alerts/rules.ts';
 import { minute } from './history.ts';
 import { EU_ADRS, EU_GAP_MS, fetchQuotes } from './sources/alert-quotes.ts';
-import { redact } from './issues.ts';
 import { fetchPublished } from './lib.ts';
+import { github, redact } from './issues.ts';
+import { closeIssue, emptyRequests, loadRequests, type Api, type Requests } from './requests.ts';
+import { alertId, userRules, type UserInputs } from './alerts/user.ts';
 
 const NTFY = 'https://ntfy.sh';
 const DAY = 86_400_000;
@@ -301,6 +303,30 @@ export function newestLog(cached: NotifyLog | null, published: NotifyLog | null)
 	return lastAttempt(published) > lastAttempt(cached) ? published : cached;
 }
 
+/** Como mucho, tantos valores de MIS y de las alertas por pasada (Finnhub gratis: 60 llamadas/min). */
+const USER_QUOTES = 15;
+
+/**
+ * Cierra los issues de la barra que ya han hecho su trabajo: alertas avisadas (o fallidas: no se
+ * reintentan), y los que planRequests manda cerrar. Los comentarios son públicos: sin datos privados.
+ */
+async function closeRequests(api: Api, repo: string, req: Requests, log: NotifyLog, say: (line: string) => void) {
+	const tried = new Map(log.entries.filter((e) => e.s !== 'baseline').map((e) => [e.k, e.s]));
+	const done = req.alerts.flatMap(({ issue }) => {
+		const s = tried.get(alertId(issue));
+		if (!s) return [];
+		return [{ issue, reason: s === 'sent' ? 'La alerta se ha cumplido y ha llegado al móvil. Se cierra.' : 'La alerta se ha cumplido, pero el aviso no se pudo enviar. Se cierra.' }];
+	});
+	for (const { issue, reason } of [...done, ...req.close]) {
+		try {
+			await closeIssue(api, repo, issue, reason);
+			say(`ntfy: issue #${issue} cerrado`);
+		} catch {
+			say(`ntfy: no se pudo cerrar el issue #${issue}`);
+		}
+	}
+}
+
 /**
  * Todo el proceso: lee los datos de `dir`, decide, envía y escribe `dir`/notify-log.json. Devuelve las
  * líneas que ha registrado (también van a console.log). No lanza: un fallo se registra saneado.
@@ -312,6 +338,8 @@ export async function runNotify({
 	cache,
 	finnhubKey,
 	euGap = EU_GAP_MS,
+	repo,
+	token,
 	now = Date.now()
 }: {
 	topic: string | undefined;
@@ -324,6 +352,9 @@ export async function runNotify({
 	finnhubKey?: string;
 	/** Pausa entre llamadas de los ADR (en los tests, 0). */
 	euGap?: number;
+	/** GITHUB_REPOSITORY y GITHUB_TOKEN: con ellos se leen las órdenes de la barra (scripts/requests.ts). */
+	repo?: string;
+	token?: string;
 	now?: number;
 }): Promise<string[]> {
 	const lines: string[] = [];
@@ -351,6 +382,29 @@ export async function runNotify({
 			// Sin decir cuál: la zona no sale en el registro.
 			else say('ntfy: ALERT_FUEL_ZONE no corresponde a ninguna zona; el diésel se vigila solo en España');
 		}
+		// Órdenes de la barra (27-B): alertas propias, MIS y palabras vigiladas, de los issues del dueño.
+		let req: Requests = emptyRequests();
+		let api: Api | null = null;
+		if (repo && token) {
+			try {
+				api = github(token);
+				req = await loadRequests(api, repo);
+				say(`ntfy: órdenes de la barra: ${req.alerts.length} alertas, MIS ${req.mis?.length ?? '—'}, ${req.words?.length ?? 0} palabras`);
+			} catch (error) {
+				api = null;
+				say(`ntfy: no se pudieron leer las órdenes de la barra (${error instanceof Error ? error.message : 'error'})`);
+			}
+		}
+		(inputs as UserInputs).search = (await readData(dir, 'search')) as UserInputs['search'];
+		// Valores de MIS y de las alertas que no estén ya en alert-quotes: cotización solo en memoria.
+		const have = new Set((inputs.alertQuotes ?? []).map((q) => q?.symbol));
+		const wanted = [...(req.mis ?? []), ...req.alerts.map((a) => a.alert.asset)];
+		const extra = [...new Set(wanted)].filter((s) => /^[A-Z0-9.]{1,12}$/.test(s) && !have.has(s)).slice(0, USER_QUOTES);
+		if (extra.length && finnhubKey?.trim()) {
+			const { quotes, failed } = await fetchQuotes(extra, finnhubKey.trim(), euGap);
+			inputs.alertQuotes = [...(inputs.alertQuotes ?? []), ...quotes];
+			say(`ntfy: ${quotes.length} de ${extra.length} valores de MIS y alertas${failed.length ? ` (sin dato: ${failed.length})` : ''}`);
+		}
 		const previous = newestLog(await cachedLog(cache), await publishedLog());
 		// ADR europeos (D25): solo en memoria para decidir los avisos; nunca se escriben en static/data. Solo
 		// traen el cierre diario, así que se piden como mucho una vez por hora (la hora va en el historial).
@@ -372,7 +426,7 @@ export async function runNotify({
 			say(`ntfy · aviso de prueba: ${ok ? 'enviado' : 'no enviado'} (${status ?? 'sin respuesta'})`);
 		} else {
 			log = trim(previous, now);
-			const { send, skipped, updates } = pickAlerts(inputs, log, now);
+			const { send, skipped, updates } = pickAlerts(inputs, log, now, [...RULES, ...userRules(req)]);
 			for (const fn of updates) fn(log);
 			for (const alert of send) {
 				const { status, error } = await post(secret, alert);
@@ -386,6 +440,7 @@ export async function runNotify({
 			}
 			if (skipped.length) say(`ntfy: ${skipped.length} avisos no caben en los cupos de hoy`);
 			if (!send.length && !skipped.length) say('ntfy: nada que avisar');
+			if (api && repo) await closeRequests(api, repo, req, log, say);
 		}
 		if (adrDue) log.last[ADR_KEY] = new Date(now).toISOString();
 		const file = (data: NotifyLog) => JSON.stringify({ name: 'notify-log', fetchedAt: new Date(now).toISOString(), data }) + '\n';
@@ -408,6 +463,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 		topic: process.env.NTFY_TOPIC,
 		zone: process.env.ALERT_FUEL_ZONE,
 		cache: process.env.NOTIFY_CACHE || undefined,
-		finnhubKey: process.env.FINNHUB_API_KEY
+		finnhubKey: process.env.FINNHUB_API_KEY,
+		repo: process.env.GITHUB_REPOSITORY,
+		token: process.env.GITHUB_TOKEN
 	});
 }

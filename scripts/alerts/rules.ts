@@ -11,8 +11,10 @@ import type { FuelData, FuelSpainData, FuelStation } from '../../src/lib/fuel.ts
 import { bmeHolidays, nyseHolidays } from '../../src/lib/markets.ts';
 import { BANKS, decisionTime, MEETINGS } from '../../src/lib/meetings.ts';
 import { lastAndYearAgo, monthlyPayment } from '../../src/lib/mortgage.ts';
+import { weekChange as eiaWeekChange, type EiaData } from '../../src/lib/eia.ts';
 import { hourly } from '../../src/lib/power.ts';
 import type {
+	AuctionsData,
 	Chokepoint,
 	CryptoData,
 	FedRegData,
@@ -34,6 +36,8 @@ import { decide, downSpan, madridTime } from '../issues.ts';
 import {
 	AI_NEWS,
 	ASSETS,
+	AUCTIONS,
+	EIA,
 	CONFLICT,
 	DIESEL,
 	DOWN,
@@ -52,13 +56,19 @@ import {
 	POLYMARKET,
 	QUAKE,
 	RATES,
+	RECORD,
 	STOCKS,
 	STRAITS,
+	MOVERS,
+	SESSIONS,
 	SUMMARIES,
 	TOMORROW,
+	VIX,
+	WAR,
 	WEEK,
 	type Asset,
-	type Level
+	type Level,
+	type SessionKey
 } from './config.ts';
 
 export { SITE };
@@ -166,6 +176,16 @@ export interface Inputs extends WorldInputs {
 	lichess?: PuzzleLike;
 	/** alert-quotes.json (PR #132): un Quote por símbolo de ALERT_TICKERS que tenga cotización. */
 	alertQuotes?: Quote[];
+	/** Prima de riesgo y bonos a 10 años diarios del Banco de España (bde.json). */
+	bde?: SeriesData;
+	/** Curva de la deuda japonesa (jgb.json, MOF). */
+	jgb?: YieldCurveData;
+	/** VIX y su curva (vix.json, Cboe). */
+	vix?: YieldCurveData;
+	/** Inventarios de petróleo de EE. UU. (eia.json, con EIA_API_KEY). */
+	eia?: EiaData;
+	/** Subastas del Tesoro de EE. UU. (auctions.json). */
+	auctions?: AuctionsData;
 	/** No es un archivo: la pone notify.ts a partir del secreto. */
 	zone?: FuelZone;
 }
@@ -199,6 +219,11 @@ export const FILES: Record<Exclude<keyof Inputs, 'zone'>, string> = {
 	launches: 'launches',
 	lichess: 'lichess',
 	alertQuotes: 'alert-quotes',
+	bde: 'bde',
+	jgb: 'jgb',
+	vix: 'vix',
+	eia: 'eia',
+	auctions: 'auctions',
 	...WORLD_FILES
 };
 
@@ -553,6 +578,48 @@ export function straitRule(d: Inputs, { now, log, update }: RuleContext): Draft[
 const impBig = (t: { sources?: string[]; sections?: string[] }) =>
 	list(t.sources).length >= IMP_BIG.media && list(t.sections).length >= IMP_BIG.sections;
 
+/** La clase de WAR más grave que cuenta el título (su posición en WAR.kinds), o -1. */
+export function warKind(title: string): number {
+	return WAR.kinds.findIndex((k) => k.all.every((re) => re.test(title)));
+}
+
+const trustedCount = (sources: string[] | undefined) => list(sources).filter((s) => WAR.trusted.includes(s)).length;
+
+/** El tema es un aviso de guerra (P1): una clase de WAR y WAR.media medios fiables. */
+const isWar = (t: { title?: string; sources?: string[] }) =>
+	warKind(t.title ?? '') >= 0 && trustedCount(t.sources) >= WAR.media;
+
+/**
+ * Guerras (P1): declaraciones de guerra, invasiones, ataques a la OTAN o la UE, amenaza nuclear, misiles contra
+ * capitales o infraestructuras, movilizaciones y altos el fuego (WAR). Un aviso por tema cada WAR.waitHours,
+ * salvo escalada: una clase más grave o el doble de medios fiables. Id: war:<k>:<minuto>.
+ */
+export function warRule(d: Inputs, { now, log }: RuleContext): Draft[] {
+	const t0 = minute(now);
+	return list(d.imp?.current).flatMap((t): Draft[] => {
+		if (!t?.k || !isWar(t)) return [];
+		const kind = warKind(t.title);
+		const trusted = trustedCount(t.sources);
+		const key = `war:${t.k}`;
+		const [at, lastKind, lastTrusted] = (log.last[key] ?? '').split('|');
+		const recent = Boolean(at) && now - Date.parse(at) < WAR.waitHours * HOUR;
+		const escalates = kind < Number(lastKind) || trusted >= 2 * Number(lastTrusted);
+		if (recent && !escalates) return [];
+		const media = list(t.sources).length;
+		return [
+			{
+				id: `${key}:${t0}`,
+				title: `🚨 ${WAR.kinds[kind].name}`,
+				body: [`${t.title} · ${media} medios (${trusted} fiables)`, t.url].filter(Boolean).join('\n'),
+				tags: 'rotating_light',
+				click: t.url || `${SITE}/geo`,
+				time: now,
+				commit: (l) => void (l.last[key] = `${t0}|${kind}|${trusted}`)
+			}
+		];
+	});
+}
+
 /**
  * Conflictos (P1/P2): un tema de IMP cuyo título habla de ataques, guerra, OTAN… P1 si es «grande» (IMP_BIG;
  * entonces impRule no lo repite) y P2 con 5 medios o más. Por tema (la k de IMP), un aviso cada 12 h, salvo
@@ -561,7 +628,8 @@ const impBig = (t: { sources?: string[]; sections?: string[] }) =>
 export function conflictRule(d: Inputs, { now, log }: RuleContext): Draft[] {
 	const t0 = minute(now);
 	return list(d.imp?.current).flatMap((t): Draft[] => {
-		if (!t?.k || !CONFLICT.words.test(t.title ?? '')) return [];
+		// Lo que ya avisa warRule (P1) no sale también aquí.
+		if (!t?.k || !CONFLICT.words.test(t.title ?? '') || isWar(t)) return [];
 		const media = list(t.sources).length;
 		const level: Level | null = impBig(t) ? 1 : media >= CONFLICT.media ? 2 : null;
 		if (!level) return [];
@@ -589,6 +657,22 @@ export function conflictRule(d: Inputs, { now, log }: RuleContext): Draft[] {
 
 // ---------- P2 ----------
 
+/**
+ * «máximo de 3 años» / «mínimo de 2 años» si el último dato es el más alto o el más bajo de un historial de al
+ * menos RECORD.minYears años (solo hasta donde llega lo que se descarga).
+ */
+export function recordNote(s: Series | undefined): string | null {
+	const pts = list(s?.points).filter((p) => typeof p?.t === 'string' && Number.isFinite(p?.v));
+	const last = pts.at(-1);
+	if (!last || pts.length < 3) return null;
+	const years = Number(last.t.slice(0, 4)) - Number(pts[0].t.slice(0, 4)) - (pts[0].t.slice(4) > last.t.slice(4) ? 1 : 0);
+	if (years < RECORD.minYears) return null;
+	const rest = pts.slice(0, -1).map((p) => p.v);
+	if (last.v > Math.max(...rest)) return `máximo de ${years} años`;
+	if (last.v < Math.min(...rest)) return `mínimo de ${years} años`;
+	return null;
+}
+
 /** Dato macro nuevo: valor, el anterior y la diferencia. La primera vez solo se apunta. Id: macro:<serie>:<periodo>. */
 export function macroRule(d: Inputs, { now, log, update }: RuleContext): Draft[] {
 	return MACRO.flatMap((m) => {
@@ -614,19 +698,111 @@ export function macroRule(d: Inputs, { now, log, update }: RuleContext): Draft[]
 				}
 			];
 		}
-		const jobs = m.unit !== '%';
-		const value = jobs ? `${signed(last.v, 0)} ${m.unit}` : `${num(last.v)} %`;
-		const previous = prev ? (jobs ? `${signed(prev.v, 0)} ${m.unit}` : `${num(prev.v)} %`) : null;
-		const diff = prev && !jobs ? ` (${signed((last.v - prev.v) * 100, 0)} pb)` : '';
+		const jobs = m.unit === 'mil empleos';
+		const digits = 'digits' in m ? m.digits : 1;
+		const fmt = (v: number) =>
+			jobs ? `${signed(v, 0)} ${m.unit}` : m.unit === '%' ? `${num(v)} %` : `${num(v, digits)} ${m.unit}`;
+		const value = fmt(last.v);
+		const previous = prev ? fmt(prev.v) : null;
+		const diff = !prev || jobs ? '' : m.unit === '%' ? ` (${signed((last.v - prev.v) * 100, 0)} pb)` : ` (${signed(last.v - prev.v, digits)})`;
+		const record = recordNote(seriesOf(d[m.file], m.id));
+		const when = /^\d{4}-\d{2}-\d{2}$/.test(last.t) ? `Semana del ${Number(last.t.slice(8))} de ${periodName(last.t)}` : periodName(last.t);
 		return [
 			{
 				id: `macro:${m.id}:${last.t}`,
-				title: `${m.name}: ${value}`,
-				body: `${periodName(last.t)} (${m.source}).${previous ? ` Anterior: ${previous}${diff}.` : ''}`,
+				title: `${m.name}: ${value}${record ? ` · ${record}` : ''}`,
+				body: `${when} (${m.source}).${previous ? ` Anterior: ${previous}${diff}.` : ''}`,
 				tags: 'chart_with_upwards_trend',
 				click: `${SITE}/eco`,
 				time: now,
 				commit: (l) => void (l.last[key] = last.t)
+			}
+		];
+	});
+}
+
+/**
+ * Inventarios de petróleo de EE. UU. (P2), cada semana nueva de la EIA (sale los miércoles): cambio semanal de
+ * crudo, gasolina, destilados y Cushing, en millones de barriles. Id: eia:<semana>.
+ */
+export function eiaRule(d: Inputs, { now }: RuleContext): Draft[] {
+	const stocks = list(d.eia?.stocks);
+	const week = stocks[0]?.points?.at(-1)?.t;
+	if (!week || now - Date.parse(`${week}T12:00:00Z`) > EIA.days * 24 * HOUR) return [];
+	const parts = stocks
+		.filter((s) => s.id !== 'WCSSTUS1')
+		.flatMap((s) => {
+			const c = eiaWeekChange(s.points);
+			return c === null ? [] : [`${s.label} ${signed(c)}`];
+		});
+	if (!parts.length) return [];
+	return [
+		{
+			id: `eia:${week}`,
+			title: `Inventarios de petróleo: ${parts[0]} M bbl`,
+			body: `${parts.join(' · ')} millones de barriles en la semana del ${Number(week.slice(8))} de ${periodName(week)} (EIA).`,
+			tags: 'oil_drum',
+			click: `${SITE}/ws`,
+			time: now
+		}
+	];
+}
+
+/**
+ * VIX (P2): sube VIX.jump % o más en el día, o la curva se invierte (1 mes por encima de 3 meses, y el día
+ * anterior no). Id: vix:<día> y vix-inv:<día>.
+ */
+export function vixRule(d: Inputs, { now }: RuleContext): Draft[] {
+	const tenors = list(d.vix?.tenors);
+	const i1 = tenors.indexOf('1M');
+	const i3 = tenors.indexOf('3M');
+	const days = list(d.vix?.days).filter((x) => typeof x?.values?.[i1] === 'number');
+	const [prev, last] = days.slice(-2);
+	if (i1 < 0 || !prev || !last) return [];
+	const v = last.values[i1] as number;
+	const out: Draft[] = [];
+	const jump = (v / (prev.values[i1] as number) - 1) * 100;
+	if (jump >= VIX.jump) {
+		out.push({
+			id: `vix:${last.date}`,
+			title: `VIX ${signed(jump, 0)} %: ${num(v)}`,
+			body: `La volatilidad del S&P 500 sube de ${num(prev.values[i1] as number)} a ${num(v)} (Cboe, cierre del ${Number(last.date.slice(8))} de ${periodName(last.date)}).`,
+			tags: 'warning',
+			click: `${SITE}/ws`,
+			time: now
+		});
+	}
+	const inverted = (x: { values: (number | null)[] }) =>
+		i3 >= 0 && typeof x.values[i3] === 'number' && (x.values[i1] as number) > (x.values[i3] as number);
+	if (inverted(last) && !inverted(prev)) {
+		out.push({
+			id: `vix-inv:${last.date}`,
+			title: 'VIX: curva invertida',
+			body: `El VIX a 1 mes (${num(v)}) pasa por encima del de 3 meses (${num(last.values[i3] as number)}): el mercado teme más lo inmediato.`,
+			tags: 'warning',
+			click: `${SITE}/ws`,
+			time: now
+		});
+	}
+	return out;
+}
+
+/**
+ * Subasta floja del Tesoro de EE. UU. (P2): bid-to-cover al menos AUCTIONS.gap por debajo de la media de las
+ * anteriores del mismo plazo, de los últimos AUCTIONS.days días. Id: auction:<día>:<plazo>.
+ */
+export function auctionRule(d: Inputs, { now, today }: RuleContext): Draft[] {
+	return list(d.auctions?.recent).flatMap((a): Draft[] => {
+		if (a?.bidToCover == null || a.avgBidToCover == null || a.date < addDays(today, -AUCTIONS.days)) return [];
+		if (a.avgBidToCover - a.bidToCover < AUCTIONS.gap) return [];
+		return [
+			{
+				id: `auction:${a.date}:${a.term}`,
+				title: `Subasta floja: ${a.term} del Tesoro`,
+				body: `Bid-to-cover ${num(a.bidToCover, 2)}, frente a ${num(a.avgBidToCover, 2)} de media${a.highYield != null ? ` · rentabilidad ${num(a.highYield, 3)} %` : ''}${a.indirectPct != null ? ` · extranjeros (indirectos) ${num(a.indirectPct)} %` : ''}.`,
+				tags: 'bank',
+				click: `${SITE}/ws`,
+				time: now
 			}
 		];
 	});
@@ -1590,16 +1766,19 @@ export function morningRule(d: Inputs, { now, today }: RuleContext): Draft[] {
 	];
 }
 
-/** «Cierre» a partir de las 22:15 (hora de Madrid), una vez al día. Id: evening:<día>. */
+/** «Cierre» a partir de las 22:15 (hora de Madrid), una vez al día, con el cierre de Wall Street. Id: evening:<día>. */
 export function eveningRule(d: Inputs, { now, today }: RuleContext): Draft[] {
 	if (!inWindow(madrid(now).hm, SUMMARIES.evening)) return [];
 	const day = list(d.imp?.days).find((x) => x?.date === today)?.items ?? list(d.imp?.current);
 	const top = list(day)
 		.slice(0, 3)
 		.map((t, i) => `${i + 1}. ${t.title} (${list(t.sources).length} medios)`);
-	const markets = figures(d, ['BTC', 'ETH', 'EUR/USD', 'US10Y', 'S&P 500', 'Nasdaq', 'Petróleo WTI']);
+	const markets = figures(d, ['BTC', 'ETH', 'EUR/USD', 'US10Y', 'Petróleo WTI']);
+	const wall = [[figures(d, ['S&P 500', 'Nasdaq']), vixLine(d)].filter(Boolean).join(' · '), moversLine(d)].filter(Boolean);
 	const body = [
 		...section('Lo más importante del día', top),
+		// Wall Street cierra a las 22:00 de Madrid (21:00 las semanas en que solo una orilla ha cambiado la hora).
+		...section('Cierre de Wall Street', wall),
 		...section('Cifras del día', markets ? [markets] : []),
 		...section(
 			'Vida diaria',
@@ -1621,6 +1800,153 @@ export function eveningRule(d: Inputs, { now, today }: RuleContext): Draft[] {
 			markdown: true
 		}
 	];
+}
+
+// ---------- P4: resúmenes de las bolsas ----------
+
+const zoneFmt = new Map<string, Intl.DateTimeFormat>();
+
+/** Día y hora en una zona horaria (como `madrid`, para Tokio o Nueva York). */
+export function zoned(ms: number, zone: string): { date: string; hm: string } {
+	if (!zoneFmt.has(zone)) {
+		zoneFmt.set(
+			zone,
+			new Intl.DateTimeFormat('en-CA', {
+				timeZone: zone,
+				year: 'numeric',
+				month: '2-digit',
+				day: '2-digit',
+				hour: '2-digit',
+				minute: '2-digit',
+				hourCycle: 'h23'
+			})
+		);
+	}
+	const p = Object.fromEntries(zoneFmt.get(zone)!.formatToParts(new Date(ms)).map((x) => [x.type, x.value]));
+	return { date: `${p.year}-${p.month}-${p.day}`, hm: `${p.hour}:${p.minute}` };
+}
+
+/** Último dato de una serie y su diferencia con el anterior. */
+function lastStep(s: Series | undefined): { v: number; diff: number | null } | null {
+	const pts = list(s?.points).filter((p) => Number.isFinite(p?.v));
+	const last = pts.at(-1);
+	if (!last) return null;
+	const prev = pts.at(-2);
+	return { v: last.v, diff: prev ? last.v - prev.v : null };
+}
+
+/** Último valor de un plazo de una curva (JGB, VIX) y su cambio frente al día anterior. */
+function curveStep(c: YieldCurveData | undefined, tenor: string): { v: number; diff: number | null } | null {
+	const i = list(c?.tenors).indexOf(tenor);
+	if (i < 0) return null;
+	const days = list(c?.days).filter((x) => typeof x?.values?.[i] === 'number');
+	const last = days.at(-1);
+	if (!last) return null;
+	const prev = days.at(-2);
+	return { v: last.values[i] as number, diff: prev ? (last.values[i] as number) - (prev.values[i] as number) : null };
+}
+
+/** «Prima ES 62 pb (+3)» con el dato diario del Banco de España. */
+function premiumLine(d: Inputs): string {
+	const p = lastStep(seriesOf(d.bde, 'premium-es-d'));
+	const bund = lastStep(seriesOf(d.bde, 'bond10-de-d'));
+	return [
+		p ? `Prima ES ${num(p.v, 0)} pb${p.diff !== null ? ` (${signed(p.diff, 0)})` : ''}` : '',
+		bund ? `Bund 10A ${num(bund.v, 2)} %` : ''
+	]
+		.filter(Boolean)
+		.join(' · ');
+}
+
+/** «JGB 10A 1,62 % (+2 pb)». */
+function jgbLine(d: Inputs): string {
+	const j = curveStep(d.jgb, '10A');
+	return j ? `JGB 10A ${num(j.v, 2)} %${j.diff !== null ? ` (${signed(j.diff * 100, 0)} pb)` : ''}` : '';
+}
+
+/** «VIX 18,4 (+1,2)». */
+function vixLine(d: Inputs): string {
+	const v = curveStep(d.vix, '1M');
+	return v ? `VIX ${num(v.v, 1)}${v.diff !== null ? ` (${signed(v.diff, 1)})` : ''}` : '';
+}
+
+/** Los valores seguidos que más se mueven hoy: «NVIDIA +4,1 % · Tesla −3,2 %». */
+export function moversLine(d: Inputs, n = MOVERS): string {
+	return list(d.alertQuotes)
+		.filter((q) => Number.isFinite(q?.changePct))
+		.sort((a, b) => Math.abs(b.changePct as number) - Math.abs(a.changePct as number))
+		.slice(0, n)
+		.map((q) => `${STOCKS.names[q.symbol] ?? q.symbol} ${move(q.changePct as number, '%')}`)
+		.join(' · ');
+}
+
+/** Los temas de IMP de ahora: «1. Título (8 medios)». */
+const topLines = (d: Inputs, n = 3) =>
+	list(d.imp?.current)
+		.slice(0, n)
+		.map((t, i) => `${i + 1}. ${t.title} (${list(t.sources).length} medios)`);
+
+/** Qué lleva cada resumen. Los activos sin dato no salen; si no queda nada, el resumen no se manda. */
+function sessionBody(key: SessionKey, d: Inputs, today: string): string[] {
+	const line = (...parts: string[]) => {
+		const text = parts.filter(Boolean).join(' · ');
+		return text ? [text] : [];
+	};
+	const fx = figures(d, ['EUR/USD', 'BTC', 'ETH']);
+	const usa = figures(d, ['S&P 500', 'Nasdaq']);
+	const today_ = agenda(d, today).map((l) => `- ${l}`);
+	switch (key) {
+		case 'tokyo-open':
+			return [...section('Mercados', line(jgbLine(d), fx)), ...section('Hoy', today_), ...section('Lo más importante', topLines(d))];
+		case 'tokyo-close':
+			return [...section('Mercados', line(jgbLine(d), fx)), ...section('Lo más importante', topLines(d))];
+		case 'europe-open':
+			return [
+				...section('Deuda', line(premiumLine(d), figures(d, ['US10Y']))),
+				...section('Mercados', line(fx)),
+				...section('Hoy', today_),
+				...section('Lo más importante', topLines(d))
+			];
+		case 'midday':
+			return [...section('Lo más importante', topLines(d, 5)), ...section('Mercados', line(fx, figures(d, ['Petróleo WTI', 'Oro'])))];
+		case 'wall-open':
+			return [
+				...section('Primeros movimientos', line(usa, vixLine(d))),
+				...section('Valores seguidos', line(moversLine(d))),
+				...section('Hoy', today_)
+			];
+		case 'europe-close':
+			return [
+				...section('Deuda', line(premiumLine(d), figures(d, ['US10Y']))),
+				...section('Mercados', line(fx, usa, figures(d, ['Petróleo WTI']))),
+				...section('Lo más importante', topLines(d))
+			];
+	}
+}
+
+/**
+ * Resúmenes de apertura y cierre de Tokio, Europa y Wall Street, y el de mediodía (SESSIONS): una vez al día
+ * cada uno, de lunes a viernes en la plaza. Id: <clave>:<día local>.
+ */
+export function sessionRule(d: Inputs, { now }: RuleContext): Draft[] {
+	return SESSIONS.flatMap((s) => {
+		const local = zoned(now, s.zone);
+		const dow = dayOfWeek(local.date);
+		if (dow === 0 || dow === 6 || !inWindow(local.hm, s)) return [];
+		const body = sessionBody(s.key, d, madrid(now).date);
+		if (!body.length) return [];
+		return [
+			{
+				id: `${s.key}:${local.date}`,
+				title: s.title,
+				body: body.join('\n').trim(),
+				tags: 'bell',
+				click: `${SITE}/ws`,
+				time: now,
+				markdown: true
+			}
+		];
+	});
 }
 
 /**
@@ -1704,9 +2030,13 @@ export const RULES: Rule[] = [
 	{ type: 'imp', level: 1, run: impRule },
 	{ type: 'strait', level: 1, run: straitRule },
 	// P1 o P2 según el tema (el nivel lo pone la regla).
+	{ type: 'war', level: 1, run: warRule },
 	{ type: 'conflict', level: 1, run: conflictRule },
 	{ type: 'macro', level: 2, run: macroRule },
 	{ type: 'market', level: 2, run: marketRule },
+	{ type: 'eia', level: 2, run: eiaRule },
+	{ type: 'vix', level: 2, run: vixRule },
+	{ type: 'auction', level: 2, run: auctionRule },
 	{ type: 'fedreg', level: 2, run: fedregRule },
 	{ type: 'gas', level: 2, run: gasRule },
 	{ type: 'diesel-day', level: 2, run: dieselDayRule },
@@ -1726,6 +2056,7 @@ export const RULES: Rule[] = [
 	{ type: 'launch', level: 3, run: launchRule },
 	{ type: 'morning', level: 4, run: morningRule },
 	{ type: 'evening', level: 4, run: eveningRule },
+	{ type: 'session', level: 4, run: sessionRule },
 	{ type: 'week', level: 4, run: weekRule },
 	...WORLD_RULES
 ];
