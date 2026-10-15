@@ -118,6 +118,8 @@
 						onclick={() => pick(n.id)}
 						onkeydown={(e) => onKey(e, n.id)}
 					>
+						<!-- Zona de toque más grande que el punto (en el móvil, los pequeños miden menos de 10 px). -->
+						<circle class="hit" r={Math.max(r(n), 40)} />
 						<circle r={r(n)} />
 						{#if labelled.has(n.id)}
 							<text y={-r(n) - 10} text-anchor="middle" font-size="26" stroke-width="6">{n.label}</text>
@@ -186,7 +188,7 @@
 	}
 	line {
 		stroke: var(--line);
-		transition: opacity 0.2s;
+		transition: opacity var(--dur-fast) var(--ease);
 	}
 	line.on {
 		stroke: var(--amber-edge);
@@ -196,7 +198,7 @@
 	}
 	.node {
 		cursor: pointer;
-		transition: opacity 0.2s;
+		transition: opacity var(--dur-fast) var(--ease);
 	}
 	.node circle {
 		fill: var(--raise);
@@ -314,5 +316,10 @@
 			max-height: none;
 			max-width: none;
 		}
+	}
+	/* Al final: manda sobre los trazos de arriba (misma especificidad). */
+	.node circle.hit {
+		fill: transparent;
+		stroke: none;
 	}
 </style>
