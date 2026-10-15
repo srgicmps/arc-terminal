@@ -57,14 +57,15 @@
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		grid-auto-flow: dense;
-		gap: var(--hair);
+		gap: var(--grid-gap);
 		margin-bottom: var(--sp-8);
-		background: var(--line);
-		border: var(--border);
+		background: var(--grid-fill);
+		border: var(--grid-edge);
 	}
 
+	/* Como las columnas de app.css: fondo y separación según la estética (tokens --grid-* y --col-fill). */
 	.cell {
-		background: var(--panel);
+		background: var(--col-fill);
 		min-width: 0;
 	}
 

@@ -108,13 +108,14 @@
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		grid-auto-flow: dense;
-		gap: var(--hair);
-		background: var(--line);
-		border: var(--border);
+		gap: var(--grid-gap);
+		background: var(--grid-fill);
+		border: var(--grid-edge);
 	}
 
+	/* Como las columnas de app.css: fondo y separación según la estética (tokens --grid-* y --col-fill). */
 	.cell {
-		background: var(--panel);
+		background: var(--col-fill);
 		min-width: 0;
 	}
 
