@@ -252,6 +252,7 @@
 		{#each keys as key (key.code)}
 			<a
 				class="key"
+				data-ui="key"
 				href={routeHref(key.route)}
 				aria-current={page.route.id === key.route ? 'page' : undefined}
 			>

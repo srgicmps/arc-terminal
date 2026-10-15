@@ -70,17 +70,22 @@ Engánchate SIEMPRE a estos atributos `data-ui` (son la API estable; las clases 
 | `clocks` | Relojes de las bolsas |
 | `cmd` | Barra de comandos (en el móvil, hoja con `.sheet`) |
 | `keys` | Fila de secciones (teclas) |
+| `key` | Cada tecla de sección (código y, en un `<span>`, el nombre; la actual lleva `aria-current`) |
 | `tape` | Cinta de cotizaciones |
 | `panel-index` | Índice de paneles del móvil |
 | `main` | Contenido de la vista |
 | `tabs` | Barra de pestañas de abajo (hoy solo en el móvil; una estética puede sacarla también en escritorio) |
 | `foot` | Pie |
 | `view-head` | Cabecera de vista (código, título, fuentes, resumen) |
+| `view-title` / `view-code` | Su título (h1) y el código dentro (ECO, WS…) |
+| `view-sub` | De dónde salen los datos |
+| `view-sum` | Resumen en una línea (o, en Sencillo, la lista de frases) |
 | `panel` | Panel (`.max`: ampliado, como hoja modal; `.folded`: plegado) |
 | `panel-head` | Cabecera del panel (título, datos, botones) |
 | `panel-meta` | El dato de la derecha de la cabecera del panel |
+| `fold` | El ▾/▸ de plegar del título del panel |
 | `table` | Tabla densa |
-| `tiles` | Fila de cifras grandes |
+| `tiles` / `tile` | Fila de cifras grandes y cada cifra |
 | `chart` | Gráfico de líneas |
 
 Las rejillas de las vistas usan las clases globales de `app.css`, también estables: `.grid` (y `.grid-2`, `.grid-2e`,

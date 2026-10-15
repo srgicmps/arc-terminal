@@ -119,13 +119,14 @@ describe('estéticas', () => {
 
 	it('los ganchos data-ui de docs/estilos.md siguen en su componente (las estéticas se enganchan a ellos)', () => {
 		const hooks: Record<string, string> = {
-			'src/routes/+layout.svelte': 'app top brand keys tape main tabs foot',
+			'src/routes/+layout.svelte': 'app top brand keys key tape main tabs foot',
 			'src/lib/components/Clocks.svelte': 'clocks',
 			'src/lib/components/PlacePicker.svelte': 'place',
 			'src/lib/components/CommandBar.svelte': 'cmd',
 			'src/lib/components/PanelIndex.svelte': 'panel-index',
-			'src/lib/components/Panel.svelte': 'panel panel-head panel-meta',
-			'src/lib/components/ViewHeader.svelte': 'view-head',
+			'src/lib/components/Panel.svelte': 'panel panel-head panel-meta fold',
+			'src/lib/components/ViewHeader.svelte': 'view-head view-title view-code view-sub view-sum',
+			'src/lib/components/ui/Tile.svelte': 'tile',
 			'src/lib/components/ui/Table.svelte': 'table',
 			'src/lib/components/ui/Tiles.svelte': 'tiles',
 			'src/lib/components/LineChart.svelte': 'chart'
@@ -134,7 +135,7 @@ describe('estéticas', () => {
 		for (const [file, names] of Object.entries(hooks))
 			for (const n of names.split(' ')) {
 				expect(readFileSync(file, 'utf8'), `${file} ${n}`).toContain(`data-ui="${n}"`);
-				expect(doc, n).toContain(`| \`${n}\``);
+				expect(doc, n).toContain(`\`${n}\``);
 			}
 	});
 });

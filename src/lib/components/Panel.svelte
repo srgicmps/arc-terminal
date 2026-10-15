@@ -180,7 +180,7 @@
 				onclick={() => (max ? close() : toggleFold(fkey))}
 				onkeydown={titleKeydown}
 			>
-				{#if !max}<span class="fold" aria-hidden="true">{shut ? '▸' : '▾'}</span>{/if}{shown}
+				{#if !max}<span class="fold" data-ui="fold" aria-hidden="true">{shut ? '▸' : '▾'}</span>{/if}{shown}
 			</button>{#if isSimple()}<Term of={title} />{/if}
 		</h2>
 		<div class="ph-r">
