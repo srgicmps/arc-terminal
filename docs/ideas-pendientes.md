@@ -254,13 +254,38 @@ Sin red en el entorno de Ideas: ninguna fuente nueva está comprobada en vivo; l
     Esfuerzo: 2 PR. (1) lienzo, ventanas y un escritorio; (2) varios escritorios, minimizar a una barra inferior y
     DASH (9) como «escritorio en rejilla».
 
+**Revisión con la regla nueva de Sergi (15/10)**: claves y registros gratuitos, sí; lo que manda es la licencia.
+Hecho de memoria, sin red: confirmar límites y términos con probe y en la web de cada servicio antes de programar.
+- **15 Conflictos → ⚠ M (antes ❌).** UCDP GED Candidate (CC BY 4.0, eventos con muertos, versión mensual con
+  ~1 mes de retraso). Token gratis que se pide en https://ucdp.uu.se/apidocs/ · Secret `UCDP_TOKEN`. Es «casi en
+  directo», no tiempo real. ACLED: registro gratis (https://acleddata.com), pero sus términos prohíben redistribuir
+  los datos de eventos y la cuenta gratuita da poco detalle. Solo cabrían agregados con cita: descartarlo y usar UCDP.
+- **21 Email → ✅ M.** Brevo: 300 correos/día gratis, sin dominio propio (basta un remitente verificado).
+  Registro en https://www.brevo.com · Secrets `BREVO_API_KEY` y `MAIL_TO` (el correo de Sergi, nunca en el repo).
+  Resend (3.000/mes) obliga a tener un dominio propio verificado, así que no conviene.
+- **5 CACS → ✅ M (antes ⚠).** Mejor sin clave nueva: SEC XBRL `companyfacts` (dominio público, ya hay
+  `SEC_USER_AGENT`). Dividendo por acción (`CommonStockDividendsPerShareDeclared`), recompras
+  (`PaymentsForRepurchaseOfCommonStock`) y splits por los 8-K. Es trimestral, no al día.
+- **12 Correlaciones y 14 Señales técnicas → siguen ⚠.** Los planes gratuitos con clave (Alpha Vantage: 25
+  consultas/día; Twelve Data: 800/día; Polygon/Massive: 5/min y cierre del día; FMP: 250/día; Tiingo: 1.000/día) son
+  **para uso personal y prohíben mostrar o redistribuir los datos** en una web pública. Ninguno sirve.
+  Se queda como estaba: 12 con series de FRED de dominio público (tipos, euro-dólar, petróleo de la EIA; ojo, el
+  S&P 500 de FRED tiene copyright de S&P), y 14 con el máx./mín. de 52 semanas de Finnhub y el widget
+  «technical-analysis» de TradingView para medias y RSI.
+- **16 Aviones → ⚠ M.** OpenSky con cuenta gratis (cliente OAuth2, unos 4.000 créditos/día, frente a 400 sin cuenta).
+  Licencia no comercial con cita; vale para una web personal. Registro en https://opensky-network.org · Secrets
+  `OPENSKY_CLIENT_ID` y `OPENSKY_CLIENT_SECRET`. La pega que queda: puede bloquear las IP de nube (probe) y la
+  privacidad (solo aviones de Estado o militares conocidos, sin seguir rutas). Alternativa sin clave: adsb.lol (ODbL).
+- **22 VENTANAS**: sin cambios (✅ L, bloque D).
+
 **Bloques para programar, sin choques**
 - **A · Mercados (WS/ficha/FONDOS)**: 1, 2, 3, 4, 5, 13, 14. Datos: TradingView, Finnhub, SEC.
 - **B · Datos y gráficos (ECO/WS)**: 6, 7, 10, 11, 12. Fuentes: Tesoro, BCE, FRED, NY Fed.
 - **C · Interfaz (barra, layout, navegador)**: 8, 17, 18, 19, 20, 21. Va tras Prog Barra 3/4.
 - **D · VENTANAS + DASH** (22 + 9), para una sola sesión: toca `pins.ts`, `prefs.ts` y una ruta nueva; no toca el
   layout de las vistas. Coordinar con C solo en `prefs.ts`.
-- Fuera: 15 (❌). 16, aparte, si Sergi acepta la pega de privacidad.
+- **E · Fuentes con clave nueva** (otra sesión): 15 (UCDP), 16 (OpenSky) y el email de la 21, cuando Sergi cree los
+  Secrets. 16 solo si acepta la pega de privacidad.
 
 ## 3. Decisiones de Sergi que hay que respetar
 
