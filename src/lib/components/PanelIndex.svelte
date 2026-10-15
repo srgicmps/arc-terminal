@@ -17,7 +17,7 @@
 </script>
 
 {#if items.length >= MIN}
-	<nav class="pidx" aria-label="Paneles de esta vista" data-noswipe>
+	<nav class="pidx" data-ui="panel-index" aria-label="Paneles de esta vista" data-noswipe>
 		{#each items as item (item.id)}
 			<button type="button" onclick={() => go(item.el)}><span>{item.title}</span></button>
 		{/each}

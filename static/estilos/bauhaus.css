@@ -1,0 +1,236 @@
+/* ── Estética «Bauhaus» (src/lib/estilos.ts) ─────────────────────────────────────────────────────────
+ * <html data-style="bauhaus">: rojo, amarillo y azul primarios con negro y blanco roto. Jost (sans geométrica),
+ * títulos en minúscula, marcos de tinta de 2 px sin sombras, esquinas rectas y círculos. Cada panel lleva su título
+ * en un bloque de color con una forma (círculo, cuadrado o triángulo) que va rotando entre paneles y columnas.
+ * El acento es el azul; el rojo de los bloques es bermellón y el de las bajadas, carmín: no se confunden.
+ * Los componentes llevan su CSS sin capa, así que aquí se cambian sus tokens EN el elemento (p. ej. --radius-s en
+ * los botones redondos) o propiedades que ellos no fijan (fondo del título, ::before). */
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	:root[data-style='bauhaus'],
+	[data-style='bauhaus'] {
+		color-scheme: dark;
+		--bg: #121110;
+		--panel: #1b1a17;
+		--raise: #262420;
+		--line: #34312b;
+		--fg: #f2ede2;
+		--muted: #b9b2a3;
+		--faint: #a29b8c;
+		--amber: #6f9bff;
+		--amber-dim: #9db8f5;
+		--amber-soft: rgba(111, 155, 255, 0.14);
+		--amber-edge: rgba(111, 155, 255, 0.55);
+		--on-amber: #0d0d0d;
+		--up: #4cc77e;
+		--down: #ff6b7d;
+		--neutral: #4a463e;
+		--series-2: #f0503a;
+		--series-3: #f2c230;
+		--sq-light: #3a372f;
+		--sq-dark: #262420;
+		--scrim: rgba(10, 9, 8, 0.78);
+
+		/* Primarios de los bloques (iguales de día y de noche) y la tinta de los marcos. */
+		--bh-red: #d1301b;
+		--bh-yellow: #f2c230;
+		--bh-blue: #1f4fa8;
+		--bh-white: #ffffff;
+		--bh-black: #111111;
+		--bh-ink: #c9c2b3;
+		--bh-rule: 2px;
+		--bh-bg-y: rgba(242, 194, 48, 0.17);
+		--bh-bg-b: rgba(31, 79, 168, 0.26);
+		--bh-bg-r: rgba(209, 48, 27, 0.4);
+
+		/* Letras: Jost para todo; títulos en negrita y minúscula, como la tipografía universal de la escuela. */
+		--sans: 'Jost', 'Futura', 'Century Gothic', system-ui, sans-serif;
+		--mono: 'Jost', 'Futura', 'Century Gothic', system-ui, sans-serif;
+		--font-ui: var(--sans);
+		--title-font: var(--sans);
+		--title-color: var(--fg);
+		--fs-title: var(--fs-m);
+		--title-case: lowercase;
+		--title-track: 0.01em;
+		--fs-xxs: 10.5px;
+		--fs-xs: 11.5px;
+		--fs-s: 12.5px;
+		--fs-m: 14px;
+		--fs-l: 15.5px;
+		--fs-xl: 24px;
+		--fs-big: 30px;
+		--fs-xxl: 34px;
+		--fw-medium: 500;
+		--fw-bold: 700;
+		--track-tight: 0.01em;
+		--track-code: 0.04em;
+		--track-caps: 0.1em;
+		--track-label: 0.06em;
+		--track-brand: 0.2em;
+
+		/* Forma: marcos de tinta, nada de sombras difusas ni esquinas redondas; rejilla con aire entre tarjetas.
+		   El marco va en --shadow (una «sombra» sólida de 2 px sin desenfoque) y no en --panel-edge: app.css quita el
+		   borde de arriba a los paneles apilados y en subcolumnas, y el marco quedaría abierto. */
+		--radius: 0;
+		--radius-s: 0;
+		--shadow: 0 0 0 var(--bh-rule) var(--bh-ink);
+		--shadow-pop: 0 0 0 var(--bh-rule) var(--bh-ink);
+		--border: var(--hair) solid var(--line);
+		--panel-edge: 0;
+		--grid-gap: var(--sp-14);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-14);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-14);
+		--stack-edge: 0;
+		--dur-ui: 90ms;
+		--ease: linear;
+
+		/* Fondo: un sol amarillo arriba a la derecha, un cuarto de círculo azul abajo a la izquierda y una línea
+		   roja. Fijo y tapado por los paneles: asoma en los huecos. */
+		--bg-image:
+			radial-gradient(circle at 100% 0, var(--bh-bg-y) 0 22vmax, transparent calc(22vmax + 1px)),
+			radial-gradient(circle at 0 100%, var(--bh-bg-b) 0 26vmax, transparent calc(26vmax + 1px)),
+			linear-gradient(to bottom, transparent 74%, var(--bh-bg-r) 74% calc(74% + 6px), transparent calc(74% + 6px));
+	}
+	:root[data-theme='light'][data-style='bauhaus'],
+	:root[data-theme='light'] [data-style='bauhaus'] {
+		color-scheme: light;
+		--bg: #efe9dc;
+		--panel: #faf7f0;
+		--raise: #ebe4d5;
+		--line: #d6cdb9;
+		--fg: #141414;
+		--muted: #4f4a42;
+		--faint: #5c564c;
+		--amber: #1d4fa0;
+		--amber-dim: #2c4f86;
+		--amber-soft: rgba(29, 79, 160, 0.1);
+		--amber-edge: rgba(29, 79, 160, 0.45);
+		--on-amber: #ffffff;
+		--up: #12703d;
+		--down: #b3243a;
+		--neutral: #c4bba7;
+		--series-2: #d1301b;
+		--series-3: #a87f00;
+		--sq-light: #f3ecdc;
+		--sq-dark: #d8ccb2;
+		--scrim: rgba(20, 20, 20, 0.45);
+
+		--bh-ink: #141414;
+		--bh-bg-y: rgba(242, 194, 48, 0.38);
+		--bh-bg-b: rgba(31, 79, 168, 0.2);
+		--bh-bg-r: rgba(209, 48, 27, 0.5);
+	}
+
+	/* ── Bloques de color de los paneles ─────────────────────────────────────────────────────────
+	 * Tres combinaciones: rojo con círculo amarillo, amarillo con cuadrado azul y azul con triángulo blanco. Rotan
+	 * con el panel dentro de su columna y con la columna, para que dos vecinos no repitan color. */
+	[data-style='bauhaus'] .panel,
+	.card[data-style='bauhaus'] .mock {
+		--bh-c: var(--bh-red);
+		--bh-on: var(--bh-white);
+		--bh-shape: var(--bh-yellow);
+		--bh-clip: circle(50%);
+	}
+	[data-style='bauhaus'] .col:nth-child(3n + 1) > .panel:nth-child(3n + 2 of .panel),
+	[data-style='bauhaus'] .col:nth-child(3n + 2) > .panel:nth-child(3n + 1 of .panel),
+	[data-style='bauhaus'] .col:nth-child(3n + 3) > .panel:nth-child(3n + 3 of .panel) {
+		--bh-c: var(--bh-yellow);
+		--bh-on: var(--bh-black);
+		--bh-shape: var(--bh-blue);
+		--bh-clip: inset(0);
+	}
+	[data-style='bauhaus'] .col:nth-child(3n + 1) > .panel:nth-child(3n + 3 of .panel),
+	[data-style='bauhaus'] .col:nth-child(3n + 2) > .panel:nth-child(3n + 2 of .panel),
+	[data-style='bauhaus'] .col:nth-child(3n + 3) > .panel:nth-child(3n + 1 of .panel) {
+		--bh-c: var(--bh-blue);
+		--bh-on: var(--bh-white);
+		--bh-shape: var(--bh-white);
+		--bh-clip: polygon(50% 0, 100% 100%, 0 100%);
+	}
+
+	/* Cabecera: línea de tinta gruesa debajo y el título como bloque de color con su forma delante. */
+	[data-style='bauhaus'] .panel .ph {
+		--border: var(--bh-rule) solid var(--bh-ink);
+	}
+	[data-style='bauhaus'] .panel .ph h2,
+	.card[data-style='bauhaus'] .mh {
+		/* Texto y ▾ en el color que contrasta con el bloque (blanco o negro, ≥ 5:1 sobre los tres primarios). */
+		--title-color: var(--bh-on);
+		--faint: var(--bh-on);
+		display: inline-flex;
+		align-items: center;
+		gap: var(--sp-7);
+		padding: var(--sp-1) var(--sp-10) var(--sp-2) var(--sp-8);
+		background: var(--bh-c);
+		line-height: var(--lh-tight);
+	}
+	[data-style='bauhaus'] .panel .ph h2::before,
+	.card[data-style='bauhaus'] .mh::before {
+		content: '';
+		flex: none;
+		width: 0.62em;
+		height: 0.62em;
+		background: var(--bh-shape);
+		clip-path: var(--bh-clip);
+	}
+	/* El título es un botón (ampliar): con el teclado, un anillo de tinta alrededor del bloque. */
+	[data-style='bauhaus'] .panel .ph h2:has(:focus-visible) {
+		box-shadow:
+			0 0 0 var(--sp-2) var(--panel),
+			0 0 0 var(--sp-4) var(--fg);
+	}
+	/* Vista previa (ESTILO): el bloque ocupa la cabecera de la tarjeta. */
+	.card[data-style='bauhaus'] .mh {
+		display: flex;
+	}
+
+	/* Título de la vista: más grande, en negrita y minúscula, con un círculo rojo, un cuadrado amarillo y un
+	   triángulo azul delante. */
+	[data-style='bauhaus'] .vh h1 {
+		--fw-medium: 700;
+		text-transform: lowercase;
+		letter-spacing: -0.01em;
+	}
+	/* El código de la vista es un comando: se queda en mayúsculas. */
+	[data-style='bauhaus'] .vh .code {
+		text-transform: uppercase;
+	}
+	[data-style='bauhaus'] .vh h1::before {
+		content: '';
+		flex: none;
+		align-self: center;
+		width: 2.3em;
+		height: 0.7em;
+		background:
+			radial-gradient(circle at 0.35em 50%, var(--bh-red) 0.34em, transparent calc(0.34em + 1px)),
+			linear-gradient(var(--bh-yellow), var(--bh-yellow)) 0.85em 50% / 0.62em 0.62em no-repeat,
+			linear-gradient(to top right, var(--bh-blue) 50%, transparent 50%) 1.6em 50% / 0.7em 0.7em no-repeat;
+	}
+
+	/* Controles: marco de tinta en la barra de comandos y los segmentados; botones de la cabecera redondos. */
+	[data-style='bauhaus'] .cmd,
+	[data-style='bauhaus'] .seg {
+		--border: var(--bh-rule) solid var(--bh-ink);
+	}
+	[data-style='bauhaus'] .theme {
+		--radius-s: 50%;
+	}
+	[data-style='bauhaus'] .key[aria-current='page'] {
+		--fw-medium: 700;
+	}
+
+	/* Tablas: cabeceras en tinta, con una regla gruesa debajo. */
+	[data-style='bauhaus'] .t thead {
+		--faint: var(--fg);
+		--border: var(--bh-rule) solid var(--bh-ink);
+	}
+
+	/* Cifras grandes: más peso. */
+	[data-style='bauhaus'] .tile {
+		--fw-medium: 600;
+	}
+}

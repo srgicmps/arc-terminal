@@ -1,0 +1,472 @@
+/* ── Estética «Zen» (src/lib/estilos.ts) ─────────────────────────────────────────────────────────────
+ * <html data-style="zen">: la calma de la experiencia /x/zen llevada a toda la web. Tinta suave y papel de arroz,
+ * IBM Plex Sans y Mono, títulos de panel como la etiqueta ámbar de Zen, tarjetas con mucho aire, cabecera de vista
+ * centrada y en grande, y la misma entrada suave (0,35 s, sube 8 px). Nada se quita: solo se reparte con aire. */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	:root[data-style='zen'],
+	[data-style='zen'] {
+		/* Noche: tinta azulada muy suave, texto cálido y el ámbar de Zen, algo más tranquilo. */
+		--bg: #101215;
+		--panel: #16191d;
+		--raise: #1e2227;
+		--line: #272c33;
+		--fg: #ebe7df;
+		--muted: #a29f98;
+		--faint: #918e87;
+		--amber: #ebb46a;
+		--amber-dim: #d0a467;
+		--amber-soft: rgba(235, 180, 106, 0.12);
+		--amber-edge: rgba(235, 180, 106, 0.4);
+		--on-amber: #1a1206;
+		--up: #6fcf9b;
+		--down: #f08b8b;
+		--neutral: #3b424b;
+		--series-2: #8fb3dc;
+		--series-3: #c2a8e0;
+		--scrim: rgba(10, 11, 13, 0.62);
+		--bg-image: radial-gradient(1200px 600px at 50% -200px, rgba(235, 180, 106, 0.06), transparent 70%);
+
+		/* Letras: las de la experiencia (IBM Plex), con la Sans normal, más de web y de leer. */
+		--sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		--mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		--font-ui: var(--sans);
+		--fs-xxs: 11px;
+		--fs-xs: 11.5px;
+		--fs-s: 13px;
+		--fs-m: 14px;
+		--fs-l: 16px;
+		--fs-xl: 22px;
+		--fs-big: 30px;
+		--fs-xxl: 34px;
+		--fw-bold: 600;
+		--lh: 1.55;
+		--lh-text: 1.5;
+		--lh-loose: 1.65;
+		--track-label: 0.06em;
+		--track-caps: 0.04em;
+
+		/* Títulos de panel: la etiqueta «Dato del día · …» de Zen (mono, pequeña, ámbar, en mayúsculas). */
+		--fs-title: var(--fs-xs);
+		--title-case: uppercase;
+		--title-track: var(--track-code);
+		--title-font: var(--mono);
+		--title-color: var(--amber);
+
+		/* Aire: tarjetas separadas, sin líneas de rejilla. */
+		--pad-x: var(--sp-20);
+		--row-y: var(--sp-10);
+		--head-y: var(--sp-14);
+		--gutter: var(--sp-24);
+		--gutter-touch: var(--sp-16);
+		--grid-gap: var(--sp-20);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-20);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-20);
+		--stack-edge: 0;
+		--panel-edge: var(--hair) solid var(--line);
+		--border: var(--hair) solid var(--line);
+		--radius: 18px;
+		--radius-s: 10px;
+		--shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 8px 28px rgba(0, 0, 0, 0.18);
+		--shadow-pop: 0 18px 48px rgba(0, 0, 0, 0.45), 0 0 0 var(--hair) rgba(255, 255, 255, 0.05);
+		--cmd-h: 40px;
+		--control-h-desk: 32px;
+		--btn-sm: 32px;
+		--fit-panel-min: 300px;
+		--focus-w: 2px;
+
+		/* Movimiento: el de Zen (0,35 s, salida suave). */
+		--dur-ui: 200ms;
+		--dur-fast: 350ms;
+		--ease: cubic-bezier(0.22, 1, 0.36, 1);
+	}
+	:root[data-theme='light'][data-style='zen'],
+	:root[data-theme='light'] [data-style='zen'] {
+		/* Día: papel de arroz, tinta sepia y ámbar tostado. */
+		--bg: #f5f2eb;
+		--panel: #fffdf8;
+		--raise: #efebe2;
+		--line: #e3ddd1;
+		--fg: #23201b;
+		--muted: #5e5950;
+		--faint: #67625a;
+		--amber: #8c5400;
+		--amber-dim: #7f5a2e;
+		--amber-soft: rgba(140, 84, 0, 0.09);
+		--amber-edge: rgba(140, 84, 0, 0.36);
+		--on-amber: #ffffff;
+		--up: #1b6b44;
+		--down: #b3323c;
+		--neutral: #c4bdaf;
+		--series-2: #2f639e;
+		--series-3: #7449a0;
+		--scrim: rgba(35, 32, 27, 0.32);
+		--bg-image: radial-gradient(1200px 600px at 50% -200px, rgba(140, 84, 0, 0.05), transparent 70%);
+		--shadow: 0 1px 2px rgba(60, 45, 20, 0.05), 0 8px 28px rgba(60, 45, 20, 0.06);
+		--shadow-pop: 0 18px 48px rgba(60, 45, 20, 0.16), 0 0 0 var(--hair) rgba(60, 45, 20, 0.06);
+	}
+}
+
+/* ── Página: una columna centrada, con aire, como una web de lectura ─────────────────────────────── */
+[data-style='zen'][data-style] [data-ui='app'] {
+	max-width: 1360px;
+	margin-inline: auto;
+}
+
+/* Cabecera: marca, barra de comandos ancha y redonda, y lo demás a la derecha; sin cajas. */
+[data-style='zen'][data-style] [data-ui='top'] {
+	gap: var(--sp-12) var(--sp-20);
+	padding-block: var(--sp-8) var(--sp-16);
+}
+
+[data-style='zen'][data-style] [data-ui='brand'] {
+	font-family: var(--sans);
+	font-size: var(--fs-l);
+	font-weight: var(--fw-medium);
+	letter-spacing: 0;
+	text-transform: none;
+}
+
+[data-style='zen'][data-style] [data-ui='cmd'] {
+	border-radius: var(--cmd-h);
+	background: var(--panel);
+	box-shadow: var(--shadow);
+	overflow: visible;
+}
+
+[data-style='zen'][data-style] [data-ui='cmd']:not(.sheet) > button:last-of-type {
+	border-radius: 0 var(--cmd-h) var(--cmd-h) 0;
+}
+
+[data-style='zen'][data-style] [data-ui='cmd'] input {
+	text-transform: none;
+	letter-spacing: 0;
+}
+
+[data-style='zen'][data-style] [data-ui='cmd'] :is(ul, ol) {
+	border-radius: var(--radius-s);
+	box-shadow: var(--shadow-pop);
+	margin-top: var(--sp-6);
+}
+
+[data-style='zen'][data-style] [data-ui='top'] :is(button, select) {
+	border-radius: 999px;
+}
+
+/* Secciones: una navegación de web, en pastillas sin borde; la actual, con fondo ámbar suave. */
+[data-style='zen'][data-style] [data-ui='keys'] {
+	gap: var(--sp-4) var(--sp-6);
+	padding-block: 0 var(--sp-16);
+}
+
+[data-style='zen'][data-style] [data-ui='keys'] a {
+	border-color: transparent;
+	border-radius: 999px;
+	padding: var(--sp-6) var(--sp-14);
+	font-family: var(--mono);
+	color: var(--fg);
+	transition:
+		background-color var(--dur-ui) var(--ease),
+		color var(--dur-ui) var(--ease);
+}
+
+[data-style='zen'][data-style] [data-ui='keys'] a:hover {
+	background: var(--raise);
+	border-color: transparent;
+}
+
+[data-style='zen'][data-style] [data-ui='keys'] a[aria-current='page'] {
+	background: var(--amber-soft);
+	border-color: var(--amber-edge);
+	color: var(--amber);
+}
+
+[data-style='zen'][data-style] [data-ui='keys'] a[aria-current='page'] span {
+	color: var(--fg);
+}
+
+/* Cinta de cotizaciones: una tarjeta más, redonda y sin borde duro. */
+[data-style='zen'][data-style] [data-ui='tape'] {
+	border-radius: var(--radius);
+	box-shadow: var(--shadow);
+	margin-bottom: var(--sp-24);
+}
+
+/* ── Cabecera de vista: centrada y en grande, como la tarjeta de Zen ─────────────────────────────── */
+[data-style='zen'][data-style] [data-ui='view-head'] {
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: var(--sp-12);
+	padding-block: var(--sp-16) var(--sp-24);
+}
+
+[data-style='zen'][data-style] [data-ui='view-head'] h1 {
+	flex-direction: column;
+	align-items: center;
+	gap: var(--sp-10);
+	font-size: clamp(var(--fs-xl), 3.6vw, var(--fs-xxl));
+	font-weight: var(--fw-medium);
+	line-height: var(--lh-tight);
+	letter-spacing: -0.01em;
+}
+
+/* El código de la vista (ECO, WS…) hace de etiqueta, encima del título. */
+[data-style='zen'][data-style] [data-ui='view-head'] h1 > span:first-child {
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-medium);
+	letter-spacing: var(--track-label);
+	text-transform: uppercase;
+}
+
+[data-style='zen'][data-style] [data-ui='view-head'] p,
+[data-style='zen'][data-style] [data-ui='view-head'] ul {
+	margin-inline: auto;
+	max-width: 62ch;
+	text-wrap: pretty;
+}
+
+[data-style='zen'][data-style] [data-ui='view-head'] p:not(:first-of-type) {
+	font-size: var(--fs-l);
+	line-height: var(--lh-loose);
+}
+
+[data-style='zen'][data-style] [data-ui='view-head'] ul {
+	text-align: left;
+	font-size: var(--fs-l);
+	line-height: var(--lh-loose);
+}
+
+/* ── Paneles: tarjetas tranquilas ────────────────────────────────────────────────────────────────── */
+[data-style='zen'][data-style] [data-ui='panel'].max {
+	border-radius: var(--radius);
+}
+
+[data-style='zen'][data-style] [data-ui='panel-head'] {
+	border-bottom-color: transparent;
+	padding-bottom: var(--sp-6);
+}
+
+[data-style='zen'][data-style] [data-ui='panel'].folded [data-ui='panel-head'] {
+	padding-bottom: var(--head-y);
+}
+
+/* Tablas: sin mayúsculas en la cabecera, filas con aire y líneas casi invisibles. */
+[data-style='zen'][data-style] [data-ui='table'] .t th {
+	text-transform: none;
+	letter-spacing: 0;
+	font-family: var(--sans);
+	padding-block: var(--sp-8);
+}
+
+[data-style='zen'][data-style] [data-ui='table'] .t :is(th, td) {
+	padding-block: var(--row-y);
+	padding-inline: var(--sp-12);
+	border-bottom-color: var(--line);
+}
+
+[data-style='zen'][data-style] [data-ui='table'] .t :is(th, td):first-child {
+	padding-left: var(--pad-x);
+}
+
+[data-style='zen'][data-style] [data-ui='table'] .t :is(th, td):last-child {
+	padding-right: var(--pad-x);
+}
+
+[data-style='zen'][data-style] [data-ui='table'] .t tbody tr {
+	transition: background-color var(--dur-ui) var(--ease);
+}
+
+[data-style='zen'][data-style] [data-ui='table'] .t tbody tr:hover {
+	background: var(--raise);
+}
+
+/* Cifras grandes: cada una en su tarjeta, sin rejilla de líneas; la cifra, en grande como en Zen. Sueltas en la
+   vista son tarjetas como los paneles; dentro de un panel, huecos suaves con el fondo de --raise. */
+[data-style='zen'][data-style] [data-ui='tiles'] {
+	gap: var(--sp-12);
+	background: transparent;
+	border-bottom: 0;
+	margin-bottom: var(--grid-join);
+}
+
+[data-style='zen'][data-style] [data-ui='tiles'] > * {
+	border-radius: var(--radius);
+	box-shadow: var(--shadow);
+	padding: var(--sp-16) var(--pad-x);
+	gap: var(--sp-4);
+}
+
+[data-style='zen'][data-style] [data-ui='panel'] [data-ui='tiles'] {
+	gap: var(--sp-8);
+	margin-bottom: 0;
+	padding: var(--sp-4) var(--sp-12) var(--sp-12);
+}
+
+[data-style='zen'][data-style] [data-ui='panel'] [data-ui='tiles'] > * {
+	background: var(--raise);
+	border-radius: var(--radius-s);
+	box-shadow: none;
+	padding: var(--sp-14) var(--sp-16);
+}
+
+[data-style='zen'][data-style] [data-ui='tiles'] > * > b {
+	font-size: var(--fs-big);
+	font-weight: var(--fw-regular);
+	line-height: 1.1;
+	letter-spacing: -0.01em;
+}
+
+/* Listas de la portada y mini paneles: más aire entre filas. */
+[data-style='zen'][data-style] .mini li {
+	padding-block: var(--row-y);
+}
+
+/* Gráficos: un margen para que respiren dentro de la tarjeta. */
+[data-style='zen'][data-style] [data-ui='chart'] {
+	padding-inline: var(--sp-8);
+}
+
+/* ── Pie y barra de abajo del móvil ──────────────────────────────────────────────────────────────── */
+[data-style='zen'][data-style] [data-ui='foot'] {
+	justify-content: center;
+	text-align: center;
+	gap: var(--sp-8) var(--sp-24);
+	margin-top: var(--sp-24);
+	padding-block: var(--sp-24);
+	border-top-color: transparent;
+	line-height: var(--lh-loose);
+}
+
+/* Foco: el contorno de siempre, un poco más grueso y separado; redondeado con la forma de la pieza. */
+[data-style='zen'][data-style] :focus-visible {
+	outline-offset: var(--sp-3);
+}
+
+@media (max-width: 720px) {
+	/* Barra de pestañas flotante, redonda y separada de los bordes, cerca del pulgar. */
+	[data-style='zen'][data-style] [data-ui='tabs'] {
+		left: var(--sp-12);
+		right: var(--sp-12);
+		bottom: calc(var(--sp-10) + env(safe-area-inset-bottom, 0px));
+		padding-bottom: 0;
+		border: var(--hair) solid var(--line);
+		border-radius: 999px;
+		box-shadow: var(--shadow-pop);
+		overflow: hidden;
+	}
+
+	[data-style='zen'][data-style] [data-ui='tabs'] [aria-current='page'] {
+		text-decoration: none;
+		background: var(--amber-soft);
+	}
+
+	[data-style='zen'][data-style] [data-ui='app'] {
+		padding-bottom: calc(var(--tabbar-h) + var(--sp-24) + env(safe-area-inset-bottom, 0px));
+	}
+
+	[data-style='zen'][data-style] [data-ui='cmd'].sheet {
+		left: var(--sp-12);
+		right: var(--sp-12);
+		bottom: calc(var(--tabbar-h) + var(--sp-20) + env(safe-area-inset-bottom, 0px));
+		border: var(--hair) solid var(--amber-edge);
+		border-radius: var(--touch);
+		box-shadow: var(--shadow-pop);
+	}
+
+	/* Índice de paneles: chips redondos, sin línea debajo. */
+	[data-style='zen'][data-style] [data-ui='panel-index'] {
+		border-bottom: 0;
+		padding-block: var(--sp-4);
+	}
+
+	[data-style='zen'][data-style] [data-ui='panel-index'] span {
+		border-radius: 999px;
+		letter-spacing: var(--track-code);
+		background: var(--panel);
+	}
+
+	[data-style='zen'][data-style] [data-ui='view-head'] {
+		padding-block: var(--sp-8) var(--sp-16);
+	}
+
+	[data-style='zen'][data-style] [data-ui='keys'] a {
+		padding: var(--sp-4) var(--sp-12);
+	}
+
+	[data-style='zen'][data-style] [data-ui='panel'] {
+		border-radius: calc(var(--radius) - 4px);
+	}
+
+	[data-style='zen'][data-style] [data-ui='panel'].max {
+		border-radius: 0;
+	}
+}
+
+/* Al bajar, la cabecera de la página se queda arriba, con el fondo de la página y una sombra leve. */
+@media (min-width: 721px) {
+	[data-style='zen'][data-style] [data-ui='top'] {
+		position: sticky;
+		top: 0;
+		z-index: var(--z-bar);
+		margin-inline: calc(-1 * var(--gutter));
+		padding-inline: var(--gutter);
+		background: var(--bg);
+		transition: box-shadow var(--dur-ui) var(--ease);
+	}
+
+	:root[data-scrolled][data-style='zen'] [data-ui='top'] {
+		box-shadow: 0 10px 24px -18px rgba(0, 0, 0, 0.5);
+	}
+
+	:root[data-fit][data-style='zen'] [data-ui='top'] {
+		position: static;
+	}
+}
+
+/* ── Movimiento: la entrada de las tarjetas de Zen ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+	@keyframes zen-in {
+		from {
+			opacity: 0;
+			transform: translateY(var(--sp-8));
+		}
+	}
+
+	[data-style='zen'][data-style] [data-ui='main'] [data-ui='view-head'],
+	[data-style='zen'][data-style] [data-ui='main'] [data-ui='panel']:not(.max) {
+		animation: zen-in var(--dur-fast) var(--ease) backwards;
+	}
+
+	[data-style='zen'][data-style] [data-ui='main'] .col:nth-child(2) > [data-ui='panel']:not(.max) {
+		animation-delay: 60ms;
+	}
+
+	[data-style='zen'][data-style] [data-ui='main'] .col:nth-child(n + 3) > [data-ui='panel']:not(.max) {
+		animation-delay: 120ms;
+	}
+
+	[data-style='zen'][data-style] [data-ui='panel'] {
+		transition: box-shadow var(--dur-ui) var(--ease);
+	}
+
+	@media (hover: hover) {
+		[data-style='zen'][data-style] [data-ui='panel']:not(.max):hover {
+			box-shadow: var(--shadow-pop);
+		}
+	}
+}
+
+/* Cristal leve en la cabecera fija, solo en escritorio y si el sistema no pide menos transparencia. */
+@media (min-width: 721px) and (prefers-reduced-transparency: no-preference) {
+	@supports (backdrop-filter: blur(1px)) {
+		[data-style='zen'][data-style] [data-ui='top'] {
+			background: color-mix(in srgb, var(--bg) 82%, transparent);
+			backdrop-filter: blur(14px);
+		}
+	}
+}
