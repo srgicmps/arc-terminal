@@ -4,7 +4,7 @@
 	import { routeHref } from '#lib/routes.ts';
 	import '../app.css';
 	import '../styles/ajustes.css';
-	import { goto } from '$app/navigation';
+	import { afterNavigate, goto } from '$app/navigation';
 	import { neighbour, nudge, SWIPE, swipeDirection } from '#lib/swipe.ts';
 	import { asset, resolve } from '$app/paths';
 	import { page, updated } from '$app/state';
@@ -26,6 +26,7 @@
 	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
 	import { initFolded } from '#lib/folded.svelte.ts';
 	import { initCloud } from '#lib/cloud.svelte.ts';
+	import { initEmbed, isEmbedded, reportPath, unembed } from '#lib/os/embed.ts';
 	import { listenServiceWorker } from '#lib/pwa.ts';
 	import PanelIndex from '#lib/components/PanelIndex.svelte';
 	import { setPanelIndex } from '#lib/panelindex.svelte.ts';
@@ -55,7 +56,10 @@
 	$effect(initMode);
 	$effect(loadPins);
 	// Tus ajustes en tu cuenta (arcterminal.dev): los sube y trae los de tus otros dispositivos.
-	$effect(initCloud);
+	// Dentro de una ventana de Arc OS, la cuenta la lleva el escritorio (no cada ventana).
+	$effect(() => (isEmbedded() ? undefined : initCloud()));
+	$effect(initEmbed);
+	afterNavigate(({ to }) => to && reportPath(unembed(to.url.pathname + to.url.search + to.url.hash)));
 	// Sesión de Cloudflare Access caducada: el service worker avisa y se recarga para ir al login.
 	$effect(listenServiceWorker);
 
@@ -494,6 +498,19 @@
 	:global(html[data-tv]) .thumb,
 	:global(html[data-tv]) .status {
 		display: none;
+	}
+
+	/* Arc OS (html[data-embed]): la vista dentro de una ventana, sin la cabecera, las teclas, la cinta ni el pie. */
+	:global(html[data-embed]) .top,
+	:global(html[data-embed]) .keys,
+	:global(html[data-embed]) .tape,
+	:global(html[data-embed]) .thumb,
+	:global(html[data-embed]) .status {
+		display: none;
+	}
+
+	:global(html[data-embed]) .app {
+		padding-bottom: 0;
 	}
 
 	:global(html[data-tv]) .app {

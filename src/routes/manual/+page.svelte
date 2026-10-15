@@ -68,7 +68,7 @@
 		}))
 	);
 
-	const GROUPS: ShortcutGroup[] = ['Barra', 'Paneles', 'Listas', 'Pantalla', 'TV'];
+	const GROUPS: ShortcutGroup[] = ['Barra', 'Paneles', 'Listas', 'Pantalla', 'TV', 'Arc OS'];
 	const shortcuts = $derived(
 		GROUPS.map((group) => ({
 			group,
