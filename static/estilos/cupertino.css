@@ -469,8 +469,9 @@
 	stroke-width: 1.5;
 	stroke-linecap: round;
 }
-/* La lupa también lleva su etiqueta, como las demás pestañas (el nombre accesible ya lo da aria-label). */
-[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] button::after {
+/* La lupa (el último botón de la barra) también lleva su etiqueta, como las demás pestañas (el nombre accesible ya lo
+   da aria-label). Solo la lupa: el botón de Experiencias tiene la suya. */
+[data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] > button:last-child::after {
 	content: 'Buscar' / '';
 }
 [data-style='cupertino'][data-style] [data-ui='app'] [data-ui='tabs'] :is([aria-current='page'], [aria-pressed='true']) {
