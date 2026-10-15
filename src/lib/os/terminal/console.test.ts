@@ -41,8 +41,9 @@ describe('consola de Arc OS', () => {
 	});
 	it('completa con Tab', () => {
 		expect(complete('limp', all).value).toBe('limpiar');
-		// «lim» también encaja con otras cosas por su descripción, pero solo «limpiar» empieza así.
-		expect(complete('lim', all).value).toBe('limpiar');
+		// «clima» encaja con «lim» por su descripción, pero solo se completa con lo que empieza por lo escrito; con el
+		// comando LIM, «lim» ya es ambiguo: se queda y enseña los dos.
+		expect(complete('lim', all).list.map((o) => o.code)).toEqual(expect.arrayContaining(['limpiar', 'LIM']));
 		expect(complete('NEW', all).value.trim()).toBe('NEWS');
 		const w = complete('W', all);
 		expect(w.value).toBe('W');
