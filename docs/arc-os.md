@@ -61,7 +61,7 @@ nada en los traspasos entre sesiones.
       (pasarlo a OS 3, OS 4 y OS 6) [OS 2] #526
 - [x] **Carpetas** en el escritorio: nueva carpeta (clic derecho), renombrar, arrastrar iconos dentro y fuera,
       abrir carpeta en una ventana con sus iconos, carpetas dentro de carpetas, eliminar a la papelera. Se guardan
-      en la cuenta. Mismo modelo que el explorador [OS 2 + OS 4] #529 (`src/lib/os/fs/`)
+      en la cuenta. Mismo modelo que el explorador [OS 2 + OS 4] #529 (`src/lib/os/fs/`) #517
 
 ## Revisión de Decisiones 2 (main a 1440 y 390 px)
 - [x] El reloj de la bandeja salía en UTC: ahora usa la zona del navegador, y Madrid si no hay ninguna [OS 2] #501
@@ -91,7 +91,7 @@ nada en los traspasos entre sesiones.
 - [x] Atajos del sistema en `shortcuts.ts` (salen en HELP) [OS 5] #499/#509
 
 ## Apps del sistema
-- [ ] Explorador de archivos al estilo de un gestor web de archivos, con papelera (mismo modelo de carpetas que el escritorio) [OS 4]: #517 se porta al modelo `src/lib/os/fs/` de OS 2b cuando entre
+- [x] Explorador de archivos al estilo de un gestor web de archivos, con papelera (mismo modelo de carpetas que el escritorio): árbol, barra de acciones, ruta clicable, lista ordenable o iconos, selección múltiple, menú contextual, arrastrar y soltar, Propiedades; a ≤ 600 px, árbol aparte y lista. App «Archivos» (`src/lib/os/apps/files/`, lógica en `explorer.ts`); las carpetas del escritorio se abren en ella [OS 4] #517
 - [x] Panel de control en ventana, estilo DSM: Ajustes con portada por categorías, lista lateral y `openApp('ajustes', '<sección>')`; el ⚙ de la barra queda como panel rápido [OS 4] #520/#531
 - [x] Centro de paquetes: instalar y quitar apps, vistas, experiencias y widgets (`arc-os-packages`, `installedApps()`) [OS 4] #524. La shell filtra Inicio, Launchpad, Actividades y buscador [OS 2] #529
 - [x] Notas [OS 4] #504

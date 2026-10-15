@@ -1,9 +1,17 @@
 // Notas en el navegador: la lista (un $state, como un reactive() de Vue), crear, guardar, papelera. Cada nota es
 // su clave en localStorage y cloud.svelte.ts la lleva a la cuenta (D1).
+import { openApp } from '../../os.svelte.ts';
 import { readJson, writeJson } from '../kit/store.ts';
 import { byRecent, isNote, MAX_HTML, MAX_NOTES, NOTE_PREFIX, noteKey, type Note } from './notes.ts';
 
-export const notes = $state({ list: [] as Note[] });
+/** pending: nota que otra app (Archivos) ha pedido abrir; Notes.svelte la abre y lo vacía. */
+export const notes = $state({ list: [] as Note[], pending: null as string | null });
+
+/** Abre una nota en la app Notas (la abre si no lo está). */
+export function openNote(id: string) {
+	notes.pending = id;
+	openApp('notas');
+}
 
 let started = false;
 
