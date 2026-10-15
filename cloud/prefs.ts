@@ -93,9 +93,10 @@ export interface D1Database {
 	batch(statements: D1Statement[]): Promise<unknown>;
 	exec(sql: string): Promise<unknown>;
 }
-interface D1Statement {
+export interface D1Statement {
 	bind(...values: unknown[]): D1Statement;
 	all<T>(): Promise<{ results: T[] }>;
+	run(): Promise<unknown>;
 }
 
 let tableReady = false;

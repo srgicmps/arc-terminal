@@ -55,6 +55,9 @@ export function tokenOf(request: Request): string | null {
 	return m ? m[1] : null;
 }
 
+/** Quién es, según un JWT de Access válido: una persona (email) o un token de servicio (common_name). */
+export type Identity = { email: string; service?: undefined } | { email?: undefined; service: string };
+
 /**
  * El email (en minúsculas) del usuario de un JWT de Access válido; null si no vale por lo que sea.
  * Los tokens de servicio (los de las Actions) no llevan email: tampoco valen aquí.
@@ -64,6 +67,18 @@ export async function verifyAccess(
 	config: AccessConfig,
 	fetcher: Fetch = fetch
 ): Promise<string | null> {
+	return (await verifyIdentity(token, config, fetcher))?.email ?? null;
+}
+
+/**
+ * Como verifyAccess, pero también reconoce los tokens de servicio (sin email, con common_name): los de las
+ * Actions. Solo los que deja pasar la política de Access de la aplicación llegan a tener un JWT así.
+ */
+export async function verifyIdentity(
+	token: string,
+	config: AccessConfig,
+	fetcher: Fetch = fetch
+): Promise<Identity | null> {
 	const parts = token.split('.');
 	if (parts.length !== 3) return null;
 	const header = parse(parts[0]);
@@ -77,7 +92,9 @@ export async function verifyAccess(
 	if (payload.iss !== team) return null;
 	if (typeof payload.exp !== 'number' || payload.exp < now) return null;
 	if (typeof payload.nbf === 'number' && payload.nbf > now + 60) return null;
-	if (typeof payload.email !== 'string' || !payload.email.includes('@')) return null;
+	const email = typeof payload.email === 'string' && payload.email.includes('@') ? payload.email.toLowerCase() : null;
+	const service = typeof payload.common_name === 'string' && payload.common_name ? payload.common_name : null;
+	if (!email && !service) return null;
 
 	let signature: Uint8Array;
 	try {
@@ -95,7 +112,8 @@ export async function verifyAccess(
 			'verify'
 		]);
 		const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, signature as BufferSource, signed as BufferSource);
-		return ok ? payload.email.toLowerCase() : null;
+		if (!ok) return null;
+		return email ? { email } : { service: service! };
 	}
 	return null;
 }

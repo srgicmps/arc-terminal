@@ -76,6 +76,12 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - **Avisos al móvil** con ntfy (`scripts/notify.ts`, tras `pnpm data`): reglas P1–P4 en la lista `RULES` de
   `scripts/alerts/rules.ts`, umbrales y cupos en `scripts/alerts/config.ts`. El tema
   va en el Secret `NTFY_TOPIC` y es la única protección: nunca en el repo, en registros ni en JSON.
+- **Avisos por usuario** (`AVISOS`): cada usuario elige temas (grupos de `src/lib/alertconfig.ts`), nivel, tope
+  diario, sus valores y silencio; por defecto, lo de Sergi. Se guarda en D1 (`cloud/alerts.ts`, `/api/alerts`) con un
+  tema de ntfy propio, aleatorio, que solo ven él y la Action. `notify.ts` lee la lista con el service token de Access
+  (`/api/alerts?all=1`, sin emails) y `scripts/alerts/users.ts` reparte los avisos de la pasada según cada uno. Su
+  historial va SOLO en la caché de Actions (`.notify-cache/notify-users.json`, por uid aleatorio), nunca en static/data.
+  Los de Sergi siguen saliendo por `NTFY_TOPIC`.
 - **Órdenes desde la barra** (D41): «alerta NVDA > 150», «+NVDA», «vigila aranceles» abren un issue ya escrito
   (`src/lib/useralerts.ts`); `notify.ts` lee con `scripts/requests.ts` solo los issues abiertos **del dueño**,
   los aplica (`scripts/alerts/user.ts`) y cierra la alerta al avisar. Los issues son públicos.
@@ -163,6 +169,7 @@ vista `HELP`. Resumen:
 | `TV` | Modo TV: las vistas rotan solas, encajadas y a pantalla completa | — |
 | `FONDOS` | Carteras 13F de grandes fondos: mayores posiciones, compras y ventas | SEC* |
 | `HDS` | Qué fondos de FONDOS tienen un valor (13F al revés, con 45 días de retraso) | SEC* |
+| `AVISOS` | Tus avisos al móvil: temas, nivel, tope, valores y silencio (solo con cuenta, en arcterminal.dev) | ntfy |
 | `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
 
 \* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`, `CLOUDFLARE_RADAR_TOKEN`, `EIA_API_KEY`):

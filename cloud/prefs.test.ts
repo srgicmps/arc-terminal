@@ -1,44 +1,17 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { clearKeyCache, verifyAccess } from './access.ts';
 import { handlePrefs, memoryStore, parsePatch } from './prefs.ts';
+import { AUD, part, TEAM, testKeys } from './testkeys.ts';
 
-// Claves de prueba: un par RSA hecho al empezar, como el de Access. La «otra» firma tokens falsos.
-const TEAM = 'https://prueba.cloudflareaccess.com';
-const AUD = 'aud-de-prueba';
-let mine: CryptoKeyPair;
-let other: CryptoKeyPair;
-let jwks: JsonWebKey[];
-
-const b64url = (bytes: Uint8Array) =>
-	btoa(String.fromCharCode(...bytes))
-		.replace(/\+/g, '-')
-		.replace(/\//g, '_')
-		.replace(/=+$/, '');
-const part = (o: object) => b64url(new TextEncoder().encode(JSON.stringify(o)));
-
-async function sign(claims: Record<string, unknown>, key = mine.privateKey, kid = 'k1') {
-	const now = Math.floor(Date.now() / 1000);
-	const body = `${part({ alg: 'RS256', kid, typ: 'JWT' })}.${part({ aud: [AUD], iss: TEAM, exp: now + 3600, iat: now, ...claims })}`;
-	const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(body));
-	return `${body}.${b64url(new Uint8Array(sig))}`;
-}
-
-const certs = async (url: string) => {
-	expect(url).toBe(`${TEAM}/cdn-cgi/access/certs`);
-	return new Response(JSON.stringify({ keys: jwks }));
-};
-
-const ALG = {
-	name: 'RSASSA-PKCS1-v1_5',
-	modulusLength: 2048,
-	publicExponent: new Uint8Array([1, 0, 1]),
-	hash: 'SHA-256'
-};
+let sign: Awaited<ReturnType<typeof testKeys>>['sign'];
+let certs: Awaited<ReturnType<typeof testKeys>>['certs'];
+let otherKey: CryptoKey;
 
 beforeAll(async () => {
-	mine = (await crypto.subtle.generateKey(ALG, true, ['sign', 'verify'])) as CryptoKeyPair;
-	other = (await crypto.subtle.generateKey(ALG, true, ['sign', 'verify'])) as CryptoKeyPair;
-	jwks = [{ ...(await crypto.subtle.exportKey('jwk', mine.publicKey)), kid: 'k1' } as JsonWebKey];
+	const k = await testKeys();
+	sign = k.sign;
+	certs = k.certs;
+	otherKey = k.other;
 });
 beforeEach(clearKeyCache);
 
@@ -50,12 +23,12 @@ describe('verifyAccess', () => {
 	});
 	it('rechaza firma de otra clave, otra audiencia, otro emisor, caducado o sin email', async () => {
 		const bad = [
-			await sign({ email: 'a@b.c' }, other.privateKey),
+			await sign({ email: 'a@b.c' }, otherKey),
 			await sign({ email: 'a@b.c', aud: ['otra'] }),
 			await sign({ email: 'a@b.c', iss: 'https://otro.cloudflareaccess.com' }),
 			await sign({ email: 'a@b.c', exp: Math.floor(Date.now() / 1000) - 10 }),
 			await sign({ common_name: 'token-de-servicio' }),
-			await sign({ email: 'a@b.c' }, mine.privateKey, 'desconocida'),
+			await sign({ email: 'a@b.c' }, undefined, 'desconocida'),
 			'no.es.un-jwt',
 			''
 		];
