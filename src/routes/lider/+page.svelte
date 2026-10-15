@@ -142,7 +142,7 @@
 			</Panel>
 			<!-- Sin comunicados recientes, el panel no sale: nada de huecos. -->
 			{#if c.recent.length}
-				<Panel title="Lo último" meta={c.leader.recentLabel}>
+				<Panel title={columns.length > 1 ? `Lo último · ${c.leader.name}` : 'Lo último'} meta={c.leader.recentLabel}>
 					<NewsList items={c.recent} />
 				</Panel>
 			{/if}

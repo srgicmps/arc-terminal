@@ -82,6 +82,8 @@ export const weekday = (date: string) => fmtWd.format(new Date(`${date}T12:00:00
  */
 export function when(iso: string | null | undefined, now: number): string {
 	if (!iso) return '';
+	// Solo el día («2026-10-14», como los del Federal Register): sin hora inventada ni «hace X h».
+	if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return dm(`${iso}T12:00:00Z`);
 	const t = Date.parse(iso);
 	if (!Number.isFinite(t)) return '';
 	const mins = Math.round((now - t) / 60_000);

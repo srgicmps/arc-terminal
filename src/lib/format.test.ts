@@ -84,6 +84,7 @@ describe('fechas (hora de Madrid)', () => {
 		expect(when('2026-10-14T11:59:40Z', now)).toBe('ahora');
 		expect(when('2026-10-14T11:55:00Z', now)).toBe('hace 5 min');
 		expect(when('2026-10-14T09:00:00Z', now)).toBe('hace 3 h');
+		expect(when('2026-10-14', now)).toBe('14 oct');
 		expect(when('2026-10-12T09:30:00Z', now)).toBe('12 oct 11:30');
 		// Fechas en el futuro (relojes desajustados): fecha absoluta.
 		expect(when('2026-10-14T12:30:00Z', now)).toBe('14 oct 14:30');
