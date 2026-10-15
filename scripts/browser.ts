@@ -2,7 +2,7 @@
 // Ayudantes de las herramientas con navegador (scripts/smoke.ts, tv-shots.ts y compare-views.ts): arrancar
 // `vite preview` con la web ya construida y abrir Chromium.
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { chromium, type Browser } from 'playwright-core';
 
 /** Chromium de la imagen de desarrollo; en el runner de GitHub, el Chrome que trae instalado. */
@@ -33,4 +33,16 @@ export async function preview(port: number, cwd?: string): Promise<{ server: Chi
 	}
 	server.kill();
 	throw new Error(`vite preview no responde en el puerto ${port}`);
+}
+
+/**
+ * Las vistas de la web ya construida, una por cada .html de build/ («index.html» es «/»). Sin 404 ni la
+ * ficha de valor (/s), que necesita un ?sym= y cada herramienta añade a su manera. Así no hace falta leer
+ * COMMANDS, que usa import.meta.glob (solo existe en Vite) y no se puede importar desde Node.
+ */
+export function viewPaths(dir = 'build'): string[] {
+	return readdirSync(dir)
+		.filter((f) => f.endsWith('.html') && f !== '404.html' && f !== 's.html')
+		.map((f) => (f === 'index.html' ? '/' : `/${f.slice(0, -'.html'.length)}`))
+		.sort();
 }

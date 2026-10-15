@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { TICKERS, tvSymbol } from '#lib/tickers.ts';
+	import { quotesHeight, TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import TvWidget from './TvWidget.svelte';
 
 	interface Props {
@@ -24,7 +24,7 @@
 	});
 </script>
 
-<TvWidget widget="market-quotes" {config} height={Math.max(220, 90 + codes.length * 46)} />
+<TvWidget widget="market-quotes" {config} height={quotesHeight(codes.length, 220)} />
 <nav class="fichas" aria-label="Fichas de los valores">
 	{#each codes as code (code)}
 		<a href="{resolve('/s')}?sym={encodeURIComponent(code)}" title="Ficha de {nameOf(code)}">{code}</a>

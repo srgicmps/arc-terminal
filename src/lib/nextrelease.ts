@@ -13,16 +13,40 @@ export interface Topic {
 }
 
 export const TOPICS: Topic[] = [
+	// Primero los de España: el PIB de España es también una serie «gdp-…», y gana el primer tema que encaja.
+	{ id: 'es-gdp', source: 'INE', match: /Contabilidad Nacional Trimestral/i, series: /^gdp(-yoy)?-es$/ },
 	{ id: 'ea-inflation', source: 'Eurostat', match: /inflation|\bHICP\b/i, series: /^inflation-/ },
 	{ id: 'ea-unemployment', source: 'Eurostat', match: /unemployment/i, series: /^(youth-)?unemployment-(?!us$)/ },
 	{ id: 'ea-gdp', source: 'Eurostat', match: /\bGDP\b/i, series: /^gdp-(?!us$)/ },
 	{ id: 'us-cpi', source: 'BLS', match: /^Consumer Price Index/i, series: /^(core-)?cpi-us$/ },
 	{ id: 'us-jobs', source: 'BLS', match: /^(The )?Employment Situation/i, series: /^(unemployment|payrolls)-us$/ },
+	{ id: 'us-gdp', source: 'BEA', match: /^Gross Domestic Product/i, series: /^gdp-us$/ },
+	{ id: 'us-pce', source: 'BEA', match: /^Personal Income and Outlays/i, series: /^core-pce-us$/ },
+	{ id: 'us-claims', source: 'DOL', match: /Unemployment Insurance Weekly Claims/i, series: /^claims-us$/ },
+	{ id: 'us-h41', source: 'Fed', match: /^H\.4\.1/i, series: /^fed-(balance|net-liquidity)$/ },
 	{ id: 'es-ipc', source: 'INE', match: /Índice de Precios de Consumo|\bIPC\b/i, series: /^ipc-/ },
 	{ id: 'es-epa', source: 'INE', match: /Población Activa|\bEPA\b/i, series: /^epa-/ },
 	{ id: 'es-ipv', source: 'INE', match: /Precios de Vivienda|\bIPV\b/i, series: /^ipv-/ },
 	{ id: 'es-tourism', source: 'INE', match: /FRONTUR|Movimientos Turísticos en Fronteras/i, series: /^turistas-/ }
 ];
+
+/** Nombre corto de cada tema, para «Mi mañana». */
+export const TOPIC_LABEL: Record<string, string> = {
+	'es-gdp': 'PIB de España',
+	'ea-inflation': 'Inflación zona euro',
+	'ea-unemployment': 'Paro zona euro',
+	'ea-gdp': 'PIB zona euro',
+	'us-cpi': 'IPC de EE. UU.',
+	'us-jobs': 'Empleo de EE. UU.',
+	'us-gdp': 'PIB de EE. UU.',
+	'us-pce': 'PCE de EE. UU.',
+	'us-claims': 'Paro semanal de EE. UU.',
+	'us-h41': 'Balance de la Fed',
+	'es-ipc': 'IPC de España',
+	'es-epa': 'EPA',
+	'es-ipv': 'Precio de la vivienda',
+	'es-tourism': 'Turistas (FRONTUR)'
+};
 
 /** Tema de un evento por su organismo y su título, o null. */
 export function topicOf(source: ReleaseEvent['source'], title: string): string | null {

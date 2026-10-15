@@ -144,6 +144,9 @@ export function withDeadline<T>(promise: Promise<T>, ms: number, message: string
 	return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
 }
 
+/** La carpeta de datos de la web publicada: las fuentes que acumulan en archivos extra leen de aquí lo último. */
+export const PUBLISHED = 'https://srgicmps.github.io/arc-terminal/data';
+
 /** Escribe un archivo extra de una fuente en static/data/<path>. */
 export async function writeExtra(path: string, content: unknown) {
 	const { mkdir, writeFile } = await import('node:fs/promises');

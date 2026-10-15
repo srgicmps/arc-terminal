@@ -1,27 +1,43 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import AdvisoryList from '#lib/components/AdvisoryList.svelte';
 	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
 	import ClimatePanel from '#lib/components/ClimatePanel.svelte';
 	import ChokepointTable from '#lib/components/ChokepointTable.svelte';
 	import DisasterList from '#lib/components/DisasterList.svelte';
 	import ElectionTable from '#lib/components/ElectionTable.svelte';
 	import HazardList from '#lib/components/HazardList.svelte';
+	import MilexTable from '#lib/components/MilexTable.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import PredictionList from '#lib/components/PredictionList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import Table from '#lib/components/ui/Table.svelte';
+	import { foodCountry, peopleRange } from '#lib/food.ts';
+	import { dm, hm, nf, period } from '#lib/format.ts';
+	import Tile from '#lib/components/ui/Tile.svelte';
+	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import TradeList from '#lib/components/TradeList.svelte';
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
+	import RefugeeTables from '#lib/components/RefugeeTables.svelte';
+	import RiskSignals from '#lib/components/RiskSignals.svelte';
 	import StormNotice from '#lib/components/StormNotice.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import WorldMap from '#lib/components/WorldMap.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { LAYERS, type LayerId } from '#lib/geo/layers.ts';
+	import { DIPLOMACY_FEEDS } from '#lib/news.ts';
+	import { REGIONS, inRegion, type RegionId } from '#lib/regions.ts';
+	import { urlState } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	const items = $derived(data.news?.data.items ?? []);
+	// Región de los titulares, en la URL (/geo?region=asia) como los filtros de IMP o FUEL.
+	const regions = [{ value: 'all' as const, label: 'Todas' }, ...REGIONS.map((r) => ({ value: r.id, label: r.label }))];
+	const regionSel = urlState<RegionId | 'all'>('region', 'all', (v) => REGIONS.some((r) => r.id === v));
+	const shownItems = $derived(inRegion(items, regionSel.value));
 	const quakes = $derived(data.quakes?.data ?? []);
 	// Los más fuertes de la semana primero, y como mucho 20.
 	const strongest = $derived([...quakes].sort((a, b) => b.mag - a.mag).slice(0, 20));
@@ -32,15 +48,44 @@
 	const points = $derived(available.filter((l) => on.includes(l.value)).flatMap((l) => layerPoints[l.value]));
 
 	const sources = $derived((data.news?.data.feeds ?? []).filter((f) => f.items).map((f) => f.name).join(', '));
+	// Canales de diplomacia dentro de news-intl; el resto son organismos internacionales.
+	const DIPLO = new Set(DIPLOMACY_FEEDS);
+	const diplo = $derived((data.intl?.data.items ?? []).filter((i) => DIPLO.has(i.source)).slice(0, 15));
+
+	// Tira de arriba: el terremoto más fuerte de la semana, los ciclones activos y las alertas de catástrofe.
+	const topQuake = $derived(strongest[0]);
+	const storms = $derived([...(data.hazards?.data.storms ?? [])].sort((a, b) => b.knots - a.knots));
+	const alerts = $derived(data.signals?.counts);
 </script>
 
 <ViewHeader code="GEO" title="Geopolítica" sub={sources} />
+
+<Tiles cols={3}>
+	<Tile
+		label="Terremoto más fuerte, 7 días"
+		value={topQuake ? `M${nf(topQuake.mag, 1)}` : '—'}
+		tone={topQuake ? undefined : 'mut'}
+		sub={topQuake ? `${topQuake.place} · ${dm(topQuake.time)} ${hm(topQuake.time)}` : ''}
+	/>
+	<Tile
+		label="Ciclones activos"
+		value={data.hazards ? String(storms.length) : '—'}
+		tone={data.hazards ? undefined : 'mut'}
+		sub={storms[0] ? `${storms[0].name} · ${nf(storms[0].knots * 1.852, 0)} km/h` : data.hazards ? 'Ninguno ahora' : ''}
+	/>
+	<Tile
+		label="Alertas de catástrofe"
+		value={alerts ? String(alerts.red + alerts.orange) : '—'}
+		tone={alerts ? undefined : 'mut'}
+		sub={alerts ? `${alerts.red} rojas · ${alerts.orange} naranjas · GDACS` : ''}
+	/>
+</Tiles>
 
 <StormNotice data={data.swpc?.data} />
 
 <div class="grid">
 	<div class="col">
-		<Panel title="Mapa" meta="Toca un punto para ver su ficha">
+		<Panel title="Mapa" meta="Toca un punto para ver su ficha" pin="pin:geo:mapa">
 			{#if available.length > 1}
 				<div class="layers"><Seg label="Capas del mapa" options={available} bind:values={on} /></div>
 			{/if}
@@ -51,13 +96,73 @@
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Titulares" meta="{items.length} noticias">
-			<NewsList {items} summaries />
+		<Panel title="Titulares" meta="{shownItems.length} noticias" jump={{ code: 'NEWS', href: `${resolve('/news')}?s=geo` }}>
+			<div class="regions"><Seg label="Región" options={regions} bind:value={regionSel.value} /></div>
+			{#if shownItems.length || !items.length}
+				<NewsList items={shownItems} summaries />
+			{:else}
+				<p class="empty">Sin titulares de esta región ahora.</p>
+			{/if}
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-geo" />{/snippet}
 		</Panel>
 		<ClimatePanel climate={data.climate} />
+		{#if data.refugees}
+			{@const r = data.refugees}
+			<Panel title="Refugiados" meta="ACNUR · fin de {r.year}">
+				<RefugeeTables from={r.from} hosted={r.hosted} />
+				{#snippet note()}
+					Refugiados y solicitantes de asilo. Fuente: <a href="https://www.unhcr.org/refugee-statistics/" target="_blank" rel="noopener"
+						>ACNUR, Refugee Data Finder</a
+					> · <Updated at={r.fetchedAt} source="unhcr" />
+				{/snippet}
+			</Panel>
+		{/if}
+		{#if data.food?.data.length}
+			{@const food = data.food}
+			<Panel title="Hambre aguda" meta="Personas en fase IPC 3 o peor · FEWS NET">
+				<Table>
+					<thead><tr><th class="l">País</th><th>Personas</th><th>Periodo</th></tr></thead>
+					<tbody>
+						{#each food.data as f (f.code)}
+							<tr>
+								<td class="l name">{foodCountry(f.code, f.country)}</td>
+								<td>{peopleRange(f.low, f.high)}</td>
+								<td class="mut">{period(f.from.slice(0, 7))}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
+				{#snippet note()}
+					Fase 3 (crisis), 4 (emergencia) o 5 (hambruna) de la clasificación IPC; horquilla de FEWS NET. Solo cubre
+					los países que sigue FEWS NET. Fuente: <a href="https://fews.net" target="_blank" rel="noopener">FEWS NET</a> ·
+					<Updated at={food.fetchedAt} source="fewsnet" />
+				{/snippet}
+			</Panel>
+		{/if}
+		{#if data.sipri?.data.rows.length}
+			{@const sipri = data.sipri}
+			<Panel title="Gasto militar" meta="Los 15 que más gastan · {sipri.data.year}">
+				<MilexTable rows={sipri.data.rows} />
+				{#snippet note()}
+					Fuente: <a href="https://www.sipri.org/databases/milex" target="_blank" rel="noopener">SIPRI Military Expenditure Database</a>.
+					Dólares corrientes; la variación real, en dólares constantes · <Updated at={sipri.fetchedAt} source="sipri" />
+				{/snippet}
+			</Panel>
+		{/if}
 	</div>
 	<div class="col">
+		{#if data.signals}
+			{@const at = data.signals.fetchedAt}
+			<Panel title="Señales de riesgo" meta="Catástrofes, internet, brotes y avisos de viaje">
+				<RiskSignals signals={data.signals} />
+				{#snippet note()}
+					Fuentes: GDACS (ONU y Comisión Europea), alertas naranjas y rojas{#if at.gdacs}&nbsp;· <Updated at={at.gdacs} source="gdacs" />{/if};
+					IODA (Georgia Tech), caídas de internet de las últimas 12 h{#if at.ioda}&nbsp;· <Updated at={at.ioda} source="ioda" />{/if};
+					OMS, Disease Outbreak News{#if at.who}&nbsp;· <Updated at={at.who} source="who-don" />{/if}; y avisos de viaje del
+					Departamento de Estado de EE. UU.
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Mercados de predicción" meta="Probabilidad que da el mercado">
 			<PredictionList items={data.predictions?.data.geopolitics.slice(0, 8) ?? []} />
 			{#snippet note()}
@@ -92,27 +197,59 @@
 				{/snippet}
 			</Panel>
 		{/if}
-		<Panel title="Sanciones y aranceles de EE. UU." meta="OFAC, USTR e ITA" jump={{ code: 'USGOV', href: resolve('/usgov') }}>
-			<TradeList items={data.sanctions?.data.slice(0, 8) ?? []} />
-			{#snippet note()}Fuente: Federal Register · <Updated at={data.sanctions?.fetchedAt} source="sanctions" />{/snippet}
+		<Panel title="Sanciones y aranceles" meta="EE. UU., UE y Reino Unido" jump={{ code: 'USGOV', href: resolve('/usgov') }}>
+			<TradeList items={data.sanctions?.data ?? []} />
+			{#snippet note()}
+				Fuentes: Federal Register (OFAC, USTR, ITA y BIS){#if data.sanctions?.fetchedAt}&nbsp;· <Updated
+						at={data.sanctions.fetchedAt}
+						source="sanctions"
+					/>{/if}; EUR-Lex, actos de sanciones del Diario Oficial de la UE{#if data.sanctions?.euAt}&nbsp;· <Updated
+						at={data.sanctions.euAt}
+						source="eurlex"
+					/>{/if}; OFSI en GOV.UK, Open Government Licence v3.0{#if data.sanctions?.ukAt}&nbsp;· <Updated
+						at={data.sanctions.ukAt}
+						source="sanctions-uk"
+					/>{/if}.
+			{/snippet}
 		</Panel>
+		{#if data.advisories}
+			<Panel title="Avisos de viaje de EE. UU." meta="Departamento de Estado · nivel 1 a 4">
+				<AdvisoryList counts={data.advisories.counts} rows={data.advisories.rows} />
+				{#snippet note()}
+					Fuente: <a href="https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html" target="_blank" rel="noopener"
+						>Departamento de Estado de EE. UU.</a
+					>, para viajeros estadounidenses · <Updated at={data.advisories?.fetchedAt} source="advisories" />
+				{/snippet}
+			</Panel>
+		{/if}
+		{#if data.world?.data.items.length}
+			<Panel title="Desde Ucrania, China, Japón y África" meta="Medios de cada región">
+				<NewsList items={data.world.data.items} />
+				{#snippet note()}<Updated at={data.world?.fetchedAt} source="news-world" />{/snippet}
+			</Panel>
+		{/if}
+		{#if data.analysis?.data.items.length}
+			<Panel title="Análisis" meta="Crisis Group y Foreign Affairs">
+				<NewsList items={data.analysis.data.items} />
+				{#snippet note()}Informes y artículos de fondo sobre conflictos · <Updated at={data.analysis?.fetchedAt} source="news-analysis" />{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Organismos internacionales" meta="ONU y OMC · comunicados">
-			<NewsList items={data.intl?.data.items.slice(0, 15) ?? []} />
+			<NewsList items={(data.intl?.data.items ?? []).filter((i) => !DIPLO.has(i.source)).slice(0, 15)} />
 			{#snippet note()}<Updated at={data.intl?.fetchedAt} source="news-intl" />{/snippet}
 		</Panel>
-		<Panel title="Gobiernos e instituciones" meta="Comunicados oficiales">
-			<NewsList items={data.gov?.data.items.slice(0, 15) ?? []} />
-		</Panel>
+		{#if diplo.length}
+			<Panel title="Diplomacia" meta="Exteriores británico y OIEA · comunicados">
+				<NewsList items={diplo} />
+				{#snippet note()}
+					Declaraciones en la ONU, la OSCE y otros foros, y el organismo atómico de la ONU ·
+					<Updated at={data.intl?.fetchedAt} source="news-intl" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<Panel title="Terremotos en el mundo" meta="M4,5+ · últimos 7 días">
 			<QuakeTable quakes={strongest} empty={data.quakes ? 'Sin terremotos fuertes estos días.' : undefined} />
 			{#snippet note()}Fuente: USGS · <Updated at={data.quakes?.fetchedAt} source="quakes" />{/snippet}
-		</Panel>
-		<Panel title="Terremotos en España" meta="Últimos 10 días · los 15 más fuertes">
-			<QuakeTable
-				quakes={[...(data.quakesEs?.data ?? [])].sort((a, b) => b.mag - a.mag).slice(0, 15)}
-				empty={data.quakesEs ? 'Sin terremotos en España en los últimos 10 días.' : undefined}
-			/>
-			{#snippet note()}Fuente: Instituto Geográfico Nacional · <Updated at={data.quakesEs?.fetchedAt} source="quakes-es" />{/snippet}
 		</Panel>
 		<Panel title="Huracanes, incendios y volcanes" meta="Activos ahora">
 			{#if data.hazards}<HazardList hazards={data.hazards.data} />{:else}<p class="empty">Sin datos todavía.</p>{/if}
@@ -124,5 +261,9 @@
 <style>
 	.layers {
 		padding: var(--sp-8) var(--pad-x) 0;
+	}
+	.regions {
+		padding: var(--sp-8) var(--pad-x);
+		border-bottom: var(--border);
 	}
 </style>

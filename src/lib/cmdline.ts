@@ -2,6 +2,7 @@
 // Va aparte del componente para poder probarla con Vitest.
 
 import { COMMANDS, type Command } from './commands.ts';
+import { FUNCTIONS, findFunction } from './functions.ts';
 import { TICKERS } from './tickers.ts';
 
 /** Una sugerencia de la barra. */
@@ -47,6 +48,9 @@ export function suggest(raw: string, all: Option[], limit = 8): Option[] {
 	// «NEWS inflación»: la única sugerencia es ejecutar el comando con ese texto.
 	const withArg = commandWithArg(raw);
 	if (withArg) return [argOption(withArg.command, withArg.arg, 'Función')];
+	// «NVDA » o «NVDA G»: las funciones del valor (GP, DES…).
+	const fns = functionOptions(raw);
+	if (fns) return fns;
 	const rank = (o: Option) => {
 		const aliases = (o.aliases ?? []).map(norm);
 		if (o.code === q) return 0;
@@ -63,8 +67,43 @@ export function suggest(raw: string, all: Option[], limit = 8): Option[] {
 		.map((x) => x.o);
 }
 
-/** Lo que abre la barra: una función o la ficha de un valor. */
-export type Target = { kind: 'command'; command: Command; arg?: string } | { kind: 'symbol'; sym: string };
+/**
+ * Lo que abre la barra: una función o la ficha de un valor. `fn` es la función del valor en minúsculas
+ * («gp» en «NVDA GP», ver src/lib/functions.ts).
+ */
+export type Target = { kind: 'command'; command: Command; arg?: string } | { kind: 'symbol'; sym: string; fn?: string };
+
+/**
+ * «NVDA GP», «bme:rep des»: un valor y una de sus funciones. Los comandos ganan: «ES GP» no llega aquí
+ * (resolveInput mira antes los comandos); para ese valor se escribe la bolsa delante, «NYSE:ES GP».
+ */
+export function symbolFunction(raw: string): { sym: string; fn: string } | null {
+	const parts = raw.trim().split(/\s+/);
+	if (parts.length !== 2 || !isTickerLike(parts[0]) || findCommand(parts[0])) return null;
+	const fn = findFunction(parts[1]);
+	return fn ? { sym: norm(parts[0]), fn: fn.code.toLowerCase() } : null;
+}
+
+/**
+ * Sugerencias de funciones cuando se escribe un valor y un espacio («NVDA », «NVDA G»), o null si lo
+ * escrito no tiene esa forma (o la primera palabra es un comando).
+ */
+export function functionOptions(raw: string): Option[] | null {
+	const m = raw.trimStart().match(/^(\S+)\s+(\S*)$/);
+	if (!m || !isTickerLike(m[1]) || findCommand(m[1])) return null;
+	const sym = norm(m[1]);
+	const q = norm(m[2]);
+	const name = TICKERS.find((t) => t.code === sym)?.name;
+	// Con solo el espacio («aranceles »), únicamente si es un valor conocido o lleva bolsa («BME:REP »).
+	if (!q && !name && !/[:.]/.test(sym)) return null;
+	const list = FUNCTIONS.filter((f) => f.code.startsWith(q)).map((f) => ({
+		code: `${sym} ${f.code}`,
+		desc: name ? `${f.desc} · ${name}` : f.desc,
+		kind: 'Función',
+		run: `${sym} ${f.code}`
+	}));
+	return list.length ? list : null;
+}
 
 /** «NEWS inflación», «gasolina Madrid»: un comando que acepta texto, seguido del texto. */
 export function commandWithArg(raw: string): { command: Command; arg: string } | null {
@@ -94,6 +133,9 @@ export function resolveInput(raw: string, suggestions: Option[]): Target | null 
 	// Un comando sin argumento seguido de texto («ECO paro»): abre el comando.
 	const head = findCommand(splitInput(raw).head);
 	if (head) return { kind: 'command', command: head };
+	// «NVDA GP»: la ficha del valor con esa función.
+	const fn = symbolFunction(raw);
+	if (fn) return { kind: 'symbol', ...fn };
 	const pick = (isTickerLike(q) && suggestions.find((o) => o.code === q)) || suggestions[0];
 	if (pick) return resolveInput(pick.run ?? pick.code, []);
 	return { kind: 'symbol', sym: q };
@@ -101,15 +143,28 @@ export function resolveInput(raw: string, suggestions: Option[]): Target | null 
 
 /** Cómo se guarda en el historial: «FUEL», «NEWS inflación», «NVDA». */
 export function canonical(target: Target): string {
-	if (target.kind === 'symbol') return target.sym;
+	if (target.kind === 'symbol') return target.fn ? `${target.sym} ${target.fn.toUpperCase()}` : target.sym;
 	return target.arg ? `${target.command.code} ${target.arg}` : target.command.code;
 }
 
 /** La ruta y la búsqueda de la URL: «/news» + «?q=inflaci%C3%B3n». La base la pone el componente. */
 export function targetPath(target: Target): { route: Command['route'] | '/s'; search: string } {
-	if (target.kind === 'symbol') return { route: '/s', search: `?sym=${encodeURIComponent(target.sym)}` };
+	if (target.kind === 'symbol') {
+		const fn = target.fn ? `&fn=${encodeURIComponent(target.fn)}` : '';
+		return { route: '/s', search: `?sym=${encodeURIComponent(target.sym)}${fn}` };
+	}
 	const { command, arg } = target;
 	const search = arg && command.arg ? `?${command.arg.param}=${encodeURIComponent(arg)}` : '';
+	return { route: command.route, search };
+}
+
+/**
+ * El enlace del ejemplo de un comando en HELP, igual que si se escribiera en la barra. El texto se
+ * separa por palabras, no por la longitud del código: el ejemplo de WX empieza por su alias «LUGAR».
+ */
+export function exampleTarget(command: Command): { route: Command['route']; search: string } {
+	const arg = command.arg ? splitInput(command.arg.example).arg : '';
+	const { search } = targetPath({ kind: 'command', command, arg });
 	return { route: command.route, search };
 }
 
@@ -152,7 +207,9 @@ export function historyOptions(list: string[]): Option[] {
 		if (withArg) return argOption(withArg.command, withArg.arg, 'Reciente');
 		const command = findCommand(entry);
 		const code = command?.code ?? norm(entry);
-		const desc = command?.desc ?? TICKERS.find((t) => t.code === code)?.name ?? 'Valor';
+		const sf = command ? null : symbolFunction(entry);
+		const stock = TICKERS.find((t) => t.code === (sf?.sym ?? code))?.name;
+		const desc = command?.desc ?? (sf ? `${findFunction(sf.fn)?.name}${stock ? ` · ${stock}` : ''}` : (stock ?? 'Valor'));
 		return { code, desc, kind: 'Reciente', run: entry };
 	});
 }

@@ -1,4 +1,4 @@
-<!-- Sanciones y aranceles de EE. UU.: título enlazado al Federal Register, organismo, tema y fecha. -->
+<!-- Sanciones y aranceles (EE. UU., UE y Reino Unido): título enlazado a su fuente, organismo, tema y fecha. -->
 <script lang="ts">
 	import { dm } from '#lib/format.ts';
 	import type { TradeDoc } from '#lib/types.ts';

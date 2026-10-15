@@ -1,6 +1,7 @@
 // Búsqueda de la barra de comandos en el índice static/data/search.json (scripts/sources/search.ts).
 // Lógica pura, sin Svelte, para probarla con Vitest. El índice se carga aparte, en diferido.
-import { commandWithArg, findCommand, isTickerLike, norm, splitInput, type Option } from './cmdline.ts';
+import { commandWithArg, findCommand, isTickerLike, norm, splitInput, symbolFunction, type Option } from './cmdline.ts';
+import { plain } from './news.ts';
 import type { SearchEntry } from './types.ts';
 
 /** Una entrada lista para buscar: con su título ya normalizado (sin tildes y en mayúsculas). */
@@ -12,6 +13,18 @@ export interface Indexed extends SearchEntry {
 export function prepare(entries: SearchEntry[]): Indexed[] {
 	return entries.filter((e) => e && typeof e.t === 'string' && typeof e.u === 'string').map((e) => ({ ...e, n: norm(e.t) }));
 }
+
+/** Texto sin tildes y en minúsculas, para los buscadores de las vistas (NEWS, BOE). */
+export const fold = (s: string) => plain(s).toLowerCase();
+
+/** Las palabras sueltas de lo escrito, ya sin tildes: «Banco  España» → ['banco', 'espana']. */
+export const queryWords = (q: string) => fold(q).split(/\s+/).filter(Boolean);
+
+/** ¿Están todas las palabras en el texto, en cualquier orden? Sin palabras, todo encaja. */
+export const hasWords = (text: string, words: string[]) => {
+	const t = fold(text);
+	return words.every((w) => t.includes(w));
+};
 
 /** Por debajo de estas letras no se busca: «a» o «de» salen en todo. */
 export const MIN_QUERY = 3;
@@ -71,7 +84,7 @@ const TICKER_MAX = 5;
  */
 export function searchOptions(raw: string, suggestions: Option[], index: Indexed[] | null, limit = 5): Option[] {
 	if (!raw.trim()) return [];
-	if (findCommand(raw) || commandWithArg(raw) || findCommand(splitInput(raw).head)) return [];
+	if (findCommand(raw) || commandWithArg(raw) || findCommand(splitInput(raw).head) || symbolFunction(raw)) return [];
 	const hits = indexHits(raw, suggestions, index ?? [], limit);
 	const text = raw.trim();
 	if (norm(text).length < MIN_QUERY) return hits;

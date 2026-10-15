@@ -22,6 +22,8 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  # NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+  pull-requests: read
 
 concurrency:
   group: ${{ github.event_name == 'pull_request' && format('fast-{0}', github.ref) || 'pages-refs/heads/main' }}
@@ -57,6 +59,7 @@ jobs:
           read -ra names <<< "$URGENT"
           FORCE_REFRESH=1 pnpm data "${names[@]}"
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -81,12 +84,23 @@ jobs:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           NOTIFY_CACHE: .notify-cache/notify-log.json
           ALERT_FUEL_ZONE: ${{ secrets.ALERT_FUEL_ZONE }}
+          # Opcional: con ella, notify.ts pide los ADR europeos (D25), solo para los avisos.
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
       - if: github.event_name != 'pull_request' && hashFiles('.notify-cache/notify-log.json') != ''
         uses: actions/cache/save@v4
         continue-on-error: true
         with:
           path: .notify-cache
           key: notify-log-${{ github.run_id }}-${{ github.run_attempt }}
+
+      # Miniaturas del MANUAL: las últimas que guardó deploy.yml (aquí no se capturan). Sin ellas, esta
+      # publicación quitaría las imágenes del manual hasta la siguiente pasada normal.
+      - uses: actions/cache/restore@v4
+        continue-on-error: true
+        with:
+          path: static/manual
+          key: thumbs-solo-restaurar
+          restore-keys: thumbs-
 
       - run: pnpm build --logLevel warn
 

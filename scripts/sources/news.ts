@@ -1,6 +1,7 @@
 // Titulares por RSS. Solo se guardan el título, el enlace, la fecha y un resumen corto de cada noticia,
 // siempre con su medio: para leerla entera hay que ir a la web original.
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
+import { DIPLOMACY_FEEDS } from '../../src/lib/news.ts';
 import type { FeedStatus, NewsData, NewsItem } from '../../src/lib/types.ts';
 import { cluster } from '../cluster.ts';
 import { getText, list, plain, type Source } from '../lib.ts';
@@ -8,6 +9,10 @@ import { getText, list, plain, type Source } from '../lib.ts';
 interface Feed {
 	name: string;
 	url: string;
+	/** Entradas que no se quieren, por su enlace (p. ej., los avisos de viaje del FCDO). */
+	skip?: RegExp;
+	/** Máximo de titulares de este canal (por defecto, PER_FEED): para que un medio que publica mucho no llene el panel. */
+	max?: number;
 }
 
 const FEEDS: Record<string, Feed[]> = {
@@ -47,7 +52,9 @@ const FEEDS: Record<string, Feed[]> = {
 		{ name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml' },
 		{ name: 'Ars Technica', url: 'https://feeds.arstechnica.com/arstechnica/index' },
 		{ name: 'Xataka', url: 'https://www.xataka.com/index.xml' },
-		{ name: 'Wired', url: 'https://www.wired.com/feed/rss' }
+		{ name: 'Wired', url: 'https://www.wired.com/feed/rss' },
+		// M38, comprobado con probe el 14-10-2026.
+		{ name: 'NVIDIA', url: 'https://blogs.nvidia.com/feed/' }
 	],
 	ai: [
 		{ name: 'MIT Technology Review', url: 'https://www.technologyreview.com/topic/artificial-intelligence/feed' },
@@ -56,7 +63,12 @@ const FEEDS: Record<string, Feed[]> = {
 		{ name: 'TechCrunch', url: 'https://techcrunch.com/category/artificial-intelligence/feed/' },
 		{ name: 'OpenAI', url: 'https://openai.com/news/rss.xml' },
 		{ name: 'Google', url: 'https://blog.google/technology/ai/rss/' },
-		{ name: 'Simon Willison', url: 'https://simonwillison.net/atom/everything/' }
+		{ name: 'Simon Willison', url: 'https://simonwillison.net/atom/everything/' },
+		// M38, comprobados con probe el 14-10-2026. Descartados: el blog de IA de Meta y las noticias de Anthropic (sin
+		// RSS, 404); de Meta se usa su blog de ingeniería.
+		{ name: 'Google DeepMind', url: 'https://deepmind.google/blog/rss.xml' },
+		{ name: 'Meta', url: 'https://engineering.fb.com/feed/' },
+		{ name: 'Microsoft Research', url: 'https://www.microsoft.com/en-us/research/feed/' }
 	],
 	gov: [
 		{ name: 'La Moncloa', url: 'https://www.lamoncloa.gob.es/Paginas/rss.aspx?tipo=16' },
@@ -71,7 +83,40 @@ const FEEDS: Record<string, Feed[]> = {
 		// Comunicados y crónicas de las reuniones: Consejo de Seguridad, Asamblea General…
 		{ name: 'ONU', url: 'https://press.un.org/en/rss.xml' },
 		{ name: 'Noticias ONU', url: 'https://news.un.org/feed/subscribe/en/news/topic/peace-and-security/feed/rss.xml' },
-		{ name: 'OMC', url: 'https://www.wto.org/library/rss/latest_news_e.xml' }
+		{ name: 'OMC', url: 'https://www.wto.org/library/rss/latest_news_e.xml' },
+		// Diplomacia (M34, comprobados con probe el 14-10-2026). Descartados: Departamento de Estado (403 desde
+		// Actions) y Servicio Europeo de Acción Exterior (sin RSS). Del FCDO se quitan los avisos de viaje.
+		{
+			name: DIPLOMACY_FEEDS[0],
+			url: 'https://www.gov.uk/government/organisations/foreign-commonwealth-development-office.atom',
+			skip: /\/foreign-travel-advice\//
+		},
+		{ name: DIPLOMACY_FEEDS[1], url: 'https://www.iaea.org/feeds/topnews' }
+	],
+	// Análisis de conflictos (M35, comprobados con probe el 14-10-2026). Descartados: Real Instituto Elcano (403 desde
+	// Actions), Chatham House, ECFR e IISS (403 de Cloudflare) y CFR (sin RSS en la ruta habitual).
+	analysis: [
+		{ name: 'Crisis Group', url: 'https://www.crisisgroup.org/rss.xml' },
+		{ name: 'Foreign Affairs', url: 'https://www.foreignaffairs.com/rss.xml' }
+	],
+	// Medios de Ucrania, China, Japón y África (M36), comprobados en la Action el 14-10-2026. Descartados: Mail &
+	// Guardian (404), Caixin (403 desde Actions) y NHK World (solo reportajes en su RSS en inglés). Como mucho, 4
+	// titulares por medio: AllAfrica publica tantos que llenaría el panel.
+	world: [
+		{ name: 'Kyiv Independent', url: 'https://kyivindependent.com/news-archive/rss/', max: 4 },
+		{ name: 'Ukrainska Pravda', url: 'https://www.pravda.com.ua/eng/rss/', max: 4 },
+		{ name: 'South China Morning Post', url: 'https://www.scmp.com/rss/91/feed', max: 4 },
+		{ name: 'The Japan Times', url: 'https://www.japantimes.co.jp/feed/', max: 4 },
+		{ name: 'Nikkei Asia', url: 'https://asia.nikkei.com/rss/feed/nar', max: 4 },
+		{ name: 'Africanews', url: 'https://www.africanews.com/feed/rss', max: 4 },
+		{ name: 'AllAfrica', url: 'https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf', max: 4 }
+	],
+	// Regulación tecnológica (M39, comprobados con probe el 14-10-2026): ley de IA y mercado digital de la UE, y
+	// multas de protección de datos (EDPB). Descartados: FTC (403 desde Actions), Departamento de Justicia (su RSS
+	// no filtra por antimonopolio) y competencia de la Comisión (400).
+	reg: [
+		{ name: 'Comisión Europea (digital)', url: 'https://digital-strategy.ec.europa.eu/en/rss.xml' },
+		{ name: 'EDPB', url: 'https://www.edpb.europa.eu/feed/news_en' }
 	]
 };
 
@@ -100,7 +145,23 @@ export const ENGLISH = new Set([
 	'Google',
 	'Simon Willison',
 	'Casa Blanca',
-	'Reserva Federal'
+	'Reserva Federal',
+	'NVIDIA',
+	'Google DeepMind',
+	'Meta',
+	'Microsoft Research',
+	'Crisis Group',
+	'Foreign Affairs',
+	'Kyiv Independent',
+	'Ukrainska Pravda',
+	'South China Morning Post',
+	'The Japan Times',
+	'Nikkei Asia',
+	'Africanews',
+	'AllAfrica',
+	'Comisión Europea (digital)',
+	'EDPB',
+	...DIPLOMACY_FEEDS
 ]);
 
 /** Marca los titulares de un medio en inglés. */
@@ -211,7 +272,9 @@ async function section(feeds: Feed[]): Promise<NewsData> {
 						headers: { Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml' }
 					}),
 					feed.name
-				).slice(0, PER_FEED),
+				)
+					.filter((item) => !feed.skip?.test(item.url))
+					.slice(0, feed.max ?? PER_FEED),
 				feed.name
 			)
 		)
@@ -249,12 +312,17 @@ const LABELS: Record<string, string> = {
 	tech: 'Tecnología',
 	ai: 'Inteligencia artificial',
 	gov: 'Gobiernos e instituciones',
-	intl: 'Organismos internacionales'
+	intl: 'Organismos internacionales',
+	analysis: 'Análisis de conflictos',
+	world: 'Ucrania, China, Japón y África',
+	reg: 'Regulación tecnológica'
 };
 
 export const newsSources: Source<NewsData>[] = Object.entries(FEEDS).map(([key, feeds]) => ({
 	name: `news-${key}`,
 	label: `Titulares de ${LABELS[key]} · ${feeds.map((f) => f.name).join(', ')}`,
 	maxAgeMinutes: 12,
+	// Si se añade un canal, la copia guardada no lo tiene: se descarga de nuevo sin esperar.
+	isStale: (previous) => feeds.some((f) => !previous.feeds?.some((s) => s.name === f.name)),
 	fetch: () => section(feeds)
 }));

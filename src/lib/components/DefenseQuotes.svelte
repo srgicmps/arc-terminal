@@ -7,6 +7,7 @@
 	import Panel from './Panel.svelte';
 	import TvWidget from './TvWidget.svelte';
 	import { DEFENSE_PRIVATE, defenseGroups } from '#lib/defense.ts';
+	import { quotesHeight } from '#lib/tickers.ts';
 
 	const groups = defenseGroups();
 	const config = {
@@ -16,8 +17,9 @@
 			symbols: g.tickers.map((t) => ({ name: t.tv, displayName: t.name }))
 		}))
 	};
-	// Alto para la pestaña más larga, sin barra de desplazamiento (como en MIS).
-	const height = 90 + Math.max(...groups.map((g) => g.tickers.length)) * 46;
+	// El widget pone los grupos uno debajo de otro, cada uno con su título: el alto cuenta todos los valores y
+	// un título por grupo (como una fila más), para que no salga barra de desplazamiento.
+	const height = quotesHeight(groups.reduce((n, g) => n + g.tickers.length + 1, 0));
 </script>
 
 <Panel title="Defensa" meta="EE. UU. y Europa · en directo">

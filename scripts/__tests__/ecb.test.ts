@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { eacurve, ecb } from '../sources/ecb.ts';
+import { eacurve, ecb, spfWanted } from '../sources/ecb.ts';
 import { mockFetch } from './mock.ts';
 
 // CSV con la forma de la API del BCE (format=csvdata&detail=dataonly), desordenado y con un hueco.
@@ -31,6 +31,22 @@ describe('ecb', () => {
 		const url = String(fetch.mock.calls.find((c) => String(c[0]).includes('/FM/B.U2'))![0]);
 		expect(url).toContain('lastNObservations=500');
 		expect(url).toContain('format=csvdata');
+	});
+
+	it('lee el CISS, diario, con la fecha del día tal cual', async () => {
+		vi.spyOn(console, 'log').mockImplementation(() => {});
+		const fetch = mockFetch((url) =>
+			url.includes('/CISS/D.U2.Z0Z.4F.EC.SS_CIN.IDX?') ? csv([['2026-10-13', '0.0115'], ['2026-10-10', '0.0121']]) : undefined
+		);
+		const { series } = await ecb.fetch(undefined);
+		expect(series).toHaveLength(1);
+		expect(series[0]).toMatchObject({ id: 'ciss-ea', unit: 'índice', geo: 'EA', source: 'BCE' });
+		expect(series[0].points).toEqual([
+			{ t: '2026-10-10', v: 0.0121 },
+			{ t: '2026-10-13', v: 0.0115 }
+		]);
+		const url = String(fetch.mock.calls.find((c) => String(c[0]).includes('/CISS/'))![0]);
+		expect(url).toContain('lastNObservations=260');
 	});
 
 	it('falla si no llega ninguna serie', async () => {
@@ -69,5 +85,15 @@ describe('ecb.isStale', () => {
 	it('da por caducada la copia publicada si le falta alguna serie (p. ej., al añadir países)', () => {
 		const copy = (ids: string[]) => ({ series: ids.map((id) => ({ id, label: id, unit: '%', points: [], source: 'BCE' })) });
 		expect(ecb.isStale?.(copy(['ecb-dfr']))).toBe(true);
+	});
+});
+
+describe('spfWanted', () => {
+	it('pide este año, el siguiente y el largo plazo de inflación, PIB y paro', () => {
+		const w = spfWanted(2026);
+		expect(w).toHaveLength(9);
+		expect(w[0]).toMatchObject({ key: 'SPF.Q.U2.HICP.POINT.2026.Q.AVG', id: 'spf-hicp-y0', label: 'Inflación 2026' });
+		expect(w[2]).toMatchObject({ key: 'SPF.Q.U2.HICP.POINT.LT.Q.AVG', id: 'spf-hicp-lt', label: 'Inflación a largo plazo' });
+		expect(w[4].key).toBe('SPF.Q.U2.RGDP.POINT.2027.Q.AVG');
 	});
 });
