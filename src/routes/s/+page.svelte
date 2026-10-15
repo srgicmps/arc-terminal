@@ -82,7 +82,7 @@
 				<Panel title="Cotización">
 					<TvWidget widget="symbol-info" config={{ symbol }} height={190} credit={false} />
 				</Panel>
-				<Panel title="Análisis técnico" expand={fn === 'ta'}>
+				<Panel title="Análisis técnico" expand={fn === 'ta'} jump={{ code: 'SIG', href: `${resolve('/sig')}?s=${encodeURIComponent(code)}` }}>
 					<TvWidget widget="technical-analysis" config={{ symbol, interval: '1D', showIntervalTabs: true, displayMode: 'single' }} height={420} credit={false} />
 				</Panel>
 			</div>
