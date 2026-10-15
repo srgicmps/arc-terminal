@@ -55,7 +55,9 @@ describe('respuestas de datos', () => {
 	it('no tapa los comandos ni los valores', () => {
 		for (const raw of ['ECO', 'FUEL', 'NVDA', 'ES', 'WS', 'gasolina madrid']) expect(ask(raw)).toBeNull();
 		// Las palabras de las respuestas no son comandos; «diésel» y «gasolina» son alias de FUEL, y su respuesta abre FUEL.
-		for (const raw of ['prima', 'btc', 'hipoteca', 'llenar', 'hora']) expect(findCommand(raw)).toBeUndefined();
+		for (const raw of ['prima', 'btc', 'llenar', 'hora']) expect(findCommand(raw)).toBeUndefined();
+		// «hipoteca» es la vista HIPOTECA: su respuesta la abre.
+		expect(findCommand('hipoteca')?.code).toBe('HIPOTECA');
 		// «euribor» es alias de BTMM (mercado monetario): su respuesta abre BTMM.
 		expect(findCommand('euribor')?.code).toBe('BTMM');
 		expect(findCommand('diesel')?.code).toBe('FUEL');
@@ -76,8 +78,9 @@ describe('hipoteca', () => {
 	it('calcula la cuota con el euríbor de hoy', () => {
 		const a = ask('hipoteca 150000 25a');
 		expect(a?.desc).toMatch(/^\d{3},\d{2} €\/mes · euríbor sep 26 2,450 % \+ 0,75 · /);
-		expect(a?.open).toBe('ECO Tu hipoteca');
-		expect(ask('hipoteca')?.desc).toMatch(/^Escribe capital y años/);
+		expect(a?.open).toBe('HIPOTECA');
+		expect(ask('hipoteca')).toBeNull();
+		expect(ask('hipoteca 150')?.desc).toMatch(/^Escribe capital y años/);
 	});
 });
 
