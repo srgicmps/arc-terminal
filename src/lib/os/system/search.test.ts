@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { searchAll } from './search.ts';
+import { recentHits, searchAll } from './search.ts';
 
 const kinds = (q: string) => searchAll(q).map((h) => h.kind);
 
 describe('buscador universal', () => {
+	it('sin texto, las apps recientes que siguen instaladas, de la más reciente', () => {
+		const hits = recentHits(['reloj', 'no-existe', 'eco'], undefined, 6);
+		expect(hits.map((h) => h.action)).toEqual([{ app: 'reloj' }, { app: 'eco' }]);
+		expect(recentHits(['reloj', 'eco'], undefined, 1)).toHaveLength(1);
+	});
 	it('nada sin texto', () => {
 		expect(searchAll('  ')).toEqual([]);
 	});

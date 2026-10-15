@@ -49,6 +49,7 @@
 	import PhoneWidget from './PhoneWidget.svelte';
 	import Spotlight from './Spotlight.svelte';
 	import CenterSheet from './CenterSheet.svelte';
+	import Toasts from '../shell/Toasts.svelte';
 	import WallLayer from '../system/wall/WallLayer.svelte';
 	import OsIcon from '../icons/OsIcon.svelte';
 	import type { Hit } from '../system/search.ts';
@@ -118,10 +119,13 @@
 			localStorage.setItem('arc-os-seen', JSON.stringify(shell.seen));
 		} catch {}
 	}
+	// Solo depende de `sheet`: markAllSeen() reescribe shell.seen y, si se leyera aquí, el efecto se relanzaría sin fin.
 	$effect(() => {
 		if (sheet !== 'notif') return;
-		unreadAtOpen = new Set(shell.notices.filter((n) => !shell.seen.includes(n.id)).map((n) => n.id));
-		markAllSeen();
+		untrack(() => {
+			unreadAtOpen = new Set(shell.notices.filter((n) => !shell.seen.includes(n.id)).map((n) => n.id));
+			markAllSeen();
+		});
 	});
 
 	// Widgets: en el modo edición se quitan («−») o se añaden («+», arriba a la izquierda).
@@ -300,13 +304,28 @@
 			if (r && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) openFolder = null;
 		}
 		drag.to = targetAt(e.clientX, e.clientY);
-		// Cerca del borde, pasa de página.
-		const side = e.clientX < 24 ? -1 : e.clientX > innerWidth - 24 ? 1 : 0;
-		clearTimeout(edge);
-		if (side && !openFolder) edge = setTimeout(() => toPage(Math.max(0, Math.min(pages.length - 1, page + side))), 600);
+		// Cerca del borde, pasa de página; y, si el dedo sigue ahí, otra cada 0,6 s. Moverse sin salir del borde no
+		// vuelve a empezar la cuenta (antes, con el pulso del dedo, no pasaba nunca o solo una).
+		const side = openFolder ? 0 : e.clientX < 24 ? -1 : e.clientX > innerWidth - 24 ? 1 : 0;
+		if (side !== edgeSide) {
+			clearTimeout(edge);
+			edgeSide = side;
+			if (side) flip();
+		}
+	}
+	let edgeSide = 0;
+	function flip() {
+		edge = setTimeout(() => {
+			if (!drag || !edgeSide) return;
+			const to = Math.max(0, Math.min(pages.length - 1, page + edgeSide));
+			if (to === page) return;
+			toPage(to);
+			flip();
+		}, 600);
 	}
 	function onrelease() {
 		clearTimeout(edge);
+		edgeSide = 0;
 		if (press) clearTimeout(press.timer);
 		press = null;
 		if (!drag) return;
@@ -320,6 +339,7 @@
 	}
 	function oncancel() {
 		clearTimeout(edge);
+		edgeSide = 0;
 		if (press) clearTimeout(press.timer);
 		press = null;
 		drag = null;
@@ -544,6 +564,8 @@
 {:else if sheet === 'notif' || sheet === 'control'}
 	<CenterSheet kind={sheet} notices={shell.notices} unread={unreadAtOpen} {notice} {now} onclose={() => (sheet = null)} onpath={launchPath} />
 {/if}
+<!-- Los avisos nuevos (notify() y los del centro) como banner arriba, también con una app abierta. -->
+<Toasts phone ongo={(t) => t.href && launchPath(t.href)} />
 
 </div>
 

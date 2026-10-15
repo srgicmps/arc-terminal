@@ -1,42 +1,66 @@
-<!-- La calculadora normal: la cuenta se escribe con los botones o el teclado y sale con evaluate() (calc.ts, sin eval). -->
+<!--
+	La calculadora normal: la cuenta se escribe con los botones o el teclado y sale con evaluate() (calc.ts, sin eval).
+	El estado vive en state.svelte.ts para no perderlo al cambiar de pestaña o cerrar la ventana.
+-->
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { evaluate, formatResult, plainResult } from '../../../calc.ts';
+	import { afterResult, percentOf } from './basic.ts';
+	import { calc } from './state.svelte.ts';
 
-	let expr = $state('');
-	let history = $state<{ expr: string; result: string }[]>([]);
-	const preview = $derived(expr ? evaluate(expr) : null);
+	const run = (e: string) => evaluate(percentOf(e));
+	/** formatResult() da 5 cifras con exponente («1,0000e+24» para 9,9999997e+23): aquí se ve con todas. */
+	const show = (v: number) => {
+		const f = formatResult(v);
+		return f.includes('e') ? plainResult(v).replace('.', ',') : f;
+	};
+	const preview = $derived(calc.expr ? run(calc.expr) : null);
+	let box: HTMLDivElement;
 
 	const KEYS = ['C', '(', ')', '÷', '7', '8', '9', '×', '4', '5', '6', '−', '1', '2', '3', '+', '%', '0', ',', '='];
 
 	function press(k: string) {
-		if (k === 'C') expr = '';
-		else if (k === '⌫') expr = expr.slice(0, -1);
+		const fresh = calc.fresh;
+		calc.fresh = false;
+		if (k === 'C') calc.expr = '';
+		else if (k === '⌫') calc.expr = fresh ? '' : calc.expr.slice(0, -1);
 		else if (k === '=') equals();
-		else expr += k;
+		else calc.expr = fresh ? afterResult(calc.expr, k) : calc.expr + k;
 	}
 
 	function equals() {
-		const v = evaluate(expr);
+		const v = run(calc.expr);
 		if (v === null) return;
-		history = [{ expr, result: formatResult(v) }, ...history].slice(0, 20);
-		expr = plainResult(v).replace('.', ',');
+		const value = plainResult(v).replace('.', ',');
+		calc.history = [{ expr: calc.expr, result: show(v), value }, ...calc.history].slice(0, 20);
+		calc.expr = value;
+		calc.fresh = true;
+	}
+
+	function use(value: string) {
+		calc.expr = value;
+		calc.fresh = true;
+		box.focus();
 	}
 
 	function key(e: KeyboardEvent) {
-		if (e.ctrlKey || e.metaKey || e.altKey) return;
-		const map: Record<string, string> = { Enter: '=', '=': '=', Escape: 'C', Backspace: '⌫', '*': '×', '/': '÷', '-': '−', '.': ',' };
+		if (e.ctrlKey || e.metaKey || e.altKey || (e.target as HTMLElement).closest('input, textarea, select')) return;
+		const map: Record<string, string> = { Enter: '=', '=': '=', Escape: 'C', Backspace: '⌫', Delete: 'C', '*': '×', x: '×', '/': '÷', '-': '−', '.': ',' };
 		const k = map[e.key] ?? (/^[\d+%(),^]$/.test(e.key) ? e.key : '');
 		if (!k) return;
 		e.preventDefault();
 		press(k);
 	}
+
+	// Se puede escribir con el teclado nada más abrirla, sin hacer clic antes.
+	onMount(() => box.focus({ preventScroll: true }));
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
-<div class="calc" tabindex="0" onkeydown={key} role="application" aria-label="Calculadora">
+<div class="calc" bind:this={box} tabindex="0" onkeydown={key} role="application" aria-label="Calculadora">
 	<output class="screen" aria-live="polite">
-		<span class="expr">{expr || '0'}</span>
-		<span class="res">{preview === null ? (expr ? '…' : '') : `= ${formatResult(preview)}`}</span>
+		<span class="expr">{calc.expr || '0'}</span>
+		<span class="res">{preview === null ? (calc.expr ? '…' : '') : calc.fresh ? '' : `= ${show(preview)}`}</span>
 	</output>
 	<div class="keys">
 		{#each KEYS as k (k)}
@@ -44,10 +68,10 @@
 		{/each}
 	</div>
 	<button type="button" class="back" onclick={() => press('⌫')} aria-label="Borrar la última cifra">⌫ Borrar</button>
-	{#if history.length}
+	{#if calc.history.length}
 		<ol class="hist" aria-label="Historial">
-			{#each history as h, i (i)}
-				<li><button type="button" onclick={() => (expr = h.result.replace(/\./g, ''))} title="Usar este resultado">{h.expr} <b>= {h.result}</b></button></li>
+			{#each calc.history as h, i (i)}
+				<li><button type="button" onclick={() => use(h.value)} title="Usar este resultado">{h.expr} <b>= {h.result}</b></button></li>
 			{/each}
 		</ol>
 	{/if}

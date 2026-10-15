@@ -71,7 +71,7 @@
 					<tbody>
 						{#each shared as e (e.cusip)}
 							<tr>
-								<td class="l name"><button type="button" class="pick" onclick={() => (sel.value = e.name)}>{e.name}</button></td>
+								<td class="l name cut"><button type="button" class="pick" title={e.name} onclick={() => (sel.value = e.name)}>{e.name}</button></td>
 								<td>{e.holders.length}</td>
 								<td class="mut">{compact(e.total)} $</td>
 							</tr>
@@ -103,5 +103,19 @@
 
 	.pick:hover {
 		color: var(--amber);
+	}
+
+	/* Nombres largos («PALANTIR TECHNOLOGIES INC») con «…»: en el móvil la tabla no cabía. */
+	td.cut {
+		width: 100%;
+		max-width: 0;
+	}
+
+	td.cut .pick {
+		display: block;
+		width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 </style>

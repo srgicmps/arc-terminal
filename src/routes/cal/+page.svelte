@@ -210,7 +210,7 @@
 			{/snippet}
 		</Panel>
 		<Puentes {today} pick={pick.day} onnext={(t) => (nextBreak = t)} />
-		<Panel title="Resultados" meta="Grandes empresas de EE. UU. · próximas 2 semanas">
+		<Panel title="Resultados" meta="Grandes empresas de EE. UU. · últimos 3 días y próximas 2 semanas">
 			{#if !data.finnhub}
 				<p class="empty">{data.finnhubMissing}</p>
 			{:else if earnings.length}

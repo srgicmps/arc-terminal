@@ -24,7 +24,7 @@
 	import { sectionLabel } from '#lib/news.ts';
 	import { latestQuote, recent, whySentence, WHY_HOURS } from '#lib/why.ts';
 	import Change from '#lib/components/ui/Change.svelte';
-	import { shortStat } from '#lib/shortvol.ts';
+	import { finraSymbol, shortStat } from '#lib/shortvol.ts';
 	import { stockShare, type ShareInfo } from '#lib/share.ts';
 	import { inWatchlist, toggleWatch } from '#lib/watchlist.svelte.ts';
 	import type { PageProps } from './$types';
@@ -38,7 +38,8 @@
 	let range = $state('');
 
 	$effect(() => {
-		code = (page.url.searchParams.get('sym') ?? 'NVDA').toUpperCase();
+		// Vacío o con espacios («?sym=%20nvda») también vale: sin código, NVDA.
+		code = (page.url.searchParams.get('sym') ?? '').trim().toUpperCase() || 'NVDA';
 		fn = (page.url.searchParams.get('fn') ?? '').toLowerCase();
 		const r = page.url.searchParams.get('rango') ?? '';
 		range = isRange(r) ? r : '';
@@ -56,7 +57,9 @@
 		now = Date.now();
 	});
 	const fresh = $derived(recent(news, now || Date.parse(data.news?.fetchedAt ?? '') || 0).slice(0, 6));
-	const quote = $derived(latestQuote(code, data.quotes));
+	// Solo si cotiza en EE. UU.: «SAN» en las cotizaciones es el ADR de Nueva York (en $), no BME:SAN.
+	const usCode = $derived(finraSymbol(code));
+	const quote = $derived(usCode ? latestQuote(usCode, data.quotes) : null);
 	// Analistas, sorpresas de resultados y directivos (Finnhub; solo EE. UU. y con la clave).
 	const analysis = $derived(data.analysts?.data[code]);
 	// Frente a sus competidores (RV): solo los grandes valores de EE. UU. con cifras de Finnhub.
@@ -157,7 +160,7 @@
 		{#if held.length}
 			<div class="grid">
 				<div class="col">
-					{#each held as issuer (issuer.name)}
+					{#each held as issuer (issuer.cusip)}
 						<Panel title="Fondos que la tienen" meta="{issuer.name} · 13F" jump={{ code: 'HDS', href: `${resolve('/hds')}?s=${encodeURIComponent(code)}` }}>
 							<HoldersTable holders={issuer.holders} names={data.hds?.fundNames ?? {}} />
 							{#snippet note()}Solo los fondos de FONDOS, con el retraso del 13F (hasta 45 días tras el trimestre) · Fuente: SEC EDGAR ·

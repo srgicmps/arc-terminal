@@ -60,6 +60,17 @@ function rank(q: string, code: string | undefined, title: string): number {
 }
 
 /** Todo lo que coincide con `q`, como mucho `limit`, con las apps y la barra primero. */
+const appHit = (a: OsApp): Hit => ({ id: `app:${a.id}`, kind: 'App', title: a.name, detail: a.code ? `${a.code} · ${a.desc}` : a.desc, icon: a.icon, action: { app: a.id } });
+
+/** Con el buscador vacío: las apps abiertas hace poco (`recent`, de la más reciente), solo las que siguen instaladas. */
+export function recentHits(recent: readonly string[], apps: readonly OsApp[] = APPS, limit = 6): Hit[] {
+	return recent
+		.map((id) => apps.find((a) => a.id === id))
+		.filter((a): a is OsApp => !!a)
+		.slice(0, limit)
+		.map(appHit);
+}
+
 export function searchAll(q: string, apps: readonly OsApp[] = APPS, limit = MAX): Hit[] {
 	const ws = words(q);
 	if (!ws.length) return [];
@@ -68,7 +79,7 @@ export function searchAll(q: string, apps: readonly OsApp[] = APPS, limit = MAX)
 
 	for (const a of apps)
 		if (has([a.name, a.code ?? '', a.desc].join(' '), ws))
-			add({ id: `app:${a.id}`, kind: 'App', title: a.name, detail: a.code ? `${a.code} · ${a.desc}` : a.desc, icon: a.icon, action: { app: a.id } }, rank(q, a.code, a.name));
+			add(appHit(a), rank(q, a.code, a.name));
 
 	// Lo que haría la barra con el texto entero, si es un comando con algo detrás («NEWS inflación», «ECO paro»).
 	const t = resolveInput(q, []);

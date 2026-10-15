@@ -158,6 +158,8 @@
 	@media (pointer: coarse) {
 		.i {
 			position: relative;
+			/* Sin el mínimo de 44 px de app.css: si no, la ⓘ alarga la línea de su etiqueta. */
+			min-height: 0;
 		}
 
 		.i::after {

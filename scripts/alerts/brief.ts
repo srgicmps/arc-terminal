@@ -94,7 +94,7 @@ export function briefLines(
 	// Sus valores: los que más se movieron en la última sesión.
 	const mine = new Set([...config.mis, ...(config.baseStocks && !config.mis.length ? base : [])]);
 	const moved = (d.alertQuotes ?? [])
-		.filter((q) => q?.symbol && config.mis.includes(q.symbol) && Number.isFinite(q.changePct))
+		.filter((q) => q?.symbol && mine.has(q.symbol) && Number.isFinite(q.changePct))
 		.sort((a, b) => Math.abs(b.changePct!) - Math.abs(a.changePct!))
 		.slice(0, 3);
 	if (moved.length) lines.push(`Tus valores ayer: ${moved.map((q) => `${q.symbol} ${pct(q.changePct!)}`).join(' · ')}.`);
@@ -116,7 +116,9 @@ export function briefLines(
 	lines.splice(BRIEF_LINES - 2);
 	for (const t of [...theirs, ...top.filter((t) => !theirs.includes(t))]) {
 		if (lines.length >= BRIEF_LINES) break;
-		lines.push(t.title.endsWith('.') ? t.title : `${t.title}.`);
+		// En español si la Action lo ha traducido (titleEs), como en IMP.
+		const title = t.titleEs ?? t.title;
+		lines.push(title.endsWith('.') ? title : `${title}.`);
 	}
 	return lines.slice(0, BRIEF_LINES);
 }

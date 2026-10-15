@@ -390,17 +390,57 @@
 		border-color: var(--amber-edge);
 	}
 
-	/* En pantallas táctiles se ve igual (28 px), pero la zona pulsable llega a 44 × 44 px. */
+	/* En pantallas táctiles se ven igual (28 px), pero la zona pulsable llega a 44 × 44 px. Vale para «⋯»,
+	   Apariencia y el chip de tu sitio: sin esto, el mínimo de 44 px de app.css los estira y la línea del
+	   logo mezcla botones de dos alturas. */
 	@media (pointer: coarse) {
-		.top :global(.theme) {
+		.top :global(:is(.theme, [data-ui='appearance'], .place .chip)) {
 			position: relative;
 			min-height: var(--btn-sm);
 		}
 
-		.top :global(.theme::after) {
+		.top :global(:is(.theme, [data-ui='appearance'], .place .chip)::after) {
 			content: '';
 			position: absolute;
 			inset: calc(-1 * var(--sp-8));
+		}
+
+		/* El logo lleva a la portada: 44 px de alto pulsable sin que la línea crezca. */
+		.brand {
+			position: relative;
+		}
+
+		.brand::after {
+			content: '';
+			position: absolute;
+			inset: calc((var(--touch) - 100%) / -2) 0;
+		}
+
+		/* Accesos de arriba (móvil y tableta): se ven igual, pero la zona pulsable llega a --touch de alto. */
+		.keys :global(.key) {
+			position: relative;
+			/* Sin la mancha gris de Safari al tocar: cubría la zona pulsable entera, desplazada de la pestaña. */
+			-webkit-tap-highlight-color: transparent;
+		}
+
+		.keys :global(.key::after) {
+			content: '';
+			position: absolute;
+			inset: calc((var(--touch) - 100%) / -2) 0;
+		}
+
+		/* «Más ▾» es un botón: sin esto, el mínimo de 44 px de app.css lo estira y, con él, a toda la fila
+		   (el texto de las demás pestañas se quedaba arriba). Su zona pulsable es el ::after, como las demás. */
+		.keys :global(button.key) {
+			min-height: 0;
+		}
+
+		/* «Estado de las fuentes», en el pie: la fila entera de 44 px. */
+		.status a {
+			display: inline-flex;
+			align-items: center;
+			min-height: var(--touch);
+			margin-block: calc((var(--touch) - 1lh) / -2);
 		}
 	}
 
@@ -462,8 +502,6 @@
 		font-family: inherit;
 		line-height: inherit;
 		cursor: pointer;
-		/* Sin el mínimo táctil de los botones (app.css): su zona pulsable es el ::after, como en los enlaces. */
-		min-height: 0;
 	}
 
 	.keys :global(.key:hover) {
@@ -674,19 +712,6 @@
 			display: none;
 		}
 
-		/* Accesos de arriba: se ven igual, pero la zona pulsable llega a --touch de alto. */
-		.keys :global(.key) {
-			position: relative;
-			/* Sin la mancha gris de Safari al tocar: cubría la zona pulsable entera, desplazada de la pestaña. */
-			-webkit-tap-highlight-color: transparent;
-		}
-
-		.keys :global(.key::after) {
-			content: '';
-			position: absolute;
-			inset: calc((var(--touch) - 100%) / -2) 0;
-		}
-
 		/* Que el contenido no quede tapado por la barra. */
 		.app {
 			padding-bottom: calc(var(--tabbar-h) + var(--hair) + env(safe-area-inset-bottom, 0px));
@@ -745,6 +770,14 @@
 			order: -1;
 			margin-left: auto;
 			margin-block: calc((var(--logo) - var(--control-h)) / 2);
+		}
+	}
+
+	/* Móviles de 360 px (Android, iPhone mini con zoom): logo, reloj, sitio y dos botones no caben y «⋯» bajaba
+	   a otra línea. El reloj sobra: el teléfono ya da la hora en su barra de estado. */
+	@media (max-width: 380px) {
+		.top :global(.clocks) {
+			display: none;
 		}
 	}
 

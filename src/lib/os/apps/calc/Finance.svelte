@@ -3,25 +3,23 @@
 	import Seg from '../../../components/ui/Seg.svelte';
 	import { cagr, compound, loanPayment, parseNum } from './fin.ts';
 
-	let mode = $state<'comp' | 'loan' | 'cagr'>('comp');
+	import { calc } from './state.svelte.ts';
+
+	// Los campos viven en state.svelte.ts: no se pierden al cambiar de pestaña.
+	const f = calc.fin;
 	const MODES = [
 		{ value: 'comp', label: 'Interés compuesto' },
 		{ value: 'loan', label: 'Préstamo' },
 		{ value: 'cagr', label: 'Rentabilidad' }
 	] as const;
 
-	let capital = $state('10.000');
-	let rate = $state('4');
-	let years = $state('10');
-	let monthly = $state('100');
-	let end = $state('15.000');
 
 	const eur = (n: number) => (Number.isFinite(n) ? n.toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2, useGrouping: 'always' }) : '—');
 	const pct = (n: number) => (Number.isFinite(n) ? `${n.toLocaleString('es-ES', { maximumFractionDigits: 2 })} %` : '—');
 
 	const out = $derived.by(() => {
-		const c = parseNum(capital), r = parseNum(rate), y = parseNum(years), m = parseNum(monthly || '0');
-		if (mode === 'comp') {
+		const c = parseNum(f.capital), r = parseNum(f.rate), y = parseNum(f.years), m = parseNum(f.monthly || '0');
+		if (f.mode === 'comp') {
 			const v = compound(c, r, y, m);
 			const put = c + m * Math.round(y * 12);
 			return [
@@ -30,7 +28,7 @@
 				['Intereses', eur(v - put)]
 			];
 		}
-		if (mode === 'loan') {
+		if (f.mode === 'loan') {
 			const q = loanPayment(c, r, y);
 			return [
 				['Cuota mensual', eur(q)],
@@ -38,28 +36,28 @@
 				['Intereses', eur(q * Math.round(y * 12) - c)]
 			];
 		}
-		return [['Rentabilidad anual', pct(cagr(c, parseNum(end), y))]];
+		return [['Rentabilidad anual', pct(cagr(c, parseNum(f.end), y))]];
 	});
 </script>
 
 <div class="fin">
-	<Seg label="Cálculo" options={MODES} bind:value={mode} />
+	<Seg label="Cálculo" options={MODES} bind:value={f.mode} />
 	<div class="form">
-		<label>{mode === 'cagr' ? 'Valor al empezar (€)' : mode === 'loan' ? 'Importe del préstamo (€)' : 'Capital inicial (€)'}<input inputmode="decimal" bind:value={capital} /></label>
-		{#if mode === 'cagr'}
-			<label>Valor al acabar (€)<input inputmode="decimal" bind:value={end} /></label>
+		<label>{f.mode === 'cagr' ? 'Valor al empezar (€)' : f.mode === 'loan' ? 'Importe del préstamo (€)' : 'Capital inicial (€)'}<input inputmode="decimal" bind:value={f.capital} /></label>
+		{#if f.mode === 'cagr'}
+			<label>Valor al acabar (€)<input inputmode="decimal" bind:value={f.end} /></label>
 		{:else}
-			<label>Interés anual (%)<input inputmode="decimal" bind:value={rate} /></label>
+			<label>Interés anual (%)<input inputmode="decimal" bind:value={f.rate} /></label>
 		{/if}
-		<label>Años<input inputmode="decimal" bind:value={years} /></label>
-		{#if mode === 'comp'}<label>Aportación al mes (€)<input inputmode="decimal" bind:value={monthly} /></label>{/if}
+		<label>Años<input inputmode="decimal" bind:value={f.years} /></label>
+		{#if f.mode === 'comp'}<label>Aportación al mes (€)<input inputmode="decimal" bind:value={f.monthly} /></label>{/if}
 	</div>
 	<dl>
 		{#each out as [k, v], i (k)}
 			<div class:main={i === 0}><dt>{k}</dt><dd>{v}</dd></div>
 		{/each}
 	</dl>
-	<p class="note">{mode === 'loan' ? 'Sistema francés, cuota fija. Para tu hipoteca con el euríbor de hoy, abre HIPOTECA.' : mode === 'comp' ? 'Interés compuesto cada mes; aportación al final de cada mes. Sin impuestos ni comisiones.' : 'Lo que tendría que rendir cada año, compuesto, para pasar de un valor al otro.'}</p>
+	<p class="note">{f.mode === 'loan' ? 'Sistema francés, cuota fija. Para tu hipoteca con el euríbor de hoy, abre HIPOTECA.' : f.mode === 'comp' ? 'Interés compuesto cada mes; aportación al final de cada mes. Sin impuestos ni comisiones.' : 'Lo que tendría que rendir cada año, compuesto, para pasar de un valor al otro.'}</p>
 </div>
 
 <style>
@@ -67,6 +65,7 @@
 		display: grid;
 		gap: var(--sp-12);
 		max-width: 480px;
+		margin: 0 auto;
 	}
 
 	.form {
@@ -83,6 +82,7 @@
 	}
 
 	input {
+		min-width: 0;
 		height: var(--control-h);
 		padding: 0 var(--sp-8);
 		font: inherit;
