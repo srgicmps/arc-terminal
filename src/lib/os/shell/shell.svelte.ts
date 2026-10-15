@@ -22,7 +22,12 @@ export const WALLPAPERS = [
 	{ id: 'estilo', label: 'El de la estética' },
 	{ id: 'liso', label: 'Liso' },
 	{ id: 'rejilla', label: 'Rejilla' },
-	{ id: 'degradado', label: 'Degradado' }
+	{ id: 'degradado', label: 'Degradado' },
+	// De «OS 5» (src/lib/os/system/): el vivo es el globo con los terremotos; los demás, solo CSS en Desktop.svelte.
+	{ id: 'globo', label: 'Vivo: el globo' },
+	{ id: 'aurora', label: 'Aurora' },
+	{ id: 'puntos', label: 'Puntos' },
+	{ id: 'horizonte', label: 'Horizonte' }
 ] as const;
 export type Wallpaper = (typeof WALLPAPERS)[number]['id'];
 
