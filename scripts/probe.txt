@@ -114,3 +114,20 @@ https://data.europa.eu/api/hub/search/search?q=frontex%20illegal%20border%20cros
 # 28.7 BTMM: tipos de referencia de la Fed de Nueva York (sin clave)
 https://markets.newyorkfed.org/api/rates/secured/sofr/last/2.json
 https://markets.newyorkfed.org/api/rates/unsecured/effr/last/2.json
+# Lote F-D (F20 DEP): football-data.org sin token (para ver qué responde) y Jolpica (F1, CC BY-NC-SA 4.0)
+https://api.football-data.org/v4/competitions/PD/standings
+https://api.football-data.org/v4/competitions
+https://api.jolpi.ca/ergast/f1/current/driverstandings.json
+https://api.jolpi.ca/ergast/f1/current/constructorstandings.json
+https://api.jolpi.ca/ergast/f1/current/last/results.json
+https://api.jolpi.ca/ergast/f1/current/races.json ~ 2026-1[0-2]
+# Lote F-D (F21): avisos marítimos de UKMTO y MARAD (MSCI)
+https://www.ukmto.org/ ~ .{0,80}(Warning|Advisory|Incident|WARNING|ADVISORY).{0,200}
+https://www.ukmto.org/indian-ocean/recent-incidents ~ .{0,80}(Warning|Advisory|Incident|UKMTO \d).{0,200}
+https://www.ukmto.org/ukmto-products/warnings ~ .{0,120}(Warning|WARNING).{0,200}
+https://www.maritime.dot.gov/msci-advisories ~ .{0,60}20\d\d-\d{3}.{0,200}
+https://www.maritime.dot.gov/msci/advisories ~ .{0,60}20\d\d-\d{3}.{0,200}
+https://www.maritime.dot.gov/rss.xml ~ MSCI|Advisory
+# Lote F-D (F22): boletines CZIB de la EASA (espacio aéreo en conflicto)
+https://www.easa.europa.eu/en/domains/air-operations/czibs ~ .{0,60}CZIB-20\d\d-\d+.{0,200}
+https://www.easa.europa.eu/en/rss.xml ~ CZIB|Conflict Zone
