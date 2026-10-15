@@ -17,6 +17,7 @@
 	import { resolve } from '$app/paths';
 	import { initNewsPrefs, newsPrefs, visibleNews } from '#lib/newsprefs.svelte.ts';
 	import AutoTag from './AutoTag.svelte';
+	import FamilySend from './FamilySend.svelte';
 	import TitleLang from './TitleLang.svelte';
 
 	interface Props {
@@ -87,6 +88,7 @@
 								</Disclosure>
 							</span>
 						{/if}
+						<FamilySend title={item.titleEs ?? item.title} url={item.url} />
 					</div>
 					{#if summaries && item.summary && item.summary !== item.title}
 						<p class="s">{item.summary}</p>
