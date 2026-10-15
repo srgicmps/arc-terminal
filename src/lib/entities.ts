@@ -23,11 +23,16 @@ const BANK_ALIASES: Record<Bank, string[]> = {
  * La ficha de lo buscado, o null. Solo con el nombre entero (o el apellido de un líder, o el código de un
  * valor): «Lagarde», «BCE», «Japón», «NVDA», «Zara». Así «inflación en Japón» no abre la ficha de Japón.
  */
-export function findEntity(query: string | null | undefined): Entity | null {
-	const q = fold(query ?? '').trim().replace(/\s+/g, ' ');
+export function findEntity(query: string | null | undefined, opts: { upperCodes?: boolean } = {}): Entity | null {
+	const raw = (query ?? '').trim().replace(/\s+/g, ' ');
+	const q = fold(raw);
 	if (q.length < 2) return null;
 	const is = (name: string) => fold(name) === q;
-	const ticker = TICKERS.find((t) => is(t.code) || is(t.name) || (t.aliases ?? []).some(is));
+	// Con upperCodes, los códigos cortos («ES», «US», «MA») solo cuentan escritos en mayúsculas: «es» o «us» son palabras.
+	const isCode = (code: string) => (opts.upperCodes && code.length < 4 ? raw === code.toUpperCase() : is(code));
+	// Un alias en mayúsculas y corto («US», «UE») es otro código.
+	const isAlias = (name: string) => (/^[A-Z]{1,3}$/.test(name) ? isCode(name) : is(name));
+	const ticker = TICKERS.find((t) => isCode(t.code) || is(t.name) || (t.aliases ?? []).some(isAlias));
 	if (ticker) return { kind: 'ticker', ticker };
 	const leader = LEADERS.find((l) => is(l.name) || is(l.name.split(' ').at(-1) ?? ''));
 	if (leader) return { kind: 'leader', leader };
@@ -35,7 +40,7 @@ export function findEntity(query: string | null | undefined): Entity | null {
 	if (bank) return { kind: 'bank', bank };
 	// findCountry también busca por el principio del nombre («reino» → Reino Unido): aquí solo si es entero.
 	const country = findCountry(q);
-	if (country && [country.code, country.iso3, country.name, ...(country.aliases ?? [])].some(is)) return { kind: 'country', country };
+	if (country && (isCode(country.code) || isCode(country.iso3) || [country.name, ...(country.aliases ?? [])].some(isAlias))) return { kind: 'country', country };
 	return null;
 }
 

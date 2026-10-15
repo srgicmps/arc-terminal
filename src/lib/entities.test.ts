@@ -42,3 +42,13 @@ describe('fichas de NEWS', () => {
 		expect(entitiesIn('La meta de déficit')).toEqual([]);
 	});
 });
+
+describe('findEntity con upperCodes (NEWS)', () => {
+	it('los códigos cortos solo en mayúsculas', () => {
+		expect(findEntity('es', { upperCodes: true })).toBeNull();
+		expect(findEntity('us', { upperCodes: true })).toBeNull();
+		expect(findEntity('ES', { upperCodes: true })).toMatchObject({ kind: 'country', country: { code: 'ES' } });
+		expect(findEntity('nvda', { upperCodes: true })).toMatchObject({ kind: 'ticker', ticker: { code: 'NVDA' } });
+		expect(findEntity('España', { upperCodes: true })).toMatchObject({ kind: 'country', country: { code: 'ES' } });
+	});
+});
