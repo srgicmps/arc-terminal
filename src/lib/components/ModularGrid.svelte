@@ -81,17 +81,16 @@
 		color: var(--faint);
 	}
 
+	/* Una línea discreta: «Modular» y «Restablecer» en gris; solo se encienden al pasar el ratón. */
 	.lbl {
-		color: var(--amber);
-		letter-spacing: var(--track-caps);
-		text-transform: uppercase;
+		color: var(--muted);
 	}
 
 	button {
 		background: none;
 		border: 0;
 		padding: 0;
-		color: var(--muted);
+		color: var(--faint);
 		font-size: var(--fs-xs);
 		cursor: pointer;
 	}
