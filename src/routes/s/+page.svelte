@@ -137,7 +137,7 @@
 						{:else}
 							<p class="empty">Sin documentos SEC: no presenta en EE. UU.</p>
 						{/if}
-						{#snippet note()}Fuente: SEC EDGAR · <Updated at={data.sec?.fetchedAt} />{/snippet}
+						{#snippet note()}Fuente: SEC EDGAR · <Updated at={data.sec?.fetchedAt} source="sec" />{/snippet}
 					</Panel>
 				</div>
 			</div>

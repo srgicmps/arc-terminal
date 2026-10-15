@@ -210,6 +210,7 @@
 
 	.del {
 		margin: var(--sp-4) var(--pad-x) 0;
+		min-height: var(--control-h);
 		padding: 0;
 		background: none;
 		border: 0;
