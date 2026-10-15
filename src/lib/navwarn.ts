@@ -107,5 +107,5 @@ export function toWarning(w: RawWarning): NavWarning | null {
 export function navSentence(items: Pick<NavWarning, 'region'>[]): string {
 	if (!items.length) return '';
 	const regions = [...new Set(items.map((i) => i.region))];
-	return `Hay ${items.length} avisos de seguridad a los barcos en ${regions.slice(0, 3).join(', ')}${regions.length > 3 ? ' y otras zonas' : ''}.`;
+	return `Hay ${items.length === 1 ? 'un aviso' : `${items.length} avisos`} de seguridad a los barcos en ${regions.slice(0, 3).join(', ')}${regions.length > 3 ? ' y otras zonas' : ''}.`;
 }

@@ -22,5 +22,6 @@ describe('navwarn', () => {
 		expect(toWarning(drill)).toMatchObject({ region: 'Mar Rojo', place: '', kind: 'Maniobras militares' });
 		expect(pickWarnings([survey, mines, drill]).map((w) => w.id)).toEqual(['HYDROPAC 3001/26', 'HYDROLANT 2452/23']);
 		expect(navSentence(pickWarnings([mines, drill]))).toBe('Hay 2 avisos de seguridad a los barcos en Mar Rojo, Mar Negro.');
+		expect(navSentence(pickWarnings([drill]))).toBe('Hay un aviso de seguridad a los barcos en Mar Rojo.');
 	});
 });

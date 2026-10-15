@@ -114,10 +114,11 @@
 		>
 			<canvas bind:this={canvas}></canvas>
 		</div>
-		<!-- Para lectores de pantalla: los puntos en una lista que abre la misma ficha. -->
+		<!-- Para lectores de pantalla: los puntos en una lista que abre la misma ficha. Fuera del tabulador: con el
+		     teclado serían cien paradas invisibles. -->
 		<ul class="sr">
 			{#each points as p (p.id)}
-				<li><button type="button" onclick={() => choose(p)}>{p.title}. {p.sub}</button></li>
+				<li><button type="button" tabindex="-1" onclick={() => choose(p)}>{p.title}. {p.sub}</button></li>
 			{/each}
 		</ul>
 	{/if}
