@@ -130,7 +130,7 @@
 	const plain = $derived(
 		city
 			? phrases([
-					tz ? `En ${city.name} son las ${hmIn(new Date(now).toISOString(), tz)}: ${offsetLabel(offset)}.` : null,
+					tz ? `En ${city.name} son las ${hmIn(new Date(now).toISOString(), tz)}: ${offsetLabel(offset)}${note ? ` (${note})` : ''}.` : null,
 					rate ? `Un euro vale ${nf(rate.perEur, rate.perEur >= 100 ? 0 : 2)} ${currency}.` : null,
 					advisory ? `Aviso de viaje de EE. UU.: ${LEVELS[advisory.level].toLowerCase()} (nivel ${advisory.level} de 4).` : null,
 					hasHolidays ? (hols.length ? `Próximo festivo: ${hols[0].names[0]}, el ${dm(`${hols[0].date}T12:00:00Z`)}.` : 'No hay festivos en los próximos dos meses.') : null
@@ -154,32 +154,33 @@
 				</div>
 			{/if}
 			{#if message}<p class="empty">{message}</p>{:else if !city}<p class="empty">Escribe una ciudad para ver su tiempo, su hora, su moneda y si hay festivos.</p>{/if}
+			{#if city}
+				<Tiles cols={4}>
+					<Tile label="Hora local" value={tz ? hmIn(new Date(now).toISOString(), tz) : '—'} sub={[offsetLabel(offset), note].filter(Boolean).join(' · ')} />
+					<Tile
+						label="Moneda"
+						value={!currency ? '—' : currency === 'EUR' ? 'Euro' : rate ? `1 € = ${nf(rate.perEur, rate.perEur >= 100 ? 0 : 2)} ${currency}` : currency}
+						sub={currency === 'EUR' ? 'no hace falta cambiar' : rate ? `BCE, ${dm(`${rate.date}T12:00:00Z`)}` : currency ? 'el BCE no la publica' : ''}
+					/>
+					<Tile
+						label="Aviso de viaje"
+						value={advisory ? `Nivel ${advisory.level}` : '—'}
+						tone={!advisory ? 'mut' : advisory.level >= 3 ? 'down' : advisory.level === 1 ? 'up' : undefined}
+						sub={advisory ? LEVELS[advisory.level] : 'sin aviso de EE. UU.'}
+					/>
+					<Tile
+						label="Próximo festivo"
+						value={hols[0] ? dm(`${hols[0].date}T12:00:00Z`) : '—'}
+						tone={hols[0] ? undefined : 'mut'}
+						sub={hols[0] ? hols[0].names.join(' · ') : hasHolidays ? 'ninguno en 2 meses' : holidays ? 'sin datos de ese país' : ''}
+					/>
+				</Tiles>
+			{/if}
 		</Panel>
 	</div>
 </div>
 
 {#if city}
-	<Tiles cols={4}>
-		<Tile label="Hora local" value={tz ? hmIn(new Date(now).toISOString(), tz) : '—'} sub={offsetLabel(offset)} />
-		<Tile
-			label="Moneda"
-			value={!currency ? '—' : currency === 'EUR' ? 'Euro' : rate ? `1 € = ${nf(rate.perEur, rate.perEur >= 100 ? 0 : 2)} ${currency}` : currency}
-			sub={currency === 'EUR' ? 'no hace falta cambiar' : rate ? `BCE, ${dm(`${rate.date}T12:00:00Z`)}` : currency ? 'el BCE no la publica' : ''}
-		/>
-		<Tile
-			label="Aviso de viaje"
-			value={advisory ? `Nivel ${advisory.level}` : '—'}
-			tone={!advisory ? 'mut' : advisory.level >= 3 ? 'down' : advisory.level === 1 ? 'up' : undefined}
-			sub={advisory ? LEVELS[advisory.level] : 'sin aviso de EE. UU.'}
-		/>
-		<Tile
-			label="Próximo festivo"
-			value={hols[0] ? dm(`${hols[0].date}T12:00:00Z`) : '—'}
-			tone={hols[0] ? undefined : 'mut'}
-			sub={hols[0] ? hols[0].names.join(' · ') : hasHolidays ? 'ninguno en 2 meses' : holidays ? 'sin datos de ese país' : ''}
-		/>
-	</Tiles>
-
 	<div class="grid grid-2">
 		<div class="col">
 			<Panel title="El tiempo" meta="{city.name} · 7 días">
@@ -195,7 +196,7 @@
 								{@const s = sky(d.code)}
 								<tr>
 									<td class="mut">{weekday(d.date)}</td>
-									<td class="l">{s.icon} {s.label}</td>
+									<td class="l sky"><span aria-hidden="true">{s.icon}</span>&nbsp;{s.label}</td>
 									<td>{nf(d.max, 0)}°</td>
 									<td class="mut">{nf(d.min, 0)}°</td>
 									<td class="mut">{nf(d.rain, 0)} %</td>
@@ -287,6 +288,10 @@
 		color: var(--amber);
 		font-size: var(--fs-s);
 		cursor: pointer;
+	}
+	/* El cielo puede partirse en dos líneas: así caben la mínima y la lluvia en el móvil sin scroll lateral. */
+	.sky {
+		white-space: normal;
 	}
 	small {
 		color: var(--muted);
