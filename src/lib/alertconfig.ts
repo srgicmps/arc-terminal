@@ -1,0 +1,106 @@
+// Avisos al móvil por usuario: qué elige cada uno en AVISOS. Lo comparten la vista (src/routes/avisos), el
+// servidor (cloud/alerts.ts, que lo guarda en D1) y la Action (scripts/alerts/users.ts, que reparte los avisos).
+// Lógica pura, sin depender del navegador ni de Node.
+
+/** Grupos de avisos, con los tipos de regla de scripts/alerts/rules.ts y world.ts que caen en cada uno. */
+export const GROUPS = [
+	{ id: 'imp', label: 'Lo más importante', types: ['imp'] },
+	{ id: 'conflictos', label: 'Guerras y geopolítica', types: ['war', 'conflict', 'strait', 'election', 'poly'] },
+	{ id: 'desastres', label: 'Terremotos y catástrofes', types: ['quake', 'gdacs', 'blackout', 'ioda', 'who'] },
+	{
+		id: 'mercados',
+		label: 'Mercados y valores',
+		types: ['market', 'vix', 'auction', 'stock', 'hy', 'liquidity', 'earnings', 'session']
+	},
+	{ id: 'macro', label: 'Macro y bancos centrales', types: ['rate', 'macro', 'eia', 'fedreg'] },
+	{ id: 'tech', label: 'IA y tecnología', types: ['ai', 'launch', 'status'] },
+	{ id: 'energia', label: 'Diésel, gas y luz', types: ['gas', 'diesel-day', 'diesel-extreme', 'diesel-gap', 'luz'] },
+	{ id: 'resumenes', label: 'Resúmenes (mañana, noche, semana)', types: ['morning', 'evening', 'week'] },
+	{ id: 'agenda', label: 'Agenda y otros', types: ['tomorrow', 'dst', 'down'] }
+] as const;
+
+export type GroupId = (typeof GROUPS)[number]['id'];
+
+/** El grupo de un tipo de regla. Los que no están en la tabla van a «Agenda y otros». */
+export const groupOf = (type: string): GroupId =>
+	GROUPS.find((g) => (g.types as readonly string[]).includes(type))?.id ?? 'agenda';
+
+/** Tipos que son solo de Sergi (órdenes de la barra por issues): no se reparten. */
+export const OWNER_ONLY = ['user-alert', 'vigila', 'hello'];
+
+export interface AlertConfig {
+	/** Avisos activados. */
+	on: boolean;
+	groups: GroupId[];
+	/** Hasta qué nivel llegan: 1 solo urgentes … 4 todo, resúmenes incluidos. */
+	level: 1 | 2 | 3 | 4;
+	/** Tope de avisos al día (día de Madrid). */
+	daily: number;
+	/** Valores propios (símbolos de EE. UU., como en MIS: «NVDA»). */
+	mis: string[];
+	/** También los valores que sigue Sergi (defensa, grandes de EE. UU.…). */
+	baseStocks: boolean;
+	/** Silencio (hora de Madrid, «23:00»–«07:30»): solo llegan los urgentes (P1). null: sin silencio. */
+	quiet: { from: string; until: string } | null;
+}
+
+export const DAILY_MAX = 100;
+export const MIS_MAX = 20;
+
+/** «El básico»: lo mismo que recibe Sergi. */
+export const DEFAULT_CONFIG: AlertConfig = {
+	on: false,
+	groups: GROUPS.map((g) => g.id),
+	level: 4,
+	daily: DAILY_MAX,
+	mis: [],
+	baseStocks: true,
+	quiet: null
+};
+
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const SYMBOL = /^[A-Z0-9.]{1,12}$/;
+
+/** Una configuración comprobada a partir de lo que llegue (del navegador o de la base); lo que no valga, por defecto. */
+export function parseConfig(raw: unknown): AlertConfig {
+	const o = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+	const ids = GROUPS.map((g) => g.id) as string[];
+	const groups = Array.isArray(o.groups)
+		? [...new Set(o.groups.filter((g): g is GroupId => typeof g === 'string' && ids.includes(g)))]
+		: DEFAULT_CONFIG.groups;
+	const level = [1, 2, 3, 4].includes(o.level as number) ? (o.level as AlertConfig['level']) : DEFAULT_CONFIG.level;
+	const daily =
+		typeof o.daily === 'number' && Number.isFinite(o.daily)
+			? Math.min(DAILY_MAX, Math.max(1, Math.round(o.daily)))
+			: DEFAULT_CONFIG.daily;
+	const mis = Array.isArray(o.mis)
+		? [...new Set(o.mis.filter((s): s is string => typeof s === 'string').map((s) => s.trim().toUpperCase()))]
+				.filter((s) => SYMBOL.test(s))
+				.slice(0, MIS_MAX)
+		: [];
+	const q = o.quiet as { from?: unknown; until?: unknown } | null | undefined;
+	const quiet =
+		q &&
+		typeof q.from === 'string' &&
+		typeof q.until === 'string' &&
+		HHMM.test(q.from) &&
+		HHMM.test(q.until) &&
+		q.from !== q.until
+			? { from: q.from, until: q.until }
+			: null;
+	return { on: o.on === true, groups, level, daily, mis, baseStocks: o.baseStocks !== false, quiet };
+}
+
+/** ¿Está «hh:mm» dentro del silencio? Admite silencios que cruzan la medianoche (23:00–07:00). */
+export function inQuiet(hhmm: string, quiet: AlertConfig['quiet']): boolean {
+	if (!quiet) return false;
+	return quiet.from < quiet.until ? hhmm >= quiet.from && hhmm < quiet.until : hhmm >= quiet.from || hhmm < quiet.until;
+}
+
+/** ¿Le llega a este usuario un aviso de este tipo y nivel a esta hora (de Madrid)? */
+export function wants(config: AlertConfig, type: string, level: number, hhmm: string): boolean {
+	if (!config.on || OWNER_ONLY.includes(type)) return false;
+	if (!config.groups.includes(groupOf(type))) return false;
+	if (level > config.level) return false;
+	return level === 1 || !inQuiet(hhmm, config.quiet);
+}

@@ -30,7 +30,7 @@
 // Uso: `NTFY_TOPIC=… [NOTIFY_CACHE=.notify-cache/notify-log.json] node scripts/notify.ts`. Sin NTFY_TOPIC,
 // sale sin hacer nada.
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findProvince, type FuelStation } from '../src/lib/fuel.ts';
 import { DAILY_TOTAL, KEEP_DAYS, NTFY_PRIORITY, QUOTAS, type Level } from './alerts/config.ts';
@@ -49,10 +49,11 @@ import {
 } from './alerts/rules.ts';
 import { minute } from './history.ts';
 import { EU_ADRS, EU_GAP_MS, fetchQuotes } from './sources/alert-quotes.ts';
-import { fetchPublished } from './lib.ts';
+import { accessHeaders, fetchPublished } from './lib.ts';
 import { github, redact } from './issues.ts';
 import { closeIssue, emptyRequests, loadRequests, type Api, type Requests } from './requests.ts';
 import { alertId, userRules, type UserInputs } from './alerts/user.ts';
+import { loadUsers, runUsers, type RemoteUser } from './alerts/users.ts';
 
 const NTFY = 'https://ntfy.sh';
 const DAY = 86_400_000;
@@ -100,7 +101,8 @@ export function pickAlerts(
 	d: Inputs,
 	log: NotifyLog,
 	now: number,
-	rules: Rule[] = RULES
+	rules: Rule[] = RULES,
+	limits: { total: number; quotas: Record<Level, number> } = { total: DAILY_TOTAL, quotas: QUOTAS }
 ): { send: Alert[]; skipped: Alert[]; updates: ((log: NotifyLog) => void)[] } {
 	const known = new Set(log.entries.map((e) => e.k));
 	const { alerts, updates } = candidates(d, log, now, rules);
@@ -109,14 +111,14 @@ export function pickAlerts(
 	const send: Alert[] = [];
 	const skipped: Alert[] = [];
 	for (const a of fresh) {
-		if (used.total < DAILY_TOTAL && used.byLevel[a.level] < QUOTAS[a.level]) {
+		if (used.total < limits.total && used.byLevel[a.level] < limits.quotas[a.level]) {
 			send.push(a);
 			used.total++;
 			used.byLevel[a.level]++;
 		} else skipped.push(a);
 	}
 	// Si con este envío se llega justo al tope, el último que sale lo dice (sin añadir un aviso más).
-	if (send.length && used.total === DAILY_TOTAL) {
+	if (send.length && used.total === limits.total) {
 		const last = send[send.length - 1];
 		send[send.length - 1] = { ...last, title: LIMIT_PREFIX + last.title };
 	}
@@ -241,7 +243,7 @@ export async function loadZone(raw: string | undefined, d: Inputs, dir: string):
 }
 
 /** Aviso de prueba de la primera pasada (sin historial publicado). */
-const HELLO = (now: number): Alert => ({
+export const HELLO = (now: number): Alert => ({
 	id: 'hello',
 	type: 'hello',
 	level: 3,
@@ -303,6 +305,24 @@ export function newestLog(cached: NotifyLog | null, published: NotifyLog | null)
 	return lastAttempt(published) > lastAttempt(cached) ? published : cached;
 }
 
+/** Historial de los usuarios de la web: solo en la caché de Actions, junto al de Sergi. Nunca en static/data. */
+export const USERS_FILE = 'notify-users.json';
+
+/** Los historiales de los usuarios ({ users: { uid: historial } }); vacío si no hay o no vale. */
+export async function readUserLogs(path: string): Promise<Record<string, NotifyLog>> {
+	try {
+		const body = JSON.parse(await readFile(path, 'utf8')) as { users?: Record<string, unknown> };
+		return Object.fromEntries(
+			Object.entries(isObject(body.users) ? body.users : {}).flatMap(([uid, log]) => {
+				const parsed = parseLog({ data: log });
+				return parsed ? [[uid, parsed]] : [];
+			})
+		);
+	} catch {
+		return {};
+	}
+}
+
 /** Como mucho, tantos valores de MIS y de las alertas por pasada (Finnhub gratis: 60 llamadas/min). */
 const USER_QUOTES = 15;
 
@@ -359,8 +379,10 @@ export async function runNotify({
 }): Promise<string[]> {
 	const lines: string[] = [];
 	const secret = topic?.trim() ?? '';
+	// Temas que nunca pueden salir en el registro: el de Sergi y los de los usuarios (alerts/users.ts).
+	const hidden = [secret];
 	const say = (line: string) => {
-		const safe = secret ? scrub(line, secret) : line;
+		const safe = hidden.filter(Boolean).reduce((text, t) => scrub(text, t), line);
 		lines.push(safe);
 		console.log(safe);
 	};
@@ -395,10 +417,20 @@ export async function runNotify({
 				say(`ntfy: no se pudieron leer las órdenes de la barra (${error instanceof Error ? error.message : 'error'})`);
 			}
 		}
+		// Avisos de los usuarios de la web (alerts/users.ts): solo con la caché, donde va su historial, y con el
+		// service token de Access, que es con lo que se lee la lista.
+		let users: RemoteUser[] | null = null;
+		if (cache && Object.keys(accessHeaders()).length) {
+			users = await loadUsers();
+			for (const u of users ?? []) hidden.push(u.topic);
+			say(users ? `ntfy: ${users.length} usuarios con avisos` : 'ntfy: sin lista de usuarios (sin service token o sin /api/alerts)');
+		}
+		// Los valores que sigue Sergi (alert-quotes.json y los ADR europeos): los que «baseStocks» da a los demás.
+		const base = new Set<string>([...(inputs.alertQuotes ?? []).flatMap((q) => (q?.symbol ? [q.symbol] : [])), ...EU_ADRS]);
 		(inputs as UserInputs).search = (await readData(dir, 'search')) as UserInputs['search'];
 		// Valores de MIS y de las alertas que no estén ya en alert-quotes: cotización solo en memoria.
 		const have = new Set((inputs.alertQuotes ?? []).map((q) => q?.symbol));
-		const wanted = [...(req.mis ?? []), ...req.alerts.map((a) => a.alert.asset)];
+		const wanted = [...(req.mis ?? []), ...req.alerts.map((a) => a.alert.asset), ...(users ?? []).flatMap((u) => u.config.mis)];
 		const extra = [...new Set(wanted)].filter((s) => /^[A-Z0-9.]{1,12}$/.test(s) && !have.has(s)).slice(0, USER_QUOTES);
 		if (extra.length && finnhubKey?.trim()) {
 			const { quotes, failed } = await fetchQuotes(extra, finnhubKey.trim(), euGap);
@@ -450,6 +482,13 @@ export async function runNotify({
 		if (cache) {
 			await mkdir(dirname(cache), { recursive: true });
 			await writeFile(cache, file(log));
+		}
+		if (cache && users) {
+			const path = join(dirname(cache), USERS_FILE);
+			const logs = await readUserLogs(path);
+			const engine = { pickAlerts, baselineLog, trim, post, hello: HELLO, minute };
+			const next = await runUsers(users, inputs, base, logs, now, engine, say);
+			await writeFile(path, JSON.stringify({ users: next }) + '\n');
 		}
 	} catch (error) {
 		say(`::warning title=ntfy::${error instanceof Error ? error.message : String(error)}`);
