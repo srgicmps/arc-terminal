@@ -225,6 +225,10 @@ export const FAQ: Faq[] = [
 		a: 'Sí. Empieza por «=» para calcular («=1250*1,21», «=200*21%»); Intro deja el resultado para seguir. «100 USD EUR» convierte con el cambio de referencia del BCE.'
 	},
 	{
+		q: '¿Cómo comparto una vista?',
+		a: '«compartir WS» copia el enlace de esa vista (en el móvil abre el menú de compartir); «compartir» solo, el de la vista abierta. También vale con un valor: «compartir NVDA».'
+	},
+	{
 		q: '¿Usa inteligencia artificial?',
 		a: 'No para decidir qué es importante: IMP y los avisos usan reglas y puntos fijos. Solo se traducen titulares al español con un servicio de traducción automática o, si no, con el traductor del propio navegador.'
 	}

@@ -29,6 +29,8 @@
 	import { answerFor, answerNeeds } from '#lib/bar/answers.ts';
 	import { barData, loadBarData } from '#lib/bar/bardata.svelte.ts';
 	import { addFav, favOptions, parseFav, readFavs, removeFav, writeFavs } from '#lib/bar/favs.ts';
+	import { actionOption, parseAction, shareInfo, shareTarget } from '#lib/actions.ts';
+	import { legacyCopy, shareOrCopy } from '#lib/share.ts';
 	import { parseConversion } from '#lib/calc.ts';
 	import { fxLive, loadFxRates } from '#lib/fxlive.svelte.ts';
 	import type { Dataset } from '#lib/data.ts';
@@ -68,8 +70,6 @@
 	let histIdx = $state(-1);
 	// Favoritos («fav ECO TIPOS», «1»), también de localStorage.
 	let favs = $state<string[]>([]);
-	// Una línea de respuesta bajo la barra («Guardado como favorito 2»).
-	let notice = $state('');
 	// Última zona de FUEL (para «llenar 50L» y «diésel»); se lee al enfocar la barra.
 	let fuelZone = $state<string | null>(null);
 	// Hora de la respuesta: se fija al escribir, para que «hora tokio» no cambie mientras se mira.
@@ -105,12 +105,16 @@
 
 	// Con la barra vacía, el historial; al escribir, las sugerencias y debajo los resultados de búsqueda.
 	// Tras un comando y un espacio («LIDER », «PAIS ale»), las opciones de su argumento.
+	// «compartir WS»: una acción (27-B), como única sugerencia.
+	const action = $derived(parseAction(value));
 	const suggestions = $derived(
-		value.trim()
-			? answer
-				? [{ code: answer.code, desc: answer.desc, kind: 'Dato', run: answer.open ?? value.trim() }]
-				: (favOptions(value, favs) ?? argOptions(value) ?? suggest(value, ALL, 8, fxLive))
-			: historyOptions(recent)
+		!value.trim()
+			? historyOptions(recent)
+			: action
+				? [actionOption(action, value, ALL)]
+				: answer
+					? [{ code: answer.code, desc: answer.desc, kind: 'Dato', run: answer.open ?? value.trim() }]
+					: (favOptions(value, favs) ?? argOptions(value) ?? suggest(value, ALL, 8, fxLive))
 	);
 	// M46: al escribir «100 USD EUR», se descargan los cambios del BCE (una sola vez).
 	$effect(() => {
@@ -134,6 +138,29 @@
 		input.blur();
 	}
 
+	// Aviso breve en la barra tras una acción («Enlace copiado»): ocupa el sitio del texto de ayuda.
+	let notice = $state('');
+	let noticeTimer: ReturnType<typeof setTimeout> | undefined;
+	function flash(text: string) {
+		notice = text;
+		clearTimeout(noticeTimer);
+		noticeTimer = setTimeout(() => (notice = ''), 2500);
+	}
+
+	/** «compartir WS»: el menú del sistema en el móvil; si no, copia el enlace al portapapeles. */
+	async function share(raw: string) {
+		const act = parseAction(raw);
+		if (!act) return;
+		const target = shareTarget(act, ALL);
+		close();
+		const info = target ? shareInfo(target) : null;
+		const url = info ? new URL(routeHref(info.route) + info.search, location.href).href : location.href;
+		const share = info ? { title: info.title, text: info.text, url } : { title: document.title, url };
+		const result = await shareOrCopy(share, navigator, (t) => legacyCopy(t, document));
+		if (result === 'copied') flash('Enlace copiado');
+		else if (result === 'failed') flash('No se ha podido copiar el enlace');
+	}
+
 	/** «fav …» y los números: guarda, quita o abre un favorito. true si lo ha atendido. */
 	function runFav(raw: string): boolean {
 		const a = parseFav(raw);
@@ -149,11 +176,11 @@
 			const { list, n } = addFav(favs, a.entry);
 			favs = list;
 			writeFavs(list);
-			notice = n ? `Favorito ${n}: ${a.entry} · escribe ${n} para abrirlo` : `Ya tienes 9 favoritos: quita uno con «fav -1»`;
+			flash(n ? `Favorito ${n}: ${a.entry} · escribe ${n} para abrirlo` : `Ya tienes 9 favoritos: quita uno con «fav -1»`);
 		} else if (a.kind === 'remove') {
 			favs = removeFav(favs, a.n);
 			writeFavs(favs);
-			notice = `Quitado el favorito ${a.n}`;
+			flash(`Quitado el favorito ${a.n}`);
 		} else {
 			// «fav» a secas: la lista se ve en las sugerencias; Intro no hace nada más.
 			return true;
@@ -164,7 +191,7 @@
 	}
 
 	function run(raw: string) {
-		notice = '';
+		if (parseAction(raw)) return void share(raw);
 		if (runFav(raw)) return;
 		// Una respuesta abre su vista (Intro en «euribor» → ECO); sin vista («hora tokio»), no hace nada.
 		const ans = answerFor(raw, { get: (n) => barData[n], now: Date.now(), fuelZone });
@@ -284,7 +311,6 @@
 		oninput={() => {
 			now = Date.now();
 			histIdx = -1;
-			notice = '';
 			open = true;
 			moved = false;
 			selected = options.length ? 0 : -1;
@@ -304,14 +330,13 @@
 		onblur={() =>
 			setTimeout(() => {
 				open = false;
-				notice = '';
 				ui.sheet = false;
 			}, 120)}
 		type="text"
 		spellcheck="false"
 		autocapitalize="characters"
 		enterkeyhint="go"
-		placeholder="Escribe un comando o un valor: NVDA, ECO, BOE…"
+		placeholder={notice || 'Escribe un comando o un valor: NVDA, ECO, BOE…'}
 		role="combobox"
 		aria-autocomplete="list"
 		aria-expanded={open && options.length > 0}
@@ -359,8 +384,6 @@
 				{/if}
 			{/each}
 		</ul>
-	{:else if notice}
-		<p class="notice" role="status">{notice}</p>
 	{/if}
 </form>
 
@@ -451,27 +474,6 @@
 		border-top-color: var(--amber);
 		border-bottom-color: var(--line);
 		max-height: 50vh;
-	}
-
-	/* Respuesta de la barra: una línea, con el mismo marco que las sugerencias. */
-	.notice {
-		position: absolute;
-		left: calc(-1 * var(--hair));
-		right: calc(-1 * var(--hair));
-		top: 100%;
-		z-index: 20;
-		margin: 0;
-		padding: var(--sp-6) var(--pad-x);
-		background: var(--raise);
-		border: var(--hair) solid var(--amber);
-		border-top-color: var(--line);
-		font-family: var(--sans);
-		font-size: var(--fs-m);
-	}
-
-	.cmd.sheet .notice {
-		top: auto;
-		bottom: 100%;
 	}
 
 	li,
