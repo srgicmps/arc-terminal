@@ -14,7 +14,12 @@
 	import { bootDone, lock, startSystem, sys, unlock } from './system.svelte.ts';
 
 	// Arranque y, mientras dure, los avisos P1–P2 de Arc como toasts (alerts.svelte.ts).
-	onMount(() => (startSystem(), startAlerts()));
+	onMount(() => {
+		startSystem();
+		// Las alarmas de la app Reloj (OS 4) suenan aunque la app esté cerrada; se cargan aparte, sin pesar.
+		import('../apps/clock/alarms.svelte.ts').then((m) => m.startAlarms()).catch(() => {});
+		return startAlerts();
+	});
 
 	function key(e: KeyboardEvent) {
 		if (sw.open && e.key === 'Escape') return (e.preventDefault(), cancel());
