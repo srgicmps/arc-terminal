@@ -48,10 +48,11 @@
 	style:width={`${WIDGET_W}px`}
 	aria-label={WIDGET_LABEL[w.kind]}
 >
-	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 	<header
 		tabindex="0"
-		role="toolbar"
+		role="group"
+		aria-roledescription="widget"
 		aria-label={`${WIDGET_LABEL[w.kind]}: flechas para moverlo`}
 		onpointerdown={down}
 		onpointermove={move}

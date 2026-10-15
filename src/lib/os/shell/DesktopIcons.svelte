@@ -14,6 +14,7 @@
 <script lang="ts">
 	import OsIcon from '../icons/OsIcon.svelte';
 	import ContextMenu, { type MenuEntry } from '#lib/components/os/ContextMenu.svelte';
+	import { nearestIndex } from '../focus.ts';
 	import { dropPlan } from '../fs/desk.ts';
 	import { DESKTOP, list, TRASH, type FsNode } from '../fs/fs.ts';
 	import { dropTarget, files, iconFor, mkdir, move, onDeskPlace, openNode, openTrash, rename, trash } from '../fs/fs.svelte.ts';
@@ -162,8 +163,16 @@
 		placeAt([id], cellAt(x, y));
 		startRename(id);
 	}
+	/** Con el teclado: Intro abre, Espacio elige (Ctrl+Espacio suma o quita), flechas al icono de al lado, F2, Supr y ⇧F10. */
 	function iconKey(e: KeyboardEvent, id: string) {
 		if (e.key === 'Enter') open(id);
+		else if (e.key === ' ') {
+			e.preventDefault();
+			selected = e.ctrlKey || e.metaKey ? (selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]) : [id];
+		} else if (e.key in STEP && !e.altKey && !e.metaKey) {
+			e.preventDefault();
+			nearest(e.currentTarget as HTMLElement, STEP[e.key])?.focus();
+		}
 		else if (e.key === 'F2') {
 			e.preventDefault();
 			startRename(id);
@@ -173,6 +182,17 @@
 			const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
 			iconMenu(r.left + r.width / 2, r.top + r.height / 2, id);
 		}
+	}
+
+	const STEP: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+	/** El icono más cercano en esa dirección (la rejilla puede tener huecos). */
+	function nearest(from: HTMLElement, d: [number, number]): HTMLElement | undefined {
+		const mid = (el: HTMLElement) => {
+			const r = el.getBoundingClientRect();
+			return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+		};
+		const all = [...(layer?.querySelectorAll<HTMLElement>('.hit') ?? [])];
+		return all[nearestIndex(mid(from), all.map(mid), d)];
 	}
 
 	// ---- Fondo: selección rectangular ----
@@ -271,8 +291,9 @@
 <div
 	class="layer"
 	bind:this={layer}
+	data-ui="os-icons"
 	role="group"
-	aria-label="Escritorio: arrastra para seleccionar, clic derecho para el menú"
+	aria-label="Escritorio: arrastra para seleccionar, clic derecho o ⇧F10 para el menú; en los iconos, flechas para moverte, Espacio para elegir"
 	tabindex="0"
 	onpointerdown={bgDown}
 	onpointermove={bgMove}
@@ -332,6 +353,11 @@
 		inset: 0;
 		outline: none;
 		touch-action: none;
+	}
+	/* Con Tab llega aquí: ⇧F10 abre el menú del escritorio. */
+	.layer:focus-visible {
+		outline: var(--focus-w) solid var(--amber);
+		outline-offset: calc(-1 * var(--focus-w));
 	}
 	.icon {
 		position: absolute;

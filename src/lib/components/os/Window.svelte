@@ -10,12 +10,13 @@
 <script lang="ts">
 	import OsIcon from '#lib/os/icons/OsIcon.svelte';
 	import UiIcon from '#lib/os/icons/UiIcon.svelte';
-	import { untrack } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import type { OsApp } from '#lib/os/apps.ts';
 	import { appOfPath, embedSrc, winTitle } from '#lib/os/apps.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import { onEmbedLink, type EmbedMessage } from '#lib/os/embed.ts';
 	import { close, closeNow, focus, maximize, minimize, nudge, openPath, os, place, setPath, snap } from '#lib/os/os.svelte.ts';
+	import { restoreFocus } from '#lib/os/focus.ts';
 	import { EDGES, resizeRect, snapTo, stackZ, type Edge, type Rect, type Snap, type Win } from '#lib/os/wm.ts';
 
 	let {
@@ -36,6 +37,22 @@
 	} = $props();
 
 	let el = $state<HTMLElement>();
+	let bar = $state<HTMLElement>();
+	// Al pasar delante (abrirla, Alt+Tab, la barra, cerrar la de encima…), el foco de teclado va a su barra de
+	// título, salvo si ya está dentro o lo tiene un menú o un diálogo. Así Alt+W, Tab o ⇧F10 siguen en ella.
+	$effect(() => {
+		if (!active) return;
+		tick().then(() => {
+			const a = document.activeElement;
+			if (!el || !bar || win.min || el.contains(a) || a?.closest('[role="dialog"], [role="menu"]')) return;
+			bar.focus({ preventScroll: true });
+		});
+	});
+	// Al minimizarla o cerrarla con el foco dentro, el foco pasa a la ventana de delante o al escritorio.
+	$effect(() => {
+		if (win.min) restoreFocus(null);
+		return () => restoreFocus(null);
+	});
 	const closing = $derived(os.closing.includes(win.uid));
 	// Al cerrar: se anima (--os-anim-close) y al acabar se quita. Sin animación (0 ms o movimiento reducido), ya.
 	$effect(() => {
@@ -201,10 +218,14 @@
 	aria-hidden={win.min || undefined}
 	onpointerdown={() => !active && focus(win.uid)}
 >
+	<!-- La barra de título es un grupo enfocable: flechas, Intro y ⇧F10 (como el «grip» de una ventana). -->
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 	<header
 		class="title"
 		data-ui="os-title"
-		role="toolbar"
+		bind:this={bar}
+		role="group"
+		aria-roledescription="barra de título"
 		tabindex="0"
 		aria-label="{app.name}: flechas para mover, ⇧ y flechas para cambiar el tamaño, Intro para maximizar, ⇧F10 para el menú"
 		onkeydown={onTitleKey}

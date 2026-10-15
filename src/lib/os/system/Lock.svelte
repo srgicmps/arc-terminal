@@ -6,6 +6,7 @@
 	cuenta ya la protege Cloudflare Access.
 -->
 <script lang="ts">
+	import { overlay } from '../focus.ts';
 	import { untrack } from 'svelte';
 	import { cloud } from '#lib/cloud.svelte.ts';
 	import Logo from '#lib/components/Logo.svelte';
@@ -34,7 +35,7 @@
 	const time = $derived(now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }));
 	const date = $derived(now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }));
 	const sum = $derived(lockSummary(shell.notices, shell.seen));
-	const name = $derived(userName(cloud.user));
+	const name = $derived(shell.name || userName(cloud.user));
 
 	function go() {
 		if (leaving) return;
@@ -66,6 +67,7 @@
 	aria-label="Pantalla de bloqueo. Pulsa una tecla para entrar"
 	tabindex="-1"
 	bind:this={el}
+	use:overlay
 	onpointerdown={down}
 	onpointerup={up}
 	onkeydown={key}

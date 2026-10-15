@@ -53,6 +53,11 @@ export const SHORTCUTS = [
 	{ id: 'os-keys', group: 'Arc OS', keys: ['←', '↑', '→', '↓'], how: 'con el foco en la barra de título (con ⇧, cambia el tamaño)', action: 'Mover la ventana' },
 	{ id: 'os-terminal', group: 'Arc OS', keys: ['Ctrl', 'Alt', 'T'], combo: true, action: 'Abrir una Terminal (la barra de comandos como consola)' },
 	{ id: 'os-desk', group: 'Arc OS', keys: ['Alt', '1…6'], combo: true, action: 'Ir a un escritorio' },
+	// Escritorio y paneles de Arc OS (src/lib/os/shell/, foco en src/lib/os/focus.ts).
+	{ id: 'os-search', group: 'Arc OS', keys: ['Ctrl', 'Espacio'], combo: true, how: 'o la lupa de la barra', action: 'Buscar apps, valores, países, comandos y ajustes' },
+	{ id: 'os-icons', group: 'Arc OS', keys: ['←', '↑', '→', '↓'], how: 'en los iconos del escritorio (entra con Tab); Espacio elige y Ctrl+Espacio suma', action: 'Ir al icono de al lado' },
+	{ id: 'os-ctx', group: 'Arc OS', keys: ['⇧', 'F10'], combo: true, how: 'en el escritorio o en un icono (o la tecla de menú)', action: 'Su menú, como el clic derecho' },
+	{ id: 'os-esc', group: 'Arc OS', keys: ['Esc'], how: 'en un menú, el buscador, el Panel de control o los avisos', action: 'Cerrarlo: el foco vuelve adonde estaba' },
 	// Sistema de Arc OS (src/lib/os/system/SystemLayer.svelte). `code` porque en el Mac ⌥ cambia la letra.
 	{ id: 'os-lock', group: 'Arc OS', keys: ['Ctrl', 'Alt', 'L'], combo: true, action: 'Bloquear la pantalla (se entra con un clic o una tecla)', match: { key: 'l', ctrl: true, alt: true, code: 'KeyL' } },
 	// App Ajustes de Arc OS (src/lib/os/apps/settings/Settings.svelte).

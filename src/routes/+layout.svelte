@@ -578,6 +578,12 @@
 		display: none;
 	}
 
+	/* Dentro de Arc OS (/os, html[data-os-look]), lo de la web queda detrás del escritorio: fuera también del
+	   teclado y de los lectores de pantalla (si no, Tab recorría la cabecera escondida). */
+	:global(html[data-os-look]) .app > :global(:not(main)) {
+		display: none;
+	}
+
 	:global(html[data-embed]) .app {
 		padding-bottom: 0;
 	}

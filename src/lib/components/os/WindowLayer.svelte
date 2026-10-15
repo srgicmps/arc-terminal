@@ -8,6 +8,8 @@
 	import { switchStep } from '#lib/os/system/switcher.svelte.ts';
 	import { appOf, close, focusedWin, goDesk, loadOs, maximize, minimize, openApp, os, sendToDesk, setArea, snap, tile, toggleTop } from '#lib/os/os.svelte.ts';
 	import { findWin } from '#lib/os/wm.ts';
+	import { altTyped } from '#lib/os/focus.ts';
+	import { isTyping } from '#lib/rownav.ts';
 	import ContextMenu, { type MenuEntry } from './ContextMenu.svelte';
 	import { snapRect, superSnap, type Snap } from '#lib/os/wm.ts';
 	import Window from './Window.svelte';
@@ -44,6 +46,8 @@
 			return true;
 		}
 		if (!e.altKey || e.ctrlKey || e.metaKey) return false;
+		// ⌥ + tecla en un campo, en el Mac, escribe «@», «|», «\»…: no es un atajo (en un iframe lo filtra embed.ts).
+		if (altTyped(e.key) && isTyping(document.activeElement)) return false;
 		// Siguiente ventana con el Alt+Tab visual de «OS 5» (src/lib/os/system/switcher.svelte.ts).
 		if (e.key === 'Tab' || e.code === 'Backquote' || e.code === 'IntlBackslash') return (switchStep(e.shiftKey ? -1 : 1), true);
 		const n = /^Digit([1-6])$/.exec(e.code);

@@ -3,6 +3,7 @@
 	Se salta con un clic o cualquier tecla. Con prefers-reduced-motion, apenas un instante y sin animación.
 -->
 <script lang="ts">
+	import { overlay } from '../focus.ts';
 	import Logo from '#lib/components/Logo.svelte';
 	import { BOOT_STEPS } from './boot.ts';
 
@@ -33,6 +34,7 @@
 	aria-label="Arrancando Arc OS"
 	tabindex="-1"
 	bind:this={el}
+	use:overlay
 	onclick={ondone}
 	onkeydown={(e) => (e.preventDefault(), ondone())}
 >

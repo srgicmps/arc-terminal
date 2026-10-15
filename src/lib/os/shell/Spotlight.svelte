@@ -6,6 +6,7 @@
 <script lang="ts">
 	import OsIcon from '../icons/OsIcon.svelte';
 	import { tick } from 'svelte';
+	import { overlay } from '../focus.ts';
 	import { installedApps } from '../packages.svelte.ts';
 	import { recentHits, searchAll, type Hit } from '../system/search.ts';
 	import { runHit } from '../system/search.svelte.ts';
@@ -43,7 +44,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div class="scrim" onclick={() => (shell.open = null)}></div>
-<div class="spot" role="dialog" aria-label="Buscar" tabindex="-1" onkeydown={key}>
+<div class="spot" role="dialog" aria-modal="true" aria-label="Buscar" tabindex="-1" onkeydown={key} use:overlay={{ trap: true }}>
 	<input
 		bind:this={input}
 		bind:value={query}
@@ -60,12 +61,12 @@
 		<ul id="os-spot-list" role="listbox" aria-label={empty ? 'Apps recientes' : 'Resultados'}>
 			{#each found as h, i (h.id)}
 				{@const app = appOf(h)}
-				<li id={`os-spot-${h.id}`} role="option" aria-selected={i === sel}>
-					<button type="button" tabindex="-1" onclick={() => go(h)} onmouseenter={() => (sel = i)}>
-						{#if app}<OsIcon id={app} size={28} />{:else}<span class="glyph" aria-hidden="true">{h.icon}</span>{/if}
-						<span class="t">{h.title}<small>{h.detail}</small></span>
-						<span class="c">{h.kind}</span>
-					</button>
+				<!-- Opción de un combobox: se elige con ↑ ↓ e Intro desde el campo (aria-activedescendant), o con el ratón. -->
+				<!-- svelte-ignore a11y_click_events_have_key_events -->
+				<li id={`os-spot-${h.id}`} role="option" aria-selected={i === sel} onclick={() => go(h)} onmouseenter={() => (sel = i)}>
+					{#if app}<OsIcon id={app} size={28} />{:else}<span class="glyph" aria-hidden="true">{h.icon}</span>{/if}
+					<span class="t">{h.title}<small>{h.detail}</small></span>
+					<span class="c">{h.kind}</span>
 				</li>
 			{/each}
 		</ul>
@@ -75,13 +76,6 @@
 </div>
 
 <style>
-	button {
-		border: 0;
-		background: none;
-		color: inherit;
-		font: inherit;
-		cursor: pointer;
-	}
 	.head {
 		margin: 0;
 		padding: var(--sp-6) var(--sp-16) 0;
@@ -134,7 +128,8 @@
 		list-style: none;
 		border-top: var(--hair) solid var(--line);
 	}
-	li button {
+	li {
+		cursor: pointer;
 		display: flex;
 		align-items: center;
 		gap: var(--sp-10);
@@ -145,7 +140,7 @@
 		text-align: left;
 	}
 	/* Elegido: velo del acento y filo a la izquierda, como el menú contextual (sin bloque macizo). */
-	li[aria-selected='true'] button {
+	li[aria-selected='true'] {
 		background: var(--amber-soft);
 		box-shadow: inset var(--sp-2) 0 0 var(--amber);
 	}

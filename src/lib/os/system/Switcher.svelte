@@ -13,7 +13,9 @@
 </script>
 
 <div class="scrim" aria-hidden="true"></div>
-<div class="sw" role="listbox" aria-label="Cambiar de ventana" aria-live="polite">
+<!-- La lista no tiene el foco (lo tiene la ventana mientras se sujeta Alt): la elegida se anuncia aparte. -->
+<p class="sr" aria-live="assertive">{wins[sw.idx] ? (appOf(wins[sw.idx])?.name ?? wins[sw.idx].app) : ''}</p>
+<div class="sw" role="listbox" aria-label="Cambiar de ventana">
 	{#each wins as w, i (w.uid)}
 		{@const app = appOf(w)}
 		{@const r = thumbRect(w, os.area)}
