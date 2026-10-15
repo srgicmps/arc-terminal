@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { parseConfig } from '../../src/lib/alertconfig.ts';
-import { homeRules, luzHomeRule, pollenHomeRule, resultsEveRule } from '../alerts/home.ts';
+import { fuelHomeRule, homeRules, luzHomeRule, pollenHomeRule, resultsEveRule } from '../alerts/home.ts';
+import { parseHomeFuel } from '../../src/lib/alertconfig.ts';
+import type { NotifyLog } from '../alerts/rules.ts';
 import { briefLines } from '../alerts/brief.ts';
 import { emptyLog, type Inputs, type RuleContext } from '../alerts/rules.ts';
 
@@ -56,5 +58,38 @@ describe('avisos de casa (F16)', () => {
 		const lines = briefLines(c, { ...d, imp } as unknown as Inputs, '2026-10-15', new Set(), null, at('08:00'));
 		expect(lines[0]).toBe('Luz más barata hoy: de 14:00 a 16:00 (0,050 €/kWh).');
 		expect(lines.filter((l) => /^(Uno|Dos|Tres)/.test(l)).length).toBeGreaterThanOrEqual(2);
+	});
+});
+
+describe('gasolinera favorita (F16)', () => {
+	const fav = parseHomeFuel({ zone: '07', id: '1234', name: 'Repsol Maó', town: 'Maó', log: [] })!;
+	const st = (g95: number) => ({ id: '1234', prices: { g95, diesel: null, g98: null, glp: null } }) as never;
+	const pass = (log: NotifyLog, price: number, hm = '10:00') => {
+		const updates: ((l: NotifyLog) => void)[] = [];
+		const out = fuelHomeRule(fav, st(price))({} as Inputs, { ...ctx(hm), log, update: (f) => void updates.push(f) });
+		for (const f of updates) f(log);
+		for (const a of out) {
+			a.commit?.(log);
+			log.entries.push({ k: a.id, t: '', s: 'sent' });
+		}
+		return out;
+	};
+
+	it('la primera vez solo apunta; avisa si baja 2 céntimos desde su máximo, una vez al día', () => {
+		const log = emptyLog();
+		expect(pass(log, 1.5)).toEqual([]);
+		expect(pass(log, 1.52)).toEqual([]);
+		expect(pass(log, 1.51)).toEqual([]);
+		const [a] = pass(log, 1.499);
+		expect(a.title).toBe('Repsol Maó: Gasolina 95 a 1,499 €/L');
+		expect(a.body).toContain('2,1 céntimos');
+		expect(pass(log, 1.45)).toEqual([]);
+	});
+
+	it('sin estación o sin ese combustible, nada; zonas o ids raros no se aceptan', () => {
+		expect(fuelHomeRule(fav, null)({} as Inputs, ctx('10:00'))).toEqual([]);
+		expect(parseHomeFuel({ zone: '../x', id: '1' })).toBeNull();
+		expect(parseHomeFuel({ zone: 'menorca', id: '1/2' })).toBeNull();
+		expect(parseHomeFuel({ zone: 'menorca', id: '12', kind: 'diesel' })).toMatchObject({ kind: 'diesel', name: 'Tu gasolinera' });
 	});
 });

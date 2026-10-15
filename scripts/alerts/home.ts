@@ -3,8 +3,10 @@
 // - Luz: las 3 mejores franjas de 2 h de mañana (PVPC), desde que se publica, hacia las 20:30.
 // - Polen: los que llegan a moderado o alto mañana en su sitio (el de «Tu mañana»; CAMS, solo Europa).
 // - Resultados: sus valores (los de AVISOS) que presentan mañana.
+// - Gasolinera: su favorita (la de FUEL) baja 2 céntimos o más desde su precio más alto desde el último aviso.
 // Lógica pura: el polen de su sitio lo pide users.ts (Open-Meteo, sin clave) y llega ya leído.
-import type { AlertConfig } from '../../src/lib/alertconfig.ts';
+import type { AlertConfig, HomeFuel } from '../../src/lib/alertconfig.ts';
+import type { FuelStation } from '../../src/lib/fuel.ts';
 import { cheapWindows, hourLabel, hourly } from '../../src/lib/power.ts';
 import { AIR_API, airParams, parseAir } from '../../src/lib/openmeteo.ts';
 import { pollenHigh, type AirData, type AirDay } from '../../src/lib/weather.ts';
@@ -12,6 +14,10 @@ import { addDays, madrid, num, SITE, type Draft, type Inputs, type Rule, type Ru
 
 /** Desde qué hora de Madrid sale cada uno (hasta medianoche). */
 export const HOME_FROM = { luz: '20:45', pollen: '19:00', results: '18:00' };
+
+/** Cuánto tiene que bajar su gasolinera para avisar, en €/L. */
+export const FUEL_DROP = 0.02;
+const FUEL_REF = 'casa:fuel:ref';
 
 const list = <T>(v: T[] | undefined | null): T[] => (Array.isArray(v) ? v : []);
 const after = (now: number, hm: string) => madrid(now).hm >= hm;
@@ -72,10 +78,43 @@ export function resultsEveRule(mis: string[]): Rule['run'] {
 	};
 }
 
+/**
+ * Su gasolinera: guarda en su historial el precio de referencia (el más alto desde el último aviso, con su
+ * estación y combustible) y avisa cuando baja FUEL_DROP o más. La primera vez solo lo apunta. Uno al día.
+ */
+export function fuelHomeRule(fav: HomeFuel, station: FuelStation | null): Rule['run'] {
+	return (_d, { now, today, log, update }) => {
+		const price = station?.prices?.[fav.kind];
+		if (typeof price !== 'number' || !Number.isFinite(price)) return [];
+		const tag = `${fav.zone}/${fav.id}/${fav.kind}`;
+		const [refTag, refRaw] = (log.last[FUEL_REF] ?? '').split('|');
+		const ref = refTag === tag ? Number(refRaw) : NaN;
+		const save = (v: number) => (l: typeof log) => void (l.last[FUEL_REF] = `${tag}|${v}`);
+		if (!Number.isFinite(ref) || price > ref) {
+			update(save(price));
+			return [];
+		}
+		if (ref - price < FUEL_DROP - 1e-9 || log.entries.some((e) => e.k === `casa:fuel:${today}`)) return [];
+		const fuel = fav.kind === 'diesel' ? 'Diésel' : 'Gasolina 95';
+		return [
+			{
+				id: `casa:fuel:${today}`,
+				title: `${fav.name}: ${fuel} a ${num(price, 3)} €/L`,
+				body: `Ha bajado ${num((ref - price) * 100, 1)} céntimos (estaba a ${num(ref, 3)} €/L). Buen momento para llenar.`,
+				tags: 'fuelpump',
+				click: `${SITE}/fuel`,
+				time: now,
+				commit: save(price)
+			}
+		];
+	};
+}
+
 /** Las reglas de casa que ha encendido. `pollen`: el día de mañana en su sitio, si se ha podido leer. */
-export function homeRules(config: AlertConfig, pollen: AirDay | null = null): Rule[] {
+export function homeRules(config: AlertConfig, pollen: AirDay | null = null, station: FuelStation | null = null): Rule[] {
 	const h = config.home;
 	return [
+		...(h.fuel ? [{ type: 'casa', level: 3 as const, run: fuelHomeRule(h.fuel, station) }] : []),
 		...(h.luz ? [{ type: 'casa', level: 3 as const, run: luzHomeRule }] : []),
 		...(h.pollen && config.brief.place ? [{ type: 'casa', level: 3 as const, run: pollenHomeRule(config.brief.place.name, pollen) }] : []),
 		...(h.results ? [{ type: 'casa', level: 3 as const, run: resultsEveRule(config.mis) }] : [])
