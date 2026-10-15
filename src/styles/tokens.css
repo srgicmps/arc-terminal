@@ -392,3 +392,16 @@
 	--os-anim-max: 160ms;
 	--os-anim-close: 140ms;
 }
+
+/* Centro de mando: mapa (herramienta «Mapa operacional» de Arc OS, src/lib/os/apps/mapa-op/). Pizarra, rejilla
+   tenue y un acento frío junto al ámbar. Salen de los colores del tema y de la estética, así que valen de día y de
+   noche sin redefinirlos. */
+:root {
+	--cmd-slate: color-mix(in srgb, var(--panel), var(--series-2) 6%); /* fondo del mapa */
+	--cmd-land: color-mix(in srgb, var(--raise), var(--series-2) 10%); /* tierra */
+	--cmd-coast: color-mix(in srgb, var(--line), var(--series-2) 28%); /* costas y bordes de 1 px */
+	--cmd-grid: color-mix(in srgb, var(--series-2) 9%, transparent); /* rejilla tenue */
+	--cmd-cold: var(--series-2); /* acento frío: selección, directo, rótulos */
+	--cmd-cold-soft: color-mix(in srgb, var(--series-2) 22%, transparent);
+	--cmd-grid-step: 32px; /* paso de la rejilla del fondo */
+}
