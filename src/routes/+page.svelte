@@ -2,6 +2,7 @@
 	import { asset, resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import { HOME_DONE, HOME_KEY, startPath } from '#lib/home.ts';
+	import { needsWelcome } from '#lib/onboarding/plan.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import { latestWatched } from '#lib/boe.ts';
 	import { clock } from '#lib/clock.svelte.ts';
@@ -25,6 +26,7 @@
 	import Select from '#lib/components/ui/Select.svelte';
 	import { initRefCountry, REF_COUNTRIES, refCountry, refName, setRefCountry } from '#lib/refcountry.svelte.ts';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
+	import { TOP_MODULES } from '#lib/topmodules.ts';
 	import type { BoeWeek } from '#lib/types.ts';
 	import { initWatchwords, matches, watchwords } from '#lib/watchwords.svelte.ts';
 	import { zoneFor } from '#lib/fuel.ts';
@@ -34,28 +36,8 @@
 
 	let { data }: PageProps = $props();
 
-	// Vista modular: los paneles de la portada, con un id estable cada uno (es la clave de lo guardado).
-	const top = new ViewLayout('top', [
-		{ id: 'rates', title: 'Tipos y bonos' },
-		{ id: 'macro', title: 'Macro' },
-		{ id: 'fx', title: 'Divisas y cripto' },
-		{ id: 'important', title: 'Lo importante' },
-		{ id: 'news', title: 'Titulares' },
-		{ id: 'weather', title: 'Tiempo' },
-		{ id: 'power', title: 'Luz' },
-		{ id: 'fuel', title: 'Gasolina' },
-		{ id: 'boe', title: 'BOE de hoy' },
-		{ id: 'quakes', title: 'Terremotos' },
-		{ id: 'predictions', title: 'Mercados de predicción' },
-		{ id: 'hn', title: 'Hacker News' },
-		// Solo en la portada modular (en la general ya están la cinta de cotizaciones y CAL).
-		{ id: 'agenda', title: 'Hoy en la agenda' },
-		{ id: 'markets', title: 'Mercados' },
-		{ id: 'sessions', title: 'Sesiones de las bolsas' },
-		{ id: 'risk', title: 'Termómetro de riesgo' },
-		{ id: 'puzzle', title: 'Problema del día' },
-		{ id: 'week', title: 'Tu semana' }
-	]);
+	// Vista modular: los paneles de la portada (topmodules.ts).
+	const top = new ViewLayout('top', TOP_MODULES);
 	// Como onMounted en Vue: lo guardado en el navegador se lee al arrancar en él.
 	$effect(() => top.load());
 	$effect(initVisit);
@@ -63,6 +45,12 @@
 	$effect(() => {
 		let go: string | null = null;
 		try {
+			// La primera vez de todas, la bienvenida (src/routes/bienvenida).
+			if (needsWelcome(localStorage, location.search)) {
+				sessionStorage.setItem(HOME_DONE, '1');
+				goto(resolve('/bienvenida') + '?primera=1', { replaceState: true });
+				return;
+			}
 			go = startPath(localStorage.getItem(HOME_KEY), sessionStorage.getItem(HOME_DONE) === '1', location.search);
 			sessionStorage.setItem(HOME_DONE, '1');
 		} catch {}
