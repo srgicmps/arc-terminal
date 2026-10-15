@@ -16,6 +16,16 @@ import { gzipSync } from 'node:zlib';
  */
 export const LIMIT = 300 * 1024;
 
+/**
+ * Páginas sin tope: Arc OS (/os) es un escritorio entero y Sergi pidió hacerlo lo mejor posible, sin límite de
+ * peso (D46). Lo que cargan sus ventanas son las vistas de siempre, que sí lo tienen (y lo que solo se carga
+ * dentro de /os, con import(), no cuenta en ninguna otra).
+ */
+export const EXEMPT = new Set(['os.html']);
+
+/** Las páginas que pasan del tope, sin las exentas. */
+export const overLimit = (rows: { page: string; bytes: number }[], limit = LIMIT) => rows.filter((r) => r.bytes > limit && !EXEMPT.has(r.page));
+
 /** El JS y el CSS de la propia web que nombra una página: «_app/immutable/…». Sin repetir. */
 export function refsOf(html: string): string[] {
 	const found = new Set<string>();
@@ -42,8 +52,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 	const rows = await weigh();
 	const kb = (n: number) => `${Math.round(n / 1024)} KB`;
 	for (const r of rows.slice(0, 5)) console.log(`${r.page.padEnd(16)} ${kb(r.bytes)}`);
-	const over = rows.filter((r) => r.bytes > LIMIT);
+	const over = overLimit(rows);
 	for (const r of over) console.log(`::error title=Peso de las vistas::${r.page} pesa ${kb(r.bytes)} (gzip, sin datos); el tope es ${kb(LIMIT)} (scripts/weight.ts)`);
 	if (over.length) process.exit(1);
-	console.log(`${rows.length} vistas por debajo de ${kb(LIMIT)}`);
+	console.log(`${rows.length - EXEMPT.size} vistas por debajo de ${kb(LIMIT)} (sin tope: ${[...EXEMPT].join(', ')})`);
 }

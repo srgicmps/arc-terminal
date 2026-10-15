@@ -6,6 +6,7 @@ import type { WallData } from '../../exp/muro.ts';
 import type { ChangesData } from '../../types.ts';
 import { buildNotices, markSeen, toastsFor, unread, type Notice } from './notices.ts';
 import { parseIds, pushRecent, togglePin } from './start.ts';
+import { DEFAULT_SKIN, isSkin, type Skin } from './skins.ts';
 import { parseWidgets, type Placed } from './widgets.ts';
 
 export const KEYS = {
@@ -14,11 +15,13 @@ export const KEYS = {
 	widgets: 'arc-os-widgets',
 	bar: 'arc-os-bar',
 	seen: 'arc-os-seen',
-	wallpaper: 'arc-os-wallpaper'
+	wallpaper: 'arc-os-wallpaper',
+	skin: 'arc-os-skin'
 } as const;
 
 /** Fondos del escritorio: «estilo» sigue la estética activa; los demás, sobre sus colores. */
 export const WALLPAPERS = [
+	{ id: 'sistema', label: 'El del aspecto' },
 	{ id: 'estilo', label: 'El de la estética' },
 	{ id: 'liso', label: 'Liso' },
 	{ id: 'rejilla', label: 'Rejilla' },
@@ -51,12 +54,17 @@ export const shell = $state({
 	/** null: los de por defecto (aún no se ha tocado nada). */
 	widgets: null as Placed[] | null,
 	bar: 'bottom' as 'bottom' | 'top',
-	wallpaper: 'estilo' as Wallpaper,
+	wallpaper: 'sistema' as Wallpaper,
+	skin: DEFAULT_SKIN as Skin,
+	/** Si ya ha elegido aspecto (si no, el primer arranque se lo pregunta). */
+	skinChosen: true,
 	seen: [] as string[],
 	notices: [] as Notice[],
 	toasts: [] as Notice[],
+	/** Widgets ocultos (botón ◫ de DSM); solo en esta visita. */
+	widgetsHidden: false,
 	/** Qué está desplegado: solo uno a la vez. */
-	open: null as null | 'start' | 'notices' | 'clock' | 'control'
+	open: null as null | 'start' | 'notices' | 'clock' | 'control' | 'spotlight' | 'launchpad' | 'activities' | 'menu'
 });
 
 /** Lee lo guardado. Se llama una vez, al montar la shell en el navegador. */
@@ -67,7 +75,10 @@ export function loadShell(defaultPinned: string[]) {
 	shell.widgets = parseWidgets(read(KEYS.widgets));
 	shell.bar = read(KEYS.bar) === 'top' ? 'top' : 'bottom';
 	const wp = read(KEYS.wallpaper);
-	shell.wallpaper = WALLPAPERS.some((w) => w.id === wp) ? (wp as Wallpaper) : 'estilo';
+	shell.wallpaper = WALLPAPERS.some((w) => w.id === wp) ? (wp as Wallpaper) : 'sistema';
+	const skin = read(KEYS.skin);
+	shell.skin = isSkin(skin) ? skin : DEFAULT_SKIN;
+	shell.skinChosen = isSkin(skin);
 	shell.seen = parseIds(read(KEYS.seen));
 	shell.ready = true;
 }
@@ -91,6 +102,11 @@ export function setBar(pos: 'bottom' | 'top') {
 export function setWallpaper(id: Wallpaper) {
 	shell.wallpaper = id;
 	write(KEYS.wallpaper, id);
+}
+export function setSkin(skin: Skin) {
+	shell.skin = skin;
+	shell.skinChosen = true;
+	write(KEYS.skin, skin);
 }
 export function toggle(what: NonNullable<typeof shell.open>) {
 	shell.open = shell.open === what ? null : what;
@@ -119,6 +135,22 @@ async function getJson<T>(name: string): Promise<T | null> {
 	}
 }
 
+/** Avisos de la propia web (del sistema, de una app…): los que no vienen de muro.json ni changes.json. */
+let local: Notice[] = [];
+
+/**
+ * Para otras piezas de Arc OS (sistema, apps): un aviso que queda en el centro de notificaciones y sale como
+ * toast. Devuelve su id.
+ */
+export function notify(n: { title: string; detail?: string; href?: string; kind?: Notice['kind'] }): string {
+	const time = new Date().toISOString();
+	const notice: Notice = { id: `s:${time}:${n.title}`, kind: n.kind ?? 'aviso', title: n.title, detail: n.detail ?? '', time, href: n.href };
+	local = [notice, ...local].slice(0, 30);
+	shell.notices = [notice, ...shell.notices];
+	shell.toasts = [...shell.toasts, notice].slice(-3);
+	return notice.id;
+}
+
 let known: Set<string> | null = null;
 
 /** Pide los avisos y novedades; los avisos nuevos desde la última vuelta salen como toast. */
@@ -127,7 +159,7 @@ export async function refreshNotices() {
 	const list = buildNotices(wall, changes);
 	const fresh = toastsFor(list, known ?? new Set(), known === null);
 	known = new Set(list.map((n) => n.id));
-	shell.notices = list;
+	shell.notices = [...local, ...list].sort((a, b) => b.time.localeCompare(a.time));
 	if (fresh.length) shell.toasts = [...shell.toasts, ...fresh.filter((f) => !shell.seen.includes(f.id))].slice(-3);
 }
 
