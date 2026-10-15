@@ -290,6 +290,62 @@
 	--os-menu-radius: 10px;
 }
 
+/*
+ * Aspecto «Mando» (centro de mando): pizarra muy oscura con rejilla técnica tenue, letra mono, acento frío para
+ * la estructura y ámbar para lo que importa, bordes de 1 px y esquinas casi rectas. Los --cmd-* también los usan
+ * las apps de análisis (mapa operacional, grafo, expediente, línea de tiempo y vigilancia).
+ */
+[data-os-skin] {
+	--cmd-slate: color-mix(in srgb, var(--bg) 70%, #0f1a26); /* fondo del escritorio */
+	--cmd-deck: color-mix(in srgb, var(--panel) 80%, #0f1a26); /* barras y paneles */
+	--cmd-cold: #6aaecf; /* acento frío: estructura, pilotos, selección */
+	--cmd-cold-dim: color-mix(in srgb, var(--cmd-cold) 45%, transparent);
+	--cmd-cold-soft: color-mix(in srgb, var(--cmd-cold) 12%, transparent);
+	--cmd-grid: color-mix(in srgb, var(--cmd-cold) 7%, transparent); /* rejilla del fondo */
+	--cmd-grid-size: 24px;
+}
+:root[data-theme='light'] [data-os-skin] {
+	--cmd-slate: color-mix(in srgb, var(--bg) 85%, #c9d6e2);
+	--cmd-deck: color-mix(in srgb, var(--panel) 85%, #c9d6e2);
+	--cmd-cold: #22678a;
+}
+
+[data-os-skin='mando'] {
+	--os-desk: var(--cmd-slate);
+	--bg-image:
+		repeating-linear-gradient(var(--cmd-grid) 0 var(--hair), transparent var(--hair) var(--cmd-grid-size)),
+		repeating-linear-gradient(90deg, var(--cmd-grid) 0 var(--hair), transparent var(--hair) var(--cmd-grid-size)),
+		radial-gradient(ellipse 80% 60% at 50% 40%, var(--cmd-cold-soft), transparent 70%);
+	--os-font: var(--mono);
+	--os-bar-h: calc(var(--control-h) + var(--sp-8));
+	--os-topbar-bg: var(--cmd-deck);
+	--os-topbar-fg: var(--fg);
+	--os-topbar-hover: var(--cmd-cold-soft);
+	--os-win-bg: var(--cmd-deck);
+	--os-win-edge: var(--hair) solid var(--cmd-cold-dim);
+	--os-win-edge-active: var(--hair) solid var(--cmd-cold);
+	--os-win-radius: 2px;
+	--os-win-radius-snapped: 0;
+	--os-win-shadow: 0 0 0 var(--hair) var(--cmd-grid), 0 12px 32px rgba(0, 0, 0, 0.45);
+	--os-title-h: 26px;
+	--os-title-bg: var(--cmd-deck);
+	--os-title-bg-active: color-mix(in srgb, var(--cmd-deck) 85%, var(--cmd-cold));
+	--os-title-edge: var(--hair) solid var(--cmd-cold-dim);
+	--os-title-font: var(--mono);
+	--os-btn-w: 30px;
+	--os-btn-hover: var(--cmd-cold-soft);
+	--os-btn-close-hover: var(--down);
+	--os-snap: var(--cmd-cold-soft);
+	--os-menu-bg: var(--cmd-deck);
+	--os-menu-radius: 2px;
+	--os-icon-radius: 2px;
+	--os-anim-open: 120ms;
+	--os-open-scale: 0.985;
+	--os-anim-min: 140ms;
+	--os-anim-max: 140ms;
+	--os-anim-close: 100ms;
+}
+
 /* Pantallas táctiles: todos los controles a la zona pulsable mínima. */
 @media (pointer: coarse) {
 	:root {
