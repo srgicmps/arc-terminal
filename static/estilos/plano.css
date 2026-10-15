@@ -260,3 +260,8 @@
 	outline-color: var(--on-amber);
 	outline-offset: calc(-1 * var(--sp-3));
 }
+
+/* «Más ▾» es un botón: la regla de la cabecera (fuera de capa) le daba la letra de los datos, no la de las pestañas. */
+[data-style='plano'][data-style] [data-ui='keys'] button.key {
+	font-family: var(--sans);
+}

@@ -234,6 +234,7 @@
 @media (prefers-reduced-motion: no-preference) {
 	[data-style='oceano'][data-style] [data-ui='key'],
 	[data-style='oceano'][data-style] .theme,
+	[data-style='oceano'][data-style] [data-ui='appearance'],
 	[data-style='oceano'][data-style] select,
 	[data-style='oceano'][data-style] [data-ui='cmd'],
 	[data-style='oceano'][data-style] .t td,

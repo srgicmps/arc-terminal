@@ -221,7 +221,7 @@
 	[data-style='bauhaus'] .seg {
 		--border: var(--bh-rule) solid var(--bh-ink);
 	}
-	[data-style='bauhaus'] .theme {
+	[data-style='bauhaus'] :is(.theme, [data-ui='appearance']) {
 		--radius-s: 50%;
 	}
 	[data-style='bauhaus'] .key[aria-current='page'] {

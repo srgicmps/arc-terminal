@@ -117,6 +117,41 @@ describe('estéticas', () => {
 		}
 	});
 
+	it('el acento elegido en «A tu gusto» también llega a AA sobre el panel y el fondo de cada estética', () => {
+		const aj = readFileSync('src/styles/ajustes.css', 'utf8');
+		const accent = (a: string, light: boolean) => ({
+			...tokens(aj, (s) => s.includes(`[data-accent='${a}']`) && !s.includes('data-theme')),
+			...(light ? tokens(aj, (s) => s.includes(`[data-accent='${a}']`) && s.includes("data-theme='light'")) : {})
+		});
+		const ids = ['terminal', ...ESTILOS.filter((e) => !e.fixedAccent && e.id !== 'terminal').map((e) => e.id)];
+		for (const id of ids)
+			for (const [theme, p] of Object.entries(palettes(id)))
+				for (const a of ['amber', 'cyan', 'blue']) {
+					const amber = hex(accent(a, theme === 'light')['--amber'], {});
+					expect(amber, a).not.toBeNull();
+					for (const surface of ['--panel', '--bg']) {
+						const bg = hex(p[surface], p);
+						if (bg) expect(contrast(amber!, bg), `${id} ${theme} ${a} sobre ${surface}`).toBeGreaterThanOrEqual(4.5);
+					}
+				}
+	});
+
+	it('el botón de Apariencia (◐) se pinta como «⋯» (.theme) en cada estética', () => {
+		// calido coloca la cabecera a mano (orden y márgenes de «⋯»), no su aspecto.
+		for (const f of files.filter((f) => f !== 'calido.css'))
+			for (const line of css(f.replace(/\.css$/, '')).split('\n'))
+				if (/\.theme\b/.test(line) && !line.includes('[data-ui=')) {
+					const text = css(f.replace(/\.css$/, ''));
+					const at = text.indexOf(line);
+					expect(text.slice(Math.max(0, at - 120), at + line.length + 120), `${f}: ${line.trim()}`).toContain("[data-ui='appearance']");
+				}
+	});
+
+	it('Apariencia no usa la clase .sheet (Fósforo la lee como la barra de comandos abierta en hoja)', () => {
+		expect(readFileSync('src/lib/components/Appearance.svelte', 'utf8')).not.toMatch(/class="(?:[^"]*\s)?sheet[\s"]/);
+		expect(css('retro')).not.toContain(':has(> .sheet)');
+	});
+
 	it('los ganchos data-ui de docs/estilos.md siguen en su componente (las estéticas se enganchan a ellos)', () => {
 		const hooks: Record<string, string> = {
 			'src/routes/+layout.svelte': 'app top brand keys key tape main tabs foot',
