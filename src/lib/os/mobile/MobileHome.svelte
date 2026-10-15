@@ -996,6 +996,56 @@
 			transform: scale(0.9);
 		}
 	}
+	/* iPhone y iPad (área de QA OS 3). Sin zoom por doble toque en las apps (dos toques seguidos en la Calculadora
+	   ampliaban la página) ni pellizco en inicio; en horizontal, nada debajo de la muesca. */
+	.phone {
+		touch-action: manipulation;
+		padding-left: env(safe-area-inset-left, 0px);
+		padding-right: env(safe-area-inset-right, 0px);
+	}
+	.home {
+		touch-action: pan-x pan-y;
+	}
+	.apps {
+		left: env(safe-area-inset-left, 0px);
+		right: env(safe-area-inset-right, 0px);
+	}
+	/* Tablet en vertical (iPad, 700–900 px): iconos algo mayores para tanto hueco. */
+	@media (min-width: 700px) and (min-height: 700px) {
+		.phone {
+			--os-icon-size: 72px;
+		}
+	}
+	/* Teléfono en horizontal: 6 filas no caben en ~390 px de alto y los iconos se montaban. Las mismas 24 casillas
+	   pasan a 8 × 3 (un widget grande ocupa media fila) y todo se compacta. */
+	@media (orientation: landscape) and (max-height: 540px) {
+		.phone {
+			--os-icon-size: 40px;
+		}
+		.page {
+			grid-template-columns: repeat(8, 1fr);
+			grid-template-rows: repeat(3, minmax(0, 1fr));
+			gap: var(--sp-4) var(--sp-12);
+			padding: var(--sp-4) var(--sp-20);
+		}
+		.page :global(.name) {
+			font-size: var(--fs-xs);
+		}
+		/* «Buscar» sigue a mano deslizando hacia abajo; quedan los puntos de página. */
+		.search {
+			display: none;
+		}
+		.below {
+			padding: var(--sp-4) 0;
+		}
+		.dock {
+			padding: var(--sp-6) var(--sp-12);
+		}
+		.switching .slot {
+			flex-basis: 56vw;
+			height: 70dvh;
+		}
+	}
 	@media (prefers-reduced-motion: reduce) {
 		.home,
 		.slot,
