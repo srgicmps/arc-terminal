@@ -1146,3 +1146,8 @@
 [data-style='cupertino'][data-style] ::-webkit-scrollbar-thumb:hover {
 	background-color: var(--cu-scroll-hover);
 }
+
+/* «Más ▾» es un botón y la cabecera (fuera de capa) le quitaba el fondo: píldora como las demás pestañas. */
+[data-style='cupertino'][data-style] [data-ui='keys'] button.key:not([aria-current='page']) {
+	background: var(--raise);
+}

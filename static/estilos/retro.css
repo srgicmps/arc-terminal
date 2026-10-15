@@ -139,7 +139,8 @@
 		--fs-s: 20px;
 		--track-brand: 0.08em;
 	}
-	[data-style='retro'] [data-ui='keys'] > a {
+	[data-style='retro'] [data-ui='keys'] > a,
+	[data-style='retro'] [data-ui='keys'] button.key {
 		font-family: var(--pixel);
 		--fs-s: 19px;
 		--track-code: 0.04em;
@@ -414,7 +415,9 @@
 	gap: var(--sp-4) var(--sp-6);
 	padding-block: var(--sp-6);
 }
-[data-style='retro'][data-style] [data-ui='keys'] > a {
+[data-style='retro'][data-style] [data-ui='keys'] > a,
+[data-style='retro'][data-style] [data-ui='keys'] button.key {
+	font-family: var(--pixel);
 	padding: var(--sp-1) var(--sp-8);
 	border: 0;
 	background: var(--line);
@@ -423,11 +426,13 @@
 [data-style='retro'][data-style] [data-ui='keys'] > a span {
 	color: inherit;
 }
-[data-style='retro'][data-style] [data-ui='keys'] > a:hover {
+[data-style='retro'][data-style] [data-ui='keys'] > a:hover,
+[data-style='retro'][data-style] [data-ui='keys'] button.key:hover {
 	text-decoration: underline;
 	text-underline-offset: var(--sp-3);
 }
-[data-style='retro'][data-style] [data-ui='keys'] > a[aria-current='page'] {
+[data-style='retro'][data-style] [data-ui='keys'] > a[aria-current='page'],
+[data-style='retro'][data-style] [data-ui='keys'] button.key[aria-current='page'] {
 	background: var(--amber);
 	color: var(--on-amber);
 }
