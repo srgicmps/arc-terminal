@@ -114,20 +114,7 @@ https://data.europa.eu/api/hub/search/search?q=frontex%20illegal%20border%20cros
 # 28.7 BTMM: tipos de referencia de la Fed de Nueva York (sin clave)
 https://markets.newyorkfed.org/api/rates/secured/sofr/last/2.json
 https://markets.newyorkfed.org/api/rates/unsecured/effr/last/2.json
-# F-B Dinero: IPCA de España por grupos COICOP 2018 (variación anual), índice largo y pesos de la cesta
-https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_minr?format=JSON&lang=EN&geo=ES&unit=RCH_A&lastTimePeriod=1
-https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_minr?format=JSON&lang=EN&geo=ES&coicop18=TOTAL&lastTimePeriod=1
-https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_minr?format=JSON&lang=EN&geo=ES&coicop18=TOTAL&unit=I25&sinceTimePeriod=2005-01&lastTimePeriod=3
-https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_midx?format=JSON&lang=EN&geo=ES&coicop=CP00&unit=I15&sinceTimePeriod=2005-01
-https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_inw?format=JSON&lang=EN&geo=ES&lastTimePeriod=1
-https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_iw?format=JSON&lang=EN&geo=ES&lastTimePeriod=1
-# F-B Dinero: tipos de los depósitos nuevos de hogares en España (BCE, MIR): a la vista y a plazo hasta 1 año
-https://data-api.ecb.europa.eu/service/data/MIR/M.ES.B.L22.F.R.A.2250.EUR.N?lastNObservations=2&format=csvdata
-https://data-api.ecb.europa.eu/service/data/MIR/M.ES.B.L21.A.R.A.2250.EUR.N?lastNObservations=2&format=csvdata
-# F-B Dinero: letras del Tesoro (BdE, síntesis de indicadores; y la web del Tesoro)
-https://www.bde.es/webbe/es/estadisticas/compartido/datos/csv/si_1_2.csv ~ LETRAS|Letras|DESCRIPCI
-https://www.tesoro.es/deuda-publica/subastas/resultado-ultimas-subastas/letras-del-tesoro ~ meses|Tipo marginal|rentabilidad
-https://www.tesoro.es/aviso-legal ~ reutiliz|reproduc|fuente
-# F-B Dinero: IPC de España por grupos (INE, base 2025): tablas
-https://servicios.ine.es/wstempus/js/ES/OPERACIONES_DISPONIBLES ~ IPC
-https://servicios.ine.es/wstempus/js/ES/TABLAS_OPERACION/IPC ~ grupos
+# F-B Dinero (2): índice largo COICOP 2018, nombres de los grupos con su peso y la columna de letras del BdE
+https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_minr?format=JSON&lang=EN&geo=ES&coicop18=TOTAL&unit=I15&sinceTimePeriod=2005-01
+https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_iw?format=JSON&lang=EN&geo=ES&lastTimePeriod=1&coicop18=CP01&coicop18=CP02&coicop18=CP03&coicop18=CP04&coicop18=CP05&coicop18=CP06&coicop18=CP07&coicop18=CP08&coicop18=CP09&coicop18=CP10&coicop18=CP11&coicop18=CP12&coicop18=CP13
+https://www.bde.es/webbe/es/estadisticas/compartido/datos/csv/si_1_2.csv ~ .{0,400}Letras.{0,400}
