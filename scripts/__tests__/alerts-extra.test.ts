@@ -220,7 +220,7 @@ describe('Valores seguidos', () => {
 		expect(first.ids).toEqual(['stock:LMT:2026-10-14T10:00Z']);
 		expect(first.alerts[0].title).toBe('Lockheed Martin −4,2 %');
 		expect(first.alerts[0].body).toBe('Variación del día (escalón ±2 %). Cotiza a 100,00; cierre anterior, 101,00.');
-		expect(first.alerts[0].click).toBe('https://srgicmps.github.io/arc-terminal/s?sym=LMT');
+		expect(first.alerts[0].click).toBe('https://arc-terminal.pages.dev/s?sym=LMT');
 		const log = emptyLog();
 		first.alerts[0].commit!(log);
 		expect(log.last['stock:LMT']).toBe('2026-10-14|101|100');

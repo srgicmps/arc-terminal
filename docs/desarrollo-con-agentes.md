@@ -58,7 +58,7 @@ Las mejoras sueltas se numeran **M1, M2…**; las decisiones de Sergi, **D1, D2�
   el chat de una sesión.
 - **Claves.** Nunca se piden ni se pegan en un chat. Sergi las crea y las guarda como Secret del repo
   (Settings → Secrets and variables → Actions → *Repository secrets*).
-- **Licencias de datos.** La web es pública: antes de publicar una fuente nueva hay que mirar sus términos.
+- **Licencias de datos.** El repo es público (y la web lo fue): antes de publicar una fuente nueva hay que mirar sus términos.
   Si hay dudas, decide Sergi.
 - **Decisiones provisionales.** Si Sergi delega («haz lo que creas oportuno»), se aplica la recomendación,
   se marca como provisional y se le enseña después para que la revise.

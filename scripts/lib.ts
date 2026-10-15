@@ -1,5 +1,6 @@
 /// <reference types="node" />
 // Herramientas comunes para los scripts que descargan datos.
+import { LEGACY_SITE, SITE } from './site.ts';
 
 /** Una fuente de datos: cómo se llama, cada cuánto merece la pena refrescarla y cómo descargarla. */
 export interface Source<T = unknown> {
@@ -144,8 +145,38 @@ export function withDeadline<T>(promise: Promise<T>, ms: number, message: string
 	return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
 }
 
-/** La carpeta de datos de la web publicada: las fuentes que acumulan en archivos extra leen de aquí lo último. */
-export const PUBLISHED = 'https://srgicmps.github.io/arc-terminal/data';
+/**
+ * Cabeceras del service token de Cloudflare Access (Secrets CF_ACCESS_CLIENT_ID y CF_ACCESS_CLIENT_SECRET):
+ * con ellas, las Actions leen la web privada sin pasar por el login. Vacío si no están.
+ */
+export function accessHeaders(): Record<string, string> {
+	const id = process.env.CF_ACCESS_CLIENT_ID;
+	const secret = process.env.CF_ACCESS_CLIENT_SECRET;
+	return id && secret ? { 'CF-Access-Client-Id': id, 'CF-Access-Client-Secret': secret } : {};
+}
+
+/**
+ * Un archivo de la carpeta de datos de la web publicada (`path`, relativo a /data/): la copia anterior que
+ * reutilizan las fuentes. Prueba primero la web de Cloudflare (con el service token de Access) y, si no
+ * responde bien, la de GitHub Pages mientras conviva. Sin seguir redirecciones: sin token válido, Access
+ * redirige al login, y eso cuenta como fallo. Devuelve la primera respuesta buena, la última si ninguna lo
+ * es, o null si no hubo respuesta.
+ */
+export async function fetchPublished(path: string, ms = 30_000): Promise<Response | null> {
+	let last: Response | null = null;
+	const sites: [string, Record<string, string>][] = [
+		[SITE, accessHeaders()],
+		[LEGACY_SITE, {}]
+	];
+	for (const [site, headers] of sites) {
+		const res = await fetch(`${site}/data/${path}`, { headers, redirect: 'manual', signal: AbortSignal.timeout(ms) }).catch(
+			() => null
+		);
+		if (res?.ok) return res;
+		if (res) last = res;
+	}
+	return last;
+}
 
 /** Escribe un archivo extra de una fuente en static/data/<path>. */
 export async function writeExtra(path: string, content: unknown) {

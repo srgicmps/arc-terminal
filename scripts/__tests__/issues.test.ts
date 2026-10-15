@@ -95,7 +95,7 @@ describe('body', () => {
 		expect(text).toContain('Falla desde: 14 oct 2026, 12:22 (hora de Madrid)');
 		expect(text).not.toContain('UTC');
 		expect(text).toContain('`HTTP 403 en https://f.org/s`');
-		expect(text).toContain('https://srgicmps.github.io/arc-terminal/status');
+		expect(text).toContain('https://arc-terminal.pages.dev/status');
 		expect(text).not.toContain('SECRETO');
 	});
 });

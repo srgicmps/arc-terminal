@@ -50,8 +50,8 @@ import {
 import { minute } from './history.ts';
 import { EU_ADRS, EU_GAP_MS, fetchQuotes } from './sources/alert-quotes.ts';
 import { redact } from './issues.ts';
+import { fetchPublished } from './lib.ts';
 
-const LOG_URL = `${SITE}/data/notify-log.json`;
 const NTFY = 'https://ntfy.sh';
 const DAY = 86_400_000;
 
@@ -271,8 +271,8 @@ export function publicLog(log: NotifyLog): NotifyLog {
 
 async function publishedLog(): Promise<NotifyLog | null> {
 	try {
-		const res = await fetch(LOG_URL, { signal: AbortSignal.timeout(20_000) });
-		return res.ok ? parseLog(await res.json()) : null;
+		const res = await fetchPublished('notify-log.json', 20_000);
+		return res?.ok ? parseLog(await res.json()) : null;
 	} catch {
 		return null;
 	}

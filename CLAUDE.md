@@ -45,8 +45,15 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   main) y `tv-shots` se lanzan a mano: Run workflow sobre la rama, con «herramienta».
 
 ## Arquitectura
-- **GitHub Pages** sirve la web estática en https://srgicmps.github.io/arc-terminal/ (por eso hay que
-  configurar `paths.base` en SvelteKit).
+- **La web es privada**: **Cloudflare Pages** la sirve en https://arc-terminal.pages.dev (en la raíz), con
+  **Cloudflare Access** delante (login por código al email de Sergi). La URL está en un solo sitio, `scripts/site.ts`,
+  y se cambia sin tocar código con la Variable de GitHub `SITE_URL` (p. ej. al pasar a un dominio propio).
+  Las Actions publican con `wrangler` (Secrets `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`) y leen la copia
+  anterior con el service token de Access (`CF_ACCESS_CLIENT_ID`/`CF_ACCESS_CLIENT_SECRET`, `fetchPublished` en
+  `scripts/lib.ts`).
+- **Transición**: GitHub Pages sigue publicando la misma web en https://srgicmps.github.io/arc-terminal/ (por eso
+  `paths.base` es `/arc-terminal` salvo con `BASE_PATH` vacío, que usa el build de Cloudflare) hasta que Sergi
+  confirme que la nueva va bien; luego se apaga en otro PR.
 - Pages no tiene servidor, así que **GitHub Actions hace de servidor**: cada 15–30 min un script de Node
   descarga los datos, los guarda como JSON y vuelve a publicar la web. Así tampoco hay problemas de CORS.
 - **Dos velocidades**: `deploy.yml` (cada 15 min y en cada push a main) refresca todo lo caducado según el
@@ -154,7 +161,7 @@ Excepción aprobada por Sergi: puertos AIS de Maó y Ciutadella (D1).
 Cuando termine una fase, actualiza esta lista.
 
 ## Reglas
-- El repo y la web son **públicos**: nada privado, ninguna clave, ninguna URL interna.
+- El **repo es público** (la web, privada tras Access): nada privado en el repo, ninguna clave, ninguna URL interna.
 - Comprueba cada fuente al usarla: si el RSS sigue vivo, límites del plan gratuito, términos de uso.
 - Los datos de ejemplo se marcan siempre como de ejemplo; nunca se presentan como reales.
 - GitHub desactiva los cron de un repo público tras 60 días sin actividad: lo evita `.github/workflows/keepalive.yml`.

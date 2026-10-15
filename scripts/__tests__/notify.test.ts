@@ -195,7 +195,7 @@ describe('ntfy', () => {
 		title: 'Fuente caída',
 		body: '',
 		tags: 'warning',
-		click: 'https://srgicmps.github.io/arc-terminal/geo',
+		click: 'https://arc-terminal.pages.dev/geo',
 		time: NOW,
 		markdown
 	});
@@ -270,7 +270,7 @@ describe('runNotify', () => {
 		const h = calls[0].init?.headers as Record<string, string>;
 		expect(h.Priority).toBe('5');
 		expect(h.Tags).toBe('warning');
-		expect(h.Click).toBe('https://srgicmps.github.io/arc-terminal/geo');
+		expect(h.Click).toBe('https://arc-terminal.pages.dev/geo');
 		expect(lines).toEqual(['ntfy · P1 quake:b: enviado (200)', 'ntfy · P1 quake:a: 429, se descarta']);
 		const json = await written();
 		expect(JSON.parse(json).data.entries).toEqual([

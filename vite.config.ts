@@ -22,8 +22,9 @@ export default defineConfig(({ command, isPreview }) => ({
 			paths: {
 				// GitHub Pages sirve la web en https://srgicmps.github.io/arc-terminal/,
 				// así que al construir todas las rutas empiezan por /arc-terminal.
+				// Cloudflare Pages la sirve en la raíz: la Action construye con BASE_PATH vacío.
 				// En desarrollo se queda en la raíz: http://localhost:5173/
-				base: command === 'build' || isPreview ? '/arc-terminal' : ''
+				base: (process.env.BASE_PATH as '' | `/${string}` | undefined) ?? (command === 'build' || isPreview ? '/arc-terminal' : '')
 			}
 		})
 	]
