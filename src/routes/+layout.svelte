@@ -114,7 +114,13 @@
 	$effect(() => {
 		void page.route.id;
 		if (!matchMedia('(max-width: 720px)').matches) return;
-		document.querySelector('.keys [aria-current="page"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+		// Solo se mueve la fila: scrollIntoView movía también la página entera en Safari (logo y «⋯» cortados).
+		const row = document.querySelector<HTMLElement>('.keys');
+		const key = row?.querySelector<HTMLElement>('[aria-current="page"]');
+		if (!row || !key) return;
+		const r = row.getBoundingClientRect();
+		const k = key.getBoundingClientRect();
+		row.scrollLeft += k.left - r.left - (r.width - k.width) / 2;
 	});
 
 	// Deslizar entre vistas en el móvil (lote 22): a izquierda o derecha, a la vista de al lado de la fila de
@@ -438,6 +444,8 @@
 		/* Accesos de arriba (móvil y tableta): se ven igual, pero la zona pulsable llega a --touch de alto. */
 		.keys :global(.key) {
 			position: relative;
+			/* Sin la mancha gris de Safari al tocar: cubría la zona pulsable entera, desplazada de la pestaña. */
+			-webkit-tap-highlight-color: transparent;
 		}
 
 		.keys :global(.key::after) {
@@ -488,6 +496,8 @@
 	.keys {
 		display: flex;
 		flex-wrap: wrap;
+		/* Sin estirar: todas las pestañas miden lo mismo, también «Más», que es un botón. */
+		align-items: center;
 		gap: var(--sp-6);
 		padding-block: var(--sp-2) var(--sp-10);
 	}
