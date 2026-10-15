@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 	import { SvelteSet } from 'svelte/reactivity';
-	import { appOf, close, cycle, focusedWin, goDesk, loadOs, maximize, minimize, os, setArea, snap } from '#lib/os/os.svelte.ts';
+	import { appOf, close, cycle, focusedWin, goDesk, loadOs, maximize, minimize, openApp, os, setArea, snap } from '#lib/os/os.svelte.ts';
 	import { snapRect, type Snap } from '#lib/os/wm.ts';
 	import Window from './Window.svelte';
 
@@ -24,7 +24,7 @@
 
 	/**
 	 * Atajos de Arc OS (todos con Alt, para no pisar los de la web): Alt+º o Alt+` siguiente ventana (con ⇧, la
-	 * anterior), Alt+↑ maximizar, Alt+↓ minimizar, Alt+⇧+← / → encajar a una mitad, Alt+W cerrar y Alt+1…6 escritorio.
+	 * anterior), Alt+↑ maximizar, Alt+↓ minimizar, Alt+⇧+← / → encajar a una mitad, Alt+W cerrar, Alt+1…6 escritorio y Alt+T Terminal.
 	 * Devuelve si era un atajo.
 	 */
 	export function handleKey(e: Key): boolean {
@@ -37,6 +37,8 @@
 			if (d) goDesk(d.id);
 			return true;
 		}
+		// Alt+T: una Terminal nueva (OS 3, src/lib/os/apps/terminal.ts).
+		if (e.code === 'KeyT') return (openApp('terminal'), true);
 		if (!f) return false;
 		if (e.key === 'ArrowUp') return (maximize(f.uid), true);
 		if (e.key === 'ArrowDown') return (f.snap ? snap(f.uid, null) : minimize(f.uid), true);

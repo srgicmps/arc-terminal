@@ -139,9 +139,9 @@
 			left: var(--gutter);
 			bottom: calc(var(--tabbar-h) + var(--sp-12) + env(safe-area-inset-bottom, 0px));
 		}
+		/* En el móvil, sin la vista previa: el aviso no tapa media pantalla. */
 		.notice :global(.pv) {
-			flex: none;
-			max-width: none;
+			display: none;
 		}
 	}
 	@keyframes rise {

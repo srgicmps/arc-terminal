@@ -232,7 +232,7 @@
 		<!-- Estética, tema, acento y densidad: un solo botón (src/lib/components/Appearance.svelte). -->
 		<Appearance />
 		<!-- Lo que se usa poco va en «⋯»: así la cabecera queda en logo, barra, sitio, hora y avisos. -->
-		<Menu label="Más opciones" cls="theme" ui="more" title="Más opciones: encajar y portada modular">
+		<Menu label="Más opciones" cls="theme" ui="more" title="Más opciones: Modo OS, encajar y portada modular">
 			{#snippet button()}<span aria-hidden="true">⋯</span>{/snippet}
 			{#snippet children(close)}
 				<!-- Terminal clásico → Modo OS (la vuelta, en el menú Inicio, el Panel de control y el móvil). -->
