@@ -22,6 +22,7 @@
 	import { hiddenPanels, isSimple, trimming } from '#lib/modo.svelte.ts';
 	import { isEssential, plainTitle } from '#lib/simple.ts';
 	import Note from './ui/Note.svelte';
+	import Term from './ui/Term.svelte';
 	import Share from './ui/Share.svelte';
 
 	interface Props {
@@ -180,7 +181,7 @@
 				onkeydown={titleKeydown}
 			>
 				{#if !max}<span class="fold" aria-hidden="true">{shut ? '▸' : '▾'}</span>{/if}{shown}
-			</button>
+			</button>{#if isSimple()}<Term of={title} />{/if}
 		</h2>
 		<div class="ph-r">
 			{#if meta}<span class:accent>{meta}</span>{/if}

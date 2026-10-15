@@ -11,9 +11,11 @@
 	import { startClock } from '#lib/clock.svelte.ts';
 	import { COMMANDS } from '#lib/commands.ts';
 	import Clocks from '#lib/components/Clocks.svelte';
+	import Logo from '#lib/components/Logo.svelte';
 	import CommandBar from '#lib/components/CommandBar.svelte';
 	import Feedback from '#lib/components/Feedback.svelte';
 	import PlacePicker from '#lib/components/PlacePicker.svelte';
+	import InstallHint from '#lib/components/InstallHint.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { fit, initFit, toggleFit } from '#lib/fit.svelte.ts';
@@ -199,10 +201,7 @@
 <div class="app">
 	<header class="top">
 		<a class="brand" href={resolve('/')}>
-			<svg class="mark" viewBox="0 0 22 22" width="22" height="22" aria-hidden="true">
-				<path d="M4 16a7 7 0 0 1 14 0" />
-				<path d="M8 16a3 3 0 0 1 6 0" />
-			</svg>
+			<Logo />
 			<span>Arc <span class="brand-sub">Terminal</span></span>
 		</a>
 		<CommandBar />
@@ -275,7 +274,7 @@
 		</button>
 	{/if}
 
-	{#if !tv.on}<PanelIndex />{/if}
+	{#if !tv.on}<PanelIndex /><InstallHint />{/if}
 
 	<main
 		class:nudged={shift !== 0}
@@ -292,7 +291,9 @@
 		{#each thumb as c (c.code)}
 			<a href={routeHref(c.route)} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
 		{/each}
-		<button type="button" aria-label="Abrir la barra de comandos" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>/</button>
+		<button type="button" aria-label="Buscar o escribir un comando" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>
+			<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5 14 14" /></svg>
+		</button>
 	</nav>
 
 	{#if tv.on}
@@ -334,16 +335,6 @@
 		font-weight: var(--fw-bold);
 		letter-spacing: var(--track-brand);
 		text-transform: uppercase;
-	}
-
-	.mark {
-		display: block;
-		width: var(--logo);
-		height: var(--logo);
-		fill: none;
-		stroke: var(--amber);
-		stroke-width: 2;
-		stroke-linecap: round;
 	}
 
 	.theme {
@@ -600,7 +591,35 @@
 
 		.thumb button {
 			color: var(--amber);
-			font-size: var(--fs-l);
+		}
+
+		.thumb svg {
+			width: var(--sp-18);
+			height: var(--sp-18);
+			fill: none;
+			stroke: currentColor;
+			stroke-width: 1.6;
+			stroke-linecap: round;
+		}
+
+		/* La cabecera del móvil en una línea: logo a la izquierda; tu sitio y los botones, a la derecha. */
+		.top {
+			column-gap: var(--sp-10);
+		}
+
+		.top :global(.place .caret) {
+			display: none;
+		}
+
+		/* Accesos de arriba: se ven igual, pero la zona pulsable llega a --touch de alto. */
+		.key {
+			position: relative;
+		}
+
+		.key::after {
+			content: '';
+			position: absolute;
+			inset: calc((var(--touch) - 100%) / -2) 0;
 		}
 
 		/* Que el contenido no quede tapado por la barra. */

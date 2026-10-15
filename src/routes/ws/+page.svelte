@@ -22,6 +22,7 @@
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import { fxPhrase, movePhrase, phrases } from '#lib/plain.ts';
 	import { pctPhrase, riskPhrase, summaryLine, trend } from '#lib/summary.ts';
 	import RiskGauge from '#lib/components/RiskGauge.svelte';
 	import VixCurve from '#lib/components/VixCurve.svelte';
@@ -47,6 +48,14 @@
 	const fxPct = $derived(eurusd.length > 1 ? (eurusd.at(-1)!.v / eurusd.at(-2)!.v - 1) * 100 : null);
 	const btc = $derived(data.crypto?.data.coins.find((c) => c.id === 'bitcoin'));
 	const tone = (v: number | null | undefined) => (v == null ? 'mut' : v > 0 ? 'up' : v < 0 ? 'down' : 'flat');
+	// Modo Sencillo: el euro, el bono y el bitcoin en frases (src/lib/plain.ts).
+	const plain = $derived(
+		phrases([
+			fxPhrase(eurusd),
+			us10 !== null && `Prestar a EE. UU. a 10 años da un ${us10.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} % al año.`,
+			movePhrase('El bitcoin', btc?.change24h, 'en las últimas 24 horas')
+		])
+	);
 	// Resumen en una línea (src/lib/summary.ts): el termómetro, el bono a 10 años, el euro y el bitcoin.
 	const summary = $derived(
 		summaryLine([
@@ -163,7 +172,7 @@
 	const map = $derived(MAPS.find((m) => m.key === mapSel.value) ?? MAPS[0]);
 </script>
 
-<ViewHeader code="WS" title="Wall Street e inversión" sub="TradingView, Tesoro de EE. UU., BCE, CoinGecko y titulares de mercados" {summary} />
+<ViewHeader code="WS" title="Wall Street e inversión" sub="TradingView, Tesoro de EE. UU., BCE, CoinGecko y titulares de mercados" {summary} {plain} />
 
 <Tiles cols={3}>
 	<Tile
