@@ -6,6 +6,7 @@
 <script lang="ts">
 	import OsIcon from '../icons/OsIcon.svelte';
 	import { tick } from 'svelte';
+	import { overlay } from '../focus.ts';
 	import { installedApps } from '../packages.svelte.ts';
 	import { searchAll, type Hit } from '../system/search.ts';
 	import { runHit } from '../system/search.svelte.ts';
@@ -41,7 +42,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div class="scrim" onclick={() => (shell.open = null)}></div>
-<div class="spot" role="dialog" aria-label="Buscar" tabindex="-1" onkeydown={key}>
+<div class="spot" role="dialog" aria-modal="true" aria-label="Buscar" tabindex="-1" onkeydown={key} use:overlay={{ trap: true }}>
 	<input
 		bind:this={input}
 		bind:value={query}

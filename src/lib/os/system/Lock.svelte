@@ -6,6 +6,7 @@
 	cuenta ya la protege Cloudflare Access.
 -->
 <script lang="ts">
+	import { overlay } from '../focus.ts';
 	import { untrack } from 'svelte';
 	import { cloud } from '#lib/cloud.svelte.ts';
 	import Logo from '#lib/components/Logo.svelte';
@@ -66,6 +67,7 @@
 	aria-label="Pantalla de bloqueo. Pulsa una tecla para entrar"
 	tabindex="-1"
 	bind:this={el}
+	use:overlay
 	onpointerdown={down}
 	onpointerup={up}
 	onkeydown={key}

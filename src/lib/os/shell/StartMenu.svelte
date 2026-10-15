@@ -4,6 +4,7 @@
 	Escape lo cierra; Intro en el buscador abre la primera que coincide.
 -->
 <script lang="ts">
+	import { overlay } from '../focus.ts';
 	import OsIcon from '../icons/OsIcon.svelte';
 	import { tick } from 'svelte';
 	import { leave as onleave } from './bridge.ts';
@@ -59,7 +60,7 @@
 	</li>
 {/snippet}
 
-<div id="os-start" class="start pop" role="dialog" aria-label="Menú Inicio" tabindex="-1" onkeydown={key}>
+<div id="os-start" class="start pop" role="dialog" aria-label="Menú Inicio" tabindex="-1" onkeydown={key} use:overlay>
 	<input bind:this={input} bind:value={query} type="search" placeholder="Buscar apps: bolsa, luz, NVDA…" aria-label="Buscar apps" enterkeyhint="go" />
 	<div class="scroll">
 		{#if query.trim()}

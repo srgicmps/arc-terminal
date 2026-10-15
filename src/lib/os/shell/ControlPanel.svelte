@@ -11,6 +11,7 @@
 	import { cloud } from '#lib/cloud.svelte.ts';
 	import { accountLine } from '#lib/os/system/account.ts';
 	import * as os from './bridge.ts';
+	import { overlay } from '../focus.ts';
 	import { setBar, setName, setWidgets, shell } from './shell.svelte.ts';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from './widgets.ts';
 
@@ -45,7 +46,7 @@
 	const account = $derived(accountLine(cloud.state, cloud.user, cloud.frozen));
 </script>
 
-<div id="os-control" class="control" role="dialog" aria-label="Panel de control">
+<div id="os-control" class="control" role="dialog" aria-label="Panel de control" use:overlay={{ autofocus: true, onescape: () => (shell.open = null) }}>
 	<header>
 		<h2>Panel de control</h2>
 		<button type="button" aria-label="Cerrar el panel de control" onclick={() => (shell.open = null)}><UiIcon id="close" size={12} /></button>

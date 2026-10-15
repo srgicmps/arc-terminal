@@ -1,6 +1,6 @@
 <!--
 	Menú contextual del Modo OS (clic derecho): lo usan las ventanas y, en el escritorio, OS 2. Se coloca donde se
-	pide y se recoloca para no salirse de la pantalla. Teclado: flechas, Inicio/Fin, Intro y Esc; clic fuera cierra.
+	pide y se recoloca para no salirse de la pantalla. Teclado: flechas, Inicio/Fin, Intro y Esc; clic fuera cierra. Al cerrarse, el foco vuelve a quien lo abrió.
 	Uso: <ContextMenu x={e.clientX} y={e.clientY} items={[{ label: 'Cerrar', kbd: 'Alt+W', run: … }, 'sep']} onclose={…} />
 -->
 <script lang="ts" module>
@@ -18,6 +18,8 @@
 </script>
 
 <script lang="ts">
+	import { overlay } from '#lib/os/focus.ts';
+
 	let { x, y, items, label = 'Menú', onclose }: { x: number; y: number; items: MenuEntry[]; label?: string; onclose: () => void } = $props();
 
 	let menu = $state<HTMLDivElement>();
@@ -68,7 +70,7 @@
 	});
 </script>
 
-<div class="menu" data-ui="os-menu" role="menu" aria-label={label} tabindex="-1" bind:this={menu} style:left="{pos.x}px" style:top="{pos.y}px" {onkeydown} oncontextmenu={(e) => e.preventDefault()}>
+<div class="menu" data-ui="os-menu" role="menu" aria-label={label} tabindex="-1" bind:this={menu} use:overlay style:left="{pos.x}px" style:top="{pos.y}px" {onkeydown} oncontextmenu={(e) => e.preventDefault()}>
 	{#each items as item, i (i)}
 		{#if item === 'sep'}
 			<div class="sep" role="separator"></div>

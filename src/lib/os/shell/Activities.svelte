@@ -4,6 +4,7 @@
 	escribir, cambia el mosaico por las apps que coinciden. Escape o tocar el fondo, vuelve.
 -->
 <script lang="ts">
+	import { overlay } from '../focus.ts';
 	import OsIcon from '../icons/OsIcon.svelte';
 	import { tick } from 'svelte';
 	import * as os from './bridge.ts';
@@ -38,7 +39,7 @@
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-<div class="acts" role="dialog" aria-label="Actividades" tabindex="-1" onkeydown={key} onclick={(e) => e.target === e.currentTarget && done()}>
+<div class="acts" role="dialog" aria-modal="true" aria-label="Actividades" tabindex="-1" onkeydown={key} use:overlay={{ trap: true }} onclick={(e) => e.target === e.currentTarget && done()}>
 	<input bind:this={input} bind:value={query} type="search" placeholder="Escribe para buscar" aria-label="Buscar apps" />
 
 	<div class="main">
