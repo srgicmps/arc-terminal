@@ -4,7 +4,9 @@
 	Tocar una app abierta la trae al frente (o la minimiza si ya estaba delante); una cerrada, la abre.
 -->
 <script lang="ts">
+	import ContextMenu, { type MenuEntry } from '#lib/components/os/ContextMenu.svelte';
 	import * as os from './bridge.ts';
+	import { appMenu, winMenu } from './menus.ts';
 	import { shell, toggle } from './shell.svelte.ts';
 	import { magnify } from './skins.ts';
 	import type { StartApp } from './start.ts';
@@ -28,6 +30,13 @@
 	}
 	const scale = (i: number) => (pointer === null || centers[i] === undefined ? 1 : magnify(pointer - centers[i]));
 
+	let menu = $state<{ x: number; y: number; items: MenuEntry[] } | null>(null);
+	function ctx(e: MouseEvent, a: StartApp) {
+		e.preventDefault();
+		const mine = wins.filter((w) => w.appId === a.id);
+		menu = { x: e.clientX, y: e.clientY, items: mine.length ? winMenu(mine.find((w) => w.focused) ?? mine[0]) : appMenu(a.id) };
+	}
+
 	function press(a: StartApp) {
 		const mine = wins.filter((w) => w.appId === a.id);
 		if (!mine.length) return os.open(a.id);
@@ -46,7 +55,7 @@
 		{#each items as a, i (a.id)}
 			{@const open = wins.some((w) => w.appId === a.id)}
 			<li style:--s={scale(i)}>
-				<button type="button" aria-label={`${a.title}${open ? ' (abierta)' : ''}`} onclick={() => press(a)}>
+				<button type="button" aria-label={`${a.title}${open ? ' (abierta)' : ''}`} onclick={() => press(a)} oncontextmenu={(e) => ctx(e, a)}>
 					<span class="ico" aria-hidden="true">{a.icon ?? '·'}</span>
 					<span class="tip" aria-hidden="true">{a.title}</span>
 				</button>
@@ -62,6 +71,7 @@
 		</li>
 	</ul>
 </nav>
+{#if menu}<ContextMenu x={menu.x} y={menu.y} items={menu.items} label="Menú de la app" onclose={() => (menu = null)} />{/if}
 
 <style>
 	button {

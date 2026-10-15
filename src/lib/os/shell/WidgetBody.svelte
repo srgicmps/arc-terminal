@@ -13,7 +13,7 @@
 	import { shell } from './shell.svelte.ts';
 	import { wdata } from './widgetdata.svelte.ts';
 	import { statusSummary, type WidgetKind } from './widgets.ts';
-	import { timeIn, ZONES } from './zones.ts';
+	import { localZone, timeIn, ZONES } from './zones.ts';
 
 	interface Props {
 		kind: WidgetKind;
@@ -26,7 +26,7 @@
 	const wx = $derived(wdata.weather?.weather ?? null);
 	const nyc = MARKETS.find((m) => m.code === 'NYC')!;
 	const ny = $derived(clock.now ? marketStatus(nyc, clock.now) : null);
-	const hour = $derived(clock.now ? Number(timeIn(Intl.DateTimeFormat().resolvedOptions().timeZone, clock.now).slice(0, 2)) : 12);
+	const hour = $derived(clock.now ? Number(timeIn(localZone(), clock.now).slice(0, 2)) : 12);
 	const hello = $derived(hour < 6 ? 'Buenas noches' : hour < 14 ? 'Buenos días' : hour < 21 ? 'Buenas tardes' : 'Buenas noches');
 	const luzLine = $derived(luz ? `${hourLabel(luz.first)}–${hourLabel(luz.after)} ${luz.tomorrow ? 'mañana' : 'hoy'} · ${nf(luz.avg, 3)} €/kWh` : null);
 
