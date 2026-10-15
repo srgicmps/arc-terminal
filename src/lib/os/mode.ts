@@ -4,7 +4,7 @@
 export type OsMode = 'os' | 'clasico';
 
 /** Modo guardado. Sin nada, Terminal clásico. */
-export const OS_KEY = 'arc-os';
+export const OS_KEY = 'arc-shell';
 /** Ya se ha enseñado el aviso «Prueba el Modo OS» a quien usaba la terminal antes de que existiera. */
 export const OS_INVITE_KEY = 'arc-os-invite';
 
