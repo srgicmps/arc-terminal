@@ -508,7 +508,8 @@
 	:global(html[data-embed]) .keys,
 	:global(html[data-embed]) .tape,
 	:global(html[data-embed]) .thumb,
-	:global(html[data-embed]) .status {
+	:global(html[data-embed]) .status,
+	:global(html[data-embed] aside.install) {
 		display: none;
 	}
 

@@ -1,6 +1,6 @@
 // Arc OS en el navegador: el estado de los escritorios (un $state, como un reactive() de Vue) y las acciones que
 // usan las ventanas, la barra de tareas, el menú Inicio y la terminal. La lógica está en wm.ts; aquí solo se
-// guarda (localStorage «arc-os», que se sincroniza con la cuenta) y se lleva el tamaño del escritorio.
+// guarda (localStorage «arc-os-desks», que se sincroniza con la cuenta) y se lleva el tamaño del escritorio.
 //
 // API para las otras piezas de Arc OS (OS 2 escritorio y barra, OS 3 móvil y terminal):
 //   os.state            escritorios y ventanas (solo leer; para cambiar, las funciones de abajo)
@@ -10,14 +10,11 @@
 //   openPath('/eco')    abre la app de una ruta de la web, con esa ruta
 //   focus · close · minimize · maximize · snap · place · cycle
 //   newDesk · rename · removeDesk · goDesk · sendToDesk
-//   shell.value         'clasico' | 'os' (arc-shell) · setShell()
+// El modo (Terminal clásico ↔ Modo OS, clave arc-shell) lo lleva src/lib/os/mode.svelte.ts (OS 3).
 import { APPS, appOfPath, findApp, type OsApp } from './apps.ts';
 import * as wm from './wm.ts';
 
-export const OS_KEY = 'arc-os';
-export const SHELL_KEY = 'arc-shell';
-export type Shell = 'clasico' | 'os';
-export const isShell = (v: unknown): v is Shell => v === 'clasico' || v === 'os';
+export const OS_KEY = 'arc-os-desks';
 
 const known = (id: string) => !!findApp(id);
 
@@ -28,8 +25,6 @@ export const os = $state({
 	notice: null as { text: string; at: number } | null,
 	loaded: false
 });
-
-export const shell = $state({ value: 'clasico' as Shell });
 
 export const desk = () => wm.activeDesk(os.state);
 export const focusedWin = () => wm.focused(desk());
@@ -46,20 +41,6 @@ export function loadOs() {
 		os.state = wm.emptyState();
 	}
 	os.loaded = true;
-}
-
-export function loadShell() {
-	try {
-		const v = localStorage.getItem(SHELL_KEY);
-		if (isShell(v)) shell.value = v;
-	} catch {}
-}
-
-export function setShell(v: Shell) {
-	shell.value = v;
-	try {
-		localStorage.setItem(SHELL_KEY, v);
-	} catch {}
 }
 
 let timer: ReturnType<typeof setTimeout> | undefined;

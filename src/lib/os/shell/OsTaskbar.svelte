@@ -4,13 +4,12 @@
 	acciones de uno a otro, como un componente contenedor de Vue que pasa props y escucha emits.
 -->
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import { APPS, appOf, desk, focus, focusedWin, goDesk, minimize, newDesk, openApp, openPath, os, setShell } from '#lib/os/os.svelte.ts';
-	import { opened } from '#lib/os/shell/shell.svelte.ts';
-	import type { StartApp } from '#lib/os/shell/start.ts';
-	import ShellBar from '#lib/os/shell/Taskbar.svelte';
-	import type { DeskInfo, TaskWin } from '#lib/os/shell/types.ts';
+	import { leaveOS } from '#lib/os/mode.svelte.ts';
+	import { APPS, appOf, desk, focus, focusedWin, goDesk, minimize, newDesk, openApp, openPath, os } from '#lib/os/os.svelte.ts';
+	import { opened } from './shell.svelte.ts';
+	import type { StartApp } from './start.ts';
+	import ShellBar from './Taskbar.svelte';
+	import type { DeskInfo, TaskWin } from './types.ts';
 
 	const apps: StartApp[] = APPS.map((a) => ({ id: a.id, title: a.name, code: a.code, icon: a.icon, desc: a.desc }));
 
@@ -37,10 +36,6 @@
 		if (win) opened(win.app);
 		else if (/^https?:/.test(href)) window.open(href, '_blank', 'noopener');
 	}
-	function onleave() {
-		setShell('clasico');
-		goto(resolve('/'));
-	}
 </script>
 
 <ShellBar
@@ -52,7 +47,7 @@
 	ondesk={goDesk}
 	{onnavigate}
 	onadddesk={() => newDesk()}
-	{onleave}
+	onleave={leaveOS}
 	deskW={os.area.w}
 	{status}
 />
