@@ -86,6 +86,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-os-system', storage: 'local', what: 'Ajustes del sistema de Arc OS: pantalla de inicio, sonidos', where: 'Arc OS, Panel de control', kind: 'ajuste' },
 	{ key: 'arc-os-skin', storage: 'local', what: 'Aspecto del escritorio de Arc OS: Windows, Mac o Linux', where: 'Arc OS, Panel de control y primer arranque', kind: 'ajuste' },
 	{ key: 'arc-os-icons', storage: 'local', what: 'Dónde está cada icono del escritorio de Arc OS', where: 'Arc OS, arrastrando los iconos', kind: 'ajuste' },
+	{ key: 'arc-os-fs', storage: 'local', what: 'Tus carpetas del escritorio de Arc OS: qué hay en cada una y la papelera', where: 'Arc OS, escritorio y ventanas de carpeta', kind: 'dato' },
 	{ key: 'arc-os-seen', storage: 'local', what: 'Avisos y novedades ya vistos en el centro de notificaciones de Arc OS', where: 'Arc OS, campana de la barra', kind: 'dato' },
 	{ key: 'arc-os-alarms', storage: 'local', what: 'Tus alarmas del Reloj de Arc OS (hora, nombre y días)', where: 'Arc OS, app Reloj', kind: 'dato' },
 	{ key: 'arc-<versión>', storage: 'cache', what: 'Los archivos de la web publicada; se renueva en cada publicación', where: 'Sin conexión', kind: 'caché' },

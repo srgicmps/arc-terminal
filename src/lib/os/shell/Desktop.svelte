@@ -45,7 +45,8 @@
 	}
 </script>
 
-<div class="desktop" data-wallpaper={shell.wallpaper} bind:clientWidth={w} bind:clientHeight={h}>
+<!-- data-fs-drop: aquí se pueden soltar iconos de las ventanas de carpeta; sobre otra ventana, no («none»). -->
+<div class="desktop" data-wallpaper={shell.wallpaper} data-fs-drop="desktop" bind:clientWidth={w} bind:clientHeight={h}>
 	<DesktopIcons {apps} {w} {h} />
 	<div class="widgets" class:hidden={shell.widgetsHidden}>
 		{#each widgets as wd (wd.kind)}
@@ -55,7 +56,7 @@
 		{/each}
 	</div>
 	<!-- Las ventanas del núcleo, encima; lo vacío deja pasar el ratón a los widgets y los iconos. -->
-	{#if children}<div class="wins">{@render children()}</div>{/if}
+	{#if children}<div class="wins" data-fs-drop="none">{@render children()}</div>{/if}
 </div>
 
 <style>

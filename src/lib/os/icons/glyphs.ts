@@ -105,6 +105,7 @@ export const GLYPHS: Record<string, Glyph> = {
 	launchpad: { hue: ['#6c737d', '#40464f'], d: '', f: dots(1.7, [6.5, 6.5], [12, 6.5], [17.5, 6.5], [6.5, 12], [12, 12], [17.5, 12], [6.5, 17.5], [12, 17.5], [17.5, 17.5]) },
 	terminal: { hue: ['#3a3f46', '#1d2025'], d: rr(2.5, 4, 19, 16, 2) + 'M6.5 9.5l3 2.5-3 2.5M12 15h5' },
 	folder: { hue: FOLDER, bare: true, d: FOLDER_BACK, f: 'M2 9.6A1.6 1.6 0 0 1 3.6 8h16.8A1.6 1.6 0 0 1 22 9.6V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z' },
+	carpeta: { hue: FOLDER, bare: true, d: FOLDER_BACK, f: 'M2 9.6A1.6 1.6 0 0 1 3.6 8h16.8A1.6 1.6 0 0 1 22 9.6V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z' },
 	'folder-open': { hue: FOLDER, bare: true, d: FOLDER_BACK, f: 'M4.6 9.1A1.6 1.6 0 0 1 6.1 8h15.4a1 1 0 0 1 .95 1.3l-2.6 9.3A2 2 0 0 1 17.9 20H4a2 2 0 0 1-2-2z' },
 	file: { hue: ['#8b939e', '#5a626d'], d: 'M6 3h8l5 5v13H6zM14 3v5h5M9 13h7M9 16.5h5' },
 	trash: { hue: BIN, d: 'M4 7h16' + TRASH },

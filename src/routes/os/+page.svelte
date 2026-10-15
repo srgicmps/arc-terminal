@@ -9,15 +9,23 @@
 	import Desktop from '#lib/os/shell/Desktop.svelte';
 	import OsChrome from '#lib/os/shell/OsChrome.svelte';
 	import { loadShell, shell } from '#lib/os/shell/shell.svelte.ts';
+	import { loadFiles } from '#lib/os/fs/fs.svelte.ts';
 	import SystemLayer from '#lib/os/system/SystemLayer.svelte';
 	import MobileHome from '#lib/os/mobile/MobileHome.svelte';
+	import { untrack } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 
 	// En el móvil (≤ 900 px), pantalla de inicio de teléfono (OS 3); sin el escritorio, así no carga sus iframes.
 	const phone = new MediaQuery('max-width: 900px', false);
 
 	// La shell de «OS 2» (aspecto, barras, escritorio con iconos y widgets) alrededor de las ventanas del núcleo.
-	$effect(() => loadShell(['top', 'imp', 'eco', 'ws', 'geo']));
+	// Luego, las carpetas del escritorio (la primera vez, con las apps ancladas y en las casillas que tenían).
+	$effect(() =>
+		untrack(() => {
+			loadShell(['top', 'imp', 'eco', 'ws', 'geo']);
+			loadFiles(shell.pinned.map((id) => apps.find((a) => a.id === id)).filter((a) => !!a).map((a) => ({ id: a.id, name: a.title })));
+		})
+	);
 </script>
 
 <svelte:head>
