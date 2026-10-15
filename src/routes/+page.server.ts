@@ -139,7 +139,7 @@ export const load: PageServerLoad = async () => {
 					{ label: 'Bitcoin ($)', kind: 'pct', decimals: 0, series: dailySeries('btc', 'Bitcoin', '$', 'CoinGecko', (crypto?.data.btcHistory ?? []).map((d) => ({ date: d.date, v: d.usd }))) }
 				]
 			});
-			return { top: w.top.slice(0, 3).map(({ k, title, url, days }) => ({ k, title, url, days })), markets: w.markets };
+			return { top: w.top.slice(0, 3).map(({ k, title, url, days, lang, titleEs }) => ({ k, title, url, days, lang, titleEs })), markets: w.markets };
 		})()
 	};
 };

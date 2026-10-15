@@ -50,7 +50,7 @@
 			{#if s.markets.length}
 				<Table>
 					<thead>
-						<tr><th>Mercado</th><th>Último</th><th>7 días</th><th class="mut">Fecha</th></tr>
+						<tr><th>Mercado</th><th>Último</th><th>7 días</th><th class="mut per">Fecha</th></tr>
 					</thead>
 					<tbody>
 						{#each s.markets as m (m.label)}
@@ -60,7 +60,7 @@
 								<td
 									><Change value={m.change} digits={m.kind === 'pct' ? 1 : 0} unit={m.kind === 'pct' ? ' %' : ' pb'} /></td
 								>
-								<td class="mut">{dm(`${m.t}T12:00:00Z`)}</td>
+								<td class="mut per">{dm(`${m.t}T12:00:00Z`)}</td>
 							</tr>
 						{/each}
 					</tbody>

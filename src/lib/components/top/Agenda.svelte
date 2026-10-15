@@ -24,7 +24,8 @@
 
 	const today = $derived(clock.now ? madridDate(clock.now) : '');
 	const results = $derived(
-		today ? earnings.filter((e) => e.date === today).sort((a, b) => a.symbol.localeCompare(b.symbol)) : []
+		// Sin repetidos: Finnhub a veces da el mismo valor dos veces el mismo día (trimestre fiscal y natural).
+		today ? [...new Map(earnings.filter((e) => e.date === today).map((e) => [e.symbol, e])).values()].sort((a, b) => a.symbol.localeCompare(b.symbol)) : []
 	);
 
 	/** «Festivo: Fiesta Nacional de España · Sin bolsa en NYSE». */
