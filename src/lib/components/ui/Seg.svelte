@@ -64,11 +64,14 @@
 		display: inline-flex;
 		flex-wrap: wrap;
 		border: var(--border);
+		border-radius: var(--radius-s);
 	}
 
 	button {
 		background: none;
 		border: 0;
+		border-radius: var(--radius-s);
+		transition: background-color var(--dur-ui) var(--ease), color var(--dur-ui) var(--ease);
 		min-height: var(--control-h);
 		padding: 0 var(--sp-10);
 		cursor: pointer;
