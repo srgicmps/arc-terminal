@@ -24,6 +24,9 @@
 	let globe = $state<Globe | null>(null);
 	let failed = $state(false);
 	let selected = $state<GlobePoint | null>(null);
+	/** Giro solo encendido; con «reducir movimiento» no gira y no hace falta el botón. */
+	let spinning = $state(true);
+	let reduced = $state(false);
 
 	const shown = $derived(selected && points.some((p) => p.id === selected!.id) ? selected : null);
 	const present = $derived(legend.filter((l) => points.some((p) => p.layer === l.value)));
@@ -48,7 +51,7 @@
 		if (!canvas || !probe) return;
 		let g: Globe | null = null;
 		let gone = false;
-		const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+		reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 		const opts: GlobeOptions = { colors: colors(), reduced, onPick: choose };
 		import('#lib/geo/globe-render.ts')
 			.then((m) => {
@@ -73,6 +76,10 @@
 			g?.destroy();
 			globe = null;
 		};
+	});
+
+	$effect(() => {
+		globe?.setSpin(spinning);
 	});
 
 	$effect(() => {
@@ -135,9 +142,14 @@
 		</div>
 	{/if}
 
-	{#if present.length}
+	{#if present.length || (globe && !reduced)}
 		<p class="legend">
 			{#each present as l (l.value)}<span><i class={l.value}></i>{l.label}</span>{/each}
+			{#if globe && !reduced}
+				<button type="button" class="spin" aria-pressed={!spinning} onclick={() => (spinning = !spinning)}>
+					{spinning ? 'Pausar el giro' : 'Girar solo'}
+				</button>
+			{/if}
 		</p>
 	{/if}
 </div>
@@ -248,6 +260,21 @@
 		font-size: var(--fs-xs);
 	}
 
+	.spin {
+		min-height: var(--control-h);
+		padding: 0 var(--sp-6);
+		border: 0;
+		background: none;
+		color: var(--muted);
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.spin:hover,
+	.spin:focus-visible {
+		color: var(--amber);
+	}
+
 	.legend i {
 		display: inline-block;
 		width: var(--swatch);
@@ -276,6 +303,7 @@
 	}
 
 	.legend i.maritime {
+		background: var(--amber-edge);
 		border-color: transparent;
 	}
 
