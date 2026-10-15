@@ -339,13 +339,24 @@ export function exampleTarget(command: Command): { route: Command['route']; sear
 // ---- Historial: los últimos comandos, guardados en este navegador ----
 
 export const HISTORY_KEY = 'arc-cmd-history';
-export const HISTORY_MAX = 5;
+/** Se guardan los 50 últimos (para recorrerlos con ↑ ↓); con la barra vacía se ven los 5 primeros. */
+export const HISTORY_MAX = 50;
+export const HISTORY_SHOWN = 5;
 
-/** Añade una entrada al principio, sin repetirla y con un máximo de 5. */
+/** Añade una entrada al principio, sin repetirla y con un máximo de 50. */
 export function pushHistory(list: string[], entry: string): string[] {
 	const e = entry.trim();
 	if (!e) return list;
 	return [e, ...list.filter((x) => norm(x) !== norm(e))].slice(0, HISTORY_MAX);
+}
+
+/**
+ * Un paso por el historial con ↑ (dir 1, más antiguo) o ↓ (dir −1, más reciente), como en un terminal.
+ * `idx` −1 es «sin recorrerlo»: la barra vacía.
+ */
+export function historyStep(list: string[], idx: number, dir: 1 | -1): { idx: number; value: string } {
+	const next = Math.max(-1, Math.min(list.length - 1, idx + dir));
+	return { idx: next, value: next >= 0 ? list[next] : '' };
 }
 
 type Store = Pick<Storage, 'getItem' | 'setItem'>;
@@ -370,7 +381,7 @@ export function writeHistory(list: string[], store: () => Store | undefined = br
 
 /** Las entradas del historial como sugerencias: «FUEL · Gasolineras…», «NVDA · NVIDIA». */
 export function historyOptions(list: string[]): Option[] {
-	return list.map((entry) => {
+	return list.slice(0, HISTORY_SHOWN).map((entry) => {
 		const help = commandHelp(entry);
 		if (help) return helpOption(help, 'Reciente');
 		const dated = commandDay(entry);

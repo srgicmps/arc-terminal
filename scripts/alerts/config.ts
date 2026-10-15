@@ -5,10 +5,10 @@
 export type Level = 1 | 2 | 3 | 4;
 
 /** Tope total de avisos al día (día de Madrid). Solo es una protección contra bucles. */
-export const DAILY_TOTAL = 50;
+export const DAILY_TOTAL = 100;
 
 /** Cupo diario de cada nivel. Si se llega al tope total, gana el nivel más alto (P1 antes que P2…). */
-export const QUOTAS: Record<Level, number> = { 1: Infinity, 2: 25, 3: 15, 4: 3 };
+export const QUOTAS: Record<Level, number> = { 1: Infinity, 2: 50, 3: 40, 4: 12 };
 
 /** Priority de ntfy para cada nivel (5 = máxima, suena aunque el móvil esté en silencio si se configura). */
 export const NTFY_PRIORITY: Record<Level, number> = { 1: 5, 2: 4, 3: 3, 4: 2 };
@@ -20,7 +20,7 @@ export const KEEP_DAYS = 7;
 
 export const QUAKE = {
 	/** Magnitud mínima. */
-	mag: 7,
+	mag: 6.5,
 	/** Con aviso de tsunami basta con esta. */
 	magTsunami: 6,
 	/** Un terremoto deja de ser motivo de aviso a las 24 h. */
@@ -36,7 +36,7 @@ export const RATES = [
 ] as const;
 
 /** IMP: un tema que dan al menos tantos medios en al menos tantas secciones. */
-export const IMP_BIG = { media: 8, sections: 3 };
+export const IMP_BIG = { media: 6, sections: 3 };
 
 /** Estrechos clave (nombres de PortWatch) y caída de tránsitos frente a la media de 7 días de la semana anterior. */
 export const STRAITS = { names: ['Ormuz', 'Canal de Suez', 'Bab el-Mandeb', 'Canal de Panamá'], drop: 0.5 };
@@ -52,8 +52,35 @@ export const MACRO = [
 	{ id: 'ipc-es', file: 'ine', name: 'IPC de España', unit: '%', source: 'INE' },
 	{ id: 'gdp-us', file: 'fred', name: 'PIB de EE. UU. (anualizado)', unit: '%', source: 'BEA vía FRED' },
 	{ id: 'gdp-ea', file: 'eurostat', name: 'PIB de la zona euro (trimestral)', unit: '%', source: 'Eurostat' },
-	{ id: 'euribor-12m', file: 'ecb', name: 'Euríbor a 12 meses', unit: '%', source: 'BCE' }
+	{ id: 'euribor-12m', file: 'ecb', name: 'Euríbor a 12 meses', unit: '%', source: 'BCE' },
+	{ id: 'core-cpi-us', file: 'bls', name: 'IPC subyacente de EE. UU.', unit: '%', source: 'BLS' },
+	{ id: 'core-pce-us', file: 'fred', name: 'PCE subyacente de EE. UU.', unit: '%', source: 'BEA vía FRED' },
+	{ id: 'claims-us', file: 'fred', name: 'Peticiones de paro en EE. UU.', unit: 'miles', digits: 0, source: 'Departamento de Trabajo vía FRED' },
+	{ id: 'unemployment-ea', file: 'eurostat', name: 'Paro de la zona euro', unit: '%', source: 'Eurostat' },
+	{ id: 'unemployment-es', file: 'eurostat', name: 'Paro de España', unit: '%', source: 'Eurostat' },
+	{ id: 'esi-ea', file: 'eurostat', name: 'Sentimiento económico de la zona euro', unit: 'puntos', source: 'Comisión Europea vía Eurostat' },
+	{ id: 'consumer-conf-ea', file: 'eurostat', name: 'Confianza del consumidor de la zona euro', unit: 'puntos', source: 'Comisión Europea vía Eurostat' },
+	{ id: 'epa-es', file: 'ine', name: 'Paro de España (EPA)', unit: '%', source: 'INE' },
+	{ id: 'ipv-es', file: 'ine', name: 'Precio de la vivienda en España', unit: '%', source: 'INE' }
 ] as const;
+
+/** Récord en un dato macro: se dice si el nuevo es el máximo o el mínimo de al menos tantos años de historial. */
+export const RECORD = { minYears: 2 };
+
+/** Inventarios de petróleo de EE. UU. (eia.json): aviso cada semana nueva, si el dato tiene menos de `days` días. */
+export const EIA = { days: 8 };
+
+/**
+ * VIX (vix.json, Cboe): sube al menos `jump` % en el día, o la curva se invierte (el VIX a 1 mes pasa por
+ * encima del de 3 meses: el mercado teme más lo inmediato).
+ */
+export const VIX = { jump: 15 };
+
+/**
+ * Subastas del Tesoro de EE. UU. (auctions.json): floja si el bid-to-cover queda al menos `gap` por debajo
+ * de la media de las anteriores del mismo plazo. Solo las de `days` días como mucho.
+ */
+export const AUCTIONS = { gap: 0.15, days: 3 };
 
 /**
  * Riesgo macro (fred.json; 'hy-us' llega con el #213 y 'fed-net-liquidity' con el #179: sin ellas, no hay aviso).
@@ -91,37 +118,37 @@ export interface Asset {
  * el activo simplemente no aplica.
  */
 export const ASSETS: Asset[] = [
-	{ name: 'BTC', source: { kind: 'coin', id: 'bitcoin' }, unit: '%', threshold: 3.5 },
-	{ name: 'ETH', source: { kind: 'coin', id: 'ethereum' }, unit: '%', threshold: 3.5 },
-	{ name: 'EUR/USD', source: { kind: 'series', file: 'ecb', id: 'eurusd' }, unit: '%', threshold: 0.6 },
-	{ name: 'US10Y', source: { kind: 'curve', tenor: '10A' }, unit: 'pb', threshold: 7.5 },
+	{ name: 'BTC', source: { kind: 'coin', id: 'bitcoin' }, unit: '%', threshold: 2.5 },
+	{ name: 'ETH', source: { kind: 'coin', id: 'ethereum' }, unit: '%', threshold: 2.5 },
+	{ name: 'EUR/USD', source: { kind: 'series', file: 'ecb', id: 'eurusd' }, unit: '%', threshold: 0.4 },
+	{ name: 'US10Y', source: { kind: 'curve', tenor: '10A' }, unit: 'pb', threshold: 5 },
 	{
 		name: 'Prima ES',
 		source: { kind: 'spread', id: 'bond10-es', base: 'bond10-de' },
 		unit: 'pb',
-		threshold: 10,
+		threshold: 6,
 		upOnly: true
 	},
 	{
 		name: 'Prima IT',
 		source: { kind: 'spread', id: 'bond10-it', base: 'bond10-de' },
 		unit: 'pb',
-		threshold: 10,
+		threshold: 6,
 		upOnly: true
 	},
 	{
 		name: 'Prima FR',
 		source: { kind: 'spread', id: 'bond10-fr', base: 'bond10-de' },
 		unit: 'pb',
-		threshold: 10,
+		threshold: 6,
 		upOnly: true
 	},
-	{ name: 'S&P 500', source: { kind: 'quote', symbol: 'SPY' }, unit: '%', threshold: 1.25 },
-	{ name: 'Nasdaq', source: { kind: 'quote', symbol: 'QQQ' }, unit: '%', threshold: 1.25 },
-	{ name: 'DAX', source: { kind: 'quote', symbol: 'DAX' }, unit: '%', threshold: 1.25 },
-	{ name: 'IBEX', source: { kind: 'quote', symbol: 'IBEX' }, unit: '%', threshold: 1.25 },
-	{ name: 'Petróleo WTI', source: { kind: 'series', file: 'fred', id: 'wti' }, unit: '%', threshold: 2 },
-	{ name: 'Oro', source: { kind: 'series', file: 'fred', id: 'gold' }, unit: '%', threshold: 2 }
+	{ name: 'S&P 500', source: { kind: 'quote', symbol: 'SPY' }, unit: '%', threshold: 0.75 },
+	{ name: 'Nasdaq', source: { kind: 'quote', symbol: 'QQQ' }, unit: '%', threshold: 0.75 },
+	{ name: 'DAX', source: { kind: 'quote', symbol: 'DAX' }, unit: '%', threshold: 0.75 },
+	{ name: 'IBEX', source: { kind: 'quote', symbol: 'IBEX' }, unit: '%', threshold: 0.75 },
+	{ name: 'Petróleo WTI', source: { kind: 'series', file: 'fred', id: 'wti' }, unit: '%', threshold: 1.5 },
+	{ name: 'Oro', source: { kind: 'series', file: 'fred', id: 'gold' }, unit: '%', threshold: 1.5 }
 ];
 
 /**
@@ -144,8 +171,73 @@ export const FEDREG = /\b(tariffs?|duties|sanctions?|export controls?|embargo|re
 export const CONFLICT = {
 	words:
 		/\b(ataque|bombardeo|invasi[óo]n|misil(es)?|ofensiva|alto el fuego|tregua|movilizaci[óo]n|art[íi]culo 5|OTAN|NATO|nuclear|escalada|guerra|attack|strike|invasion|missiles?|ceasefire|war)\b/i,
-	media: 5,
-	waitHours: 12
+	media: 4,
+	waitHours: 6
+};
+
+/**
+ * Guerras (P1, siempre llegan): un tema de IMP cuyo título cuenta un hecho grave de una de estas clases (cada
+ * una, una o dos expresiones que tienen que estar las dos), en español o inglés, y que dan al menos `media`
+ * medios de la lista `trusted`. Un aviso por tema cada `waitHours`, salvo escalada: una clase más grave que la
+ * del último aviso o el doble de medios fiables. Los temas que avisa no salen además como conflicto (P2).
+ */
+export const WAR = {
+	media: 3,
+	waitHours: 4,
+	/** De más grave a menos: el orden decide qué es una escalada. */
+	kinds: [
+		{
+			key: 'nuclear',
+			name: 'Amenaza nuclear',
+			all: [/\b(nuclear|nucleares|at[óo]mic[ao]s?|atomic)\b/i, /\b(ataque|arma|armas|bomba|amenaza|detona|attack|strike|weapons?|bomb|threat(ens?|s)?|detonat\w*)\b/i]
+		},
+		{
+			key: 'war',
+			name: 'Declaración de guerra',
+			all: [/\b(declara(ci[óo]n de)? (la )?guerra|declares? war|declaration of war|state of war|estado de guerra)\b/i]
+		},
+		{
+			key: 'invasion',
+			name: 'Invasión',
+			all: [/\b(invade[ns]?|invadi[óo]|invadieron|invasi[óo]n|invasion|invades|invaded|ofensiva terrestre|ground (offensive|invasion)|cruzan la frontera|cross(es|ed)? the border)\b/i]
+		},
+		{
+			key: 'nato',
+			name: 'Ataque a la OTAN o la UE',
+			all: [
+				/\b(OTAN|NATO|art[íi]culo 5|article 5|Polonia|Poland|Lituania|Lithuania|Letonia|Latvia|Estonia|Ruman[íi]a|Romania|Finlandia|Finland|Suecia|Sweden|Alemania|Germany|Moldavia|Moldova)\b/,
+				/\b(ataque|ataca|atacan|bombardeo|bombardea|misil(es)?|dron(es)?|derriba|invade|attack(s|ed)?|airstrikes?|missiles?|drones?|shot down|airspace|espacio a[ée]reo)\b/i
+			]
+		},
+		{
+			key: 'missiles',
+			name: 'Misiles contra una capital o infraestructuras',
+			all: [
+				/\b(misil(es)?|bal[íi]stic[oa]s?|dron(es)?|bombardeo|missiles?|ballistic|drones?|airstrikes?|bombing)\b/i,
+				/\b(capital|Kiev|Kyiv|Mosc[úu]|Moscow|Tel Aviv|Jerusal[ée]n|Jerusalem|Teher[áa]n|Tehran|Taip[ée]i|Se[úu]l|Seoul|Beirut|Damasco|Damascus|Riad|Riyadh|central nuclear|nuclear (power )?plant|central el[ée]ctrica|power (plant|grid)|red el[ée]ctrica|refiner[íi]a|refinery|oleoducto|gasoducto|pipeline|aeropuerto|airport|puerto|port)\b/i
+			]
+		},
+		{
+			key: 'mobilization',
+			name: 'Movilización general',
+			all: [/\b(movilizaci[óo]n (general|total|militar)|general mobili[sz]ation|mobili[sz]ation|ley marcial|martial law)\b/i]
+		},
+		{
+			key: 'ceasefire',
+			name: 'Alto el fuego',
+			all: [
+				/\b(alto el fuego|tregua|armisticio|acuerdo de paz|ceasefire|cease-fire|truce|armistice|peace (deal|agreement))\b/i,
+				/\b(firma|firman|firmado|acuerdan|entra en vigor|rompe|rompen|roto|viola|violan|colapsa|signs?|signed|agree[ds]?|takes effect|breaks?|broken|violat\w*|collaps\w*)\b/i
+			]
+		}
+	],
+	/** Medios que cuentan como fiables (nombres de las fuentes de scripts/sources/news.ts). */
+	trusted: [
+		'BBC', 'Al Jazeera', 'DW', 'France 24', 'The Guardian', 'Financial Times', 'WSJ', 'The Economist',
+		'El País', 'El Mundo', 'El Confidencial', 'elDiario.es', 'RTVE', 'Europa Press', 'Nikkei Asia',
+		'South China Morning Post', 'The Japan Times', 'Kyiv Independent', 'Noticias ONU', 'ONU', 'Crisis Group',
+		'CNBC', 'Africanews'
+	]
 };
 
 /**
@@ -167,11 +259,11 @@ export const ELECTIONS = {
 
 /** IA (news-ai.json y news-tech.json): grupo de titulares de `media` medios o más que nombra a un laboratorio y un lanzamiento. */
 export const AI_NEWS = {
-	media: 3,
+	media: 2,
 	labs: /\b(OpenAI|GPT|Google|Gemini|DeepMind|Anthropic|Claude|Meta|Llama|xAI|Grok|Mistral|DeepSeek|Qwen)/i,
 	launch: /\b(lanza|presenta|anuncia|nuevo modelo|launch(es)?|releases?|unveils?|introduc(es|ing))\b/i,
 	/** Como mucho tantos al día. */
-	perDay: 3
+	perDay: 6
 };
 
 /**
@@ -181,7 +273,7 @@ export const AI_NEWS = {
  * (ALERT_TICKERS de scripts/sources/alert-quotes.ts).
  */
 export const STOCKS = {
-	threshold: 3,
+	threshold: 2,
 	group: 3,
 	names: {
 		// ADR de los europeos (D25, solo avisos).
@@ -192,6 +284,8 @@ export const STOCKS = {
 		THLLY: 'Thales (ADR)',
 		SAABY: 'Saab (ADR)',
 		ISMAY: 'Indra (ADR)',
+		IBDRY: 'Iberdrola (ADR)',
+		IDEXY: 'Inditex (ADR)',
 		LMT: 'Lockheed Martin',
 		RTX: 'RTX',
 		NOC: 'Northrop Grumman',
@@ -207,7 +301,41 @@ export const STOCKS = {
 		'SAAB-B.ST': 'Saab',
 		'IDR.MC': 'Indra',
 		NVDA: 'NVIDIA',
-		AAPL: 'Apple'
+		AAPL: 'Apple',
+		MSFT: 'Microsoft',
+		GOOGL: 'Alphabet',
+		AMZN: 'Amazon',
+		META: 'Meta',
+		TSLA: 'Tesla',
+		AVGO: 'Broadcom',
+		TSM: 'TSMC',
+		AMD: 'AMD',
+		ASML: 'ASML',
+		NFLX: 'Netflix',
+		ORCL: 'Oracle',
+		CRM: 'Salesforce',
+		INTC: 'Intel',
+		QCOM: 'Qualcomm',
+		MU: 'Micron',
+		ARM: 'Arm',
+		COIN: 'Coinbase',
+		MSTR: 'Strategy',
+		JPM: 'JPMorgan',
+		GS: 'Goldman Sachs',
+		V: 'Visa',
+		MA: 'Mastercard',
+		XOM: 'ExxonMobil',
+		CVX: 'Chevron',
+		LLY: 'Eli Lilly',
+		NVO: 'Novo Nordisk',
+		UNH: 'UnitedHealth',
+		'BRK.B': 'Berkshire Hathaway',
+		SAP: 'SAP',
+		SAN: 'Santander',
+		BBVA: 'BBVA',
+		TEF: 'Telefónica',
+		SONY: 'Sony',
+		TM: 'Toyota'
 	} as Record<string, string>
 };
 
@@ -232,7 +360,7 @@ export const DIESEL = {
 // ---------- P3 ----------
 
 /** Polymarket: volumen mínimo en 24 h ($) y cambio mínimo de probabilidad (0–1) en 24 h. */
-export const POLYMARKET = { minVolume: 1_000_000, change: 0.15, maxTracked: 60 };
+export const POLYMARKET = { minVolume: 500_000, change: 0.1, maxTracked: 60 };
 
 /**
  * Resultados: las 10 más grandes y la lista MIS de Sergi. MIS se guarda en su navegador, así que la Action
@@ -240,8 +368,12 @@ export const POLYMARKET = { minVolume: 1_000_000, change: 0.15, maxTracked: 60 }
  */
 export const EARNINGS_WATCH = {
 	top10: ['NVDA', 'MSFT', 'AAPL', 'GOOGL', 'AMZN', 'META', 'AVGO', 'TSLA', 'BRK.B', 'TSM'],
-	/** Valores seguidos de EE. UU. (los de STOCKS; NVDA y AAPL ya están arriba). */
-	seguidos: ['LMT', 'RTX', 'NOC', 'GD', 'LHX', 'BA', 'PLTR'],
+	/** Valores seguidos de EE. UU. (los de STOCKS que no están arriba). */
+	seguidos: [
+		'LMT', 'RTX', 'NOC', 'GD', 'LHX', 'BA', 'PLTR',
+		'AMD', 'ASML', 'NFLX', 'ORCL', 'CRM', 'INTC', 'QCOM', 'MU', 'ARM', 'COIN', 'MSTR',
+		'JPM', 'GS', 'V', 'MA', 'XOM', 'CVX', 'LLY', 'NVO', 'UNH', 'SAP', 'SAN', 'BBVA', 'TEF', 'SONY', 'TM'
+	],
 	mis: [] as string[]
 };
 
@@ -253,7 +385,7 @@ export const DOWN = { days: 3 };
  * anteriores. El historial de power.json lo acumula la web: mientras tenga menos de `days` días se usa lo
  * que haya, con un mínimo de `minDays`.
  */
-export const LUZ = { change: 30, days: 30, minDays: 3 };
+export const LUZ = { change: 20, days: 30, minDays: 3 };
 
 /** «Mañana es festivo / no abre la bolsa»: hora de Madrid desde la que sale la víspera. */
 export const TOMORROW = { from: '19:00', until: '23:59' };
@@ -283,6 +415,25 @@ export const SUMMARIES = {
 	/** SEMANA: los domingos. */
 	week: { from: '19:00', until: '23:59' }
 };
+
+/**
+ * Resúmenes de las bolsas (P4), en la hora local de cada plaza: así se ajustan solos a los cambios de hora
+ * de Madrid, Nueva York y Tokio, que no van a la vez. Solo de lunes a viernes (día local de la plaza).
+ * - `from`/`until`: ventana en la que sale (si una pasada se retrasa, sale igual mientras tenga sentido).
+ */
+export const SESSIONS = [
+	{ key: 'tokyo-open', title: 'Tokio abre', zone: 'Asia/Tokyo', from: '09:00', until: '10:59' },
+	{ key: 'tokyo-close', title: 'Tokio cierra', zone: 'Asia/Tokyo', from: '15:30', until: '17:29' },
+	{ key: 'europe-open', title: 'Europa abre', zone: 'Europe/Madrid', from: '09:05', until: '10:59' },
+	{ key: 'midday', title: 'Mediodía', zone: 'Europe/Madrid', from: '13:30', until: '14:29' },
+	{ key: 'wall-open', title: 'Wall Street abre', zone: 'America/New_York', from: '09:35', until: '11:29' },
+	{ key: 'europe-close', title: 'Europa cierra', zone: 'Europe/Madrid', from: '17:40', until: '19:29' }
+] as const;
+
+export type SessionKey = (typeof SESSIONS)[number]['key'];
+
+/** Valores seguidos que más se mueven: cuántos salen en los resúmenes de Wall Street. */
+export const MOVERS = 3;
 
 /** SEMANA: cuántos temas de IMP (los de más puntuación de los últimos 7 días). */
 export const WEEK = { top: 5 };
