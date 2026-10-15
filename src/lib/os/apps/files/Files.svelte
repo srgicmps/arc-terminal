@@ -42,7 +42,13 @@
 
 	// ---- Dónde estamos ----
 	const w = $derived(os.state.desks.flatMap((d) => d.wins).find((x) => x.uid === win));
-	const loc = $derived(ex.locOf(w?.path));
+	// En el móvil (MobileHome) la app va a pantalla completa sin ventana del núcleo: la carpeta se guarda aquí.
+	let ownPath = $state<string | undefined>();
+	const loc = $derived(ex.locOf(w ? w.path : ownPath));
+	function goPath(path: string) {
+		if (w) setPath(win, path);
+		else ownPath = path;
+	}
 
 	let favs = $state<string[]>([]);
 	onMount(() => {
@@ -94,14 +100,14 @@
 		});
 	});
 	function go(to: string) {
-		if (to !== loc) setPath(win, ex.locPath(to));
+		if (to !== loc) goPath(ex.locPath(to));
 		treeOpen = false;
 	}
 	function jump(r: { hist: ex.Hist; to: string } | null) {
 		if (!r) return;
 		hist = r.hist;
 		jumping = true;
-		setPath(win, ex.locPath(r.to));
+		goPath(ex.locPath(r.to));
 	}
 	const back = () => jump(ex.goBack(hist, loc));
 	const forward = () => jump(ex.goForward(hist, loc));
@@ -298,7 +304,7 @@
 			selected = r.sel;
 			anchor = r.anchor;
 		} else single = i.key;
-		if (e.pointerType === 'touch') return;
+		if (e.pointerType === 'touch') return holdStart(e, i);
 		const keys = (selected.includes(i.key) ? selected : [i.key]).filter((k) => byKey.get(k)?.node || byKey.get(k)?.ref);
 		if (!keys.length) return;
 		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -313,6 +319,7 @@
 		return { t, its, p: canHold(t) ? ({ kind: 'copy', to: t! } as const) : ({ kind: 'none' } as const) };
 	}
 	function itemMove(e: PointerEvent) {
+		holdMove(e);
 		if (!drag) return;
 		const moved = drag.moved || Math.abs(e.clientX - drag.x0) + Math.abs(e.clientY - drag.y0) > 4;
 		drag = { ...drag, x: e.clientX, y: e.clientY, moved };
@@ -321,6 +328,7 @@
 		files.hover = r && r.p.kind !== 'none' && r.p.kind !== 'desk' ? r.t : null;
 	}
 	function itemUp(e: PointerEvent) {
+		holdEnd();
 		if (!drag) return;
 		const r = drag.moved && e.type === 'pointerup' ? plan(e.clientX, e.clientY) : null;
 		const here = insideMe(e.clientX, e.clientY);
@@ -344,12 +352,40 @@
 		files.hover = null;
 	}
 	function itemClick(e: MouseEvent, i: ex.Item) {
+		if (held) return void (held = false);
 		if ((e as PointerEvent).pointerType === 'touch' && !e.ctrlKey && !e.shiftKey) open(i);
+	}
+
+	// ---- Táctil: sin clic derecho ni arrastre fino, mantener pulsado abre el menú (el de la fila o el del fondo) ----
+	const HOLD_MS = 500;
+	let hold: { id: number; timer: ReturnType<typeof setTimeout>; x: number; y: number } | null = null;
+	/** El menú ya salió con esta pulsación: el toque que la acaba no abre nada. */
+	let held = false;
+	function holdStart(e: PointerEvent, i: ex.Item | null) {
+		holdEnd();
+		held = false;
+		const { clientX: x, clientY: y } = e;
+		const timer = setTimeout(() => {
+			hold = null;
+			held = true;
+			if (i) itemMenu(x, y, i);
+			else bgMenu(x, y);
+		}, HOLD_MS);
+		hold = { id: e.pointerId, timer, x, y };
+	}
+	function holdMove(e: PointerEvent) {
+		// Si el dedo se mueve, es que desliza la lista: no es mantener pulsado.
+		if (hold && e.pointerId === hold.id && Math.abs(e.clientX - hold.x) + Math.abs(e.clientY - hold.y) > 10) holdEnd();
+	}
+	function holdEnd() {
+		if (hold) clearTimeout(hold.timer);
+		hold = null;
 	}
 
 	let band = $state<{ x0: number; y0: number; x: number; y: number; base: string[] } | null>(null);
 	function paneDown(e: PointerEvent) {
-		if (e.button !== 0 || e.pointerType === 'touch' || (e.target as HTMLElement).closest('[data-key], button, input')) return;
+		if (e.button !== 0 || (e.target as HTMLElement).closest('[data-key], button, input')) return;
+		if (e.pointerType === 'touch') return holdStart(e, null);
 		pane?.focus({ preventScroll: true });
 		const keep = e.ctrlKey || e.metaKey || e.shiftKey;
 		if (!keep) selected = [];
@@ -357,6 +393,7 @@
 		band = { x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, base: keep ? [...selected] : [] };
 	}
 	function paneMove(e: PointerEvent) {
+		holdMove(e);
 		if (!band || !pane) return;
 		band = { ...band, x: e.clientX, y: e.clientY };
 		const r = ex.boxOf(band.x0, band.y0, band.x, band.y);
@@ -368,7 +405,10 @@
 		selected = [...new Set([...band.base, ...hit])];
 		if (hit.length) anchor = hit[0];
 	}
-	const paneUp = () => (band = null);
+	function paneUp() {
+		holdEnd();
+		band = null;
+	}
 	const bandBox = $derived(band ? ex.boxOf(band.x0, band.y0, band.x, band.y) : null);
 
 	// ---- Teclado ----
@@ -480,6 +520,8 @@
 	}
 	function contextmenu(e: MouseEvent) {
 		e.preventDefault();
+		// En Android, mantener pulsado también lanza contextmenu: ya lo abre holdStart.
+		if (held || hold) return;
 		const el = (e.target as HTMLElement).closest<HTMLElement>('[data-key]');
 		const i = el && byKey.get(el.dataset.key!);
 		if (i) itemMenu(e.clientX, e.clientY, i);
@@ -497,12 +539,13 @@
 		{ value: 'list', label: 'Lista' },
 		{ value: 'icons', label: 'Iconos' }
 	] as const;
-	const COLS: { col: ex.SortCol; label: string }[] = [
+	// En la papelera, «Ubicación» y «Creado» dicen de dónde venía y cuándo se tiró.
+	const COLS = $derived<{ col: ex.SortCol; label: string }[]>([
 		{ col: 'name', label: 'Nombre' },
 		{ col: 'type', label: 'Tipo' },
-		{ col: 'where', label: 'Ubicación' },
-		{ col: 'at', label: 'Creado' }
-	];
+		{ col: 'where', label: isBin ? 'Venía de' : 'Ubicación' },
+		{ col: 'at', label: isBin ? 'Tirado' : 'Creado' }
+	]);
 	const optId = (i: number) => `${win}-it${i}`;
 	/** Foco al abrir un diálogo. */
 	const focusBtn = (el: HTMLElement) => void queueMicrotask(() => el.focus());
@@ -673,13 +716,13 @@
 							</span>
 							{#if shownView === 'list'}
 								<span class="c-type">{i.type}</span>
-								<span class="c-where">{locName(i.where)}</span>
-								<span class="c-at">{whenShort(i.at)}</span>
+								<span class="c-where">{locName(ex.shownWhere(i))}</span>
+								<span class="c-at">{whenShort(ex.shownAt(i))}</span>
 							{/if}
 						</div>
 					{:else}
 						<p class="hint">
-							{words.length ? 'Nada coincide con la búsqueda.' : isBin ? 'La papelera está vacía.' : sys ? 'Aquí no hay nada.' : 'Carpeta vacía. Arrastra aquí iconos o accesos.'}
+							{words.length ? 'Nada coincide con la búsqueda.' : isBin ? 'La papelera está vacía.' : sys ? 'Aquí no hay nada.' : 'Carpeta vacía. Arrastra aquí iconos o usa «Mover a…».'}
 						</p>
 					{/each}
 				</div>
@@ -688,7 +731,7 @@
 	</div>
 
 	<footer class="status" aria-live="polite">
-		<span>{many(items.length, '1 elemento', '# elementos')}</span>
+		<span>{ex.plural(items.length, '1 elemento', '# elementos')}</span>
 		{#if sel.length}<span>· {many(sel.length, '1 seleccionado', '# seleccionados')}</span>{/if}
 		{#if sys}<span class="mut">· Solo lectura</span>{/if}
 		{#if note}<span class="note">{note}</span>{/if}
@@ -990,6 +1033,7 @@
 	.it {
 		cursor: default;
 		touch-action: manipulation;
+		-webkit-touch-callout: none;
 	}
 	.it:hover {
 		background: var(--amber-soft);
@@ -1238,8 +1282,23 @@
 		.head .c-where {
 			display: none;
 		}
+		/* La ruta cabe junto a los botones de navegar: una fila menos. */
+		.crumbs {
+			flex-basis: 96px;
+		}
 		.find {
 			flex: 1 1 100%;
+		}
+		/* Las acciones, en una sola fila que se desliza: así no se comen la lista. */
+		.acts {
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			scrollbar-width: none;
+			/* Un contenedor con scroll puede encogerse a 0 en la rejilla: que mida siempre su fila. */
+			min-height: min-content;
+		}
+		.acts button {
+			flex: none;
 		}
 	}
 </style>
