@@ -128,6 +128,39 @@ export function pollenLevel(key: PollenKey, v: number | null | undefined): Level
 	return { label: 'Alto', tone: 'bad' };
 }
 
+export interface PollenHigh {
+	key: PollenKey;
+	name: string;
+	value: number;
+	level: Level;
+}
+
+/**
+ * Los pólenes de un día que llegan a moderado o alto, del más fuerte al más flojo (para alérgicos y para los
+ * avisos de casa, F16). Vacío si no hay polen que se note o si CAMS no da polen (fuera de Europa).
+ */
+export function pollenHigh(day: AirDay | undefined): PollenHigh[] {
+	if (!day) return [];
+	const rank = (l: Level) => (l.tone === 'bad' ? 2 : 1);
+	return POLLEN_KEYS.flatMap((key) => {
+		const value = day.pollen[key];
+		const level = pollenLevel(key, value);
+		return level && level.tone !== 'ok' && known(value) ? [{ key, name: POLLEN_NAMES[key], value, level }] : [];
+	}).sort((a, b) => rank(b.level) - rank(a.level) || b.value / POLLEN_STEPS[b.key][1] - a.value / POLLEN_STEPS[a.key][1]);
+}
+
+/** ¿Da CAMS polen para este sitio? (fuera de Europa, todo null). */
+export const hasPollen = (air: AirData | null | undefined): boolean =>
+	!!air?.days.some((d) => POLLEN_KEYS.some((k) => known(d.pollen[k])));
+
+/** Primera y última hora local de un día con UV de 3 o más (cuando conviene protegerse), o null. */
+export function uvWindow(hours: AirHour[], date: string): { from: string; to: string } | null {
+	const strong = hours.filter((h) => h.time.startsWith(date) && known(h.uv) && h.uv >= 2.5);
+	if (!strong.length) return null;
+	const end = Number(strong.at(-1)!.time.slice(11, 13)) + 1;
+	return { from: strong[0].time.slice(11, 16), to: `${String(end).padStart(2, '0')}:00` };
+}
+
 // ---------- Estado del mar (Open-Meteo Marine) ----------
 
 export interface SeaState {
