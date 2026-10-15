@@ -43,6 +43,11 @@ export const BAR: GuideSection = {
 	items: [
 		'↑ con la barra vacía: tu comando anterior, como en un terminal (guarda los 50 últimos); ↓ vuelve hacia los más recientes.',
 		'«fav ECO TIPOS»: lo guarda como favorito (hasta 9). Luego «1», «2», «3»… lo abren. «fav» los enseña y «fav -2» quita el segundo.',
+		'Respuesta al momento, sin cambiar de vista (Intro abre la vista del dato): «euribor», «euribor 3m», «prima», «bund», «bono», «tipos bce», «fed», «estr», «dolar», «wti», «btc», «eth», «us10y», «paro es» (o it, de, fr, pt, ue, ea, us), «ipc», «inflación it».',
+		'«diésel» o «gasolina»: lo más barato de tu zona de FUEL (la última que elegiste; si no, Menorca) y la media de España. «llenar 50L» (o «llenar 40 diésel»): lo que cuesta el depósito en la gasolinera más barata de tu zona.',
+		'«hipoteca 150000 25a» (y el diferencial, «hipoteca 150k 30a 1,1»; si no, 0,75): la cuota con el euríbor a 12 meses de hoy y los intereses totales. Intro abre la calculadora de ECO.',
+		'«hora tokio», «hora NY», «qué hora es en Londres»: la hora allí, la diferencia con Madrid y si su bolsa está abierta. «hora» a secas: NY, Londres y Tokio.',
+		'Preguntas sencillas, sin IA: «¿está abierta la bolsa?», «¿abre la bolsa mañana?», «¿abre Wall Street el lunes?» (con sus festivos) y «¿cuándo es el próximo BCE?» (o la Fed, el BoE, el BoJ…).',
 		'«=1250*1,21»: calculadora. «100 USD EUR»: conversor con el cambio del BCE.',
 		'«ECO ?»: la ficha del comando en este MANUAL. «LUZ mañana», «CAL viernes»: el comando en ese día.'
 	]
