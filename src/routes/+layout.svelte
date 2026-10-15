@@ -13,6 +13,7 @@
 	import CommandBar from '#lib/components/CommandBar.svelte';
 	import Feedback from '#lib/components/Feedback.svelte';
 	import PlacePicker from '#lib/components/PlacePicker.svelte';
+	import InstallHint from '#lib/components/InstallHint.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { fit, initFit, toggleFit } from '#lib/fit.svelte.ts';
@@ -274,7 +275,7 @@
 		</button>
 	{/if}
 
-	{#if !tv.on}<PanelIndex />{/if}
+	{#if !tv.on}<PanelIndex /><InstallHint />{/if}
 
 	<main
 		class:nudged={shift !== 0}
