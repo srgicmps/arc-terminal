@@ -1,11 +1,7 @@
 <!--
 	Recorrido de 5 pasos (pasos en tour.ts, estado en tour.svelte.ts). Una tarjeta abajo y, si el paso señala algo
 	que se ve, un marco fino alrededor. Se salta con «Saltar» o Esc; ← → cambian de paso.
-	Se descarga solo al abrirlo (+layout) y con el CSS dentro del JS (css="injected"): si no, cada vista precargaría
-	su hoja de estilos y pasaría del tope de peso (scripts/weight.ts).
 -->
-<svelte:options css="injected" />
-
 <script lang="ts">
 	import { TOUR } from './tour.ts';
 	import { closeTour, stepTour, tour } from './tour.svelte.ts';

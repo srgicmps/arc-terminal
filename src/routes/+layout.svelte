@@ -24,7 +24,6 @@
 	import { initWatchlist, watchlist } from '#lib/watchlist.svelte.ts';
 	import { initFolded } from '#lib/folded.svelte.ts';
 	import { initCloud } from '#lib/cloud.svelte.ts';
-	import { startTour, tour } from '#lib/onboarding/tour.svelte.ts';
 	import { listenServiceWorker } from '#lib/pwa.ts';
 	import PanelIndex from '#lib/components/PanelIndex.svelte';
 	import { setPanelIndex } from '#lib/panelindex.svelte.ts';
@@ -55,12 +54,6 @@
 	$effect(loadPins);
 	// Tus ajustes en tu cuenta (arcterminal.dev): los sube y trae los de tus otros dispositivos.
 	$effect(initCloud);
-	// Recorrido: al acabar la bienvenida se entra con #recorrido (o se abre desde HELP).
-	$effect(() => {
-		if (location.hash !== '#recorrido') return;
-		history.replaceState(history.state, '', location.pathname + location.search);
-		startTour();
-	});
 	// Sesión de Cloudflare Access caducada: el service worker avisa y se recarga para ir al login.
 	$effect(listenServiceWorker);
 
@@ -283,8 +276,6 @@
 	{/if}
 
 	{#if !tv.on}<PanelIndex /><InstallHint />{/if}
-	<!-- El recorrido se descarga solo al abrirlo: así no pesa en cada vista. -->
-	{#if tour.open && !tv.on}{#await import('#lib/onboarding/Tour.svelte') then { default: Tour }}<Tour />{/await}{/if}
 
 	<main
 		class:nudged={shift !== 0}

@@ -26,7 +26,8 @@
 		type InterestId,
 		type ProfileId
 	} from '#lib/onboarding/plan.ts';
-	import { startTour } from '#lib/onboarding/tour.svelte.ts';
+	import Tour from '#lib/onboarding/Tour.svelte';
+	import { startTour, tour } from '#lib/onboarding/tour.svelte.ts';
 
 	const STEPS = ['Qué te interesa', 'Tu ciudad', 'Cómo lo quieres', 'Listo'];
 	let step = $state(0);
@@ -118,9 +119,10 @@
 		try {
 			applyPlan(localStorage, plan);
 		} catch {}
-		// La portada y las listas leen lo guardado al arrancar: se entra de nuevo con todo puesto.
+		// El recorrido, aquí mismo; al cerrarlo, a tu inicio. La portada y las listas leen lo guardado al arrancar:
+		// se entra de nuevo (sin SPA) con todo puesto.
 		const href = homeCmd && homeCmd.code !== 'TOP' ? routeHref(homeCmd.route) : resolve('/');
-		location.assign(href + '#recorrido');
+		startTour(() => location.assign(href));
 	}
 
 	function later() {
@@ -130,6 +132,8 @@
 		goto(resolve('/'), { replaceState: true });
 	}
 </script>
+
+{#if tour.open}<Tour />{/if}
 
 <ViewHeader code="BIENVENIDA" title={again ? 'Vuelve a ajustar Arc' : 'Bienvenido a Arc Terminal'} sub="Tres preguntas y Arc se ajusta a ti" />
 
@@ -235,7 +239,7 @@
 		</section>
 	{/if}
 
-	<p class="foot">¿Solo quieres el recorrido? <button type="button" class="link" onclick={startTour}>Ver el recorrido</button></p>
+	<p class="foot">¿Solo quieres el recorrido? <button type="button" class="link" onclick={() => startTour()}>Ver el recorrido</button></p>
 </div>
 
 <style>
