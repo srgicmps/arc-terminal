@@ -213,7 +213,7 @@ export function columns(width: number): Columns {
 	let label = narrow ? 80 : 150;
 	const MIN_AREA = 60;
 	if (w - label - value < MIN_AREA) label = Math.max(0, Math.min(label, w - value - MIN_AREA));
-	return { narrow, x0: label, x1: Math.max(label, w - value), tickGap: narrow ? 64 : 84 };
+	return { narrow, x0: label, x1: Math.max(label, w - value), tickGap: narrow ? 56 : 84 };
 }
 
 /** Texto corto de un instante para la etiqueta del cursor: «15 oct 14:05» o «15 oct 2025». */
