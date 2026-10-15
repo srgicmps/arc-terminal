@@ -9,6 +9,7 @@
 	import Desktop from '#lib/os/shell/Desktop.svelte';
 	import OsChrome from '#lib/os/shell/OsChrome.svelte';
 	import { loadShell, shell } from '#lib/os/shell/shell.svelte.ts';
+	import SystemLayer from '#lib/os/system/SystemLayer.svelte';
 	import MobileHome from '#lib/os/mobile/MobileHome.svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 
@@ -37,6 +38,8 @@
 		<OsChrome where="over" />
 	</div>
 {/if}
+<!-- Arranque, bloqueo y Alt+Tab de «OS 5», por encima de todo (también en el móvil). -->
+<SystemLayer />
 
 <style>
 	.os {

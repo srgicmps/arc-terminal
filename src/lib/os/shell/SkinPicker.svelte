@@ -21,11 +21,12 @@
 		{@const on = shell.skin === s.id}
 		<button type="button" role="radio" aria-checked={on} tabindex={on ? 0 : -1} class="card" onclick={() => setSkin(s.id as Skin)} onkeydown={(e) => move(e, i)}>
 			<span class="mini {s.id}" aria-hidden="true">
-				{#if s.id === 'mac' || s.id === 'dsm'}<i class="menubar"></i>{/if}
+				{#if s.id === 'mac' || s.id === 'dsm' || s.id === 'mando'}<i class="menubar"></i>{/if}
 				{#if s.id === 'dsm'}<i class="bigicons"><b></b><b></b><b></b></i><i class="widgets"><b></b><b></b></i>{/if}
 				{#if s.id === 'linux'}<i class="topbar"><b></b></i>{/if}
 				<i class="win"><i class="title"><i class="btns"><i></i><i></i><i></i></i></i></i>
 				{#if s.id === 'windows'}<i class="taskbar"><b></b><b></b><b></b></i>{/if}
+				{#if s.id === 'mando'}<i class="lvl"></i><i class="statusbar"></i>{/if}
 				{#if s.id === 'mac'}<i class="dock"><b></b><b></b><b></b><b></b></i>{/if}
 			</span>
 			<span class="name">{s.label}</span>
@@ -198,6 +199,37 @@
 	}
 	.dsm .menubar {
 		opacity: 0.85;
+	}
+	/* Mando: pizarra con rejilla, barra con el nivel de alerta (ámbar) y franja de estado abajo. */
+	.mando {
+		background:
+			repeating-linear-gradient(var(--cmd-grid) 0 1px, transparent 1px 6px),
+			repeating-linear-gradient(90deg, var(--cmd-grid) 0 1px, transparent 1px 6px),
+			var(--cmd-slate);
+	}
+	.mando .menubar,
+	.statusbar {
+		background: var(--cmd-deck);
+		border-bottom: var(--hair) solid var(--cmd-cold-dim);
+	}
+	.mando .win {
+		border-radius: 0;
+		border: var(--hair) solid var(--cmd-cold);
+	}
+	.lvl {
+		top: 1px;
+		right: 18%;
+		width: 12%;
+		height: 4px;
+		background: var(--amber);
+	}
+	.statusbar {
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 4px;
+		border-bottom: 0;
+		border-top: var(--hair) solid var(--cmd-cold-dim);
 	}
 	.dock {
 		left: 30%;
