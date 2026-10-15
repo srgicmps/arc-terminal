@@ -39,7 +39,7 @@
 </div>
 
 {#snippet source()}
-	Solo los fondos de FONDOS ({Object.keys(names).length}) y sus 100 mayores posiciones; cada fondo declara el trimestre
+	Solo los fondos de FONDOS ({Object.keys(names).length}) y sus {data.hds?.top ?? 100} mayores posiciones; cada fondo declara el trimestre
 	{quarters || '—'} con hasta 45 días de retraso{lastFiled ? ` (último, ${period(lastFiled)})` : ''}: no es la cartera de hoy.
 	Fuente: SEC EDGAR (13F) · <Updated at={data.hds?.fetchedAt} source="funds" />
 {/snippet}
@@ -57,7 +57,7 @@
 					</Panel>
 				{:else}
 					<Panel title="Quién lo tiene" meta="{ticker?.name ?? sel.value} · sin fondos">
-						<p class="empty">Ninguno de los fondos de FONDOS lo tiene entre sus 100 mayores posiciones.</p>
+						<p class="empty">Ninguno de los fondos de FONDOS lo tiene entre sus {data.hds?.top ?? 100} mayores posiciones.</p>
 					</Panel>
 				{/each}
 			{:else}

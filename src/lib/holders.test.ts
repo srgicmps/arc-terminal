@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildHolders, issuerKey, issuersFor, tickerKeys } from './holders.ts';
+import { buildHolders, holdersFromTop, issuerKey, issuersFor, tickerKeys } from './holders.ts';
 import { findIssuers, mostShared } from './holders-search.ts';
 
 const line = (cusip: string, name: string, value: number, shares = value) => ({ cusip, name, value, shares });
@@ -67,5 +67,16 @@ describe('HDS: buscar', () => {
 
 	it('los más repartidos primero', () => {
 		expect(mostShared(list).map((e) => e.cusip)).toEqual(['3', '2', '1']);
+	});
+});
+
+describe('HDS: respaldo con las 10 mayores', () => {
+	it('sin opciones y sin cambios de trimestre', () => {
+		const out = holdersFromTop([
+			{ key: 'BRK', top: [line('A', 'Apple Inc', 300), { ...line('A', 'Apple Inc', 50), putCall: 'Put' }] },
+			{ key: 'ARK', top: [line('A', 'Apple Inc', 10)] }
+		]);
+		expect(out).toHaveLength(1);
+		expect(out[0].holders.map((h) => [h.fund, h.change])).toEqual([['BRK', null], ['ARK', null]]);
 	});
 });

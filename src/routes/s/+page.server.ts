@@ -1,7 +1,7 @@
 import { dataset } from '#lib/data.ts';
 import type { Mention } from '#lib/news.ts';
 import { summarize, type FinraData } from '#lib/shortvol.ts';
-import { issuersFor } from '#lib/holders.ts';
+import { holdersFromTop, issuersFor } from '#lib/holders.ts';
 import { TICKERS } from '#lib/tickers.ts';
 import type { AnalystsData, FundsData, SecData } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
@@ -19,7 +19,7 @@ export const load: PageServerLoad = async () => {
 		// Fondos de FONDOS que tienen cada valor de la barra (HDS): solo los de EE. UU. que salen en el índice.
 		dataset<FundsData>('funds')
 	]);
-	const issuers = funds?.data.holders ?? [];
+	const issuers = funds ? (funds.data.holders ?? holdersFromTop(funds.data.funds)) : [];
 	const holders = Object.fromEntries(
 		TICKERS.filter((t) => t.cik)
 			.map((t) => [t.code, issuersFor(t.code, issuers).map((e) => ({ name: e.name, holders: e.holders.map(({ shares: _, ...h }) => h) }))] as const)

@@ -125,3 +125,14 @@ export function issuersFor(code: string, issuers: HeldIssuer[]): HeldIssuer[] {
 	});
 }
 
+
+/**
+ * Respaldo para las copias de funds.json de antes de HDS (sin `holders`): el índice con las 10 mayores de
+ * cada fondo, que sí están. Sin el trimestre anterior, así que sin cambios.
+ */
+export function holdersFromTop(funds: { key: string; top: { cusip: string; name: string; value: number; shares: number; putCall?: string }[] }[]): HeldIssuer[] {
+	return buildHolders(
+		funds.map((f) => ({ fund: f.key, current: f.top.filter((p) => !p.putCall), previous: null })),
+		Infinity
+	);
+}
