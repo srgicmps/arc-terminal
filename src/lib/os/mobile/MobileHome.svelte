@@ -578,6 +578,8 @@
 	}
 	.phone {
 		-webkit-touch-callout: none;
+		/* El tamaño de icono de este teléfono (cambia en tablet y en horizontal); .page > .icon lo encoge si no cabe. */
+		--os-icon-full: var(--os-icon-size);
 	}
 	.done {
 		position: absolute;
@@ -788,10 +790,10 @@
 		padding: var(--sp-8) var(--sp-20);
 		container-type: size;
 	}
-	/* En pantallas bajas (iPhone SE…) el icono encoge para que su nombre quepa en la fila: alto de una fila (la
+	/* Tope: el tamaño de .phone (58 px; 72 en tablet). En pantallas bajas (iPhone SE…) el icono encoge para que su nombre quepa en la fila: alto de una fila (la
 	   página menos sus huecos, entre 6) menos el nombre; y nunca más ancho que su columna. */
 	.page > .icon {
-		--os-icon-size: clamp(32px, min(calc((100cqh - 30px) / 6 - 22px), calc((100cqw - 36px) / 4 - 4px)), 58px);
+		--os-icon-size: clamp(32px, min(calc((100cqh - 30px) / 6 - 22px), calc((100cqw - 36px) / 4 - 4px)), var(--os-icon-full));
 	}
 	.cell {
 		display: flex;
@@ -1012,6 +1014,64 @@
 		from {
 			opacity: 0;
 			transform: scale(0.9);
+		}
+	}
+	/* iPhone y iPad (área de QA OS 3). Sin zoom por doble toque en las apps (dos toques seguidos en la Calculadora
+	   ampliaban la página) ni pellizco en inicio; en horizontal, nada debajo de la muesca. */
+	.phone {
+		touch-action: manipulation;
+		padding-left: env(safe-area-inset-left, 0px);
+		padding-right: env(safe-area-inset-right, 0px);
+	}
+	.home {
+		touch-action: pan-x pan-y;
+	}
+	.apps {
+		left: env(safe-area-inset-left, 0px);
+		right: env(safe-area-inset-right, 0px);
+	}
+	/* Tablet en vertical (iPad, 700–900 px): iconos algo mayores para tanto hueco. */
+	@media (min-width: 700px) and (min-height: 700px) {
+		.phone {
+			--os-icon-size: 72px;
+			--os-icon-full: 72px;
+		}
+	}
+	/* Teléfono en horizontal: 6 filas no caben en ~390 px de alto y los iconos se montaban. Las mismas 24 casillas
+	   pasan a 8 × 3 (un widget grande ocupa media fila) y todo se compacta. */
+	@media (orientation: landscape) and (max-height: 540px) {
+		.phone {
+			--os-icon-size: 40px;
+		}
+		.page > .icon {
+			--os-icon-size: 40px;
+		}
+		/* Un widget pequeño ocupa 2 × 1: los de 2 filas no cabían en la tercera y se aplastaban. */
+		.w-s {
+			grid-row: span 1;
+		}
+		.page {
+			grid-template-columns: repeat(8, 1fr);
+			grid-template-rows: repeat(3, minmax(0, 1fr));
+			gap: var(--sp-4) var(--sp-12);
+			padding: var(--sp-4) var(--sp-20);
+		}
+		.page :global(.name) {
+			font-size: var(--fs-xs);
+		}
+		/* «Buscar» sigue a mano deslizando hacia abajo; quedan los puntos de página. */
+		.search {
+			display: none;
+		}
+		.below {
+			padding: var(--sp-4) 0;
+		}
+		.dock {
+			padding: var(--sp-6) var(--sp-12);
+		}
+		.switching .slot {
+			flex-basis: 56vw;
+			height: 70dvh;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {

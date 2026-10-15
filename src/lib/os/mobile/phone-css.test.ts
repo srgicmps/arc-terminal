@@ -19,6 +19,11 @@ describe('inicio del teléfono (CSS)', () => {
 	it('el «−» de los widgets es redondo con pantalla táctil (el min-height global lo estiraba)', () => {
 		expect(rule(home, '.minus')).toMatch(/min-height:\s*0/);
 	});
+	it('el tope del icono es el del teléfono (72 px en tablet) y en horizontal los widgets pequeños ocupan 1 fila', () => {
+		expect(rule(home, '.page > .icon')).toMatch(/var\(--os-icon-full\)/);
+		const land = home.split('@media (orientation: landscape)')[1] ?? '';
+		expect(land).toMatch(/\.w-s\s*\{\s*grid-row: span 1/);
+	});
 	it('los widgets se ajustan a su hueco', () => {
 		expect(rule(home, '.w-l,\n\t.w-s')).toMatch(/container-type:\s*size/);
 		expect(css('./PhoneWidget.svelte')).toMatch(/@container \(max-height/);

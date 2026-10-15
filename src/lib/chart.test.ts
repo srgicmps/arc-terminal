@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { axisTicks, periodChoices, periodDate, periodStart } from './chart.ts';
+import { axisTicks, periodChoices, periodDate, periodStart, valueTicks } from './chart.ts';
 
 describe('axisTicks', () => {
 	it('pone la primera y la última, y reparte las demás por igual', () => {
@@ -45,5 +45,18 @@ describe('periodos', () => {
 		const days = Array.from({ length: 400 }, (_, i) => new Date(Date.UTC(2025, 8, 1 + i)).toISOString().slice(0, 10));
 		expect(periodChoices(days).map((c) => c.label)).toEqual(['1M', '6M', '1A', 'Máx']);
 		expect(periodChoices(['2026-08', '2026-09', '2026-10'])).toEqual([]);
+	});
+});
+
+describe('valueTicks', () => {
+	it('marcas exactas, sin decimales acumulados ni -0', () => {
+		expect(valueTicks(-1.2, 1.2, 0.4)).toEqual([-1.2, -0.8, -0.4, 0, 0.4, 0.8, 1.2]);
+		expect(Object.is(valueTicks(-0.5, 0.5, 0.5)[1], 0)).toBe(true);
+		expect(valueTicks(0, 0.3, 0.1)).toEqual([0, 0.1, 0.2, 0.3]);
+	});
+
+	it('sin paso válido, ninguna marca', () => {
+		expect(valueTicks(0, 1, 0)).toEqual([]);
+		expect(valueTicks(NaN, 1, 1)).toEqual([]);
 	});
 });

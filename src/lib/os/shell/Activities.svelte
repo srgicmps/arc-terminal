@@ -150,9 +150,13 @@
 		outline-offset: var(--sp-4);
 		transition: transform var(--dur-fast) var(--ease);
 	}
-	.card:hover,
 	.card:focus-visible {
 		outline: var(--sp-2) solid var(--amber);
+	}
+	@media (hover: hover) {
+		.card:hover {
+			outline: var(--sp-2) solid var(--amber);
+		}
 	}
 	.card.min {
 		opacity: 0.6;
@@ -171,9 +175,11 @@
 		border-radius: 50%;
 		opacity: 0.7;
 	}
-	.x:hover {
-		background: var(--os-topbar-hover);
-		opacity: 1;
+	@media (hover: hover) {
+		.x:hover {
+			background: var(--os-topbar-hover);
+			opacity: 1;
+		}
 	}
 	.desks {
 		display: grid;
@@ -212,9 +218,13 @@
 		border-radius: var(--radius);
 		font-size: var(--fs-s);
 	}
-	.apps button:hover,
 	.apps button:focus-visible {
 		background: var(--os-topbar-hover);
+	}
+	@media (hover: hover) {
+		.apps button:hover {
+			background: var(--os-topbar-hover);
+		}
 	}
 	.none {
 		align-self: center;
@@ -247,5 +257,11 @@
 		width: var(--hair);
 		background: currentColor;
 		opacity: 0.3;
+	}
+	/* iPhone e iPad: con menos de 16 px, Safari amplía la página al escribir (--fs-field vale 16 px en táctil). */
+	@media (pointer: coarse) {
+		input {
+			font-size: var(--fs-field);
+		}
 	}
 </style>

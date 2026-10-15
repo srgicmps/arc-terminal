@@ -47,6 +47,13 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
 - [x] Iconos que encogen con el alto de la pantalla (iPhone SE y 320 px: el nombre pisaba el icono de abajo) y widgets
   que se ajustan a su hueco (`@container`).
 - [x] Widgets en franjas de 2 filas (`layout` + `rowsOf` de `home.ts`): con 4 pequeños el último se salía de la rejilla.
-- [x] «−» de los widgets, redondo (el horizontal lo hace QA OS 2, #551).
+- [x] «−» de los widgets, redondo. En horizontal (8 × 3 de QA OS 3) un widget pequeño ocupa 2 × 1 (no cabían).
 - [x] Mantener un widget entra en el modo edición; tocar un hueco vacío lo termina. Carpetas: miniaturas 3×3 desde
   arriba a la izquierda.
+
+## iPhone, iPad y PWA (QA OS 3)
+- [x] `viewport-fit=cover` solo dentro de /os (`src/lib/os/mobile/viewport.ts`): sin él, Safari dejaba a 0 todas las
+  zonas seguras y el dock y la barra de las apps quedaban bajo la barra de inicio del iPhone.
+- [x] Teléfono en horizontal: rejilla de 8 × 3 con iconos de 40 px (antes se montaban unos sobre otros); nada bajo la muesca.
+- [x] Sin zoom por doble toque en las apps ni pellizco en inicio; en iPad vertical (700–900 px), iconos de 72 px.
+- iPad en horizontal (> 900 px) lleva el escritorio, con pantalla táctil.

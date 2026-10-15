@@ -191,8 +191,7 @@
 		}
 	}
 	@container (max-height: 118px) {
-		.s .row:nth-of-type(n + 2),
-		.rows .row:nth-of-type(n + 2) {
+		.row:nth-of-type(n + 2) {
 			display: none;
 		}
 	}
