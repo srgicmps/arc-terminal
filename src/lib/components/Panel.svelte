@@ -354,6 +354,24 @@
 		opacity: 1;
 	}
 
+	/* Menos ruido: con ratón, ampliar, compartir, fijar, mover y ocultar solo aparecen al pasar por el panel o
+	   con el foco del teclado (no cambian de sitio: solo se encienden). En táctil siguen siempre a la vista.
+	   El 📌 de un panel ya fijado no se esconde: dice algo. */
+	@media (hover: hover) and (pointer: fine) {
+		.ph-r > :is(.tool:not(.pin.on)),
+		.ph-r > :global(.share) {
+			opacity: 0;
+			transition: opacity var(--dur-ui) var(--ease);
+		}
+
+		.panel:hover .ph-r > :is(.tool:not(.pin.on)),
+		.panel:hover .ph-r > :global(.share),
+		.ph:focus-within .ph-r > :is(.tool:not(.pin.on)),
+		.ph:focus-within .ph-r > :global(.share) {
+			opacity: 1;
+		}
+	}
+
 	.grip {
 		cursor: grab;
 		letter-spacing: calc(-1 * var(--track-code));
