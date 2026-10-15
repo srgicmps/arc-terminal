@@ -152,3 +152,13 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - [x] Una ventana minimizada o de otro escritorio seguía pintando (iframe a 60 fps, globo del mapa girando): `content-visibility: hidden`, sin recargarla [QA OS 11]
 - [x] Toasts: un temporizador por aviso y limpieza al desmontar [QA OS 11]
 - [x] Prueba de humo de /os con 12 ventanas (`scripts/smoke-os.ts`) [QA OS 11]
+
+## QA OS 12 · Teclado y accesibilidad (escritorio)
+- [x] Tab ya no recorre la cabecera de la web escondida detrás de /os (`+layout.svelte`, `html[data-os-look]`) [QA OS 12]
+- [x] Foco: menús, buscador, Launchpad, Panel de control, avisos, asistente y bloqueo lo reciben al abrirse, lo
+      atrapan si tapan la pantalla y lo devuelven al cerrarse (`src/lib/os/focus.ts`, `use:overlay`) [QA OS 12]
+- [x] Esc cierra el Panel de control y los avisos; la ventana que pasa delante recibe el foco; al cerrar la última,
+      el foco va al escritorio [QA OS 12]
+- [x] Iconos del escritorio con flechas, Espacio y Ctrl+Espacio; foco visible en el escritorio; radios del asistente
+      con flechas; Alt+Tab anunciado al lector; toasts que no se van con el ratón o el foco encima [QA OS 12]
+- [x] Roles ARIA válidos en barras de título y widgets (axe-core sin fallos en /os a 1440 px) [QA OS 12]

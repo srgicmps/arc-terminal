@@ -1,7 +1,7 @@
 <!--
 	Centro de notificaciones de Arc OS: campana con lo no leído y, al tocarla, los avisos gordos (los mismos que
 	los P1 del móvil) y las novedades de la web. Los avisos nuevos salen además como toast discreto, abajo a la
-	derecha, que se va solo a los 8 s (o con ✕). Tus avisos al móvil se configuran en AVISOS.
+	derecha, que se va solo a los 8 s (o con ✕; no mientras tenga el ratón encima o el foco). Tus avisos al móvil se configuran en AVISOS.
 -->
 <script lang="ts">
 	import UiIcon from '../icons/UiIcon.svelte';
@@ -9,6 +9,7 @@
 	import { clock } from '#lib/clock.svelte.ts';
 	import { when } from '#lib/format.ts';
 	import { onDestroy, onMount } from 'svelte';
+	import { overlay } from '../focus.ts';
 	import { dismissToast, markAllSeen, shell, startNotices, toggle, unreadCount } from './shell.svelte.ts';
 	import type { Notice } from './notices.ts';
 
@@ -62,7 +63,7 @@
 		{#if count}<span class="badge">{count}</span>{/if}
 	</button>
 	{#if isOpen}
-		<div id="os-notices" class="pop" role="region" aria-label="Notificaciones">
+		<div id="os-notices" class="pop" role="region" aria-label="Notificaciones" use:overlay={{ autofocus: true, onescape: () => (shell.open = null) }}>
 			<header>
 				<span>Notificaciones</span>
 				<a href={resolve('/avisos')} onclick={(e) => (e.preventDefault(), go({ id: '', kind: 'aviso', title: '', detail: '', time: '', href: '/avisos' }))}>Tus avisos al móvil</a>
@@ -86,9 +87,9 @@
 	{/if}
 </div>
 
-<div class="toasts" aria-live="polite">
+<div class="toasts" role="status">
 	{#each shell.toasts as t (t.id)}
-		<div class="toast" role="status">
+		<div class="toast" data-toast={t.id}>
 			<button type="button" class="body" onclick={() => (go(t), dismissToast(t.id))}>
 				<b>{t.title}</b>
 				<span class="mut">{t.detail}</span>

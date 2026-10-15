@@ -8,6 +8,8 @@
 // Los mensajes llevan type «arcos:…» y solo se aceptan del mismo origen.
 
 import { webLook } from './look.ts';
+import { altTyped } from './focus.ts';
+import { isTyping } from '../rownav.ts';
 
 export const isEmbedded = () => typeof document !== 'undefined' && document.documentElement.dataset.embed === '1';
 
@@ -93,6 +95,8 @@ export function initEmbed() {
 		send({ type: 'arcos:key', key: e.key, code: e.code, alt: e.altKey, shift: e.shiftKey, ctrl: e.ctrlKey, meta: e.metaKey, ...(up && { up }) });
 	const onKey = (e: KeyboardEvent) => {
 		if (!isOsKey(e)) return;
+		// ⌥ escribiendo en un campo (Mac): «@», «|»… son texto, no atajos de Arc OS.
+		if (altTyped(e.key) && isTyping(document.activeElement)) return;
 		if (e.code === 'Space') e.preventDefault();
 		forward(e);
 	};

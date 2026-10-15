@@ -6,6 +6,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import * as os from './bridge.ts';
+	import { overlay } from '../focus.ts';
 	import { setName, setSkin, setWallpaper, setWidgets, shell, WALLPAPERS } from './shell.svelte.ts';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from './widgets.ts';
 
@@ -16,12 +17,24 @@
 
 	$effect(() => {
 		void step;
-		tick().then(() => box?.querySelector<HTMLElement>('[aria-checked="true"], [aria-pressed="true"], button')?.focus());
+		// En cada paso, el foco va al fondo elegido, al campo del nombre o, si no, al primer botón.
+		tick().then(() => (box?.querySelector<HTMLElement>('[aria-checked="true"], input') ?? box?.querySelector<HTMLElement>('button'))?.focus());
 	});
 
 	const current = $derived(shell.widgets ?? defaultWidgets(os.deskW(), shell.skin));
 	const has = (k: WidgetKind) => current.some((w) => w.kind === k);
 	const flip = (k: WidgetKind) => setWidgets(has(k) ? removeWidget(current, k) : addWidget(current, k, os.deskW()));
+
+	/** Grupo de radios: flechas para cambiar de fondo; solo el elegido es parada de Tab. */
+	function wallKey(e: KeyboardEvent) {
+		const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+		if (!d) return;
+		e.preventDefault();
+		const i = Math.max(0, WALLPAPERS.findIndex((w) => w.id === shell.wallpaper));
+		const n = (i + d + WALLPAPERS.length) % WALLPAPERS.length;
+		setWallpaper(WALLPAPERS[n].id);
+		(e.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('[role="radio"]')[n]?.focus();
+	}
 
 	function finish() {
 		setName(name);
@@ -29,7 +42,7 @@
 	}
 </script>
 
-<div class="first" role="dialog" aria-modal="true" aria-labelledby="os-first-title" bind:this={box}>
+<div class="first" role="dialog" aria-modal="true" aria-labelledby="os-first-title" bind:this={box} use:overlay={{ trap: true }}>
 	<div class="card">
 		<p class="kicker">Bienvenido a Arc OS · paso {step + 1} de {STEPS.length}</p>
 		<ol class="dots" aria-hidden="true">
@@ -39,9 +52,10 @@
 		{#if step === 0}
 			<h2 id="os-first-title">Elige un fondo</h2>
 			<p class="mut">Se puede cambiar cuando quieras con el clic derecho en el escritorio.</p>
-			<div class="walls" role="radiogroup" aria-label="Fondo del escritorio">
-				{#each WALLPAPERS as wp (wp.id)}
-					<button type="button" role="radio" aria-checked={shell.wallpaper === wp.id} class="wall" onclick={() => setWallpaper(wp.id)}>
+			<div class="walls" role="radiogroup" aria-label="Fondo del escritorio" tabindex="-1" onkeydown={wallKey}>
+				{#each WALLPAPERS as wp, i (wp.id)}
+					{@const on = shell.wallpaper === wp.id || (i === 0 && !WALLPAPERS.some((w) => w.id === shell.wallpaper))}
+					<button type="button" role="radio" aria-checked={shell.wallpaper === wp.id} tabindex={on ? 0 : -1} class="wall" onclick={() => setWallpaper(wp.id)}>
 						<span class="sw" data-wp={wp.id} aria-hidden="true"></span>
 						<span>{wp.label}</span>
 					</button>
