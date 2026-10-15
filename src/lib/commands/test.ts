@@ -1,10 +1,10 @@
 import type { Command } from '../commands.ts';
 
 export default {
-	order: 234, code: 'TEST', route: '/test', key: 'Test', desc: 'Test de la semana: cinco preguntas con los titulares y datos de la semana, para jugar en familia', sources: 'IMP, FRED, BCE, CoinGecko, USGS, Jolpica', aliases: ['test', 'quiz', 'preguntas', 'juego'],
+	order: 234, code: 'TEST', route: '/test', key: 'Test', desc: 'Test de la semana: cinco preguntas con los titulares y datos de la semana, para jugar en familia', sources: 'IMP, FRED, BCE, CoinGecko, USGS', aliases: ['test', 'quiz', 'preguntas', 'juego'],
 	manual: {
 		section: 'Utilidades',
-		what: 'Cinco preguntas hechas con lo que ha pasado esta semana: titulares, mercados, terremotos y deporte. Sin IA: salen de los datos con reglas fijas.',
+		what: 'Cinco preguntas hechas con lo que ha pasado esta semana: titulares, mercados y terremotos. Sin IA: salen de los datos con reglas fijas.',
 		tips: [
 			'Todos ven las mismas preguntas durante la semana (de lunes a domingo); el lunes salen otras.',
 			'Tu puntuación se guarda en tu cuenta, así que la ves en todos tus dispositivos. Compara con la familia de viva voz.'

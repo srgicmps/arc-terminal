@@ -39,14 +39,13 @@ describe('preguntas', () => {
 describe('buildQuiz', () => {
 	it('cinco preguntas iguales para todos en la misma semana', () => {
 		const input = {
-			top: [entry('1', 'Francia aprueba la reforma'), entry('2', 'China y Japón firman un acuerdo'), entry('3', 'Sin país')],
+			top: [entry('1', 'Francia aprueba la reforma'), entry('2', 'China y Japón firman un acuerdo'), entry('3', 'Sin país'), entry('4', 'Brasil elige presidente')],
 			markets: [market('el bitcoin', 3.1), market('el euro frente al dólar', -0.4)],
-			quakes: [quake('a', 6.1, 'Hualien, Taiwan')],
-			leaders: [{ label: 'en el Mundial de F1', names: ['Antonelli', 'Russell', 'Hamilton', 'Verstappen', 'Leclerc'], explain: 'Antonelli, 340 puntos.' }]
+			quakes: [quake('a', 6.1, 'Hualien, Taiwan')]
 		};
 		const a = buildQuiz(input, now);
 		expect(a.week).toBe('2026-W42');
-		expect(a.questions.map((q) => q.topic)).toEqual(['Titulares', 'Titulares', 'Mercados', 'Mundo', 'Deporte']);
+		expect(a.questions.map((q) => q.topic)).toEqual(['Titulares', 'Titulares', 'Mercados', 'Mundo', 'Titulares']);
 		expect(buildQuiz(input, now + 3_600_000)).toEqual(a);
 	});
 	it('veredicto', () => {

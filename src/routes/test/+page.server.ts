@@ -6,19 +6,14 @@ import type { CryptoData, ImpData, Quake, SeriesData, YieldCurveData } from '#li
 import { dailySeries, weekSummary } from '#lib/week.ts';
 import type { PageServerLoad } from './$types';
 
-/** Lo que se usa de f1.json y football.json (DEP): solo los nombres en orden y los puntos del primero. */
-type Standings = { drivers?: { name: string; points: number }[]; competitions?: { code: string; table: { team: string; points: number }[] }[] };
-
 export const load: PageServerLoad = async () => {
-	const [imp, fred, ecb, curve, crypto, quakes, f1, football] = await Promise.all([
+	const [imp, fred, ecb, curve, crypto, quakes] = await Promise.all([
 		dataset<ImpData>('imp'),
 		dataset<SeriesData>('fred'),
 		dataset<SeriesData>('ecb'),
 		dataset<YieldCurveData>('uscurve'),
 		dataset<CryptoData>('crypto'),
-		dataset<Quake[]>('quakes'),
-		dataset<Standings>('f1'),
-		dataset<Standings>('football')
+		dataset<Quake[]>('quakes')
 	]);
 	const get = seriesMap(fred, ecb);
 	const ten = curve?.data.tenors.indexOf('10A') ?? -1;
@@ -34,12 +29,6 @@ export const load: PageServerLoad = async () => {
 			{ label: 'el bitcoin', kind: 'pct', decimals: 0, series: dailySeries('btc', 'Bitcoin', '$', 'CoinGecko', (crypto?.data.btcHistory ?? []).map((d) => ({ date: d.date, v: d.usd }))) }
 		]
 	});
-	const drivers = f1?.data.drivers ?? [];
-	const liga = football?.data.competitions?.find((c) => c.code === 'PD')?.table ?? [];
-	const leaders = [
-		{ label: 'en LaLiga', names: liga.map((r) => r.team), explain: liga[0] ? `${liga[0].team}, con ${liga[0].points} puntos.` : '' },
-		{ label: 'en el Mundial de Fórmula 1', names: drivers.map((d) => d.name), explain: drivers[0] ? `${drivers[0].name}, con ${drivers[0].points} puntos.` : '' }
-	];
 	const now = Date.parse(imp?.fetchedAt ?? '') || Date.now();
-	return { quiz: buildQuiz({ top: week.top, markets: week.markets, quakes: quakes?.data ?? [], leaders }, now) };
+	return { quiz: buildQuiz({ top: week.top, markets: week.markets, quakes: quakes?.data ?? [] }, now) };
 };

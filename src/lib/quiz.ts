@@ -1,4 +1,5 @@
 // F24 «Test de la semana» (TEST): cinco preguntas hechas con los datos y titulares de la semana, sin IA.
+// Sin deporte (decisión de Sergi).
 // Se generan al construir la web con reglas fijas y un sorteo que depende solo de la semana: todos los de casa
 // ven las mismas preguntas en el mismo orden. Cada uno guarda su puntuación en su cuenta (clave arc-quiz).
 import { findCountries } from './countries.ts';
@@ -7,7 +8,7 @@ import type { WeekMarket } from './week.ts';
 
 export interface Question {
 	id: string;
-	/** Tema, para la etiqueta: «Titulares», «Mercados», «Mundo», «Deporte». */
+	/** Tema, para la etiqueta: «Titulares», «Mercados», «Mundo». */
 	topic: string;
 	q: string;
 	options: string[];
@@ -140,27 +141,18 @@ export function quakeQuestion(quakes: Quake[], now: number, rnd: () => number): 
 	};
 }
 
-/** Quién lidera una clasificación (F1 o LaLiga), con los cuatro primeros como opciones. */
-export function leaderQuestion(label: string, names: string[], rnd: () => number, explain: string): Question | null {
-	if (names.length < 4) return null;
-	const o = options(names[0], names.slice(1, 6), rnd);
-	if (!o) return null;
-	return { id: `l-${label}`, topic: 'Deporte', q: `¿Quién va primero ${label}?`, ...o, explain };
-}
-
-/** Las cinco preguntas de la semana: dos de titulares, una de mercados, una del mundo y una de deporte, o lo que haya. */
+/** Las cinco preguntas de la semana: tres de titulares, una de mercados y una del mundo, o lo que haya. */
 export function buildQuiz(
-	input: { top: ImpEntry[]; markets: WeekMarket[]; quakes: Quake[]; leaders: { label: string; names: string[]; explain: string }[] },
+	input: { top: ImpEntry[]; markets: WeekMarket[]; quakes: Quake[] },
 	now: number,
 	size = 5
 ): Quiz {
 	const week = isoWeek(now);
 	const rnd = seeded(week);
-	const headlines = headlineQuestions(input.top, rnd, 3);
+	const headlines = headlineQuestions(input.top, rnd, 4);
 	const market = marketQuestion(input.markets, rnd);
 	const quake = quakeQuestion(input.quakes, now, rnd);
-	const sport = input.leaders.map((l) => leaderQuestion(l.label, l.names, rnd, l.explain)).find(Boolean) ?? null;
-	const picked = [...headlines.slice(0, 2), market, quake, sport, ...headlines.slice(2)].filter((q): q is Question => !!q);
+	const picked = [...headlines.slice(0, 2), market, quake, ...headlines.slice(2)].filter((q): q is Question => !!q);
 	return { week, questions: picked.slice(0, size) };
 }
 

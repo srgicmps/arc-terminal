@@ -91,7 +91,7 @@
 			{:else}
 				<p class="empty">Esta semana aún no hay datos para hacer preguntas.</p>
 			{/if}
-			{#snippet note()}Preguntas hechas sin IA con IMP, mercados (FRED, BCE, CoinGecko), terremotos (USGS) y deporte (DEP). Las mismas para todos hasta el domingo{/snippet}
+			{#snippet note()}Preguntas hechas sin IA con IMP, mercados (FRED, BCE, CoinGecko), y terremotos (USGS). Las mismas para todos hasta el domingo{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
