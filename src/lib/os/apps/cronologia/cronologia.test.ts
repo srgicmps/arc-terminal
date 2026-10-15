@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { cluster, nearest } from './cluster.ts';
 import { allEvents, fromEarnings, fromGdacs, fromImp, fromMeetings, fromQuakes, fromReleases, type TlEvent } from './events.ts';
 import { defaultSettings, LANES, moveLane, parseSettings, toggleLane, visibleLanes } from './lanes.ts';
-import { DAY, HOUR, MAX_SPAN, MIN_SPAN, pan, rangeDomain, scale, ticks, zoned, zoom } from './scale.ts';
+import { columns, DAY, HOUR, MAX_SPAN, MIN_SPAN, pan, rangeDomain, scale, ticks, zoned, zoom } from './scale.ts';
 import { change, laneSeries, pointTime, stepPath, valueAt, visible } from './series.ts';
 import type { ImpData } from '../../../types.ts';
 
@@ -57,6 +57,54 @@ describe('escala de tiempo', () => {
 	it('en un año marca el día 1 de los meses', () => {
 		const m = ticks([Date.parse('2026-01-10T00:00:00Z'), Date.parse('2026-12-20T00:00:00Z')], 6, 'UTC');
 		for (const x of m) expect(new Date(x.t).getUTCDate()).toBe(1);
+	});
+
+	it('en pasos de días da las mismas marcas que el recorrido hora a hora de antes', () => {
+		// Referencia: el algoritmo anterior (hora a hora, quedándose con las medianoches locales).
+		const old = (d0: number, d1: number, n: number, timeZone: string) => {
+			const parts = new Intl.DateTimeFormat('es-ES', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', hourCycle: 'h23', timeZone });
+			const out: number[] = [];
+			for (let t = Math.floor(d0 / HOUR) * HOUR - HOUR - DAY; t <= d1 + DAY; t += HOUR) {
+				const p = Object.fromEntries(parts.formatToParts(t).map((x) => [x.type, Number(x.value)]));
+				if (p.hour !== 0) continue;
+				const day = Date.UTC(p.year, p.month - 1, p.day);
+				const ep = Math.round(day / DAY);
+				if (n === 7 || n === 14) {
+					if (new Date(day).getUTCDay() !== 1 || (n === 14 && Math.floor(ep / 7) % 2)) continue;
+				} else if (ep % n) continue;
+				if (t >= d0 && t <= d1) out.push(t);
+			}
+			return out;
+		};
+		const steps: [number, number][] = [
+			[8 * DAY, 1],
+			[15 * DAY, 2],
+			[50 * DAY, 7],
+			[100 * DAY, 14]
+		];
+		for (const tz of ['UTC', 'Europe/Madrid', 'America/New_York', 'Asia/Tokyo', 'Australia/Sydney']) {
+			for (const end of ['2026-10-27T15:00:00Z', '2026-03-30T03:30:00Z', '2026-11-02T05:00:00Z']) {
+				for (const [span, n] of steps) {
+					const d1 = Date.parse(end);
+					const got = ticks([d1 - span, d1], 10, tz).map((m) => m.t);
+					expect(got, `${tz} ${end} ${n}d`).toEqual(old(d1 - span, d1, n, tz));
+				}
+			}
+		}
+	});
+
+	it('las columnas dejan sitio al gráfico en estrecho y nunca invaden la de valores', () => {
+		expect(columns(1200)).toMatchObject({ narrow: false, x0: 150, x1: 1108 });
+		const phone = columns(390);
+		expect(phone).toMatchObject({ narrow: true, x0: 80, x1: 334 });
+		expect(phone.x1 - phone.x0).toBeGreaterThan(200);
+		for (const w of [0, 50, 120, 200, 321, 600, 900]) {
+			const c = columns(w);
+			expect(c.x0).toBeGreaterThanOrEqual(0);
+			expect(c.x1).toBeGreaterThanOrEqual(c.x0);
+			expect(c.x1).toBeLessThanOrEqual(Math.max(c.x0, w - (c.narrow ? 56 : 92)));
+		}
+		expect(columns(180).x1 - columns(180).x0).toBe(60);
 	});
 
 	it('pasa una hora de reloj de una zona a UTC, con horario de verano', () => {

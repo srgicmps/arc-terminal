@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 	import { rgba, token } from '#lib/color.ts';
-	import { theme } from '#lib/theme.svelte.ts';
+	import { paint } from '#lib/tvpaint.svelte.ts';
 	import TvWidget from './TvWidget.svelte';
 	import Seg from './ui/Seg.svelte';
 
@@ -29,7 +29,7 @@
 
 	// TradingView necesita los colores escritos: se leen de los tokens del tema activo.
 	const config = $derived.by(() => {
-		void theme.resolved;
+		void paint.n;
 		return {
 			exchange,
 			dateRange: '1D',

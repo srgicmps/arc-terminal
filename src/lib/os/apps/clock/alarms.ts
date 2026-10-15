@@ -27,6 +27,25 @@ export function due(alarms: Alarm[], now: Date): Alarm[] {
 	return alarms.filter((a) => a.on && minuteOfTime(a.time) === m && (!a.days.length || a.days.includes(now.getDay())));
 }
 
+/** Cuánto se puede llegar tarde a una alarma (pestaña dormida, ordenador en reposo) y que aún suene, en minutos. */
+export const MAX_LATE_MIN = 10;
+
+/**
+ * Las alarmas que tocaban entre `from` (sin incluir) y `to` (incluido). Así no se pierde ninguna aunque el reloj
+ * que mira no pase justo por su minuto: el navegador frena los temporizadores de una pestaña en segundo plano (hasta
+ * uno por minuto) y los para con el ordenador en reposo. Lo que tocaba hace más de `maxLate` minutos ya no suena.
+ */
+export function dueBetween(alarms: Alarm[], from: Date, to: Date, maxLate = MAX_LATE_MIN): Alarm[] {
+	const start = Math.max(from.getTime(), to.getTime() - maxLate * 60_000);
+	const hits = new Map<string, Alarm>();
+	// Cada minuto en punto del intervalo (las alarmas suenan en el segundo 0 de su minuto).
+	const t = new Date(start);
+	t.setSeconds(0, 0);
+	if (t.getTime() <= start) t.setMinutes(t.getMinutes() + 1);
+	for (; t.getTime() <= to.getTime(); t.setMinutes(t.getMinutes() + 1)) for (const a of due(alarms, t)) hits.set(a.id, a);
+	return [...hits.values()];
+}
+
 /** Cuánto falta para que suene, en minutos (para «Suena dentro de 7 h 12 min»); null si está apagada. */
 export function minutesUntil(a: Alarm, now: Date): number | null {
 	if (!a.on) return null;

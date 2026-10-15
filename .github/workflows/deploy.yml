@@ -216,6 +216,8 @@ jobs:
       - run: pnpm build --logLevel warn
       # Presupuesto de peso por vista (JS, CSS y HTML propios, gzip, sin datos): falla si alguna pasa del tope.
       - run: node scripts/weight.ts
+      # Arc OS: cada vista como app (embebida a 390 px) y el escritorio con ventanas, sin datos (scripts/smoke-vistas-os.ts).
+      - run: node scripts/smoke-vistas-os.ts
 
   # PR: datos reales y prueba de humo. Abre todas las vistas a 390 y 1280 px con el Chrome del runner y
   # falla si alguna da errores en la consola, tiene scroll horizontal en el móvil o se queda sin datos.

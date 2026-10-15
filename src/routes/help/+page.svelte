@@ -298,12 +298,19 @@
 	}
 
 	/* Atajos: la acción puede ser larga; en el móvil baja de línea en vez de salirse del panel. */
+	/* Las teclas también bajan de línea: en una ventana estrecha de Arc OS, «Alt + ⇧ + ← / →» no cabe en una. */
 	.keys li {
-		grid-template-columns: auto minmax(0, 1fr);
+		grid-template-columns: minmax(0, max-content) minmax(6em, 1fr);
+	}
+
+	.keys .l {
+		white-space: normal;
+		min-width: 0;
 	}
 
 	.keys b {
 		white-space: normal;
+		overflow-wrap: anywhere;
 		text-align: right;
 	}
 

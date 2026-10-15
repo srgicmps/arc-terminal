@@ -185,10 +185,12 @@ export const removeWidget = (a: Arrangement, id: WidgetId): Arrangement => ({ ..
 export const folderName = (sections: (string | undefined)[]) =>
 	sections[0] && sections.every((s) => s === sections[0]) ? sections[0] : 'Carpeta';
 
-/** Las páginas de inicio: widgets en la primera y, después, las casillas en tu orden. */
 /**
- * La primera página lleva los widgets entre los iconos: el primero arriba, dos filas de apps y los demás debajo; lo
- * que sobra, apps. Las siguientes, solo apps. Las del dock no se repiten.
+ * Las páginas de inicio. La primera lleva los widgets entre los iconos, en franjas de 2 filas: un widget grande
+ * ocupa una franja; dos pequeños, una (se emparejan en tu orden aunque haya uno grande en medio); uno pequeño suelto,
+ * media con 4 apps al lado. La primera franja arriba, dos filas de apps y la otra debajo; lo que sobra, apps. Las
+ * siguientes páginas, solo apps. Las del dock no se repiten. Así nada se sale de las 6 filas (con 4 widgets pequeños
+ * el último quedaba en una séptima fila, cortado).
  */
 export function layout(apps: PhoneApp[], a: Arrangement = arrange(null, apps.map((x) => x.id))): Cell[][] {
 	const byId = new Map(apps.map((x) => [x.id, x]));
@@ -200,14 +202,49 @@ export function layout(apps: PhoneApp[], a: Arrangement = arrange(null, apps.map
 	let i = 0;
 	const take = (n: number): Cell[] => rest.slice(i, (i += n));
 	const widget = (id: WidgetId): Cell => ({ kind: 'widget', id, size: sizeOf(id) });
+	// Franjas: [grande] o [pequeño, pequeño] o [pequeño] (este, con 4 apps al lado).
+	const bands: WidgetId[][] = [];
+	const smalls = a.widgets.filter((w) => sizeOf(w) === 's');
+	for (const w of a.widgets) {
+		if (sizeOf(w) === 'l') bands.push([w]);
+		else if (smalls[0] === w) bands.push(smalls.splice(0, 2));
+	}
+	const band = (ws: WidgetId[]): Cell[] => [...ws.map(widget), ...(ws.length === 1 && sizeOf(ws[0]) === 's' ? take(COLS) : [])];
 	const first: Cell[] = [];
-	const [top, ...more] = a.widgets;
-	if (top) first.push(widget(top), ...take(COLS * 2));
-	first.push(...more.map(widget));
+	const [top, ...more] = bands;
+	if (top) first.push(...band(top), ...take(COLS * 2));
+	for (const b of more) first.push(...band(b));
 	first.push(...take(CELLS - used(first)));
 	const pages: Cell[][] = [first];
 	while (i < rest.length) pages.push(take(CELLS));
 	return pages;
+}
+
+/**
+ * Filas que ocupa una página en la rejilla de 4 columnas, colocando las casillas como el navegador (auto-placement
+ * de CSS Grid, sin `dense`). Sirve para comprobar que nada pasa de ROWS.
+ */
+export function rowsOf(page: Cell[]): number {
+	const taken: boolean[][] = [];
+	const free = (r: number, c: number) => !taken[r]?.[c];
+	let r = 0;
+	let c = 0;
+	let rows = 0;
+	for (const cell of page) {
+		const w = cell.kind === 'widget' ? (cell.size === 'l' ? COLS : 2) : 1;
+		const h = cell.kind === 'widget' ? 2 : 1;
+		for (;;) {
+			if (c + w > COLS) (r++, (c = 0));
+			let ok = true;
+			for (let y = r; y < r + h && ok; y++) for (let x = c; x < c + w && ok; x++) ok = free(y, x);
+			if (ok) break;
+			c++;
+		}
+		for (let y = r; y < r + h; y++) for (let x = c; x < c + w; x++) (taken[y] ??= [])[x] = true;
+		rows = Math.max(rows, r + h);
+		c += w;
+	}
+	return rows;
 }
 
 /** Casillas que ocupa una página (para comprobar que nada se sale de la rejilla). */

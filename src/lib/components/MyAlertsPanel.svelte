@@ -7,7 +7,7 @@
 	import Panel from './Panel.svelte';
 	import ChipInput from './ui/ChipInput.svelte';
 	import { newPrice, parseWordList, type AlertConfig } from '#lib/alertconfig.ts';
-	import { alertText, LIMITS, parseAlert } from '#lib/useralerts.ts';
+	import { alertText, cleanWord, LIMITS, parseAlert } from '#lib/useralerts.ts';
 
 	let { config, set }: { config: AlertConfig; set: (patch: Partial<AlertConfig>) => void } = $props();
 	let msg = $state('');
@@ -16,8 +16,18 @@
 		const a = parseAlert(raw);
 		msg = '';
 		if (!a) msg = 'No la entiendo. Ejemplos: NVDA > 150 · BTC -5% · diésel < 1,40';
+		else if (config.prices.some((p) => alertText(p) === alertText(a))) msg = 'Esa ya la tienes.';
 		else if (config.prices.length >= LIMITS.alerts) msg = `Como mucho ${LIMITS.alerts}.`;
 		else set({ prices: [...config.prices, newPrice(a)] });
+	}
+
+	function addWord(raw: string) {
+		const w = cleanWord(raw);
+		msg = '';
+		if (!w) msg = `Esa palabra no vale: hasta ${LIMITS.wordLength} letras, sin < > [ ].`;
+		else if (config.words.some((x) => x.toLowerCase() === w.toLowerCase())) msg = 'Esa ya la vigilas.';
+		else if (config.words.length >= LIMITS.words) msg = `Como mucho ${LIMITS.words} palabras.`;
+		else set({ words: parseWordList([...config.words, w]) });
 	}
 </script>
 
@@ -33,7 +43,7 @@
 		label="Palabra vigilada"
 		placeholder="aranceles"
 		items={config.words}
-		onadd={(w) => set({ words: parseWordList([...config.words, w]) })}
+		onadd={addWord}
 		onremove={(w) => set({ words: config.words.filter((x) => x !== w) })}
 	/>
 	{#snippet note()}

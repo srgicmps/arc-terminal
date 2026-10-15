@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { APPS } from '../apps.ts';
-import { addWidget, arrange, badgesFor, badgeText, CELLS, dockApps, drop, folderName, gesture, keyboardFit, layout, webApp, noticesOf, place, removeWidget, rename, takeOut, touch, used } from './home.ts';
+import { addWidget, arrange, badgesFor, badgeText, CELLS, dockApps, drop, folderName, gesture, keyboardFit, layout, webApp, noticesOf, place, removeWidget, rename, ROWS, rowsOf, takeOut, touch, used, WIDGETS, type Cell, type WidgetId } from './home.ts';
 
 describe('Modo OS en el móvil', () => {
 	it('dock de 4 con la Terminal y sin repetir en las páginas', () => {
@@ -104,5 +104,27 @@ describe('Modo OS en el móvil', () => {
 		const cells = layout(APPS, a).flat();
 		expect(cells.some((c) => c.kind === 'folder' && c.apps.length === 2)).toBe(true);
 		expect(layout(APPS, a).every((p) => used(p) <= CELLS)).toBe(true);
+	});
+});
+
+describe('layout: franjas de widgets', () => {
+	const ids = APPS.map((a) => a.id);
+	const smalls = WIDGETS.filter((w) => w.size === 's').map((w) => w.id);
+	// Todas las combinaciones que caben (hasta 16 casillas), en varios órdenes.
+	const combos: WidgetId[][] = [[], ['hoy'], ['mundo'], ['mundo', 'hoy'], ['hoy', 'mundo'], ['mundo', 'hoy', 'mercados'], ['mundo', 'mercados', 'hoy'], smalls.slice(0, 3), smalls.slice(0, 4), smalls.slice(3, 7)];
+	it.each(combos.map((c) => [c.join(',') || '(ninguno)', c]))('%s: la primera página cabe en 6 filas y está llena', (_, ws) => {
+		let a = arrange(null, ids);
+		a = { ...a, widgets: [] };
+		for (const w of ws as WidgetId[]) a = addWidget(a, w);
+		expect(a.widgets).toEqual(ws);
+		const pages = layout(APPS, a);
+		for (const p of pages) expect(rowsOf(p)).toBeLessThanOrEqual(ROWS);
+		expect(used(pages[0])).toBe(CELLS);
+		expect(pages[0].filter((c) => c.kind === 'widget').map((c) => (c.kind === 'widget' ? c.id : ''))).toHaveLength(ws.length);
+	});
+	it('rowsOf: 4 widgets pequeños seguidos de 8 apps sí se salían (lo que pasaba antes)', () => {
+		const w = (id: WidgetId): Cell => ({ kind: 'widget', id, size: 's' });
+		const app: Cell = { kind: 'app', app: APPS[0] };
+		expect(rowsOf([w('mundo'), ...Array(8).fill(app), w('mercados'), w('cripto'), w('bonos')])).toBe(7);
 	});
 });

@@ -107,7 +107,7 @@ export function labelOf(t: Target): string {
 /**
  * ¿Lo nombra este texto? Países con findCountries (los nombres largos ganan: «Corea del Norte» no es «Corea»),
  * valores por su nombre y alias (y el código si tiene 3 letras o más), líderes por el nombre o el apellido, y
- * palabras enteras sin mirar tildes ni mayúsculas.
+ * palabras enteras sin mirar tildes ni mayúsculas (salvo la inicial del nombre corto de un banco: «Fed», no «fed»).
  */
 export function matcher(t: Target): (text: string) => boolean {
 	if (t.kind === 'country') return (text) => findCountries(text).some((c) => c.code === t.id);
@@ -122,7 +122,9 @@ export function matcher(t: Target): (text: string) => boolean {
 		const last = l?.name.split(' ').slice(-1)[0];
 		pats = l ? [l.name, ...(last && last.length >= 4 ? [last] : [])].map(namePattern) : [];
 	} else {
-		pats = [namePattern(t.id.toLowerCase())];
+		// El nombre corto de un banco central («Fed», «BCE») mira la mayúscula inicial: «fed» es un verbo en inglés.
+		const bank = /^\p{Lu}/u.test(t.id) && Object.values(BANKS).some((b) => b.name === t.id);
+		pats = [namePattern(bank ? t.id : t.id.toLowerCase())];
 	}
 	return (text) => {
 		const p = plain(text);

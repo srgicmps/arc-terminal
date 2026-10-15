@@ -101,6 +101,20 @@ export function appOfPath(path: string, list = APPS): OsApp | undefined {
 	return list.find((a) => a.href === clean) ?? list.find((a) => a.href && a.href !== '/' && clean.startsWith(a.href + '/'));
 }
 
+/**
+ * El título de una ventana: el nombre de la app y, si enseña algo concreto, lo que lo distingue en claro
+ * («País · CN», «Noticias · aranceles»), sin la ruta. Las herramientas sin ruta de la web, solo su nombre.
+ */
+export function winTitle(app: OsApp, path: string | undefined): string {
+	if (app.title) return app.title(path);
+	if (!path || !app.href || path === app.href) return app.name;
+	const [route, rest = ''] = path.split('#')[0].split('?');
+	const vals = [...new URLSearchParams(rest).values()].filter((v) => v && v !== '1').slice(0, 2);
+	const sub = route.replace(/\/+$/, '') !== app.href ? route.slice(app.href.length).replace(/^\/+/, '') : '';
+	const label = vals.join(' · ') || sub;
+	return label ? `${app.name} · ${label}` : app.name;
+}
+
 /** Lo que va en el src de la ventana: la ruta con ?embed=1 (src/app.html quita la cabecera de la web). */
 export function embedSrc(path: string): string {
 	const [base, hash = ''] = path.split('#');

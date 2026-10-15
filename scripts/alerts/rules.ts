@@ -82,6 +82,8 @@ export interface ImpLike {
 	current?: {
 		k: string;
 		title: string;
+		/** El titular traducido al español (scripts/translate.ts), si lo hay. */
+		titleEs?: string;
 		url?: string;
 		sources?: string[];
 		sections?: string[];

@@ -28,6 +28,7 @@
 		OP_LAYERS,
 		parseParams,
 		PERIODS,
+		reaspect,
 		timeRange,
 		visible,
 		zoomAt,
@@ -63,12 +64,14 @@
 	const max = $derived(fitView(sw / Math.max(1, sh)));
 	// $state.raw: el encuadre siempre se sustituye entero (como un ref de Vue con un objeto que no se muta).
 	let view = $state.raw<ViewBox>(fitView(2));
-	// Al cambiar el tamaño de la ventana, si se veía el mundo entero, se sigue viendo entero.
+	// Al cambiar el tamaño de la ventana, si se veía el mundo entero, se sigue viendo entero; si había zoom, el
+	// mismo encuadre con la proporción nueva (si no, el mapa se deformaba y arrastrar o la rueda iban desfasados).
 	let lastMax: ViewBox | null = null;
 	$effect(() => {
 		const m = max;
 		untrack(() => {
 			if (!lastMax || (view.w >= lastMax.w - 0.01 && view.h >= lastMax.h - 0.01)) view = m;
+			else view = reaspect(view, m.w / m.h);
 		});
 		lastMax = m;
 	});
@@ -111,7 +114,16 @@
 		new Set(shown.filter((p) => p.at !== null && p.at >= recentSince && !isState(p.layer)).map((p) => p.id))
 	);
 	const selected = $derived(selectedId ? (shown.find((p) => p.id === selectedId) ?? null) : null);
-	const log = $derived(newestFirst(shown.filter((p) => p.at !== null && !isState(p.layer))).slice(0, 60));
+	// Un titular con dos países son dos puntos en el mapa, pero una sola línea en el registro.
+	const log = $derived.by(() => {
+		const seen = new Set<string>();
+		return newestFirst(shown.filter((p) => p.at !== null && !isState(p.layer)))
+			.filter((p) => {
+				const k = `${p.layer}|${p.url}|${p.title}`;
+				return !seen.has(k) && !!seen.add(k);
+			})
+			.slice(0, 60);
+	});
 
 	const fmt = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 	const stamp = (t: number) => fmt.format(new Date(t)).replace('.', '');
@@ -192,7 +204,7 @@
 					selected={selectedId}
 					bind:view
 					{max}
-					{recentSince}
+					{flash}
 					onpick={pick}
 					onhover={(h) => (hover = h)}
 				/>
@@ -775,27 +787,69 @@
 			grid-template-areas: 'bar' 'layers' 'stage' 'side' 'time';
 		}
 
+		/* Los periodos y la vista en una sola fila que se desliza: a 390 px no caben y no deben robarle alto al mapa. */
+		.tools {
+			flex-wrap: nowrap;
+			width: 100%;
+			overflow-x: auto;
+			scrollbar-width: none;
+		}
+
+		.tools > :global(*) {
+			flex: none;
+		}
+
+		/* Las capas, igual: una fila que se desliza en vez de cinco o seis filas que dejaban el mapa en nada. */
 		.layers {
 			flex-direction: row;
-			flex-wrap: wrap;
+			flex-wrap: nowrap;
+			align-items: center;
 			padding: var(--sp-4) 0;
 			border-right: 0;
 			border-bottom: var(--border);
 			border-color: var(--cmd-coast);
+			overflow-x: auto;
+			overflow-y: hidden;
+			scrollbar-width: none;
 		}
 
 		.layers ul {
 			display: flex;
-			flex-wrap: wrap;
+			flex-wrap: nowrap;
 		}
 
 		.layer {
 			width: auto;
+			white-space: nowrap;
 		}
 
-		.lh,
-		.note {
+		.chk {
+			flex: none;
+			white-space: nowrap;
+		}
+
+		.zoom {
+			grid-auto-flow: column;
+		}
+
+		.zoom button + button {
+			border-top: 0;
+			border-left: var(--border);
+			border-color: var(--cmd-coast);
+		}
+
+		.note,
+		.lh > span {
 			display: none;
+		}
+
+		/* «Todas» y «Ninguna» se quedan, al principio de la fila: en táctil no hay doble clic para «solo esta capa». */
+		.lh {
+			flex: none;
+		}
+
+		.lnk {
+			min-height: var(--control-h);
 		}
 
 		.side {

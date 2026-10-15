@@ -207,11 +207,12 @@ export interface Welcome {
  */
 export function applyPlan(store: Store, plan: Plan, now = new Date()) {
 	store.setItem('arc-home', plan.home);
-	// Con todo lo que hay, la portada de siempre; si no, la modular con lo tuyo delante y el resto oculto.
+	// Con todo lo que hay, la portada de siempre (también si una bienvenida anterior la dejó modular; su diseño se
+	// guarda por si vuelves a ella); si no, la modular con lo tuyo delante y el resto oculto.
 	if (plan.layout.hidden.length) {
 		store.setItem('arc-mode', 'modular');
 		store.setItem('arc-layout-top', JSON.stringify(plan.layout));
-	}
+	} else store.setItem('arc-mode', 'general');
 	store.setItem(SIMPLE_KEY, plan.simple ? 'sencillo' : 'terminal');
 
 	let pins: { id: string; span: number }[] = [];

@@ -8,12 +8,14 @@
 	no se recargan.
 -->
 <script lang="ts">
+	import OsIcon from '#lib/os/icons/OsIcon.svelte';
+	import UiIcon from '#lib/os/icons/UiIcon.svelte';
 	import { untrack } from 'svelte';
 	import type { OsApp } from '#lib/os/apps.ts';
-	import { embedSrc } from '#lib/os/apps.ts';
+	import { appOfPath, embedSrc, winTitle } from '#lib/os/apps.ts';
 	import { routeHref } from '#lib/routes.ts';
-	import type { EmbedMessage } from '#lib/os/embed.ts';
-	import { close, closeNow, focus, maximize, minimize, nudge, os, place, setPath, snap } from '#lib/os/os.svelte.ts';
+	import { onEmbedLink, type EmbedMessage } from '#lib/os/embed.ts';
+	import { close, closeNow, focus, maximize, minimize, nudge, openPath, os, place, setPath, snap } from '#lib/os/os.svelte.ts';
 	import { snapTo, stackZ, type Rect, type Snap, type Win } from '#lib/os/wm.ts';
 
 	let {
@@ -21,7 +23,6 @@
 		app,
 		active,
 		onpreview,
-		onkey,
 		onmenu
 	}: {
 		win: Win;
@@ -30,8 +31,6 @@
 		active: boolean;
 		/** Dónde encajará si se suelta ahora (o null): lo pinta WindowLayer. */
 		onpreview: (s: Snap | null) => void;
-		/** Un atajo pulsado con el foco dentro del iframe. */
-		onkey: (e: Pick<KeyboardEvent, 'key' | 'code' | 'altKey' | 'shiftKey' | 'ctrlKey' | 'metaKey'>) => void;
 		/** Clic derecho en la barra de título (o ⇧F10 / tecla de menú): WindowLayer abre el menú de la ventana. */
 		onmenu: (x: number, y: number) => void;
 	} = $props();
@@ -54,6 +53,26 @@
 	let frame = $state<HTMLIFrameElement>();
 	// La ruta se lee una vez: si cambia porque navegas dentro, no se vuelve a cargar el iframe.
 	const src = untrack(() => (app.href !== undefined ? base + embedSrc(win.path ?? app.href) : ''));
+	// Lo que enseña el iframe ahora: la ruta de arranque o la que avisa al navegar dentro. Si la ruta de la ventana
+	// cambia desde fuera (openPath de otra app con la ventana ya abierta: PAIS de otro país), el iframe va allí.
+	let shown = untrack(() => win.path);
+	$effect(() => {
+		const p = win.path;
+		if (p === shown || !frame || app.href === undefined) return;
+		shown = p;
+		frame.contentWindow?.location.replace(base + embedSrc(p ?? app.href));
+	});
+
+	// Un enlace de la vista a otra app (TOP → «LUZ ›») la abre en su ventana, como un sistema operativo; los de la
+	// misma app, o de rutas que no son de ninguna, navegan aquí dentro.
+	$effect(() => {
+		if (!frame || app.href === undefined) return;
+		return onEmbedLink(frame, (href) => {
+			const path = href.startsWith(base + '/') ? href.slice(base.length) : href;
+			const to = appOfPath(path);
+			return !!to && to.id !== app.id && !!openPath(path);
+		});
+	});
 
 	type Drag = { kind: 'move' | 'e' | 's' | 'se'; px: number; py: number; start: Rect; moved: boolean };
 	let drag = $state<Drag | null>(null);
@@ -123,8 +142,13 @@
 			if (e.origin !== location.origin || !frame || e.source !== frame.contentWindow) return;
 			const m = e.data;
 			if (m?.type === 'arcos:focus') focus(win.uid);
-			else if (m?.type === 'arcos:path') setPath(win.uid, m.path.startsWith(base) ? m.path.slice(base.length) || '/' : m.path);
-			else if (m?.type === 'arcos:key') onkey({ key: m.key, code: m.code, altKey: m.alt, shiftKey: m.shift, ctrlKey: m.ctrl, metaKey: m.meta });
+			else if (m?.type === 'arcos:path') setPath(win.uid, (shown = m.path.startsWith(base) ? m.path.slice(base.length) || '/' : m.path));
+			// Un atajo con el foco dentro: se repite en el escritorio, para que lo oigan todos los que escuchan el teclado
+			// (ventanas, buscador, Alt+Tab, bloqueo), igual que con el foco fuera.
+			else if (m?.type === 'arcos:key')
+				window.dispatchEvent(
+					new KeyboardEvent(m.up ? 'keyup' : 'keydown', { key: m.key, code: m.code, altKey: m.alt, shiftKey: m.shift, ctrlKey: m.ctrl, metaKey: m.meta, cancelable: true })
+				);
 		};
 		window.addEventListener('message', onMessage);
 		return () => window.removeEventListener('message', onMessage);
@@ -146,7 +170,7 @@
 	}
 
 	const r = $derived(ghost ?? win);
-	const title = $derived(app.title ? app.title(win.path) : win.path && win.path !== app.href ? `${app.name} · ${win.path}` : app.name);
+	const title = $derived(winTitle(app, win.path));
 </script>
 
 <section
@@ -188,12 +212,12 @@
 			onmenu(e.clientX, e.clientY);
 		}}
 	>
-		<span class="icon" data-ui="os-icon" aria-hidden="true">{app.icon}</span>
+		<span class="icon" data-ui="os-icon" aria-hidden="true"><OsIcon id={app.id} size={14} /></span>
 		<span class="name" data-ui="os-name" {title}>{title}</span>
 		<span class="btns" data-ui="os-btns">
-			<button type="button" data-ui="os-btn" data-btn="min" onclick={() => minimize(win.uid)} aria-label="Minimizar {app.name}" title="Minimizar"><span class="glyph" aria-hidden="true">–</span></button>
-			<button type="button" data-ui="os-btn" data-btn="max" onclick={() => maximize(win.uid)} aria-label={win.snap === 'max' ? `Restaurar ${app.name}` : `Maximizar ${app.name}`} title={win.snap === 'max' ? 'Restaurar' : 'Maximizar'}><span class="glyph" aria-hidden="true">{win.snap === 'max' ? '❐' : '□'}</span></button>
-			<button type="button" data-ui="os-btn" data-btn="close" onclick={() => close(win.uid)} aria-label="Cerrar {app.name}" title="Cerrar"><span class="glyph" aria-hidden="true">×</span></button>
+			<button type="button" data-ui="os-btn" data-btn="min" onclick={() => minimize(win.uid)} aria-label="Minimizar {app.name}" title="Minimizar"><span class="glyph" aria-hidden="true"><UiIcon id="min" /></span></button>
+			<button type="button" data-ui="os-btn" data-btn="max" onclick={() => maximize(win.uid)} aria-label={win.snap === 'max' ? `Restaurar ${app.name}` : `Maximizar ${app.name}`} title={win.snap === 'max' ? 'Restaurar' : 'Maximizar'}><span class="glyph" aria-hidden="true"><UiIcon id={win.snap === 'max' ? 'restore' : 'max'} /></span></button>
+			<button type="button" data-ui="os-btn" data-btn="close" onclick={() => close(win.uid)} aria-label="Cerrar {app.name}" title="Cerrar"><span class="glyph" aria-hidden="true"><UiIcon id="close" /></span></button>
 		</span>
 	</header>
 	<div class="body">
@@ -314,7 +338,7 @@
 
 	.icon {
 		display: var(--os-icon-display);
-		color: var(--amber);
+		line-height: 0;
 	}
 
 	.name {
@@ -365,8 +389,17 @@
 		background: var(--os-btn-close-bg, var(--os-btn-bg));
 	}
 
+	/* Símbolo SVG (ui.ts) del tamaño de la letra del título, y nunca mayor que el botón (los círculos del Mac). */
 	.glyph {
+		display: grid;
+		place-items: center;
+		width: min(var(--sp-12), 100%);
+		height: min(var(--sp-12), 100%);
 		opacity: var(--os-btn-glyph);
+	}
+	.glyph :global(svg) {
+		width: 100%;
+		height: 100%;
 	}
 
 	.btns button:focus-visible .glyph {

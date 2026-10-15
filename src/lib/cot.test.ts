@@ -30,6 +30,13 @@ describe('cot', () => {
 		expect(data?.markets).toEqual([{ code: '099741', name: 'Euro', net: -200, pctOi: -10, change: -50, range: null }]);
 	});
 
+	it('una fila con un campo vacío no cuenta (Number(\'\') es 0: la neta salía igual a los largos)', () => {
+		const empty = { ...row('2026-10-06', '099741', 100, 0, 2000), noncomm_positions_short_all: '' };
+		const data = parseCot([empty, row('2026-09-29', '099741', 150, 300, 2000)]);
+		// Sin la fila del último informe, el mercado se salta: mejor nada que una neta de +100.
+		expect(data).toBeNull();
+	});
+
 	it('null si no hay filas', () => {
 		expect(parseCot([])).toBeNull();
 	});

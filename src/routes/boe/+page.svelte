@@ -168,7 +168,7 @@
 				{#each days as d (d.date)}
 					{#if d.items.length}
 						<div class="col">
-							<Panel title={longDay(`${d.date}T12:00:00Z`)} meta={query ? `${d.items.length}` : `Disposiciones generales · ${d.items.length}`}>
+							<Panel title={longDay(`${d.date}T12:00:00Z`)} meta={words.length ? `${d.items.length}` : `Disposiciones generales · ${d.items.length}`}>
 								<ol class="boe">
 									{#each d.items as item (item.id)}{@render entry(item)}{/each}
 								</ol>

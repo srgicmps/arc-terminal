@@ -30,7 +30,7 @@
 		<Panel title="Casa Blanca y Fed" meta="Comunicados">
 			<NewsList items={official.slice(0, 20)} />
 		</Panel>
-		<Panel title="Sanciones y aranceles" meta="OFAC, USTR e ITA (Section 232)">
+		<Panel title="Sanciones y aranceles" meta="OFAC, USTR, ITA (Section 232) y BIS">
 			<TradeList items={data.sanctions?.data.slice(0, 15) ?? []} />
 			{#snippet note()}Fuente: Federal Register · <Updated at={data.sanctions?.fetchedAt} source="sanctions" />{/snippet}
 		</Panel>
