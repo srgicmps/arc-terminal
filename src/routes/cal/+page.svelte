@@ -183,7 +183,7 @@
 			{/if}
 			{#snippet note()}
 				ES: festivo en toda España · IB: en Baleares · NYSE y BME: sin bolsa en Nueva York o en Madrid. Festivos:
-				Nager.Date{#if data.holidays}&nbsp;· <Updated at={data.holidays.fetchedAt} />{/if}. Días sin bolsa calculados
+				Nager.Date{#if data.holidays}&nbsp;· <Updated at={data.holidays.fetchedAt} source="holidays" />{/if}. Días sin bolsa calculados
 				con las reglas de la NYSE y del calendario TARGET2 (BME). Los festivos locales de cada municipio no están
 				incluidos.
 			{/snippet}

@@ -6,7 +6,7 @@
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
-	import { nf } from '#lib/format.ts';
+	import { dm, nf } from '#lib/format.ts';
 	import { hourly } from '#lib/power.ts';
 	import { seriesMap, spread } from '#lib/series.ts';
 	import type { PageProps } from './$types';
@@ -98,7 +98,10 @@
 				{/snippet}
 			</Panel>
 		{/if}
-		<Panel title="BOE de hoy" meta="Disposiciones generales" jump={{ code: 'BOE', href: resolve('/boe') }}>
+		<Panel
+			title="BOE de hoy"
+			meta={data.boe ? `Disposiciones generales · ${dm(`${data.boe.data.date}T12:00:00Z`)}` : 'Disposiciones generales'}
+			jump={{ code: 'BOE', href: resolve('/boe') }}>
 			{#if general.length}
 				<ul class="mini">
 					{#each general.slice(0, 12) as item (item.id)}
@@ -107,8 +110,10 @@
 						</li>
 					{/each}
 				</ul>
+			{:else if data.boe}
+				<p class="empty">Este sumario no trae disposiciones generales.</p>
 			{:else}
-				<p class="empty">Hoy no hay disposiciones generales.</p>
+				<p class="empty">Sin datos todavía.</p>
 			{/if}
 		</Panel>
 		<Panel title="Gobierno y Europa" meta="Comunicados oficiales">
