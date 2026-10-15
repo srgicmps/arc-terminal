@@ -245,9 +245,6 @@ export const EARNINGS_WATCH = {
 	mis: [] as string[]
 };
 
-/** ReliefWeb: niveles que cuentan como «alto» (si la fuente llega a darlos) y antigüedad máxima. */
-export const CRISIS = { levels: ['high', 'red'], hours: 48 };
-
 /** Fuente caída: pasadas seguidas en «error» (el mismo número que scripts/issues.ts). */
 export const DOWN = { days: 3 };
 

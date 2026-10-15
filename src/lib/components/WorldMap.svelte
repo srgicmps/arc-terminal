@@ -1,6 +1,6 @@
 <!--
 	Mapa del mundo con capas de puntos (src/lib/geo/layers.ts): terremotos, ciclones, incendios y volcanes,
-	estrechos, sanciones por país y crisis. Proyección equirectangular: sencilla y suficiente para situar
+	estrechos y sanciones por país. Proyección equirectangular: sencilla y suficiente para situar
 	cada cosa. Al tocar un punto sale una ficha con el enlace a su fuente y, si es un país, a su ficha en PAIS.
 	Colores: ámbar y grises del tema; rojo y verde quedan para subidas y bajadas.
 -->
@@ -147,11 +147,6 @@
 		stroke: var(--amber);
 	}
 
-	.crises circle {
-		fill: none;
-		stroke: var(--muted);
-	}
-
 	/* :not(.hit): la zona de toque invisible no se pinta al pasar el ratón ni al tocarla. */
 	.pt:hover circle:not(.hit),
 	.pt:hover rect,
@@ -244,9 +239,5 @@
 		border-radius: 0;
 		transform: rotate(45deg);
 		background: var(--amber-soft);
-	}
-
-	.legend i.crises {
-		border-color: var(--muted);
 	}
 </style>

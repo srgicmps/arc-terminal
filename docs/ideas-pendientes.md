@@ -210,7 +210,7 @@ clave ni registro. Comparar con el lote 26-A antes de repartir, por si algo se r
 - Claves ya en Secrets: FRED_API_KEY, FINNHUB_API_KEY, SEC_USER_AGENT (y HF_TOKEN opcional). EIA_API_KEY, en camino (D30).
 - NTFY_TOPIC y la zona de las alertas, solo en Secrets.
 - Descartadas: GDELT, el RSS de la CNMV, el RSS del Parlamento Europeo, el RSS de OFAC (retirado en 2025) y la
-  agenda de la Comisión y Xinhua. ReliefWeb, aparcado (falta el appname).
+  agenda de la Comisión y Xinhua.
 
 ## 4. Cómo se trabaja
 
