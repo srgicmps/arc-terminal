@@ -43,11 +43,14 @@ export const SHORTCUTS = [
 	{ id: 'tv-pause', group: 'TV', keys: ['Espacio'], how: 'en modo TV', action: 'Pausar o seguir', match: { key: ' ' } },
 	{ id: 'tv-exit', group: 'TV', keys: ['Esc'], how: 'en modo TV', action: 'Salir', match: { key: 'Escape' } },
 	// Arc OS (src/lib/components/os/WindowLayer.svelte, handleKey): todos con Alt, también con el foco dentro de una ventana.
-	{ id: 'os-next', group: 'Arc OS', keys: ['Alt', 'º'], combo: true, how: 'con ⇧, la anterior', action: 'Siguiente ventana' },
+	{ id: 'os-next', group: 'Arc OS', keys: ['Alt', 'º'], combo: true, how: 'o Alt+Tab si el sistema lo deja; con ⇧, la anterior', action: 'Siguiente ventana' },
 	{ id: 'os-max', group: 'Arc OS', keys: ['Alt', '↑'], combo: true, action: 'Maximizar o restaurar la ventana' },
 	{ id: 'os-min', group: 'Arc OS', keys: ['Alt', '↓'], combo: true, action: 'Desencajar o minimizar la ventana' },
-	{ id: 'os-half', group: 'Arc OS', keys: ['Alt', '⇧', '←', '→'], combo: true, action: 'Ventana a media pantalla' },
+	{ id: 'os-half', group: 'Arc OS', keys: ['Alt', '⇧', '←', '→'], combo: true, how: 'o ⌘/Super + flechas', action: 'Ventana a media pantalla' },
+	{ id: 'os-menu', group: 'Arc OS', keys: ['⇧', 'F10'], combo: true, how: 'o clic derecho en la barra de título', action: 'Menú de la ventana (siempre encima, nueva ventana, mover a otro escritorio…)' },
 	{ id: 'os-close', group: 'Arc OS', keys: ['Alt', 'W'], combo: true, action: 'Cerrar la ventana' },
+	{ id: 'os-tile', group: 'Arc OS', keys: ['Alt', 'T'], combo: true, action: 'Mosaico: todas las ventanas en rejilla' },
+	{ id: 'os-keys', group: 'Arc OS', keys: ['←', '↑', '→', '↓'], how: 'con el foco en la barra de título (con ⇧, cambia el tamaño)', action: 'Mover la ventana' },
 	{ id: 'os-desk', group: 'Arc OS', keys: ['Alt', '1…6'], combo: true, action: 'Ir a un escritorio' }
 ] as const satisfies readonly Shortcut[];
 

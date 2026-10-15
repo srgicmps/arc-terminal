@@ -6,9 +6,9 @@
 //   os.state            escritorios y ventanas (solo leer; para cambiar, las funciones de abajo)
 //   os.area             tamaño del escritorio en px (lo pone WindowLayer)
 //   desk()              el escritorio que se ve · focusedWin() la ventana con el foco
-//   openApp(id, path?)  abre (o trae al frente) una app; null si hay MAX_WINS ventanas (os.notice lo explica)
+//   openApp(id, path?, fresh?)  abre (o trae al frente) una app; null si hay MAX_WINS ventanas (os.notice lo explica)
 //   openPath('/eco')    abre la app de una ruta de la web, con esa ruta
-//   focus · close · minimize · maximize · snap · place · cycle
+//   focus · close (animada) · toggleTop (siempre encima) · minimize · maximize · snap · place · cycle · tile (mosaico) · nudge (teclado)
 //   newDesk · rename · removeDesk · goDesk · sendToDesk
 // El modo (Terminal clásico ↔ Modo OS, clave arc-shell) lo lleva src/lib/os/mode.svelte.ts (OS 3).
 import { APPS, appOfPath, findApp, type OsApp } from './apps.ts';
@@ -23,6 +23,8 @@ export const os = $state({
 	area: { w: 1280, h: 720 },
 	/** Último aviso para quien use la API (p. ej. «Hay 12 ventanas…»); la barra de OS 2 lo enseña. */
 	notice: null as { text: string; at: number } | null,
+	/** Ventanas que se están cerrando (la animación; luego se quitan). No se guarda. */
+	closing: [] as string[],
 	loaded: false
 });
 
@@ -58,10 +60,11 @@ const say = (text: string) => (os.notice = { text, at: Date.now() });
 
 const done = <T>(v: T): T => (persist(), v);
 
-export function openApp(id: string, path?: string): wm.Win | null {
+/** Abre una app (o la trae al frente). `fresh`: otra ventana de la misma app («Nueva ventana»). */
+export function openApp(id: string, path?: string, fresh = false): wm.Win | null {
 	const app = findApp(id);
 	if (!app) return null;
-	const r = wm.openWin(os.state, app, os.area, path);
+	const r = wm.openWin(os.state, app, os.area, path, fresh);
 	if (!r.win) {
 		say(`Hay ${wm.MAX_WINS} ventanas en este escritorio: cierra alguna o abre otro escritorio.`);
 		return null;
@@ -76,12 +79,24 @@ export function openPath(path: string): wm.Win | null {
 }
 
 export const focus = (uid: string) => done(wm.focusWin(os.state, uid));
-export const close = (uid: string) => done(wm.closeWin(os.state, uid));
+/** Cerrar: la ventana se anima (--os-anim-close) y luego se quita con closeNow. */
+export function close(uid: string) {
+	if (!os.closing.includes(uid)) os.closing.push(uid);
+}
+/** Quita la ventana ya (lo llama la ventana al acabar la animación de cierre). */
+export function closeNow(uid: string) {
+	os.closing = os.closing.filter((u) => u !== uid);
+	done(wm.closeWin(os.state, uid));
+}
+export const toggleTop = (uid: string) => done(wm.toggleTop(os.state, uid));
 export const minimize = (uid: string) => done(wm.minimizeWin(os.state, uid));
 export const maximize = (uid: string) => done(wm.toggleMax(os.state, uid, os.area));
 export const snap = (uid: string, to: wm.Snap | null) => done(wm.snapWin(os.state, uid, to, os.area));
 export const place = (uid: string, r: wm.Rect) => done(wm.placeWin(os.state, uid, r, os.area));
 export const cycle = (dir: 1 | -1 = 1) => done(wm.cycleWin(os.state, dir));
+/** Mosaico: todas las ventanas a la vista, en rejilla (el «escritorio en rejilla» de DASH). */
+export const tile = () => done(wm.tileDesk(os.state, os.area));
+export const nudge = (uid: string, dx: number, dy: number, resize = false) => done(wm.nudgeWin(os.state, uid, dx, dy, resize, os.area));
 /** La ruta que enseña ahora una ventana (la apunta la propia ventana al navegar dentro). */
 export function setPath(uid: string, path: string) {
 	const w = wm.findWin(os.state, uid);
