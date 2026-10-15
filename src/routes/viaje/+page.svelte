@@ -109,7 +109,13 @@
 	function submit(e: SubmitEvent) {
 		e.preventDefault();
 		const q = query.trim();
-		if (q) writeParams({ ciudad: q });
+		if (q) go(q);
+	}
+
+	/** Abre una ciudad. Si ya es la de la URL (otra vez Buscar tras un fallo), la URL no cambia: se busca de nuevo. */
+	function go(q: string) {
+		if ((page.shallow?.url ?? page.url).searchParams.get('ciudad') === q) open(q);
+		else writeParams({ ciudad: q });
 	}
 
 	const now = $derived(clock.now || Date.now());
@@ -150,7 +156,7 @@
 			</form>
 			{#if !city}
 				<div class="quick">
-					{#each QUICK as q (q)}<button type="button" onclick={() => writeParams({ ciudad: q })}>{q}</button>{/each}
+					{#each QUICK as q (q)}<button type="button" onclick={() => go(q)}>{q}</button>{/each}
 				</div>
 			{/if}
 			{#if message}<p class="empty">{message}</p>{:else if !city}<p class="empty">Escribe una ciudad para ver su tiempo, su hora, su moneda y si hay festivos.</p>{/if}
