@@ -1,0 +1,293 @@
+/* ── Estética «Brutalista» (src/lib/estilos.ts) ───────────────────────────────────────────────────────
+ * <html data-style="brutal">: blanco y negro puro, sin redondeos ni degradados. Paneles como cajas con borde de
+ * 3 px y una sombra dura desplazada (sin difuminar); la cabecera de cada panel va invertida, con el título en
+ * Archivo 900 enorme. Datos en Space Mono. Un amarillo ácido, con mesura: la tecla activa, el código de la vista,
+ * el subrayado de lo vigilado. Sin transiciones: todo cambia de golpe.
+ *
+ * Orden del archivo: primero las reglas por pieza (cabecera invertida, título de vista…), después los dos bloques
+ * de tokens. Las piezas solo redefinen tokens con var(…) y los bloques de tokens van detrás para que el test de
+ * contraste (estilos.test.ts) mida la paleta de la página, no la de la cabecera invertida. */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=Space+Mono:wght@400;700&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	/* ── Por pieza ──────────────────────────────────────────────────────────────────────────── */
+
+	/* Cabecera del panel invertida: tinta de fondo y papel de letra. Todo lo que hay dentro (título, ▾, enlace
+	   «NVDA ›», botones, segmentados) lee los tokens invertidos, así que se ve sin tocar cada componente. */
+	[data-style='brutal'] .panel > .ph {
+		--panel: var(--ink);
+		--raise: var(--ink-raise);
+		--fg: var(--paper);
+		--muted: var(--paper-muted);
+		--faint: var(--paper-muted);
+		--line: var(--paper);
+		--amber: var(--paper);
+		--amber-dim: var(--paper);
+		--amber-edge: var(--paper);
+		--amber-soft: var(--ink-raise);
+		--on-amber: var(--ink);
+		--title-color: var(--paper);
+		--border: var(--hair) solid var(--line);
+		--fw-bold: 900;
+		--head-y: var(--sp-7);
+		background: var(--panel);
+		color: var(--fg);
+	}
+	[data-style='brutal'] .panel > .ph h2 {
+		line-height: 1;
+	}
+
+	/* Título de vista: cartel. Archivo 900 en mayúsculas, muy apretado, y debajo una raya de 3 px. */
+	[data-style='brutal'] .vh {
+		border-bottom: var(--thick) solid var(--fg);
+		margin-bottom: var(--sp-16);
+	}
+	[data-style='brutal'] .vh h1 {
+		--sans: var(--display);
+		--fw-medium: 900;
+		--fs-xl: clamp(34px, 6.4vw, 72px);
+		line-height: 0.9;
+		letter-spacing: -0.035em;
+		word-spacing: 0.12em;
+		text-transform: uppercase;
+		flex-wrap: wrap;
+		row-gap: var(--sp-8);
+	}
+	/* El código (ECO, WS…), una etiqueta amarilla con borde y sombra dura. */
+	[data-style='brutal'] .vh .code {
+		--fs-l: clamp(13px, 1.5vw, 18px);
+		--amber: var(--acid-ink);
+		align-self: center;
+		padding: var(--sp-2) var(--sp-8);
+		background: var(--acid);
+		border: var(--thin) solid var(--fg);
+		box-shadow: var(--sp-3) var(--sp-3) 0 0 var(--fg);
+		letter-spacing: 0;
+		line-height: var(--lh-tight);
+	}
+	[data-style='brutal'] .vh .sum {
+		--fs-s: var(--fs-m);
+		font-weight: var(--fw-medium);
+	}
+
+	/* Barra de comandos, teclas, cinta, botones y controles: borde grueso del color del texto. */
+	[data-style='brutal'] .cmd,
+	[data-style='brutal'] .tape {
+		--border: var(--thick) solid var(--fg);
+	}
+	[data-style='brutal'] .cmd input {
+		font-weight: var(--fw-bold);
+	}
+	[data-style='brutal'] .key,
+	[data-style='brutal'] .theme,
+	[data-style='brutal'] .seg,
+	[data-style='brutal'] select,
+	[data-style='brutal'] input[type='search'],
+	[data-style='brutal'] .tv-chip button {
+		--border: var(--thin) solid var(--fg);
+		--amber-edge: var(--acid);
+	}
+	[data-style='brutal'] .key {
+		text-transform: uppercase;
+	}
+	[data-style='brutal'] .seg button + button {
+		box-shadow: inset var(--thin) 0 0 0 var(--fg);
+	}
+	/* Pulsar hunde el botón lo que mide su sombra: sin animación, de golpe. */
+	[data-style='brutal'] :is(.go, .key, .theme, .seg button, .card):active {
+		translate: var(--sp-2) var(--sp-2);
+	}
+
+	/* Logotipo en Archivo negra, sin el espaciado de terminal. */
+	[data-style='brutal'] .brand {
+		--fw-bold: 900;
+		--track-brand: 0;
+		font-family: var(--display);
+		font-size: var(--fs-l);
+	}
+
+	/* Tablas: cabecera en negrita, del color del texto y con raya gruesa debajo. */
+	[data-style='brutal'] .t th {
+		--faint: var(--fg);
+		--fw-regular: 700;
+		--border: var(--thin) solid var(--fg);
+	}
+
+	/* Cifras grandes: Archivo 800, separadas por rayas del color del texto. */
+	[data-style='brutal'] .tiles {
+		--line: var(--fg);
+		--border: var(--thin) solid var(--line);
+	}
+	[data-style='brutal'] .tile b {
+		--fs-xl: 30px;
+		--fw-medium: 800;
+		font-family: var(--display);
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+	}
+	[data-style='brutal'] .tile .lbl {
+		font-weight: var(--fw-bold);
+	}
+
+	/* Pie y barra inferior del móvil: raya gruesa. */
+	[data-style='brutal'] .status,
+	[data-style='brutal'] .thumb {
+		--border: var(--thick) solid var(--fg);
+	}
+	[data-style='brutal'] .status kbd {
+		--border: var(--hair) solid var(--fg);
+	}
+	[data-style='brutal'] .thumb [aria-current='page'] {
+		background: var(--acid);
+		--amber: var(--acid-ink);
+	}
+
+	/* Vista previa (HELP, ESTILO): la cabecera de la tarjeta, invertida como la de los paneles. */
+	[data-style='brutal'] > .mock > .mh {
+		--title-color: var(--paper);
+		background: var(--ink);
+		font-size: var(--fs-l);
+		font-weight: 900;
+		text-transform: uppercase;
+	}
+	[data-style='brutal'] > .mock {
+		--border: var(--thin) solid var(--fg);
+	}
+
+	/* Lo vigilado (BOE, titulares), como con rotulador amarillo; y la selección, igual. */
+	[data-style='brutal'] mark {
+		--amber: var(--acid-ink);
+		--amber-soft: var(--acid);
+	}
+	[data-style='brutal'] ::selection {
+		background: var(--acid);
+		color: var(--acid-ink);
+	}
+	:root[data-style='brutal'] {
+		scrollbar-color: var(--fg) var(--bg);
+	}
+
+	/* ── Noche: negro con blanco ─────────────────────────────────────────────────────────────── */
+	:root[data-style='brutal'],
+	[data-style='brutal'] {
+		color-scheme: dark;
+		--bg: #000000;
+		--panel: #000000;
+		--raise: #1f1f1f;
+		--line: #4d4d4d;
+		--fg: #ffffff;
+		--muted: #c4c4c4;
+		--faint: #a8a8a8;
+		--amber: #e5ff00;
+		--amber-dim: #d6e85c;
+		--amber-soft: rgba(229, 255, 0, 0.16);
+		--amber-edge: rgba(229, 255, 0, 0.75);
+		--on-amber: #000000;
+		--up: #00e676;
+		--down: #ff4a4a;
+		--neutral: #575757;
+		--series-2: #ffffff;
+		--series-3: #5c9dff;
+		--sq-light: #3d3d3d;
+		--sq-dark: #141414;
+		--scrim: rgba(0, 0, 0, 0.82);
+		/* Propios de esta estética: tinta (el color del texto) y papel (el del fondo), para invertir piezas. */
+		--ink: #ffffff;
+		--paper: #000000;
+		--ink-raise: #e0e0e0;
+		--paper-muted: #333333;
+		--acid: #e5ff00;
+		--acid-ink: #000000;
+		--thick: 3px;
+		--thin: 2px;
+
+		--display: 'Archivo', 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
+		--sans: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+		--mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		--font-ui: var(--mono);
+		--fw-medium: 700;
+		--fw-bold: 800;
+		--fs-xl: 24px;
+		--fs-big: 32px;
+		--fs-xxl: 36px;
+		--lh: 1.4;
+		--track-tight: 0.02em;
+		--track-code: 0.02em;
+		--track-caps: 0.06em;
+		--track-label: 0;
+
+		--title-font: var(--display);
+		--fs-title: 19px;
+		--title-case: uppercase;
+		--title-track: -0.015em;
+		--title-color: var(--fg);
+
+		--radius: 0;
+		--radius-s: 0;
+		--key-edge: var(--thick);
+		--cmd-h: 40px;
+		--border: var(--hair) solid var(--line);
+		--panel-edge: var(--thick) solid var(--fg);
+		--shadow: 6px 6px 0 0 var(--fg);
+		--shadow-pop: 10px 10px 0 0 var(--fg);
+		--grid-gap: var(--sp-16);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-16);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-16);
+		--stack-edge: 0;
+		--bg-image: none;
+		--panel-blur: none;
+		--dur-ui: 0ms;
+		--dur-fast: 0ms;
+		--ease: steps(1, end);
+	}
+	/* En el móvil, sombra y huecos algo menores: el ancho no sobra. */
+	@media (max-width: 720px) {
+		:root[data-style='brutal'],
+		[data-style='brutal'] {
+			--shadow: 4px 4px 0 0 var(--fg);
+			--grid-gap: var(--sp-12);
+			--grid-join: var(--sp-12);
+			--stack-gap: var(--sp-12);
+			--fs-title: 17px;
+		}
+	}
+
+	/* ── Día: blanco con negro ───────────────────────────────────────────────────────────────── */
+	:root[data-theme='light'][data-style='brutal'],
+	:root[data-theme='light'] [data-style='brutal'] {
+		color-scheme: light;
+		--bg: #ffffff;
+		--panel: #ffffff;
+		--raise: #ebebeb;
+		--line: #a3a3a3;
+		--fg: #000000;
+		--muted: #383838;
+		--faint: #545454;
+		--amber: #c93600;
+		--amber-dim: #a33000;
+		--amber-soft: rgba(229, 255, 0, 0.55);
+		--amber-edge: #c93600;
+		--on-amber: #ffffff;
+		--up: #00802b;
+		--down: #d40000;
+		--neutral: #bdbdbd;
+		--series-2: #000000;
+		--series-3: #0047ff;
+		--sq-light: #ffffff;
+		--sq-dark: #c7c7c7;
+		--piece-w: #ffffff;
+		--piece-w-edge: #000000;
+		--piece-b: #000000;
+		--piece-b-edge: #000000;
+		--scrim: rgba(0, 0, 0, 0.5);
+		--ink: #000000;
+		--paper: #ffffff;
+		--ink-raise: #262626;
+		--paper-muted: #d1d1d1;
+		--acid: #e5ff00;
+		--acid-ink: #000000;
+	}
+}
