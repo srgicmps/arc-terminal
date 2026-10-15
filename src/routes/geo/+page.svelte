@@ -79,7 +79,7 @@
 		label="Alertas de catástrofe"
 		value={alerts ? String(alerts.red + alerts.orange) : '—'}
 		tone={alerts ? undefined : 'mut'}
-		sub={alerts ? `${alerts.red} rojas · ${alerts.orange} naranjas · GDACS` : ''}
+		sub={alerts ? `${alerts.red} ${alerts.red === 1 ? 'roja' : 'rojas'} · ${alerts.orange} ${alerts.orange === 1 ? 'naranja' : 'naranjas'} · GDACS` : ''}
 	/>
 </Tiles>
 
@@ -208,8 +208,9 @@
 				<ul class="mini">
 					{#each data.navwarn.data.items as w (w.id)}
 						<li>
-							<b>{w.kind}</b> · {w.region}{#if w.place}<span class="mut"> · {w.place}</span>{/if}
-							<span class="mut">· {w.issued ? new Date(w.issued).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : w.id}</span>
+							<!-- Dos columnas, como toda lista .mini: qué y dónde a la izquierda, la fecha a la derecha. -->
+							<span class="l">{w.kind}<small>{[w.region, w.place].filter(Boolean).join(' · ')}</small></span>
+							<span class="mut">{w.issued ? new Date(w.issued).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : w.id}</span>
 						</li>
 					{/each}
 				</ul>
