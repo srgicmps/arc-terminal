@@ -64,15 +64,24 @@
 			</Widget>
 		{/each}
 	</div>
-	{@render children?.()}
+	<!-- Las ventanas del núcleo, encima; lo vacío deja pasar el ratón a los widgets y los iconos. -->
+	{#if children}<div class="wins">{@render children()}</div>{/if}
 </div>
 
 <style>
+	/* Botones de la shell sin el borde ni el fondo que algunas estéticas dan a todos los botones. */
+	button {
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
 	.desktop {
 		position: relative;
 		height: 100%;
 		overflow: hidden;
-		background: var(--bg);
+		background: var(--os-desk);
 		background-image: var(--bg-image, none);
 	}
 	.desktop[data-wallpaper='liso'] {
@@ -139,5 +148,13 @@
 	}
 	.widgets :global(.widget) {
 		pointer-events: auto;
+	}
+	.wins {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+	.wins :global([data-os-layer]) {
+		pointer-events: none;
 	}
 </style>

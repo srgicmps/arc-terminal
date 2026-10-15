@@ -6,6 +6,7 @@
 <script lang="ts">
 	import Logo from '#lib/components/Logo.svelte';
 	import { cloud } from '#lib/cloud.svelte.ts';
+	import ControlPanel from './ControlPanel.svelte';
 	import NoticeCenter from './NoticeCenter.svelte';
 	import { shell, toggle } from './shell.svelte.ts';
 	import StartMenu from './StartMenu.svelte';
@@ -21,8 +22,15 @@
 		onactivate: (winId: string) => void;
 		ondesk: (deskId: string) => void;
 		onnavigate: (href: string) => void;
+		onadddesk?: () => void;
+		/** Volver a la web clásica. */
+		onleave: () => void;
+		/** Ancho del escritorio (para colocar widgets nuevos). */
+		deskW: number;
+		/** Aviso del núcleo («Hay 12 ventanas…»). */
+		status?: string | null;
 	}
-	let { apps, windows, desks, onopen, onactivate, ondesk, onnavigate }: Props = $props();
+	let { apps, windows, desks, onopen, onactivate, ondesk, onnavigate, onadddesk, onleave, deskW, status = null }: Props = $props();
 
 	const byId = $derived(new Map(apps.map((a) => [a.id, a])));
 	// Ancladas sin ventana abierta (las abiertas ya salen como ventana).
@@ -35,7 +43,7 @@
 		<button type="button" class="startbtn" aria-expanded={shell.open === 'start'} aria-controls="os-start" aria-label="Inicio" onclick={() => toggle('start')}>
 			<Logo />
 		</button>
-		{#if shell.open === 'start'}<StartMenu {apps} {onopen} />{/if}
+		{#if shell.open === 'start'}<StartMenu {apps} {onopen} {onleave} />{/if}
 	</div>
 
 	<ul class="tasks">
@@ -56,10 +64,16 @@
 					<span class="ico">{w.icon ?? byId.get(w.appId)?.icon ?? short(w.title)}</span>
 					<span class="label">{w.title}</span>
 				</button>
+				<span class="peek" aria-hidden="true">
+					<b>{w.title}</b>
+					<span>{byId.get(w.appId)?.desc ?? ''}</span>
+					<i>{w.focused ? 'En primer plano' : w.minimized ? 'Minimizada' : 'Abierta'}</i>
+				</span>
 			</li>
 		{/each}
 	</ul>
 
+	{#if status}<span class="status" role="status">{status}</span>{/if}
 	<div class="tray">
 		{#if desks.length > 1}
 			<div class="desks" role="group" aria-label="Escritorios">
@@ -76,13 +90,19 @@
 		<span class="user mut" title={cloud.user || 'Sin cuenta (solo en este navegador)'}>{cloud.user ? cloud.user.slice(0, 1).toUpperCase() : '·'}</span>
 	</div>
 </nav>
+{#if shell.open === 'control'}<ControlPanel {desks} {deskW} {onnavigate} {onadddesk} {onleave} />{/if}
 
 <style>
+	/* Botones de la shell sin el borde ni el fondo que algunas estéticas dan a todos los botones. */
+	button {
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
 	.taskbar {
-		position: fixed;
-		left: 0;
-		right: 0;
-		bottom: 0;
+		position: relative;
 		z-index: var(--z-bar);
 		display: flex;
 		align-items: center;
@@ -94,8 +114,7 @@
 		backdrop-filter: var(--panel-blur);
 	}
 	.taskbar.top {
-		top: 0;
-		bottom: auto;
+		order: -1;
 		border-top: 0;
 		border-bottom: var(--hair) solid var(--panel-edge);
 	}
@@ -122,8 +141,6 @@
 		margin: 0;
 		padding: 0;
 		list-style: none;
-		overflow-x: auto;
-		scrollbar-width: none;
 	}
 	.task {
 		position: relative;
@@ -131,6 +148,7 @@
 		align-items: center;
 		gap: var(--sp-6);
 		max-width: 180px;
+		min-width: 0;
 		height: var(--control-h);
 		padding: 0 var(--sp-8);
 		border-radius: var(--radius-s);
@@ -166,6 +184,51 @@
 	.task.min::after,
 	.task.idle::after {
 		display: none;
+	}
+	/* Sin scroll (cortaría la vista previa): con muchas ventanas, los nombres se acortan. */
+	.tasks li {
+		position: relative;
+		min-width: 0;
+	}
+	.tasks li .task {
+		max-width: 100%;
+	}
+	/* Vista previa al pasar o con el foco: nombre, qué es y su estado. */
+	.peek {
+		position: absolute;
+		left: 0;
+		bottom: calc(100% + var(--sp-8));
+		display: none;
+		gap: var(--sp-2);
+		width: 220px;
+		padding: var(--sp-8) var(--sp-10);
+		background: var(--panel);
+		border: var(--hair) solid var(--panel-edge);
+		border-radius: var(--radius);
+		box-shadow: var(--shadow-pop);
+		font-size: var(--fs-xs);
+		pointer-events: none;
+	}
+	.top .peek {
+		top: calc(100% + var(--sp-8));
+		bottom: auto;
+	}
+	.tasks li:hover .peek,
+	.tasks li:focus-within .peek {
+		display: grid;
+	}
+	.peek b {
+		font-size: var(--fs-s);
+		font-weight: var(--fw-medium);
+	}
+	.peek i {
+		color: var(--amber);
+		font-style: normal;
+	}
+	.status {
+		color: var(--amber);
+		font-size: var(--fs-xs);
+		white-space: nowrap;
 	}
 	.ico {
 		color: var(--amber);

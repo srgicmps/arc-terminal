@@ -45,7 +45,7 @@
 		aria-label={count ? `Notificaciones: ${count} sin leer` : 'Notificaciones'}
 		onclick={toggleCenter}
 	>
-		<span aria-hidden="true">◔</span>
+		<span aria-hidden="true">◬</span>
 		{#if count}<span class="badge">{count}</span>{/if}
 	</button>
 	{#if isOpen}
@@ -86,6 +86,14 @@
 </div>
 
 <style>
+	/* Botones de la shell sin el borde ni el fondo que algunas estéticas dan a todos los botones. */
+	button {
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
 	.center {
 		position: relative;
 	}
@@ -154,11 +162,14 @@
 	.toasts {
 		position: fixed;
 		right: var(--sp-12);
-		bottom: calc(var(--os-bar-h, 0px) + var(--sp-12));
+		bottom: calc(var(--os-bar-h) + var(--sp-12));
 		z-index: var(--z-popover);
 		display: grid;
 		gap: var(--sp-8);
 		width: min(320px, calc(100vw - 2 * var(--sp-12)));
+	}
+	:global([data-os-bar='top']) .toasts {
+		bottom: var(--sp-12);
 	}
 	.toast {
 		display: flex;

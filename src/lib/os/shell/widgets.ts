@@ -28,8 +28,8 @@ export function defaultWidgets(deskW: number): Placed[] {
 	const x = Math.max(GRID, deskW - WIDGET_W - 3 * GRID);
 	return [
 		{ kind: 'reloj', x, y: 2 * GRID },
-		{ kind: 'cotizaciones', x, y: 20 * GRID },
-		{ kind: 'titulares', x, y: 44 * GRID }
+		{ kind: 'cotizaciones', x, y: 26 * GRID },
+		{ kind: 'titulares', x, y: 50 * GRID }
 	];
 }
 
@@ -55,7 +55,7 @@ export function nudge(p: Placed, key: string, big: boolean): Placed {
 export function addWidget(list: Placed[], kind: WidgetKind, deskW: number): Placed[] {
 	if (list.some((w) => w.kind === kind)) return list;
 	const x = Math.max(GRID, deskW - WIDGET_W - 3 * GRID);
-	const y = list.length ? Math.max(...list.map((w) => w.y)) + 20 * GRID : 2 * GRID;
+	const y = list.length ? Math.max(...list.map((w) => w.y)) + 24 * GRID : 2 * GRID;
 	return [...list, { kind, x, y }];
 }
 export const removeWidget = (list: Placed[], kind: WidgetKind) => list.filter((w) => w.kind !== kind);

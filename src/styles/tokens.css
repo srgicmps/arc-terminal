@@ -166,6 +166,7 @@
 	--os-badge-bg: var(--down); /* insignia con número */
 	--os-badge-fg: var(--bg);
 	--os-radius-l: 22px; /* esquinas de widgets, dock y tarjetas */
+	--os-bar-h: calc(var(--control-h) + var(--sp-12)); /* alto de la barra de tareas (crece sola en pantallas táctiles) */
 	/* Decoración de ventana: cada aspecto (data-os-skin: Windows, Mac, Linux…) la cambia aquí, sin tocar Window.svelte. */
 	--os-win-shadow-active: var(--os-win-shadow); /* sombra de la ventana con el foco */
 	--os-win-radius-snapped: 0; /* esquinas encajada o maximizada */
