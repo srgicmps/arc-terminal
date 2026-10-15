@@ -27,6 +27,8 @@
 		type ProfileId
 	} from '#lib/onboarding/plan.ts';
 	import Tour from '#lib/onboarding/Tour.svelte';
+	import OsInvite from '#lib/os/invite/OsInvite.svelte';
+	import { isOS } from '#lib/os/mode.svelte.ts';
 	import { startTour, tour } from '#lib/onboarding/tour.svelte.ts';
 
 	const STEPS = ['Qué te interesa', 'Tu ciudad', 'Cómo lo quieres', 'Listo'];
@@ -121,7 +123,8 @@
 		} catch {}
 		// El recorrido, aquí mismo; al cerrarlo, a tu inicio. La portada y las listas leen lo guardado al arrancar:
 		// se entra de nuevo (sin SPA) con todo puesto.
-		const href = homeCmd && homeCmd.code !== 'TOP' ? routeHref(homeCmd.route) : resolve('/');
+		// Con «Empezar siempre en el Modo OS», al escritorio (o a la pantalla de inicio del móvil).
+		const href = isOS() ? resolve('/os' as '/') : homeCmd && homeCmd.code !== 'TOP' ? routeHref(homeCmd.route) : resolve('/');
 		startTour(() => location.assign(href));
 	}
 
@@ -147,6 +150,7 @@
 	</ol>
 
 	{#if step === 0}
+		<OsInvite />
 		<section aria-labelledby="q1">
 			<h2 id="q1">¿Qué te interesa?</h2>
 			<p class="lead">Elige un perfil ya hecho o marca los temas que quieras. Todo se puede cambiar después.</p>

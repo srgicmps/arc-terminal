@@ -22,4 +22,11 @@ describe('vista de inicio', () => {
 		expect(codes).toContain('IMP');
 		expect(codes).not.toContain('TV');
 	});
+
+	it('en el Modo OS abre /os, salvo con un enlace compartido o si la pestaña ya entró', () => {
+		expect(startPath('ECO', false, '', 'os')).toBe('/os');
+		expect(startPath(null, false, '?q=1', 'os')).toBeNull();
+		expect(startPath(null, true, '', 'os')).toBeNull();
+		expect(startPath(null, false, '', 'clasico')).toBeNull();
+	});
 });
