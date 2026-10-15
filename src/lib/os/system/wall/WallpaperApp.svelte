@@ -13,6 +13,10 @@
 	import { activeSource, clearDesk, deskHasOwn, dropImage, loadWall, setLockSame, setShow, setSource, wall } from './wall.svelte.ts';
 	import { FITS, PRESETS, SHOW_MINUTES, sameSource, type Fit, type WallSource } from './wall.ts';
 
+	import { untrack } from 'svelte';
+	import type { AppProps } from '../../apps.ts';
+
+	let { win: _win }: AppProps = $props();
 	loadWall();
 
 	let scope = $state<'all' | 'desk'>(deskHasOwn() ? 'desk' : 'all');
@@ -22,14 +26,16 @@
 	] as const);
 
 	const current = $derived(activeSource());
+	/** El fondo al abrir la app (para rellenar los campos de color y degradado). */
+	const start = untrack(() => activeSource());
 	const apply = (s: WallSource) => setSource(s, scope === 'desk');
 	const isOn = (s: WallSource) => sameSource(s, current);
 
 	// Color y degradado.
-	let color = $state(current.kind === 'color' ? current.color : '#1d2430');
-	let from = $state(current.kind === 'gradient' ? current.from : '#1d2430');
-	let to = $state(current.kind === 'gradient' ? current.to : '#c99447');
-	let angle = $state(current.kind === 'gradient' ? current.angle : 160);
+	let color = $state(start.kind === 'color' ? start.color : '#1d2430');
+	let from = $state(start.kind === 'gradient' ? start.from : '#1d2430');
+	let to = $state(start.kind === 'gradient' ? start.to : '#c99447');
+	let angle = $state(start.kind === 'gradient' ? start.angle : 160);
 
 	// Imágenes propias.
 	let images = $state<StoredImage[]>([]);
@@ -81,9 +87,15 @@
 		const y = Math.round(((e.clientY - r.top) / r.height) * 100);
 		apply({ ...current, x, y });
 	}
-	let fit = $state<Fit>(current.kind === 'image' ? current.fit : 'cover');
+	let fit = $state<Fit>(start.kind === 'image' ? start.fit : 'cover');
+	// El segmentado manda al tocarlo; al cambiar de imagen, enseña cómo está colocada esa.
+	let lastFit = untrack(() => fit);
 	$effect(() => {
-		if (current.kind === 'image' && current.fit !== fit) setFit(fit);
+		const f = fit;
+		if (f !== lastFit) (lastFit = f), untrack(() => setFit(f));
+	});
+	$effect(() => {
+		if (current.kind === 'image') untrack(() => ((fit = current.fit as Fit), (lastFit = fit)));
 	});
 
 	// Presentación.

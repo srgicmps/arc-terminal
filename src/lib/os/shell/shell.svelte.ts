@@ -26,11 +26,13 @@ export const WALLPAPERS = [
 	{ id: 'liso', label: 'Liso' },
 	{ id: 'rejilla', label: 'Rejilla' },
 	{ id: 'degradado', label: 'Degradado' },
-	// De «OS 5» (src/lib/os/system/): el vivo es el globo con los terremotos; los demás, solo CSS en Desktop.svelte.
-	{ id: 'globo', label: 'Vivo: el globo' },
+	// De «OS 5»: los pinta src/lib/os/system/wall/WallLayer.svelte (lista completa en wall.ts → PRESETS).
 	{ id: 'aurora', label: 'Aurora' },
+	{ id: 'horizonte', label: 'Horizonte' },
+	{ id: 'duna', label: 'Duna' },
 	{ id: 'puntos', label: 'Puntos' },
-	{ id: 'horizonte', label: 'Horizonte' }
+	{ id: 'globo', label: 'Vivo: el mundo ahora' },
+	{ id: 'cielo', label: 'Vivo: tu cielo' }
 ] as const;
 export type Wallpaper = (typeof WALLPAPERS)[number]['id'];
 

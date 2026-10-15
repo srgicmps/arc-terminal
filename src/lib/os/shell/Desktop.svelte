@@ -7,7 +7,7 @@
 	import type { Snippet } from 'svelte';
 	import { onMount } from 'svelte';
 	import { place } from '#lib/place.svelte.ts';
-	import LiveWall from '../system/LiveWall.svelte';
+	import WallLayer from '../system/wall/WallLayer.svelte';
 	import { setWidgets, shell } from './shell.svelte.ts';
 	import type { StartApp } from './start.ts';
 	import Widget from './Widget.svelte';
@@ -47,7 +47,8 @@
 </script>
 
 <div class="desktop" data-wallpaper={shell.wallpaper} bind:clientWidth={w} bind:clientHeight={h}>
-	{#if shell.wallpaper === 'globo'}<LiveWall />{/if}
+	<!-- El fondo (app «Fondo de pantalla» de «OS 5»): uno por escritorio, imagen propia, vivos y presentación. -->
+	<WallLayer />
 	<ul class="icons" aria-label="Accesos directos">
 		{#each icons as a (a.id)}
 			<li>
@@ -107,23 +108,6 @@
 	}
 	.desktop[data-wallpaper='degradado'] {
 		background-image: radial-gradient(ellipse at 20% 0%, var(--amber-soft), transparent 60%), linear-gradient(var(--bg), var(--panel));
-	}
-	/* Fondos de «OS 5». */
-	.desktop[data-wallpaper='globo'] {
-		background-image: radial-gradient(circle at 50% 50%, var(--amber-soft), transparent 70%);
-	}
-	.desktop[data-wallpaper='aurora'] {
-		background-image:
-			radial-gradient(60% 40% at 15% 10%, var(--amber-soft), transparent 70%),
-			radial-gradient(50% 45% at 85% 25%, var(--os-wall-cool), transparent 70%),
-			radial-gradient(70% 50% at 50% 110%, var(--amber-soft), transparent 70%);
-	}
-	.desktop[data-wallpaper='puntos'] {
-		background-image: radial-gradient(var(--line) var(--sp-1), transparent calc(var(--sp-1) + var(--hair)));
-		background-size: var(--sp-24) var(--sp-24);
-	}
-	.desktop[data-wallpaper='horizonte'] {
-		background-image: linear-gradient(to top, var(--amber-soft), transparent 45%), linear-gradient(var(--bg), var(--panel));
 	}
 	.icons {
 		position: absolute;
