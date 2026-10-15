@@ -7,7 +7,7 @@
 	import '../styles/ajustes.css';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { MediaQuery } from 'svelte/reactivity';
-	import { neighbour, nudge, SWIPE, swipeDirection } from '#lib/swipe.ts';
+	import { isOnRoute, neighbour, nudge, SWIPE, swipeDirection } from '#lib/swipe.ts';
 	import { asset, resolve } from '$app/paths';
 	import { page, updated } from '$app/state';
 	import { startClock } from '#lib/clock.svelte.ts';
@@ -167,7 +167,7 @@
 		const t = e.changedTouches[0];
 		const dir = swipeDirection(t.clientX - s.x, t.clientY - s.y, Date.now() - s.t);
 		if (!dir) return;
-		const next = neighbour(keys, keys.findIndex((k) => k.route === page.route.id), dir);
+		const next = neighbour(keys, keys.findIndex((k) => isOn(k.route)), dir);
 		if (next) goto(routeHref(next.route));
 	}
 
@@ -181,11 +181,12 @@
 	// Fila de arriba y barra inferior del móvil (a mano del pulgar): las de la web o las de «A tu gusto».
 	const keys = $derived(COMMANDS.filter((c) => taste.top.includes(c.code)));
 	// A la vista, solo las primeras de la fila (como mucho VISIBLE_KEYS); el resto va en «Más».
+	const isOn = (route: string) => isOnRoute(page.route.id, route);
 	const visibleKeys = $derived(keys.slice(0, VISIBLE_KEYS));
 	const hiddenKeys = $derived(keys.slice(VISIBLE_KEYS));
 	/** En /os el escritorio tapa la web: el atajo de Experiencias (⇧X) no debe abrir su diálogo encima ni sacarte de /os. */
 	const inOs = $derived(page.route.id === '/os');
-	const hiddenCurrent = $derived(hiddenKeys.find((k) => k.route === page.route.id));
+	const hiddenCurrent = $derived(hiddenKeys.find((k) => isOn(k.route)));
 	const thumb = $derived(COMMANDS.filter((c) => taste.thumb.includes(c.code)));
 
 	// navigator.onLine, enlazado como en Vue con un ref que se actualiza solo.
@@ -277,17 +278,17 @@
 				data-ui="key"
 				data-code={key.code}
 				href={routeHref(key.route)}
-				aria-current={page.route.id === key.route ? 'page' : undefined}
+				aria-current={isOn(key.route) ? 'page' : undefined}
 			>
 				{key.code}<span>{key.key}</span>
 			</a>
 		{/each}
 		<!-- El resto de tu fila y la ayuda, en «Más»; si estás en una de esas vistas, el botón lo dice. -->
-		<Menu label="Más secciones" cls="key more" ui="key" current={!!hiddenCurrent || page.route.id === '/help'} title="Más secciones">
+		<Menu label={hiddenCurrent ? `${hiddenCurrent.code}, más secciones` : 'Más secciones'} cls="key more" ui="key" current={!!hiddenCurrent || page.route.id === '/help'} title="Más secciones">
 			{#snippet button()}{hiddenCurrent?.code ?? 'Más'}<span aria-hidden="true">▾</span>{/snippet}
 			{#snippet children(close)}
 				{#each hiddenKeys as key (key.code)}
-					<a href={routeHref(key.route)} onclick={close} aria-current={page.route.id === key.route ? 'page' : undefined}>
+					<a href={routeHref(key.route)} onclick={close} aria-current={isOn(key.route) ? 'page' : undefined}>
 						{key.code} <small>{key.key}</small>
 					</a>
 				{/each}
@@ -329,7 +330,7 @@
 
 	<nav class="thumb" data-ui="tabs" aria-label="Accesos rápidos">
 		{#each thumb as c (c.code)}
-			<a href={routeHref(c.route)} data-code={c.code} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
+			<a href={routeHref(c.route)} data-code={c.code} aria-current={isOn(c.route) ? 'page' : undefined}>{c.code}</a>
 		{/each}
 		<ExpLauncher variant="thumb" />
 		<button type="button" aria-label="Buscar o escribir un comando" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>

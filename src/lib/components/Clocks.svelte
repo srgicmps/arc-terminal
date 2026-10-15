@@ -30,7 +30,7 @@
 </script>
 
 <div class="clocks" data-ui="clocks">
-	<Menu label="Hora y estado de las bolsas" cls="clocks-btn" title="Hora y estado de las bolsas · toca para verlas todas">
+	<Menu label="Hora y estado de las bolsas: {[...(showSite ? [`${place.current.name} ${siteTime}`] : []), ...shown.map((r) => `${r.code} ${r.time}`)].join(', ')}" cls="clocks-btn" title="Hora y estado de las bolsas · toca para verlas todas">
 		{#snippet button()}
 			{#if showSite}
 				<span class="clock site"><span class="code">{place.current.name}</span> <b>{siteTime}</b></span>
