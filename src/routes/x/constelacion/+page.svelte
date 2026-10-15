@@ -46,9 +46,11 @@
 	const byId = $derived(new Map(nodes.map((n) => [n.id, n])));
 	const maxN = $derived(Math.max(1, ...nodes.map((n) => n.n)));
 	const maxW = $derived(Math.max(1, ...edges.map((e) => e.w)));
-	const near = $derived(selected ? neighbours(selected, edges) : []);
-	const lit = $derived(selected ? new Set([selected, ...near.map((n) => n.id)]) : null);
-	const current = $derived(selected ? byId.get(selected) : undefined);
+	// El elegido solo cuenta si se ve: al quitar su tipo con los filtros, no se apaga todo el mapa.
+	const sel = $derived(selected && visible.has(selected) ? selected : null);
+	const near = $derived(sel ? neighbours(sel, edges) : []);
+	const lit = $derived(sel ? new Set([sel, ...near.map((n) => n.id)]) : null);
+	const current = $derived(sel ? byId.get(sel) : undefined);
 	// Etiquetas: las de los 18 que más salen y, si hay uno elegido, las de sus vecinos.
 	const labelled = $derived(new Set([...[...nodes].sort((a, b) => b.n - a.n).slice(0, 18).map((n) => n.id), ...(lit ?? [])]));
 
@@ -56,7 +58,7 @@
 	const px = (v: number) => v * SIZE;
 
 	function pick(id: string) {
-		selected = selected === id ? null : id;
+		selected = sel === id ? null : id;
 	}
 	function onKey(e: KeyboardEvent, id: string) {
 		if (e.key === 'Enter' || e.key === ' ') {
@@ -98,20 +100,20 @@
 							x2={px(b.x)}
 							y2={px(b.y)}
 							stroke-width={1 + 5 * (e.w / maxW)}
-							class:on={lit?.has(e.a) && lit?.has(e.b) && (e.a === selected || e.b === selected)}
-							class:dim={lit && !(e.a === selected || e.b === selected)}
+							class:on={lit?.has(e.a) && lit?.has(e.b) && (e.a === sel || e.b === sel)}
+							class:dim={lit && !(e.a === sel || e.b === sel)}
 						/>
 					{/each}
 				</g>
 				{#each nodes as n (n.id)}
 					<g
 						class="node {n.kind}"
-						class:sel={n.id === selected}
+						class:sel={n.id === sel}
 						class:dim={lit && !lit.has(n.id)}
 						transform="translate({px(n.x)} {px(n.y)})"
 						role="button"
 						tabindex="0"
-						aria-pressed={n.id === selected}
+						aria-pressed={n.id === sel}
 						aria-label="{n.label}, {KIND_LABEL[n.kind]}, {n.n} titulares"
 						onclick={() => pick(n.id)}
 						onkeydown={(e) => onKey(e, n.id)}
@@ -241,6 +243,10 @@
 	.node:focus-visible circle,
 	.node:hover circle {
 		stroke: var(--amber);
+	}
+	/* El elegido ya va en ámbar: con el teclado, el foco se ve como un trazo discontinuo, también sobre él. */
+	.node:focus-visible circle {
+		stroke-dasharray: 6 4;
 	}
 	.count {
 		margin: 0;

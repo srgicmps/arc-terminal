@@ -73,6 +73,11 @@
 	const y = (lat: number) => 90 - lat;
 
 	let stage = $state<HTMLElement>();
+	// Safari del iPhone no tiene pantalla completa para páginas: sin ella, el botón no sale.
+	let canFull = $state(false);
+	$effect(() => {
+		canFull = !!document.fullscreenEnabled;
+	});
 	const full = () => (document.fullscreenElement ? document.exitFullscreen() : stage?.requestFullscreen?.());
 
 	const flashSet = $derived(new Set(points.filter(flashes).map((p) => p.id)));
@@ -81,7 +86,7 @@
 </script>
 
 <ExpHeader {exp} sub="Todo lo que pasa en el mundo, en el mapa">
-	{#snippet aside()}<button type="button" class="full" onclick={full}>⤢ Pantalla completa</button>{/snippet}
+	{#snippet aside()}{#if canFull}<button type="button" class="full" onclick={full}>⤢ Pantalla completa</button>{/if}{/snippet}
 </ExpHeader>
 
 <section class="stage" bind:this={stage}>
