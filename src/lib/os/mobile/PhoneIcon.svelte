@@ -43,6 +43,13 @@
 		height: var(--os-icon-size);
 		transition: transform var(--dur-fast) var(--ease);
 	}
+	/* El dibujo sigue al hueco (--os-icon-size encoge en pantallas bajas). */
+	.sq > :global(.os-icon),
+	.sq > :global(.os-icon) :global(.tile),
+	.sq > :global(.os-icon) :global(svg) {
+		width: 100% !important;
+		height: 100% !important;
+	}
 	.app:active .sq {
 		transform: scale(0.92);
 		filter: brightness(0.85);

@@ -36,8 +36,9 @@
 	.sq {
 		position: relative;
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		grid-auto-rows: 1fr;
+		/* 3×3 desde arriba a la izquierda, como en un teléfono (con dos apps no quedan flotando en medio). */
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-rows: repeat(3, minmax(0, 1fr));
 		gap: var(--sp-2);
 		place-items: center;
 		width: var(--os-icon-size);
@@ -52,7 +53,16 @@
 		transition: transform var(--dur-fast) var(--ease);
 	}
 	.mini {
+		width: 100%;
+		height: 100%;
 		line-height: 0;
+	}
+	/* Las miniaturas siguen al hueco (--os-icon-size encoge en pantallas bajas). */
+	.mini > :global(.os-icon),
+	.mini > :global(.os-icon) :global(.tile),
+	.mini > :global(.os-icon) :global(svg) {
+		width: 100% !important;
+		height: 100% !important;
 	}
 	.app:active .sq {
 		transform: scale(0.92);
