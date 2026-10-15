@@ -197,6 +197,8 @@ vista `HELP`. Resumen:
 | `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica, Comisión Europea (Weekly Oil Bulletin) |
 | `HIPOTECA` | Tu hipoteca: cuota, cuadro de amortización y próxima revisión (datos solo tuyos, en tus ajustes) | BCE (euríbor a 12 meses) |
 | `CARTERA` | Tu cartera: posiciones, ganancia o pérdida y reparto (datos solo tuyos, en tus ajustes) | Finnhub* (EE. UU.), precio a mano, BCE |
+| `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
+| `TEST` | Test de la semana: cinco preguntas con titulares y datos de la semana, sin IA; puntuación en la cuenta de cada uno | IMP, FRED*, BCE, CoinGecko, USGS |
 | `CAL` | Agenda económica, resultados, festivos y puentes (`PUENTES`) | TradingView, Finnhub*, Nager.Date |
 | `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista, análisis y problema del día | Stockfish, chess.js, Lichess |
 | `MODO` | Modo Sencillo (lo esencial, letra mayor, explicaciones; por defecto para usuarios nuevos) o Terminal (todo) | — |
