@@ -143,6 +143,8 @@ export async function handleAdmin(
 	const who = await person(request, env, fetcher);
 	if (who instanceof Response) return who;
 	if (!isAdmin(who.email, env)) return json(403, { error: 'solo el administrador' });
+	// ?yo=1: solo «¿soy el admin?» (Arc OS enseña o no «Administración» sin pedir la lista entera).
+	if (request.method === 'GET' && new URL(request.url).searchParams.has('yo')) return json(200, { admin: true });
 	const access = new AccessPolicies(env, fetcher);
 
 	if (request.method === 'GET') {
@@ -237,6 +239,10 @@ export function d1AdminStore(db: D1Database): AdminStore {
 			await db.batch(
 				['prefs', 'alerts', 'seen'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email))
 			);
+			// Predicciones (cloud/forecasts.ts): sus tablas solo existen si alguien ha jugado.
+			await db
+				.batch(['forecast_bets', 'forecast_players'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email)))
+				.catch(() => {});
 		}
 	};
 }

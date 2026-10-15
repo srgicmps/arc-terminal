@@ -1,5 +1,6 @@
 // NOVEDADES: lo fusionado en Arc Terminal, agrupado por día de Madrid. Funciones puras (con tests).
 import { COMMANDS } from './commands.ts';
+import { EXPERIENCES, findExperience, type Experience } from './experiences.ts';
 import { dm, weekday } from './format.ts';
 import { madridDate } from './meetings.ts';
 import type { Change } from './types.ts';
@@ -11,6 +12,15 @@ import type { Change } from './types.ts';
 export function changeCommand(title: string): (typeof COMMANDS)[number] | null {
 	const head = /^([A-ZÁÉÍÓÚÑ]{2,})\b[^:]{0,30}:/.exec(title.trim())?.[1];
 	return (head && COMMANDS.find((c) => c.code === head)) || null;
+}
+
+/**
+ * La experiencia de un cambio, si el título empieza por «Experiencia <nombre>»: «Experiencia Radio: …» → Radio.
+ * Así NOVEDADES lleva directo a ella (/x/<id>).
+ */
+export function changeExperience(title: string, list = EXPERIENCES): Experience | null {
+	const name = /^Experiencia\s+([^:(]{2,30}?)\s*[:(]/i.exec(title.trim())?.[1];
+	return name ? findExperience(name, list) : null;
 }
 
 export interface ChangeDay {

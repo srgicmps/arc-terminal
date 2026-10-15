@@ -1,6 +1,6 @@
 <!--
 	Cabecera común de las experiencias (src/routes/x/<id>): icono y nombre, un selector para saltar a otra
-	experiencia y «← Arc» para volver a la terminal. Así todas tienen la misma salida, sea cual sea su forma.
+	experiencia y «✕ Salir» (o Esc) para volver a la vista normal. Así todas tienen la misma salida, sea cual sea su forma.
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
@@ -31,7 +31,7 @@
 
 <header class="xh">
 	<div class="who">
-		<a class="back" href={href('/')}>← Arc</a>
+		<a class="back" href={href('/')} title="Volver a la vista normal de Arc (Esc)">✕ Salir</a>
 		<h1><span aria-hidden="true">{exp.icon}</span> {exp.name}</h1>
 		{#if sub}<p>{sub}</p>{/if}
 	</div>
@@ -61,21 +61,27 @@
 	.who {
 		display: flex;
 		flex-wrap: wrap;
-		align-items: baseline;
+		align-items: center;
 		gap: var(--sp-4) var(--sp-12);
 		min-width: 0;
 	}
 
 	.back {
+		display: inline-flex;
+		align-items: center;
+		height: var(--control-h);
+		padding: 0 var(--sp-10);
+		border: var(--hair) solid var(--amber-edge);
 		font-family: var(--mono);
 		font-size: var(--fs-s);
-		color: var(--muted);
+		color: var(--amber);
 		text-decoration: none;
 	}
 
 	.back:hover,
 	.back:focus-visible {
-		color: var(--amber);
+		border-color: var(--amber);
+		background: var(--amber-soft);
 	}
 
 	h1 {

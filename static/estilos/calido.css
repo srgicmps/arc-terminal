@@ -92,6 +92,18 @@
 		--dur-ui: 180ms;
 		--dur-fast: 180ms;
 		--ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+
+		/* ── Medidas editoriales de la estructura (retoques de abajo, fuera de la capa) ── */
+		--ca-sp-32: 32px;
+		--ca-sp-40: 40px;
+		--ca-sp-56: 56px;
+		--ca-read: 1200px; /* columna de lectura en escritorio */
+		--ca-search: 640px; /* buscador de la cabecera */
+		--ca-fs-mast: 40px; /* cabecera de revista */
+		--ca-fs-cover: 46px; /* título de la portada de sección */
+		--ca-fs-lead: 19px; /* entradilla */
+		--ca-fs-article: 23px; /* título de un artículo (panel) */
+		--ca-fs-feature: 32px; /* título del artículo destacado */
 	}
 	:root[data-theme='light'][data-style='calido'],
 	:root[data-theme='light'] [data-style='calido'] {
@@ -338,4 +350,501 @@
 	border: var(--hair) solid var(--line);
 	border-radius: var(--radius-s);
 	box-shadow: var(--shadow-pop);
+}
+
+/* ══ Estructura: una revista, no una terminal ═══════════════════════════════════════════════════════════
+ * Fuera de la capa y con el prefijo doble para ganar al CSS de los componentes (docs/estilos.md, «Estructura»).
+ * Cabecera de revista centrada (relojes y botones arriba, la marca, el buscador y un menú de texto entre
+ * filetes), columna de lectura de ~1200 px, cabecera de vista como portada de sección y paneles como artículos:
+ * sin tarjeta, con filete arriba, título serif grande y el dato como entradilla. Con «encajar» (html[data-fit])
+ * los paneles siguen siendo tarjetas, porque cada uno hace scroll por dentro. Nada se oculta: solo se mueve. */
+
+/* ── Columna de lectura ── */
+[data-style='calido'][data-style] [data-ui='app'] {
+	max-width: var(--ca-read);
+	margin-inline: auto;
+}
+
+/* ── Cabecera de revista ──
+ * Fila 1 (la «fecha» del periódico): relojes a la izquierda; sitio y botones a la derecha, pequeños.
+ * Fila 2: la marca, grande y centrada. Fila 3: el buscador, amplio y suave. */
+[data-style='calido'][data-style] [data-ui='top'] {
+	justify-content: center;
+	gap: var(--sp-10) var(--sp-12);
+	padding-block: 0 var(--sp-16);
+}
+[data-style='calido'][data-style] [data-ui='top'] > :not([data-ui='brand'], [data-ui='cmd']) {
+	order: -5;
+}
+[data-style='calido'][data-style] [data-ui='top'] > .clocks {
+	margin-right: auto;
+}
+[data-style='calido'][data-style] [data-ui='top'] > .theme {
+	border-color: transparent;
+	border-radius: 999px;
+}
+[data-style='calido'][data-style] [data-ui='top'] > .theme:hover {
+	border-color: var(--amber-edge);
+}
+[data-style='calido'][data-style] [data-ui='brand'] {
+	order: 0;
+	flex: 1 0 100%;
+	justify-content: center;
+	gap: var(--sp-12);
+	padding-block: var(--sp-16) var(--sp-4);
+	border-top: var(--hair) solid var(--line);
+	font-family: var(--ca-serif);
+	font-size: var(--ca-fs-mast);
+	font-weight: var(--fw-medium);
+	letter-spacing: -0.01em;
+	text-transform: none;
+	line-height: 1.1;
+	--logo: var(--ca-sp-32);
+}
+[data-style='calido'][data-style] [data-ui='brand'] .brand-sub {
+	font-style: italic;
+	font-weight: var(--fw-regular);
+}
+[data-style='calido'][data-style] [data-ui='cmd'] {
+	order: 1;
+	flex: 0 1 var(--ca-search);
+	margin-inline: auto;
+	--cmd-h: 46px;
+	--border: var(--hair) solid var(--line);
+	box-shadow: none;
+}
+[data-style='calido'][data-style] [data-ui='cmd']:focus-within {
+	border-color: var(--amber-edge);
+}
+[data-style='calido'][data-style] [data-ui='cmd'].sheet {
+	--border: var(--hair) solid var(--line);
+}
+/* Una lupa en vez de «>»: se lee como un buscador. */
+[data-style='calido'][data-style] [data-ui='cmd'] .caret {
+	display: none;
+}
+[data-style='calido'][data-style] [data-ui='cmd'] .lens {
+	display: block;
+}
+[data-style='calido'][data-style] [data-ui='cmd'] .prompt {
+	color: var(--muted);
+}
+/* «GO» deja de ser un botón relleno: una píldora tenue en el acento, que se llena al pasar por encima. */
+[data-style='calido'][data-style] [data-ui='cmd'] .go {
+	margin: var(--sp-5);
+	border-radius: 999px;
+	background: var(--amber-soft);
+	color: var(--amber);
+}
+[data-style='calido'][data-style] [data-ui='cmd'] .go:hover {
+	background: var(--amber);
+	color: var(--on-amber);
+}
+
+/* ── Secciones: un menú de texto centrado entre dos filetes, sin cajas ── */
+[data-style='calido'][data-style] [data-ui='keys'] {
+	justify-content: center;
+	gap: 0 var(--sp-2);
+	padding-block: var(--sp-4);
+	margin-bottom: var(--sp-16);
+	border-block: var(--hair) solid var(--line);
+}
+[data-style='calido'][data-style] [data-ui='keys'] .key {
+	border: 0;
+	border-radius: 0;
+	background: none;
+	padding: var(--sp-6) var(--sp-10);
+	color: var(--muted);
+	font-size: var(--fs-xxs);
+	font-weight: var(--fw-bold);
+	letter-spacing: var(--track-brand);
+}
+/* El nombre de la sección en serif; el código, en versales pequeñas delante. */
+[data-style='calido'][data-style] [data-ui='keys'] .key span {
+	margin-left: var(--sp-6);
+	color: var(--fg);
+	font-family: var(--ca-serif);
+	font-size: var(--fs-l);
+	font-weight: var(--fw-regular);
+	letter-spacing: 0;
+}
+[data-style='calido'][data-style] [data-ui='keys'] .key:hover span {
+	color: var(--amber);
+}
+[data-style='calido'][data-style] [data-ui='keys'] .key[aria-current='page'] {
+	background: none;
+	color: var(--amber);
+}
+[data-style='calido'][data-style] [data-ui='keys'] .key[aria-current='page'] span {
+	color: var(--amber);
+	text-decoration: underline var(--hair);
+	text-underline-offset: var(--sp-6);
+}
+
+/* ── Cinta de cotizaciones: una línea bajo el menú, sin tarjeta ── */
+[data-style='calido'][data-style] [data-ui='tape'] {
+	background: transparent;
+	box-shadow: none;
+	border-radius: 0;
+	border-bottom: var(--hair) solid var(--line);
+	margin-bottom: var(--ca-sp-32);
+}
+
+/* ── Cabecera de vista: portada de sección, centrada ── */
+[data-style='calido'][data-style] [data-ui='view-head'] {
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: var(--sp-12);
+	margin: 0 0 var(--ca-sp-40);
+	padding-block: var(--sp-8) var(--ca-sp-32);
+	border-bottom: var(--hair) solid var(--line);
+}
+[data-style='calido'][data-style] [data-ui='view-head'] h1 {
+	flex-direction: column;
+	align-items: center;
+	gap: var(--sp-10);
+	font-size: var(--ca-fs-cover);
+	line-height: 1.08;
+}
+[data-style='calido'][data-style] [data-ui='view-head'] .code {
+	align-self: center;
+	font-family: var(--ca-sans);
+	font-size: var(--fs-xs);
+	font-weight: var(--fw-bold);
+	letter-spacing: 0.22em;
+}
+[data-style='calido'][data-style] [data-ui='view-head'] p {
+	margin-inline: auto;
+	max-width: 62ch;
+}
+[data-style='calido'][data-style] [data-ui='view-head'] .sum {
+	margin-top: var(--sp-12);
+	font-family: var(--ca-serif);
+	font-size: var(--ca-fs-lead);
+	font-style: italic;
+	line-height: 1.45;
+	color: var(--muted);
+}
+[data-style='calido'][data-style] [data-ui='view-head'] .plain {
+	margin-inline: auto;
+	text-align: left;
+	font-family: var(--ca-serif);
+	font-size: var(--ca-fs-lead);
+}
+[data-style='calido'][data-style] [data-ui='view-head'] .vh-r {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--sp-8);
+}
+
+/* Tira de cifras suelta: una fila de cifras entre filetes, como los datos de una portada. */
+[data-style='calido'][data-style] [data-ui='main'] > [data-ui='tiles'] {
+	background: transparent;
+	box-shadow: none;
+	border-radius: 0;
+	border-block: var(--hair) solid var(--line);
+	margin-bottom: var(--ca-sp-40);
+}
+[data-style='calido'][data-style] [data-ui='main'] > [data-ui='tiles'] .tile {
+	background: var(--bg);
+}
+
+/* ── Paneles como artículos (fuera de «encajar» y del panel ampliado) ── */
+[data-style='calido'][data-style]:not([data-fit]) [data-ui='panel']:not(.max) {
+	--pad-x: 0px;
+	background: transparent;
+	box-shadow: none;
+	border-radius: 0;
+	backdrop-filter: none;
+	border-top: var(--hair) solid var(--line);
+}
+/* Cabecera del artículo: título serif grande; debajo, el dato como entradilla en cursiva; los botones, a la derecha. */
+[data-style='calido'][data-style]:not([data-fit]) [data-ui='panel']:not(.max) [data-ui='panel-head'] {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	grid-auto-columns: auto;
+	align-items: baseline;
+	gap: var(--sp-4) var(--sp-12);
+	padding-block: var(--sp-14) var(--sp-12);
+	border-bottom: 0;
+}
+[data-style='calido'][data-style]:not([data-fit]) [data-ui='panel']:not(.max) [data-ui='panel-head'] h2 {
+	grid-row: 1;
+	grid-column: 1;
+	font-size: var(--ca-fs-article);
+	font-weight: var(--fw-medium);
+	line-height: 1.2;
+	letter-spacing: -0.01em;
+}
+[data-style='calido'][data-style]:not([data-fit]) [data-ui='panel']:not(.max) [data-ui='panel-head'] .fold {
+	width: auto;
+	margin-right: var(--sp-8);
+	font-size: 0.55em;
+	vertical-align: 0.25em;
+}
+[data-style='calido'][data-style]:not([data-fit]) [data-ui='panel']:not(.max) .ph-r {
+	display: contents;
+}
+[data-style='calido'][data-style]:not([data-fit]) [data-ui='panel']:not(.max) .ph-r > * {
+	grid-row: 1;
+}
+[data-style='calido'][data-style]:not([data-fit]) [data-ui='panel']:not(.max) .ph-r > span:first-child:not(.sr) {
+	grid-row: 2;
+	grid-column: 1 / -1;
+	font-family: var(--ca-serif);
+	font-size: var(--fs-l);
+	font-style: italic;
+	color: var(--muted);
+}
+[data-style='calido'][data-style]:not([data-fit]) [data-ui='panel']:not(.max) .ph-r > span.accent:first-child {
+	color: var(--amber);
+}
+/* Más aire entre artículos. */
+[data-style='calido'][data-style]:not([data-fit]) [data-ui='main'] {
+	--stack-gap: var(--ca-sp-32);
+	--grid-join: var(--ca-sp-40);
+}
+
+/* ── Rejilla editorial (escritorio, sin «encajar») ── */
+@media (min-width: 1100px) {
+	/* Rejilla de dos: el primer artículo a todo el ancho y el resto en dos columnas de periódico, con filete
+	   entre ellas. Las columnas de la vista se disuelven (display: contents) y el texto corre de una a otra. */
+	[data-style='calido'][data-style]:not([data-fit]) [data-ui='main'] > .grid:is(.grid-2, .grid-2e) {
+		display: block;
+		columns: 2;
+		column-gap: var(--ca-sp-56);
+		column-rule: var(--hair) solid var(--line);
+	}
+	[data-style='calido'][data-style]:not([data-fit]) [data-ui='main'] > .grid:is(.grid-2, .grid-2e) > .col {
+		display: contents;
+	}
+	[data-style='calido'][data-style]:not([data-fit]) [data-ui='main'] > .grid:is(.grid-2, .grid-2e) > .col > * {
+		break-inside: avoid;
+		margin-bottom: var(--ca-sp-32);
+	}
+	/* El destacado: el primer artículo de la primera rejilla de dos de la vista, a todo el ancho. */
+	[data-style='calido'][data-style]:not([data-fit]) [data-ui='main'] > .grid:is(.grid-2, .grid-2e):not(.grid ~ .grid) > .col:first-child > [data-ui='panel']:first-child:not(.max) {
+		column-span: all;
+		margin-bottom: var(--ca-sp-40);
+	}
+
+	/* Rejilla de tres (TOP, WS): primera plana, con la columna central más ancha y filetes entre columnas. */
+	[data-style='calido'][data-style]:not([data-fit]) [data-ui='main'] > .grid.grid-3 {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr) minmax(0, 1fr);
+		gap: var(--ca-sp-40);
+	}
+	[data-style='calido'][data-style]:not([data-fit]) [data-ui='main'] > .grid.grid-3 > .col + .col {
+		position: relative;
+	}
+	[data-style='calido'][data-style]:not([data-fit]) [data-ui='main'] > .grid.grid-3 > .col + .col::before {
+		content: '';
+		position: absolute;
+		inset-block: 0;
+		left: calc(var(--ca-sp-40) / -2);
+		border-left: var(--hair) solid var(--line);
+	}
+
+	/* Destacados (el de la rejilla de dos y el primero de la columna central): filete fuerte y título mayor. */
+	[data-style='calido'][data-style]:not([data-fit]) [data-ui='main'] > .grid:is(.grid-2, .grid-2e):not(.grid ~ .grid) > .col:first-child > [data-ui='panel']:first-child:not(.max),
+	[data-style='calido'][data-style]:not([data-fit]) [data-ui='main'] > .grid.grid-3 > .col:nth-child(2) > [data-ui='panel']:first-child:not(.max) {
+		border-top: var(--sp-2) solid var(--fg);
+	}
+	[data-style='calido'][data-style]:not([data-fit]) [data-ui='main'] > .grid:is(.grid-2, .grid-2e):not(.grid ~ .grid) > .col:first-child > [data-ui='panel']:first-child:not(.max) [data-ui='panel-head'] h2,
+	[data-style='calido'][data-style]:not([data-fit]) [data-ui='main'] > .grid.grid-3 > .col:nth-child(2) > [data-ui='panel']:first-child:not(.max) [data-ui='panel-head'] h2 {
+		font-size: var(--ca-fs-feature);
+		line-height: 1.12;
+	}
+}
+
+/* ── «Encajar en pantalla»: la cabecera de revista se recoge en una línea para dejar el alto a los paneles ── */
+@media (min-width: 1280px) {
+	[data-style='calido'][data-style][data-fit] [data-ui='top'] {
+		flex-wrap: nowrap;
+		padding-bottom: var(--sp-10);
+	}
+	[data-style='calido'][data-style][data-fit] [data-ui='brand'] {
+		order: -7;
+		flex: none;
+		padding: 0;
+		border: 0;
+		font-size: var(--fs-xl);
+		gap: var(--sp-8);
+		--logo: var(--sp-20);
+	}
+	[data-style='calido'][data-style][data-fit] [data-ui='cmd'] {
+		order: -6;
+		margin-inline: var(--sp-8);
+		--cmd-h: 38px;
+	}
+	[data-style='calido'][data-style][data-fit] [data-ui='top'] > :not([data-ui='cmd']) {
+		flex: none;
+	}
+	[data-style='calido'][data-style][data-fit] [data-ui='top'] > .clocks {
+		margin-right: 0;
+	}
+	/* Las secciones, en una sola línea que se desliza si no cabe. */
+	[data-style='calido'][data-style][data-fit] [data-ui='keys'] {
+		flex-wrap: nowrap;
+		justify-content: safe center;
+		overflow-x: auto;
+		scrollbar-width: none;
+		margin-bottom: var(--sp-10);
+		padding-block: var(--sp-2);
+	}
+	[data-style='calido'][data-style][data-fit] [data-ui='keys'] .key {
+		flex: none;
+	}
+	[data-style='calido'][data-style][data-fit] [data-ui='keys'] .key {
+		padding-inline: var(--sp-7);
+	}
+	[data-style='calido'][data-style][data-fit] [data-ui='keys'] .key span {
+		font-size: var(--fs-m);
+	}
+	[data-style='calido'][data-style][data-fit] [data-ui='tape'] {
+		margin-bottom: var(--sp-12);
+	}
+	[data-style='calido'][data-style][data-fit] [data-ui='view-head'] {
+		margin-bottom: var(--sp-12);
+		padding-block: 0 var(--sp-12);
+		gap: var(--sp-4);
+	}
+	[data-style='calido'][data-style][data-fit] [data-ui='view-head'] h1 {
+		flex-direction: row;
+		align-items: baseline;
+		gap: var(--sp-12);
+		font-size: var(--fs-xxl);
+	}
+	[data-style='calido'][data-style][data-fit] [data-ui='view-head'] .sum {
+		margin-top: var(--sp-4);
+		font-size: var(--fs-l);
+	}
+	[data-style='calido'][data-style][data-fit] [data-ui='main'] > [data-ui='tiles'] {
+		margin-bottom: var(--sp-12);
+	}
+	/* El pie, en una línea y sin adorno (nada se quita: solo se recoge). */
+	[data-style='calido'][data-style][data-fit] [data-ui='foot'] {
+		flex-direction: row;
+		justify-content: center;
+		gap: var(--sp-6) var(--sp-20);
+		margin-top: var(--sp-12);
+		padding-block: var(--sp-8) var(--sp-10);
+	}
+	[data-style='calido'][data-style][data-fit] [data-ui='foot']::before {
+		content: none;
+	}
+}
+
+/* ── Pie editorial: centrado, con un adorno y las líneas una debajo de otra ── */
+[data-style='calido'][data-style] [data-ui='foot'] {
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: var(--sp-8);
+	margin-top: var(--ca-sp-40);
+	padding-block: var(--sp-16) var(--ca-sp-40);
+	border-top: var(--hair) solid var(--line);
+}
+[data-style='calido'][data-style] [data-ui='foot']::before {
+	content: '⁂' / '';
+	color: var(--amber);
+	font-family: var(--ca-serif);
+	font-size: var(--fs-xl);
+	line-height: 1;
+}
+
+/* ── Móvil ── */
+@media (max-width: 720px) {
+	/* Cabecera: sitio a la izquierda, la marca en el centro y los botones a la derecha; debajo, relojes y buscador. */
+	[data-style='calido'][data-style] [data-ui='top'] {
+		gap: var(--sp-8);
+		padding-bottom: var(--sp-10);
+	}
+	[data-style='calido'][data-style] [data-ui='top'] > .place {
+		order: -3;
+		margin-left: 0;
+		margin-right: auto;
+	}
+	[data-style='calido'][data-style] [data-ui='brand'] {
+		order: -2;
+		flex: 1 1 auto;
+		padding: 0;
+		border: 0;
+		font-size: var(--fs-xl);
+		gap: var(--sp-6);
+		--logo: var(--sp-20);
+	}
+	[data-style='calido'][data-style] [data-ui='top'] > .theme {
+		order: -1;
+	}
+	[data-style='calido'][data-style] [data-ui='top'] > .clocks {
+		order: 1;
+		flex: 1 0 100%;
+		margin: 0;
+		justify-content: center;
+	}
+	[data-style='calido'][data-style] [data-ui='cmd'] {
+		order: 2;
+		flex: 1 0 100%;
+	}
+	[data-style='calido'][data-style] [data-ui='cmd'].sheet {
+		flex: none;
+	}
+	/* Menú de secciones: una línea que se desliza, entre filetes. */
+	[data-style='calido'][data-style] [data-ui='keys'] {
+		justify-content: flex-start;
+		margin-bottom: var(--sp-12);
+	}
+	[data-style='calido'][data-style] [data-ui='keys'] .key {
+		font-size: var(--fs-xs);
+		padding-inline: var(--sp-8);
+	}
+	[data-style='calido'][data-style] [data-ui='keys'] .key[aria-current='page'] {
+		text-decoration: underline var(--hair);
+		text-underline-offset: var(--sp-6);
+	}
+	[data-style='calido'][data-style] [data-ui='tape'] {
+		margin-bottom: var(--sp-16);
+	}
+	[data-style='calido'][data-style] [data-ui='view-head'] {
+		margin-bottom: var(--sp-24);
+		padding-bottom: var(--sp-20);
+	}
+	[data-style='calido'][data-style] [data-ui='view-head'] h1 {
+		font-size: var(--fs-xxl);
+	}
+	[data-style='calido'][data-style] [data-ui='view-head'] .sum {
+		font-size: var(--fs-l);
+	}
+	[data-style='calido'][data-style]:not([data-fit]) [data-ui='panel']:not(.max) [data-ui='panel-head'] h2 {
+		font-size: var(--fs-xl);
+	}
+	[data-style='calido'][data-style]:not([data-fit]) [data-ui='main'] {
+		--stack-gap: var(--sp-24);
+		--grid-join: var(--sp-24);
+	}
+	/* Pestañas: texto limpio sobre el papel; la actual, en el acento con un filete corto encima. */
+	[data-style='calido'][data-style] [data-ui='tabs'] {
+		background: var(--bg);
+	}
+	[data-style='calido'][data-style] [data-ui='tabs'] :is(a, button) {
+		position: relative;
+		font-family: var(--ca-sans);
+		font-weight: var(--fw-bold);
+		font-size: var(--fs-xs);
+		letter-spacing: var(--track-brand);
+	}
+	[data-style='calido'][data-style] [data-ui='tabs'] :is([aria-current='page'], [aria-pressed='true']) {
+		text-decoration: none;
+	}
+	[data-style='calido'][data-style] [data-ui='tabs'] :is([aria-current='page'], [aria-pressed='true'])::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 30%;
+		right: 30%;
+		border-top: var(--sp-2) solid var(--amber);
+		border-radius: 0 0 var(--sp-2) var(--sp-2);
+	}
 }
