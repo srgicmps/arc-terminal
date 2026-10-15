@@ -114,3 +114,5 @@ https://data.europa.eu/api/hub/search/search?q=frontex%20illegal%20border%20cros
 # 28.7 BTMM: tipos de referencia de la Fed de Nueva York (sin clave)
 https://markets.newyorkfed.org/api/rates/secured/sofr/last/2.json
 https://markets.newyorkfed.org/api/rates/unsecured/effr/last/2.json
+# WS, subastas: ¿los TIPS llegan como Note/Bond con inflation_index_security=Yes?
+https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?fields=auction_date,security_type,security_term,floating_rate,inflation_index_security&filter=auction_date:gte:2026-01-01,inflation_index_security:eq:Yes&page[size]=5 ~ inflation_index_security
