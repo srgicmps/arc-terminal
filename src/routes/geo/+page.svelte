@@ -4,7 +4,6 @@
 	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
 	import ClimatePanel from '#lib/components/ClimatePanel.svelte';
 	import ChokepointTable from '#lib/components/ChokepointTable.svelte';
-	import DisasterList from '#lib/components/DisasterList.svelte';
 	import ElectionTable from '#lib/components/ElectionTable.svelte';
 	import HazardList from '#lib/components/HazardList.svelte';
 	import MilexTable from '#lib/components/MilexTable.svelte';
@@ -179,16 +178,6 @@
 				retraso · <Updated at={data.portwatch?.fetchedAt} source="portwatch" />
 			{/snippet}
 		</Panel>
-		<!-- Hasta que ReliefWeb apruebe el appname (secreto RELIEFWEB_APPNAME) no hay datos: el panel no sale. -->
-		{#if data.reliefweb}
-			<Panel title="Crisis y desastres activos" meta="{data.reliefweb.data.length} abiertos · los 20 más recientes">
-				<DisasterList items={data.reliefweb.data.slice(0, 20)} />
-				{#snippet note()}
-					Fuente: <a href="https://reliefweb.int/disasters" target="_blank" rel="noopener">ReliefWeb</a> (OCHA, ONU), que recoge
-					informes de gobiernos, agencias de la ONU y ONG: cada ficha enlaza a sus fuentes originales · <Updated at={data.reliefweb?.fetchedAt} source="reliefweb" />
-				{/snippet}
-			</Panel>
-		{/if}
 		<!-- Sin datos (en local, o si Wikidata falla sin copia anterior), el panel no sale. -->
 		{#if data.elections?.data.items.length}
 			<Panel title="Próximas elecciones" meta="90 días · G20 y UE en ámbar">

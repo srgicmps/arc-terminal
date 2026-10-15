@@ -15,7 +15,6 @@ import { hourly } from '../../src/lib/power.ts';
 import type {
 	Chokepoint,
 	CryptoData,
-	Disaster,
 	FedRegData,
 	NewsData,
 	FinnhubData,
@@ -35,7 +34,6 @@ import {
 	AI_NEWS,
 	ASSETS,
 	CONFLICT,
-	CRISIS,
 	DIESEL,
 	DOWN,
 	DST,
@@ -156,7 +154,6 @@ export interface Inputs extends WorldInputs {
 	fedreg?: FedRegData;
 	gie?: GieLike;
 	predictions?: PredictionsData;
-	reliefweb?: (Disaster & { level?: string })[];
 	holidays?: HolidaysData;
 	fuelEs?: FuelSpainData;
 	fuel?: FuelData;
@@ -191,7 +188,6 @@ export const FILES: Record<Exclude<keyof Inputs, 'zone'>, string> = {
 	fedreg: 'fedreg',
 	gie: 'gie',
 	predictions: 'predictions',
-	reliefweb: 'reliefweb',
 	holidays: 'holidays',
 	fuelEs: 'fuel-es',
 	fuel: 'fuel',
@@ -1308,25 +1304,6 @@ export function earningsRule(d: Inputs, { now, today }: RuleContext): Draft[] {
 	});
 }
 
-/** Crisis nueva de nivel alto (ReliefWeb, si llega a dar el nivel en `level`). Id: crisis:<id>. */
-export function crisisRule(d: Inputs, { now }: RuleContext): Draft[] {
-	return list(d.reliefweb).flatMap((c) => {
-		const t = Date.parse(c?.date ?? '');
-		if (!c?.id || !CRISIS.levels.includes(String(c.level ?? '').toLowerCase())) return [];
-		if (!Number.isFinite(t) || now - t > CRISIS.hours * HOUR) return [];
-		return [
-			{
-				id: `crisis:${c.id}`,
-				title: 'Crisis nueva',
-				body: `${c.name} (ReliefWeb).`,
-				tags: 'sos',
-				click: `${SITE}/geo`,
-				time: t
-			}
-		];
-	});
-}
-
 /** Fuente caída: la misma decisión que abre el issue en scripts/issues.ts (3 pasadas). Id: down:<fuente>:<inicio>. */
 export function downRule(d: Inputs, { now }: RuleContext): Draft[] {
 	const historyOf = new Map(list(d.history).map((h) => [h?.name, h]));
@@ -1741,7 +1718,6 @@ export const RULES: Rule[] = [
 	{ type: 'liquidity', level: 2, run: liquidityRule },
 	{ type: 'poly', level: 3, run: polyRule },
 	{ type: 'earnings', level: 3, run: earningsRule },
-	{ type: 'crisis', level: 3, run: crisisRule },
 	{ type: 'down', level: 3, run: downRule },
 	{ type: 'luz', level: 3, run: luzRule },
 	{ type: 'tomorrow', level: 3, run: tomorrowRule },
