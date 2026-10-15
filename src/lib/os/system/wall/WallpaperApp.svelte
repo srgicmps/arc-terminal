@@ -15,12 +15,15 @@
 	import { FITS, PRESETS, SHOW_MINUTES, sameSource, type Fit, type WallSource } from './wall.ts';
 
 	import { untrack } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
 	import type { AppProps } from '../../apps.ts';
 
 	let { win: _win }: AppProps = $props();
 	loadWall();
 
-	let scope = $state<'all' | 'desk'>(deskHasOwn() ? 'desk' : 'all');
+	// En el teléfono (≤ 900 px) no hay escritorios virtuales: el fondo es uno y la vista previa, en vertical.
+	const phone = new MediaQuery('max-width: 900px', false);
+	let scope = $state<'all' | 'desk'>(!phone.current && deskHasOwn() ? 'desk' : 'all');
 	const SCOPES = $derived([
 		{ value: 'all', label: 'Todos los escritorios' },
 		{ value: 'desk', label: `Solo «${desk().name}»` }
@@ -114,17 +117,19 @@
 
 <div class="app">
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="preview" class:pick={current.kind === 'image'} onpointerdown={focus} title={current.kind === 'image' ? 'Toca para elegir qué parte se ve' : undefined}>
+	<div class="preview" class:tall={phone.current} class:pick={current.kind === 'image'} onpointerdown={focus} title={current.kind === 'image' ? 'Toca para elegir qué parte se ve' : undefined}>
 		<WallLayer source={current} preview />
 		{#if current.kind === 'image' && current.fit !== 'tile' && current.fit !== 'center'}
 			<i class="dot" style:left="{current.x}%" style:top="{current.y}%"></i>
 		{/if}
 	</div>
 
-	<div class="row">
-		<Seg label="Dónde se aplica" options={SCOPES} bind:value={scope} />
-		{#if deskHasOwn()}<button type="button" class="btn" onclick={() => (clearDesk(), (scope = 'all'))}>Quitar el de este escritorio</button>{/if}
-	</div>
+	{#if !phone.current}
+		<div class="row">
+			<Seg label="Dónde se aplica" options={SCOPES} bind:value={scope} />
+			{#if deskHasOwn()}<button type="button" class="btn" onclick={() => (clearDesk(), (scope = 'all'))}>Quitar el de este escritorio</button>{/if}
+		</div>
+	{/if}
 
 	{#each groups as g (g)}
 		<h3>{g}</h3>
@@ -218,6 +223,12 @@
 		border: var(--border);
 		border-radius: var(--radius);
 		overflow: hidden;
+	}
+
+	/* Teléfono: la pantalla es vertical, la vista previa también. */
+	.preview.tall {
+		aspect-ratio: 9 / 16;
+		max-height: var(--os-wall-preview);
 	}
 
 	.preview.pick {
@@ -315,6 +326,10 @@
 		place-items: center;
 		width: var(--sp-20);
 		height: var(--sp-20);
+		/* Redondos también en táctil, donde los botones tienen un alto mínimo. */
+		min-width: 0;
+		min-height: 0;
+		aspect-ratio: 1;
 		padding: 0;
 		border: var(--border);
 		border-radius: 50%;
@@ -327,6 +342,21 @@
 
 	.add {
 		right: var(--sp-8);
+	}
+
+	@media (pointer: coarse) {
+		.add,
+		.del {
+			width: var(--sp-24);
+			height: var(--sp-24);
+		}
+		/* Zona de toque mayor que el círculo que se ve. */
+		.add::after,
+		.del::after {
+			content: '';
+			position: absolute;
+			inset: calc(var(--sp-10) * -1);
+		}
 	}
 
 	.add[aria-pressed='true'] {

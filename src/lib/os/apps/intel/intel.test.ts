@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GdacsEvent, ImpData, NewsItem, TradeDoc } from '../../../types.ts';
-import { dossier, fileName, toJson, toMarkdown } from './dossier.ts';
+import { dossier, fileName, mdLink, summaryOf, toJson, toMarkdown } from './dossier.ts';
 import { hit, seed, settle } from './force.ts';
 import { edgesAmong, ego, expand, neighbors, overview, pathTo, searchNodes, targetOf, whyText } from './graph.ts';
 import { KINDS, buildGraph, edgeKey, entityIdsIn, leaderPlace, type Kind } from './model.ts';
@@ -114,7 +114,7 @@ describe('expediente', () => {
 		const md = toMarkdown(d, '2026-10-15', 'https://arc');
 		expect(md).toMatch(/^# Japón/);
 		expect(md).toContain('## Cronología');
-		expect(md).toContain('[Ficha en PAIS](https://arc/pais?c=JP)');
+		expect(md).toContain('[Ficha en PAIS](<https://arc/pais?c=JP>)');
 		expect(JSON.parse(toJson(d, 'hoy')).label).toBe('Japón');
 		expect(fileName(d, 'md')).toBe('expediente-japon.md');
 	});
@@ -129,5 +129,44 @@ describe('fuerzas', () => {
 		expect(d(0, 1)).toBeLessThan(d(2, 3));
 		expect(hit(b, b[2].x + 1, b[2].y)?.id).toBe('c');
 		expect(hit(b, 1e6, 1e6)).toBeNull();
+	});
+});
+
+describe('arreglos del centro de mando', () => {
+	it('la vista inicial resta el peso real de la estructura (BCE↔país pesa 1)', () => {
+		const empty = buildGraph({});
+		// Sin titulares, ninguna arista es de la actualidad: nada en la vista inicial.
+		expect(overview(empty, ALL).size).toBe(0);
+		const e = empty.edges.get(edgeKey('bank:ecb', 'country:DE'))!;
+		expect(e.w).toBe(1);
+		expect(e.ws.banco).toBe(1);
+		// Con un titular que nombra al BCE y a Alemania, la arista cuenta solo por ese titular.
+		const one = buildGraph({ news: [item('El BCE y Alemania', 'z1')] });
+		expect(overview(one, ALL)).toEqual(new Set(['bank:ecb', 'country:DE']));
+	});
+
+	it('el path con códigos en minúscula apunta al nodo en mayúsculas', () => {
+		expect(targetOf('/grafo#country:cn')).toBe('country:CN');
+		expect(targetOf('/expediente#ticker:nvda')).toBe('ticker:NVDA');
+		expect(targetOf('/expediente#leader:lagarde')).toBe('leader:lagarde');
+	});
+
+	it('el resumen cuenta todos los enlaces, no solo los 40 que se enseñan', () => {
+		const node = g.nodes.get('country:US')!;
+		const rel = [{ id: 'x', kind: 'country' as Kind, label: 'X', w: 1, why: 'en los mismos titulares' }];
+		expect(summaryOf(node, rel, 0, 57)).toContain('Enlazada con 57 entidades');
+		const d = dossier(g, 'country:US')!;
+		expect(d.relatedTotal).toBe(neighbors(g, 'country:US').length);
+		expect(d.related.length).toBe(Math.min(40, d.relatedTotal));
+		expect(d.summary).toContain(`Enlazada con ${d.relatedTotal}`);
+	});
+
+	it('Markdown: corchetes escapados, URL entre <> y sin enlace si no hay URL', () => {
+		expect(mdLink('Informe [borrador] final', 'https://x/a (1)')).toBe('[Informe \\[borrador\\] final](<https://x/a%20(1)>)');
+		expect(mdLink('Sin enlace', '')).toBe('Sin enlace');
+		const d = dossier(g, 'country:CN')!;
+		const md = toMarkdown({ ...d, timeline: [{ kind: 'news', title: 'A [b]', url: '', source: 'S', time: null }] }, 'hoy');
+		expect(md).toContain('- Titular · A \\[b\\] — S');
+		expect(toMarkdown(d, 'hoy')).toMatch(/\]\(<https?:/);
 	});
 });

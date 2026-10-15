@@ -1,5 +1,6 @@
 // Muestreador de la pestaña «Recursos»: toma una muestra por segundo de lo que el navegador deja medir y la guarda en
-// buffers circulares (resources.ts). Se para solo cuando la pestaña no se ve (document.hidden) y al cerrarse.
+// buffers circulares (resources.ts). Se para solo cuando la pestaña del navegador no se ve (document.hidden), cuando
+// su ventana está minimizada o en otro escritorio (setAway) y al cerrarse.
 import { busy, fps, rate, Ring, WINDOW } from './resources.ts';
 
 export type Key = 'fps' | 'busy' | 'heap' | 'net' | 'storage' | 'dom' | 'wins' | 'fresh' | 'stale';
@@ -21,6 +22,8 @@ export class Sampler {
 	running = $state(false);
 	/** Pausa pedida por la persona: no se reanuda al volver a verse la pestaña. */
 	paused = $state(false);
+	/** La ventana no se ve (minimizada o en otro escritorio): no se mide nada. */
+	away = $state(false);
 	/** Qué deja medir este navegador. */
 	readonly can = {
 		longtask: supports('longtask'),
@@ -48,9 +51,9 @@ export class Sampler {
 
 	/** Arranca (si la pestaña se ve) y escucha si deja de verse. Devuelve la función para pararlo del todo. */
 	mount(): () => void {
-		const onVis = () => (document.hidden ? this.stop() : !this.paused && this.start());
+		const onVis = () => this.sync();
 		document.addEventListener('visibilitychange', onVis);
-		if (!document.hidden) this.start();
+		this.sync();
 		return () => {
 			document.removeEventListener('visibilitychange', onVis);
 			this.stop();
@@ -60,8 +63,19 @@ export class Sampler {
 	/** Pausar o seguir a mano. */
 	toggle() {
 		this.paused = !this.paused;
-		if (this.paused) this.stop();
-		else if (!document.hidden) this.start();
+		this.sync();
+	}
+
+	/** La ventana deja de verse (true) o vuelve (false). */
+	setAway(away: boolean) {
+		this.away = away;
+		this.sync();
+	}
+
+	/** Mide solo si la pestaña y la ventana se ven y nadie lo ha pausado. */
+	private sync() {
+		if (this.paused || this.away || document.hidden) this.stop();
+		else this.start();
 	}
 
 	start() {

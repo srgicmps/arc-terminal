@@ -2,7 +2,7 @@
 // su clave en localStorage y cloud.svelte.ts la lleva a la cuenta (D1).
 import { openApp } from '../../os.svelte.ts';
 import { readJson, writeJson } from '../kit/store.ts';
-import { byRecent, isNote, MAX_HTML, MAX_NOTES, NOTE_PREFIX, noteKey, type Note } from './notes.ts';
+import { byRecent, isNote, makeRoom, MAX_HTML, MAX_NOTES, NOTE_PREFIX, noteKey, type Note } from './notes.ts';
 
 /** pending: nota que otra app (Archivos) ha pedido abrir; Notes.svelte la abre y lo vacía. */
 export const notes = $state({ list: [] as Note[], pending: null as string | null });
@@ -41,9 +41,11 @@ export function startNotes() {
 const find = (id: string) => notes.list.find((n) => n.id === id);
 const save = (n: Note) => writeJson(noteKey(n.id), $state.snapshot(n));
 
-/** Nota nueva (null si ya hay MAX_NOTES). */
+/** Nota nueva (null si ya hay MAX_NOTES vivas). Si sobran por la papelera, se borra del todo la más antigua de ella. */
 export function newNote(html = ''): Note | null {
-	if (notes.list.length >= MAX_NOTES) return null;
+	const room = makeRoom(notes.list, MAX_NOTES);
+	if (!room.ok) return null;
+	if (room.purge) deleteNote(room.purge);
 	const n: Note = { id: Math.random().toString(36).slice(2, 10), html, updated: Date.now() };
 	notes.list.unshift(n);
 	save(n);

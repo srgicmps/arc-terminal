@@ -8,11 +8,13 @@
 	import { Sampler } from './sampler.svelte.ts';
 	import Spark from './Spark.svelte';
 
-	let { wins, sources }: { wins: number; sources: { fresh: number; stale: number } | null } = $props();
+	let { wins, sources, shown = true }: { wins: number; sources: { fresh: number; stale: number } | null; shown?: boolean } = $props();
 
 	const s = new Sampler({ wins: () => wins, sources: () => sources });
 
 	onMount(() => s.mount());
+	// Minimizada o en otro escritorio: deja de medir (y de pintar) hasta que vuelva a verse.
+	$effect(() => s.setAway(!shown));
 
 	const last = (v: number[]) => (v.length ? v[v.length - 1] : null);
 	const show = (v: number[], f: (n: number) => string) => {

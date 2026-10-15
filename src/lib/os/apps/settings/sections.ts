@@ -35,12 +35,11 @@ export interface SectionDef {
 
 export const SECTIONS = [
 	{ id: 'cuenta', label: 'Cuenta', icon: 'user', cat: 'personal', desc: 'Tu cuenta y volver a la web clásica', items: ['Cuenta', 'Volver a la web clásica', 'Salir de Arc OS'] },
-	{ id: 'apariencia', label: 'Apariencia del contenido', icon: 'contrast', cat: 'personal', desc: 'Tema, acento, densidad y estética de las vistas', items: ['Tema día noche', 'Color de acento', 'Densidad', 'Estética'] },
+	{ id: 'apariencia', label: 'Apariencia', icon: 'contrast', cat: 'personal', desc: 'Tema, acento, densidad y estética de las vistas', items: ['Tema día noche', 'Color de acento', 'Densidad', 'Estética'] },
 	{ id: 'modo', label: 'Modo', icon: 'toggle', cat: 'personal', desc: 'Sencillo o Terminal', items: ['Modo Sencillo', 'Modo Terminal'] },
 	{ id: 'region', label: 'Idioma y región', icon: 'globe', cat: 'personal', desc: 'Tu sitio e idioma de los titulares', items: ['Tu sitio ciudad', 'Idioma de los titulares', 'Traducir'] },
 	{ id: 'sistema', label: 'Arranque y bloqueo', icon: 'power', cat: 'sistema', desc: 'Pantalla de inicio y bloqueo', items: ['Pantalla de inicio', 'Bloquear la pantalla'] },
 	{ id: 'sonidos', label: 'Sonidos', icon: 'sound', cat: 'sistema', desc: 'Sonidos del sistema', items: ['Sonidos del sistema', 'Probar sonido'] },
-	{ id: 'barra', label: 'Barra de tareas', icon: 'taskbar', cat: 'sistema', desc: 'Dónde va la barra', items: ['Barra de tareas arriba abajo'] },
 	{ id: 'escritorio', label: 'Escritorio y fondo', icon: 'desktop', cat: 'sistema', desc: 'Fondo de pantalla y escritorios virtuales', items: ['Fondo de pantalla', 'Escritorios virtuales', 'Añadir escritorio'] },
 	{ id: 'widgets', label: 'Widgets', icon: 'widgets', cat: 'sistema', desc: 'Qué widgets salen en el escritorio', items: ['Widgets del escritorio'] },
 	{ id: 'sync', label: 'Sincronización', icon: 'sync', cat: 'datos', desc: 'Tus ajustes en tu cuenta, en todos tus dispositivos', items: ['Sincronizar dispositivos'] },

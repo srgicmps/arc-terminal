@@ -49,6 +49,7 @@
 	import PhoneWidget from './PhoneWidget.svelte';
 	import Spotlight from './Spotlight.svelte';
 	import CenterSheet from './CenterSheet.svelte';
+	import Toasts from '../shell/Toasts.svelte';
 	import WallLayer from '../system/wall/WallLayer.svelte';
 	import OsIcon from '../icons/OsIcon.svelte';
 	import type { Hit } from '../system/search.ts';
@@ -118,10 +119,13 @@
 			localStorage.setItem('arc-os-seen', JSON.stringify(shell.seen));
 		} catch {}
 	}
+	// Solo depende de `sheet`: markAllSeen() reescribe shell.seen y, si se leyera aquí, el efecto se relanzaría sin fin.
 	$effect(() => {
 		if (sheet !== 'notif') return;
-		unreadAtOpen = new Set(shell.notices.filter((n) => !shell.seen.includes(n.id)).map((n) => n.id));
-		markAllSeen();
+		untrack(() => {
+			unreadAtOpen = new Set(shell.notices.filter((n) => !shell.seen.includes(n.id)).map((n) => n.id));
+			markAllSeen();
+		});
 	});
 
 	// Widgets: en el modo edición se quitan («−») o se añaden («+», arriba a la izquierda).
@@ -288,7 +292,7 @@
 				if (d > 10) (clearTimeout(press.timer), (press = null));
 				return;
 			}
-			if (d < 6) return;
+			if (d < 6 || !press.src.id) return;
 			drag = { src: press.src, x: e.clientX, y: e.clientY, to: null };
 		}
 		if (!drag) return;
@@ -328,6 +332,11 @@
 	function tap(a: PhoneApp) {
 		if (swallow || editing) return void (swallow = false);
 		launch(a);
+	}
+	/** Un toque en un widget abre lo suyo, salvo en el modo edición o tras mantenerlo. */
+	function fromWidget() {
+		if (swallow || editing) return ((swallow = false), false);
+		return true;
 	}
 	function tapFolder(f: Folder) {
 		if (swallow) return void (swallow = false);
@@ -389,7 +398,9 @@
 	<div class="home" inert={current !== null || sheet === 'switch'} aria-hidden={current !== null}>
 		<div class="pager" bind:this={pager} {onscroll}>
 			{#each pages as cells, i (i)}
-				<section class="page" aria-label="Página {i + 1} de {pages.length}">
+				<!-- En el modo edición, tocar un hueco vacío lo termina (como «Listo»). -->
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
+				<section class="page" aria-label="Página {i + 1} de {pages.length}" onclick={(e) => editing && e.target === e.currentTarget && ((editing = false), (picking = false))}>
 					{#each cells as c (c.kind === 'app' ? c.app.id : c.kind === 'folder' ? c.folder.id : c.id)}
 						{#if c.kind === 'app' || c.kind === 'folder'}
 							{@const key = c.kind === 'app' ? c.app.id : c.folder.id}
@@ -407,8 +418,10 @@
 								{/if}
 							</div>
 						{:else}
-							<div class="cell w-{c.size}">
-								<PhoneWidget id={c.id} {now} notices={shell.notices} onopen={launchCode} onpath={launchPath} />
+							<!-- Mantener un widget también entra en el modo edición (no se arrastra: src vacío). -->
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
+							<div class="cell w-{c.size}" onpointerdown={(e) => pressStart(e, { id: '' })}>
+								<PhoneWidget id={c.id} {now} notices={shell.notices} onopen={(code) => fromWidget() && launchCode(code)} onpath={(p) => fromWidget() && launchPath(p)} />
 								{#if editing}
 									<button class="minus" onclick={() => save(removeWidget(arr, c.id))} aria-label="Quitar el widget {widgetName(c.id)}">−</button>
 								{/if}
@@ -535,6 +548,8 @@
 {:else if sheet === 'notif' || sheet === 'control'}
 	<CenterSheet kind={sheet} notices={shell.notices} unread={unreadAtOpen} {notice} {now} onclose={() => (sheet = null)} onpath={launchPath} />
 {/if}
+<!-- Los avisos nuevos (notify() y los del centro) como banner arriba, también con una app abierta. -->
+<Toasts phone ongo={(t) => t.href && launchPath(t.href)} />
 
 </div>
 
@@ -569,6 +584,8 @@
 	}
 	.phone {
 		-webkit-touch-callout: none;
+		/* El tamaño de icono de este teléfono (cambia en tablet y en horizontal); .page > .icon lo encoge si no cabe. */
+		--os-icon-full: var(--os-icon-size);
 	}
 	.done {
 		position: absolute;
@@ -610,6 +627,8 @@
 	.w-l,
 	.w-s {
 		position: relative;
+		/* El widget se ajusta a su hueco (PhoneWidget, @container). */
+		container-type: size;
 	}
 	.minus {
 		position: absolute;
@@ -618,6 +637,7 @@
 		z-index: 1;
 		width: 24px;
 		height: 24px;
+		min-height: 0;
 		padding: 0;
 		border: 0;
 		border-radius: 50%;
@@ -774,6 +794,12 @@
 		grid-template-rows: repeat(6, minmax(0, 1fr));
 		gap: var(--sp-6) var(--sp-12);
 		padding: var(--sp-8) var(--sp-20);
+		container-type: size;
+	}
+	/* Tope: el tamaño de .phone (58 px; 72 en tablet). En pantallas bajas (iPhone SE…) el icono encoge para que su nombre quepa en la fila: alto de una fila (la
+	   página menos sus huecos, entre 6) menos el nombre; y nunca más ancho que su columna. */
+	.page > .icon {
+		--os-icon-size: clamp(32px, min(calc((100cqh - 30px) / 6 - 22px), calc((100cqw - 36px) / 4 - 4px)), var(--os-icon-full));
 	}
 	.cell {
 		display: flex;
@@ -1021,6 +1047,7 @@
 	@media (min-width: 700px) and (min-height: 700px) {
 		.phone {
 			--os-icon-size: 72px;
+			--os-icon-full: 72px;
 		}
 	}
 	/* Teléfono en horizontal: 6 filas no caben en ~390 px de alto y los iconos se montaban. Las mismas 24 casillas
@@ -1028,6 +1055,13 @@
 	@media (orientation: landscape) and (max-height: 540px) {
 		.phone {
 			--os-icon-size: 40px;
+		}
+		.page > .icon {
+			--os-icon-size: 40px;
+		}
+		/* Un widget pequeño ocupa 2 × 1: los de 2 filas no cabían en la tercera y se aplastaban. */
+		.w-s {
+			grid-row: span 1;
 		}
 		.page {
 			grid-template-columns: repeat(8, 1fr);

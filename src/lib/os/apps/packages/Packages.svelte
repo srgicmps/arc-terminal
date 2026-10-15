@@ -6,7 +6,6 @@
 -->
 <script lang="ts">
 	import Search from '../../../components/ui/Search.svelte';
-	import OsIcon from '../../icons/OsIcon.svelte';
 	import { hasWords, queryWords } from '../../../search.ts';
 	import { APPS, type AppProps } from '../../apps.ts';
 	import { openApp, os } from '../../os.svelte.ts';
@@ -20,6 +19,7 @@
 		WIDGET_LABEL,
 		type WidgetKind
 	} from '../../shell/widgets.ts';
+	import OsIcon from '../../icons/OsIcon.svelte';
 	import Tool from '../kit/Tool.svelte';
 
 	let { win }: AppProps = $props();
@@ -30,7 +30,7 @@
 		id: string;
 		kind: Kind;
 		name: string;
-		/** Id del icono SVG (OsIcon). */
+		/** id de OsIcon. */
 		icon: string;
 		desc: string;
 		code?: string;
@@ -43,17 +43,17 @@
 		widget: 'Widget'
 	};
 
-	// Icono SVG (OsIcon) de cada widget: el de la app que le corresponde.
+	/** Icono (OsIcon) de cada widget: el de la app que hace lo mismo. */
 	const WIDGET_ICON: Record<WidgetKind, string> = {
 		reloj: 'reloj',
-		cotizaciones: 'ws',
+		cotizaciones: 'mis',
 		tiempo: 'wx',
-		titulares: 'news',
+		titulares: 'imp',
 		luz: 'luz',
-		manana: 'calendario',
-		sistema: 'status',
+		manana: 'avisos',
+		sistema: 'monitor',
 		registro: 'registros',
-		datos: 'monitor'
+		datos: 'status'
 	};
 	const WIDGET_DESC: Record<WidgetKind, string> = {
 		reloj: 'La hora en varias ciudades del mundo',
@@ -92,7 +92,7 @@
 		{ id: 'vista', label: 'Vistas' },
 		{ id: 'exp', label: 'Experiencias' },
 		{ id: 'herramienta', label: 'Herramientas' },
-		{ id: 'widget', label: 'Widgets' },
+		{ id: 'widget', label: 'Widgets del escritorio' },
 		{ id: 'on', label: 'Instaladas' },
 		{ id: 'off', label: 'Disponibles' }
 	] as const;
@@ -170,7 +170,7 @@
 						>‹ {CATS.find((c) => c.id === cat)?.label}</button
 					>
 					<div class="detail">
-						<span class="icon" aria-hidden="true"><OsIcon id={detail.icon} size={64} /></span>
+						<OsIcon id={detail.icon} size={64} />
 						<div class="info">
 							<h2>{detail.name}</h2>
 							<p class="mut">
@@ -205,7 +205,7 @@
 										onclick={() => (selected = it.key)}
 										aria-label="Ficha de {it.name}"
 									>
-										<span class="icon" aria-hidden="true"><OsIcon id={it.icon} size={40} /></span>
+										<OsIcon id={it.icon} size={40} />
 										<span class="txt">
 											<span class="name">{it.name}</span>
 											<span class="kind mut">{KIND_LABEL[it.kind]}</span>
@@ -263,9 +263,11 @@
 		cursor: pointer;
 	}
 
-	.side button:hover {
-		color: var(--fg);
-		background: var(--raise);
+	@media (hover: hover) {
+		.side button:hover {
+			color: var(--fg);
+			background: var(--raise);
+		}
 	}
 
 	.side button.on {
@@ -306,8 +308,10 @@
 		background: var(--bg);
 	}
 
-	.card:hover {
-		border-color: var(--amber-edge);
+	@media (hover: hover) {
+		.card:hover {
+			border-color: var(--amber-edge);
+		}
 	}
 
 	.open {
@@ -323,10 +327,6 @@
 		cursor: pointer;
 	}
 
-	.icon {
-		flex: none;
-		line-height: 0;
-	}
 
 	.txt {
 		display: flex;
@@ -383,9 +383,11 @@
 		border-color: var(--amber-edge);
 	}
 
-	.row button:hover,
-	.back:hover {
-		background: var(--amber-soft);
+	@media (hover: hover) {
+		.row button:hover,
+		.back:hover {
+			background: var(--amber-soft);
+		}
 	}
 
 	.tag {
