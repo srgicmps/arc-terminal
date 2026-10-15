@@ -37,4 +37,5 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
   novedad sin leer cuenta en la app de su enlace y todos los avisos en AVISOS; Calendario, tus eventos de hoy.
 - [x] Widgets elegibles: en el modo edición, «−» quita y «+» añade (Hoy, Mundo, Mercados, Avisos, Cripto, Bonos, Macro y
   Gasolina; hasta 16 casillas). Se guardan en `arc-os-phone`.
+- [x] Fondo de pantalla: el inicio del teléfono pinta `WallLayer` de OS 5 (el que eliges en la app «Fondo de pantalla»).
 - [ ] Probar en un iPhone de verdad (safe-area, PWA instalada, gestos frente al «atrás» del navegador).
