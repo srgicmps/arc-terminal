@@ -122,6 +122,7 @@ export const STOCK: GuideSection & { examples: string[]; panels: { name: string;
 	panels: [
 		{ name: 'Gráfico', what: 'Gráfico interactivo de TradingView.' },
 		{ name: 'Cotización', what: 'Precio y variación en directo.' },
+		{ name: 'Por qué se mueve', what: 'Su variación del día (Finnhub, solo EE. UU.) junto a los titulares de las últimas 24 h que la nombran.' },
 		{ name: 'Análisis técnico', what: 'Resumen de indicadores técnicos.' },
 		{ name: 'Datos fundamentales', what: 'Valoración, márgenes y cuentas.' },
 		{ name: 'Perfil de la empresa', what: 'Qué hace, sector y sede.' },
