@@ -37,9 +37,10 @@
 			// Color de acento elegido en «A tu gusto» (src/lib/taste.svelte.ts); sin nada, el ámbar.
 			try {
 				var a = localStorage.getItem('arc-accent');
-				if (a === 'cyan' || a === 'blue') document.documentElement.dataset.accent = a;
-				// Y la densidad (compacta, si no hay nada).
-				if (localStorage.getItem('arc-density') === 'comoda') document.documentElement.dataset.density = 'comoda';
+				if (a === 'amber' || a === 'cyan' || a === 'blue') document.documentElement.dataset.accent = a;
+				// Y la densidad («Normal», la de la estética, si no hay nada).
+				var d = localStorage.getItem('arc-density');
+				if (d === 'compacta' || d === 'comoda') document.documentElement.dataset.density = d;
 			} catch (e) {}
 			// Modo Sencillo o Terminal (src/lib/modo.ts, decideModo: misma regla). Sin nada guardado, quien ya tenía
 			// otras claves arc-… sigue en Terminal y quien llega nuevo empieza en Sencillo; se guarda la decisión.
