@@ -5,6 +5,12 @@
 
 const FOCUSABLE = 'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), iframe, [tabindex]:not([tabindex="-1"])';
 
+/**
+ * ¿Alt (⌥ en el Mac) ha escrito un carácter? En un Mac con teclado español ⌥1 es «|», ⌥2 «@» y ⌥º «\»: con el
+ * foco en un campo eso es texto, no un atajo de Arc OS. En Windows y Linux Alt+1 sigue dando «1».
+ */
+export const altTyped = (key: string) => key.length === 1 && !/^[0-9a-zº`ª<>]$/i.test(key);
+
 type Pt = { x: number; y: number };
 
 /**

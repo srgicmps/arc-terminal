@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nearestIndex, trapStep } from './focus.ts';
+import { altTyped, nearestIndex, trapStep } from './focus.ts';
 
 describe('nearestIndex: flechas entre iconos', () => {
 	// Rejilla de iconos en columnas (como el escritorio): a (0,0), b (0,100), c (100,0), d (100,200).
@@ -38,4 +38,9 @@ describe('trapStep: Tab dentro de un diálogo modal', () => {
 		expect(trapStep(-1, 3, true)).toBe(2);
 	});
 	it('sin nada enfocable no mueve', () => expect(trapStep(-1, 0, false)).toBeNull());
+});
+
+describe('altTyped: ⌥ que escribe en el Mac', () => {
+	it('«@», «|», «\\», «∑» son texto', () => ['@', '|', '\\', '∑', '#'].forEach((k) => expect(altTyped(k)).toBe(true)));
+	it('Alt+1, Alt+W, Alt+º y las flechas siguen siendo atajos', () => ['1', 'w', 'W', 'º', 'ArrowUp', 'Tab'].forEach((k) => expect(altTyped(k)).toBe(false)));
 });
