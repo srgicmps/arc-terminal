@@ -129,7 +129,7 @@
 	<div class="col">
 		<Panel title="Bancos centrales" meta="Próximas decisiones de tipos · hora de Madrid">
 			<Table>
-				<thead><tr><th>Día</th><th>Hora</th><th class="l">Banco</th><th class="l"></th></tr></thead>
+				<thead><tr><th>Día</th><th>Hora</th><th class="l">Banco</th><th class="l">Publica</th></tr></thead>
 				<tbody>
 					{#each decisions as m (m.bank + m.date)}
 						<tr class:hl={m.date === pick.day}>

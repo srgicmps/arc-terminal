@@ -58,11 +58,11 @@
 	.stale {
 		cursor: help;
 	}
+	/* Apagados, pero legibles (4,5:1): con opacity bajaban de 2,2:1 y 3:1. */
 	.time {
-		opacity: 0.55;
+		color: var(--faint);
 	}
 	.ago {
-		color: var(--amber);
-		opacity: 0.7;
+		color: var(--amber-dim);
 	}
 </style>
