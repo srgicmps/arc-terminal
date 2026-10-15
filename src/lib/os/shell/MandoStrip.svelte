@@ -10,13 +10,24 @@
 	import { wdata } from './widgetdata.svelte.ts';
 
 	const HEALTH = { ok: 'en vivo', degradado: 'con copia o fallos', caido: 'caído', 'sin-datos': 'sin datos' } as const;
-	const list = $derived(feeds(wdata.status));
-	const count = $derived(sourcesLive(wdata.status));
-	const msg = $derived(os.status());
 	let now = $state(Date.now());
 	$effect(() => {
 		const id = setInterval(() => (now = Date.now()), 60_000);
 		return () => clearInterval(id);
+	});
+	const list = $derived(feeds(wdata.status, now));
+	const count = $derived(sourcesLive(wdata.status, now));
+	// os.status() caduca a los 8 s con Date.now(), que no es reactivo: un tic al caducar lo vuelve a leer (si no,
+	// el último aviso del sistema se quedaba fijo en la franja).
+	let expire = $state(0);
+	const msg = $derived.by(() => {
+		void expire;
+		return os.status();
+	});
+	$effect(() => {
+		if (!msg) return;
+		const id = setTimeout(() => expire++, 8100);
+		return () => clearTimeout(id);
 	});
 </script>
 
@@ -91,11 +102,19 @@
 		background: var(--up);
 		box-shadow: 0 0 var(--sp-4) var(--up);
 	}
+	/* El estado no va solo por el color (WCAG 1.4.1): ok, círculo lleno; degradado, cuadrado; caído, aro rojo;
+	   sin datos, aro gris. */
 	[data-health='degradado'] i {
+		border-radius: 0;
 		background: var(--amber);
 	}
 	[data-health='caido'] i {
-		background: var(--down);
+		background: none;
+		box-shadow: inset 0 0 0 var(--hair) var(--down), 0 0 0 var(--hair) var(--down);
+	}
+	[data-health='sin-datos'] i {
+		background: none;
+		box-shadow: inset 0 0 0 var(--hair) var(--faint);
 	}
 	.n {
 		color: var(--cmd-cold);
