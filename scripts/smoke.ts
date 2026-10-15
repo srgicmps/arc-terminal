@@ -16,11 +16,16 @@ import { gzipSync } from 'node:zlib';
 import { launch, preview, viewPaths } from './browser.ts';
 import { osChecks } from './smoke-os.ts';
 
+/** En WebKit (SMOKE_BROWSER) solo se mira la web clásica en el móvil: lo que cambia con Safari es el diseño. */
+const WEBKIT = !!process.env.SMOKE_BROWSER;
 /** Con las experiencias (/x/<id>, en su propia carpeta de build/). */
-const PATHS = process.env.SMOKE_ONLY ? process.env.SMOKE_ONLY.split(',') : [...viewPaths(), ...viewPaths('build/x').map((p) => `/x${p}`), '/s?sym=NVDA'];
-const WIDTHS = [390, 1280];
+const PATHS = (process.env.SMOKE_ONLY ? process.env.SMOKE_ONLY.split(',') : [...viewPaths(), ...viewPaths('build/x').map((p) => `/x${p}`), '/s?sym=NVDA']).filter((p) => !WEBKIT || p !== '/os');
+/** SMOKE_WIDTHS y SMOKE_MODES (separados por comas) acotan la pasada; SMOKE_STYLE fija una estética con tema claro y
+ *  acento azul (como el iPhone de Sergi). Los usa el paso de WebKit del CI. */
+const WIDTHS = process.env.SMOKE_WIDTHS ? process.env.SMOKE_WIDTHS.split(',').map(Number) : [390, 1280];
 /** Los dos modos (src/lib/modo.ts): Sencillo enseña menos paneles y letra mayor; Terminal, todo. */
-const MODES = ['sencillo', 'terminal'] as const;
+const MODES = process.env.SMOKE_MODES ? process.env.SMOKE_MODES.split(',') : ['sencillo', 'terminal'];
+const STYLE = process.env.SMOKE_STYLE ?? '';
 
 /** Vistas de texto, sin paneles, y el Modo OS (/os: un escritorio con ventanas). Las experiencias (/x/<id>) tampoco usan Panel. */
 const NO_PANELS = new Set(['/help', '/doc', '/bienvenida', '/os']);
@@ -56,7 +61,16 @@ try {
 	for (const mode of MODES)
 	for (const width of WIDTHS) {
 		const context = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width < 600, hasTouch: width < 600 });
-		await context.addInitScript((m) => localStorage.setItem('arc-modo', m), mode);
+		await context.addInitScript(
+			([m, style]) => {
+				localStorage.setItem('arc-modo', m);
+				if (!style) return;
+				localStorage.setItem('arc-style', style);
+				localStorage.setItem('arc-theme', 'light');
+				localStorage.setItem('arc-accent', 'blue');
+			},
+			[mode, STYLE]
+		);
 		// Peso y accesibilidad se miran una vez, en el primer modo.
 		const first = mode === MODES[0];
 		await context.route('**/*', (route) => {
@@ -68,7 +82,7 @@ try {
 		// La primera vez, la portada lleva a la bienvenida: se comprueba aquí y luego se da por vista.
 		const fresh = await context.newPage();
 		await fresh.goto(ROOT + '/', { waitUntil: 'networkidle' });
-		await fresh.waitForURL(/\/bienvenida\?primera=1$/, { timeout: 5000 }).catch(() => failures.push(`/ a ${width} px: la primera vez no lleva a la bienvenida`));
+		if (!WEBKIT) await fresh.waitForURL(/\/bienvenida\?primera=1$/, { timeout: 5000 }).catch(() => failures.push(`/ a ${width} px: la primera vez no lleva a la bienvenida`));
 		await fresh.close();
 		await context.addInitScript(() => {
 			if (!localStorage.getItem('arc-welcome')) localStorage.setItem('arc-welcome', JSON.stringify({ v: 1, profile: null, interests: [], alerts: { groups: [], level: 2, daily: 10, mis: [] }, at: '' }));
@@ -77,7 +91,9 @@ try {
 			const where = `${path} a ${width} px (${mode})`;
 			const page = await context.newPage();
 			page.on('console', (m) => {
-				if (m.type() !== 'error') return;
+				// WebKit escribe en la consola cada 404 de /api/* (aquí no hay Pages Functions) y los avisos del widget de
+				// TradingView: no dicen nada del diseño, que es lo que mira esa pasada.
+				if (m.type() !== 'error' || WEBKIT) return;
 				if (/ 404 /.test(m.text()) && ONLY_PUBLISHED.some((f) => m.location().url.endsWith(f))) return;
 				failures.push(`${where}: consola: ${m.text()} (${m.location().url})`);
 			});
@@ -94,7 +110,32 @@ try {
 			// Deja que arranquen el reloj y los $effect.
 			await page.waitForTimeout(300);
 			const check = await page.evaluate(() => ({
-				scroll: document.documentElement.scrollWidth - window.innerWidth,
+				// clientWidth, no innerWidth: en el móvil, innerWidth crece con la página si algo se sale y la resta da 0.
+				scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+				// Qué se sale: se oculta cada hijo por turnos y se baja por el que quita el scroll.
+				culprit: (() => {
+					const root = document.documentElement;
+					const over = () => root.scrollWidth - root.clientWidth;
+					if (over() <= 0) return '';
+					const path: string[] = [];
+					let el: Element = document.body;
+					for (let depth = 0; depth < 14; depth++) {
+						const before = over();
+						const kid = [...el.children].find((c) => {
+							const h = c as HTMLElement;
+							const prev = h.style.display;
+							h.style.display = 'none';
+							const gone = over() < before;
+							h.style.display = prev;
+							return gone;
+						});
+						if (!kid) break;
+						const cls = [...kid.classList].filter((c) => !c.startsWith('svelte-')).slice(0, 2).join('.');
+						path.push(kid.tagName.toLowerCase() + (cls ? '.' + cls : '') + (kid.getAttribute('data-ui') ? `[${kid.getAttribute('data-ui')}]` : ''));
+						el = kid;
+					}
+					return path.slice(-5).join(' > ') + ` «${(el.textContent ?? '').trim().slice(0, 40)}»`;
+				})(),
 				// Campos con letra de menos de 16 px: Safari del iPhone amplía la página al tocarlos (app.css lo evita).
 				zoom: [...document.querySelectorAll<HTMLElement>('input, select, textarea')]
 					.filter((e) => !/^(checkbox|radio|range|color|button|submit|hidden)$/.test((e as HTMLInputElement).type) && e.offsetParent)
@@ -119,7 +160,7 @@ try {
 					return [...found];
 				})()
 			}));
-			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px`);
+			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px (${check.culprit})`);
 			if (width < 600) for (const f of new Set(check.zoom)) failures.push(`${where}: el campo «${f}» tiene letra de menos de 16 px (el iPhone amplía al tocarlo)`);
 			if (check.keys.length > 1) failures.push(`${where}: pestañas de arriba de alturas distintas (${check.keys.join(', ')} px)`);
 			if (!NO_PANELS.has(path) && !path.startsWith('/x/') && !check.panels) failures.push(`${where}: sin paneles`);
@@ -144,8 +185,9 @@ try {
 		await context.close();
 	}
 	// Arc OS en el escritorio, con 12 ventanas (scripts/smoke-os.ts).
-	failures.push(...(await osChecks(browser, ROOT)));
-	await keyboard(browser);
+	if (!WEBKIT) failures.push(...(await osChecks(browser, ROOT)));
+	// La pasada acotada de WebKit solo mira el móvil.
+	if (!WEBKIT) await keyboard(browser);
 	await browser.close();
 } catch (error) {
 	failures.push(String(error));

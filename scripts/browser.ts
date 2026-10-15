@@ -3,10 +3,12 @@
 // `vite preview` con la web ya construida y abrir Chromium.
 import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
-import { chromium, type Browser } from 'playwright-core';
+import { chromium, webkit, type Browser } from 'playwright-core';
 
 /** Chromium de la imagen de desarrollo; en el runner de GitHub, el Chrome que trae instalado. */
 export function launch(): Promise<Browser> {
+	// WebKit (el motor de Safari), el que instala Playwright: para probar lo que solo pasa en el iPhone.
+	if (process.env.SMOKE_BROWSER === 'webkit') return webkit.launch();
 	const local = '/opt/pw-browsers/chromium';
 	if (process.env.CHROMIUM_PATH) return chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 	if (existsSync(local)) return chromium.launch({ executablePath: local });
