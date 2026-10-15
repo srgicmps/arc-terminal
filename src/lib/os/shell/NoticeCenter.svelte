@@ -4,6 +4,7 @@
 	derecha, que se va solo a los 8 s (o con ✕). Tus avisos al móvil se configuran en AVISOS.
 -->
 <script lang="ts">
+	import UiIcon from '../icons/UiIcon.svelte';
 	import { resolve } from '$app/paths';
 	import { clock } from '#lib/clock.svelte.ts';
 	import { when } from '#lib/format.ts';
@@ -57,7 +58,7 @@
 		aria-label={count ? `Notificaciones: ${count} sin leer` : 'Notificaciones'}
 		onclick={toggleCenter}
 	>
-		<span aria-hidden="true">◬</span>
+		<UiIcon id="bell" size={16} />
 		{#if count}<span class="badge">{count}</span>{/if}
 	</button>
 	{#if isOpen}
@@ -92,7 +93,7 @@
 				<b>{t.title}</b>
 				<span class="mut">{t.detail}</span>
 			</button>
-			<button type="button" class="x" aria-label="Cerrar aviso" onclick={() => dismissToast(t.id)}>✕</button>
+			<button type="button" class="x" aria-label="Cerrar aviso" onclick={() => dismissToast(t.id)}><UiIcon id="close" size={12} /></button>
 		</div>
 	{/each}
 </div>
@@ -136,8 +137,10 @@
 		color: var(--amber);
 		text-decoration: none;
 	}
-	header a:hover {
-		text-decoration: underline;
+	@media (hover: hover) {
+		header a:hover {
+			text-decoration: underline;
+		}
 	}
 	/* Estado vacío con la letra de la interfaz, no la de los textos de la web. */
 	.pop .empty {
@@ -149,7 +152,7 @@
 		list-style: none;
 		margin: 0;
 		padding: 0;
-		max-height: 60vh;
+		max-height: 60dvh;
 		overflow: auto;
 	}
 	li + li {
@@ -215,6 +218,8 @@
 		font-size: var(--fs-s);
 	}
 	.toast .x {
+		display: grid;
+		place-items: center;
 		padding: var(--sp-8);
 		color: var(--muted);
 	}

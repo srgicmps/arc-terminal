@@ -31,7 +31,7 @@
 	import { quotesHeight } from '#lib/tickers.ts';
 	import { urlState } from '#lib/urlstate.svelte.ts';
 	import { rgba, token } from '#lib/color.ts';
-	import { theme } from '#lib/theme.svelte.ts';
+	import { paint } from '#lib/tvpaint.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -71,7 +71,7 @@
 	// TradingView necesita los colores escritos (no entiende variables CSS): se leen de los tokens del
 	// tema activo y se recalculan al cambiar de tema.
 	const overview = $derived.by(() => {
-		void theme.resolved; // depende del tema: al cambiarlo se vuelve a calcular
+		void paint.n; // depende de los colores (tema, acento, estética): al cambiarlos se vuelve a calcular
 		const up = token('--up');
 		const down = token('--down');
 		return {
@@ -181,7 +181,9 @@
 		tone={us10 === null ? 'mut' : undefined}
 		sub={us10 === null
 			? ''
-			: `${us10prev === null ? '' : `${signed(Math.round((us10 - us10prev) * 100), 0)} pb hoy`}${us2 === null ? '' : ` · 2 años ${nf(us2, 2)} % (${nf((us10 - us2) * 100, 0)} pb)`}`}
+			: [us10prev === null ? '' : `${signed(Math.round((us10 - us10prev) * 100), 0)} pb hoy`, us2 === null ? '' : `2 años ${nf(us2, 2)} % (${signed((us10 - us2) * 100, 0)} pb)`]
+					.filter(Boolean)
+					.join(' · ')}
 	/>
 	<Tile
 		label="EUR/USD"

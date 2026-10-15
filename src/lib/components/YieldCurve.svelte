@@ -64,8 +64,11 @@
 				]
 	);
 
-	const W = 520;
-	const H = 170;
+	// El viewBox sigue al ancho de verdad: con uno fijo de 520, en el móvil (~360 px) el texto de los ejes se
+	// encogía a unos 7 px. El alto guarda la proporción de siempre, con un mínimo para el móvil.
+	let width = $state(0);
+	const W = $derived(width > 0 ? Math.max(260, Math.round(width)) : 520);
+	const H = $derived(Math.max(170, Math.round((W * 170) / 520)));
 	const pad = { l: 34, r: 12, t: 12, b: 24 };
 
 	const all = $derived(lines.flatMap((l) => l.values).filter((v): v is number => v !== null));
@@ -113,37 +116,39 @@
 </script>
 
 {#if all.length}
-	<svg
-		class="curve"
-		viewBox="0 0 {W} {H}"
-		role="img"
-		aria-label={aria}
-		onpointermove={onmove}
-		onpointerdown={onmove}
-		onpointerleave={(e) => {
-			// Con el dedo, el navegador «sale» al levantarlo: el valor se queda hasta tocar en otro sitio.
-			if (e.pointerType !== 'touch') hover = null;
-		}}
-	>
-		{#each ticks as t (t)}
-			<line class="grid" x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} />
-			<text class="lbl" x={pad.l - 6} y={y(t) + 4} text-anchor="end">{nf(t, t % 1 ? 1 : 0)}</text>
-		{/each}
-		{#each labels as label, i (label)}
-			<text class="lbl" x={x(i)} y={H - 6} text-anchor="middle">{label}</text>
-		{/each}
-		{#each lines as l, k (k)}
-			<polyline class={l.cls} points={path(l.values)} />
-		{/each}
-		{#each lines.filter((l) => l.cls.startsWith('now')) as l, k (k)}
-			{#each l.values as v, i (i)}
-				{#if v !== null}<circle class={l.cls} cx={x(i)} cy={y(v)} r="2.5" />{/if}
+	<div bind:clientWidth={width}>
+		<svg
+			class="curve"
+			viewBox="0 0 {W} {H}"
+			role="img"
+			aria-label={aria}
+			onpointermove={onmove}
+			onpointerdown={onmove}
+			onpointerleave={(e) => {
+				// Con el dedo, el navegador «sale» al levantarlo: el valor se queda hasta tocar en otro sitio.
+				if (e.pointerType !== 'touch') hover = null;
+			}}
+		>
+			{#each ticks as t (t)}
+				<line class="grid" x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} />
+				<text class="lbl" x={pad.l - 6} y={y(t) + 4} text-anchor="end">{nf(t, t % 1 ? 1 : 0)}</text>
 			{/each}
-		{/each}
-		{#if hover !== null}
-			<line class="cursor" x1={x(hover)} x2={x(hover)} y1={pad.t} y2={H - pad.b} />
-		{/if}
-	</svg>
+			{#each labels as label, i (label)}
+				<text class="lbl" x={x(i)} y={H - 6} text-anchor="middle">{label}</text>
+			{/each}
+			{#each lines as l, k (k)}
+				<polyline class={l.cls} points={path(l.values)} />
+			{/each}
+			{#each lines.filter((l) => l.cls.startsWith('now')) as l, k (k)}
+				{#each l.values as v, i (i)}
+					{#if v !== null}<circle class={l.cls} cx={x(i)} cy={y(v)} r="2.5" />{/if}
+				{/each}
+			{/each}
+			{#if hover !== null}
+				<line class="cursor" x1={x(hover)} x2={x(hover)} y1={pad.t} y2={H - pad.b} />
+			{/if}
+		</svg>
+	</div>
 	{#if hover !== null}
 		<p class="readout" aria-live="polite">
 			<b>{labels[hover]}</b>

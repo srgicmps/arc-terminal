@@ -1,7 +1,7 @@
 <!--
 	Fondo «vivo» del escritorio de Arc OS: el globo de GLOBO, tenue y girando despacio, con los terremotos de
 	las últimas horas (/data/quakes.json). No se toca (deja pasar el ratón a los iconos y widgets), se para si no se
-	ve y, con prefers-reduced-motion, se queda quieto. El dibujo (src/lib/geo/globe-render.ts) se carga con
+	ve (también tapado por una ventana maximizada) y, con prefers-reduced-motion, se queda quieto. El dibujo (src/lib/geo/globe-render.ts) se carga con
 	import() solo si eliges este fondo.
 -->
 <script lang="ts">
@@ -9,9 +9,12 @@
 	import type { Globe } from '#lib/geo/globe-render.ts';
 	import { quakePoints } from '#lib/geo/layers.ts';
 	import type { Quake } from '#lib/types.ts';
+	import { desk } from '../../os.svelte.ts';
 
 	let canvas = $state<HTMLCanvasElement>();
 	let probe = $state<HTMLSpanElement>();
+	// Tapado por una ventana maximizada: sin pintar, y el globo se para (su IntersectionObserver ya no lo ve).
+	const covered = $derived(desk().wins.some((w) => !w.min && w.snap === 'max'));
 
 	const TOKENS = ['bg', 'panel', 'raise', 'line', 'muted', 'fg', 'amber', 'amber-soft', 'amber-dim', 'amber-edge'];
 	function colors(): Record<string, string> {
@@ -54,7 +57,7 @@
 	});
 </script>
 
-<div class="live" aria-hidden="true">
+<div class="live" class:covered aria-hidden="true">
 	<canvas bind:this={canvas}></canvas>
 	<span class="probe" bind:this={probe}></span>
 </div>
@@ -65,6 +68,10 @@
 		inset: 0;
 		pointer-events: none;
 		opacity: var(--os-live-opacity);
+	}
+
+	.covered {
+		content-visibility: hidden;
 	}
 
 	canvas {

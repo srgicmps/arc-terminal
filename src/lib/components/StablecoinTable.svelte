@@ -22,8 +22,8 @@
 {#if data?.coins.length}
 	<Tiles cols={3}>
 		<Tile label="Total" value="{compact(data.total)} $" sub={period(data.date)} />
-		<Tile label="En 30 días" value="{signed(data.totalMonth, 1)} %" tone={tone(data.totalMonth)} sub="Variación del total" />
-		<Tile label="En un año" value="{signed(data.totalYear, 1)} %" tone={tone(data.totalYear)} sub="Variación del total" />
+		<Tile label="En 30 días" value={data.totalMonth === null ? '—' : `${signed(data.totalMonth, 1)} %`} tone={tone(data.totalMonth)} sub="Variación del total" />
+		<Tile label="En un año" value={data.totalYear === null ? '—' : `${signed(data.totalYear, 1)} %`} tone={tone(data.totalYear)} sub="Variación del total" />
 	</Tiles>
 	<Table>
 		<thead>
