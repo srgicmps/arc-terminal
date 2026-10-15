@@ -149,8 +149,8 @@ export function cheapestNow(
 
 /**
  * Las `count` mejores franjas de `length` horas seguidas de un día, sin tocarse (entre dos hay al menos una hora), de la más barata a la más cara
- * (horas baratas para la lavadora o el coche). Con `from` (la hora actual de Madrid) solo cuentan las que aún no
- * han empezado. Sirve también para los avisos de casa (F16): `cheapWindows(hourly(pvpc), mañana, 2)`.
+ * (horas baratas para la lavadora o el coche). Con `from` (la hora actual de Madrid) solo cuentan las que empiezan
+ * en la hora en curso o después. Sirve también para los avisos de casa (F16): `cheapWindows(hourly(pvpc), mañana, 2)`.
  */
 export function cheapWindows(
 	prices: HourPrice[],
