@@ -31,7 +31,7 @@
 	<title>{code} · Arc Terminal</title>
 </svelte:head>
 
-<div class="vh">
+<div class="vh" data-ui="view-head">
 	<div>
 		<h1><span class="code">{code}</span>{title}</h1>
 		{#if sub}<p>{sub}</p>{/if}

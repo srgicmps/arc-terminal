@@ -168,8 +168,8 @@
 	<div class="scrim" aria-hidden="true" onclick={close}></div>
 {/if}
 
-<section bind:this={section} class="panel" class:max class:folded={shut} class:flash role={max ? 'dialog' : undefined} aria-modal={max ? 'true' : undefined} aria-label={max ? title : undefined}>
-	<header class="ph">
+<section bind:this={section} class="panel" data-ui="panel" class:max class:folded={shut} class:flash role={max ? 'dialog' : undefined} aria-modal={max ? 'true' : undefined} aria-label={max ? title : undefined}>
+	<header class="ph" data-ui="panel-head">
 		<h2>
 			<button
 				bind:this={titleButton}
