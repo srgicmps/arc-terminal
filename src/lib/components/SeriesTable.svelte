@@ -5,6 +5,7 @@
 	(por ejemplo, frente a hace 7 días y a hace un año, con `diffDays` de series.ts). Con `pct`, la variación
 	frente al dato anterior va en % y no en unidades (índices de precios). Con `alt` en una fila, una segunda
 	serie del mismo indicador (otra fuente o frecuencia) sale en pequeño bajo el nombre: último dato y periodo.
+	Si el último dato es un máximo o un mínimo de varios años (src/lib/records.ts), se anota bajo el nombre.
 -->
 <script lang="ts">
 	import { GEO, nf, period } from '#lib/format.ts';
@@ -17,6 +18,7 @@
 	import Spark from './Spark.svelte';
 	import { shortDay, type NextMap } from '#lib/nextrelease.ts';
 	import { crossed, parseNumber } from '#lib/thresholds.ts';
+	import { recordLabel, seriesRecord } from '#lib/records.ts';
 	import { removeRule, seen, setRule, thresholds } from '#lib/thresholds.svelte.ts';
 
 	interface Row {
@@ -120,6 +122,7 @@
 				{@const diff = pct ? change(row.series) : prev ? last.v - prev.v : null}
 				{@const nx = next?.[row.series.id]}
 				{@const rule = thresholds.rules[row.series.id]}
+				{@const rec = seriesRecord(pts)}
 				<tr class:hit={rule && crossed(rule, last.v)}>
 					<td>
 						<a class="name" href={row.series.url} target="_blank" rel="noopener">
@@ -128,6 +131,11 @@
 						{#if row.alt?.series?.points.length}
 							{@const a = row.alt.series.points[row.alt.series.points.length - 1]}
 							<small class="alt">{row.alt.label} {nf(a.v, row.alt.decimals ?? d)}{row.alt.series.unit === '%' ? ' %' : ''} · {period(a.t)}</small>
+						{/if}
+						{#if rec}
+							<small class="rec" title="El último dato es el {rec.kind === 'max' ? 'más alto' : 'más bajo'} {rec.since !== null ? `desde ${rec.since}` : `de los ${rec.years} años que guarda la terminal`}"
+								>{recordLabel(rec)}</small
+							>
 						{/if}
 						{#if nx}<small class="nx-sub" title={nx.title}>próx. {shortDay(nx.date)}</small>{/if}
 					</td>
@@ -235,6 +243,13 @@
 	.alt {
 		display: block;
 		color: var(--faint);
+		font-size: var(--fs-xs);
+	}
+
+	/* Récord de varios años: una nota en ámbar tenue, sin color de subida o bajada. */
+	.rec {
+		display: block;
+		color: var(--amber-dim);
 		font-size: var(--fs-xs);
 	}
 
