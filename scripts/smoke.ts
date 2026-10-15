@@ -16,6 +16,8 @@ import { launch, preview, viewPaths } from './browser.ts';
 
 const PATHS = [...viewPaths(), '/s?sym=NVDA'];
 const WIDTHS = [390, 1280];
+/** Los dos modos (src/lib/modo.ts): Sencillo enseña menos paneles y letra mayor; Terminal, todo. */
+const MODES = ['sencillo', 'terminal'] as const;
 /** Vistas de texto, sin paneles. */
 const NO_PANELS = new Set(['/help', '/doc']);
 /** Peso máximo razonable de una vista en el móvil (4G), en bytes gzip. */
@@ -32,14 +34,18 @@ const a11y: string[] = [];
 
 try {
 	const browser = await launch();
+	for (const mode of MODES)
 	for (const width of WIDTHS) {
 		const context = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width < 600, hasTouch: width < 600 });
+		await context.addInitScript((m) => localStorage.setItem('arc-modo', m), mode);
+		// Peso y accesibilidad se miran una vez, en el primer modo.
+		const first = mode === MODES[0];
 		await context.route('**/*', (route) => {
 			const url = new URL(route.request().url());
 			return url.hostname === 'localhost' ? route.continue() : route.fulfill({ status: 200, body: '' });
 		});
 		for (const path of PATHS) {
-			const where = `${path} a ${width} px`;
+			const where = `${path} a ${width} px (${mode})`;
 			const page = await context.newPage();
 			page.on('console', (m) => {
 				if (m.type() === 'error') failures.push(`${where}: consola: ${m.text()} (${m.location().url})`);
@@ -66,7 +72,7 @@ try {
 			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px`);
 			if (!NO_PANELS.has(path) && !check.panels) failures.push(`${where}: sin paneles`);
 			for (const text of check.missing) failures.push(`${where}: panel sin datos («${text}»)`);
-			if (width < 600) {
+			if (width < 600 && first) {
 				await page.addScriptTag({ path: AXE });
 				const found = await page.evaluate(async (rules) => {
 					const r = await (window as unknown as { axe: { run: (c: Document, o: object) => Promise<{ violations: { id: string; nodes: unknown[] }[] }> } }).axe.run(document, {
@@ -77,7 +83,7 @@ try {
 				if (found.length) a11y.push(`${path}: ${found.join(', ')}`);
 			}
 			const weight = (await Promise.all(sizes)).reduce((a, b) => a + b, 0);
-			if (width < 600 && weight > WEIGHT_LIMIT) {
+			if (width < 600 && first && weight > WEIGHT_LIMIT) {
 				warnings.push(`${path} pesa ${Math.round(weight / 1024)} KB (gzip, sin terceros); el límite es ${WEIGHT_LIMIT / 1024} KB`);
 			}
 			await page.close();
@@ -100,4 +106,4 @@ if (failures.length) {
 	console.log(`✗ Prueba de humo: ${failures.length} fallos\n${failures.map((f) => `  - ${f}`).join('\n')}`);
 	process.exit(1);
 }
-console.log(`✓ Prueba de humo: ${PATHS.length} vistas a ${WIDTHS.join(' y ')} px sin errores`);
+console.log(`✓ Prueba de humo: ${PATHS.length} vistas a ${WIDTHS.join(' y ')} px, en modo ${MODES.join(' y ')}, sin errores`);

@@ -20,6 +20,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-theme', storage: 'local', what: 'Tema: automático, de día o de noche', where: 'Botón ◐ de la cabecera', kind: 'ajuste' },
 	{ key: 'arc-fit', storage: 'local', what: 'Encajar en la pantalla (cada panel con su scroll)', where: 'Botón ⤢ de la cabecera', kind: 'ajuste' },
 	{ key: 'arc-mode', storage: 'local', what: 'Portada general o modular', where: 'Botón ▦ de la cabecera, en TOP', kind: 'ajuste' },
+	{ key: 'arc-modo', storage: 'local', what: 'Modo Sencillo (lo esencial, con explicaciones) o Terminal (todo, denso)', where: 'HELP, «A tu gusto», o MODO en la barra', kind: 'ajuste' },
 	{ key: 'arc-layout-<vista>', prefix: 'arc-layout-', storage: 'local', what: 'Paneles ocultos, orden y ancho de la vista modular', where: 'TOP en modo modular', kind: 'ajuste' },
 	{ key: 'arc-titles', storage: 'local', what: 'Idioma de los titulares (ES traducido o EN original)', where: 'Selector ES / EN de IMP', kind: 'ajuste' },
 	{ key: 'arc-news-prefs', storage: 'local', what: 'Medios silenciados e idioma original de los titulares', where: 'NEWS, «Tus medios»', kind: 'ajuste' },
