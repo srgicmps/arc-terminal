@@ -340,6 +340,7 @@ describe('códigos de Bloomberg (M45)', () => {
 		expect(open('N')).toBe('/news');
 		expect(open('CN')).toBe('/news');
 		expect(open('BI')).toBe('/ai');
+		expect(open('MOST')).toBe('/most');
 	});
 
 	it('cada código es único, no pisa un comando y su panel existe', () => {

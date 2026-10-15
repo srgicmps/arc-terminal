@@ -4,7 +4,6 @@
 	Con varias series de unidades distintas, «Base 100» las pone a 100 en la primera fecha común.
 -->
 <script lang="ts">
-	import { asset } from '$app/paths';
 	import LineChart from '#lib/components/LineChart.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -13,7 +12,8 @@
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
 	import { nf } from '#lib/format.ts';
-	import { extract, parseTokens, rebase, resolve, searchCatalog, SHORTCUTS, type CatalogEntry } from '#lib/gseries.ts';
+	import { loadCatalog, loadPoints } from '#lib/gfetch.ts';
+	import { parseTokens, rebase, resolve, searchCatalog, SHORTCUTS, type CatalogEntry } from '#lib/gseries.ts';
 	import type { Point } from '#lib/types.ts';
 	import { urlState } from '#lib/urlstate.svelte.ts';
 
@@ -29,16 +29,9 @@
 	let mode = $state<'valor' | 'base'>('valor');
 	let query = $state('');
 
-	/** JSON de static/data ya pedidos (cada archivo, una vez). */
-	const files = new Map<string, Promise<unknown>>();
-	const file = (name: string) => {
-		if (!files.has(name)) files.set(name, fetch(asset(`data/${name}.json` as Parameters<typeof asset>[0])).then((r) => (r.ok ? r.json() : null)));
-		return files.get(name)!;
-	};
-
 	$effect(() => {
-		file('g/series')
-			.then((f) => (catalog = (f as { data?: CatalogEntry[] } | null)?.data ?? []))
+		loadCatalog()
+			.then((c) => (catalog = c))
 			.catch(() => (failed = true));
 	});
 
@@ -49,7 +42,7 @@
 	$effect(() => {
 		for (const e of found) {
 			if (points[e.id]) continue;
-			file(e.ds).then((f) => (points = { ...points, [e.id]: extract((f as { data?: unknown } | null)?.data, e) }));
+			loadPoints(e).then((p) => (points = { ...points, [e.id]: p }));
 		}
 	});
 

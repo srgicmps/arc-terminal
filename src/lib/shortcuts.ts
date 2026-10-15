@@ -16,13 +16,14 @@ export interface Shortcut {
 	/** Qué hace. */
 	action: string;
 	/** Tecla que se escucha (KeyboardEvent.key) y si va con Mayúsculas. Sin match, es solo informativo. */
-	match?: { key: string; shift?: boolean };
+	match?: { key: string; shift?: boolean; alt?: boolean };
 }
 
 export const SHORTCUTS = [
 	{ id: 'bar', group: 'Barra', keys: ['/'], how: 'o empieza a escribir', action: 'Ir a la barra', match: { key: '/' } },
 	{ id: 'history', group: 'Barra', keys: ['↑', '↓'], how: 'con la barra vacía', action: 'Recorrer tus últimos comandos, como en un terminal' },
 	{ id: 'move', group: 'Barra', keys: ['↑', '↓'], how: 'mientras escribes', action: 'Moverte por las sugerencias' },
+	{ id: 'queue', group: 'Barra', keys: ['Alt', '→'], combo: true, how: 'tras «ECO; WS CURVA» (o Intro con la barra vacía)', action: 'Abrir la siguiente vista de la cola', match: { key: 'ArrowRight', alt: true } },
 	{ id: 'favs', group: 'Barra', keys: ['1', '9'], how: 'tras «fav ECO TIPOS»', action: 'Abrir un favorito (del 1 al 9)' },
 	{ id: 'complete', group: 'Barra', keys: ['Tab'], how: 'tras un comando y un espacio salen sus opciones', action: 'Completar con la sugerencia (comando, líder, país, provincia…)', match: { key: 'Tab' } },
 	{ id: 'open', group: 'Barra', keys: ['Intro'], action: 'Abrir' },
@@ -47,9 +48,10 @@ export type ShortcutId = (typeof SHORTCUTS)[number]['id'];
 const byId = new Map<string, Shortcut>(SHORTCUTS.map((s) => [s.id, s]));
 
 /** ¿La tecla pulsada es la de este atajo? Las letras valen en mayúscula o minúscula, salvo si piden ⇧. */
-export function isShortcut(e: Pick<KeyboardEvent, 'key' | 'shiftKey'>, id: ShortcutId): boolean {
+export function isShortcut(e: Pick<KeyboardEvent, 'key' | 'shiftKey'> & { altKey?: boolean }, id: ShortcutId): boolean {
 	const m = byId.get(id)?.match;
 	if (!m) return false;
+	if (m.alt) return e.altKey === true && e.key === m.key;
 	if (m.shift) return e.shiftKey && e.key === m.key;
 	return e.key.length === 1 ? e.key.toLowerCase() === m.key.toLowerCase() : e.key === m.key;
 }
