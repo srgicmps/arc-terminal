@@ -3,6 +3,7 @@
 	nombre debajo y la suma de sus insignias.
 -->
 <script lang="ts">
+	import OsIcon from '../icons/OsIcon.svelte';
 	import { badgeText, type Folder, type PhoneApp } from './home.ts';
 
 	let { folder, apps, badge = 0, onopen }: { folder: Folder; apps: PhoneApp[]; badge?: number; onopen: () => void } = $props();
@@ -10,7 +11,7 @@
 
 <button class="app" onclick={onopen} aria-label="Carpeta {folder.name}, {apps.length} apps{badge ? `, ${badge} nuevas` : ''}">
 	<span class="sq" aria-hidden="true">
-		{#each apps.slice(0, 9) as a (a.id)}<span class="mini">{a.icon}</span>{/each}
+		{#each apps.slice(0, 9) as a (a.id)}<span class="mini"><OsIcon id={a.id} size={13} /></span>{/each}
 		{#if badge}<b class="badge">{badgeText(badge)}</b>{/if}
 	</span>
 	<span class="name" aria-hidden="true">{folder.name}</span>
@@ -51,8 +52,7 @@
 		transition: transform var(--dur-fast) var(--ease);
 	}
 	.mini {
-		font-size: var(--fs-xs);
-		line-height: 1;
+		line-height: 0;
 	}
 	.app:active .sq {
 		transform: scale(0.92);

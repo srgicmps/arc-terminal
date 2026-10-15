@@ -1,17 +1,19 @@
 <!--
-	Un icono de la pantalla de inicio: cuadrado redondeado («squircle») con el símbolo de la app, el nombre debajo y,
+	Un icono de la pantalla de inicio: el icono SVG de la app (OsIcon, de OS 2b), el nombre debajo y,
 	si hay cosas nuevas, la insignia roja con el número. `bare`: sin nombre (dock).
 -->
 <script lang="ts">
+	import OsIcon from '../icons/OsIcon.svelte';
 	import { badgeText, type PhoneApp } from './home.ts';
 
 	let { app, badge = 0, bare = false, onopen }: { app: PhoneApp; badge?: number; bare?: boolean; onopen: (a: PhoneApp) => void } = $props();
-	const long = $derived([...app.icon].length > 2);
+	/** Lado del icono en px (OsIcon lo pide en número); el hueco lo marca --os-icon-size. */
+	const SIZE = 58;
 </script>
 
 <button class="app" onclick={() => onopen(app)} aria-label={badge ? `${app.name}, ${badge} nuevas` : app.name}>
-	<span class="sq" class:long aria-hidden="true">
-		{app.icon}
+	<span class="sq" aria-hidden="true">
+		<OsIcon id={app.id} size={SIZE} />
 		{#if badge}<b class="badge">{badgeText(badge)}</b>{/if}
 	</span>
 	{#if !bare}<span class="name" aria-hidden="true">{app.name}</span>{/if}
@@ -39,16 +41,7 @@
 		place-items: center;
 		width: var(--os-icon-size);
 		height: var(--os-icon-size);
-		border-radius: var(--os-icon-radius);
-		background: var(--os-icon-bg);
-		box-shadow: inset 0 0 0 var(--hair) var(--os-icon-edge);
-		color: var(--os-icon-fg);
-		font-size: var(--fs-xxl);
-		line-height: 1;
 		transition: transform var(--dur-fast) var(--ease);
-	}
-	.sq.long {
-		font-size: var(--fs-l);
 	}
 	.app:active .sq {
 		transform: scale(0.92);

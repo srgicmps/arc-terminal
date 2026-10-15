@@ -12,6 +12,9 @@
 	import { routeHref } from '#lib/routes.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import { COMMANDS } from '#lib/commands.ts';
+	import { pushState } from '$app/navigation';
+	import { untrack } from 'svelte';
+	import { page as nav } from '$app/state';
 	import { markAllSeen, shell, startNotices } from '../shell/shell.svelte.ts';
 	import { markSeen as seenWith } from '../shell/notices.ts';
 	import { EVENTS_KEY, isEvents, isoDay } from '../apps/cal/cal.ts';
@@ -47,6 +50,7 @@
 	import Spotlight from './Spotlight.svelte';
 	import CenterSheet from './CenterSheet.svelte';
 	import WallLayer from '../system/wall/WallLayer.svelte';
+	import OsIcon from '../icons/OsIcon.svelte';
 	import type { Hit } from '../system/search.ts';
 	import { lock } from '../system/system.svelte.ts';
 	import { leaveOS } from '../mode.svelte.ts';
@@ -143,7 +147,8 @@
 		const c = COMMANDS.find((x) => x.code === code);
 		if (c) launchPath(c.route);
 	}
-	const goHome = () => ((current = null), (sheet = null));
+	const goHome = () => ((current = null), (sheet = null), (openFolder = null));
+
 	function closeApp(id: string) {
 		open = drop(open, id);
 		const { [id]: _, ...rest } = paths;
@@ -200,6 +205,27 @@
 	let openFolder = $state<string | null>(null);
 	const folder = $derived(arr.items.find((s): s is Folder => typeof s !== 'string' && s.id === openFolder));
 	const folderApps = $derived(folder ? dockApps(apps, folder.apps) : []);
+
+	// «Atrás» (botón del navegador, gesto del iPhone o de Android): cierra lo de encima en vez de salir de /os. Lo
+	// que se abre (app, hoja o carpeta) deja una entrada en el historial con el enrutado superficial de SvelteKit.
+	const layer = $derived(sheet ?? (openFolder ? 'folder' : current ? 'app' : null));
+	let pushed = false;
+	$effect(() => {
+		if (layer && !pushed) {
+			pushed = true;
+			pushState('', { phone: layer });
+		} else if (!layer && pushed && nav.state.phone) history.back();
+	});
+	$effect(() => {
+		if (nav.state.phone || !pushed) return;
+		// Se ha vuelto atrás: se cierra lo de encima (una hoja sobre una app deja la app).
+		pushed = false;
+		untrack(() => {
+			if (sheet) sheet = null;
+			else if (openFolder) openFolder = null;
+			else current = null;
+		});
+	});
 
 	/** Lo que se arrastra (null: nada), dónde está el dedo y dónde caería. */
 	let drag = $state<{ src: Src; x: number; y: number; to: Target | null } | null>(null);
@@ -431,7 +457,7 @@
 					<div class="slot" class:front={current === id} hidden={sheet !== 'switch' && current !== id}>
 						{#if sheet === 'switch'}
 							<div class="card-head">
-								<span>{a.icon} {a.name}</span>
+								<span class="ch"><OsIcon id={a.id} size={16} /> {a.name}</span>
 								<button onclick={() => closeApp(id)} aria-label="Cerrar {a.name}">✕</button>
 							</div>
 						{/if}
@@ -924,6 +950,11 @@
 		background: var(--raise);
 		font-size: var(--fs-s);
 		font-weight: var(--fw-medium);
+	}
+	.ch {
+		display: flex;
+		align-items: center;
+		gap: var(--sp-6);
 	}
 	.card-head button {
 		position: relative;

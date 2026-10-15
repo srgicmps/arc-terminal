@@ -24,7 +24,8 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
 - [x] **Estilo único de Arc OS** («Mando», de OS 6): el teléfono y todo lo que se abre encima llevan
   `data-os-skin="mando"`; sus `--os-phone-*`, `--os-glass*`, `--os-icon-*` y `--os-radius-*` están en el bloque Mando de
   `tokens.css`. Las estéticas de la web solo cambian lo de dentro de las apps.
-- [ ] **Iconos SVG** de OS 2b (`src/lib/os/icons/`, `<OsIcon id size />`) en `PhoneIcon.svelte` en lugar del carácter.
+- [x] **Iconos SVG** de OS 2b (#526, `<OsIcon id size />`) en inicio, dock, carpetas y multitarea; las esquinas salen
+  de `--os-icon-radius` del bloque Mando.
 - [x] **Carpetas** al arrastrar un icono sobre otro; orden de iconos y dock editables y guardados (`arc-os-phone`, en la
   cuenta). Modelo propio del teléfono, de un nivel como en iOS (`place`, `takeOut`, `arrange` de `home.ts`), no el árbol
   de archivos de OS 2.
@@ -38,4 +39,6 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
 - [x] Widgets elegibles: en el modo edición, «−» quita y «+» añade (Hoy, Mundo, Mercados, Avisos, Cripto, Bonos, Macro y
   Gasolina; hasta 16 casillas). Se guardan en `arc-os-phone`.
 - [x] Fondo de pantalla: el inicio del teléfono pinta `WallLayer` de OS 5 (el que eliges en la app «Fondo de pantalla»).
-- [ ] Probar en un iPhone de verdad (safe-area, PWA instalada, gestos frente al «atrás» del navegador).
+- [x] «Atrás» del navegador o gesto del sistema: cierra lo de encima (hoja, carpeta, app) con el enrutado superficial
+  de SvelteKit (`pushState`, `page.state.phone`); en inicio, sale de /os como siempre.
+- [ ] Probarlo en un iPhone de verdad (safe-area, PWA instalada): solo puede Sergi; probado en Chromium a 390×844.
