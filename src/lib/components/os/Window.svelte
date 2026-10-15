@@ -13,15 +13,16 @@
 	import { embedSrc } from '#lib/os/apps.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import type { EmbedMessage } from '#lib/os/embed.ts';
-	import { close, focus, maximize, minimize, nudge, os, place, setPath, snap } from '#lib/os/os.svelte.ts';
-	import { snapTo, type Rect, type Snap, type Win } from '#lib/os/wm.ts';
+	import { close, closeNow, focus, maximize, minimize, nudge, os, place, setPath, snap } from '#lib/os/os.svelte.ts';
+	import { snapTo, stackZ, type Rect, type Snap, type Win } from '#lib/os/wm.ts';
 
 	let {
 		win,
 		app,
 		active,
 		onpreview,
-		onkey
+		onkey,
+		onmenu
 	}: {
 		win: Win;
 		app: OsApp;
@@ -31,7 +32,22 @@
 		onpreview: (s: Snap | null) => void;
 		/** Un atajo pulsado con el foco dentro del iframe. */
 		onkey: (e: Pick<KeyboardEvent, 'key' | 'code' | 'altKey' | 'shiftKey' | 'ctrlKey' | 'metaKey'>) => void;
+		/** Clic derecho en la barra de título (o ⇧F10 / tecla de menú): WindowLayer abre el menú de la ventana. */
+		onmenu: (x: number, y: number) => void;
 	} = $props();
+
+	let el = $state<HTMLElement>();
+	const closing = $derived(os.closing.includes(win.uid));
+	// Al cerrar: se anima (--os-anim-close) y al acabar se quita. Sin animación (0 ms o movimiento reducido), ya.
+	$effect(() => {
+		if (!closing || !el) return;
+		const ms = parseFloat(getComputedStyle(el).animationDuration) || 0;
+		if (ms === 0 || matchMedia('(prefers-reduced-motion: reduce)').matches) closeNow(win.uid);
+		else {
+			const t = setTimeout(() => closeNow(win.uid), ms * 1000 + 50);
+			return () => clearTimeout(t);
+		}
+	});
 
 	/** La base de la web (vacía si se publica en la raíz). */
 	const base = routeHref('/').replace(/\/$/, '');
@@ -121,6 +137,10 @@
 		const d = ARROWS[e.key];
 		if (d) nudge(win.uid, d[0], d[1], e.shiftKey);
 		else if (e.key === 'Enter') maximize(win.uid);
+		else if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+			const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+			onmenu(r.left + 8, r.bottom);
+		}
 		else return;
 		e.preventDefault();
 	}
@@ -133,6 +153,7 @@
 	class="win"
 	class:active
 	class:min={win.min}
+	class:closing
 	class:busy={drag !== null}
 	class:snapped={!!win.snap}
 	data-ui="os-win"
@@ -141,7 +162,9 @@
 	style:top="{r.y}px"
 	style:width="{r.w}px"
 	style:height="{r.h}px"
-	style:z-index={win.z}
+	style:z-index={stackZ(win)}
+	bind:this={el}
+	onanimationend={(e) => closing && e.animationName.endsWith('os-close') && closeNow(win.uid)}
 	aria-label={app.name}
 	aria-hidden={win.min || undefined}
 	onpointerdown={() => !active && focus(win.uid)}
@@ -151,7 +174,7 @@
 		data-ui="os-title"
 		role="toolbar"
 		tabindex="0"
-		aria-label="{app.name}: flechas para mover, ⇧ y flechas para cambiar el tamaño, Intro para maximizar"
+		aria-label="{app.name}: flechas para mover, ⇧ y flechas para cambiar el tamaño, Intro para maximizar, ⇧F10 para el menú"
 		onkeydown={onTitleKey}
 		onfocus={() => !active && focus(win.uid)}
 		onpointerdown={(e) => down(e, 'move')}
@@ -159,6 +182,11 @@
 		onpointerup={up}
 		onpointercancel={up}
 		ondblclick={(e) => !(e.target as HTMLElement).closest('button') && maximize(win.uid)}
+		oncontextmenu={(e) => {
+			e.preventDefault();
+			focus(win.uid);
+			onmenu(e.clientX, e.clientY);
+		}}
 	>
 		<span class="icon" data-ui="os-icon" aria-hidden="true">{app.icon}</span>
 		<span class="name" data-ui="os-name" {title}>{title}</span>
@@ -223,6 +251,18 @@
 
 	.win.snapped {
 		border-radius: var(--os-win-radius-snapped);
+	}
+
+	.win.closing {
+		pointer-events: none;
+		animation: os-close var(--os-anim-close) var(--ease) forwards;
+	}
+
+	@keyframes os-close {
+		to {
+			opacity: 0;
+			transform: scale(var(--os-open-scale));
+		}
 	}
 
 	@keyframes os-open {

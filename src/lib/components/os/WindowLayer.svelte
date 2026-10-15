@@ -5,7 +5,9 @@
 -->
 <script lang="ts">
 	import { SvelteSet } from 'svelte/reactivity';
-	import { appOf, close, cycle, focusedWin, goDesk, loadOs, maximize, minimize, os, setArea, snap, tile } from '#lib/os/os.svelte.ts';
+	import { appOf, close, cycle, focusedWin, goDesk, loadOs, maximize, minimize, openApp, os, sendToDesk, setArea, snap, tile, toggleTop } from '#lib/os/os.svelte.ts';
+	import { findWin } from '#lib/os/wm.ts';
+	import ContextMenu, { type MenuEntry } from './ContextMenu.svelte';
 	import { snapRect, type Snap } from '#lib/os/wm.ts';
 	import Window from './Window.svelte';
 
@@ -24,12 +26,21 @@
 
 	/**
 	 * Atajos de Arc OS (todos con Alt, para no pisar los de la web): Alt+º o Alt+` siguiente ventana (con ⇧, la
-	 * anterior), Alt+↑ maximizar, Alt+↓ minimizar, Alt+⇧+← / → encajar a una mitad, Alt+W cerrar, Alt+T mosaico y Alt+1…6 escritorio.
-	 * Devuelve si era un atajo.
+	 * anterior; Alt+Tab también, cuando el sistema lo deja llegar al navegador, p. ej. a pantalla completa),
+	 * Alt+↑ maximizar, Alt+↓ minimizar, Alt+⇧+← / → encajar a una mitad, Alt+W cerrar, Alt+T mosaico y Alt+1…6
+	 * escritorio. ⌘/Super+flechas encaja como en Mac y Windows (si el sistema no se lo queda). Ctrl+W y Ctrl+Tab son
+	 * del navegador: no se pueden usar. Devuelve si era un atajo.
 	 */
 	export function handleKey(e: Key): boolean {
-		if (!e.altKey || e.ctrlKey || e.metaKey) return false;
 		const f = focusedWin();
+		if (e.metaKey && !e.altKey && !e.ctrlKey && f) {
+			const to: Record<string, Snap | null> = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'max', ArrowDown: null };
+			if (!(e.key in to)) return false;
+			snap(f.uid, to[e.key]);
+			return true;
+		}
+		if (!e.altKey || e.ctrlKey || e.metaKey) return false;
+		if (e.key === 'Tab') return (cycle(e.shiftKey ? -1 : 1), true);
 		if (e.code === 'Backquote' || e.code === 'IntlBackslash') return (cycle(e.shiftKey ? -1 : 1), true);
 		const n = /^Digit([1-6])$/.exec(e.code);
 		if (n) {
@@ -52,6 +63,26 @@
 	}
 
 	const box = $derived(preview ? snapRect(preview, os.area) : null);
+
+	// Menú de la ventana (clic derecho en la barra de título).
+	let menu = $state<{ uid: string; x: number; y: number } | null>(null);
+	const menuItems = (uid: string): MenuEntry[] => {
+		const w = findWin(os.state, uid);
+		if (!w) return [];
+		const others = os.state.desks.filter((d) => !d.wins.some((x) => x.uid === uid));
+		return [
+			{ label: 'Minimizar', kbd: 'Alt+↓', run: () => minimize(uid) },
+			{ label: w.snap === 'max' ? 'Restaurar' : 'Maximizar', kbd: 'Alt+↑', run: () => maximize(uid) },
+			{ label: 'Media pantalla a la izquierda', kbd: 'Alt+⇧+←', run: () => snap(uid, 'left') },
+			{ label: 'Media pantalla a la derecha', kbd: 'Alt+⇧+→', run: () => snap(uid, 'right') },
+			{ label: 'Siempre encima', checked: !!w.top, run: () => toggleTop(uid) },
+			'sep',
+			{ label: 'Nueva ventana', run: () => openApp(w.app, undefined, true) },
+			...others.map((d): MenuEntry => ({ label: `Mover a «${d.name}»`, run: () => sendToDesk(uid, d.id) })),
+			'sep',
+			{ label: 'Cerrar', kbd: 'Alt+W', run: () => close(uid) }
+		];
+	};
 </script>
 
 <svelte:window {onkeydown} />
@@ -64,12 +95,15 @@
 					{#each d.wins as win (win.uid)}
 						{@const app = appOf(win)}
 						{#if app}
-							<Window {win} {app} active={d.id === os.state.active && focusedWin()?.uid === win.uid} onpreview={(s) => (preview = s)} onkey={handleKey} />
+							<Window {win} {app} active={d.id === os.state.active && focusedWin()?.uid === win.uid} onpreview={(s) => (preview = s)} onkey={handleKey} onmenu={(x, y) => (menu = { uid: win.uid, x, y })} />
 						{/if}
 					{/each}
 				</div>
 			{/if}
 		{/each}
+	{/if}
+	{#if menu}
+		<ContextMenu x={menu.x} y={menu.y} label="Ventana" items={menuItems(menu.uid)} onclose={() => (menu = null)} />
 	{/if}
 	{#if box}
 		<div class="preview" style:left="{box.x}px" style:top="{box.y}px" style:width="{box.w}px" style:height="{box.h}px" aria-hidden="true"></div>
