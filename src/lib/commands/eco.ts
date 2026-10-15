@@ -22,7 +22,7 @@ export default {
 			{ name: 'Tu hipoteca', what: 'Calculadora de hipoteca variable con el euríbor a 12 meses; recuerda lo que escribes.' },
 			{ name: 'Previsiones del FMI', what: 'PIB real e inflación previstos.' },
 			{ name: 'Discursos de banqueros centrales', what: 'Los más recientes.' },
-			{ name: 'Bancos centrales', what: 'Tipo oficial de cada banco y su último cambio.' },
+			{ name: 'Bancos centrales', what: 'Tipo oficial de cada banco y su último cambio.', keys: ['tipos'] },
 			{ name: 'Balances de los bancos centrales', what: 'Total del activo, semanal.' },
 			{ name: 'Bonos a 10 años', what: 'Rentabilidad media mensual.' },
 			{ name: 'Primas de riesgo', what: 'Frente al bono alemán, en puntos básicos.' },
