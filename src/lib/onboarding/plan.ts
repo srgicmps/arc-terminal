@@ -8,6 +8,8 @@ import { readLists } from '../watchlists.ts';
 export const WELCOME_KEY = 'arc-welcome';
 /** Modo «sencillo» o «terminal». Lo guarda la bienvenida; lo aplica el modo sencillo (modo.svelte.ts). */
 export const SIMPLE_KEY = 'arc-modo';
+/** La estética (src/lib/estilos.ts): también la pone app.html en la primera visita. */
+export const STYLE_KEY = 'arc-style';
 
 export type InterestId = 'bolsa' | 'eco' | 'mundo' | 'es' | 'tech' | 'hogar';
 
@@ -242,8 +244,8 @@ export function readWelcome(text: string | null): Welcome | null {
 export function needsWelcome(store: Pick<Storage, 'length' | 'key' | 'getItem'>, search: string): boolean {
 	if (search) return false;
 	if (store.getItem(WELCOME_KEY) !== null) return false;
-	// arc-modo no cuenta: app.html lo pone solo antes de pintar, también a quien llega por primera vez.
-	return Object.keys(collect(store)).every((k) => k === SIMPLE_KEY);
+	// arc-modo y arc-style no cuentan: app.html los pone solos antes de pintar, también a quien llega por primera vez.
+	return Object.keys(collect(store)).every((k) => k === SIMPLE_KEY || k === STYLE_KEY);
 }
 
 /** «Ahora no»: se apunta que ya la has visto (no vuelve a salir sola) sin cambiar nada más. */
