@@ -49,7 +49,7 @@
 <div class="toasts" class:phone aria-live="polite">
 	{#each shell.toasts as t (t.id)}
 		<!-- Con el ratón encima o el foco dentro no se va (WCAG 2.2.1). Lo anuncia la región viva de fuera. -->
-		<div class="toast" onpointerenter={() => hold(t.id)} onpointerleave={() => release(t.id)} onfocusin={() => hold(t.id)} onfocusout={() => release(t.id)}>
+		<div class="toast" role="group" aria-label="Aviso" onpointerenter={() => hold(t.id)} onpointerleave={() => release(t.id)} onfocusin={() => hold(t.id)} onfocusout={() => release(t.id)}>
 			<button type="button" class="body" onclick={() => (dismissToast(t.id), ongo(t))}>
 				<b>{t.title}</b>
 				{#if t.detail}<span class="mut">{t.detail}</span>{/if}
