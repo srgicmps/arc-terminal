@@ -25,8 +25,18 @@
 		// Intro crea párrafos <p> (no <div>), como en un editor de textos.
 		document.execCommand('defaultParagraphSeparator', false, 'p');
 		const first = notes.list.find((n) => !n.trashed);
-		if (first && matchMedia('(min-width: 640px)').matches) void open(first.id);
+		if (first && !notes.pending && matchMedia('(min-width: 640px)').matches) void open(first.id);
 		return () => flush();
+	});
+
+	// Archivos ha pedido abrir una nota.
+	$effect(() => {
+		const id = notes.pending;
+		if (!id) return;
+		notes.pending = null;
+		trash = !!notes.list.find((n) => n.id === id)?.trashed;
+		query = '';
+		void open(id);
 	});
 
 	const words = $derived(queryWords(query));
