@@ -87,14 +87,17 @@
 
 <ViewHeader code="ADMIN" title="Administración" sub="Usuarios, invitaciones y sugerencias" />
 
-{#if phase === 'loading'}
-	<p class="empty">Cargando…</p>
-{:else if phase === 'none'}
-	<p class="empty">Solo en arcterminal.dev, con cuenta.</p>
-{:else if phase === 'denied'}
-	<p class="empty">Solo para el administrador.</p>
-{:else if phase === 'error'}
-	<p class="empty">No se ha podido cargar. Prueba más tarde.</p>
+{#if phase !== 'ready'}
+	<div class="grid">
+		<Panel title="Administración">
+			<p class="empty">
+				{#if phase === 'loading'}Cargando…
+				{:else if phase === 'none'}Solo en arcterminal.dev, con cuenta.
+				{:else if phase === 'denied'}Solo para el administrador.
+				{:else}No se ha podido cargar. Prueba más tarde.{/if}
+			</p>
+		</Panel>
+	</div>
 {:else}
 	<div class="grid grid-2">
 		<div class="col">
