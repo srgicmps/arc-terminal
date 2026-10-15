@@ -25,6 +25,8 @@ describe('frases del modo Sencillo', () => {
 	});
 	it('tipos del banco central con su último movimiento', () => {
 		expect(policyPhrase('El BCE', pts(['2026-01-01', 2.25], ['2026-06-10', 2], ['2026-10-01', 2]))).toMatch(/2,00 %: la última vez los bajó/);
+		// El tipo efectivo diario de la Fed se mueve un punto básico sin reunión: no cuenta como subida.
+		expect(policyPhrase('La Fed', pts(['2026-09-01', 4.33], ['2026-09-20', 4.08], ['2026-10-01', 4.09], ['2026-10-02', 4.1]))).toMatch(/4,10 %: la última vez los bajó/);
 	});
 	it('prima de riesgo con su lectura, subidas y bajadas, y las que faltan no salen', () => {
 		expect(premiumPhrase('España', 64.6)).toMatch(/65 puntos: tranquilidad/);

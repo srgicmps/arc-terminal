@@ -290,10 +290,15 @@
 		cursor: pointer;
 	}
 
-	button:hover:not(:disabled),
 	button:focus-visible {
 		border-color: var(--cmd-cold);
 		color: var(--cmd-cold);
+	}
+	@media (hover: hover) {
+		button:hover:not(:disabled) {
+			border-color: var(--cmd-cold);
+			color: var(--cmd-cold);
+		}
 	}
 
 	button:disabled {
@@ -514,10 +519,15 @@
 		text-decoration: none;
 	}
 
-	a:hover,
 	a:focus-visible {
 		color: var(--cmd-cold);
 		text-decoration: underline;
+	}
+	@media (hover: hover) {
+		a:hover {
+			color: var(--cmd-cold);
+			text-decoration: underline;
+		}
 	}
 
 	.t {

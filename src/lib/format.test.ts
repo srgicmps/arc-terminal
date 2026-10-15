@@ -6,8 +6,19 @@ describe('números', () => {
 		expect(nf(1.5)).toBe('1,50');
 		expect(nf(12345.678, 1)).toBe('12.345,7');
 		expect(nf(-0.126, 2)).toBe('-0,13');
+		// Sin «-0»: ni el -0 de JavaScript ni un negativo que se redondea a cero (ejes de LineChart).
+		expect(nf(-0, 1)).toBe('0,0');
+		expect(nf(-0.001, 2)).toBe('0,00');
+		expect(nf(-1.1e-16, 0)).toBe('0');
 		// En español los números de cuatro cifras no llevan punto de miles.
 		expect(nf(1234.5)).toBe('1234,50');
+	});
+
+	it('trend con decimales: lo que se redondea a cero es plano', () => {
+		expect(trend(0.004, 2)).toBe('flat');
+		expect(trend(-2.7e-17, 1)).toBe('flat');
+		expect(trend(0.006, 2)).toBe('up');
+		expect(trend(0.004)).toBe('up');
 	});
 
 	it('nf, signed y compact ponen una raya si no hay número', () => {
@@ -23,6 +34,8 @@ describe('números', () => {
 		expect(signed(0.25)).toBe('+0,25');
 		expect(signed(-1.3)).toBe('−1,30');
 		expect(signed(0)).toBe('0,00');
+		expect(signed(-0.001)).toBe('0,00');
+		expect(signed(0.004, 2)).toBe('0,00');
 		expect(signed(-2, 0)).toBe('−2');
 	});
 

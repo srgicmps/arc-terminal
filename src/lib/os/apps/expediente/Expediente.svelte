@@ -247,10 +247,15 @@
 		cursor: pointer;
 	}
 
-	button:hover,
 	button:focus-visible {
 		border-color: var(--amber-edge);
 		color: var(--amber);
+	}
+	@media (hover: hover) {
+		button:hover {
+			border-color: var(--amber-edge);
+			color: var(--amber);
+		}
 	}
 
 	.body {
@@ -336,8 +341,10 @@
 		text-underline-offset: var(--sp-4);
 	}
 
-	.nav a:hover {
-		color: var(--amber);
+	@media (hover: hover) {
+		.nav a:hover {
+			color: var(--amber);
+		}
 	}
 
 	h3 {
@@ -487,8 +494,10 @@
 		text-decoration: none;
 	}
 
-	.time a:hover {
-		color: var(--amber);
+	@media (hover: hover) {
+		.time a:hover {
+			color: var(--amber);
+		}
 	}
 
 	.src {

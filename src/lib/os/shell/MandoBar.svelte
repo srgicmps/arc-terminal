@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
 	import { cloud } from '#lib/cloud.svelte.ts';
+	import { accountLine } from '#lib/os/system/account.ts';
 	import * as os from './bridge.ts';
 	import { alertLevel, hms } from './mando.ts';
 	import NoticeCenter from './NoticeCenter.svelte';
@@ -20,6 +21,7 @@
 		const id = setInterval(() => (now = Date.now()), 1000);
 		return () => clearInterval(id);
 	});
+	const account = $derived(accountLine(cloud.state, cloud.user, cloud.frozen));
 </script>
 
 <nav class="mando" aria-label="Barra del centro de mando">
@@ -47,7 +49,7 @@
 		<span class="clk" title="Hora universal coordinada"><span class="k">UTC</span>{hms('UTC', now)}</span>
 		<span class="clk" title="Hora de Madrid"><span class="k">MAD</span>{hms('Europe/Madrid', now)}</span>
 		<button type="button" class="tray-btn" aria-label="Panel de control" aria-expanded={shell.open === 'control'} onclick={() => toggle('control')}>⚙</button>
-		<span class="user" title={cloud.user || 'Sin cuenta (solo en este navegador)'}>{cloud.user ? cloud.user.slice(0, 1).toUpperCase() : '·'}</span>
+		<span class="user" class:warn={account.warn} title={account.text}>{cloud.user ? cloud.user.slice(0, 1).toUpperCase() : '·'}</span>
 	</div>
 </nav>
 
@@ -95,9 +97,13 @@
 		font-size: var(--fs-m);
 		color: var(--cmd-cold);
 	}
-	.tool:hover,
 	.tool[aria-expanded='true'] {
 		background: var(--os-topbar-hover);
+	}
+	@media (hover: hover) {
+		.tool:hover {
+			background: var(--os-topbar-hover);
+		}
 	}
 	.tabs {
 		flex: 1;
@@ -107,14 +113,19 @@
 		padding: 0 var(--sp-8);
 		list-style: none;
 		border-left: var(--hair) solid var(--line);
+		overflow: hidden;
 	}
+	/* Con muchas ventanas, cada pestaña encoge (hasta quedarse en el icono) en vez de pisar a la de al lado. */
 	.tabs li {
 		min-width: 0;
+		display: flex;
+		overflow: hidden;
 	}
 	.tabs button {
 		display: flex;
 		align-items: center;
 		gap: var(--sp-6);
+		min-width: 0;
 		max-width: 180px;
 		height: var(--os-bar-h);
 		padding: 0 var(--sp-10);
@@ -122,9 +133,11 @@
 		text-transform: uppercase;
 		color: var(--muted);
 	}
-	.tabs button:hover {
-		background: var(--os-topbar-hover);
-		color: var(--fg);
+	@media (hover: hover) {
+		.tabs button:hover {
+			background: var(--os-topbar-hover);
+			color: var(--fg);
+		}
 	}
 	.tabs button.on {
 		border-bottom-color: var(--cmd-cold);
@@ -134,6 +147,7 @@
 		opacity: 0.6;
 	}
 	.ico {
+		flex: none;
 		color: var(--cmd-cold);
 	}
 	.t {
@@ -221,9 +235,13 @@
 		color: inherit;
 		font-size: var(--fs-s);
 	}
-	.mando :global(.tray-btn:hover),
 	.mando :global(.tray-btn[aria-expanded='true']) {
 		background: var(--os-topbar-hover);
+	}
+	@media (hover: hover) {
+		.mando :global(.tray-btn:hover) {
+			background: var(--os-topbar-hover);
+		}
 	}
 	.mando :global(.pop) {
 		position: absolute;
@@ -244,6 +262,11 @@
 		border: var(--hair) solid var(--cmd-cold);
 		color: var(--cmd-cold);
 		font-size: var(--fs-xxs);
+	}
+	/* La cuenta no está sincronizando (sin conexión, sesión caducada): en ámbar, y el porqué en el título. */
+	.user.warn {
+		border-color: var(--amber-edge);
+		color: var(--amber);
 	}
 	/* Pantallas estrechas: fuera la marca y Madrid; quedan las pestañas, el nivel y UTC. */
 	@media (max-width: 900px) {

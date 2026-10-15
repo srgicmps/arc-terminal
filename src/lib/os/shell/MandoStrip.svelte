@@ -48,7 +48,7 @@
 		display: flex;
 		align-items: center;
 		gap: var(--sp-12);
-		height: var(--sp-24);
+		height: var(--os-strip-h);
 		padding: 0 var(--sp-10);
 		background: var(--cmd-deck);
 		border-top: var(--hair) solid var(--cmd-cold-dim);
@@ -76,8 +76,10 @@
 		gap: var(--sp-4);
 		padding: 0 var(--sp-6);
 	}
-	.feeds button:hover {
-		color: var(--fg);
+	@media (hover: hover) {
+		.feeds button:hover {
+			color: var(--fg);
+		}
 	}
 	.feeds i {
 		width: var(--sp-6);
