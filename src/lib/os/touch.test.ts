@@ -4,8 +4,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/** Archivos aún por pasar (la carpeta del escritorio, de OS 2). */
-const PENDING = ['fs/Folder.svelte'];
+/** Archivos aún por pasar a `@media (hover: hover)` (ninguno). */
+const PENDING: string[] = [];
 
 function svelteFiles(dir: string): string[] {
 	return readdirSync(dir).flatMap((f) => {
