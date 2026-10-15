@@ -190,6 +190,8 @@
 	--os-font: var(--sans); /* letra de la barra, los menús y los títulos de ventana; cada aspecto pone la suya */
 	--os-menu-radius: var(--radius); /* esquinas de menús, buscador y dock */
 	--os-icon-radius: var(--radius); /* esquinas de los iconos de app */
+	--os-icon-shadow: 0 1px 2px rgb(0 0 0 / 0.28); /* sombra de los iconos de app (una sola, de drop-shadow) */
+	--os-icon-ring: none; /* filo de los iconos de app (box-shadow; Mando lo usa como borde de 1 px) */
 	--os-topbar-bg: var(--panel); /* barra de arriba y vista Actividades del aspecto Linux */
 	--os-topbar-fg: var(--fg);
 	--os-topbar-hover: var(--raise);
@@ -398,6 +400,8 @@
 	--os-menu-bg: var(--cmd-deck);
 	--os-menu-radius: 2px;
 	--os-icon-radius: 2px;
+	--os-icon-ring: inset 0 0 0 var(--hair) var(--cmd-cold-dim);
+	--os-icon-shadow: 0 0 0 transparent;
 	--os-anim-open: 120ms;
 	--os-open-scale: 0.985;
 	--os-anim-min: 140ms;
@@ -484,16 +488,19 @@
 	--os-font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
 	--os-menu-radius: 8px;
 	--os-icon-radius: 4px;
+	--os-icon-shadow: 0 1px 1px rgb(0 0 0 / 0.3);
 }
 [data-os-skin='mac'] {
 	--os-font: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
 	--os-bar-h: max(28px, var(--control-h));
 	--os-icon-radius: 22%;
+	--os-icon-shadow: 0 3px 5px rgb(0 0 0 / 0.35);
 }
 [data-os-skin='linux'] {
 	--os-font: Cantarell, 'Noto Sans', Ubuntu, system-ui, sans-serif;
 	--os-bar-h: max(32px, var(--control-h));
 	--os-icon-radius: 50%;
+	--os-icon-shadow: 0 0 0 transparent;
 	--os-topbar-bg: #121214; /* barra negra, de día y de noche */
 	--os-topbar-fg: #f2f2f3;
 	--os-topbar-hover: color-mix(in srgb, var(--os-topbar-fg) 14%, transparent);
@@ -503,6 +510,7 @@
 	--os-font: 'Segoe UI', system-ui, 'Noto Sans', sans-serif;
 	--os-bar-h: max(36px, var(--control-h));
 	--os-icon-radius: 14px;
+	--os-icon-shadow: 0 0 6px rgb(255 255 255 / 0.12);
 	--os-topbar-bg: color-mix(in srgb, var(--panel) 78%, transparent);
 	--os-topbar-fg: var(--fg);
 	--os-topbar-hover: var(--raise);
