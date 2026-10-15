@@ -103,7 +103,7 @@
 	</Disclosure>
 </div>
 
-<div class="grid grid-2e">
+<div class="grid grid-2e leaders">
 	{#each columns as c (c.leader.id)}
 		<div class="col" class:solo={columns.length === 1}>
 			<Panel title={c.leader.name} meta={c.leader.role}>
@@ -151,6 +151,18 @@
 </div>
 
 <style>
+	/* Con 5 líderes en 3 columnas, la rejilla dejaba una celda vacía con el color de las líneas. En filas flexibles,
+	   los de la última fila se reparten todo el ancho. */
+	.leaders {
+		display: flex;
+		flex-wrap: wrap;
+	}
+
+	.leaders > .col,
+	.solo > :global(*) {
+		flex: 1 1 min(var(--col-min), 100%);
+	}
+
 	/* Un solo líder: agenda y «Lo último», uno al lado del otro. */
 	.solo {
 		display: contents;
