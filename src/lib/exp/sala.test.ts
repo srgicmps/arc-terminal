@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { conflictPoints, electionPoints, newByRegion, regionAt, travelPoints, type SalaPoint } from './sala.ts';
+import { conflictPoints, electionPoints, newByRegion, regionAt, travelPoints, uniqueBy, type SalaPoint } from './sala.ts';
 
 describe('Sala de control', () => {
+	it('sin claves repetidas (el {#each} con clave de Svelte falla con dos iguales)', () => {
+		const items = [{ url: 'a', n: 1 }, { url: 'b', n: 2 }, { url: 'a', n: 3 }];
+		expect(uniqueBy(items, (i) => i.url)).toEqual([{ url: 'a', n: 1 }, { url: 'b', n: 2 }]);
+	});
+
 	it('sitúa regiones por coordenadas', () => {
 		expect(regionAt(40, -100)).toBe('america');
 		expect(regionAt(48, 2)).toBe('europa');
