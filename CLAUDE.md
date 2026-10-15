@@ -86,6 +86,10 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   (`src/lib/useralerts.ts`); `notify.ts` lee con `scripts/requests.ts` solo los issues abiertos **del dueño**,
   los aplica (`scripts/alerts/user.ts`) y cierra la alerta al avisar. Los issues son públicos.
 
+- **Experiencias** (`EXP`): cada una es una ruta `src/routes/x/<id>` que reutiliza datos y componentes; se apuntan en
+  `src/lib/experiences.ts` (de ahí salen el índice `/x`, «EXP <nombre>», el selector de `ExpHeader` y «Al entrar» de
+  HELP, que guarda `x:<id>` en `arc-home`). Sin tokens propios: funcionan con cualquier estilo y con el modo Sencillo.
+
 ## Stack
 - SvelteKit con `adapter-static` + TypeScript, Svelte 5 (runes).
 - pnpm y Node 24.
@@ -167,6 +171,7 @@ vista `HELP`. Resumen:
 | `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
 | `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista, análisis y problema del día | Stockfish, chess.js, Lichess |
 | `TV` | Modo TV: las vistas rotan solas, encajadas y a pantalla completa | — |
+| `EXP` | Experiencias: otras formas de usar Arc con los mismos datos (periódico, sala de control, feed…) | Todas |
 | `FONDOS` | Carteras 13F de grandes fondos: mayores posiciones, compras y ventas | SEC* |
 | `HDS` | Qué fondos de FONDOS tienen un valor (13F al revés, con 45 días de retraso) | SEC* |
 | `AVISOS` | Tus avisos al móvil: temas, nivel, tope, valores y silencio (solo con cuenta, en arcterminal.dev) | ntfy |
