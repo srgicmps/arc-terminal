@@ -9,8 +9,7 @@
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { cloud } from '#lib/cloud.svelte.ts';
 	import * as os from './bridge.ts';
-	import { setBar, setWallpaper, setWidgets, shell, WALLPAPERS, type Wallpaper } from './shell.svelte.ts';
-	import SkinPicker from './SkinPicker.svelte';
+	import { setBar, setName, setWallpaper, setWidgets, shell, WALLPAPERS, type Wallpaper } from './shell.svelte.ts';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from './widgets.ts';
 
 	const desks = $derived(os.desks());
@@ -47,12 +46,9 @@
 	</header>
 	<div class="scroll">
 		<section>
-			<h3>Aspecto del escritorio</h3>
-			<SkinPicker />
-		</section>
-		<section>
 			<h3>Apariencia</h3>
-			<p class="mut">Dentro de Arc OS, los colores y la letra son los del aspecto. La estética de la web (ESTILO), el acento y la densidad se aplican fuera.</p>
+			<p class="mut">Arc OS tiene su propio aspecto. La estética, el acento y la densidad solo cambian el contenido de las apps.</p>
+			<button type="button" class="link" onclick={() => go('/estilo')}>Estética de las apps…</button>
 			<div class="row">
 				<Seg label="Fondo del escritorio" options={WALLPAPERS.map((w) => ({ value: w.id, label: w.label }))} bind:value={wallpaper} />
 			</div>
@@ -80,6 +76,10 @@
 		</section>
 		<section>
 			<h3>Cuenta</h3>
+			<label class="row">
+				<span class="mut">Cómo te llamamos</span>
+				<input class="name" type="text" maxlength="40" autocomplete="given-name" value={shell.name} onchange={(e) => setName(e.currentTarget.value)} />
+			</label>
 			{#if cloud.user}
 				<p>Ajustes en tu cuenta: <b>{cloud.user}</b>. Se sincronizan entre tus dispositivos.</p>
 			{:else}
@@ -175,6 +175,22 @@
 	}
 	.row {
 		margin-top: var(--sp-10);
+	}
+	label.row {
+		display: flex;
+		align-items: center;
+		gap: var(--sp-8);
+	}
+	.name {
+		flex: 1;
+		min-width: 0;
+		height: var(--control-h);
+		padding: 0 var(--sp-8);
+		border: var(--hair) solid var(--line);
+		border-radius: var(--radius-s);
+		background: var(--bg);
+		color: var(--fg);
+		font: inherit;
 	}
 	.chips {
 		display: flex;

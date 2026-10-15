@@ -1,6 +1,7 @@
-// Dentro de Arc OS no se aplican las estéticas de la web (data-style, acento ni densidad): el OS tiene sus colores
-// y su letra, los del aspecto (data-os-skin, tokens al final de tokens.css). Vale para /os y para las vistas
-// embebidas en sus ventanas (?embed=1). Fuera de /os todo sigue igual: al salir se vuelve a lo guardado.
+// Arc OS tiene su propio aspecto: el escritorio, la barra, los menús y la decoración de ventana no usan la estética
+// de la web (data-style, acento ni densidad), sino los colores y la letra del aspecto (data-os-skin, tokens al final
+// de tokens.css). Las vistas dentro de las ventanas (?embed=1) sí siguen la estética: son otro documento, y
+// webLook las mantiene al día. Fuera de /os todo sigue igual: al salir se vuelve a lo guardado.
 // src/app.html hace lo mismo antes de pintar (data-os-look), para que no parpadee.
 
 /** Atributos de <html> que pone la web y que en Arc OS no se usan. */
@@ -36,13 +37,13 @@ export function osLook(skin: () => string | null) {
 			watch.disconnect();
 			delete root.dataset.osLook;
 			delete root.dataset.osSkin;
-			restore(root);
+			webLook(root);
 		}
 	};
 }
 
-/** Lo que pondría src/app.html: la estética, el acento y la densidad guardados. */
-function restore(root: HTMLElement) {
+/** Pone en `root` la estética, el acento y la densidad guardados (lo mismo que src/app.html al cargar). */
+export function webLook(root: HTMLElement) {
 	const get = (k: string) => {
 		try {
 			return localStorage.getItem(k);
@@ -52,14 +53,16 @@ function restore(root: HTMLElement) {
 	};
 	const st = get('arc-style');
 	if (st && /^[a-z]+$/.test(st)) {
-		root.dataset.style = st;
+		if (root.dataset.style !== st) root.dataset.style = st;
 		// Con import(): apps.ts (y sus tests) llega aquí por embed.ts, y estilos-css necesita $app/paths.
 		void import('../estilos-css.ts').then((m) => m.useSheet(st, 'style-sheet'));
 	}
 	const a = get('arc-accent');
 	if (a === 'amber' || a === 'cyan' || a === 'blue') root.dataset.accent = a;
+	else delete root.dataset.accent;
 	const d = get('arc-density');
 	if (d === 'compacta' || d === 'comoda') root.dataset.density = d;
+	else delete root.dataset.density;
 	const link = sheet();
 	if (link) link.disabled = false;
 }

@@ -7,7 +7,7 @@ import type { ChangesData } from '../../types.ts';
 import { buildNotices, markSeen, toastsFor, unread, type Notice } from './notices.ts';
 import { parseIds, pushRecent, togglePin } from './start.ts';
 import { parseSpots, type Spots } from './icons.ts';
-import { DEFAULT_SKIN, isSkin, type Skin } from './skins.ts';
+import { DEFAULT_SKIN, type Skin } from './skins.ts';
 import { parseWidgets, type Placed } from './widgets.ts';
 
 export const KEYS = {
@@ -18,6 +18,7 @@ export const KEYS = {
 	seen: 'arc-os-seen',
 	wallpaper: 'arc-os-wallpaper',
 	skin: 'arc-os-skin',
+	name: 'arc-os-name',
 	icons: 'arc-os-icons'
 } as const;
 
@@ -51,9 +52,12 @@ export const shell = $state({
 	widgets: null as Placed[] | null,
 	bar: 'bottom' as 'bottom' | 'top',
 	wallpaper: 'sistema' as Wallpaper,
+	/** Aspecto: uno solo y fijo (cambio de Sergi); el código de los demás queda, sin interfaz. */
 	skin: DEFAULT_SKIN as Skin,
-	/** Si ya ha elegido aspecto (si no, el primer arranque se lo pregunta). */
+	/** Si ya ha pasado el asistente del primer arranque (se apunta guardando arc-os-skin). */
 	skinChosen: true,
+	/** Cómo quiere que le llame Arc OS (asistente y Panel de control); vacío si no lo ha dicho. */
+	name: '',
 	seen: [] as string[],
 	notices: [] as Notice[],
 	toasts: [] as Notice[],
@@ -75,8 +79,11 @@ export function loadShell(defaultPinned: string[]) {
 	const wp = read(KEYS.wallpaper);
 	shell.wallpaper = WALLPAPERS.some((w) => w.id === wp) ? (wp as Wallpaper) : 'sistema';
 	const skin = read(KEYS.skin);
-	shell.skin = isSkin(skin) ? skin : DEFAULT_SKIN;
-	shell.skinChosen = isSkin(skin);
+	shell.skin = DEFAULT_SKIN;
+	shell.skinChosen = skin !== null;
+	// Quien eligió otro aspecto cuando se podía vuelve al único (src/app.html lo lee antes de pintar).
+	if (skin !== null && skin !== DEFAULT_SKIN) write(KEYS.skin, DEFAULT_SKIN);
+	shell.name = cleanName(read(KEYS.name) ?? '');
 	shell.seen = parseIds(read(KEYS.seen));
 	shell.icons = parseSpots(read(KEYS.icons));
 	shell.ready = true;
@@ -110,6 +117,13 @@ export function setSkin(skin: Skin) {
 	shell.skin = skin;
 	shell.skinChosen = true;
 	write(KEYS.skin, skin);
+}
+/** Nombre limpio: una línea, sin espacios de más, 40 letras como mucho. */
+export const cleanName = (s: string) => s.replace(/\s+/g, ' ').trim().slice(0, 40);
+
+export function setName(name: string) {
+	shell.name = cleanName(name);
+	write(KEYS.name, shell.name);
 }
 export function toggle(what: NonNullable<typeof shell.open>) {
 	shell.open = shell.open === what ? null : what;

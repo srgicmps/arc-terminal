@@ -34,10 +34,10 @@
 			} catch (e) {}
 			if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 			document.documentElement.dataset.theme = t;
-			// Arc OS (/os y sus ventanas, ?embed=1) no usa la estética, el acento ni la densidad de la web: lleva los
-			// colores de su aspecto (src/lib/os/look.ts). Aquí solo se marca y se pone el aspecto guardado.
+			// Arc OS (/os) no usa la estética, el acento ni la densidad de la web en el escritorio: lleva los colores de
+			// su aspecto (src/lib/os/look.ts). Las vistas de sus ventanas (?embed=1) sí los usan.
 			var embed = /[?&]embed=1(&|$)/.test(location.search) && window.parent !== window;
-			var osl = embed || /\/os\/?$/.test(location.pathname);
+			var osl = !embed && /\/os\/?$/.test(location.pathname);
 			if (osl) {
 				document.documentElement.dataset.osLook = '1';
 				try {

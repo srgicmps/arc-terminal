@@ -1,16 +1,16 @@
 <!--
 	«Bienvenido a Arc OS»: el asistente del primer arranque (cuando aún no hay arc-os-skin guardado), en tres
-	pasos: aspecto del escritorio, fondo y widgets. Todo se puede cambiar luego en el Panel de control (⚙).
+	pasos: fondo, widgets y cómo quieres que te llame. El aspecto es uno solo y no se elige. Todo se puede cambiar luego en el Panel de control (⚙).
 	Las elecciones se aplican al momento, así se ve el resultado detrás. «Saltar» deja lo de por defecto.
 -->
 <script lang="ts">
 	import { tick } from 'svelte';
 	import * as os from './bridge.ts';
-	import { setSkin, setWallpaper, setWidgets, shell, WALLPAPERS } from './shell.svelte.ts';
-	import SkinPicker from './SkinPicker.svelte';
+	import { setName, setSkin, setWallpaper, setWidgets, shell, WALLPAPERS } from './shell.svelte.ts';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from './widgets.ts';
 
-	const STEPS = ['Aspecto', 'Fondo', 'Widgets'] as const;
+	const STEPS = ['Fondo', 'Widgets', 'Nombre'] as const;
+	let name = $state(shell.name);
 	let step = $state(0);
 	let box = $state<HTMLElement>();
 
@@ -24,6 +24,7 @@
 	const flip = (k: WidgetKind) => setWidgets(has(k) ? removeWidget(current, k) : addWidget(current, k, os.deskW()));
 
 	function finish() {
+		setName(name);
 		setSkin(shell.skin);
 	}
 </script>
@@ -36,12 +37,8 @@
 		</ol>
 
 		{#if step === 0}
-			<h2 id="os-first-title">¿Cómo quieres tu escritorio?</h2>
-			<p class="mut">Los mismos datos y las mismas ventanas, con la barra y los menús que te resulten más familiares.</p>
-			<SkinPicker />
-		{:else if step === 1}
 			<h2 id="os-first-title">Elige un fondo</h2>
-			<p class="mut">Siempre con los colores del aspecto que has elegido.</p>
+			<p class="mut">Se puede cambiar cuando quieras con el clic derecho en el escritorio.</p>
 			<div class="walls" role="radiogroup" aria-label="Fondo del escritorio">
 				{#each WALLPAPERS as wp (wp.id)}
 					<button type="button" role="radio" aria-checked={shell.wallpaper === wp.id} class="wall" onclick={() => setWallpaper(wp.id)}>
@@ -50,7 +47,7 @@
 					</button>
 				{/each}
 			</div>
-		{:else}
+		{:else if step === 1}
 			<h2 id="os-first-title">Widgets en el escritorio</h2>
 			<p class="mut">Datos de un vistazo. Se mueven arrastrándolos por el título.</p>
 			<div class="chips" role="group" aria-label="Widgets">
@@ -58,6 +55,10 @@
 					<button type="button" aria-pressed={has(k)} onclick={() => flip(k)}>{WIDGET_LABEL[k]}</button>
 				{/each}
 			</div>
+		{:else}
+			<h2 id="os-first-title">¿Cómo quieres que te llame?</h2>
+			<p class="mut">Para saludarte al entrar. Se puede dejar en blanco.</p>
+			<input class="name" type="text" maxlength="40" autocomplete="given-name" aria-label="Tu nombre" placeholder="Tu nombre" bind:value={name} onkeydown={(e) => e.key === 'Enter' && finish()} />
 		{/if}
 
 		<div class="actions">
@@ -189,6 +190,19 @@
 		border-color: var(--amber-edge);
 		background: var(--amber-soft);
 		color: var(--fg);
+	}
+	.name {
+		width: 100%;
+		height: var(--control-h);
+		padding: 0 var(--sp-10);
+		border: var(--hair) solid var(--line);
+		border-radius: var(--radius-s);
+		background: var(--bg);
+		color: var(--fg);
+		font: inherit;
+	}
+	.name:focus-visible {
+		outline: var(--hair) solid var(--amber-edge);
 	}
 	.actions {
 		display: flex;
