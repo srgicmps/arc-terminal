@@ -1,6 +1,6 @@
 <!--
 	Capa del sistema de Arc OS («OS 5»): pantalla de inicio la primera vez del día, bloqueo (también con
-	Ctrl+Alt+L) y, más adelante, Alt+Tab, sonidos y el resto de la experiencia de sistema. Se monta una vez en
+	Ctrl+Alt+L), Alt+Tab visual y, más adelante, sonidos y el resto de la experiencia de sistema. Se monta una vez en
 	src/routes/os/+page.svelte, encima del escritorio. Estado en system.svelte.ts.
 -->
 <script lang="ts">
@@ -9,12 +9,15 @@
 	import { startAlerts } from './alerts.svelte.ts';
 	import Boot from './Boot.svelte';
 	import Lock from './Lock.svelte';
+	import Switcher from './Switcher.svelte';
+	import { cancel, commit, sw } from './switcher.svelte.ts';
 	import { bootDone, lock, startSystem, sys, unlock } from './system.svelte.ts';
 
 	// Arranque y, mientras dure, los avisos P1–P2 de Arc como toasts (alerts.svelte.ts).
 	onMount(() => (startSystem(), startAlerts()));
 
 	function key(e: KeyboardEvent) {
+		if (sw.open && e.key === 'Escape') return (e.preventDefault(), cancel());
 		if (sys.phase === 'on' && isShortcut(e, 'os-lock')) {
 			e.preventDefault();
 			lock();
@@ -22,10 +25,12 @@
 	}
 </script>
 
-<svelte:window onkeydown={key} />
+<svelte:window onkeydown={key} onkeyup={(e) => sw.open && e.key === 'Alt' && commit()} onblur={commit} />
 
 {#if sys.phase === 'boot'}
 	<Boot ondone={bootDone} />
 {:else if sys.phase === 'lock'}
 	<Lock onunlock={unlock} />
+{:else if sw.open}
+	<Switcher />
 {/if}

@@ -158,6 +158,7 @@
 	--os-logo-big: 56px; /* logo de la pantalla de inicio */
 	--fs-clock: 72px; /* hora de la pantalla de bloqueo */
 	--os-boot-bar: 160px; /* ancho de la barra de progreso del arranque */
+	--os-thumb-w: 168px; /* miniatura de ventana del Alt+Tab */
 	--os-lock-card: 360px; /* tarjeta de la pantalla de bloqueo */
 	--os-avatar: 56px; /* inicial del usuario en la pantalla de bloqueo */
 	/* Arc OS en el móvil (≤ 900 px): pantalla de inicio de teléfono. */
@@ -308,6 +309,89 @@
 	--os-anim-max: 200ms;
 	--os-anim-close: 160ms;
 	--os-menu-radius: 10px;
+}
+
+/*
+ * Aspecto «Mando» (centro de mando): el único estilo del escritorio de Arc OS (decisión de Sergi). Es fijo: no
+ * cambia con la estética, el acento, la densidad ni el tema de la web, que solo se aplican dentro de las apps.
+ * Por eso redefine aquí la paleta, la letra y las formas de base sobre el contenedor de /os. Pizarra muy oscura
+ * con rejilla técnica tenue, letra mono, acento frío para la estructura y ámbar para lo que importa, bordes de
+ * 1 px y esquinas casi rectas. Los --cmd-* también los usan las apps de análisis (mapa operacional, grafo,
+ * expediente, línea de tiempo y vigilancia).
+ */
+[data-os-skin] {
+	--cmd-slate: #070c12; /* fondo del escritorio */
+	--cmd-deck: #0b131b; /* barras, ventanas y paneles */
+	--cmd-cold: #6aaecf; /* acento frío: estructura, pilotos, selección */
+	--cmd-cold-dim: rgba(106, 174, 207, 0.4);
+	--cmd-cold-soft: rgba(106, 174, 207, 0.12);
+	--cmd-grid: rgba(106, 174, 207, 0.06); /* rejilla del fondo */
+	--cmd-grid-size: 24px;
+}
+
+[data-os-skin='mando'] {
+	color-scheme: dark;
+	color: var(--fg); /* el texto heredado del body sería el de la estética de la web */
+	/* Base fija (mismos nombres que la web, valores propios del OS). */
+	--bg: var(--cmd-slate);
+	--panel: var(--cmd-deck);
+	--raise: #111c27;
+	--line: #1a2734;
+	--fg: #d5dde5;
+	--muted: #818d9a;
+	--faint: #75818e;
+	--amber: #f2a83b;
+	--amber-dim: #c99447;
+	--amber-soft: rgba(242, 168, 59, 0.13);
+	--amber-edge: rgba(242, 168, 59, 0.42);
+	--on-amber: #0b131b;
+	--up: #4cc48a;
+	--down: #f0646f;
+	--neutral: #3a4654;
+	--scrim: rgba(3, 6, 10, 0.6);
+	--mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	--sans: 'IBM Plex Sans Condensed', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+	--font-ui: var(--mono);
+	--radius: 2px;
+	--radius-s: 0;
+	--border: var(--hair) solid var(--line);
+	--panel-edge: var(--cmd-cold-dim);
+	--panel-blur: none;
+	--shadow: none;
+	--shadow-pop: 0 0 0 var(--hair) var(--cmd-cold-dim), 0 12px 32px rgba(0, 0, 0, 0.5);
+	--os-desk: var(--cmd-slate);
+	--bg-image:
+		repeating-linear-gradient(var(--cmd-grid) 0 var(--hair), transparent var(--hair) var(--cmd-grid-size)),
+		repeating-linear-gradient(90deg, var(--cmd-grid) 0 var(--hair), transparent var(--hair) var(--cmd-grid-size)),
+		radial-gradient(ellipse 80% 60% at 50% 40%, var(--cmd-cold-soft), transparent 70%);
+	--os-font: var(--mono);
+	--os-bar-h: calc(var(--control-h) + var(--sp-8));
+	--os-topbar-bg: var(--cmd-deck);
+	--os-topbar-fg: var(--fg);
+	--os-topbar-hover: var(--cmd-cold-soft);
+	--os-win-bg: var(--cmd-deck);
+	--os-win-edge: var(--hair) solid var(--cmd-cold-dim);
+	--os-win-edge-active: var(--hair) solid var(--cmd-cold);
+	--os-win-radius: 2px;
+	--os-win-radius-snapped: 0;
+	--os-win-shadow: 0 0 0 var(--hair) var(--cmd-grid), 0 12px 32px rgba(0, 0, 0, 0.45);
+	--os-title-h: 26px;
+	--os-title-bg: var(--cmd-deck);
+	--os-title-bg-active: color-mix(in srgb, var(--cmd-deck) 85%, var(--cmd-cold));
+	--os-title-edge: var(--hair) solid var(--cmd-cold-dim);
+	--os-title-font: var(--mono);
+	--os-btn-w: 30px;
+	--os-btn-hover: var(--cmd-cold-soft);
+	--os-btn-close-hover: var(--down);
+	--os-snap: var(--cmd-cold-soft);
+	--os-menu-bg: var(--cmd-deck);
+	--os-menu-radius: 2px;
+	--os-icon-radius: 2px;
+	--os-anim-open: 120ms;
+	--os-open-scale: 0.985;
+	--os-anim-min: 140ms;
+	--os-anim-max: 140ms;
+	--os-anim-close: 100ms;
 }
 
 /* Pantallas táctiles: todos los controles a la zona pulsable mínima. */
