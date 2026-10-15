@@ -47,6 +47,6 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
 - [x] Iconos que encogen con el alto de la pantalla (iPhone SE y 320 px: el nombre pisaba el icono de abajo) y widgets
   que se ajustan a su hueco (`@container`).
 - [x] Widgets en franjas de 2 filas (`layout` + `rowsOf` de `home.ts`): con 4 pequeños el último se salía de la rejilla.
-- [x] Horizontal: 8 columnas y la página se desplaza (antes se apilaban los iconos). «−» de los widgets, redondo.
+- [x] «−» de los widgets, redondo (el horizontal lo hace QA OS 2, #551).
 - [x] Mantener un widget entra en el modo edición; tocar un hueco vacío lo termina. Carpetas: miniaturas 3×3 desde
   arriba a la izquierda.

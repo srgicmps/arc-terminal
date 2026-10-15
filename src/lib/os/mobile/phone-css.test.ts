@@ -19,11 +19,6 @@ describe('inicio del teléfono (CSS)', () => {
 	it('el «−» de los widgets es redondo con pantalla táctil (el min-height global lo estiraba)', () => {
 		expect(rule(home, '.minus')).toMatch(/min-height:\s*0/);
 	});
-	it('en horizontal la rejilla pasa a 8 columnas y se desplaza (6 filas no caben en 390 px de alto)', () => {
-		const land = home.split('@media (orientation: landscape)')[1] ?? '';
-		expect(land).toMatch(/repeat\(8, 1fr\)/);
-		expect(land).toMatch(/overflow-y:\s*auto/);
-	});
 	it('los widgets se ajustan a su hueco', () => {
 		expect(rule(home, '.w-l,\n\t.w-s')).toMatch(/container-type:\s*size/);
 		expect(css('./PhoneWidget.svelte')).toMatch(/@container \(max-height/);

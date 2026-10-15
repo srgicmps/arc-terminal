@@ -1008,39 +1008,6 @@
 		font-weight: var(--fw-medium);
 		cursor: pointer;
 	}
-	/* En horizontal (móvil girado) no caben 6 filas: 8 columnas y la página se desplaza en vertical. */
-	@media (orientation: landscape) and (max-height: 500px) {
-		.pager {
-			touch-action: pan-x pan-y;
-		}
-		.page {
-			container-type: normal;
-			grid-template-columns: repeat(8, 1fr);
-			grid-template-rows: none;
-			grid-auto-rows: auto;
-			grid-auto-flow: row dense;
-			row-gap: var(--sp-12);
-			overflow-y: auto;
-			scrollbar-width: none;
-		}
-		.page > .icon {
-			--os-icon-size: 44px;
-		}
-		.w-l,
-		.w-s {
-			min-height: 120px;
-		}
-		.below {
-			flex-direction: row;
-			justify-content: center;
-			gap: var(--sp-16);
-			padding: var(--sp-4) 0;
-		}
-		.dock {
-			padding: var(--sp-6) var(--sp-12);
-			--os-icon-size: 44px;
-		}
-	}
 	@keyframes zoom {
 		from {
 			opacity: 0;
