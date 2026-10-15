@@ -6,6 +6,7 @@
 	import Panel from './Panel.svelte';
 	import Seg from './ui/Seg.svelte';
 	import { parseHomeFuel, type AlertConfig } from '#lib/alertconfig.ts';
+	import { MY_FUEL_KEY } from '#lib/myfuel.ts';
 
 	let { config, set }: { config: AlertConfig; set: (patch: Partial<AlertConfig>) => void } = $props();
 
@@ -21,11 +22,11 @@
 	const on = $derived(ROWS.filter((r) => config.home[r.key]).length + (config.home.fuel ? 1 : 0));
 	let fuelMsg = $state('');
 
-	/** La favorita de FUEL (clave `arc-fuel-fav`, la marca la ☆ de cada gasolinera). */
+	/** La favorita de FUEL (src/lib/myfuel.ts, la marca la ☆ de cada gasolinera). */
 	function useFavorite() {
 		let raw: unknown = null;
 		try {
-			raw = JSON.parse(localStorage.getItem('arc-fuel-fav') ?? 'null');
+			raw = JSON.parse(localStorage.getItem(MY_FUEL_KEY) ?? 'null');
 		} catch {
 			raw = null;
 		}
