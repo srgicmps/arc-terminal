@@ -52,8 +52,35 @@ export const MACRO = [
 	{ id: 'ipc-es', file: 'ine', name: 'IPC de España', unit: '%', source: 'INE' },
 	{ id: 'gdp-us', file: 'fred', name: 'PIB de EE. UU. (anualizado)', unit: '%', source: 'BEA vía FRED' },
 	{ id: 'gdp-ea', file: 'eurostat', name: 'PIB de la zona euro (trimestral)', unit: '%', source: 'Eurostat' },
-	{ id: 'euribor-12m', file: 'ecb', name: 'Euríbor a 12 meses', unit: '%', source: 'BCE' }
+	{ id: 'euribor-12m', file: 'ecb', name: 'Euríbor a 12 meses', unit: '%', source: 'BCE' },
+	{ id: 'core-cpi-us', file: 'bls', name: 'IPC subyacente de EE. UU.', unit: '%', source: 'BLS' },
+	{ id: 'core-pce-us', file: 'fred', name: 'PCE subyacente de EE. UU.', unit: '%', source: 'BEA vía FRED' },
+	{ id: 'claims-us', file: 'fred', name: 'Peticiones de paro en EE. UU.', unit: 'miles', digits: 0, source: 'Departamento de Trabajo vía FRED' },
+	{ id: 'unemployment-ea', file: 'eurostat', name: 'Paro de la zona euro', unit: '%', source: 'Eurostat' },
+	{ id: 'unemployment-es', file: 'eurostat', name: 'Paro de España', unit: '%', source: 'Eurostat' },
+	{ id: 'esi-ea', file: 'eurostat', name: 'Sentimiento económico de la zona euro', unit: 'puntos', source: 'Comisión Europea vía Eurostat' },
+	{ id: 'consumer-conf-ea', file: 'eurostat', name: 'Confianza del consumidor de la zona euro', unit: 'puntos', source: 'Comisión Europea vía Eurostat' },
+	{ id: 'epa-es', file: 'ine', name: 'Paro de España (EPA)', unit: '%', source: 'INE' },
+	{ id: 'ipv-es', file: 'ine', name: 'Precio de la vivienda en España', unit: '%', source: 'INE' }
 ] as const;
+
+/** Récord en un dato macro: se dice si el nuevo es el máximo o el mínimo de al menos tantos años de historial. */
+export const RECORD = { minYears: 2 };
+
+/** Inventarios de petróleo de EE. UU. (eia.json): aviso cada semana nueva, si el dato tiene menos de `days` días. */
+export const EIA = { days: 8 };
+
+/**
+ * VIX (vix.json, Cboe): sube al menos `jump` % en el día, o la curva se invierte (el VIX a 1 mes pasa por
+ * encima del de 3 meses: el mercado teme más lo inmediato).
+ */
+export const VIX = { jump: 15 };
+
+/**
+ * Subastas del Tesoro de EE. UU. (auctions.json): floja si el bid-to-cover queda al menos `gap` por debajo
+ * de la media de las anteriores del mismo plazo. Solo las de `days` días como mucho.
+ */
+export const AUCTIONS = { gap: 0.15, days: 3 };
 
 /**
  * Riesgo macro (fred.json; 'hy-us' llega con el #213 y 'fed-net-liquidity' con el #179: sin ellas, no hay aviso).
