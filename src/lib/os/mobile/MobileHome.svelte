@@ -19,6 +19,7 @@
 	import { markSeen as seenWith } from '../shell/notices.ts';
 	import { EVENTS_KEY, isEvents, isoDay } from '../apps/cal/cal.ts';
 	import { APPS, appOfPath, embedSrc, findApp } from '../apps.ts';
+	import { onEmbedLink } from '../embed.ts';
 	import { closeNow, os, phoneOpen } from '../os.svelte.ts';
 	import {
 		ARRANGE_KEY,
@@ -484,6 +485,19 @@
 		return () => (vv.removeEventListener('resize', fit), vv.removeEventListener('scroll', fit));
 	});
 
+	/** Un enlace de una app a otra (TOP → «LUZ ›») abre la otra a pantalla completa; los suyos navegan dentro. */
+	function links(frame: HTMLIFrameElement, id: string) {
+		return {
+			destroy: onEmbedLink(frame, (href) => {
+				const path = base && href.startsWith(base + '/') ? href.slice(base.length) : href;
+				const to = appOfPath(path) as PhoneApp | undefined;
+				if (!to || to.id === id) return false;
+				launch(to, path);
+				return true;
+			})
+		};
+	}
+
 	/** Lo que se carga en el iframe de cada app abierta. */
 	const src = (id: string) => base + embedSrc(paths[id] ?? appOf(id)?.href ?? '/');
 </script>
@@ -589,7 +603,7 @@
 									<mod.default win={wins[id] ?? id} />
 								{/await}
 							{:else}
-								<iframe src={src(id)} title={a.name}></iframe>
+								<iframe src={src(id)} title={a.name} use:links={id}></iframe>
 							{/if}
 						</div>
 						{#if sheet === 'switch'}
