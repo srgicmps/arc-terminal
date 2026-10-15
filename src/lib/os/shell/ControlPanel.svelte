@@ -131,7 +131,7 @@
 	:global([data-os-skin='mac']) .control,
 	:global([data-os-skin='linux']) .control {
 		top: calc(var(--os-bar-h) + var(--sp-12));
-		bottom: var(--sp-12);
+		bottom: calc(var(--os-strip-h, 0px) + var(--sp-12));
 	}
 	:global([data-os-skin='mac']) .control {
 		bottom: calc(var(--os-dock-h) + var(--sp-12));
