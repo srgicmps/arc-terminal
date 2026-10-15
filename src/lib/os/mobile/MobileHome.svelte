@@ -94,8 +94,8 @@
 <div class="phone" role="application" aria-label="Modo OS: inicio" {ontouchstart} {ontouchend}>
 	<header class="status">
 		<span class="t">{time}</span>
-		<button class="bell" onclick={() => (notices = true)} aria-label="Notificaciones" aria-expanded={notices}>
-			<span aria-hidden="true">◔</span>
+		<button class="bell" onclick={() => (notices = true)} aria-expanded={notices}>
+			<span class="bl">Avisos</span>
 			{#if changes.length}<i class="dot" aria-hidden="true"></i>{/if}
 		</button>
 	</header>
@@ -122,7 +122,7 @@
 					{#each list as a (a.id)}
 						<li>
 							<button class="app" onclick={() => open(a)}>
-								<span class="ic" class:mono={!a.icon} aria-hidden="true">{glyph(a)}</span>
+								<span class="ic" class:mono={!a.icon} class:long={glyph(a).length > 4} aria-hidden="true">{glyph(a)}</span>
 								<span class="name">{a.title}</span>
 							</button>
 						</li>
@@ -141,7 +141,7 @@
 	<nav class="dock" aria-label="Dock">
 		{#each dock as a (a.id)}
 			<button class="app" onclick={() => open(a)}>
-				<span class="ic" class:mono={!a.icon} aria-hidden="true">{glyph(a)}</span>
+				<span class="ic" class:mono={!a.icon} class:long={glyph(a).length > 4} aria-hidden="true">{glyph(a)}</span>
 				<span class="name">{a.title}</span>
 			</button>
 		{/each}
@@ -333,6 +333,7 @@
 		min-height: var(--touch);
 	}
 	.ic {
+		overflow: hidden;
 		display: grid;
 		place-items: center;
 		width: 56px;
@@ -348,6 +349,10 @@
 		font-size: var(--fs-s);
 		font-weight: var(--fw-bold);
 		letter-spacing: var(--track-code);
+	}
+	.ic.mono.long {
+		font-size: var(--fs-xxs);
+		letter-spacing: 0;
 	}
 	.ic.sm {
 		width: 32px;
@@ -372,6 +377,8 @@
 		padding: var(--sp-6) 0;
 	}
 	.dots button {
+		flex: none;
+		min-height: 0;
 		width: var(--sp-6);
 		height: var(--sp-6);
 		border-radius: 50%;

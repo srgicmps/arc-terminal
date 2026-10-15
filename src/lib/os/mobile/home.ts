@@ -49,5 +49,5 @@ export function findApps(apps: MobileApp[], q: string): MobileApp[] {
 	return apps.filter((a) => fold(`${a.title} ${a.code ?? ''}`).includes(w));
 }
 
-/** Monograma del icono: el carácter propio o las 2-4 primeras letras del código. */
-export const glyph = (a: MobileApp) => a.icon ?? (a.code ?? a.title).slice(0, 4);
+/** Icono: el carácter propio o, sin él, el código entero como monograma (los largos, en letra menor). */
+export const glyph = (a: MobileApp) => a.icon ?? a.code ?? a.title.slice(0, 3);
