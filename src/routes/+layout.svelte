@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { edgeFade } from '#lib/edgefade.ts';
 	import { onRowKey } from '#lib/rownav.ts';
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import { routeHref } from '#lib/routes.ts';
@@ -259,7 +260,7 @@
 		</Menu>
 	</header>
 
-	<nav class="keys" data-ui="keys" aria-label="Secciones">
+	<nav class="keys" data-ui="keys" aria-label="Secciones" use:edgeFade>
 		{#each visibleKeys as key (key.code)}
 			<a
 				class="key"
@@ -716,12 +717,11 @@
 		}
 
 		/* Accesos en una sola fila que se desliza en horizontal: la cabecera ocupa una línea menos. Un fundido
-		   muy leve a la derecha avisa de que hay más; el de la vista actual se trae a la vista al cambiar. */
+		   muy leve en el lado por el que sigue (data-fade, src/lib/edgefade.ts) avisa de que hay más; el de la vista actual se trae a la vista al cambiar. */
 		.keys {
 			flex-wrap: nowrap;
 			overflow-x: auto;
 			scrollbar-width: none;
-			mask-image: linear-gradient(to right, var(--bg) calc(100% - var(--sp-24)), transparent);
 		}
 
 		.keys::-webkit-scrollbar {
