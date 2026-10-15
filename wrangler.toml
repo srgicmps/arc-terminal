@@ -1,7 +1,7 @@
 # Cloudflare Pages (arcterminal.dev). Lo lee `wrangler pages deploy` en las Actions (deploy.yml y fast.yml).
-# Sin secretos: el id de la base D1 y los datos de Access llegan en la publicación desde las Variables de
-# GitHub (D1_DATABASE_ID, ACCESS_TEAM_DOMAIN, ACCESS_AUD), que sustituyen los marcadores de abajo. Si faltan,
-# se publica sin este archivo y /api/prefs responde «sin configurar» (la web sigue igual, sin cuentas).
+# Sin secretos: scripts/cf-config.ts sustituye los marcadores de abajo al publicar (busca o crea la base D1 y lee
+# el AUD de Access con la API de Cloudflare). Si no puede, se publica sin este archivo y /api/* responde «sin
+# configurar» (la web sigue igual, sin cuentas).
 name = "arc-terminal"
 pages_build_output_dir = "build"
 compatibility_date = "2026-10-01"

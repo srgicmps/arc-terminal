@@ -136,13 +136,15 @@ jobs:
       - if: steps.cfbuild.outcome == 'success'
         continue-on-error: true
         run: |
-          bash scripts/cf-config.sh
+          node scripts/cf-config.ts
           npx --yes wrangler@4.145.0 pages project create arc-terminal --production-branch=main || true
           npx --yes wrangler@4.145.0 pages deploy build --project-name=arc-terminal --branch=main --commit-dirty=true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # Ajustes por usuario (functions/, cloud/): Variables de GitHub, no secretas. Ver scripts/cf-config.sh.
+          # Ajustes y avisos por usuario (functions/, cloud/): cf-config.ts saca la base D1 y Access con la API.
+          # Las Variables son opcionales (por si el token no tiene esos permisos). SITE_URL: qué web protege Access.
+          SITE_URL: ${{ vars.SITE_URL }}
           D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}
           ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
           ACCESS_AUD: ${{ vars.ACCESS_AUD }}

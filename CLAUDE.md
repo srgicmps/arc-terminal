@@ -57,9 +57,11 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   Access **verificado** con las claves del equipo (`cloud/access.ts`), nunca de una cabecera suelta. Solo se guardan
   las claves «portables» de `prefs.ts` (las de `transfer.ts`), con topes de tamaño. En el navegador,
   `src/lib/cloud.svelte.ts` (fusión a tres bandas en `cloud.ts`): localStorage sigue siendo la caché y el modo sin
-  conexión; la primera vez sube lo que haya (migración). `wrangler.toml` no lleva secretos: `scripts/cf-config.sh`
-  lo rellena al publicar con las Variables de GitHub `D1_DATABASE_ID`, `ACCESS_TEAM_DOMAIN` y `ACCESS_AUD` (sin ellas,
-  /api/prefs responde 503 y la web va igual, solo en local). En GitHub Pages no hay API: todo sigue en el navegador.
+  conexión; la primera vez sube lo que haya (migración). `wrangler.toml` no lleva secretos: `scripts/cf-config.ts`
+  lo rellena al publicar con la API de Cloudflare (crea la base si no está, lee el AUD de la app de Access y el dominio
+  del equipo; el token necesita D1 · Edit y Access: Apps and Policies y Organizations · Read). Las Variables
+  `D1_DATABASE_ID`, `ACCESS_TEAM_DOMAIN` y `ACCESS_AUD` son opcionales y mandan. Sin nada, /api/* responde 503 y la web
+  va igual, solo en local. En GitHub Pages no hay API: todo sigue en el navegador.
 - **Transición**: GitHub Pages sigue publicando la misma web en https://srgicmps.github.io/arc-terminal/ (por eso
   `paths.base` es `/arc-terminal` salvo con `BASE_PATH` vacío, que usa el build de Cloudflare) hasta que Sergi
   confirme que la nueva va bien; luego se apaga en otro PR.
