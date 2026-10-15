@@ -90,9 +90,11 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   `seen` que apunta `/api/prefs`; avisos), invitar o quitar emails de la política de Access «Sergi» (Variable
   `ACCESS_POLICY` si se llama distinto) con los Secrets de Pages `CF_ACCESS_ADMIN_TOKEN` (Access: Apps and Policies ·
   Edit) y `CF_ACCOUNT_ID`, y las sugerencias. Quitar cierra su sesión y borra sus datos de D1.
-- **Órdenes desde la barra** (D41): «alerta NVDA > 150», «+NVDA», «vigila aranceles» abren un issue ya escrito
-  (`src/lib/useralerts.ts`); `notify.ts` lee con `scripts/requests.ts` solo los issues abiertos **del dueño**,
-  los aplica (`scripts/alerts/user.ts`) y cierra la alerta al avisar. Los issues son públicos.
+- **Alertas propias** (F14, antes D41 con issues): «alerta NVDA > 150», «+NVDA», «vigila aranceles» se guardan en la
+  cuenta de cada uno (`prices`, `mis`, `words` de `alertconfig.ts`, `/api/alerts`; panel «Tus alertas» en AVISOS). A
+  cada uno le llegan por su tema; las de Sergi (Secret de Pages `ADMIN_EMAIL`) salen por `NTFY_TOPIC` como siempre.
+  Al avisar, la Action las borra (`?fired=1`). Los issues que queden se pasan a la cuenta de Sergi y se cierran
+  (`?migrate=1`, `scripts/requests.ts`); nada privado en `notify-log.json`.
 
 ## Stack
 - SvelteKit con `adapter-static` + TypeScript, Svelte 5 (runes).
