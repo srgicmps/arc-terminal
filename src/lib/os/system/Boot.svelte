@@ -1,5 +1,5 @@
 <!--
-	Pantalla de inicio de Arc OS: el logo y una barra de progreso, un par de segundos, la primera vez del día.
+	Pantalla de inicio de Arc OS: el logo y una barra fina de progreso, menos de un segundo, la primera vez del día.
 	Se salta con un clic o cualquier tecla. Con prefers-reduced-motion, apenas un instante y sin animación.
 -->
 <script lang="ts">
@@ -14,7 +14,7 @@
 	$effect(() => {
 		el?.focus();
 		const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-		const each = reduced ? 120 : 420;
+		const each = reduced ? 80 : 200; // unos 0,8 s en total
 		const id = setInterval(() => {
 			if (step < BOOT_STEPS.length - 1) step++;
 			else (clearInterval(id), setTimeout(ondone, each));
@@ -80,7 +80,7 @@
 		display: block;
 		height: 100%;
 		background: var(--amber);
-		transition: width 380ms ease-out;
+		transition: width 180ms ease-out;
 	}
 
 	.step,

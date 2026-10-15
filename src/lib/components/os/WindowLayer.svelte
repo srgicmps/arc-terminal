@@ -33,6 +33,8 @@
 	 * del navegador: no se pueden usar. Devuelve si era un atajo.
 	 */
 	export function handleKey(e: Key): boolean {
+		// Ctrl+Alt+T: una Terminal nueva, como en Linux (OS 3, src/lib/os/apps/terminal.ts).
+		if (e.ctrlKey && e.altKey && e.code === 'KeyT') return (openApp('terminal'), true);
 		const f = focusedWin();
 		if (e.metaKey && !e.altKey && !e.ctrlKey && f) {
 			const to: Record<string, Snap | null> = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'max', ArrowDown: null };

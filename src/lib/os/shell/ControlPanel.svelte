@@ -9,17 +9,13 @@
 	import StylePicker from '#lib/components/StylePicker.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { cloud } from '#lib/cloud.svelte.ts';
+	import * as os from './bridge.ts';
 	import { setBar, setWallpaper, setWidgets, shell, WALLPAPERS, type Wallpaper } from './shell.svelte.ts';
-	import type { DeskInfo } from './types.ts';
+	import SkinPicker from './SkinPicker.svelte';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from './widgets.ts';
 
-	interface Props {
-		desks: DeskInfo[];
-		deskW: number;
-		onnavigate: (href: string) => void;
-		onadddesk?: () => void;
-	}
-	let { desks, deskW, onnavigate, onadddesk }: Props = $props();
+	const desks = $derived(os.desks());
+	const deskW = $derived(os.deskW());
 
 	let admin = $state(false);
 	onMount(async () => {
@@ -34,14 +30,14 @@
 	$effect(() => setBar(bar));
 	$effect(() => setWallpaper(wallpaper));
 
-	const current = $derived(shell.widgets ?? defaultWidgets(deskW));
+	const current = $derived(shell.widgets ?? defaultWidgets(deskW, shell.skin));
 	const has = (k: WidgetKind) => current.some((w) => w.kind === k);
 	function flip(k: WidgetKind) {
 		setWidgets(has(k) ? removeWidget(current, k) : addWidget(current, k, deskW));
 	}
 	function go(href: string) {
 		shell.open = null;
-		onnavigate(href);
+		os.navigate(href);
 	}
 </script>
 
@@ -52,14 +48,21 @@
 	</header>
 	<div class="scroll">
 		<section>
+			<h3>Aspecto del escritorio</h3>
+			<SkinPicker />
+		</section>
+		<section>
 			<h3>Apariencia</h3>
+			<p class="mut">Colores y letra de todo Arc (la estética).</p>
 			<StylePicker />
 			<div class="row">
 				<Seg label="Fondo del escritorio" options={WALLPAPERS.map((w) => ({ value: w.id, label: w.label }))} bind:value={wallpaper} />
 			</div>
-			<div class="row">
-				<Seg label="Barra de tareas" options={[{ value: 'bottom', label: 'Barra abajo' }, { value: 'top', label: 'Barra arriba' }]} bind:value={bar} />
-			</div>
+			{#if shell.skin === 'windows'}
+				<div class="row">
+					<Seg label="Barra de tareas" options={[{ value: 'bottom', label: 'Barra abajo' }, { value: 'top', label: 'Barra arriba' }]} bind:value={bar} />
+				</div>
+			{/if}
 		</section>
 		<section>
 			<h3>Escritorio</h3>
@@ -70,7 +73,7 @@
 				{/each}
 			</div>
 			<p class="mut">Escritorios: {desks.length || 1}.</p>
-			{#if onadddesk}<button type="button" class="link" onclick={onadddesk}>Añadir escritorio</button>{/if}
+			<button type="button" class="link" onclick={os.addDesk}>Añadir escritorio</button>
 		</section>
 		<section>
 			<h3>Avisos</h3>
@@ -85,6 +88,11 @@
 				<p class="mut">Sin cuenta: los ajustes se quedan en este navegador.</p>
 			{/if}
 		</section>
+		<section>
+			<h3>Arc OS</h3>
+			<p class="mut">Es opcional: puedes volver a la web de siempre cuando quieras (y entrar otra vez con OS).</p>
+			<button type="button" class="link" onclick={os.leave}>Volver a la web clásica</button>
+		</section>
 		{#if admin}
 			<section>
 				<h3>Administración</h3>
@@ -95,6 +103,14 @@
 </div>
 
 <style>
+	/* Botones de la shell sin el borde ni el fondo que algunas estéticas dan a todos los botones. */
+	button {
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
 	.control {
 		position: fixed;
 		right: var(--sp-12);
@@ -109,9 +125,15 @@
 		border-radius: var(--radius);
 		box-shadow: var(--shadow-pop);
 	}
-	:global(.os-top) .control {
+	/* Con la barra arriba (Windows subida, Mac y Linux), el panel baja; con el dock del Mac, deja su hueco. */
+	:global([data-os-bar='top']) .control,
+	:global([data-os-skin='mac']) .control,
+	:global([data-os-skin='linux']) .control {
 		top: calc(var(--os-bar-h) + var(--sp-12));
 		bottom: var(--sp-12);
+	}
+	:global([data-os-skin='mac']) .control {
+		bottom: calc(var(--os-dock-h) + var(--sp-12));
 	}
 	header {
 		display: flex;
