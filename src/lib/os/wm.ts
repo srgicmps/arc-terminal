@@ -52,6 +52,9 @@ export const MIN_W = 280;
 export const MIN_H = 160;
 /** Lo que se queda siempre a la vista de una ventana arrastrada fuera (para poder recuperarla). */
 export const KEEP = 48;
+/** Por la izquierda se queda más: a la derecha de la barra de título van los botones (90 px en Mando), y con solo
+ *  KEEP px a la vista no quedaba título por donde agarrarla. */
+export const KEEP_LEFT = 144;
 
 /** Capa de las ventanas «siempre encima» (se suma a z al pintar). */
 export const TOP_LAYER = 1000;
@@ -70,16 +73,17 @@ export const findWin = (s: OsState, uid: string): Win | undefined => s.desks.fla
 const deskOf = (s: OsState, uid: string) => s.desks.find((d) => d.wins.some((w) => w.uid === uid));
 const topZ = (d: Desk) => d.wins.reduce((z, w) => Math.max(z, w.z), 0);
 
-/** La ventana que tiene el foco: la última usada que no está minimizada («siempre encima» solo cambia cómo se pinta). */
-export function focused(d: Desk): Win | undefined {
-	return d.wins.filter((w) => !w.min).sort((a, b) => b.z - a.z)[0];
+/** La ventana que tiene el foco: la última usada que no está minimizada ni cerrándose (`skip`, los uid que se
+ *  están cerrando); «siempre encima» solo cambia cómo se pinta. */
+export function focused(d: Desk, skip: readonly string[] = []): Win | undefined {
+	return d.wins.filter((w) => !w.min && !skip.includes(w.uid)).sort((a, b) => b.z - a.z)[0];
 }
 
 /** Recoloca un rectángulo para que no salga del escritorio (o deje al menos KEEP px a la vista) y lo ajusta a la rejilla. */
 export function fit(r: Rect, area: { w: number; h: number }): Rect {
 	const w = clamp(snapTo(r.w), MIN_W, Math.max(MIN_W, area.w));
 	const h = clamp(snapTo(r.h), MIN_H, Math.max(MIN_H, area.h));
-	return { w, h, x: clamp(snapTo(r.x), KEEP - w, Math.max(0, area.w - KEEP)), y: clamp(snapTo(r.y), 0, Math.max(0, area.h - KEEP)) };
+	return { w, h, x: clamp(snapTo(r.x), KEEP_LEFT - w, Math.max(0, area.w - KEEP)), y: clamp(snapTo(r.y), 0, Math.max(0, area.h - KEEP)) };
 }
 
 /** El rectángulo de un encaje en un escritorio de ese tamaño. */
@@ -183,14 +187,56 @@ export function snapWin(s: OsState, uid: string, snap: Snap | null, area: { w: n
 	Object.assign(w, snapRect(snap, area));
 }
 
+/** Por dónde se agarra para cambiar el tamaño: los cuatro bordes y las cuatro esquinas. */
+export type Edge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+export const EDGES: readonly Edge[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
+
+/** El rectángulo al arrastrar un borde o una esquina dx, dy px: el lado contrario se queda quieto y no baja de
+ *  MIN_W × MIN_H (antes la silueta encogía hasta 0 y al soltar daba un salto). Arriba no sale del escritorio. */
+export function resizeRect(r: Rect, edge: Edge, dx: number, dy: number): Rect {
+	let { x, y, w, h } = r;
+	if (edge.includes('e')) w = Math.max(MIN_W, snapTo(r.w + dx));
+	if (edge.includes('s')) h = Math.max(MIN_H, snapTo(r.h + dy));
+	if (edge.includes('w')) {
+		w = Math.max(MIN_W, snapTo(r.w - dx));
+		x = r.x + r.w - w;
+	}
+	if (edge.includes('n')) {
+		h = Math.max(MIN_H, snapTo(r.h - Math.max(dy, -r.y)));
+		y = r.y + r.h - h;
+	}
+	return { x, y, w, h };
+}
+
+/**
+ * ⌘/Super + flechas, como en Windows: ← y → a una mitad; ↑ y ↓ desde una mitad la pasan a su cuarto de arriba o
+ * de abajo (y desde un cuarto, de vuelta a la mitad); ↑ desde suelta o desde arriba, a pantalla entera. ↓ desde
+ * maximizada la devuelve a su sitio y, suelta, la minimiza ('min').
+ */
+export function superSnap(cur: Snap | undefined, key: 'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown'): Snap | null | 'min' {
+	if (key === 'ArrowLeft') return 'left';
+	if (key === 'ArrowRight') return 'right';
+	const side = cur === 'left' || cur === 'top-left' || cur === 'bottom-left' ? 'left' : cur === 'right' || cur === 'top-right' || cur === 'bottom-right' ? 'right' : null;
+	if (key === 'ArrowUp') {
+		if (cur === 'left' || cur === 'right') return `top-${cur}`;
+		if (cur === 'bottom-left' || cur === 'bottom-right') return side;
+		return 'max';
+	}
+	if (cur === 'left' || cur === 'right') return `bottom-${cur}`;
+	if (cur === 'top-left' || cur === 'top-right') return side;
+	if (cur === 'bottom-left' || cur === 'bottom-right') return cur;
+	return cur ? null : 'min';
+}
+
 export const toggleMax = (s: OsState, uid: string, area: { w: number; h: number }) => snapWin(s, uid, 'max', area);
 
-/** Al cambiar el tamaño del escritorio: los encajes se recalculan y las demás vuelven dentro. */
+/** Al cambiar el tamaño del escritorio: los encajes se recalculan y las que se salen vuelven dentro. Las que caben
+ *  se quedan tal cual: fit() las pasaría a la rejilla de 8 px y el mosaico, al recargar, se salía por abajo. */
 export function relayout(s: OsState, area: { w: number; h: number }): void {
 	for (const d of s.desks)
 		for (const w of d.wins) {
 			if (w.snap) Object.assign(w, snapRect(w.snap, area));
-			else Object.assign(w, fit(w, area));
+			else if (w.x < 0 || w.y < 0 || w.x + w.w > area.w || w.y + w.h > area.h) Object.assign(w, fit(w, area));
 		}
 }
 

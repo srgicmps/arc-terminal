@@ -185,10 +185,12 @@ export const removeWidget = (a: Arrangement, id: WidgetId): Arrangement => ({ ..
 export const folderName = (sections: (string | undefined)[]) =>
 	sections[0] && sections.every((s) => s === sections[0]) ? sections[0] : 'Carpeta';
 
-/** Las páginas de inicio: widgets en la primera y, después, las casillas en tu orden. */
 /**
- * La primera página lleva los widgets entre los iconos: el primero arriba, dos filas de apps y los demás debajo; lo
- * que sobra, apps. Las siguientes, solo apps. Las del dock no se repiten.
+ * Las páginas de inicio. La primera lleva los widgets entre los iconos, en franjas de 2 filas: un widget grande
+ * ocupa una franja; dos pequeños, una (se emparejan en tu orden aunque haya uno grande en medio); uno pequeño suelto,
+ * media con 4 apps al lado. La primera franja arriba, dos filas de apps y la otra debajo; lo que sobra, apps. Las
+ * siguientes páginas, solo apps. Las del dock no se repiten. Así nada se sale de las 6 filas (con 4 widgets pequeños
+ * el último quedaba en una séptima fila, cortado).
  */
 export function layout(apps: PhoneApp[], a: Arrangement = arrange(null, apps.map((x) => x.id))): Cell[][] {
 	const byId = new Map(apps.map((x) => [x.id, x]));
@@ -200,14 +202,49 @@ export function layout(apps: PhoneApp[], a: Arrangement = arrange(null, apps.map
 	let i = 0;
 	const take = (n: number): Cell[] => rest.slice(i, (i += n));
 	const widget = (id: WidgetId): Cell => ({ kind: 'widget', id, size: sizeOf(id) });
+	// Franjas: [grande] o [pequeño, pequeño] o [pequeño] (este, con 4 apps al lado).
+	const bands: WidgetId[][] = [];
+	const smalls = a.widgets.filter((w) => sizeOf(w) === 's');
+	for (const w of a.widgets) {
+		if (sizeOf(w) === 'l') bands.push([w]);
+		else if (smalls[0] === w) bands.push(smalls.splice(0, 2));
+	}
+	const band = (ws: WidgetId[]): Cell[] => [...ws.map(widget), ...(ws.length === 1 && sizeOf(ws[0]) === 's' ? take(COLS) : [])];
 	const first: Cell[] = [];
-	const [top, ...more] = a.widgets;
-	if (top) first.push(widget(top), ...take(COLS * 2));
-	first.push(...more.map(widget));
+	const [top, ...more] = bands;
+	if (top) first.push(...band(top), ...take(COLS * 2));
+	for (const b of more) first.push(...band(b));
 	first.push(...take(CELLS - used(first)));
 	const pages: Cell[][] = [first];
 	while (i < rest.length) pages.push(take(CELLS));
 	return pages;
+}
+
+/**
+ * Filas que ocupa una página en la rejilla de 4 columnas, colocando las casillas como el navegador (auto-placement
+ * de CSS Grid, sin `dense`). Sirve para comprobar que nada pasa de ROWS.
+ */
+export function rowsOf(page: Cell[]): number {
+	const taken: boolean[][] = [];
+	const free = (r: number, c: number) => !taken[r]?.[c];
+	let r = 0;
+	let c = 0;
+	let rows = 0;
+	for (const cell of page) {
+		const w = cell.kind === 'widget' ? (cell.size === 'l' ? COLS : 2) : 1;
+		const h = cell.kind === 'widget' ? 2 : 1;
+		for (;;) {
+			if (c + w > COLS) (r++, (c = 0));
+			let ok = true;
+			for (let y = r; y < r + h && ok; y++) for (let x = c; x < c + w && ok; x++) ok = free(y, x);
+			if (ok) break;
+			c++;
+		}
+		for (let y = r; y < r + h; y++) for (let x = c; x < c + w; x++) (taken[y] ??= [])[x] = true;
+		rows = Math.max(rows, r + h);
+		c += w;
+	}
+	return rows;
 }
 
 /** Casillas que ocupa una página (para comprobar que nada se sale de la rejilla). */
@@ -219,6 +256,47 @@ export const dockApps = (apps: PhoneApp[], dock: readonly string[] = DOCK) =>
 // ---- Multitarea: las apps abiertas, de la última a la primera ----
 
 /** Apps que se quedan vivas a la vez (cada una es un iframe: más pesaría demasiado en un móvil). */
+/**
+ * Una ruta de la web que no es de ninguna app (la ficha de un valor, «/s?sym=NVDA»): se abre igual, a pantalla
+ * completa, con una app de paso que no está en inicio. Su id empieza por «web:».
+ */
+export function webApp(path: string, name?: string): PhoneApp {
+	const sym = /^\/s\?sym=([^&#]+)/.exec(path);
+	return { id: `web:${path}`, name: name ?? (sym ? decodeURIComponent(sym[1]) : path), icon: '◆', href: path };
+}
+
+/**
+ * Con el teclado en pantalla, el hueco visible (visualViewport) que debe ocupar el teléfono; null sin teclado o con
+ * zoom de pellizco (entonces manda el navegador).
+ */
+export function keyboardFit(vv: { height: number; offsetTop: number; scale: number }, innerHeight: number): { top: number; h: number } | null {
+	return Math.abs(vv.scale - 1) < 0.01 && innerHeight - vv.height > 120 ? { top: vv.offsetTop, h: vv.height } : null;
+}
+
+/** Apps abiertas del teléfono en esta pestaña (sessionStorage): sobreviven a una recarga, como en el escritorio. */
+export const SESSION_KEY = 'arc-os-phone-session';
+/** `entry`: había algo abierto (app, hoja o carpeta), así que la entrada actual del historial es del teléfono. */
+export type PhoneSession = { open: string[]; current: string | null; paths: Record<string, string>; names: Record<string, string>; entry: boolean };
+
+/** Lee la sesión guardada: solo apps que existen (`known`) o rutas de paso («web:/s?sym=X»), como mucho MAX_OPEN. */
+export function readSession(raw: string | null, known: (id: string) => boolean): PhoneSession {
+	const none: PhoneSession = { open: [], current: null, paths: {}, names: {}, entry: false };
+	let v: unknown;
+	try {
+		v = JSON.parse(raw ?? 'null');
+	} catch {
+		return none;
+	}
+	if (!v || typeof v !== 'object') return none;
+	const o = v as Record<string, unknown>;
+	const ok = (id: unknown): id is string => typeof id === 'string' && (known(id) || /^web:\//.test(id));
+	const open = (Array.isArray(o.open) ? o.open.filter(ok) : []).filter((id, i, a) => a.indexOf(id) === i).slice(0, MAX_OPEN);
+	const strings = (x: unknown) =>
+		Object.fromEntries(Object.entries(x && typeof x === 'object' ? x : {}).filter(([k, p]) => open.includes(k) && typeof p === 'string')) as Record<string, string>;
+	const paths = Object.fromEntries(Object.entries(strings(o.paths)).filter(([, p]) => p.startsWith('/')));
+	return { open, current: ok(o.current) && open.includes(o.current) ? o.current : null, paths, names: strings(o.names), entry: o.entry === true };
+}
+
 export const MAX_OPEN = 4;
 
 export function touch(list: string[], id: string, max = MAX_OPEN): string[] {
@@ -260,21 +338,23 @@ export const badgeText = (n: number) => (n > 99 ? '99+' : String(n));
 export type Edge = 'notif' | 'control' | 'spot' | 'home' | 'switch' | null;
 
 /**
- * Qué hace un deslizamiento. Desde arriba, a la izquierda, notificaciones; a la derecha, centro de control. En la
- * pantalla de inicio, hacia abajo por el medio, Spotlight. Desde la barra de abajo de una app: corto, a inicio;
- * largo (más de un cuarto de pantalla), multitarea.
+ * Qué hace un deslizamiento. Desde arriba (la barra de estado: `top`, su borde de abajo, con la zona segura del
+ * iPhone), a la izquierda, notificaciones; a la derecha, centro de control. En la pantalla de inicio, hacia abajo
+ * por el medio, Spotlight. Desde la barra de abajo de una app: corto, a inicio; largo (más de un 35 % de la
+ * pantalla) o parando el dedo antes de soltar (`paused`, como en iOS), multitarea.
  */
 export function gesture(
 	start: { x: number; y: number },
 	end: { x: number; y: number },
 	size: { w: number; h: number },
-	inApp: boolean
+	inApp: boolean,
+	{ top = 48, paused = false }: { top?: number; paused?: boolean } = {}
 ): Edge {
 	const dx = end.x - start.x;
 	const dy = end.y - start.y;
 	if (Math.abs(dy) < 50 || Math.abs(dx) > Math.abs(dy)) return null;
-	if (start.y < 48 && dy > 0) return start.x < size.w / 2 ? 'notif' : 'control';
-	if (inApp && start.y > size.h - 40 && dy < 0) return -dy > size.h / 4 ? 'switch' : 'home';
-	if (!inApp && dy > 0 && start.y > 48) return 'spot';
+	if (start.y < top && dy > 0) return start.x < size.w / 2 ? 'notif' : 'control';
+	if (inApp && start.y > size.h - 40 && dy < 0) return -dy > size.h * 0.35 || (paused && -dy > size.h / 10) ? 'switch' : 'home';
+	if (!inApp && dy > 0 && start.y >= top) return 'spot';
 	return null;
 }

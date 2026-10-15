@@ -24,5 +24,8 @@ describe('textos', () => {
 	it('nombres y frase', () => {
 		expect(areaName('Pakistan – Baluchistan and Khyber Pakhtunkhwa provinces')).toBe('Pakistán (Baluchistan y Khyber Pakhtunkhwa)');
 		expect(czibSentence([])).toBe('');
+		// Con un solo boletín, en singular.
+		const one = parseCzibs(HTML).slice(0, 1);
+		expect(czibSentence(one)).toContain('sobre una zona:');
 	});
 });

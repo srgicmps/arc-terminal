@@ -13,13 +13,15 @@ export function recent<T extends { time: string | null }>(items: T[], now: numbe
 			const t = i.time ? Date.parse(i.time) : NaN;
 			return Number.isFinite(t) && t >= from && t <= now + 3_600_000;
 		})
-		.sort((a, b) => (b.time ?? '').localeCompare(a.time ?? ''));
+		.sort((a, b) => Date.parse(b.time!) - Date.parse(a.time!));
 }
 
 /** La cotización más reciente de un símbolo entre varias listas (Finnhub usa «BRK.B»; la barra, «BRK.B» también). */
 export function latestQuote(code: string, ...lists: (Quote[] | null | undefined)[]): Quote | null {
 	const all = lists.flatMap((l) => l ?? []).filter((q) => q.symbol === code && q.changePct !== null);
-	return all.sort((a, b) => (b.time ?? '').localeCompare(a.time ?? ''))[0] ?? null;
+	// Por fecha de verdad, no como texto: «…+02:00» y «…Z» no se ordenan bien alfabéticamente. Sin hora, al final.
+	const at = (q: Quote) => (q.time ? Date.parse(q.time) : NaN) || 0;
+	return all.sort((a, b) => at(b) - at(a))[0] ?? null;
 }
 
 /** Frase corta para el modo Sencillo: «NVIDIA sube un 2,3 % hoy y sale en 4 titulares de las últimas 24 h». */

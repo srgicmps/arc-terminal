@@ -204,19 +204,27 @@ export interface Sort {
 	dir: 1 | -1;
 }
 
+/** Ubicación que se enseña: en la papelera, de dónde venía (que «Papelera» no dice nada). */
+export const shownWhere = (i: Item) => i.trashed?.from ?? i.where;
+/** Fecha que se enseña: en la papelera, cuándo se tiró. */
+export const shownAt = (i: Item) => i.trashed?.at ?? i.at;
+
 /** Carpetas siempre primero; luego por la columna (y, a igualdad, por nombre). */
 export function sortItems(items: Item[], sort: Sort, whereName: (loc: string) => string = (l) => l): Item[] {
-	const key = (i: Item) => (sort.col === 'name' ? i.name : sort.col === 'type' ? i.type : sort.col === 'where' ? whereName(i.where) : '');
+	const key = (i: Item) => (sort.col === 'name' ? i.name : sort.col === 'type' ? i.type : sort.col === 'where' ? whereName(shownWhere(i)) : '');
 	return [...items].sort((a, b) => {
 		const f = Number(b.kind === 'folder') - Number(a.kind === 'folder');
 		if (f) return f;
-		const c = sort.col === 'at' ? (a.at ?? 0) - (b.at ?? 0) : key(a).localeCompare(key(b), 'es', { sensitivity: 'base', numeric: true });
+		const c = sort.col === 'at' ? (shownAt(a) ?? 0) - (shownAt(b) ?? 0) : key(a).localeCompare(key(b), 'es', { sensitivity: 'base', numeric: true });
 		return c * sort.dir || a.name.localeCompare(b.name, 'es', { numeric: true });
 	});
 }
 
 /** Clic en la cabecera de una columna: la misma cambia el sentido; otra, ascendente (las fechas, de nueva a vieja). */
 export const toggleSort = (s: Sort, col: SortCol): Sort => (s.col === col ? { col, dir: s.dir === 1 ? -1 : 1 } : { col, dir: col === 'at' ? -1 : 1 });
+
+/** «1 elemento», «3 elementos» y también «0 elementos» (# es el número). */
+export const plural = (n: number, one: string, more: string) => (n === 1 ? one : more.replace('#', String(n)));
 
 // ---- Selección ----
 

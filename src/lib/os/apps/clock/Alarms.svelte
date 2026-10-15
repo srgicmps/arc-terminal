@@ -18,6 +18,7 @@
 		if (!/^\d{2}:\d{2}$/.test(time)) return;
 		addAlarm(time, label.trim(), days);
 		label = '';
+		days = [];
 	}
 	async function ask() {
 		perm = await Notification.requestPermission();
@@ -143,7 +144,10 @@
 	}
 
 	.link {
+		display: inline-flex;
+		align-items: center;
 		height: auto;
+		min-height: var(--control-h);
 		padding: 0;
 		border: 0;
 		background: none;

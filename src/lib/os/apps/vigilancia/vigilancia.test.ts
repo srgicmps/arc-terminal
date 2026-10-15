@@ -165,3 +165,15 @@ describe('desde tu última visita', () => {
 		expect(parseState({ at: 'no', seen: { 'country:JP': { h: ['!!'], l: 9 } } }, cleanTargets).at).toBeNull();
 	});
 });
+
+describe('bancos centrales como tema', () => {
+	it('«Fed» no casa con el verbo inglés «fed»', () => {
+		const fed = matcher({ kind: 'word', id: 'Fed' });
+		expect(fed('The Fed holds rates')).toBe(true);
+		expect(fed('La Fed mantiene los tipos')).toBe(true);
+		expect(fed('Investors fed up with tariffs')).toBe(false);
+		expect(matcher({ kind: 'word', id: 'BCE' })('El BCE sube tipos')).toBe(true);
+		// Una palabra cualquiera sigue sin mirar mayúsculas.
+		expect(matcher({ kind: 'word', id: 'Aranceles' })('Nuevos aranceles a China')).toBe(true);
+	});
+});

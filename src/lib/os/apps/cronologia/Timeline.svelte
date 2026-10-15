@@ -7,22 +7,20 @@
 	Como en Vue, `$state` es un ref() y `$derived` un computed().
 -->
 <script lang="ts">
-	import { onMount, untrack } from 'svelte';
+	import { onMount, tick, untrack } from 'svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import type { AppProps } from '../../apps.ts';
 	import { openPath } from '../../os.svelte.ts';
 	import { cluster, nearest, radius, type Cluster } from './cluster.ts';
 	import { getData, loadSources } from './data.ts';
 	import { allEvents, type TlEvent } from './events.ts';
-	import { LANES, laneOf, moveLane, parseSettings, toggleLane, visibleLanes, type LaneDef, type LaneId, type LaneSettings, type MarketLaneDef } from './lanes.ts';
-	import { pan, RANGES, rangeDomain, scale, stamp, ticks, zoom, type Domain, type RangeKey } from './scale.ts';
+	import { LANES, laneOf, moveLane, type EventLane, parseSettings, toggleLane, visibleLanes, type LaneDef, type LaneId, type LaneSettings, type MarketLaneDef } from './lanes.ts';
+	import { columns, pan, RANGES, rangeDomain, scale, stamp, ticks, zoom, type Domain, type RangeKey } from './scale.ts';
 	import { change, laneSeries, stepPath, valueAt, type TPoint } from './series.ts';
 
 	let { win }: AppProps = $props();
 
-	// Geometría propia del componente (px): columnas de etiquetas y valores, eje y alto de cada carril.
-	const LABEL_W = 150;
-	const VALUE_W = 92;
+	// Geometría propia del componente (px): eje y alto de cada carril. Las columnas dependen del ancho (columns()).
 	const AXIS_H = 22;
 	const EV_H = 40;
 	const MK_H = 46;
@@ -38,6 +36,11 @@
 	let settings = $state<LaneSettings>(parseSettings(null));
 	let showLanes = $state(false);
 	let hoverX = $state<number | null>(null);
+	/** Cursor fijado con un toque (en táctil no hay «pasar por encima»): no se borra al levantar el dedo. */
+	let pinned = $state(false);
+	/** Grupo con la parada de tabulación de cada carril de sucesos (tabindex itinerante). */
+	let active = $state<Partial<Record<LaneId, string>>>({});
+	let readoutEl: HTMLElement | undefined = $state();
 	let selected = $state<Cluster | null>(null);
 	let plot: HTMLDivElement | undefined = $state();
 
@@ -53,11 +56,14 @@
 		}
 	};
 
-	const x0 = LABEL_W;
-	const x1 = $derived(Math.max(LABEL_W + 80, width - VALUE_W));
+	const cols = $derived(columns(width));
+	const x0 = $derived(cols.x0);
+	const x1 = $derived(cols.x1);
+	/** Margen de los textos de etiqueta y valor respecto al borde. */
+	const pad = $derived(cols.narrow ? 6 : 10);
 	const sc = $derived(scale(domain, [x0, x1]));
 	const span = $derived(domain[1] - domain[0]);
-	const marks = $derived(ticks(domain, Math.max(2, Math.floor((x1 - x0) / 84))));
+	const marks = $derived(ticks(domain, Math.max(2, Math.floor((x1 - x0) / cols.tickGap))));
 
 	const lanes = $derived(visibleLanes(settings));
 	/** Cada carril visible con su posición vertical. */
@@ -110,10 +116,17 @@
 		// La rueda necesita preventDefault (para que no haga scroll la ventana): escucha no pasiva.
 		const el = plot;
 		el?.addEventListener('wheel', onWheel, { passive: false });
+		// Tocar fuera del gráfico (y de la lectura) quita el cursor fijado.
+		const outside = (e: PointerEvent) => {
+			const t = e.target as Node | null;
+			if (pinned && t && !el?.contains(t) && !readoutEl?.contains(t)) unpin();
+		};
+		window.addEventListener('pointerdown', outside, true);
 		return () => {
 			clearInterval(tick);
 			clearInterval(again);
 			el?.removeEventListener('wheel', onWheel);
+			window.removeEventListener('pointerdown', outside, true);
 		};
 	});
 
@@ -142,14 +155,18 @@
 
 	const pointers = new Map<number, number>();
 	let drag: { x: number; domain: Domain; moved: boolean } | null = null;
+	/** Hubo dos dedos en este gesto: al levantarlos no se fija el cursor. */
+	let pinched = false;
 	let pinch: { dist: number; domain: Domain; at: number } | null = null;
 	let justDragged = false;
 
 	function down(e: PointerEvent) {
 		if (e.button !== 0) return;
 		justDragged = false;
+		if (!pointers.size) pinched = false;
 		pointers.set(e.pointerId, e.clientX);
 		if (pointers.size === 2) {
+			pinched = true;
 			const [a, b] = [...pointers.values()];
 			pinch = { dist: Math.abs(a - b) || 1, domain, at: sc.t(localX((a + b) / 2)) };
 			drag = null;
@@ -157,8 +174,12 @@
 	}
 
 	function move(e: PointerEvent) {
-		const x = localX(e.clientX);
-		hoverX = inPlot(x) ? x : null;
+		// Con ratón o lápiz, el cursor sigue al puntero; con el dedo, solo se fija al tocar sin mover (en up).
+		if (e.pointerType !== 'touch') {
+			const x = localX(e.clientX);
+			pinned = false;
+			hoverX = inPlot(x) ? x : null;
+		}
 		if (!pointers.has(e.pointerId)) return;
 		pointers.set(e.pointerId, e.clientX);
 		if (pinch && pointers.size === 2) {
@@ -179,11 +200,24 @@
 		pointers.delete(e.pointerId);
 		if (pointers.size < 2) pinch = null;
 		justDragged = !!drag?.moved;
+		// Un toque sin mover ni pellizcar fija el cursor ahí (para leer cada carril en ese instante).
+		if (e.type === 'pointerup' && e.pointerType === 'touch' && drag && !drag.moved && !pinched && !pointers.size) {
+			const x = localX(e.clientX);
+			if (inPlot(x)) {
+				hoverX = x;
+				pinned = true;
+			}
+		}
 		drag = null;
 	}
 
 	function leave() {
-		if (!drag) hoverX = null;
+		if (!drag && !pinned) hoverX = null;
+	}
+
+	function unpin() {
+		pinned = false;
+		hoverX = null;
 	}
 
 	function onKey(e: KeyboardEvent) {
@@ -195,6 +229,7 @@
 		else if (k === '+' || k === '=') domain = zoom(domain, mid, 1 / 1.4);
 		else if (k === '-' || k === '_') domain = zoom(domain, mid, 1.4);
 		else if (k === 'Escape' && selected) selected = null;
+		else if (k === 'Escape' && pinned) unpin();
 		else if (k === 'Home') toNow();
 		else return;
 		e.preventDefault();
@@ -213,6 +248,45 @@
 		selected = selected?.id === c.id ? null : c;
 	}
 
+	/** La parada de tabulación de cada carril: la elegida con las flechas o, si ya no está a la vista, la más cercana a ahora. */
+	const tabIds = $derived.by(() => {
+		const m = new Map<LaneId, string>();
+		for (const [id, g] of groups) {
+			const keep = active[id];
+			const c = (keep && g.find((x) => x.id === keep)) || nearest(g, sc.x(now)) || g[0];
+			if (c) m.set(id, c.id);
+		}
+		return m;
+	});
+
+	/** Teclado de un punto: Intro o espacio lo abre; ← → (e Inicio y Fin) van al grupo de al lado del mismo carril. */
+	function dotKey(e: KeyboardEvent, lane: EventLane, i: number) {
+		const g = groups.get(lane) ?? [];
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			pick(g[i]);
+			return;
+		}
+		const j = e.key === 'ArrowLeft' ? i - 1 : e.key === 'ArrowRight' ? i + 1 : e.key === 'Home' ? 0 : e.key === 'End' ? g.length - 1 : -2;
+		if (j === -2) return;
+		// No sigue hasta el gráfico (que movería el tiempo).
+		e.preventDefault();
+		e.stopPropagation();
+		const c = g[Math.max(0, Math.min(g.length - 1, j))];
+		if (!c) return;
+		active = { ...active, [lane]: c.id };
+		tick().then(() => plot?.querySelector<SVGElement>(`[data-lane="${lane}"][data-cid="${CSS.escape(c.id)}"]`)?.focus());
+	}
+
+	/** Con el foco en un punto, el cursor se pone en él (la fecha y el título salen arriba). */
+	function dotFocus(c: Cluster) {
+		if (!pinned) hoverX = c.x;
+	}
+
+	function dotBlur() {
+		if (!pinned) hoverX = null;
+	}
+
 	function openView(ev: TlEvent) {
 		if (!openPath(ev.href)) openPath(laneOf(ev.lane)?.href ?? '/top');
 	}
@@ -223,23 +297,29 @@
 	const when = (t: number) => stamp(t, 0);
 	const fmtValue = (l: MarketLaneDef, p: TPoint | null) => (p ? `${nf(p.v, l.digits)}${l.unit === '%' ? '%' : ''}` : '—');
 
-	function readout(l: LaneDef): { text: string; title: string; dir?: number } {
+	/**
+	 * Lo que dice cada carril: `text` (valor, en su columna), `sub` (variación en lo que se ve, debajo, visible) y
+	 * `title` (explicación: también sale en la lectura del cursor fijado). En estrecho, textos cortos.
+	 */
+	function readout(l: LaneDef): { text: string; title: string; sub?: string; dir?: number } {
+		const narrow = cols.narrow;
 		if (l.kind === 'market') {
 			const pts = series.get(l.id) ?? [];
 			if (markets[l.ds] === undefined) return { text: '…', title: 'Cargando' };
-			if (!pts.length) return { text: 'sin datos', title: 'Este archivo no está publicado o no trae la serie' };
+			if (!pts.length) return { text: narrow ? '—' : 'sin datos', title: 'Este archivo no está publicado o no trae la serie' };
 			if (cursorT !== null) {
 				const p = valueAt(pts, cursorT);
 				return { text: fmtValue(l, p), title: p ? `Cierre del ${when(p.t)}` : 'Aún no había datos' };
 			}
 			const last = valueAt(pts, Math.min(now, domain[1]));
 			const ch = change(pts, domain);
-			return { text: fmtValue(l, last), title: ch === null ? '' : `${pct(ch)} en lo que se ve`, dir: ch ?? undefined };
+			return { text: fmtValue(l, last), title: ch === null ? '' : `${pct(ch)} en lo que se ve`, sub: ch === null ? undefined : pct(ch), dir: ch ?? undefined };
 		}
 		const g = groups.get(l.id) ?? [];
 		if (hoverX !== null) {
 			const c = nearest(g, hoverX, 10);
-			if (c) return { text: c.events.length > 1 ? `${c.events.length} sucesos` : '1 suceso', title: c.events[0].title };
+			if (c) return { text: narrow ? `${c.events.length}` : c.events.length > 1 ? `${c.events.length} sucesos` : '1 suceso', title: c.events[0].title };
+			if (pinned) return { text: '—', title: 'Ningún suceso en ese instante' };
 		}
 		const n = g.reduce((s, c) => s + c.events.length, 0);
 		return { text: n ? `${n}` : '—', title: `${n} sucesos a la vista` };
@@ -264,7 +344,7 @@
 		<Seg label="Rango" options={RANGES} bind:value={range.value} />
 		<button type="button" class="btn" onclick={toNow} title="Volver a ahora (Inicio)">Ahora</button>
 		<button type="button" class="btn" aria-pressed={showLanes} onclick={() => (showLanes = !showLanes)}>Carriles</button>
-		<span class="hint" aria-live="polite">
+		<span class="hint">
 			{#if cursorT !== null}
 				<b>{stamp(cursorT, span)}</b>{#if hovered}<span class="ev">· {hovered.title}</span>{/if}
 			{:else if loading}Cargando sucesos…
@@ -293,7 +373,7 @@
 				<svg {width} {height} viewBox="0 0 {width} {height}">
 					<defs>
 						<clipPath id="tl-clip-{win}"><rect x={x0} y="0" width={x1 - x0} height={height} /></clipPath>
-						<clipPath id="tl-labels-{win}"><rect x="0" y="0" width={x0 - 8} height={height} /></clipPath>
+						<clipPath id="tl-labels-{win}"><rect x="0" y="0" width={Math.max(0, x0 - pad)} height={height} /></clipPath>
 					</defs>
 
 					{#each rows as r, i (r.lane.id)}
@@ -315,10 +395,12 @@
 
 					{#each rows as r (r.lane.id)}
 						{@const ro = readout(r.lane)}
-						<text class="label" x="10" y={r.y + r.h / 2 + 4} clip-path="url(#tl-labels-{win})"><title>{r.lane.desc}</title>{r.lane.label}</text>
-						<text class="value" class:up={(ro.dir ?? 0) > 0} class:down={(ro.dir ?? 0) < 0} x={width - 10} y={r.y + r.h / 2 + 4}>
-							<title>{ro.title}</title>{ro.text}
-						</text>
+						{@const cy = r.y + r.h / 2}
+						{#if x0 > pad}<text class="label" x={pad} y={cy + 4} clip-path="url(#tl-labels-{win})"><title>{r.lane.desc}</title>{r.lane.label}</text>{/if}
+						<text class="value" x={width - pad} y={ro.sub ? cy - 1 : cy + 4}><title>{ro.title || r.lane.desc}</title>{ro.text}</text>
+						{#if ro.sub}
+							<text class="value sub" class:up={(ro.dir ?? 0) > 0} class:down={(ro.dir ?? 0) < 0} x={width - pad} y={cy + 11}>{ro.sub}</text>
+						{/if}
 					{/each}
 
 					<g clip-path="url(#tl-clip-{win})">
@@ -328,20 +410,27 @@
 							{:else}
 								{@const cy = r.y + r.h / 2}
 								{@const color = `var(${r.lane.color})`}
-								{#each groups.get(r.lane.id) ?? [] as c (c.id)}
+								{@const lane = r.lane.id}
+								{#each groups.get(lane) ?? [] as c, i (c.id)}
 									{@const n = c.events.length}
 									{@const rad = n > 1 ? Math.max(radius(c.weight), n > 9 ? 9 : 7) : radius(c.weight)}
 									<g
 										class="dot"
 										class:sel={selected?.id === c.id}
 										role="button"
-										tabindex="0"
-										aria-label={n > 1 ? `${n} sucesos: ${c.events[0].title}` : c.events[0].title}
+										tabindex={tabIds.get(lane) === c.id ? 0 : -1}
+										data-lane={lane}
+										data-cid={c.id}
+										aria-label={`${when(c.t)}: ${n > 1 ? `${n} sucesos, ${c.events[0].title}` : c.events[0].title}`}
 										onclick={() => pick(c)}
-										onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), pick(c))}
+										onkeydown={(e) => dotKey(e, lane, i)}
+										onfocus={() => dotFocus(c)}
+										onblur={dotBlur}
 										style:--c={color}
 									>
-										<circle cx={r1(c.x)} {cy} r={rad} />
+										<!-- En táctil, un círculo invisible mayor para acertar con el dedo. -->
+										<circle class="hit" cx={r1(c.x)} {cy} r="22" />
+										<circle class="mark" cx={r1(c.x)} {cy} r={rad} />
 										{#if n > 1}<text x={r1(c.x)} y={cy + 3}>{n > 99 ? '+' : n}</text>{/if}
 									</g>
 								{/each}
@@ -377,7 +466,7 @@
 							<li>
 								<label title={l.desc}>
 									<input type="checkbox" checked={!settings.hidden.includes(id)} onchange={() => saveSettings(toggleLane(settings, id))} />
-									<span>{l.label}</span>
+									<span>{l.label}<small>{l.desc}</small></span>
 								</label>
 								<button type="button" class="mini" disabled={i === 0} onclick={() => saveSettings(moveLane(settings, id, -1))} aria-label="Subir {l.label}">↑</button>
 								<button type="button" class="mini" disabled={i === settings.order.length - 1} onclick={() => saveSettings(moveLane(settings, id, 1))} aria-label="Bajar {l.label}">↓</button>
@@ -389,6 +478,26 @@
 			</aside>
 		{/if}
 	</div>
+
+	{#if pinned && cursorT !== null && !selected}
+		<!-- Lectura del cursor fijado con un toque: lo que en el escritorio sale al pasar el ratón, en texto. -->
+		<section class="detail readout" aria-label="Lectura del cursor" bind:this={readoutEl}>
+			<header>
+				<span>{stamp(cursorT, span)}</span>
+				<button type="button" class="mini" onclick={unpin} aria-label="Quitar el cursor">×</button>
+			</header>
+			<ul>
+				{#each rows as r (r.lane.id)}
+					{@const ro = readout(r.lane)}
+					<li>
+						<span class="name">{r.lane.label}<small>{r.lane.desc}</small></span>
+						<span class="title">{ro.title}</span>
+						<b class="val">{ro.text}</b>
+					</li>
+				{/each}
+			</ul>
+		</section>
+	{/if}
 
 	{#if selected}
 		<section class="detail" aria-label="Detalle">
@@ -420,6 +529,7 @@
 
 <style>
 	.tl {
+		container: tl / inline-size;
 		display: flex;
 		flex-direction: column;
 		height: 100%;
@@ -580,6 +690,19 @@
 		fill: var(--down);
 	}
 
+	.value.sub {
+		font-size: var(--fs-xxs);
+		fill: var(--muted);
+	}
+
+	.value.sub.up {
+		fill: var(--up);
+	}
+
+	.value.sub.down {
+		fill: var(--down);
+	}
+
 	.series {
 		fill: none;
 		stroke: var(--cmd-tl-series);
@@ -592,25 +715,36 @@
 		outline: none;
 	}
 
-	.dot circle {
+	.dot .mark {
 		fill: var(--c);
 		fill-opacity: var(--cmd-tl-dot-fill);
 		stroke: var(--c);
 		stroke-width: var(--hair);
 	}
 
-	.dot:focus-visible circle {
+	.dot:focus-visible .mark {
 		fill-opacity: var(--cmd-tl-dot-hover);
 	}
 	@media (hover: hover) {
-		.dot:hover circle {
+		.dot:hover .mark {
 			fill-opacity: var(--cmd-tl-dot-hover);
 		}
 	}
 
-	.dot.sel circle {
+	.dot.sel .mark {
 		stroke: var(--fg);
 		fill-opacity: var(--cmd-tl-dot-sel);
+	}
+
+	.dot .hit {
+		display: none;
+		fill: transparent;
+	}
+
+	@media (pointer: coarse) {
+		.dot .hit {
+			display: inline;
+		}
 	}
 
 	.dot text {
@@ -686,12 +820,24 @@
 	}
 
 	.lanes label span {
+		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
+	.lanes label small {
+		display: block;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		font-family: var(--sans);
+		font-size: var(--fs-xxs);
+		color: var(--faint);
+	}
+
 	.mini {
+		position: relative;
+		flex: none;
 		width: var(--btn-sm);
 		height: var(--btn-sm);
 		border: var(--hair) solid transparent;
@@ -705,6 +851,19 @@
 		.mini:hover:not(:disabled) {
 			border-color: var(--cmd-tl-edge);
 			color: var(--fg);
+		}
+	}
+
+	/* En táctil, la zona pulsable crece hasta --touch sin cambiar el aspecto. */
+	@media (pointer: coarse) {
+		.mini::after {
+			content: '';
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			width: var(--touch);
+			height: var(--touch);
+			transform: translate(-50%, -50%);
 		}
 	}
 
@@ -779,6 +938,35 @@
 		gap: var(--sp-4);
 	}
 
+	.readout li {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+		padding: var(--sp-4) var(--pad-x);
+	}
+
+	.readout .name {
+		min-width: 0;
+		color: var(--muted);
+	}
+
+	.readout .name small {
+		display: block;
+		font-family: var(--sans);
+		font-size: var(--fs-xxs);
+		color: var(--faint);
+		line-height: var(--lh-snug);
+	}
+
+	.readout .title {
+		font-size: var(--fs-s);
+	}
+
+	.readout .val {
+		font-weight: var(--fw-medium);
+		font-variant-numeric: tabular-nums;
+		text-align: right;
+		white-space: nowrap;
+	}
+
 	.more {
 		margin: var(--sp-6) var(--pad-x);
 		color: var(--muted);
@@ -792,7 +980,7 @@
 		line-height: var(--lh-snug);
 	}
 
-	@media (max-width: 720px) {
+	@container tl (max-width: 720px) {
 		.lanes {
 			position: absolute;
 			right: 0;
@@ -808,6 +996,25 @@
 		.detail li {
 			grid-template-columns: 1fr;
 			gap: var(--sp-4);
+		}
+
+		/* Lectura: nombre y valor en una fila; debajo, qué es (título del suceso o fecha del cierre). */
+		.readout li {
+			grid-template-columns: minmax(0, 1fr) auto;
+			grid-template-areas: 'name val' 'title title';
+			gap: 0 var(--sp-8);
+		}
+
+		.readout .name {
+			grid-area: name;
+		}
+
+		.readout .val {
+			grid-area: val;
+		}
+
+		.readout .title {
+			grid-area: title;
 		}
 	}
 </style>

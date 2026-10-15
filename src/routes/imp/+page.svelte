@@ -38,7 +38,9 @@
 		if (!imp) return [];
 		const pool =
 			period === 'day'
-				? [...topImportant(imp, 10), ...(groupSel.value === 'all' ? [] : imp.current)]
+				? groupSel.value === 'all'
+					? topImportant(imp, 10)
+					: [...topImportant(imp, 500), ...imp.current]
 				: aggregate(imp.days, imp.date, span, groupSel.value === 'all' ? 10 : 500);
 		return inGroup<ImpEntry | ImpTotal>(pool, groupSel.value, sectionsOf, 10);
 	});
@@ -86,7 +88,7 @@
 			<Panel
 				title={period === 'day' ? 'Hoy' : `Últimos ${span} días`}
 				meta={period === 'day'
-					? `${items.length} temas`
+					? `${items.length} ${items.length === 1 ? 'tema' : 'temas'}`
 					: `${recorded} ${recorded === 1 ? 'día' : 'días'} con datos`}
 			>
 				{#if items.length}

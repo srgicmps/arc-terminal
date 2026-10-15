@@ -67,7 +67,10 @@
 		border-radius: var(--radius-s);
 	}
 
+	/* flex: 1 1 auto: si el grupo no cabe y baja de línea, cada fila llena el marco y los fondos encendidos no
+	   quedan escalonados. En una sola línea no cambia nada (el marco mide lo que sus botones). */
 	button {
+		flex: 1 1 auto;
 		background: none;
 		border: 0;
 		border-radius: var(--radius-s);
@@ -90,5 +93,9 @@
 		background: var(--amber-soft);
 		color: var(--amber);
 		font-weight: var(--fw-regular);
+	}
+	/* De día, el ámbar sobre su propio fondo suave se queda en 4,4:1 fuera de un panel: el tenue pasa de 4,5:1 (WCAG AA). */
+	:global([data-theme='light']) .multi button[aria-pressed='true'] {
+		color: var(--amber-dim);
 	}
 </style>

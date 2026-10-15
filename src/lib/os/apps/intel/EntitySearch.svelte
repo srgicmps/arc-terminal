@@ -11,10 +11,29 @@
 
 	let query = $state('');
 	let active = $state(0);
+	/** La lista se cierra si el foco sale del buscador (y vuelve a salir al escribir o al entrar otra vez). */
+	let open = $state(true);
+	let box: HTMLDivElement;
+	const uid = $props.id();
+	const listId = `${uid}-list`;
+	const optId = (i: number) => `${uid}-opt-${i}`;
 	const results = $derived(graph && query.trim() ? searchNodes(graph, query, 10) : []);
+	const shown = $derived(open && results.length > 0);
 	$effect(() => {
 		void results;
 		active = 0;
+	});
+
+	// El campo es el de Search (común): el papel de combobox y la opción activa se le ponen desde aquí.
+	$effect(() => {
+		const input = box?.querySelector('input');
+		if (!input) return;
+		input.setAttribute('role', 'combobox');
+		input.setAttribute('aria-autocomplete', 'list');
+		input.setAttribute('aria-controls', listId);
+		input.setAttribute('aria-expanded', String(shown));
+		if (shown) input.setAttribute('aria-activedescendant', optId(active));
+		else input.removeAttribute('aria-activedescendant');
 	});
 
 	function pick(id: string) {
@@ -22,7 +41,13 @@
 		onpick(id);
 	}
 
+	function leave(e: FocusEvent) {
+		const to = e.relatedTarget as Node | null;
+		if (!to || !box.contains(to)) open = false;
+	}
+
 	function keys(e: KeyboardEvent) {
+		open = true;
 		if (!results.length) return;
 		if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
 			e.preventDefault();
@@ -35,13 +60,13 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="find" onkeydown={keys}>
+<div class="find" bind:this={box} onkeydown={keys} onfocusin={() => (open = true)} onfocusout={leave} oninput={() => (open = true)}>
 	<Search label="Buscar una entidad" {placeholder} bind:value={query} />
-	{#if results.length}
-		<ul class="results" role="listbox" aria-label="Entidades que encajan">
+	{#if shown}
+		<ul class="results" id={listId} role="listbox" aria-label="Entidades que encajan">
 			{#each results as n, i (n.id)}
-				<li role="option" aria-selected={i === active}>
-					<button type="button" class:on={i === active} onclick={() => pick(n.id)} onpointerenter={() => (active = i)}>
+				<li role="option" id={optId(i)} aria-selected={i === active}>
+					<button type="button" tabindex="-1" class:on={i === active} onpointerdown={(e) => e.preventDefault()} onclick={() => pick(n.id)} onpointerenter={() => (active = i)}>
 						<span class="dot" data-cmd-kind={n.kind} aria-hidden="true"></span>
 						<span class="label">{n.label}</span>
 						<span class="kind">{kindLabel(n.kind)}{n.mentions ? ` · ${n.mentions}` : ''}</span>

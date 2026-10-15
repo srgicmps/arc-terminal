@@ -1,57 +1,40 @@
-<!-- Temporizador: minutos (y segundos) hacia atrás; al acabar, pitido y aviso. -->
+<!--
+	Temporizador: minutos (y segundos) hacia atrás; al acabar, pitido y aviso. El estado vive en timers.svelte.ts:
+	sigue aunque cambies de pestaña o cierres la ventana. Aquí solo se repinta.
+-->
 <script lang="ts">
-	import { onDestroy } from 'svelte';
-	import { os } from '../../os.svelte.ts';
+	import { onMount } from 'svelte';
 	import { stopwatchText } from './alarms.ts';
-	import { beep, notifySystem } from './alarms.svelte.ts';
+	import { timer, timerCancel, timerStart } from './timers.svelte.ts';
 
-	let min = $state(5);
-	let sec = $state(0);
-	let end = $state<number | null>(null);
-	let left = $state(0);
-	let id: ReturnType<typeof setInterval> | undefined;
-
-	function start() {
-		const total = (min * 60 + sec) * 1000;
-		if (total <= 0) return;
-		end = Date.now() + total;
-		left = total;
-		id = setInterval(tick, 200);
-	}
-	function tick() {
-		if (end === null) return;
-		left = end - Date.now();
-		if (left > 0) return;
-		cancel();
-		const text = '⏲ Temporizador terminado';
-		os.notice = { text, at: Date.now() };
-		beep();
-		notifySystem(text);
-	}
-	function cancel() {
-		clearInterval(id);
-		end = null;
-		left = 0;
-	}
-	onDestroy(() => clearInterval(id));
+	let now = $state(Date.now());
+	onMount(() => {
+		const id = setInterval(() => (now = Date.now()), 200);
+		return () => clearInterval(id);
+	});
+	const left = $derived(timer.end === null ? 0 : Math.max(0, timer.end - now));
 	const PRESETS = [1, 3, 5, 10, 15, 25];
+	function start() {
+		now = Date.now();
+		timerStart();
+	}
 </script>
 
 <div class="timer">
-	{#if end === null}
+	{#if timer.end === null}
 		<div class="set">
-			<label>Min<input type="number" min="0" max="999" bind:value={min} /></label>
-			<label>Seg<input type="number" min="0" max="59" bind:value={sec} /></label>
+			<label>Min<input type="number" min="0" max="999" inputmode="numeric" bind:value={timer.min} /></label>
+			<label>Seg<input type="number" min="0" max="59" inputmode="numeric" bind:value={timer.sec} /></label>
 		</div>
 		<div class="presets">
-			{#each PRESETS as p (p)}<button type="button" onclick={() => ((min = p), (sec = 0))}>{p} min</button>{/each}
+			{#each PRESETS as p (p)}<button type="button" onclick={() => ((timer.min = p), (timer.sec = 0))}>{p} min</button>{/each}
 		</div>
 		<button type="button" class="go" onclick={start}>Empezar</button>
 	{:else}
 		<p class="big">{stopwatchText(left + 999, false)}</p>
-		<button type="button" onclick={cancel}>Cancelar</button>
+		<button type="button" onclick={timerCancel}>Cancelar</button>
 	{/if}
-	<p class="mut">Si cierras esta ventana, el temporizador se cancela.</p>
+	<p class="mut">Sigue contando aunque cierres esta ventana (no si recargas la página).</p>
 </div>
 
 <style>

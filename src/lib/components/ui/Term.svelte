@@ -148,16 +148,23 @@
 		cursor: help;
 	}
 
-	.i:hover,
 	.i:focus-visible,
 	.i[aria-expanded='true'] {
 		color: var(--amber);
+	}
+
+	@media (hover: hover) {
+		.i:hover {
+			color: var(--amber);
+		}
 	}
 
 	/* En pantallas táctiles, la zona que se puede tocar crece sin mover nada. */
 	@media (pointer: coarse) {
 		.i {
 			position: relative;
+			/* Sin el mínimo de 44 px de app.css: si no, la ⓘ alarga la línea de su etiqueta. */
+			min-height: 0;
 		}
 
 		.i::after {

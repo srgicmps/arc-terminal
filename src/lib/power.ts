@@ -132,8 +132,9 @@ function madridMinutes(now: number): number {
 }
 
 /**
- * La franja de `hours` horas seguidas más barata que interesa ahora: la de hoy o, desde las 20:30 (cuando
- * REE ya ha publicado el PVPC del día siguiente), la de mañana. null si aún no hay precios de ese día.
+ * La franja de `hours` horas seguidas más barata que interesa ahora: la de lo que queda de hoy (empieza en la hora
+ * en curso o después; una ya pasada no sirve) o, desde las 20:30 (cuando REE ya ha publicado el PVPC del día
+ * siguiente), la de mañana. null si aún no hay precios de ese día o ya no cabe ninguna hoy.
  */
 export function cheapestNow(
 	prices: HourPrice[],
@@ -143,7 +144,7 @@ export function cheapestNow(
 	const today = madridNow(now).day;
 	const tomorrow = madridMinutes(now) >= 20 * 60 + 30;
 	const day = tomorrow ? days(prices).find((d) => d > today) : today;
-	const window = day ? cheapestWindow(prices, day, hours) : null;
+	const window = day ? cheapestWindow(prices, day, hours, tomorrow ? 0 : madridNow(now).hour) : null;
 	return day && window ? { ...window, day, tomorrow } : null;
 }
 

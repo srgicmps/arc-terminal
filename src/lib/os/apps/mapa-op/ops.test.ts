@@ -16,6 +16,7 @@ import {
 	parseParams,
 	parseT,
 	playStep,
+	reaspect,
 	timeRange,
 	visible,
 	WORLD,
@@ -108,6 +109,12 @@ describe('buildPoints', () => {
 	});
 });
 
+it('una noticia que está en news-geo y en news-world sale una sola vez', () => {
+	const n = { title: 'Rusia y Ucrania negocian', url: 'https://ex.example/1', source: 'A', time: '2026-10-15T10:00:00Z', summary: '' };
+	const pts = buildPoints({ news: [n, { ...n }] }).filter((p) => p.layer === 'conflict');
+	expect(pts.map((p) => p.country).sort()).toEqual(['RU', 'UA']);
+});
+
 describe('filtro por capa y por tiempo', () => {
 	const points = [
 		pt('quakes', NOW - 2 * HOUR),
@@ -193,6 +200,8 @@ describe('línea de tiempo', () => {
 		const r = { start: 0, end: 100 };
 		expect(playStep(0, r, 10)).toEqual({ cursor: 10, done: false });
 		expect(playStep(95, r, 10)).toEqual({ cursor: 100, done: true });
+		// De antes del rango (se cambió de periodo): sigue desde el principio, no se queda clavado.
+		expect(playStep(-1e9, r, 10)).toEqual({ cursor: 10, done: false });
 		expect(playStep(100, r, 10)).toEqual({ cursor: 0, done: false });
 		expect(clampCursor(150, r)).toBe(100);
 		expect(clampCursor(-5, r)).toBe(0);
@@ -211,6 +220,11 @@ describe('línea de tiempo', () => {
 });
 
 describe('mapa plano', () => {
+	it('al cambiar la proporción con zoom, mantiene centro y ancho', () => {
+		const v = reaspect({ x: 100, y: 50, w: 40, h: 20 }, 1);
+		expect(v).toEqual({ x: 100, y: 40, w: 40, h: 40 });
+		expect(reaspect(v, 0)).toBe(v);
+	});
 	it('encaja el mundo en la proporción de la ventana', () => {
 		const v = fitView(4);
 		expect(v.h).toBe(WORLD.h);

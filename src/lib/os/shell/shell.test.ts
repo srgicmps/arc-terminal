@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildNotices, markSeen, toastsFor, unread } from './notices.ts';
+import { addNotice, buildNotices, markSeen, noticeTime, toastsFor, unread } from './notices.ts';
 import { byCategory, categoryOf, parseIds, pushRecent, searchApps, togglePin } from './start.ts';
-import { addWidget, defaultWidgets, nudge, stackWidgets, parseWidgets, removeWidget, snap, statusSummary } from './widgets.ts';
+import { addWidget, defaultWidgets, fitWidgets, nudge, stackWidgets, parseWidgets, removeWidget, snap, statusSummary } from './widgets.ts';
 import { localZone, offsetFrom, openMarkets, timeIn } from './zones.ts';
 
 const wall = {
@@ -12,6 +12,17 @@ const wall = {
 const changes = { items: [{ number: 471, title: 'Experiencias: galería', mergedAt: '2026-10-15T11:00:00Z', url: '' }] };
 
 describe('notificaciones', () => {
+	it('un aviso lleva la hora del suceso, no la de ahora (y la de ahora si no trae una válida)', () => {
+		const now = new Date('2026-10-15T12:00:00Z');
+		expect(noticeTime('2026-10-15T11:50:00Z', now)).toBe('2026-10-15T11:50:00.000Z');
+		expect(noticeTime(undefined, now)).toBe(now.toISOString());
+		expect(noticeTime('ayer', now)).toBe(now.toISOString());
+	});
+	it('un aviso nuevo pero antiguo se coloca en su sitio, no arriba', () => {
+		const list = buildNotices(wall, changes);
+		const old = { id: 's:1', kind: 'aviso' as const, title: 'VIX', detail: '', time: '2026-10-15T09:00:00Z' };
+		expect(addNotice(list, old).map((n) => n.id).at(-1)).toBe('s:1');
+	});
 	it('junta avisos y novedades, de la más nueva a la más vieja', () => {
 		const list = buildNotices(wall, changes);
 		expect(list.map((n) => n.kind)).toEqual(['novedad', 'aviso']);
@@ -74,6 +85,23 @@ describe('widgets', () => {
 		expect(parseWidgets('nada')).toBeNull();
 		expect(defaultWidgets(1280, 'dsm').map((w) => w.kind)).toEqual(['sistema', 'registro', 'datos']);
 	});
+	it('uno nuevo nunca cae fuera del escritorio: si la columna está llena, va a la de la izquierda', () => {
+		let list = defaultWidgets(1440, 'mando');
+		for (const k of ['reloj', 'titulares', 'tiempo', 'luz'] as const) list = addWidget(list, k, 1440, 840);
+		for (const w of list) expect(w.y + 120).toBeLessThanOrEqual(840);
+		expect(new Set(list.map((w) => w.x)).size).toBeGreaterThan(1);
+		// Sin alto (llamadas antiguas), como antes: debajo del último.
+		expect(addWidget(defaultWidgets(1280), 'luz', 1280).at(-1)!.y).toBeGreaterThan(400);
+	});
+	it('en una pantalla más pequeña se pintan dentro, sin tocar lo guardado', () => {
+		const saved = [{ kind: 'reloj' as const, x: 1176, y: 700 }];
+		expect(fitWidgets(saved, 1000, 600)).toEqual([{ kind: 'reloj', x: 760, y: 552 }]);
+		expect(fitWidgets(saved, 1440, 900)[0]).toBe(saved[0]);
+		expect(saved[0].x).toBe(1176);
+		// Dos columnas: se corren juntas y no se montan.
+		const two = fitWidgets([{ kind: 'reloj', x: 1176, y: 16 }, { kind: 'luz', x: 920, y: 16 }], 1000, 600);
+		expect(two.map((w) => w.x)).toEqual([760, 504]);
+	});
 });
 
 describe('reloj', () => {
@@ -131,12 +159,24 @@ describe('aspectos', () => {
 	});
 });
 
-import { arrange, cellToPx, inRect, moveGroup, nearestFree, parseSpots, pxToCell, rectOf } from './icons.ts';
+import { arrange, cellToPx, inRect, moveGroup, nearestFree, neighbor, parseSpots, pxToCell, rectOf } from './icons.ts';
 
 describe('iconos del escritorio', () => {
 	const size = { w: 100, h: 100 };
 	it('colocan los nuevos en la primera casilla libre, columna a columna', () => {
 		expect(arrange(['a', 'b', 'c'], { b: { col: 0, row: 0 } }, 3, 2)).toEqual({ b: { col: 0, row: 0 }, a: { col: 0, row: 1 }, c: { col: 1, row: 0 } });
+		// Una carpeta nueva (va la primera de la lista): con las casillas apuntadas antes (freeze), nadie se corre.
+		const before = arrange(['a', 'b'], {}, 3, 2);
+		expect(arrange(['nueva', 'a', 'b'], {}, 3, 2).a).not.toEqual(before.a);
+		expect(arrange(['nueva', 'a', 'b'], before, 3, 2)).toMatchObject(before);
+	});
+	it('las flechas van al icono de al lado', () => {
+		const spots = { a: { col: 0, row: 0 }, b: { col: 0, row: 1 }, c: { col: 1, row: 0 }, d: { col: 3, row: 1 } };
+		expect(neighbor(spots, 'a', 'ArrowDown')).toBe('b');
+		expect(neighbor(spots, 'a', 'ArrowRight')).toBe('c');
+		expect(neighbor(spots, 'b', 'ArrowRight')).toBe('d');
+		expect(neighbor(spots, 'a', 'ArrowUp')).toBeNull();
+		expect(neighbor(spots, 'a', 'Enter')).toBeNull();
 	});
 	it('caen en la casilla libre más cercana', () => {
 		const spots = { a: { col: 0, row: 0 }, b: { col: 1, row: 0 } };

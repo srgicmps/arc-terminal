@@ -9,7 +9,7 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { clock } from '#lib/clock.svelte.ts';
-	import { hm } from '#lib/format.ts';
+	import { dm, hm } from '#lib/format.ts';
 	import Disclosure from '#lib/components/ui/Disclosure.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { allInOrder, cleanLeaderIds, LEADERS_KEY, moveLeader, myLeaders, toggleLeader, visibleIds } from '#lib/leaderprefs.ts';
@@ -121,8 +121,9 @@
 							{/each}
 							{#if c.later}
 								<li class="hit">
-									<span class="l">{c.later.title}<small>siguiente · {c.later.place}</small></span>
-									<b>{c.later.start ? hm(c.later.start) : ''}</b>
+									<span class="l">{c.later.title}<small>{['siguiente', c.later.place].filter(Boolean).join(' · ')}</small></span>
+									<!-- No es de hoy: con el día delante, para no confundirlo con un acto de hoy. -->
+									<b>{c.later.start ? `${dm(c.later.start)} ${hm(c.later.start)}` : ''}</b>
 								</li>
 							{/if}
 						</ul>
@@ -141,7 +142,7 @@
 			</Panel>
 			<!-- Sin comunicados recientes, el panel no sale: nada de huecos. -->
 			{#if c.recent.length}
-				<Panel title="Lo último" meta={c.leader.recentLabel}>
+				<Panel title={columns.length > 1 ? `Lo último · ${c.leader.name}` : 'Lo último'} meta={c.leader.recentLabel}>
 					<NewsList items={c.recent} />
 				</Panel>
 			{/if}

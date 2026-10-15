@@ -10,6 +10,7 @@ import { convert, type FxState } from './fx.ts';
 import { longDay, weekday } from './format.ts';
 import { madridDate } from './meetings.ts';
 import { TICKERS } from './tickers.ts';
+import { compareInput, symbolRange } from './bar/ranges.ts';
 
 /** Una sugerencia de la barra. */
 export interface Option {
@@ -165,9 +166,15 @@ export function suggest(raw: string, all: Option[], limit = 8, fx?: FxState): Op
  * («gp» en «NVDA GP», ver src/lib/functions.ts).
  */
 export type Target =
-	| { kind: 'command'; command: Command; arg?: string; panel?: string; day?: string }
+	| ({ kind: 'command'; command: Command; arg?: string; panel?: string; day?: string } & Chart)
 	| { kind: 'help'; command: Command }
-	| { kind: 'symbol'; sym: string; fn?: string };
+	| ({ kind: 'symbol'; sym: string; fn?: string } & Chart);
+
+/** «NVDA vs AMD», «NVDA 1a»: lo que va en la URL (con el rango) y lo escrito, que es lo que se guarda en el historial. */
+interface Chart {
+	search?: string;
+	text?: string;
+}
 
 /**
  * «NVDA GP», «bme:rep des»: un valor y una de sus funciones. Los comandos ganan: «ES GP» no llega aquí
@@ -308,6 +315,14 @@ export function resolveInput(raw: string, suggestions: Option[]): Target | null 
 	if (command) return { kind: 'command', command };
 	const bloomberg = findBloomberg(q);
 	if (bloomberg) return { kind: 'command', ...bloomberg };
+	// «NVDA vs AMD», «NVDA 1a»: aquí y no solo en la barra, para que la Terminal y el Spotlight de Arc OS también lo abran.
+	const chart = compareInput(raw) ?? symbolRange(raw);
+	if (chart) {
+		const text = raw.trim();
+		return chart.route === '/cmp'
+			? { kind: 'command', command: findCommand('CMP')!, search: chart.search, text }
+			: { kind: 'symbol', sym: chart.code.split(' ')[0], search: chart.search, text };
+	}
 	const help = commandHelp(raw);
 	if (help) return { kind: 'help', command: help };
 	const dated = commandDay(raw);
@@ -331,6 +346,7 @@ export function resolveInput(raw: string, suggestions: Option[]): Target | null 
 
 /** Cómo se guarda en el historial: «FUEL», «NEWS inflación», «NVDA». */
 export function canonical(target: Target): string {
+	if (target.kind !== 'help' && target.text) return target.text;
 	if (target.kind === 'symbol') return target.fn ? `${target.sym} ${target.fn.toUpperCase()}` : target.sym;
 	if (target.kind === 'help') return `${target.command.code} ?`;
 	if (target.panel) return `${target.command.code} ${target.panel}`;
@@ -342,6 +358,7 @@ export function canonical(target: Target): string {
  * La base la pone el componente.
  */
 export function targetPath(target: Target): { route: Command['route'] | '/s' | '/manual'; search: string } {
+	if (target.kind !== 'help' && target.search) return { route: target.kind === 'symbol' ? '/s' : target.command.route, search: target.search };
 	if (target.kind === 'symbol') {
 		const fn = target.fn ? `&fn=${encodeURIComponent(target.fn)}` : '';
 		return { route: '/s', search: `?sym=${encodeURIComponent(target.sym)}${fn}` };

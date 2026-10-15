@@ -13,8 +13,9 @@ export function europeAverage(zones: EuPowerZone[], day: PowerDay): number | nul
 export function vsAverage(zones: EuPowerZone[], zone: string, day: PowerDay): { diff: number; pct: number } | null {
 	const avg = europeAverage(zones, day);
 	const v = zones.find((z) => z.zone === zone)?.[day];
-	if (avg === null || v === null || v === undefined || !avg) return null;
-	return { diff: v - avg, pct: ((v - avg) / avg) * 100 };
+	// Con la media cerca de cero (o negativa, con mucho sol y viento) el % no dice nada o sale con el signo al revés.
+	if (avg === null || v === null || v === undefined || Math.abs(avg) < 1) return null;
+	return { diff: v - avg, pct: ((v - avg) / Math.abs(avg)) * 100 };
 }
 
 /** Las zonas de un país (Alemania → DE-LU; Italia → IT-North), para la ficha PAIS. */

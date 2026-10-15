@@ -1,7 +1,7 @@
 import type { Command } from '../commands.ts';
 
 export default {
-	order: 170, code: 'FUEL', route: '/fuel', key: 'Gasolina', desc: 'Gasolineras más baratas de Menorca', sources: 'Ministerio para la Transición Ecológica', pinned: true, aliases: ['gasolina', 'diésel', 'carburante'], arg: { param: 'zona', label: 'Provincia (nombre o número)', example: 'FUEL Madrid' },
+	order: 170, code: 'FUEL', route: '/fuel', key: 'Gasolina', desc: 'Gasolineras más baratas por provincia o cerca de ti', sources: 'Ministerio para la Transición Ecológica', pinned: true, aliases: ['gasolina', 'diésel', 'carburante'], arg: { param: 'zona', label: 'Provincia (nombre o número)', example: 'FUEL Madrid' },
 	manual: {
 		section: 'Utilidades',
 		what: 'Las gasolineras más baratas de Menorca o de cualquier provincia, con el ahorro frente a la media y cómo está el precio frente a España y Europa.',

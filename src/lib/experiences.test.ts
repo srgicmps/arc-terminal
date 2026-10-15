@@ -23,6 +23,13 @@ describe('experiencias', () => {
 		expect(findExperience('', LIST)).toBeNull();
 	});
 
+	it('el id o el nombre de una experiencia ganan al alias de otra, y ningún alias se repite', () => {
+		expect(findExperience('muro')?.id).toBe('muro');
+		expect(findExperience('Muro')?.id).toBe('muro');
+		const aliases = EXPERIENCES.flatMap((e) => e.aliases ?? []);
+		expect(new Set(aliases).size).toBe(aliases.length);
+	});
+
 	it('«Al entrar» la guarda como x:<id>', () => {
 		expect(homeValue(LIST[1])).toBe('x:sala');
 		expect(fromHomeValue('x:sala', LIST)?.id).toBe('sala');

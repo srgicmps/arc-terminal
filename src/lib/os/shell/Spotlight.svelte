@@ -7,14 +7,16 @@
 	import OsIcon from '../icons/OsIcon.svelte';
 	import { tick } from 'svelte';
 	import { installedApps } from '../packages.svelte.ts';
-	import { searchAll, type Hit } from '../system/search.ts';
+	import { recentHits, searchAll, type Hit } from '../system/search.ts';
 	import { runHit } from '../system/search.svelte.ts';
 	import { shell } from './shell.svelte.ts';
 
 	let query = $state('');
 	let sel = $state(0);
 	let input = $state<HTMLInputElement>();
-	const found = $derived(searchAll(query, installedApps(), 10));
+	// Sin texto, las últimas apps abiertas, para volver a una con Intro.
+	const empty = $derived(!query.trim());
+	const found = $derived(empty ? recentHits(shell.recent, installedApps()) : searchAll(query, installedApps(), 10));
 
 	$effect(() => {
 		tick().then(() => input?.focus());
@@ -28,7 +30,9 @@
 		shell.open = null;
 		runHit(hit);
 	}
-	const appOf = (h: Hit) => ('app' in h.action ? h.action.app : null);
+	// Los resultados que no son apps llevan el icono de su clase (mismo set SVG que las apps).
+	const KIND_ICON: Record<string, string> = { País: 'pais', Líder: 'lider', Valor: 'g', Comando: 'terminal', Ajuste: 'ajustes' };
+	const appOf = (h: Hit) => ('app' in h.action ? h.action.app : (KIND_ICON[h.kind] ?? null));
 	function key(e: KeyboardEvent) {
 		if (e.key === 'Escape') shell.open = null;
 		else if (e.key === 'ArrowDown') (e.preventDefault(), (sel = Math.min(sel + 1, found.length - 1)));
@@ -52,7 +56,8 @@
 		aria-activedescendant={found[sel] ? `os-spot-${found[sel].id}` : undefined}
 	/>
 	{#if found.length}
-		<ul id="os-spot-list" role="listbox" aria-label="Resultados">
+		{#if empty}<p class="head" aria-hidden="true">Recientes</p>{/if}
+		<ul id="os-spot-list" role="listbox" aria-label={empty ? 'Apps recientes' : 'Resultados'}>
 			{#each found as h, i (h.id)}
 				{@const app = appOf(h)}
 				<li id={`os-spot-${h.id}`} role="option" aria-selected={i === sel}>
@@ -76,6 +81,18 @@
 		color: inherit;
 		font: inherit;
 		cursor: pointer;
+	}
+	.head {
+		margin: 0;
+		padding: var(--sp-6) var(--sp-16) 0;
+		border-top: var(--hair) solid var(--line);
+		color: var(--muted);
+		font-size: var(--fs-xxs);
+		letter-spacing: var(--track-caps);
+		text-transform: uppercase;
+	}
+	.head + ul {
+		border-top: 0;
 	}
 	.scrim {
 		position: fixed;
@@ -107,6 +124,10 @@
 		font-size: var(--fs-l);
 		outline: none;
 	}
+	/* Sin la ✕ del navegador (cada uno la dibuja a su manera): Escape o clic fuera cierran. */
+	input::-webkit-search-cancel-button {
+		appearance: none;
+	}
 	ul {
 		margin: 0;
 		padding: var(--sp-4);
@@ -123,9 +144,10 @@
 		border-radius: var(--radius-s);
 		text-align: left;
 	}
+	/* Elegido: velo del acento y filo a la izquierda, como el menú contextual (sin bloque macizo). */
 	li[aria-selected='true'] button {
-		background: var(--amber);
-		color: var(--on-amber);
+		background: var(--amber-soft);
+		box-shadow: inset var(--sp-2) 0 0 var(--amber);
 	}
 	.t {
 		flex: 1;

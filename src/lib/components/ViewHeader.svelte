@@ -43,7 +43,7 @@
 		{#if isSimple() && hiddenPanels.size}
 			<p class="more">
 				{modo.all ? 'Ves todos los paneles.' : `Ves lo esencial: ${hiddenPanels.size} ${hiddenPanels.size === 1 ? 'panel más' : 'paneles más'} en el modo completo.`}
-				<button type="button" onclick={() => (modo.all = !modo.all)}>{modo.all ? 'Ver solo lo esencial' : 'Ver todos'}</button>
+				<button type="button" aria-pressed={modo.all} onclick={() => (modo.all = !modo.all)}>{modo.all ? 'Ver solo lo esencial' : 'Ver todos'}</button>
 			</p>
 		{/if}
 	</div>
@@ -119,8 +119,10 @@
 		cursor: pointer;
 	}
 
-	.more button:hover {
-		color: var(--amber);
+	@media (hover: hover) {
+		.more button:hover {
+			color: var(--amber);
+		}
 	}
 
 	.vh-r {

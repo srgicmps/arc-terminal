@@ -30,7 +30,7 @@ export const os = $state({
 });
 
 export const desk = () => wm.activeDesk(os.state);
-export const focusedWin = () => wm.focused(desk());
+export const focusedWin = () => wm.focused(desk(), os.closing);
 export const appOf = (w: wm.Win): OsApp | undefined => findApp(w.app);
 export { APPS };
 
@@ -43,6 +43,7 @@ export function loadOs() {
 	} catch {
 		os.state = wm.emptyState();
 	}
+	if (sized) wm.relayout(os.state, os.area);
 	os.loaded = true;
 }
 
@@ -62,22 +63,36 @@ const say = (text: string) => (os.notice = { text, at: Date.now() });
 const done = <T>(v: T): T => (persist(), v);
 
 /** Abre una app (o la trae al frente). `fresh`: otra ventana de la misma app («Nueva ventana»). */
+/**
+ * En el teléfono (MobileHome) las ventanas no se ven: tras abrir una, se la pasa para que la enseñe a pantalla completa
+ * (las herramientas leen su ruta de la ventana, así que se crea igual).
+ */
+export const phoneOpen: { fn: ((w: wm.Win) => void) | null } = { fn: null };
+
 export function openApp(id: string, path?: string, fresh = false): wm.Win | null {
 	const app = findApp(id);
 	if (!app) return null;
+	// Si la que había se está cerrando, se quita ya: si no, «abrir» la traería al frente y desaparecería.
+	for (const w of desk().wins) if (w.app === id && os.closing.includes(w.uid)) closeNow(w.uid);
 	const r = wm.openWin(os.state, app, os.area, path, fresh);
 	if (!r.win) {
 		say(`Hay ${wm.MAX_WINS} ventanas en este escritorio: cierra alguna o abre otro escritorio.`);
 		return null;
 	}
 	if (r.created) logSession('abre', app.name);
-	return done(r.win);
+	const w = done(r.win);
+	phoneOpen.fn?.(w);
+	return w;
 }
 
 /** Abre la app de una ruta de la web («/eco?x=1», «/x/zen»). null si la ruta no es de ninguna app. */
 export function openPath(path: string): wm.Win | null {
 	const app = appOfPath(path);
-	return app ? openApp(app.id, path === app.href ? undefined : path) : null;
+	if (!app) return null;
+	// Si ya hay una ventana enseñando esa misma ruta (la ficha de NVDA), se trae al frente en vez de abrir otra.
+	const same = desk().wins.find((w) => w.app === app.id && (w.path ?? app.href) === path);
+	if (same) return done((wm.focusWin(os.state, same.uid), same));
+	return openApp(app.id, path === app.href ? undefined : path);
 }
 
 export const focus = (uid: string) => done(wm.focusWin(os.state, uid));
@@ -120,9 +135,12 @@ export function sendToDesk(uid: string, id: string) {
 	persist();
 }
 
-/** El escritorio ha cambiado de tamaño (lo llama WindowLayer). */
+let sized = false;
+/** El escritorio ha cambiado de tamaño (lo llama WindowLayer). La primera medida recoloca siempre, aunque coincida
+ *  con la de por defecto: lo guardado en otra pantalla puede haber quedado fuera. */
 export function setArea(w: number, h: number) {
-	if (w < 1 || h < 1 || (w === os.area.w && h === os.area.h)) return;
+	if (w < 1 || h < 1 || (sized && w === os.area.w && h === os.area.h)) return;
+	sized = true;
 	os.area = { w, h };
 	wm.relayout(os.state, os.area);
 	persist();

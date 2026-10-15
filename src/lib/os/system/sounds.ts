@@ -17,6 +17,9 @@ let ctx: AudioContext | null = null;
 /** Suena `kind` si se puede (el navegador puede no dejarlo hasta el primer toque: entonces, nada). */
 export function playTone(kind: SoundKind) {
 	try {
+		// Sin un toque o una tecla antes, el navegador deja el audio en pausa y las notas esperarían en cola: el
+		// tono de arranque sonaría de golpe con el primer clic. Mejor no sonar.
+		if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
 		ctx ??= new AudioContext();
 		if (ctx.state === 'suspended') void ctx.resume();
 		const { notes, dur, gain } = SOUNDS[kind];

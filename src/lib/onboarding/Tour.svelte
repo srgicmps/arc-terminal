@@ -1,5 +1,5 @@
 <!--
-	Recorrido de 5 pasos (pasos en tour.ts, estado en tour.svelte.ts). Una tarjeta abajo y, si el paso señala algo
+	Recorrido corto (pasos en tour.ts, estado en tour.svelte.ts). Una tarjeta abajo y, si el paso señala algo
 	que se ve, un marco fino alrededor. Se salta con «Saltar» o Esc; ← → cambian de paso.
 -->
 <script lang="ts">
@@ -27,6 +27,13 @@
 		card?.focus();
 	});
 
+	function escape(e: KeyboardEvent) {
+		if (e.key !== 'Escape') return;
+		e.preventDefault();
+		e.stopImmediatePropagation();
+		closeTour();
+	}
+
 	function onkey(e: KeyboardEvent) {
 		if (e.key === 'Escape') closeTour();
 		else if (e.key === 'ArrowRight') stepTour(1, TOUR.length);
@@ -37,7 +44,9 @@
 	}
 </script>
 
-<svelte:window onresize={measure} onscroll={measure} />
+<!-- Esc cierra el recorrido aunque el foco ya no esté en la tarjeta (tras un clic fuera): sin esto llegaba al Esc
+	general de la barra, que lleva a TOP y dejaba el recorrido abierto sin ir a tu inicio. -->
+<svelte:window onresize={measure} onscroll={measure} onkeydowncapture={escape} />
 
 {#if box}
 	<div class="mark" style:top="{box.top}px" style:left="{box.left}px" style:width="{box.width}px" style:height="{box.height}px" aria-hidden="true"></div>

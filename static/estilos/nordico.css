@@ -161,6 +161,7 @@
 	@media (prefers-reduced-motion: no-preference) {
 		[data-style='nordico'] .key,
 		[data-style='nordico'] .theme,
+		[data-style='nordico'] [data-ui='appearance'],
 		[data-style='nordico'] .cmd,
 		[data-style='nordico'] select,
 		[data-style='nordico'] .mini a,

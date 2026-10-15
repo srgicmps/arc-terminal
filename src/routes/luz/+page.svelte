@@ -93,7 +93,8 @@
 	// Modo Sencillo: la media de hoy y la mejor franja de hoy y de mañana, en frases (src/lib/plain.ts).
 	const plain = $derived(
 		phrases([
-			powerPhrase(todayBlock?.stats.avg),
+			// La frase habla de la tarifa regulada: con solo el mayorista de hoy no se dice.
+			powerPhrase(todayBlock?.kind === 'PVPC' ? todayBlock.stats.avg : null),
 			...cheap.map((c) =>
 				c.list[0] ? cheapPhrase(c.when, Number(length), hourLabel(c.list[0].first), hourLabel(c.list[0].after), c.list[0].avg) : null
 			)
@@ -124,7 +125,7 @@
 		<Tile
 			label="Mañana, media"
 			value={nextBlock ? `${nf(nextBlock.stats.avg, 3)} €/kWh` : '—'}
-			tone={!nextBlock ? 'mut' : nextBlock.stats.avg <= todayBlock.stats.avg ? 'up' : 'down'}
+			tone={!nextBlock ? 'mut' : nextBlock.kind !== todayBlock.kind ? undefined : nextBlock.stats.avg <= todayBlock.stats.avg ? 'up' : 'down'}
 			sub={nextBlock ? `${nextBlock.kind}` : 'aún sin publicar (sale hacia las 20:30)'}
 		/>
 	</Tiles>
@@ -151,7 +152,7 @@
 											<span
 												>{nf(w.avg, 3)}
 												{#if c.b.stats.avg}{@const pct = ((w.avg - c.b.stats.avg) / c.b.stats.avg) * 100}<span class="mut"
-														>· {pct > 0 ? '+' : '−'}{nf(Math.abs(pct), 0)} %</span
+														>· {signed(pct, 0)} %</span
 													>{/if}</span
 											>
 										</li>
@@ -238,7 +239,7 @@
 						label="Desvío"
 						value={d.gap === null ? '—' : `${signed(-d.gap, 1)} %`}
 						tone={d.gap === null ? 'mut' : undefined}
-						sub={d.gap === null ? undefined : d.gap > 0 ? 'por debajo de la prevista' : 'por encima de la prevista'}
+						sub={d.gap === null ? undefined : Math.abs(d.gap) < 0.05 ? 'igual que la prevista' : d.gap > 0 ? 'por debajo de la prevista' : 'por encima de la prevista'}
 					/>
 				</Tiles>
 				{#if demandLines.length}<LineChart lines={demandLines} decimals={0} unit=" MW" height={160} />{/if}

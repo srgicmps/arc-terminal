@@ -74,5 +74,5 @@ export function czibSentence(items: Czib[]): string {
 	if (!items.length) return '';
 	const names = items.slice(0, 4).map((c) => c.area.replace(/ \(.*\)$/, ''));
 	const more = items.length > 4 ? ` y ${items.length - 4} más` : '';
-	return `La agencia europea de aviación pide precaución o no volar sobre ${items.length} zonas: ${names.join(', ')}${more}.`;
+	return `La agencia europea de aviación pide precaución o no volar sobre ${items.length === 1 ? 'una zona' : `${items.length} zonas`}: ${names.join(', ')}${more}.`;
 }

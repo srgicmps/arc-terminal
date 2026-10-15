@@ -46,7 +46,7 @@ export const LAYER_STYLE: Record<string, { shape: Shape; fill?: string; stroke?:
 	elections: { shape: 'square', stroke: 'fg' },
 	internet: { shape: 'triangle', stroke: 'fg' },
 	airspace: { shape: 'circle', stroke: 'amber', dash: true },
-	maritime: { shape: 'circle', fill: 'amber-soft' },
+	maritime: { shape: 'circle', fill: 'amber-edge' },
 	straits: { shape: 'circle', stroke: 'amber' },
 	sanctions: { shape: 'diamond', fill: 'amber-soft', stroke: 'amber' }
 };
@@ -137,7 +137,8 @@ export function pick<P extends GlobePoint>(
 	let bestD = Infinity;
 	for (const p of points) {
 		const q = rotate(p.lat, p.lon, view);
-		if (q.z <= 0) continue;
+		// Igual que el dibujo (globe-render.ts): un punto pegado al borde no se pinta, así que tampoco se toca.
+		if (q.z <= 0.02) continue;
 		const d = Math.hypot(q.x * radius - sx, -q.y * radius - sy);
 		if (d <= Math.max(pointPx(p.r, radius), touch) && d < bestD) {
 			best = p;

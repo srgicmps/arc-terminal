@@ -30,7 +30,7 @@ export function appMenu(appId: string): MenuEntry[] {
 	];
 }
 
-/** «Añadir al escritorio», si aún no tiene acceso allí (la ventana de carpeta no lo lleva). */
+/** «Añadir al escritorio», si aún no tiene acceso allí. */
 function toDesktop(appId: string): MenuEntry[] {
-	return appId === 'carpeta' || onDesktop(appId) ? [] : [{ label: 'Añadir al escritorio', run: () => addToDesktop(appId) }];
+	return onDesktop(appId) ? [] : [{ label: 'Añadir al escritorio', run: () => addToDesktop(appId) }];
 }

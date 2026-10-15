@@ -6,6 +6,7 @@ import { withLang } from '../sources/news.ts';
 import { mergeDay, mergeSections } from '../sources/imp.ts';
 import {
 	LIMITS,
+	myMemory,
 	loadCache,
 	pickTitles,
 	redact,
@@ -241,4 +242,13 @@ it('la fuente translations va en una oleada posterior a IMP', async () => {
 	const { translations } = await import('../sources/translate.ts');
 	const order = waves([translations, imp]).map((w) => w.map((s) => s.name));
 	expect(order).toEqual([['imp'], ['translations']]);
+});
+
+describe('myMemory', () => {
+	const reply = (text: string) => (async () => Response.json({ responseStatus: 200, responseData: { translatedText: text } })) as unknown as typeof fetch;
+
+	it('decodifica las entidades numéricas y con nombre, sin decodificar dos veces', async () => {
+		expect(await myMemory('x', 'a@b.c', reply('El &#039;plan&#039; de &#8220;Trump&#8221;&nbsp;&amp; la Fed'))).toBe("El 'plan' de “Trump” & la Fed");
+		expect(await myMemory('x', 'a@b.c', reply('Apple&#x2019;s &amp;#39;'))).toBe('Apple’s &#39;');
+	});
 });

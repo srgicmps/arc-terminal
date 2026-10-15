@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { neighbour, nudge, swipeDirection } from './swipe.ts';
+import { isOnRoute, neighbour, nudge, swipeDirection } from './swipe.ts';
 
 describe('deslizar entre vistas', () => {
 	it('cuenta solo los gestos horizontales, largos y rápidos', () => {
@@ -17,5 +17,16 @@ describe('deslizar entre vistas', () => {
 	it('el desplazamiento de pista no pasa de 24 px', () => {
 		expect(nudge(-400)).toBe(-24);
 		expect(nudge(40)).toBe(6);
+	});
+});
+
+describe('isOnRoute (QA T7)', () => {
+	it('marca la sección también en sus subrutas, pero la portada solo en /', () => {
+		expect(isOnRoute('/x/periodico', '/x')).toBe(true);
+		expect(isOnRoute('/x', '/x')).toBe(true);
+		expect(isOnRoute('/xyz', '/x')).toBe(false);
+		expect(isOnRoute('/eco', '/')).toBe(false);
+		expect(isOnRoute('/', '/')).toBe(true);
+		expect(isOnRoute(null, '/eco')).toBe(false);
 	});
 });

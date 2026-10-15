@@ -15,7 +15,8 @@
 		{ name: 'TVC:SX5E', displayName: 'Euro Stoxx 50' },
 		{ name: 'TVC:UKOIL', displayName: 'Brent' },
 		{ name: 'TVC:GOLD', displayName: 'Oro' },
-		{ name: 'TVC:US10Y', displayName: 'Bono EE. UU. 10 a' }
+		// TVC:US10Y sale vacío en los widgets (como en la cinta): FRED:DGS10, la rentabilidad oficial al cierre anterior.
+		{ name: 'FRED:DGS10', displayName: 'Bono EE. UU. 10 a' }
 	];
 	const config = {
 		width: '100%',

@@ -20,6 +20,8 @@
 	let wall = $state<WallData | null>(null);
 	let fetchedAt = $state<string | null>(null);
 	let full = $state(false);
+	// Safari del iPhone no tiene pantalla completa para páginas: sin ella, el botón no sale.
+	let canFull = $state(false);
 
 	async function load() {
 		try {
@@ -54,6 +56,7 @@
 		const onFull = () => (full = !!document.fullscreenElement);
 		document.addEventListener('fullscreenchange', onFull);
 		onFull();
+		canFull = !!document.fullscreenEnabled;
 		return () => {
 			clearInterval(tick);
 			clearInterval(refresh);
@@ -145,7 +148,7 @@
 		<a class="back" href={resolve('/')}>✕ Salir</a>
 		<span>MURO</span>
 		<span>{age === null ? '' : `datos de hace ${age} min · `}Esc para salir</span>
-		{#if !full}<button type="button" onclick={goFull}>Pantalla completa</button>{/if}
+		{#if canFull && !full}<button type="button" onclick={goFull}>Pantalla completa</button>{/if}
 	</footer>
 
 	{#if alert}
@@ -296,6 +299,9 @@
 		letter-spacing: var(--track-code);
 	}
 	footer .back {
+		display: inline-flex;
+		align-items: center;
+		min-height: var(--control-h);
 		color: var(--amber);
 		text-decoration: none;
 	}

@@ -88,6 +88,9 @@ describe('globo', () => {
 		const b = rotate(0, 5, v);
 		expect(pick(pts, b.x * 200 + 3, 0, v, 200)?.id).toBe('b');
 		expect(pick(pts, 150, 150, v, 200)).toBeNull();
+		// Pegado al borde (z ≈ 0,009) no se dibuja, así que tampoco se toca.
+		const edge = rotate(0, 89.5, v);
+		expect(pick([pt('e', 0, 89.5)], edge.x * 200, -edge.y * 200, v, 200)).toBeNull();
 	});
 
 	it('las capas sin estilo propio se pintan igual', () => {

@@ -5,6 +5,7 @@ import {
 	countryEntries,
 	dropSectionFilter,
 	hasWords,
+	hasWordsAt,
 	leaderEntries,
 	parseNewsQuery,
 	prepare,
@@ -205,5 +206,29 @@ describe('valores con bolsa (QA T7)', () => {
 	it('«BME:REP» y «NYSE:ES» abren su ficha, no NEWS', () => {
 		expect(searchOptions('BME:REP', [], [])[0]).toMatchObject({ code: 'BME:REP', kind: 'Valor' });
 		expect(searchOptions('NYSE:ES', [], [])[0]).toMatchObject({ code: 'NYSE:ES', kind: 'Valor' });
+	});
+});
+
+describe('búsqueda de NEWS (QA T5)', () => {
+	const SECTIONS = [
+		{ key: 'eco', label: 'Economía' },
+		{ key: 'ai', label: 'IA' }
+	];
+
+	it('«/ia» filtra por la sección IA aunque tenga solo 2 letras', () => {
+		expect(parseNewsQuery('chips /ia', SECTIONS)).toEqual({ text: 'chips', section: 'ai', hours: null });
+		expect(parseNewsQuery('chips /IA', SECTIONS).section).toBe('ai');
+	});
+
+	it('queryWords quita la puntuación de los extremos', () => {
+		expect(queryWords('Lagarde, «aranceles» (BCE)')).toEqual(['lagarde', 'aranceles', 'bce']);
+		expect(queryWords('¿qué? ,')).toEqual(['que']);
+	});
+
+	it('hasWordsAt: las palabras cortas empiezan palabra; las largas, en cualquier sitio', () => {
+		expect(hasWordsAt('Francia sube impuestos', ['ia'])).toBe(false);
+		expect(hasWordsAt('La IA de Google', ['ia'])).toBe(true);
+		expect(hasWordsAt('Nuevos aranceles', ['arancel'])).toBe(true);
+		expect(hasWordsAt('La (IA) avanza', ['ia'])).toBe(true);
 	});
 });

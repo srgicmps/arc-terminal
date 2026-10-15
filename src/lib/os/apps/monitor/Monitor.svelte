@@ -4,6 +4,7 @@
 	(salud de las fuentes, almacenamiento y memoria del navegador) y «Recursos» (gráficas en directo, Resources.svelte). Lee /data/status.json al abrir y cada minuto.
 -->
 <script lang="ts">
+	import UiIcon from '../../icons/UiIcon.svelte';
 	import { asset } from '$app/paths';
 	import { onMount } from 'svelte';
 	import Search from '../../../components/ui/Search.svelte';
@@ -13,6 +14,7 @@
 	import { hasWords, queryWords } from '../../../search.ts';
 	import { appOf, close, focus, openApp, os } from '../../os.svelte.ts';
 	import type { AppProps } from '../../apps.ts';
+	import OsIcon from '../../icons/OsIcon.svelte';
 	import Tool from '../kit/Tool.svelte';
 	import Resources from './Resources.svelte';
 	import { ageMin, ageText, late, sortProcs, STATE_TEXT, summary, type SortKey } from './procs.ts';
@@ -78,6 +80,11 @@
 	const words = $derived(queryWords(query));
 	const rows = $derived(list ? sortProcs(list, sort, now).filter((s) => !words.length || hasWords(`${s.label} ${s.name}`, words)) : []);
 	const sum = $derived(list ? summary(list) : null);
+	/** ¿Se ve esta ventana? (no minimizada y en el escritorio activo; en el móvil, siempre). */
+	const shown = $derived.by(() => {
+		const d = os.state.desks.find((x) => x.wins.some((w) => w.uid === win));
+		return !d || (d.id === os.state.active && !d.wins.find((w) => w.uid === win)?.min);
+	});
 	const wins = $derived(os.state.desks.flatMap((d) => d.wins.map((w) => ({ w, desk: d.name }))));
 	const mb = (b: number) => `${(b / 1048576).toLocaleString('es-ES', { maximumFractionDigits: 1 })} MB`;
 	const SORTS = [
@@ -91,7 +98,7 @@
 	{#snippet bar()}
 		<Seg label="Monitor" options={TABS} bind:value={tab} />
 		<span class="gap"></span>
-		<button type="button" onclick={load} title="Volver a leer">↻</button>
+		<button type="button" onclick={load} title="Volver a leer" aria-label="Volver a leer"><UiIcon id="refresh" size={14} /></button>
 	{/snippet}
 	{#if tab === 'apps'}
 		<Table csv={false}>
@@ -100,7 +107,7 @@
 				{#each wins as { w, desk } (w.uid)}
 					{@const app = appOf(w)}
 					<tr>
-						<td><button type="button" class="link" onclick={() => focus(w.uid)}>{app?.icon} {app?.name ?? w.app}</button></td>
+						<td><button type="button" class="link app" onclick={() => focus(w.uid)} title="Ir a esta ventana"><OsIcon id={w.app} size={18} /> {app?.name ?? w.app}</button></td>
 						<td class="l mut">{desk}</td>
 						<td class="l mut">{w.min ? 'Minimizada' : w.uid === win ? 'Este monitor' : 'Abierta'}</td>
 						<td><button type="button" onclick={() => close(w.uid)}>Finalizar</button></td>
@@ -108,9 +115,9 @@
 				{/each}
 			</tbody>
 		</Table>
-		<p class="mut">{wins.length} ventanas en {os.state.desks.length} escritorios.</p>
+		<p class="mut">{wins.length} {wins.length === 1 ? 'ventana' : 'ventanas'} en {os.state.desks.length} {os.state.desks.length === 1 ? 'escritorio' : 'escritorios'}.</p>
 	{:else if tab === 'res'}
-		<Resources wins={wins.length} sources={sum ? { fresh: sum.count.ok + sum.count.cached, stale: sum.count.stale + sum.count.error } : null} />
+		<Resources {shown} wins={wins.length} sources={sum ? { fresh: sum.count.ok + sum.count.cached, stale: sum.count.stale + sum.count.error } : null} />
 	{:else if failed && !list}
 		<p class="mut">No se ha podido leer el estado de las fuentes.</p>
 	{:else if !list || !sum}
@@ -177,6 +184,12 @@
 		border: 0;
 		background: none;
 		color: var(--amber);
+	}
+
+	.app {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--sp-6);
 	}
 
 	.tools {
