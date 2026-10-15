@@ -146,7 +146,7 @@
 	}
 
 	const r = $derived(ghost ?? win);
-	const title = $derived(win.path && win.path !== app.href ? `${app.name} · ${win.path}` : app.name);
+	const title = $derived(app.title ? app.title(win.path) : win.path && win.path !== app.href ? `${app.name} · ${win.path}` : app.name);
 </script>
 
 <section

@@ -91,6 +91,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-os-skin', storage: 'local', what: 'Que ya has pasado el primer arranque de Arc OS (y su aspecto, que es uno solo)', where: 'Arc OS, primer arranque', kind: 'ajuste' },
 	{ key: 'arc-os-name', storage: 'local', what: 'Cómo quieres que te llame Arc OS', where: 'Arc OS, primer arranque y Panel de control', kind: 'ajuste' },
 	{ key: 'arc-os-icons', storage: 'local', what: 'Dónde está cada icono del escritorio de Arc OS', where: 'Arc OS, arrastrando los iconos', kind: 'ajuste' },
+	{ key: 'arc-os-fs', storage: 'local', what: 'Tus carpetas del escritorio de Arc OS: qué hay en cada una y la papelera', where: 'Arc OS, escritorio y ventanas de carpeta', kind: 'dato' },
 	{ key: 'arc-os-watch', storage: 'local', what: 'Tus objetivos de Vigilancia (países, valores, líderes y temas), tu última visita y lo que ya habías visto', where: 'Arc OS, app Vigilancia', kind: 'dato' },
 	{ key: 'arc-os-seen', storage: 'local', what: 'Avisos y novedades ya vistos en el centro de notificaciones de Arc OS', where: 'Arc OS, campana de la barra', kind: 'dato' },
 	{ key: 'arc-os-cronologia', storage: 'local', what: 'Línea de tiempo de Arc OS: carriles visibles, su orden y el rango', where: 'Arc OS, app «Línea de tiempo» (botón «Carriles»)', kind: 'ajuste' },

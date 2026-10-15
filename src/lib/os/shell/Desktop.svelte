@@ -13,7 +13,7 @@
 	import type { StartApp } from './start.ts';
 	import Widget from './Widget.svelte';
 	import WidgetBody from './WidgetBody.svelte';
-	import { refreshWidgets } from './widgetdata.svelte.ts';
+	import { REFRESH_MS, refreshWidgets } from './widgetdata.svelte.ts';
 	import { defaultWidgets, removeWidget, type Placed } from './widgets.ts';
 
 	interface Props {
@@ -37,7 +37,7 @@
 	onMount(() => {
 		const go = () => refreshWidgets(place.current);
 		go();
-		const id = setInterval(go, 300_000);
+		const id = setInterval(go, REFRESH_MS);
 		return () => clearInterval(id);
 	});
 
@@ -46,7 +46,8 @@
 	}
 </script>
 
-<div class="desktop" data-wallpaper={shell.wallpaper} bind:clientWidth={w} bind:clientHeight={h}>
+<!-- data-fs-drop: aquí se pueden soltar iconos de las ventanas de carpeta; sobre otra ventana, no («none»). -->
+<div class="desktop" data-wallpaper={shell.wallpaper} data-fs-drop="desktop" bind:clientWidth={w} bind:clientHeight={h}>
 	<!-- El fondo (app «Fondo de pantalla» de «OS 5»): uno por escritorio, imagen propia, vivos y presentación. -->
 	<WallLayer />
 	<DesktopIcons {apps} {w} {h} />
@@ -58,7 +59,7 @@
 		{/each}
 	</div>
 	<!-- Las ventanas del núcleo, encima; lo vacío deja pasar el ratón a los widgets y los iconos. -->
-	{#if children}<div class="wins">{@render children()}</div>{/if}
+	{#if children}<div class="wins" data-fs-drop="none">{@render children()}</div>{/if}
 </div>
 
 <style>

@@ -35,6 +35,8 @@ export interface OsApp {
 	single?: boolean;
 	/** Posición en el menú (de 10 en 10). */
 	order: number;
+	/** Título de la ventana según lo que enseña (su path), si no basta con el nombre (p. ej. la carpeta abierta). */
+	title?: (path: string | undefined) => string;
 }
 
 /** Lo que exporta cada archivo de src/lib/os/apps/ (sin kind: siempre es una herramienta). */

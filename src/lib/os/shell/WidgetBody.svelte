@@ -11,7 +11,7 @@
 	import { cheapestNow, hourLabel } from '#lib/power.ts';
 	import { sky } from '#lib/weather.ts';
 	import { shell } from './shell.svelte.ts';
-	import { wdata } from './widgetdata.svelte.ts';
+	import { wdata, type WidgetSource } from './widgetdata.svelte.ts';
 	import { statusSummary, type WidgetKind } from './widgets.ts';
 	import { localZone, timeIn, ZONES } from './zones.ts';
 
@@ -32,6 +32,14 @@
 
 	const sys = $derived(statusSummary(wdata.status));
 	const health = $derived(sys.total ? Math.round((sys.ok / sys.total) * 100) : null);
+
+	// Sin datos: «Cargando…», el fallo y cuándo se reintenta, o que de verdad no hay nada.
+	const retryAt = $derived(wdata.retry ? timeIn(localZone(), wdata.retry) : '');
+	function empty(src: WidgetSource, what: string, none: string) {
+		if (!wdata.loaded) return `Cargando ${what}…`;
+		const why = wdata.failed[src];
+		return why ? `No se han podido leer ${what} (${why}). Se vuelve a intentar a las ${retryAt}.` : none;
+	}
 
 	function go(e: MouseEvent, href: string) {
 		e.preventDefault();
@@ -54,26 +62,26 @@
 			{/each}
 		</ul>
 		<a href="/mis" onclick={(e) => go(e, '/mis')}>Mis valores →</a>
-	{:else}<p class="mut">Sin cotizaciones ahora.</p>{/if}
+	{:else}<p class="mut">{empty('muro', 'las cotizaciones', 'Sin cotizaciones ahora.')}</p>{/if}
 {:else if kind === 'tiempo'}
 	{#if wx}
 		{@const s = sky(wx.current.code)}
 		<p class="wx"><span class="icon" aria-hidden="true">{s.icon}</span><b class="big">{Math.round(wx.current.temp)}°</b> <span>{s.label}</span></p>
 		<p class="mut">{place.current.name} · {wx.daily[0] ? `${Math.round(wx.daily[0].min)}° / ${Math.round(wx.daily[0].max)}°` : ''}</p>
 		<a href="/wx" onclick={(e) => go(e, '/wx')}>Tiempo →</a>
-	{:else}<p class="mut">Cargando el tiempo de {place.current.name}…</p>{/if}
+	{:else}<p class="mut">{empty('tiempo', `el tiempo de ${place.current.name}`, `Sin el tiempo de ${place.current.name} ahora.`)}</p>{/if}
 {:else if kind === 'titulares'}
 	{#if wdata.wall?.headlines.length}
 		<ol class="news">
 			{#each wdata.wall.headlines.slice(0, 5) as h (h.title)}<li>{h.title}</li>{/each}
 		</ol>
 		<a href="/imp" onclick={(e) => go(e, '/imp')}>Lo importante →</a>
-	{:else}<p class="mut">Sin titulares ahora.</p>{/if}
+	{:else}<p class="mut">{empty('muro', 'los titulares', 'Sin titulares ahora.')}</p>{/if}
 {:else if kind === 'luz'}
 	{#if luzLine}
 		<p>Lo más barato: <b>{luzLine}</b></p>
 		<a href="/luz" onclick={(e) => go(e, '/luz')}>Luz →</a>
-	{:else}<p class="mut">Aún no hay precios de la luz.</p>{/if}
+	{:else}<p class="mut">{empty('os', 'los precios de la luz', 'Aún no hay precios de la luz de hoy.')}</p>{/if}
 {:else if kind === 'sistema'}
 	{#if sys.total}
 		<p class="gauge"><b class="big">{health}%</b> <span class="mut">fuentes al día</span></p>
@@ -85,7 +93,7 @@
 			<li><span>Sin clave</span><b>{sys.off}</b><span></span></li>
 		</ul>
 		<a href="/status" onclick={(e) => go(e, '/status')}>Estado de las fuentes →</a>
-	{:else}<p class="mut">Sin estado de las fuentes.</p>{/if}
+	{:else}<p class="mut">{empty('status', 'el estado de las fuentes', 'Aún no hay estado de las fuentes.')}</p>{/if}
 {:else if kind === 'registro'}
 	{#if shell.notices.length || sys.failing.length}
 		<ul class="lines small">
@@ -97,7 +105,7 @@
 	{#if sys.total}
 		<p><b class="big">{sys.total}</b> <span class="mut">fuentes de datos</span></p>
 		<p class="mut">Última descarga: {when(sys.last, clock.now)}. Se refrescan cada 5–30 min con GitHub Actions.</p>
-	{:else}<p class="mut">Sin datos.</p>{/if}
+	{:else}<p class="mut">{empty('status', 'los datos de las fuentes', 'Aún no hay datos de las fuentes.')}</p>{/if}
 {:else if kind === 'manana'}
 	<p><b>{hello}.</b></p>
 	<ul class="lines">

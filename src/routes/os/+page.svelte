@@ -4,22 +4,29 @@
 	(src/lib/os/, src/lib/components/os/WindowLayer.svelte). Ocupa toda la pantalla, por encima de la cabecera de la web.
 -->
 <script lang="ts">
-	import { untrack } from 'svelte';
 	import WindowLayer from '#lib/components/os/WindowLayer.svelte';
 	import { apps, navigate, open } from '#lib/os/shell/bridge.ts';
 	import Desktop from '#lib/os/shell/Desktop.svelte';
 	import OsChrome from '#lib/os/shell/OsChrome.svelte';
 	import { osLook } from '#lib/os/look.ts';
 	import { loadShell, shell } from '#lib/os/shell/shell.svelte.ts';
+	import { loadFiles } from '#lib/os/fs/fs.svelte.ts';
 	import SystemLayer from '#lib/os/system/SystemLayer.svelte';
 	import MobileHome from '#lib/os/mobile/MobileHome.svelte';
+	import { untrack } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 
 	// En el móvil (≤ 900 px), pantalla de inicio de teléfono (OS 3); sin el escritorio, así no carga sus iframes.
 	const phone = new MediaQuery('max-width: 900px', false);
 
 	// La shell de «OS 2» (aspecto, barras, escritorio con iconos y widgets) alrededor de las ventanas del núcleo.
-	$effect(() => loadShell(['top', 'imp', 'eco', 'ws', 'geo']));
+	// Luego, las carpetas del escritorio (la primera vez, con las apps ancladas y en las casillas que tenían).
+	$effect(() =>
+		untrack(() => {
+			loadShell(['top', 'imp', 'eco', 'ws', 'geo']);
+			loadFiles(shell.pinned.map((id) => apps.find((a) => a.id === id)).filter((a) => !!a).map((a) => ({ id: a.id, name: a.title })));
+		})
+	);
 	// Dentro de Arc OS, los colores y la letra son los del aspecto, no la estética de la web (src/lib/os/look.ts).
 	let look: ReturnType<typeof osLook> | undefined;
 	$effect(() => {

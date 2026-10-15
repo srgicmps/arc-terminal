@@ -9,7 +9,7 @@
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { cloud } from '#lib/cloud.svelte.ts';
 	import * as os from './bridge.ts';
-	import { setBar, setName, setWallpaper, setWidgets, shell, WALLPAPERS, type Wallpaper } from './shell.svelte.ts';
+	import { setBar, setName, setWidgets, shell } from './shell.svelte.ts';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from './widgets.ts';
 
 	const desks = $derived(os.desks());
@@ -24,14 +24,16 @@
 	});
 
 	let bar = $state(shell.bar);
-	let wallpaper = $state<Wallpaper>(shell.wallpaper);
 	$effect(() => setBar(bar));
-	$effect(() => setWallpaper(wallpaper));
 
 	const current = $derived(shell.widgets ?? defaultWidgets(deskW, shell.skin));
 	const has = (k: WidgetKind) => current.some((w) => w.kind === k);
 	function flip(k: WidgetKind) {
 		setWidgets(has(k) ? removeWidget(current, k) : addWidget(current, k, deskW));
+	}
+	function app(id: string) {
+		shell.open = null;
+		os.open(id);
 	}
 	function go(href: string) {
 		shell.open = null;
@@ -49,9 +51,7 @@
 			<h3>Apariencia</h3>
 			<p class="mut">Arc OS tiene su propio aspecto. La estética, el acento y la densidad solo cambian el contenido de las apps.</p>
 			<button type="button" class="link" onclick={() => go('/estilo')}>Estética de las apps…</button>
-			<div class="row">
-				<Seg label="Fondo del escritorio" options={WALLPAPERS.map((w) => ({ value: w.id, label: w.label }))} bind:value={wallpaper} />
-			</div>
+			<button type="button" class="link" onclick={() => app('wallpaper')}>Cambiar fondo…</button>
 			{#if shell.skin === 'windows'}
 				<div class="row">
 					<Seg label="Barra de tareas" options={[{ value: 'bottom', label: 'Barra abajo' }, { value: 'top', label: 'Barra arriba' }]} bind:value={bar} />
@@ -90,6 +90,9 @@
 			<h3>Arc OS</h3>
 			<p class="mut">Es opcional: puedes volver a la web de siempre cuando quieras (y entrar otra vez con OS).</p>
 			<button type="button" class="link" onclick={os.leave}>Volver a la web clásica</button>
+		</section>
+		<section>
+			<button type="button" class="link" onclick={() => app('ajustes')}>Todos los ajustes…</button>
 		</section>
 		{#if admin}
 			<section>

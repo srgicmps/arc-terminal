@@ -1,5 +1,6 @@
 // Menús de clic derecho de la barra de tareas, el dock y las pestañas de DSM: los mismos en los tres sitios.
 import type { MenuEntry } from '../../components/os/ContextMenu.svelte';
+import { addToDesktop, onDesktop } from '../fs/fs.svelte.ts';
 import * as os from './bridge.ts';
 import { pin, shell } from './shell.svelte.ts';
 import type { TaskWin } from './types.ts';
@@ -14,6 +15,7 @@ export function winMenu(w: TaskWin): MenuEntry[] {
 		{ label: 'Abrir otra ventana', run: () => os.openFresh(w.appId) },
 		'sep',
 		{ label: pinned ? 'Desanclar' : 'Anclar', run: () => pin(w.appId) },
+		...toDesktop(w.appId),
 		{ label: 'Cerrar ventana', kbd: 'Alt+W', run: () => os.winClose(w.id) }
 	];
 }
@@ -23,6 +25,12 @@ export function appMenu(appId: string): MenuEntry[] {
 	return [
 		{ label: 'Abrir', run: () => os.open(appId) },
 		'sep',
-		{ label: shell.pinned.includes(appId) ? 'Desanclar' : 'Anclar', run: () => pin(appId) }
+		{ label: shell.pinned.includes(appId) ? 'Desanclar' : 'Anclar', run: () => pin(appId) },
+		...toDesktop(appId)
 	];
+}
+
+/** «Añadir al escritorio», si aún no tiene acceso allí (la ventana de carpeta no lo lleva). */
+function toDesktop(appId: string): MenuEntry[] {
+	return appId === 'carpeta' || onDesktop(appId) ? [] : [{ label: 'Añadir al escritorio', run: () => addToDesktop(appId) }];
 }
