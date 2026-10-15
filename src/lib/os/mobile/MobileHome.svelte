@@ -46,6 +46,7 @@
 	import PhoneWidget from './PhoneWidget.svelte';
 	import Spotlight from './Spotlight.svelte';
 	import CenterSheet from './CenterSheet.svelte';
+	import WallLayer from '../system/wall/WallLayer.svelte';
 	import type { Hit } from '../system/search.ts';
 	import { lock } from '../system/system.svelte.ts';
 	import { leaveOS } from '../mode.svelte.ts';
@@ -348,6 +349,8 @@
 <!-- Arc OS tiene un solo estilo, «Mando» (tokens.css): también el teléfono y lo que se abre encima. -->
 <div class="skin" data-os-skin="mando" data-ui="os">
 <div class="phone" class:in-app={current !== null} class:editing role="application" oncontextmenu={(e) => e.preventDefault()} aria-label="Modo OS" onpointerdown={down} onpointerup={up}>
+	<!-- Fondo de pantalla: el que eliges en la app «Fondo de pantalla» de OS 5 (el mismo que el escritorio). -->
+	<div class="wall" aria-hidden="true"><WallLayer /></div>
 	<div class="top">
 		<PhoneStatus {time} onnotif={() => (sheet = 'notif')} oncontrol={() => (sheet = 'control')} />
 		{#if editing && current === null}
@@ -527,6 +530,11 @@
 		overscroll-behavior: none;
 		user-select: none;
 		-webkit-user-select: none;
+	}
+	.wall {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
 	}
 	.top {
 		position: relative;

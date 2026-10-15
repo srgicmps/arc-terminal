@@ -30,11 +30,12 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
   de archivos de OS 2.
 - [x] Spotlight con `searchAll()` de OS 5: apps, valores, países, líderes y ajustes (bloquear, centro de control…);
   las acciones se hacen en el teléfono (`runPhoneHit` de `MobileHome`), no en ventanas.
-- [ ] Pantalla de bloqueo/arranque de OS 5 en el móvil (le pedí aspecto de teléfono, por encima de `--z-modal`+4).
+- [x] Arranque y bloqueo de OS 5 en el móvil, con cara de teléfono y en estilo «Mando» (#499 y #512).
 - [x] Apps de OS 4 a pantalla completa a 390 px: Calculadora, Reloj, Monitor, Ajustes, Visor y Vigilancia, bien;
   Notas (el `@container` se consultaba a sí mismo) y Calendario (fila de «Evento nuevo») arreglados.
 - [x] Insignias del centro de notificaciones de Arc OS (`shell.notices`, lo mismo que en el escritorio): cada aviso o
   novedad sin leer cuenta en la app de su enlace y todos los avisos en AVISOS; Calendario, tus eventos de hoy.
 - [x] Widgets elegibles: en el modo edición, «−» quita y «+» añade (Hoy, Mundo, Mercados, Avisos, Cripto, Bonos, Macro y
   Gasolina; hasta 16 casillas). Se guardan en `arc-os-phone`.
+- [x] Fondo de pantalla: el inicio del teléfono pinta `WallLayer` de OS 5 (el que eliges en la app «Fondo de pantalla»).
 - [ ] Probar en un iPhone de verdad (safe-area, PWA instalada, gestos frente al «atrás» del navegador).
