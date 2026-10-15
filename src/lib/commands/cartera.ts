@@ -13,6 +13,7 @@ export default {
 		panels: [
 			{ name: 'Resumen', what: 'Lo que vale hoy, lo invertido y la ganancia o pérdida, en euros.' },
 			{ name: 'Posiciones', what: 'Cada valor con su precio de hoy (o el tuyo), la variación del día, la ganancia y su peso. Abajo, para añadir.', keys: ['posiciones'] },
+			{ name: 'Resultados de tus valores', what: 'Cuándo presentan resultados tus valores (grandes de EE. UU., 2 semanas). El aviso la víspera, en AVISOS.', keys: ['resultados'] },
 			{ name: 'Reparto por sector', what: 'Cuánto pesa cada sector (el que escribas al añadir).' },
 			{ name: 'Reparto por divisa', what: 'Cuánto tienes en dólares, euros…' }
 		]
