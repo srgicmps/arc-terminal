@@ -25,6 +25,11 @@ export interface Command {
 	 */
 	arg?: { param: string; label: string; example: string };
 	/**
+	 * Si acepta un día detrás («LUZ mañana», «CAL viernes», M49). `panel`: la vista tiene un panel por día con
+	 * el día como título («jueves, 15 de octubre de 2026»); `param`: la vista lee `?dia=AAAA-MM-DD` y lo resalta.
+	 */
+	date?: 'panel' | 'param';
+	/**
 	 * Códigos de Bloomberg que llevan aquí (M45), para quien viene de su terminal: «WEI», «FXC»… Con `panel`,
 	 * van a ese panel de la vista (su título, como en `manual.panels`).
 	 */

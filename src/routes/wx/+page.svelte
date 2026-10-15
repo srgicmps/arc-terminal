@@ -9,6 +9,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { dayParam } from '#lib/dayparam.svelte.ts';
 	import { untrack } from 'svelte';
 	import { dm, hm, hmIn, nf, weekday } from '#lib/format.ts';
 	import { fetchLocal, type LocalWeather } from '#lib/localweather.ts';
@@ -83,6 +84,9 @@
 			.catch(() => (localError = 'No se pudo buscar el sitio.'))
 			.finally(() => goto(resolve('/wx'), { replaceState: true }));
 	});
+
+	// «WX sábado» (M49): ese día, resaltado en la previsión.
+	const pick = dayParam();
 
 	const fixed = $derived(data.weather?.data.places ?? []);
 	// El sitio elegido, primero; si no llega, el mismo de weather.json (Menorca), si está.
@@ -371,7 +375,7 @@
 					<tbody>
 						{#each p.daily as d (d.date)}
 							{@const s = sky(d.code)}
-							<tr>
+							<tr class:hl={d.date === pick.day}>
 								<td>{weekday(d.date)}</td>
 								<td class="l"><span class="i" aria-hidden="true">{s.icon}</span> {s.label}</td>
 								<td>{nf(d.max, 0)}°</td>
