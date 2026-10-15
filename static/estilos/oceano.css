@@ -85,6 +85,10 @@
 		--dur-ui: 260ms;
 		--dur-fast: 200ms;
 		--ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+		/* Barras de desplazamiento: turquesa apagado, como el agua honda; sin carril. */
+		--scroll-thumb: #1d4762;
+		--scroll-track: transparent;
 	}
 	:root[data-theme='light'][data-style='oceano'],
 	:root[data-theme='light'] [data-style='oceano'] {
@@ -118,6 +122,7 @@
 		--sea-edge: rgba(255, 255, 255, 0.9);
 		--shadow: 0 0 0 var(--hair) rgba(11, 34, 52, 0.05), 0 10px 28px -16px rgba(11, 50, 80, 0.28);
 		--shadow-pop: 0 0 0 var(--hair) rgba(11, 34, 52, 0.08), 0 24px 56px -18px rgba(11, 50, 80, 0.34);
+		--scroll-thumb: #b4cddb;
 	}
 
 	/* Móvil: algo menos de agua entre tarjetas, para que quepa más. */
@@ -131,101 +136,125 @@
 		}
 	}
 
-	/* ── Lo que un token no alcanza ─────────────────────────────────────────────────────────────── */
-	/* Título de vista: amplio y algo apretado. */
-	[data-style='oceano'] .vh h1 {
-		letter-spacing: -0.015em;
-	}
-	/* Cabecera de panel: una luz de agua que se apaga hacia la derecha, siguiendo la esquina. */
-	[data-style='oceano'] .panel .ph {
-		border-top-left-radius: var(--radius);
-		border-top-right-radius: var(--radius);
-		background-image: linear-gradient(90deg, var(--sea-glow), transparent 70%);
-	}
-	/* Barra de comandos: redonda, con un halo turquesa al escribir. */
-	[data-style='oceano'] .cmd {
-		--radius-s: 14px;
-		box-shadow: var(--shadow);
-	}
-	[data-style='oceano'] .cmd:focus-within {
-		box-shadow: 0 0 0 var(--sp-3) var(--amber-soft), var(--shadow);
-	}
-	[data-style='oceano'] .cmd .go {
-		border-radius: 0 calc(var(--radius-s) - var(--hair)) calc(var(--radius-s) - var(--hair)) 0;
-	}
-	[data-style='oceano'] .cmd.sheet {
-		--radius-s: 0;
-	}
-	[data-style='oceano'] .cmd .suggest {
-		margin-top: var(--sp-6);
-		border-radius: var(--radius-s);
-		box-shadow: var(--shadow-pop);
-	}
-	[data-style='oceano'] .cmd.sheet .suggest {
-		margin: 0 0 var(--sp-6);
-	}
-	/* Teclas de función: cápsulas; la activa, con un reflejo turquesa debajo. */
-	[data-style='oceano'] .key {
-		--radius-s: 999px;
-	}
-	[data-style='oceano'] .key[aria-current='page'] {
-		box-shadow: 0 var(--sp-6) var(--sp-16) -8px var(--amber-edge);
-	}
-	[data-style='oceano'] .tape {
-		--radius-s: var(--radius);
-	}
-	/* Segmentados: cápsula, con la opción elegida en turquesa. */
-	[data-style='oceano'] .seg,
-	[data-style='oceano'] .seg button {
-		--radius-s: 999px;
-	}
-	/* Cifras grandes de cabecera de vista (fuera de un panel): una tarjeta más, sin la línea de abajo. */
-	[data-style='oceano'] .tiles:not(.panel *) {
-		--border: 0 solid transparent;
-		margin-bottom: var(--grid-gap);
-		border-radius: var(--radius);
-		overflow: hidden;
-		box-shadow: var(--shadow);
-	}
-	/* Chips sueltos: lugar de la cabecera e índice de paneles del móvil. */
-	[data-style='oceano'] .place .chip {
-		border-radius: var(--radius-s);
-	}
-	[data-style='oceano'] .pidx span {
-		border-radius: 999px;
-	}
-	/* Tablas: la fila bajo el ratón se ilumina como el agua. */
-	[data-style='oceano'] .t tbody tr:not(.hl):hover td {
-		background: var(--sea-glow);
-	}
-	/* Gráficos: líneas de puntas redondas. */
-	[data-style='oceano'] .chart path {
-		stroke-linecap: round;
-	}
-
-	@media (prefers-reduced-motion: no-preference) {
-		[data-style='oceano'] .key,
-		[data-style='oceano'] .theme,
-		[data-style='oceano'] select,
-		[data-style='oceano'] .cmd,
-		[data-style='oceano'] .t td,
-		[data-style='oceano'] .chart path {
-			transition:
-				background-color var(--dur-ui) var(--ease),
-				border-color var(--dur-ui) var(--ease),
-				box-shadow var(--dur-ui) var(--ease),
-				color var(--dur-ui) var(--ease),
-				stroke var(--dur-ui) var(--ease);
-		}
-		/* Al entrar en una vista, los paneles emergen un poco desde el fondo: todos a la vez y breve. */
-		[data-style='oceano'] main .panel {
-			animation: oceano-rise var(--dur-ui) var(--ease) both;
-		}
-	}
 	@keyframes oceano-rise {
 		from {
 			opacity: 0;
 			translate: 0 var(--sp-6);
 		}
 	}
+}
+
+/* ── Lo que un token no alcanza ─────────────────────────────────────────────────────────────────────
+ * Fuera de la capa y con [data-style='oceano'][data-style]: el CSS de los componentes no tiene capa y ganaría
+ * a cualquier regla de dentro (docs/estilos.md). */
+
+/* Título de vista: amplio y algo apretado. */
+[data-style='oceano'][data-style] [data-ui='view-title'] {
+	letter-spacing: -0.015em;
+}
+/* Cabecera de panel: una luz de agua que se apaga hacia la derecha, siguiendo la esquina. */
+[data-style='oceano'][data-style] [data-ui='panel-head'] {
+	border-top-left-radius: inherit;
+	border-top-right-radius: inherit;
+	background-image: linear-gradient(90deg, var(--sea-glow), transparent 70%);
+}
+/* Barra de comandos: redonda, con un halo turquesa al escribir. */
+[data-style='oceano'][data-style] [data-ui='cmd'] {
+	--radius-s: 14px;
+	box-shadow: var(--shadow);
+}
+[data-style='oceano'][data-style] [data-ui='cmd']:focus-within {
+	box-shadow: 0 0 0 var(--sp-3) var(--amber-soft), var(--shadow);
+}
+[data-style='oceano'][data-style] [data-ui='cmd'] .go {
+	border-radius: 0 calc(var(--radius-s) - var(--hair)) calc(var(--radius-s) - var(--hair)) 0;
+}
+[data-style='oceano'][data-style] [data-ui='cmd'].sheet {
+	--radius-s: 0;
+}
+/* Sugerencias: una tarjeta aparte bajo la barra, con esquinas redondas que recortan su contenido. */
+[data-style='oceano'][data-style] [data-ui='cmd'] .suggest {
+	margin-top: var(--sp-6);
+	border: var(--border);
+	border-radius: var(--radius-s);
+	box-shadow: var(--shadow-pop);
+}
+[data-style='oceano'][data-style] [data-ui='cmd'].sheet .suggest {
+	margin: 0 var(--sp-6) var(--sp-6);
+	border-radius: var(--radius);
+}
+/* Burbujas del glosario (ⓘ): esquinas y sombra de lo que flota. */
+[data-style='oceano'][data-style] .tip[role='tooltip'] {
+	border-radius: var(--radius-s);
+	box-shadow: var(--shadow-pop);
+}
+/* Campos y desplegables propios de una vista (HIPOTECA…), con las esquinas de los demás controles. */
+[data-style='oceano'][data-style] [data-ui='main'] :is(input:not([type='checkbox'], [type='radio']), select, textarea) {
+	border-radius: var(--radius-s);
+}
+/* Teclas de función: cápsulas; la activa, con un reflejo turquesa debajo. */
+[data-style='oceano'][data-style] [data-ui='key'] {
+	--radius-s: 999px;
+}
+[data-style='oceano'][data-style] [data-ui='key'][aria-current='page'] {
+	box-shadow: 0 var(--sp-6) var(--sp-16) -8px var(--amber-edge);
+}
+[data-style='oceano'][data-style] [data-ui='tape'] {
+	--radius-s: var(--radius);
+}
+/* Segmentados: cápsula, con la opción elegida en turquesa. */
+[data-style='oceano'][data-style] .seg,
+[data-style='oceano'][data-style] .seg button {
+	--radius-s: 999px;
+}
+/* Cifras grandes de cabecera de vista (fuera de un panel): una tarjeta más, sin la línea de abajo. */
+[data-style='oceano'][data-style] [data-ui='tiles']:not([data-ui='panel'] *) {
+	--border: 0 solid transparent;
+	margin-bottom: var(--grid-gap);
+	border-radius: var(--radius);
+	overflow: hidden;
+	box-shadow: var(--shadow);
+}
+/* Chips sueltos: lugar de la cabecera e índice de paneles del móvil. */
+[data-style='oceano'][data-style] [data-ui='place'] .chip {
+	border-radius: var(--radius-s);
+}
+[data-style='oceano'][data-style] [data-ui='panel-index'] span {
+	border-radius: 999px;
+}
+/* Tablas: la fila bajo el ratón se ilumina como el agua. */
+[data-style='oceano'][data-style] .t tbody tr:not(.hl):hover td {
+	background: var(--sea-glow);
+}
+/* Gráficos: líneas de puntas redondas. */
+[data-style='oceano'][data-style] [data-ui='chart'] path {
+	stroke-linecap: round;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	[data-style='oceano'][data-style] [data-ui='key'],
+	[data-style='oceano'][data-style] .theme,
+	[data-style='oceano'][data-style] select,
+	[data-style='oceano'][data-style] [data-ui='cmd'],
+	[data-style='oceano'][data-style] .t td,
+	[data-style='oceano'][data-style] [data-ui='chart'] path {
+		transition:
+			background-color var(--dur-ui) var(--ease),
+			border-color var(--dur-ui) var(--ease),
+			box-shadow var(--dur-ui) var(--ease),
+			color var(--dur-ui) var(--ease),
+			stroke var(--dur-ui) var(--ease);
+	}
+	/* Al entrar en una vista, los paneles emergen un poco desde el fondo: todos a la vez y breve. El ampliado no:
+	   ya tiene su propia aparición. «backwards» y no «both»: al acabar no queda ningún translate en el panel, que lo
+	   haría bloque contenedor de lo fijo de dentro (las burbujas ⓘ saldrían descolocadas y recortadas). */
+	[data-style='oceano'][data-style] [data-ui='main'] [data-ui='panel']:not(.max) {
+		animation: oceano-rise var(--dur-ui) var(--ease) backwards;
+	}
+}
+/* Foco con teclado sobre un control relleno del acento dentro de un panel: el contorno va hacia dentro (por el
+   recorte de las esquinas) y, en el color del acento, no se vería. En el color del texto sobre el acento, sí. */
+[data-style='oceano'][data-style] [data-ui='panel'] :is(.seg [aria-checked='true'], .go):focus-visible {
+	outline-color: var(--on-amber);
+	outline-offset: calc(-2 * var(--focus-w) - var(--sp-1));
 }
