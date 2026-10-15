@@ -2,7 +2,7 @@
 // WorldMap solo tenga que dibujarlos. Funciones puras, con tests.
 import { findCountries } from '../countries.ts';
 import { nf } from '../format.ts';
-import type { Chokepoint, Disaster, NaturalEvent, Quake, Storm } from '../types.ts';
+import type { Chokepoint, NaturalEvent, Quake, Storm } from '../types.ts';
 
 /** Lo que hace falta de un documento de sanciones o aranceles (sanctions.json). */
 export interface TradeLike {
@@ -11,15 +11,14 @@ export interface TradeLike {
 	url: string;
 }
 
-export type LayerId = 'quakes' | 'storms' | 'events' | 'straits' | 'sanctions' | 'crises';
+export type LayerId = 'quakes' | 'storms' | 'events' | 'straits' | 'sanctions';
 
 export const LAYERS: { value: LayerId; label: string }[] = [
 	{ value: 'quakes', label: 'Terremotos' },
 	{ value: 'storms', label: 'Ciclones' },
 	{ value: 'events', label: 'Incendios y volcanes' },
 	{ value: 'straits', label: 'Estrechos' },
-	{ value: 'sanctions', label: 'Sanciones' },
-	{ value: 'crises', label: 'Crisis' }
+	{ value: 'sanctions', label: 'Sanciones' }
 ];
 
 export interface MapPoint {
@@ -49,7 +48,7 @@ export const STRAITS: Record<string, [number, number]> = {
 };
 
 /**
- * Países que nombra un texto (sanciones, aranceles, crisis), con su centro para el mapa: los de
+ * Países que nombra un texto (sanciones, aranceles), con su centro para el mapa: los de
  * findCountries() (src/lib/countries.ts, los mismos que PAIS) y, aparte, la Unión Europea, que no es país.
  */
 const EU = { name: 'Unión Europea', code: undefined, at: [50.1, 9.7] as [number, number] };
@@ -129,14 +128,6 @@ export function sanctionPoints(docs: TradeLike[]): MapPoint[] {
 	}));
 }
 
-/** Crisis de ReliefWeb, en el centro de su país (si el país está en la tabla). */
-export const crisisPoints = (items: Disaster[]): MapPoint[] =>
-	items.flatMap((d) => {
-		const c = countriesIn(d.country)[0];
-		if (!c) return [];
-		return [{ id: `r-${d.id}`, layer: 'crises' as const, lat: c.at[0], lon: c.at[1], r: 1.6, title: d.name, sub: d.type, url: d.url, country: c.code }];
-	});
-
 /** Todas las capas a la vez. La usan GEO (+page.server.ts) y el JSON del mapa fijado en TOP. */
 export const mapLayers = (d: {
 	quakes?: Quake[];
@@ -144,12 +135,10 @@ export const mapLayers = (d: {
 	events?: NaturalEvent[];
 	straits?: Chokepoint[];
 	sanctions?: TradeLike[];
-	crises?: Disaster[];
 }): Record<LayerId, MapPoint[]> => ({
 	quakes: quakePoints(d.quakes ?? []),
 	storms: stormPoints(d.storms ?? []),
 	events: eventPoints(d.events ?? []),
 	straits: straitPoints(d.straits ?? []),
-	sanctions: sanctionPoints(d.sanctions ?? []),
-	crises: crisisPoints(d.crises ?? [])
+	sanctions: sanctionPoints(d.sanctions ?? [])
 });

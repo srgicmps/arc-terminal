@@ -9,6 +9,7 @@
 <script lang="ts">
 	import { onMount, type Snippet } from 'svelte';
 	import { asset } from '$app/paths';
+	import { page } from '$app/state';
 	import Panel from '#lib/components/Panel.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
@@ -111,6 +112,15 @@
 	});
 
 	const isOpen = (id: string) => (searching ? !!has.get(id) : (toggled[id] ?? !mobile));
+
+	// «ECO ?» en la barra abre /manual#cmd-ECO: en el móvil, su sección se abre para que se vea la ficha.
+	$effect(() => {
+		const code = page.url.hash.match(/^#cmd-(.+)$/)?.[1];
+		const section = COMMANDS.find((c) => c.code === code)?.manual?.section;
+		if (!section) return;
+		toggled[`sec-${slug(section)}`] = true;
+		requestAnimationFrame(() => document.getElementById(`cmd-${code}`)?.scrollIntoView({ block: 'start' }));
+	});
 
 	function ontoggle(id: string, e: Event) {
 		if (!searching) toggled[id] = (e.currentTarget as HTMLDetailsElement).open;

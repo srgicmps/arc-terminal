@@ -146,6 +146,8 @@
 					<ol class="boe">
 						{#each hits as { item, date } (item.id)}{@render entry(item, date)}{/each}
 					</ol>
+				{:else if watchwords.words.length}
+					<p class="empty">Nada coincide con «{watchwords.words.join(', ')}».</p>
 				{/if}
 				{#snippet note()}Sin tildes ni mayúsculas y por palabra entera{weekly ? ', en los últimos 7 días' : ''}. Se guardan solo
 					en este navegador.{/snippet}
@@ -159,6 +161,9 @@
 		{:else if !week}
 			<p class="empty">Cargando la semana…</p>
 		{:else}
+			{#if words.length && !days.some((d) => d.items.length)}
+				<p class="empty">Nada coincide con «{query.trim()}».</p>
+			{/if}
 			<div class="grid">
 				{#each days as d (d.date)}
 					{#if d.items.length}
@@ -174,6 +179,9 @@
 			</div>
 		{/if}
 	{:else}
+	{#if boe && words.length && !sections.some((s) => s.items.length)}
+		<p class="empty">Nada coincide con «{query.trim()}».</p>
+	{/if}
 	<div class="grid">
 		{#each sections as s (s.code)}
 			{#if s.items.length}

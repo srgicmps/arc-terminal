@@ -70,7 +70,8 @@
 			<TvWidget widget="market-quotes" config={chain} height={chainHeight} />
 		</Panel>
 		<Panel title="IA en Hacker News" meta="{hnAi.length} en portada">
-			<HnTable items={hnAi} />
+			{#if hnAi.length}<HnTable items={hnAi} />{:else}<p class="empty">Nada de este tema en la portada ahora mismo.</p>{/if}
+			{#snippet note()}Fuente: Hacker News (API de Algolia) · <Updated at={data.hn?.fetchedAt} source="hn" />{/snippet}
 		</Panel>
 		{#if data.newModels?.data.length}
 			{@const fresh = data.newModels.data}

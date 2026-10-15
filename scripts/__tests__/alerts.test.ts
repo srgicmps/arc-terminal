@@ -15,7 +15,6 @@ import { appendSpan } from '../history.ts';
 import {
 	addDays,
 	cheapestDiesel,
-	crisisRule,
 	dieselDayRule,
 	dieselExtremeRule,
 	dieselGapRule,
@@ -107,7 +106,6 @@ describe('RULES', () => {
 			'2:liquidity',
 			'3:poly',
 			'3:earnings',
-			'3:crisis',
 			'3:down',
 			'3:luz',
 			'3:tomorrow',
@@ -670,20 +668,6 @@ describe('P3', () => {
 		const { alerts } = run(earningsRule, { finnhub });
 		expect(alerts.map((a) => a.id)).toEqual(['earn:NVDA:2026-10-14']);
 		expect(alerts[0].body).toBe('BPA 1,10 $ (previsto 1,00) · ingresos 52,0 mil M$ (previstos 50,0).');
-	});
-
-	it('crisis de ReliefWeb: solo si trae nivel alto y es reciente (hoy la fuente no da nivel: no aplica)', () => {
-		const c = (id: string, level?: string, hoursAgo = 2) => ({
-			id,
-			name: `Crisis ${id}`,
-			country: '',
-			type: '',
-			date: new Date(NOW - hoursAgo * HOUR).toISOString(),
-			url: '',
-			glide: '',
-			level
-		});
-		expect(run(crisisRule, { reliefweb: [c('a', 'High'), c('b'), c('c', 'high', 72)] }).ids).toEqual(['crisis:a']);
 	});
 
 	it('fuente caída: cuando issues.ts abriría el issue (3 pasadas en error)', () => {

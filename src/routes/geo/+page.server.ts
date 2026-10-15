@@ -10,7 +10,6 @@ import { headlines, trim } from '#lib/trim.ts';
 import type {
 	AdvisoriesData,
 	Chokepoint,
-	Disaster,
 	ElectionsData,
 	FoodInsecurity,
 	EuLexDoc,
@@ -29,7 +28,7 @@ import type {
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, intl, analysis, world, quakes, hazards, predictions, portwatch, reliefweb, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex, unhcr, food, radar] = await Promise.all([
+	const [news, intl, analysis, world, quakes, hazards, predictions, portwatch, sanctions, climate, elections, swpc, advisories, sipri, gdacs, ioda, who, sanctionsUk, eurlex, unhcr, food, radar] = await Promise.all([
 		dataset<NewsData>('news-geo'),
 		dataset<NewsData>('news-intl'),
 		dataset<NewsData>('news-analysis'),
@@ -38,7 +37,6 @@ export const load: PageServerLoad = async () => {
 		dataset<HazardsData>('hazards'),
 		dataset<PredictionsData>('predictions'),
 		dataset<Chokepoint[]>('portwatch'),
-		dataset<Disaster[]>('reliefweb'),
 		dataset<TradeDoc[]>('sanctions'),
 		dataset<ClimateData>('climate'),
 		dataset<ElectionsData>('elections'),
@@ -67,8 +65,7 @@ export const load: PageServerLoad = async () => {
 		storms: hazards?.data.storms,
 		events: hazards?.data.events,
 		straits: portwatch?.data,
-		sanctions: trade,
-		crises: reliefweb?.data
+		sanctions: trade
 	});
 	return {
 		layers,
@@ -81,7 +78,6 @@ export const load: PageServerLoad = async () => {
 		hazards,
 		predictions: trim(predictions, (d) => ({ geopolitics: d.geopolitics.slice(0, 8), economy: [] })),
 		portwatch,
-		reliefweb,
 		sanctions: sanctions || sanctionsUk || eurlex
 			? { fetchedAt: sanctions?.fetchedAt, ukAt: sanctionsUk?.fetchedAt, euAt: eurlex?.fetchedAt, data: trade.slice(0, 10) }
 			: null,

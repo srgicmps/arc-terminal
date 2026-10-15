@@ -276,7 +276,7 @@
 {/snippet}
 
 {#snippet risk()}
-	<RiskGauge id="risk" risk={data.risk} />
+	<RiskGauge id="risk" risk={data.risk} lights={data.lights} />
 {/snippet}
 
 {#snippet puzzle()}
