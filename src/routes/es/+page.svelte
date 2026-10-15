@@ -11,7 +11,8 @@
 	import Change from '#lib/components/ui/Change.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
 	import { dm, nf, period } from '#lib/format.ts';
-	import { hourly } from '#lib/power.ts';
+	import { clock } from '#lib/clock.svelte.ts';
+	import { hourly, madridNow } from '#lib/power.ts';
 	import { seriesMap, spread } from '#lib/series.ts';
 	import type { PageProps } from './$types';
 
@@ -27,7 +28,8 @@
 	const fuelAvg = $derived(data.fuel?.data.avg);
 	const pvpc = $derived(hourly(data.power?.data.pvpc ?? []));
 	const luzHoy = $derived.by(() => {
-		const day = pvpc[0]?.day;
+		// El día de hoy en Madrid (en el navegador); sin reloj aún, el primero que trae la descarga.
+		const day = (clock.now ? madridNow(clock.now).day : null) ?? pvpc[0]?.day;
 		const today = pvpc.filter((p) => p.day === day);
 		return today.length ? today.reduce((a, p) => a + p.kwh, 0) / today.length : null;
 	});

@@ -59,7 +59,7 @@
 		display: flex;
 		align-items: center;
 		gap: var(--sp-12);
-		height: var(--sp-24);
+		height: var(--os-strip-h);
 		padding: 0 var(--sp-10);
 		background: var(--cmd-deck);
 		border-top: var(--hair) solid var(--cmd-cold-dim);

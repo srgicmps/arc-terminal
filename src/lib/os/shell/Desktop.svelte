@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { place } from '#lib/place.svelte.ts';
 	import WallLayer from '../system/wall/WallLayer.svelte';
 	import DesktopIcons from './DesktopIcons.svelte';
@@ -14,7 +14,7 @@
 	import Widget from './Widget.svelte';
 	import WidgetBody from './WidgetBody.svelte';
 	import { REFRESH_MS, refreshWidgets } from './widgetdata.svelte.ts';
-	import { defaultWidgets, removeWidget, type Placed } from './widgets.ts';
+	import { defaultWidgets, removeWidget, stackWidgets, type Placed } from './widgets.ts';
 
 	interface Props {
 		apps: StartApp[];
@@ -32,7 +32,22 @@
 		size = { w, h };
 	});
 
-	const widgets = $derived(shell.widgets ?? (w ? defaultWidgets(w, shell.skin) : []));
+	// Los de por defecto (sin tocar aún) se apilan según su alto real: con datos crecen y no deben pisarse.
+	let heights = $state<number[]>([]);
+	let layer = $state<HTMLElement>();
+	const widgets = $derived(shell.widgets ?? (w ? stackWidgets(defaultWidgets(w, shell.skin), heights) : []));
+	$effect(() => {
+		void widgets.length; // volver a mirar cuando aparecen (el ancho del escritorio llega después de montar)
+		if (!layer || shell.widgets) return;
+		const measure = () => {
+			const hs = [...layer!.querySelectorAll<HTMLElement>(':scope > .widget')].map((el) => el.offsetHeight);
+			if (hs.join() !== untrack(() => heights).join()) heights = hs;
+		};
+		const ro = new ResizeObserver(measure);
+		for (const el of layer.querySelectorAll(':scope > .widget')) ro.observe(el);
+		measure();
+		return () => ro.disconnect();
+	});
 
 	onMount(() => {
 		const go = () => refreshWidgets(place.current);
@@ -51,7 +66,7 @@
 	<!-- El fondo (app «Fondo de pantalla» de «OS 5»): uno por escritorio, imagen propia, vivos y presentación. -->
 	<WallLayer />
 	<DesktopIcons {apps} {w} {h} />
-	<div class="widgets" class:hidden={shell.widgetsHidden}>
+	<div class="widgets" class:hidden={shell.widgetsHidden} bind:this={layer}>
 		{#each widgets as wd (wd.kind)}
 			<Widget w={wd} desk={{ w, h }} onmove={moveTo} onremove={() => setWidgets(removeWidget(widgets, wd.kind))}>
 				<WidgetBody kind={wd.kind} {onnavigate} />

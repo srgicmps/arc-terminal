@@ -39,3 +39,9 @@ describe('parseDay (M49)', () => {
 		expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
 	});
 });
+
+describe('fechas imposibles (QA T7)', () => {
+	it('devuelven null en vez de lanzar RangeError', () => {
+		for (const raw of ['10/15', '1/13', '40/10', '0/10', '2026-13-01']) expect(parseDay(raw, '2026-10-15')).toBeNull();
+	});
+});
