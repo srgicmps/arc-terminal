@@ -57,7 +57,11 @@
 
 	function submit(e: SubmitEvent) {
 		e.preventDefault();
-		if (found[0] && !go) onapp(found[0]);
+		// El nombre exacto de una app («Ajustes») gana a lo que adivina la barra de comandos (MANUAL).
+		const same = (x: string) => x.normalize('NFD').replace(/\p{M}/gu, '').trim().toLowerCase();
+		const exact = found.find((a) => same(a.name) === same(q));
+		if (exact) onapp(exact);
+		else if (found[0] && !go) onapp(found[0]);
 		else if (go) onpath(go.path);
 		else if (hits[0]) onhit(hits[0]);
 	}
