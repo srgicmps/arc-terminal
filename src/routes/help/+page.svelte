@@ -22,6 +22,8 @@
 	import { collect, decode, encode, HASH } from '#lib/transfer.ts';
 	import { cloud } from '#lib/cloud.svelte.ts';
 	import StylePicker from '#lib/components/StylePicker.svelte';
+	import Tour from '#lib/onboarding/Tour.svelte';
+	import { startTour, tour } from '#lib/onboarding/tour.svelte.ts';
 	import { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, resetTaste, setAccent, setDensity, setThumb, setTop, taste, THUMB_MAX } from '#lib/taste.svelte.ts';
 
 	// «A tu gusto»: todas las vistas que se abren sin texto detrás pueden ir en la fila de arriba o abajo.
@@ -54,6 +56,8 @@
 		taste.accent !== 'amber' || taste.density !== 'compacta' || taste.top.join() !== DEFAULT_TOP.join() || taste.thumb.join() !== DEFAULT_THUMB.join()
 	);
 </script>
+
+{#if tour.open}<Tour />{/if}
 
 <ViewHeader code="HELP" title="Comandos y atajos" sub="Escribe un comando o un valor en la barra de arriba y pulsa Intro" />
 
@@ -125,6 +129,8 @@
 						{/if}
 					</Select>
 				</dd>
+				<dt>Primeros pasos</dt>
+				<dd class="send"><a href={resolve('/bienvenida')}>Repetir la bienvenida</a> · <button class="tourbtn" type="button" onclick={() => startTour()}>Ver el recorrido</button></dd>
 				{#if cloud.user}
 					<dt>Tu cuenta</dt>
 					<dd>Todo esto se guarda en tu cuenta ({cloud.user}) y llega solo a tus otros dispositivos.</dd>
@@ -310,4 +316,14 @@
 		}
 	}
 
+	.tourbtn {
+		padding: 0;
+		font: inherit;
+		color: var(--amber-dim);
+		background: none;
+		border: 0;
+		cursor: pointer;
+		text-decoration: underline;
+		text-underline-offset: var(--sp-2);
+	}
 </style>
