@@ -19,7 +19,7 @@
 	import { markSeen as seenWith } from '../shell/notices.ts';
 	import { EVENTS_KEY, isEvents, isoDay } from '../apps/cal/cal.ts';
 	import { APPS, appOfPath, embedSrc, findApp } from '../apps.ts';
-	import { os } from '../os.svelte.ts';
+	import { os, phoneOpen } from '../os.svelte.ts';
 	import {
 		ARRANGE_KEY,
 		WIDGETS,
@@ -193,6 +193,17 @@
 		const c = COMMANDS.find((x) => x.code === code);
 		if (c) launchPath(c.route);
 	}
+	// Lo que las apps abren con openApp/openPath (Terminal «eco», enlaces de Ajustes o Calendario…) sería una ventana
+	// del escritorio, que aquí no se ve: se abre a pantalla completa.
+	$effect(() => {
+		phoneOpen.fn = (id, path) => {
+			const a = appOf(id);
+			if (!a) return false;
+			launch(a, path);
+			return true;
+		};
+		return () => (phoneOpen.fn = null);
+	});
 	const goHome = () => ((current = null), (sheet = null), (openFolder = null));
 
 	function closeApp(id: string) {
