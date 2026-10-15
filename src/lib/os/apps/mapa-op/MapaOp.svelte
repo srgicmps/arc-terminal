@@ -404,8 +404,10 @@
 		cursor: pointer;
 	}
 
-	.lnk:hover {
-		color: var(--cmd-cold);
+	@media (hover: hover) {
+		.lnk:hover {
+			color: var(--cmd-cold);
+		}
 	}
 
 	ul {
@@ -430,8 +432,10 @@
 		cursor: pointer;
 	}
 
-	.layer:hover {
-		background: var(--raise);
+	@media (hover: hover) {
+		.layer:hover {
+			background: var(--raise);
+		}
 	}
 
 	.layer[aria-pressed='true'] {
@@ -577,8 +581,10 @@
 		border-color: var(--cmd-coast);
 	}
 
-	.zoom button:hover {
-		color: var(--cmd-cold);
+	@media (hover: hover) {
+		.zoom button:hover {
+			color: var(--cmd-cold);
+		}
 	}
 
 	.hud {
@@ -629,8 +635,10 @@
 		cursor: pointer;
 	}
 
-	.x:hover {
-		color: var(--fg);
+	@media (hover: hover) {
+		.x:hover {
+			color: var(--fg);
+		}
 	}
 
 	.card {
@@ -711,9 +719,11 @@
 		cursor: pointer;
 	}
 
-	.act:hover {
-		border-color: var(--cmd-cold);
-		color: var(--cmd-cold);
+	@media (hover: hover) {
+		.act:hover {
+			border-color: var(--cmd-cold);
+			color: var(--cmd-cold);
+		}
 	}
 
 	.log {
@@ -740,8 +750,10 @@
 		cursor: pointer;
 	}
 
-	.log button:hover {
-		background: var(--raise);
+	@media (hover: hover) {
+		.log button:hover {
+			background: var(--raise);
+		}
 	}
 
 	.log time {

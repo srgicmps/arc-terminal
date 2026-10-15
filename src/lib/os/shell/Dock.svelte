@@ -133,9 +133,13 @@
 		white-space: nowrap;
 		pointer-events: none;
 	}
-	button:hover .tip,
 	button:focus-visible .tip {
 		display: block;
+	}
+	@media (hover: hover) {
+		button:hover .tip {
+			display: block;
+		}
 	}
 	.dot {
 		position: absolute;

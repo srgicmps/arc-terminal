@@ -161,10 +161,15 @@
 		cursor: pointer;
 	}
 
-	.btn:hover:not(:disabled),
 	.btn[aria-pressed='true'] {
 		border-color: var(--cmd-cold);
 		color: var(--cmd-cold);
+	}
+	@media (hover: hover) {
+		.btn:hover:not(:disabled) {
+			border-color: var(--cmd-cold);
+			color: var(--cmd-cold);
+		}
 	}
 
 	.btn:disabled {

@@ -95,9 +95,13 @@
 		font-size: var(--fs-m);
 		color: var(--cmd-cold);
 	}
-	.tool:hover,
 	.tool[aria-expanded='true'] {
 		background: var(--os-topbar-hover);
+	}
+	@media (hover: hover) {
+		.tool:hover {
+			background: var(--os-topbar-hover);
+		}
 	}
 	.tabs {
 		flex: 1;
@@ -122,9 +126,11 @@
 		text-transform: uppercase;
 		color: var(--muted);
 	}
-	.tabs button:hover {
-		background: var(--os-topbar-hover);
-		color: var(--fg);
+	@media (hover: hover) {
+		.tabs button:hover {
+			background: var(--os-topbar-hover);
+			color: var(--fg);
+		}
 	}
 	.tabs button.on {
 		border-bottom-color: var(--cmd-cold);
@@ -221,9 +227,13 @@
 		color: inherit;
 		font-size: var(--fs-s);
 	}
-	.mando :global(.tray-btn:hover),
 	.mando :global(.tray-btn[aria-expanded='true']) {
 		background: var(--os-topbar-hover);
+	}
+	@media (hover: hover) {
+		.mando :global(.tray-btn:hover) {
+			background: var(--os-topbar-hover);
+		}
 	}
 	.mando :global(.pop) {
 		position: absolute;

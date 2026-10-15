@@ -189,9 +189,13 @@
 		padding: 0 var(--sp-8);
 		border-radius: var(--radius-s);
 	}
-	.m > button[aria-expanded='true'],
-	.m > button:hover {
+	.m > button[aria-expanded='true'] {
 		background: var(--raise);
+	}
+	@media (hover: hover) {
+		.m > button:hover {
+			background: var(--raise);
+		}
 	}
 	.m :global(svg) {
 		width: var(--sp-16);
@@ -228,10 +232,15 @@
 		border-radius: var(--radius-s);
 		text-align: left;
 	}
-	.drop button:hover:not(:disabled),
 	.drop button:focus-visible {
 		background: var(--amber);
 		color: var(--on-amber);
+	}
+	@media (hover: hover) {
+		.drop button:hover:not(:disabled) {
+			background: var(--amber);
+			color: var(--on-amber);
+		}
 	}
 	.drop button:disabled {
 		color: var(--faint);
@@ -255,9 +264,13 @@
 		border-radius: var(--os-menu-radius, var(--radius));
 		font-weight: var(--fw-medium);
 	}
-	.activities:hover,
 	.activities[aria-expanded='true'] {
 		background: var(--os-topbar-hover);
+	}
+	@media (hover: hover) {
+		.activities:hover {
+			background: var(--os-topbar-hover);
+		}
 	}
 	.center {
 		position: relative;
@@ -283,13 +296,21 @@
 		color: inherit;
 		font-size: var(--fs-s);
 	}
-	.menubar :global(.tray-btn:hover),
 	.menubar :global(.tray-btn[aria-expanded='true']) {
 		background: var(--raise);
 	}
-	.linux :global(.tray-btn:hover),
+	@media (hover: hover) {
+		.menubar :global(.tray-btn:hover) {
+			background: var(--raise);
+		}
+	}
 	.linux :global(.tray-btn[aria-expanded='true']) {
 		background: var(--os-topbar-hover);
+	}
+	@media (hover: hover) {
+		.linux :global(.tray-btn:hover) {
+			background: var(--os-topbar-hover);
+		}
 	}
 	.linux :global(.mk) {
 		color: inherit;
