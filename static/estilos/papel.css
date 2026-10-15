@@ -77,6 +77,10 @@
 		--gutter-touch: var(--sp-14);
 		--cmd-h: 38px;
 
+		/* Barras de desplazamiento: finas, del tono del filete; el carril, sin pintar. */
+		--scroll-w: 9px;
+		--scroll-thumb: #57524a;
+
 		--dur-ui: 160ms;
 		--dur-fast: 160ms;
 		--ease: cubic-bezier(0.25, 0.1, 0.25, 1);
@@ -104,13 +108,14 @@
 		--sq-light: #f1ede4;
 		--sq-dark: #d9d1c2;
 		--scrim: rgba(34, 32, 28, 0.32);
+		--scroll-thumb: #c4bcae;
 	}
 
 	/* ── Lo que un token no alcanza ───────────────────────────────────────────────────────── */
 
 	/* Cifras en Plex Mono: tablas y recuadros (los nombres de las tablas siguen en Sans). */
 	[data-style='papel'] .t,
-	[data-style='papel'] .tile b {
+	[data-style='papel'] .tile > b {
 		font-family: var(--mono);
 	}
 	[data-style='papel'] .t {
@@ -176,4 +181,42 @@
 				border-color var(--dur-ui) var(--ease);
 		}
 	}
+}
+
+/* ── Retoques de componente (fuera de la capa, para ganar al CSS de los componentes) ───────────────── */
+
+/* Campos y desplegables sueltos (hipoteca, manual, conversores…): con las esquinas de los controles, como los
+   botones. La barra de comandos queda fuera: su campo no tiene borde propio. */
+[data-style='papel'][data-style] :is(input:not([type='checkbox'], [type='radio'], [type='range']), select, textarea):not([data-ui='cmd'] *) {
+	border-radius: var(--radius-s);
+}
+
+/* Barra de comandos: «GO» pegado al borde derecho, con la misma curva por dentro. */
+[data-style='papel'][data-style] [data-ui='cmd'] .go {
+	border-radius: 0 calc(var(--radius-s) - var(--hair)) calc(var(--radius-s) - var(--hair)) 0;
+}
+/* Sugerencias: una hoja suelta bajo la barra, con sus esquinas y un filete de tinta; nada asoma por ellas. */
+[data-style='papel'][data-style] [data-ui='cmd'] .suggest {
+	top: calc(100% + var(--sp-4));
+	border-color: var(--amber-edge);
+	border-radius: var(--radius);
+	box-shadow: var(--shadow);
+}
+/* En el móvil la barra es una hoja a todo el ancho pegada abajo: recta, y las sugerencias redondeadas solo arriba. */
+[data-style='papel'][data-style] [data-ui='cmd'].sheet,
+[data-style='papel'][data-style] [data-ui='cmd'].sheet .go {
+	border-radius: 0;
+}
+[data-style='papel'][data-style] [data-ui='cmd'].cmd.sheet .suggest {
+	top: auto;
+	bottom: 100%;
+	border-radius: var(--radius) var(--radius) 0 0;
+	border-bottom-color: var(--line);
+}
+
+/* Burbuja del glosario (ⓘ): una tarjeta más, con esquinas y filete (el borde, entero: dentro de una tira de
+   cifras --border vale 0). */
+[data-style='papel'][data-style] [role='tooltip'].tip {
+	border: var(--hair) solid var(--amber-edge);
+	border-radius: var(--radius-s);
 }

@@ -37,6 +37,9 @@
 		--title-font: var(--sans);
 		--title-color: var(--fg);
 		--dur-ui: 150ms;
+		/* Barras de desplazamiento: grafito suave, sin carril. */
+		--scroll-thumb: #343a45;
+		--scroll-track: transparent;
 	}
 	:root[data-theme='light'][data-style='grafito'],
 	:root[data-theme='light'] [data-style='grafito'] {
@@ -49,5 +52,45 @@
 		--scrim: rgba(16, 24, 40, 0.35);
 		--shadow: 0 1px 3px rgba(16, 24, 40, 0.08), 0 0 0 var(--hair) rgba(16, 24, 40, 0.05);
 		--shadow-pop: 0 12px 32px rgba(16, 24, 40, 0.16), 0 0 0 var(--hair) rgba(16, 24, 40, 0.06);
+		--scroll-thumb: #c8cdd5;
 	}
+}
+
+/* ── Lo que un token no alcanza ─────────────────────────────────────────────────────────────────────
+ * Fuera de la capa y con [data-style='grafito'][data-style]: el CSS de los componentes no tiene capa y ganaría
+ * a cualquier regla de dentro (docs/estilos.md). */
+
+/* Barra de comandos: GO encaja en la esquina redonda de la barra. */
+[data-style='grafito'][data-style] [data-ui='cmd'] .go {
+	border-radius: 0 calc(var(--radius-s) - var(--hair)) calc(var(--radius-s) - var(--hair)) 0;
+}
+/* Sugerencias: una tarjeta que flota bajo la barra, con esquinas redondas (su contenido se recorta con ellas). */
+[data-style='grafito'][data-style] [data-ui='cmd'] .suggest {
+	margin-top: var(--sp-4);
+	border: var(--border);
+	border-radius: var(--radius-s);
+	box-shadow: var(--shadow-pop);
+}
+[data-style='grafito'][data-style] [data-ui='cmd'].sheet .suggest {
+	margin: 0 var(--sp-6) var(--sp-6);
+	border-radius: var(--radius);
+}
+/* Burbujas del glosario (ⓘ): esquinas y sombra de lo que flota. */
+[data-style='grafito'][data-style] .tip[role='tooltip'] {
+	border-radius: var(--radius-s);
+	box-shadow: var(--shadow-pop);
+}
+/* Campos y desplegables propios de una vista (HIPOTECA…), con las esquinas de los demás controles. */
+[data-style='grafito'][data-style] [data-ui='main'] :is(input:not([type='checkbox'], [type='radio']), select, textarea) {
+	border-radius: var(--radius-s);
+}
+/* Hoja de comandos del móvil: pegada a los bordes de la pantalla, sin esquinas. */
+[data-style='grafito'][data-style] [data-ui='cmd'].sheet {
+	--radius-s: 0;
+}
+/* Foco con teclado sobre un control relleno del acento dentro de un panel: el contorno va hacia dentro (por el
+   recorte de las esquinas) y, en el color del acento, no se vería. En el color del texto sobre el acento, sí. */
+[data-style='grafito'][data-style] [data-ui='panel'] :is(.seg [aria-checked='true'], .go):focus-visible {
+	outline-color: var(--on-amber);
+	outline-offset: calc(-2 * var(--focus-w) - var(--sp-1));
 }
