@@ -39,7 +39,7 @@ export interface Command {
 }
 
 /** Secciones del MANUAL, en el orden en que salen. */
-export const MANUAL_SECTIONS = ['Portada y resumen', 'Economía y mercados', 'Mundo', 'España', 'Tecnología', 'Utilidades', 'Sistema'] as const;
+export const MANUAL_SECTIONS = ['Portada y resumen', 'Economía y mercados', 'Mundo', 'España', 'Tecnología', 'Tu dinero', 'Utilidades', 'Sistema'] as const;
 export type ManualSection = (typeof MANUAL_SECTIONS)[number];
 
 /** Ficha de un comando en el MANUAL. */
