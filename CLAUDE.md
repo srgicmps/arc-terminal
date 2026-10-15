@@ -83,6 +83,8 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   (tiempo de su sitio con Open-Meteo, sus valores, su agenda y titulares de IMP de sus temas; 5 líneas). Por su ntfy y,
   si lo pide, por email: la Action manda el texto por uid a `/api/brief` (`cloud/brief.ts`) y la web lo envía con
   Brevo (Secrets de Pages `BREVO_API_KEY` y `BREVO_SENDER`); el email nunca sale de Cloudflare. Uno al día.
+- **Avisos de casa** (F16, `scripts/alerts/home.ts`, panel «En casa» de AVISOS): horas baratas de la luz de mañana, su gasolinera favorita (si baja 2 cts), polen de
+  mañana en el sitio de «Tu mañana» (Open-Meteo, CAMS) y la víspera de los resultados de sus valores (F12). Por usuario.
 - **Mandar a la familia** (F15): «Mandar» en cada titular (`FamilySend.svelte`) y panel «Familia» en AVISOS. `/api/family`
   (`cloud/family.ts`, tablas `family` y `family_sent`): cada uno pone un nombre y acepta o no; la Function manda al tema
   de ntfy del otro (nunca sale de ahí), con tope diario. Solo salen quienes aceptan y tienen los avisos activados.
@@ -93,9 +95,11 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   `seen` que apunta `/api/prefs`; avisos), invitar o quitar emails de la política de Access «Sergi» (Variable
   `ACCESS_POLICY` si se llama distinto) con los Secrets de Pages `CF_ACCESS_ADMIN_TOKEN` (Access: Apps and Policies ·
   Edit) y `CF_ACCOUNT_ID`, y las sugerencias. Quitar cierra su sesión y borra sus datos de D1.
-- **Órdenes desde la barra** (D41): «alerta NVDA > 150», «+NVDA», «vigila aranceles» abren un issue ya escrito
-  (`src/lib/useralerts.ts`); `notify.ts` lee con `scripts/requests.ts` solo los issues abiertos **del dueño**,
-  los aplica (`scripts/alerts/user.ts`) y cierra la alerta al avisar. Los issues son públicos.
+- **Alertas propias** (F14, antes D41 con issues): «alerta NVDA > 150», «+NVDA», «vigila aranceles» se guardan en la
+  cuenta de cada uno (`prices`, `mis`, `words` de `alertconfig.ts`, `/api/alerts`; panel «Tus alertas» en AVISOS). A
+  cada uno le llegan por su tema; las de Sergi (Secret de Pages `ADMIN_EMAIL`) salen por `NTFY_TOPIC` como siempre.
+  Al avisar, la Action las borra (`?fired=1`). Los issues que queden se pasan a la cuenta de Sergi y se cierran
+  (`?migrate=1`, `scripts/requests.ts`); nada privado en `notify-log.json`.
 
 - **Experiencias** (`EXP`): cada una es una ruta `src/routes/x/<id>` que reutiliza datos y componentes; se apuntan en
   `src/lib/experiences.ts` (de ahí salen el índice `/x`, «EXP <nombre>», el selector de `ExpHeader` y «Al entrar» de
@@ -153,6 +157,10 @@ Un cambio de estética se hace en un solo sitio.
   mismo archivo). Para una web más densa o más aireada: `--pad-x` y `--row-y`, o la escala `--sp-*`.
   Sergi también puede elegir cian o azul en HELP, «A tu gusto» (`src/lib/taste.svelte.ts`): son bloques
   `[data-accent]` al final de `tokens.css` que redefinen `--amber*`; nada lleva el acento escrito a mano.
+  **Estéticas** (`ESTILO` y «A tu gusto»): `<html data-style="<id>">`, una por archivo en `static/estilos/<id>.css`
+  (registro en `src/lib/estilos.ts`; cómo se hace una, en `docs/estilos.md`). Capas CSS: `tokens` < `estilos` <
+  `ajustes` (`src/styles/ajustes.css`: densidad y modo Sencillo). Clave `arc-style`, sincronizada con la cuenta. Sin
+  nada guardado, `src/app.html` decide: «Terminal» si el navegador ya usaba la web, «Grafito» si es nuevo.
   Lo único fuera de los tokens son los iconos (`static/favicon.svg` y los PNG de la PWA): llevan el ámbar
   escrito: se rehacen con `node scripts/icons.ts` (iconos, maskable, apple-touch y arranque del iPhone) a partir de
   `static/favicon.svg`. El logo en la web es `Logo.svelte` (mismo dibujo, con `--amber`).
@@ -167,7 +175,7 @@ vista `HELP`. Resumen:
 | `IMP` | Lo más importante de hoy, la semana, el mes y el año (puntuación propia, sin IA) | Todos los titulares, BOE, Federal Register, Wikipedia |
 | `SEMANA` | Resumen de la semana: top de IMP en 7 días, mercados, datos publicados y agenda | IMP, FRED*, BCE, Tesoro de EE. UU., CoinGecko, calendarios de publicaciones |
 | `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FAO, FRED*, RSS |
-| `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5), Wikidata, SIPRI, Cloudflare Radar* |
+| `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5), Wikidata, SIPRI, EASA (CZIB), Cloudflare Radar* |
 | `ES` | España en cifras, paro registrado por comunidad, BOE, luz | INE, SEPE, Seguridad Social, BOE, REE, RSS |
 | `WS` | Wall Street, mapa de calor, curva de tipos, divisas, cripto, materias primas | TradingView, Tesoro de EE. UU., BCE, CoinGecko, Banco Mundial (Pink Sheet), EIA* (inventarios de petróleo) |
 | `WB` | Bonos a 2, 10 y 30 años de EE. UU., zona euro (AAA) y Japón, con pendientes | Tesoro de EE. UU., BCE, MOF de Japón |
@@ -186,6 +194,8 @@ vista `HELP`. Resumen:
 | `LUZ` | Precio de la luz y mix de generación | REE |
 | `WX` | Tiempo, mar, aire, avisos, sol y luna | Open-Meteo, MeteoAlarm, Copernicus (ERA5), NOAA (CO₂) |
 | `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica, Comisión Europea (Weekly Oil Bulletin) |
+| `HIPOTECA` | Tu hipoteca: cuota, cuadro de amortización y próxima revisión (datos solo tuyos, en tus ajustes) | BCE (euríbor a 12 meses) |
+| `CARTERA` | Tu cartera: posiciones, ganancia o pérdida y reparto (datos solo tuyos, en tus ajustes) | Finnhub* (EE. UU.), precio a mano, BCE |
 | `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
 | `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista, análisis y problema del día | Stockfish, chess.js, Lichess |
 | `MODO` | Modo Sencillo (lo esencial, letra mayor, explicaciones; por defecto para usuarios nuevos) o Terminal (todo) | — |
@@ -194,7 +204,9 @@ vista `HELP`. Resumen:
 | `FONDOS` | Carteras 13F de grandes fondos: mayores posiciones, compras y ventas | SEC* |
 | `HDS` | Qué fondos de FONDOS tienen un valor (13F al revés, con 45 días de retraso) | SEC* |
 | `RSS` | Mis RSS (como Feedly): tus feeds en tu cuenta, leídos por `/api/rss` (`cloud/rss.ts`, caché de 15 min y topes; solo con cuenta) | Tus feeds |
+| `ESTILO` | Estética: Terminal, Grafito, Cristal, Fósforo… (17), con vista previa | — |
 | `AVISOS` | Tus avisos al móvil: temas, nivel, tope, valores y silencio (solo con cuenta, en arcterminal.dev) | ntfy |
+| `BIENVENIDA` | La primera vez (y desde HELP): intereses o perfil, ciudad y modo → portada, inicio, MIS de ejemplo y propuesta de avisos; recorrido de 5 pasos, solo en BIENVENIDA y HELP (`src/lib/onboarding/`) | — |
 | `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
 
 \* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`, `CLOUDFLARE_RADAR_TOKEN`, `EIA_API_KEY`):

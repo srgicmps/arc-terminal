@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
 /**
- * Tope por vista, en bytes gzip. Hoy la más pesada (GEO) ronda los 181 KB. Cada ruta nueva engorda un poco el
+ * Tope por vista, en bytes gzip. Hoy la más pesada (GEO) ronda los 182 KB. Cada ruta nueva engorda un poco el
  * manifiesto de rutas que cargan todas las vistas (las experiencias /x/* añadieron ~2,5 KB a GEO). Sergi lo
  * subió a 300 KB (D45): margen para estéticas y vistas nuevas. Aun así, el CSS de cada estética solo se
  * descarga cuando se elige.

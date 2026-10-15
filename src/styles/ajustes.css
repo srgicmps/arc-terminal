@@ -1,0 +1,51 @@
+/*
+ * Ajustes que van por encima de la estética: densidad «Cómoda» y modo «Sencillo». Van en la capa «ajustes», que
+ * manda sobre la de las estéticas (static/estilos/, capa «estilos») por el orden de capas de app.css: elijas la
+ * estética que elijas, «Cómoda» y «Sencillo» dan su letra y su aire.
+ */
+@layer tokens, estilos, ajustes;
+@layer ajustes {
+	/* ── Densidad «Cómoda» («A tu gusto», src/lib/taste.svelte.ts) ──────────────────────────────
+	 * Sin data-density, la compacta de arriba. La cómoda da más aire a filas y paneles y sube la letra 1 px; no toca
+	 * --control-h (el alto de los controles es el mismo en las dos). Va en su propio bloque: no pisa el acento. */
+	:root[data-density='comoda'] {
+		--pad-x: var(--sp-14);
+		--row-y: var(--sp-8);
+		--head-y: var(--sp-6);
+		--gutter: var(--sp-12);
+		--gutter-touch: var(--sp-16);
+		--fs-xxs: 11px;
+		--fs-xs: 12px;
+		--fs-s: 13px;
+		--fs-m: 14px;
+		--fs-l: 15.5px;
+		--fs-xl: 21px;
+		--fs-big: 27px;
+		--fs-xxl: 29px;
+		--fit-panel-min: 320px;
+	}
+
+	/* ── Modo «Sencillo» (src/lib/modo.ts) ───────────────────────────────────────────────────────
+	 * Para quien no es experto: letra algo mayor que la «Cómoda», más aire y títulos de panel como se escriben, sin
+	 * mayúsculas ni espaciado de terminal. Va detrás de la densidad para mandar sobre ella; no toca --control-h. */
+	:root[data-modo='sencillo'] {
+		--pad-x: var(--sp-14);
+		--row-y: var(--sp-9);
+		--head-y: var(--sp-7);
+		--gutter: var(--sp-12);
+		--gutter-touch: var(--sp-16);
+		--fs-xxs: 12px;
+		--fs-xs: 13px;
+		--fs-s: 14px;
+		--fs-m: 15px;
+		--fs-l: 16.5px;
+		--fs-xl: 22px;
+		--fs-big: 28px;
+		--fs-xxl: 30px;
+		--fs-title: var(--fs-m);
+		--title-case: none;
+		--title-track: 0;
+		--title-font: var(--sans);
+		--fit-panel-min: 340px;
+	}
+}
