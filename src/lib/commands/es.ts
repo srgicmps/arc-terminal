@@ -1,12 +1,14 @@
 import type { Command } from '../commands.ts';
 
 export default {
-	order: 50, code: 'ES', route: '/es', key: 'España', desc: 'España: actualidad, BOE y luz', sources: 'El País, RTVE, elDiario.es, El Mundo, Europa Press, BOE, REE', pinned: true, aliases: ['españa'],
+	order: 50, code: 'ES', route: '/es', key: 'España', desc: 'España: actualidad, BOE y luz', sources: 'El País, RTVE, elDiario.es, El Mundo, Europa Press, BOE, REE', pinned: true, aliases: ['españa', 'tráfico', 'trafico', 'dgt'],
 	manual: {
 		section: 'España',
 		what: 'España: titulares, cifras clave del INE, turismo y vivienda, el BOE de hoy y comunicados del Gobierno y de Europa.',
+		tips: ['«ES TRÁFICO» (o «tráfico», «DGT») salta al panel de tráfico; escribe una provincia y «Añadir» para sumarla.'],
 		panels: [
 			{ name: 'Titulares', what: 'Noticias de los medios españoles.' },
+			{ name: 'Tráfico', what: 'Cortes, accidentes, retenciones y obras de la DGT en las provincias que elijas (hasta 5). Sin Cataluña ni el País Vasco.', keys: ['DGT', 'cortes', 'obras'] },
 			{ name: 'Terremotos en España', what: 'Los más fuertes de los últimos 10 días (IGN).' },
 			{ name: 'España en cifras', what: 'Último dato de paro, IPC y otros indicadores.' },
 			{ name: 'Turismo y vivienda', what: 'Datos del INE.' },
