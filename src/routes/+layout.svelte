@@ -19,6 +19,8 @@
 	import Feedback from '#lib/components/Feedback.svelte';
 	import PlacePicker from '#lib/components/PlacePicker.svelte';
 	import InstallHint from '#lib/components/InstallHint.svelte';
+	import { enterOS } from '#lib/os/mode.svelte.ts';
+	import OsNotice from '#lib/os/invite/OsNotice.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { fit, initFit, toggleFit } from '#lib/fit.svelte.ts';
@@ -230,9 +232,12 @@
 		<!-- Estética, tema, acento y densidad: un solo botón (src/lib/components/Appearance.svelte). -->
 		<Appearance />
 		<!-- Lo que se usa poco va en «⋯»: así la cabecera queda en logo, barra, sitio, hora y avisos. -->
-		<Menu label="Más opciones" cls="theme" ui="more" title="Más opciones: encajar y portada modular">
+		<Menu label="Más opciones" cls="theme" ui="more" title="Más opciones: Modo OS, encajar y portada modular">
 			{#snippet button()}<span aria-hidden="true">⋯</span>{/snippet}
 			{#snippet children(close)}
+				<!-- Terminal clásico → Modo OS (la vuelta, en el menú Inicio, el Panel de control y el móvil). -->
+				<button type="button" onclick={() => (close(), enterOS())}>Cambiar al Modo OS <small>⧉</small></button>
+				<hr />
 				{#if page.route.id === '/'}
 					<!-- General / Modular: de momento solo la portada se puede personalizar. -->
 					<button type="button" aria-pressed={mode.modular} onclick={() => (toggleMode(), close())}>
@@ -295,7 +300,7 @@
 		</button>
 	{/if}
 
-	{#if !tv.on}<PanelIndex /><InstallHint />{/if}
+	{#if !tv.on}<PanelIndex /><InstallHint /><OsNotice />{/if}
 
 	<main
 		data-ui="main"

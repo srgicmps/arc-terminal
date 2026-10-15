@@ -2,6 +2,7 @@
 	import { asset, resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import { HOME_DONE, HOME_KEY, startPath } from '#lib/home.ts';
+	import { OS_KEY } from '#lib/os/mode.ts';
 	import { needsWelcome } from '#lib/onboarding/plan.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import { latestWatched } from '#lib/boe.ts';
@@ -51,7 +52,7 @@
 				goto(resolve('/bienvenida') + '?primera=1', { replaceState: true });
 				return;
 			}
-			go = startPath(localStorage.getItem(HOME_KEY), sessionStorage.getItem(HOME_DONE) === '1', location.search);
+			go = startPath(localStorage.getItem(HOME_KEY), sessionStorage.getItem(HOME_DONE) === '1', location.search, localStorage.getItem(OS_KEY));
 			sessionStorage.setItem(HOME_DONE, '1');
 		} catch {}
 		if (go) goto(routeHref(go as '/'), { replaceState: true });
