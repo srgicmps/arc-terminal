@@ -5,6 +5,7 @@
 // Pasos por fondo: /submissions/CIK##########.json → los dos últimos 13F-HR → índice del expediente
 // (index.json) → el XML de la «information table» → posiciones.
 import { XMLParser } from 'fast-xml-parser';
+import { buildHolders, type Line } from '../../src/lib/holders.ts';
 import type { Fund, FundMove, FundPosition, FundsData } from '../../src/lib/types.ts';
 import { getJson, getText, list, num, type Source } from '../lib.ts';
 
@@ -185,6 +186,10 @@ export function compareQuarters(current: Holding[], previous: Holding[]): { boug
 
 const sum = (holdings: Holding[]) => holdings.reduce((s, h) => s + h.value, 0);
 
+/** Solo las acciones (sin opciones), para invertir las carteras en HDS. */
+const stockLines = (holdings: Holding[]): Line[] =>
+	holdings.filter((h) => !h.putCall).map(({ cusip, name, value, shares }) => ({ cusip, name, value, shares }));
+
 export const funds: Source<FundsData> = {
 	name: 'funds',
 	label: 'SEC EDGAR · carteras 13F de grandes fondos',
@@ -209,6 +214,7 @@ export const funds: Source<FundsData> = {
 		};
 
 		const out: Fund[] = [];
+		const portfolios: Parameters<typeof buildHolders>[0] = [];
 		for (const def of FUNDS) {
 			try {
 				const body = await get(() => getJson(`${API}/CIK${def.cik}.json`, { headers }));
@@ -220,6 +226,7 @@ export const funds: Source<FundsData> = {
 				if (!current.length) throw new Error(`13F ${last.accession} sin posiciones`);
 				const previous = prev ? await holdingsOf(def.cik, prev).catch(() => null) : null;
 				const total = sum(current);
+				portfolios.push({ fund: def.key, current: stockLines(current), previous: previous && stockLines(previous) });
 				out.push({
 					key: def.key,
 					name: def.name,
@@ -241,6 +248,8 @@ export const funds: Source<FundsData> = {
 			}
 		}
 		if (!out.length) throw new Error('ningún fondo con datos');
-		return { funds: out };
+		const holders = buildHolders(portfolios);
+		console.log(`  funds · ${holders.length} valores en el índice de HDS`);
+		return { funds: out, holders };
 	}
 };
