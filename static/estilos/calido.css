@@ -86,6 +86,9 @@
 		--stack-edge: 0;
 		--fit-panel-min: 300px;
 		--bg-image: radial-gradient(1100px 520px at 12% -180px, var(--ca-glow), transparent 70%);
+		/* Barras de desplazamiento: una píldora cálida, algo más ancha; el carril, sin pintar. */
+		--scroll-w: 10px;
+		--scroll-thumb: #574b40;
 		--dur-ui: 180ms;
 		--dur-fast: 180ms;
 		--ease: cubic-bezier(0.25, 0.1, 0.25, 1);
@@ -128,6 +131,7 @@
 		--ca-line-soft: rgba(90, 64, 40, 0.07);
 		--ca-glow: rgba(165, 74, 41, 0.06);
 		--ca-shadow: rgba(90, 64, 40, 0.13);
+		--scroll-thumb: #d3c5b2;
 	}
 
 	/* ── Lo que un token no alcanza ───────────────────────────────────────────────────────────── */
@@ -210,7 +214,7 @@
 	}
 
 	/* Cifras grandes en serif: se leen como un titular de cifras. */
-	[data-style='calido'] .tile b {
+	[data-style='calido'] .tile > b {
 		font-family: var(--ca-serif);
 		--fs-xl: 28px;
 		--fw-medium: 500;
@@ -308,6 +312,44 @@
 			transition: color var(--dur-ui) var(--ease), border-color var(--dur-ui) var(--ease), background-color var(--dur-ui) var(--ease);
 		}
 	}
+}
+
+/* ── Retoques de componente (fuera de la capa, para ganar al CSS de los componentes) ───────────────── */
+
+/* Campos y desplegables sueltos (hipoteca, manual, conversores…): con esquinas suaves, como los botones. Los
+   desplegables, en píldora como los de Select. La barra de comandos queda fuera: su campo no tiene borde propio. */
+[data-style='calido'][data-style] :is(input:not([type='checkbox'], [type='radio'], [type='range']), textarea):not([data-ui='cmd'] *) {
+	border-radius: var(--radius-s);
+}
+[data-style='calido'][data-style] select {
+	border-radius: 999px;
+}
+
+/* Sugerencias: una tarjeta que flota algo separada de la píldora (pegadas, la curva de la barra no casaba con la
+   de la tarjeta). */
+[data-style='calido'][data-style] [data-ui='cmd'] .suggest {
+	top: calc(100% + var(--sp-6));
+	border-color: var(--line);
+}
+/* Hoja del móvil: pegada a la barra de pestañas (sin línea, quedaba 1 px por el que asomaba la página). Sus
+   sugerencias se abren hacia arriba. */
+[data-style='calido'][data-style] [data-ui='cmd'].cmd.sheet {
+	bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+}
+[data-style='calido'][data-style] [data-ui='cmd'].cmd.sheet .suggest {
+	top: auto;
+	bottom: 100%;
+	box-shadow: 0 -8px 24px -16px var(--ca-shadow);
+}
+
+/* Burbuja del glosario (ⓘ): una tarjeta que flota, con esquinas y sombra cálida (el borde, entero: dentro de una
+   tira de cifras --border vale 0). */
+[data-style='calido'][data-style] [role='tooltip'].tip {
+	padding: var(--sp-8) var(--sp-12);
+	background: var(--panel);
+	border: var(--hair) solid var(--line);
+	border-radius: var(--radius-s);
+	box-shadow: var(--shadow-pop);
 }
 
 /* ══ Estructura: una revista, no una terminal ═══════════════════════════════════════════════════════════

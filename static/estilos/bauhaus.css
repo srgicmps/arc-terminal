@@ -87,6 +87,11 @@
 		--stack-edge: 0;
 		--dur-ui: 90ms;
 		--ease: linear;
+		/* Foco con la regla de tinta; barras de desplazamiento rectas, del tono terciario (ver «Barras», al final). */
+		--focus-w: var(--bh-rule);
+		--scroll-w: 10px;
+		--scroll-thumb: var(--faint);
+		--scroll-track: transparent;
 
 		/* Fondo: un sol amarillo arriba a la derecha, un cuarto de círculo azul abajo a la izquierda y una línea
 		   roja. Fijo y tapado por los paneles: asoma en los huecos. */
@@ -232,5 +237,53 @@
 	/* Cifras grandes: más peso. */
 	[data-style='bauhaus'] .tile {
 		--fw-medium: 600;
+	}
+}
+
+/* ── Fuera de la capa: retoques que tienen que ganar al CSS de los componentes ───────────────────── */
+
+/* Barras de desplazamiento: un bloque recto, como las reglas; al pasar el ratón, el azul del acento. */
+[data-style='bauhaus'][data-style]::-webkit-scrollbar-thumb,
+[data-style='bauhaus'][data-style] ::-webkit-scrollbar-thumb {
+	border-radius: 0;
+}
+[data-style='bauhaus'][data-style]::-webkit-scrollbar-thumb:hover,
+[data-style='bauhaus'][data-style] ::-webkit-scrollbar-thumb:hover {
+	background-color: var(--amber);
+}
+
+/* «Encajar en pantalla»: la vista hace scroll y recortaría el marco de tinta (una sombra de 2 px por fuera de
+   cada panel) a izquierda, derecha y abajo. Se le deja ese margen dentro. */
+[data-style='bauhaus'][data-style][data-fit] [data-ui='main'] {
+	padding-inline: var(--bh-rule);
+	padding-bottom: var(--bh-rule);
+}
+
+/* Sugerencias de la barra de comandos y burbujas del glosario: con el marco de tinta, como los paneles. */
+[data-style='bauhaus'][data-style] [data-ui='cmd'] [role='listbox'],
+[data-style='bauhaus'][data-style] [role='tooltip'] {
+	border: var(--bh-rule) solid var(--bh-ink);
+}
+[data-style='bauhaus'][data-style] [data-ui='cmd']:not(.sheet) [role='listbox'] {
+	left: calc(-1 * var(--bh-rule));
+	right: calc(-1 * var(--bh-rule));
+}
+
+/* Dentro de un panel el foco va hacia dentro (no lo corta el recorte del panel): en la opción marcada de un
+   segmentado, que ya es del color del acento, se pinta con el color de su texto para que se vea. */
+[data-style='bauhaus'][data-style] [data-ui='panel'] :is([aria-checked='true'], [aria-pressed='true']):focus-visible {
+	outline-color: var(--on-amber);
+}
+
+/* Sugerencias de la barra de comandos por encima del índice de paneles del móvil (fijo, con --z-bar), que si no
+   las tapa al bajar. */
+[data-style='bauhaus'][data-style] [data-ui='cmd'] [role='listbox'] {
+	z-index: calc(var(--z-bar) + 1);
+}
+/* Fila de secciones e índice de paneles del móvil: se desplazan de lado y recortan lo que asoma; el foco va por
+   dentro de la tecla para que no se corte. */
+@media (max-width: 720px) {
+	[data-style='bauhaus'][data-style] :is([data-ui='keys'], [data-ui='panel-index']) :focus-visible {
+		outline-offset: calc(-1 * var(--focus-w));
 	}
 }

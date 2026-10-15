@@ -31,6 +31,13 @@
 		--glass-top: rgba(255, 255, 255, 0.1); /* brillo del canto de arriba */
 		--glass-drop: rgba(0, 0, 0, 0.35);
 		--panel-blur: saturate(160%) blur(14px);
+		/* Vidrio opaco: lo que flota o se queda fijo encima de otro contenido (sugerencias, burbujas, panel ampliado,
+		   cabeceras fijas). Translúcido, el texto de debajo se leería a través. */
+		--glass-solid: #161c29;
+		--glass-solid-raise: #222a3a;
+		/* Barras de desplazamiento: un filo de luz, como los bordes del vidrio. */
+		--scroll-thumb: rgba(176, 196, 230, 0.2);
+		--scroll-track: transparent;
 
 		/* Letra: Inter para todo, cifras tabulares (body ya lleva tabular-nums). */
 		--sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -95,6 +102,9 @@
 		--glass-light: rgba(255, 255, 255, 0.7);
 		--glass-top: rgba(255, 255, 255, 0.9);
 		--glass-drop: rgba(40, 52, 90, 0.16);
+		--glass-solid: #fbfcfe;
+		--glass-solid-raise: #f2f4f9;
+		--scroll-thumb: rgba(30, 44, 80, 0.22);
 		--shadow-pop: inset 0 var(--hair) 0 var(--glass-top), 0 0 0 var(--hair) rgba(30, 44, 80, 0.08), 0 24px 60px -16px rgba(40, 52, 90, 0.28);
 	}
 
@@ -143,90 +153,147 @@
 		}
 	}
 
-	/* ── Lo que un token no alcanza ─────────────────────────────────────────────────────────────── */
-	/* Título de vista: más grande y apretado, como un rótulo de vidrio. */
-	[data-style='cristal'] .vh h1 {
-		letter-spacing: -0.02em;
+}
+
+/* ── Lo que un token no alcanza ─────────────────────────────────────────────────────────────────────
+ * Fuera de la capa y con [data-style='cristal'][data-style]: el CSS de los componentes no tiene capa y ganaría
+ * a cualquier regla de dentro (docs/estilos.md). */
+
+/* Desenfoque del panel en un ::before detrás, no en el panel: un backdrop-filter en el panel lo convierte en el
+   bloque contenedor de lo que va con position: fixed dentro (las burbujas ⓘ), que saldría descolocado y, con el
+   recorte de las esquinas, cortado. El ::before con z-index -1 queda bajo el fondo del panel, igual que antes. */
+[data-style='cristal'][data-style] [data-ui='panel'] {
+	backdrop-filter: none;
+}
+[data-style='cristal'][data-style] [data-ui='panel']:not(.max) {
+	position: relative;
+}
+[data-style='cristal'][data-style] [data-ui='panel']:not(.max)::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: inherit;
+	backdrop-filter: var(--panel-blur);
+	pointer-events: none;
+}
+/* Lo que se queda fijo con contenido que pasa por debajo, en vidrio opaco: el panel ampliado (sobre la página),
+   los paneles de «encajar» (su ::before se iría con el scroll) y las tablas con cabecera fija. Cambiando --panel en
+   el propio panel, su fondo y el de sus cabeceras fijas son el mismo. */
+[data-style='cristal'][data-style] [data-ui='panel'].max,
+[data-style='cristal'][data-fit] main [data-ui='panel'],
+[data-style='cristal'][data-style] [data-ui='panel']:has(.capped) {
+	--panel: var(--glass-solid);
+	--raise: var(--glass-solid-raise);
+}
+[data-style='cristal'][data-fit] main [data-ui='panel']::before {
+	display: none;
+}
+
+/* Título de vista: más grande y apretado, como un rótulo de vidrio. */
+[data-style='cristal'][data-style] [data-ui='view-title'] {
+	letter-spacing: -0.02em;
+}
+/* Cabecera de panel: un velo de luz arriba que sigue la esquina redonda. */
+[data-style='cristal'][data-style] [data-ui='panel-head'] {
+	border-top-left-radius: inherit;
+	border-top-right-radius: inherit;
+	background-image: linear-gradient(180deg, var(--glass-light), transparent);
+}
+
+/* Barra de comandos: cápsula de vidrio, con un halo del acento al escribir. Por encima de los paneles que vienen
+   después, para que sus sugerencias no queden debajo. */
+[data-style='cristal'][data-style] [data-ui='cmd'] {
+	--radius-s: 12px;
+	z-index: var(--z-popover);
+	box-shadow: inset 0 var(--hair) 0 var(--glass-top), 0 0 0 var(--hair) var(--glass-light);
+	backdrop-filter: var(--panel-blur);
+}
+[data-style='cristal'][data-style] [data-ui='cmd']:focus-within {
+	box-shadow: inset 0 var(--hair) 0 var(--glass-top), 0 0 0 var(--sp-3) var(--amber-soft);
+}
+[data-style='cristal'][data-style] [data-ui='cmd'] .go {
+	border-radius: 0 calc(var(--radius-s) - var(--hair)) calc(var(--radius-s) - var(--hair)) 0;
+}
+/* Sugerencias: una tarjeta aparte, opaca (dentro de la barra, que ya desenfoca, otro desenfoque no funciona y se
+   leería el texto de debajo), con las esquinas redondas y su contenido recortado. */
+[data-style='cristal'][data-style] [data-ui='cmd'] .suggest {
+	margin-top: var(--sp-6);
+	background: var(--glass-solid-raise);
+	border: var(--border);
+	border-radius: var(--radius-s);
+	box-shadow: var(--shadow-pop);
+}
+[data-style='cristal'][data-style] [data-ui='cmd'].sheet {
+	--radius-s: 0;
+}
+[data-style='cristal'][data-style] [data-ui='cmd'].sheet .suggest {
+	margin: 0 var(--sp-6) var(--sp-6);
+	border-radius: var(--radius);
+}
+
+/* Burbujas del glosario (ⓘ): vidrio opaco, esquinas y sombra de lo que flota. */
+[data-style='cristal'][data-style] .tip[role='tooltip'] {
+	background: var(--glass-solid-raise);
+	border-radius: var(--radius-s);
+	box-shadow: var(--shadow-pop);
+}
+
+/* Campos y desplegables propios de una vista (HIPOTECA…), con las esquinas de los demás controles. */
+[data-style='cristal'][data-style] [data-ui='main'] :is(input:not([type='checkbox'], [type='radio']), select, textarea) {
+	border-radius: var(--radius-s);
+}
+
+/* Teclas de función y cinta: cápsulas. */
+[data-style='cristal'][data-style] [data-ui='key'] {
+	--radius-s: 999px;
+}
+[data-style='cristal'][data-style] [data-ui='tape'] {
+	--radius-s: var(--radius);
+}
+[data-style='cristal'][data-style] [data-ui='key'][aria-current='page'] {
+	box-shadow: 0 var(--sp-4) var(--sp-14) -6px var(--amber-edge);
+}
+/* Controles: en cápsula, como el resto del vidrio. */
+[data-style='cristal'][data-style] .seg,
+[data-style='cristal'][data-style] .seg button {
+	--radius-s: 999px;
+}
+/* Cifras grandes de cabecera de vista (fuera de un panel): una tarjeta más, sin la línea de abajo. */
+[data-style='cristal'][data-style] [data-ui='tiles']:not([data-ui='panel'] *) {
+	--border: 0 solid transparent;
+	margin-bottom: var(--grid-gap);
+	border-radius: var(--radius);
+	overflow: hidden;
+	box-shadow: var(--shadow);
+}
+/* Chips sueltos: lugar de la cabecera e índice de paneles del móvil. */
+[data-style='cristal'][data-style] [data-ui='place'] .chip {
+	border-radius: var(--radius-s);
+}
+[data-style='cristal'][data-style] [data-ui='panel-index'] span {
+	border-radius: 999px;
+}
+/* Tablas: filas que se iluminan al pasar. */
+[data-style='cristal'][data-style] .t tbody tr:not(.hl):hover td {
+	background: var(--glass-light);
+}
+@media (prefers-reduced-motion: no-preference) {
+	[data-style='cristal'][data-style] [data-ui='key'],
+	[data-style='cristal'][data-style] .theme,
+	[data-style='cristal'][data-style] select,
+	[data-style='cristal'][data-style] [data-ui='cmd'],
+	[data-style='cristal'][data-style] .t td {
+		transition:
+			background-color var(--dur-ui) var(--ease),
+			border-color var(--dur-ui) var(--ease),
+			box-shadow var(--dur-ui) var(--ease),
+			color var(--dur-ui) var(--ease);
 	}
-	/* Cabecera de panel: un velo de luz arriba que sigue la esquina redonda. */
-	[data-style='cristal'] .panel .ph {
-		border-top-left-radius: var(--radius);
-		border-top-right-radius: var(--radius);
-		background-image: linear-gradient(180deg, var(--glass-light), transparent);
-	}
-	/* Barra de comandos: cápsula de vidrio, con un halo del acento al escribir. */
-	[data-style='cristal'] .cmd {
-		--radius-s: 12px;
-		box-shadow: inset 0 var(--hair) 0 var(--glass-top), 0 0 0 var(--hair) var(--glass-light);
-		backdrop-filter: var(--panel-blur);
-	}
-	[data-style='cristal'] .cmd:focus-within {
-		box-shadow: inset 0 var(--hair) 0 var(--glass-top), 0 0 0 var(--sp-3) var(--amber-soft);
-	}
-	[data-style='cristal'] .cmd .go {
-		border-radius: 0 calc(var(--radius-s) - var(--hair)) calc(var(--radius-s) - var(--hair)) 0;
-	}
-	[data-style='cristal'] .cmd.sheet {
-		--radius-s: 0;
-	}
-	[data-style='cristal'] .cmd .suggest {
-		margin-top: var(--sp-6);
-		border-radius: var(--radius-s);
-		box-shadow: var(--shadow-pop);
-		backdrop-filter: var(--panel-blur);
-	}
-	[data-style='cristal'] .cmd.sheet .suggest {
-		margin: 0 0 var(--sp-6);
-	}
-	/* Teclas de función y cinta: cápsulas. */
-	[data-style='cristal'] .key {
-		--radius-s: 999px;
-	}
-	[data-style='cristal'] .tape {
-		--radius-s: var(--radius);
-	}
-	[data-style='cristal'] .key[aria-current='page'] {
-		box-shadow: 0 var(--sp-4) var(--sp-14) -6px var(--amber-edge);
-	}
-	/* Controles: en cápsula, como el resto del vidrio. */
-	[data-style='cristal'] .seg,
-	[data-style='cristal'] .seg button {
-		--radius-s: 999px;
-	}
-	/* Cifras grandes de cabecera de vista (fuera de un panel): una tarjeta más, sin la línea de abajo. */
-	[data-style='cristal'] .tiles:not(.panel *) {
-		--border: 0 solid transparent;
-		margin-bottom: var(--grid-gap);
-		border-radius: var(--radius);
-		overflow: hidden;
-		box-shadow: var(--shadow);
-	}
-	/* Chips sueltos: lugar de la cabecera e índice de paneles del móvil. */
-	[data-style='cristal'] .place .chip {
-		border-radius: var(--radius-s);
-	}
-	[data-style='cristal'] .pidx span {
-		border-radius: 999px;
-	}
-	/* Tablas: filas que se iluminan al pasar. */
-	[data-style='cristal'] .t tbody tr:not(.hl):hover td {
-		background: var(--glass-light);
-	}
-	/* En «encajar» la cabecera fija del panel también es de vidrio. */
-	html[data-fit][data-style='cristal'] .panel .ph {
-		backdrop-filter: var(--panel-blur);
-	}
-	@media (prefers-reduced-motion: no-preference) {
-		[data-style='cristal'] .key,
-		[data-style='cristal'] .theme,
-		[data-style='cristal'] select,
-		[data-style='cristal'] .cmd,
-		[data-style='cristal'] .t td {
-			transition:
-				background-color var(--dur-ui) var(--ease),
-				border-color var(--dur-ui) var(--ease),
-				box-shadow var(--dur-ui) var(--ease),
-				color var(--dur-ui) var(--ease);
-		}
-	}
+}
+/* Foco con teclado sobre un control relleno del acento dentro de un panel: el contorno va hacia dentro (por el
+   recorte de las esquinas) y, en el color del acento, no se vería. En el color del texto sobre el acento, sí. */
+[data-style='cristal'][data-style] [data-ui='panel'] :is(.seg [aria-checked='true'], .go):focus-visible {
+	outline-color: var(--on-amber);
+	outline-offset: calc(-2 * var(--focus-w) - var(--sp-1));
 }

@@ -79,6 +79,10 @@
 		--gutter-touch: var(--sp-14);
 		--cmd-h: 40px;
 
+		/* Barras de desplazamiento: una píldora de piedra, algo más ancha y redonda; el carril, sin pintar. */
+		--scroll-w: 10px;
+		--scroll-thumb: #545b56;
+
 		--dur-ui: 220ms;
 		--dur-fast: 200ms;
 		--ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -106,6 +110,7 @@
 		--sq-light: #f3eee4;
 		--sq-dark: #dbd1c0;
 		--scrim: rgba(42, 43, 40, 0.28);
+		--scroll-thumb: #c9c0b0;
 		--shadow: 0 0 0 var(--hair) var(--line), 0 1px 2px rgba(80, 64, 40, 0.04), 0 6px 18px rgba(80, 64, 40, 0.05);
 		--shadow-pop: 0 0 0 var(--hair) var(--line), 0 16px 40px rgba(80, 64, 40, 0.16);
 	}
@@ -166,4 +171,43 @@
 				border-color var(--dur-ui) var(--ease);
 		}
 	}
+}
+
+/* ── Retoques de componente (fuera de la capa, para ganar al CSS de los componentes) ───────────────── */
+
+/* Campos y desplegables sueltos (hipoteca, manual, conversores…): redondos como los botones. La barra de comandos
+   queda fuera: su campo no tiene borde propio. */
+[data-style='nordico'][data-style] :is(input:not([type='checkbox'], [type='radio'], [type='range']), select, textarea):not([data-ui='cmd'] *) {
+	border-radius: var(--radius-s);
+}
+
+/* Barra de comandos: «GO» pegado al borde derecho, con la misma curva por dentro. */
+[data-style='nordico'][data-style] [data-ui='cmd'] .go {
+	border-radius: 0 calc(var(--radius-s) - var(--hair)) calc(var(--radius-s) - var(--hair)) 0;
+}
+/* Sugerencias: una tarjeta que flota bajo la barra, con sus esquinas y su sombra; nada asoma por ellas. */
+[data-style='nordico'][data-style] [data-ui='cmd'] .suggest {
+	top: calc(100% + var(--sp-6));
+	border-color: var(--line);
+	border-radius: var(--radius);
+	box-shadow: var(--shadow-pop);
+}
+/* En el móvil la barra es una hoja a todo el ancho pegada abajo: recta, y las sugerencias redondeadas solo arriba. */
+[data-style='nordico'][data-style] [data-ui='cmd'].sheet,
+[data-style='nordico'][data-style] [data-ui='cmd'].sheet .go {
+	border-radius: 0;
+}
+[data-style='nordico'][data-style] [data-ui='cmd'].cmd.sheet .suggest {
+	top: auto;
+	bottom: 100%;
+	border-radius: var(--radius) var(--radius) 0 0;
+	box-shadow: none;
+}
+
+/* Burbuja del glosario (ⓘ): una tarjeta que flota (el borde, entero: dentro de una tira de cifras --border vale 0). */
+[data-style='nordico'][data-style] [role='tooltip'].tip {
+	padding: var(--sp-8) var(--sp-12);
+	border: var(--hair) solid var(--line);
+	border-radius: var(--radius-s);
+	box-shadow: var(--shadow-pop);
 }
