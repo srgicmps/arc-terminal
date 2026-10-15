@@ -31,6 +31,10 @@
 		--lx-rule: rgba(214, 178, 110, 0.55);
 		--lx-rule-soft: rgba(214, 178, 110, 0.18);
 		--lx-glow: rgba(214, 178, 110, 0.06);
+		/* Barras de desplazamiento: un hilo dorado sin carril, que se aviva al pasar el ratón. */
+		--scroll-w: 7px;
+		--scroll-thumb: rgba(214, 178, 110, 0.32);
+		--scroll-track: transparent;
 
 		/* ── Letras: serif de alto contraste para títulos y cifras; Lato para leer ── */
 		--lx-serif: 'Playfair Display', 'Bodoni 72', Didot, 'Times New Roman', Georgia, serif;
@@ -75,7 +79,8 @@
 		--radius: 0;
 		--radius-s: 0;
 		--shadow: inset 0 var(--hair) 0 var(--lx-rule);
-		--shadow-pop: inset 0 var(--hair) 0 var(--lx-rule), 0 24px 64px rgba(0, 0, 0, 0.55);
+		--lx-drop: 0 24px 64px rgba(0, 0, 0, 0.55); /* sombra de lo que flota, sin el filete */
+		--shadow-pop: inset 0 var(--hair) 0 var(--lx-rule), var(--lx-drop);
 		--panel-edge: 0;
 		--grid-gap: var(--sp-24);
 		--grid-fill: transparent;
@@ -116,6 +121,8 @@
 		--lx-rule: rgba(127, 97, 32, 0.6);
 		--lx-rule-soft: rgba(127, 97, 32, 0.2);
 		--lx-glow: rgba(127, 97, 32, 0.05);
+		--lx-drop: 0 24px 64px rgba(23, 20, 15, 0.2);
+		--scroll-thumb: rgba(127, 97, 32, 0.34);
 	}
 
 	/* ── Lo que un token no alcanza ───────────────────────────────────────────────────────────── */
@@ -570,4 +577,54 @@
 	[data-style='lujo'][data-style] [data-ui='panel-index'] button + button span {
 		border-left: var(--hair) solid var(--lx-rule-soft);
 	}
+}
+
+/* ── Barras de desplazamiento: al pasar el ratón, el hilo se vuelve oro ── */
+[data-style='lujo'][data-style] ::-webkit-scrollbar-thumb:hover {
+	background-color: var(--amber-dim);
+}
+
+/* ── Sugerencias de la barra: la cabecera centra el texto, pero una lista se lee alineada a la izquierda; la
+   elegida lleva además un hilo de oro a la izquierda (el fondo dorado tenue apenas se veía) ── */
+[data-style='lujo'][data-style] [data-ui='cmd'] .suggest {
+	text-align: left;
+}
+/* En el móvil la barra es una hoja de lado a lado: el «>» no va pegado al borde de la pantalla. */
+[data-style='lujo'][data-style] [data-ui='cmd'].sheet .prompt {
+	padding-left: var(--gutter);
+}
+/* Ahí las sugerencias se abren hacia arriba: sin la sombra que caía sobre el campo y lo oscurecía. */
+@media (max-width: 720px) {
+	[data-style='lujo'][data-style] [data-ui='cmd'].sheet .suggest {
+		box-shadow: inset 0 var(--hair) 0 var(--lx-rule);
+	}
+}
+[data-style='lujo'][data-style] [data-ui='cmd'] .suggest li[aria-selected='true'] {
+	box-shadow: inset var(--sp-2) 0 0 var(--amber);
+}
+
+/* ── Paneles que hacen scroll por dentro (ampliado y «encajar»): el filete dorado de arriba, como borde y no como
+   sombra interior (la cabecera fija lo tapaba y solo asomaba un trocito sobre la barra de desplazamiento), y aire
+   entre el texto y la barra ── */
+[data-style='lujo'][data-style] [data-ui='panel'].max {
+	--pad-x: var(--sp-4); /* el margen lo da el panel: así cabecera, tablas y listas empiezan en la misma línea */
+	padding-inline: var(--sp-16);
+	border-top-color: var(--lx-rule);
+	box-shadow: var(--lx-drop);
+}
+@media (min-width: 1280px) {
+	[data-style='lujo'][data-style][data-fit] [data-ui='main'] > .grid:last-child > .col > [data-ui='panel']:not(.max) {
+		padding-right: var(--sp-8);
+		border-top: var(--hair) solid var(--lx-rule);
+		box-shadow: none;
+	}
+}
+
+/* ── Campos sueltos de las vistas (HIPOTECA…): sin caja oscura, con el filete dorado fino de los desplegables ── */
+[data-style='lujo'][data-style] [data-ui='main'] input:is([type='number'], [type='text'], [type='search'], [type='email'], [type='url'], :not([type])) {
+	border-color: var(--lx-rule-soft);
+	background-color: transparent;
+}
+[data-style='lujo'][data-style] [data-ui='main'] :is(input, select):focus {
+	border-color: var(--amber);
 }
