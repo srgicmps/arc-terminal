@@ -6,7 +6,7 @@ export default {
 		section: 'Sistema',
 		what: 'Las experiencias cambian la forma de usar Arc con los mismos datos: un periódico, una sala de control, una cosa cada vez… «EXP» solo enseña todas.',
 		args: [{ label: 'Experiencia', examples: ['EXP periodico'] }],
-		tips: ['En HELP, «Al entrar», puedes elegir que Arc se abra directamente en una experiencia.', 'Esc o «← Arc» vuelve a la terminal.'],
+		tips: ['En HELP, «Al entrar», puedes elegir que Arc se abra directamente en una experiencia.', 'Esc o «✕ Salir» vuelve a la vista normal. En la galería, «Usar al entrar» la deja como inicio.'],
 		panels: [{ name: 'Experiencias', what: 'Todas, con qué es cada una.' }]
 	}
 } satisfies Command;

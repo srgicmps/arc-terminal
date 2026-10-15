@@ -237,6 +237,10 @@ export function d1AdminStore(db: D1Database): AdminStore {
 			await db.batch(
 				['prefs', 'alerts', 'seen'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email))
 			);
+			// Predicciones (cloud/forecasts.ts): sus tablas solo existen si alguien ha jugado.
+			await db
+				.batch(['forecast_bets', 'forecast_players'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email)))
+				.catch(() => {});
 		}
 	};
 }

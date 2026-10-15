@@ -1,0 +1,211 @@
+/* ── Estética «Cuaderno» (src/lib/estilos.ts) ─────────────────────────────────────────────────────────
+ * <html data-style="cuaderno">: papel cuadriculado (rejilla fina de gradientes, en la página y en cada panel),
+ * tinta azul y títulos de vista y de panel como escritos a mano (Caveat, solo en títulos). Los datos, en
+ * Nunito Sans con cifras tabulares. Detalles de libreta: el margen rojo a la izquierda de cada panel, la doble raya
+ * roja bajo el título de la vista y lo vigilado subrayado con rotulador. De noche, pizarra con tiza y tinta clara.
+ *
+ * Orden del archivo: primero las reglas por pieza y después los dos bloques de tokens, para que el test de
+ * contraste (estilos.test.ts) mida la paleta de la página. */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Nunito+Sans:wght@400;600;700&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	/* ── Por pieza ──────────────────────────────────────────────────────────────────────────── */
+
+	/* Cada panel es una hoja: margen rojo y cuadrícula en su propio fondo. Panel.svelte pinta el fondo con
+	   background: var(--panel), así que en el panel --panel lleva los dibujos y el color del papel; lo de dentro
+	   (cabecera fija, cifras, tablas) vuelve al color liso. */
+	[data-style='cuaderno'] .panel {
+		--panel: var(--margin-line), var(--sheet-grid), var(--sheet);
+	}
+	[data-style='cuaderno'] .panel > * {
+		--panel: var(--sheet);
+	}
+	/* La vista previa (HELP, ESTILO), con la misma hoja. */
+	[data-style='cuaderno'] > .mock {
+		--panel: var(--margin-line), var(--sheet-grid), var(--sheet);
+		padding-left: var(--sp-4);
+	}
+
+	/* Título del panel: a mano, con una raya de tinta debajo. */
+	[data-style='cuaderno'] .panel > .ph {
+		--border: var(--hair) solid var(--rule);
+		--head-y: var(--sp-5);
+	}
+	[data-style='cuaderno'] .panel > .ph h2 {
+		line-height: 1.05;
+	}
+
+	/* Título de vista: a mano y grande, con la doble raya roja del margen superior de una libreta. */
+	[data-style='cuaderno'] .vh {
+		border-bottom: var(--sp-3) double var(--margin-c);
+		margin-bottom: var(--sp-14);
+	}
+	[data-style='cuaderno'] .vh h1 {
+		--sans: var(--hand);
+		--fw-medium: 700;
+		--fs-xl: clamp(36px, 5.4vw, 54px);
+		color: var(--title-color);
+		line-height: 1;
+		flex-wrap: wrap;
+		row-gap: var(--sp-4);
+	}
+	/* El código (ECO, WS…), rodeado como con bolígrafo: un óvalo irregular. */
+	[data-style='cuaderno'] .vh .code {
+		--mono: var(--sans);
+		--fs-l: var(--fs-s);
+		align-self: center;
+		padding: var(--sp-2) var(--sp-10);
+		border: var(--sp-2) solid var(--amber);
+		border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+		line-height: var(--lh-tight);
+		rotate: -2deg;
+	}
+
+	/* El logotipo, también a mano. */
+	[data-style='cuaderno'] .brand {
+		--fs-s: 24px;
+		--track-brand: 0.02em;
+		--fw-bold: 700;
+		font-family: var(--hand);
+		line-height: 1;
+		text-transform: none;
+	}
+
+	/* Cifras grandes y cabeceras de tabla: Nunito Sans, firme. */
+	[data-style='cuaderno'] .tile b {
+		--fw-medium: 700;
+		letter-spacing: -0.01em;
+	}
+	[data-style='cuaderno'] .t th {
+		--fw-regular: 700;
+	}
+
+	/* Lo vigilado (BOE, titulares) y la selección: rotulador fluorescente. */
+	[data-style='cuaderno'] mark {
+		--amber-soft: var(--highlight);
+		--amber: var(--fg);
+	}
+	[data-style='cuaderno'] ::selection {
+		background: var(--highlight);
+	}
+	:root[data-style='cuaderno'] {
+		scrollbar-color: var(--line) var(--bg);
+	}
+
+	/* ── Noche: pizarra con tiza y tinta clara ───────────────────────────────────────────────── */
+	:root[data-style='cuaderno'],
+	[data-style='cuaderno'] {
+		color-scheme: dark;
+		--bg: #1a1f24;
+		--panel: #20262c;
+		--sheet: #20262c;
+		--raise: #2a3138;
+		--line: #39424c;
+		--fg: #eef1e8;
+		--muted: #b4bcc5;
+		--faint: #9ca6b1;
+		--amber: #8db4ff;
+		--amber-dim: #a9c2f0;
+		--amber-soft: rgba(141, 180, 255, 0.14);
+		--amber-edge: rgba(141, 180, 255, 0.5);
+		--on-amber: #0d1626;
+		--up: #6fd69b;
+		--down: #ff8f87;
+		--neutral: #4a545e;
+		--series-2: #f2c46b;
+		--series-3: #c6a8ff;
+		--sq-light: #3a444e;
+		--sq-dark: #283038;
+		--scrim: rgba(12, 15, 18, 0.66);
+		/* Propios: el papel liso (--sheet, igual que --panel), tinta de las rayas, cuadrícula, margen rojo y rotulador. */
+		--rule: #56708f;
+		--grid-c: rgba(238, 241, 232, 0.05);
+		--grid-page: rgba(238, 241, 232, 0.045);
+		--margin-c: rgba(255, 128, 128, 0.42);
+		--highlight: rgba(255, 214, 0, 0.26);
+		--cell: 20px;
+
+		--hand: 'Caveat', 'Segoe Print', 'Bradley Hand', cursive;
+		--sans: 'Nunito Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		--mono: 'Nunito Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		--font-ui: var(--sans);
+		--fw-medium: 600;
+		--fw-bold: 700;
+		--track-tight: 0.01em;
+		--track-code: 0.02em;
+		--track-caps: 0.04em;
+		--track-label: 0;
+		--track-brand: 0.04em;
+
+		--title-font: var(--hand);
+		--fs-title: 24px;
+		--title-case: none;
+		--title-track: 0;
+		--title-color: #b9d0ff;
+
+		--radius: 5px;
+		--radius-s: 4px;
+		--border: var(--hair) solid var(--line);
+		--panel-edge: var(--hair) solid var(--line);
+		--shadow: 0 1px 0 rgba(0, 0, 0, 0.35), 0 3px 10px rgba(0, 0, 0, 0.28);
+		--shadow-pop: 0 10px 28px rgba(0, 0, 0, 0.5);
+		--pad-x: var(--sp-14);
+		--grid-gap: var(--sp-12);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-12);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-12);
+		--stack-edge: 0;
+		--dur-ui: 160ms;
+		--ease: cubic-bezier(0.3, 0, 0.2, 1);
+
+		/* Dibujos: la cuadrícula de la página, la de cada hoja y el margen rojo (a 6 px del borde izquierdo). */
+		--bg-image:
+			repeating-linear-gradient(0deg, var(--grid-page) 0 1px, transparent 1px var(--cell)),
+			repeating-linear-gradient(90deg, var(--grid-page) 0 1px, transparent 1px var(--cell));
+		--sheet-grid:
+			repeating-linear-gradient(180deg, transparent 0 calc(var(--cell) - 1px), var(--grid-c) calc(var(--cell) - 1px) var(--cell)),
+			repeating-linear-gradient(90deg, transparent 0 calc(var(--cell) - 1px), var(--grid-c) calc(var(--cell) - 1px) var(--cell));
+		--margin-line: linear-gradient(90deg, transparent 0 var(--sp-6), var(--margin-c) var(--sp-6) calc(var(--sp-6) + 1px), transparent calc(var(--sp-6) + 1px));
+	}
+
+	/* ── Día: papel cuadriculado con tinta azul ──────────────────────────────────────────────── */
+	:root[data-theme='light'][data-style='cuaderno'],
+	:root[data-theme='light'] [data-style='cuaderno'] {
+		color-scheme: light;
+		--bg: #f4f1e6;
+		--panel: #fffdf6;
+		--sheet: #fffdf6;
+		--raise: #f1ede0;
+		--line: #d9dbe3;
+		--fg: #1e2640;
+		--muted: #48526d;
+		--faint: #576079;
+		--amber: #1f45b5;
+		--amber-dim: #34508f;
+		--amber-soft: rgba(31, 69, 181, 0.09);
+		--amber-edge: rgba(31, 69, 181, 0.42);
+		--on-amber: #ffffff;
+		--up: #15703a;
+		--down: #c0262d;
+		--neutral: #c9c4b3;
+		--series-2: #a8650f;
+		--series-3: #6b3fc4;
+		--sq-light: #fbf8ee;
+		--sq-dark: #cfd6e6;
+		--piece-w: #ffffff;
+		--piece-w-edge: #1e2640;
+		--piece-b: #1e2640;
+		--piece-b-edge: #1e2640;
+		--scrim: rgba(30, 38, 64, 0.32);
+		--rule: #9fb0d8;
+		--grid-c: rgba(31, 69, 181, 0.075);
+		--grid-page: rgba(31, 69, 181, 0.085);
+		--margin-c: rgba(214, 64, 69, 0.5);
+		--highlight: rgba(255, 221, 0, 0.5);
+		--title-color: #1a3a9c;
+		--shadow: 0 1px 0 rgba(30, 38, 64, 0.06), 0 2px 8px rgba(30, 38, 64, 0.07);
+		--shadow-pop: 0 12px 30px rgba(30, 38, 64, 0.18);
+	}
+}

@@ -62,6 +62,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-puzzle', storage: 'local', what: 'El último problema del día resuelto', where: 'CHESS', kind: 'dato' },
 	{ key: 'arc-journal', storage: 'local', what: 'Tu bitácora: notas, ideas con precio de entrada y recordatorios (hasta 200)', where: 'Experiencia «Bitácora» (/x/bitacora)', kind: 'dato' },
 	{ key: 'arc-radio-rate', storage: 'local', what: 'Velocidad de la voz de Arc Radio', where: 'Experiencia «Radio» (/x/radio)', kind: 'ajuste' },
+	{ key: 'arc-forecasts', storage: 'local', what: 'Tus apuestas del juego de predicciones cuando juegas sin cuenta', where: 'Experiencia «Predicciones» (/x/predicciones)', kind: 'dato' },
 	{ key: 'arc-last-visit', storage: 'local', what: 'Hora de tu última visita, para marcar lo nuevo', where: 'TOP y titulares', kind: 'dato' },
 	{ key: 'arc-last-visit-session', storage: 'session', what: 'La referencia de esta pestaña: recargar no borra lo marcado como nuevo', where: 'TOP y titulares', kind: 'dato' },
 	{ key: 'arc-sync', storage: 'local', what: 'De quién son los ajustes de aquí y cómo quedaron en tu cuenta la última vez', where: 'Ajustes en tu cuenta (arcterminal.dev)', kind: 'caché' },
