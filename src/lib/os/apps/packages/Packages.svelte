@@ -92,7 +92,7 @@
 		{ id: 'vista', label: 'Vistas' },
 		{ id: 'exp', label: 'Experiencias' },
 		{ id: 'herramienta', label: 'Herramientas' },
-		{ id: 'widget', label: 'Widgets del escritorio' },
+		{ id: 'widget', label: 'Widgets' },
 		{ id: 'on', label: 'Instaladas' },
 		{ id: 'off', label: 'Disponibles' }
 	] as const;

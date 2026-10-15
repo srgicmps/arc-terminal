@@ -11,6 +11,8 @@ export const UI = {
 	user: 'M12 4.5a3.5 3.5 0 1 1 0 7a3.5 3.5 0 1 1 0-7M5 20a7 7 0 0 1 14 0',
 	close: 'M6 6l12 12M18 6 6 18',
 	min: 'M6 12h12',
+	plus: 'M12 5v14M5 12h14',
+	check: 'M5 12.5l4.5 4.5L19 7.5',
 	max: 'M6 6h12v12H6z',
 	restore: 'M9 9h10v10H9zM5 15V5h10',
 	refresh: 'M20 12a8 8 0 1 1-2.35-5.65M20 4.5v4h-4',

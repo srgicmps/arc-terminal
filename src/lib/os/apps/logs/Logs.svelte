@@ -151,7 +151,7 @@
 		<Tiles cols={3}>
 			<Tile label="Errores" value={String(sum.errors)} tone={sum.errors ? 'down' : 'mut'} sub="en lo filtrado" />
 			<Tile label="Avisos" value={String(sum.warnings)} tone={sum.warnings ? 'flat' : 'mut'} sub="en lo filtrado" />
-			<Tile label="Fuentes al día" value={`${sum.fresh} de ${sum.active}`} tone={sum.fresh === sum.active ? 'up' : 'flat'} sub="sin contar las que no tienen clave" />
+			<Tile label="Fuentes al día" value={sum.active ? `${sum.fresh} de ${sum.active}` : '—'} tone={sum.active && sum.fresh === sum.active ? 'up' : 'flat'} sub="sin contar las que no tienen clave" />
 		</Tiles>
 		{#if failed}<p class="down">No se ha podido leer el estado de las fuentes; se enseña lo último que se leyó.</p>{/if}
 		<div class="tools">

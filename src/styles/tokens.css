@@ -346,6 +346,7 @@
 [data-os-skin='mando'],
 :root[data-theme][data-os-skin='mando'] {
 	color-scheme: dark;
+	accent-color: var(--amber); /* casillas, deslizadores y radios nativos con el acento, no el azul del navegador */
 	color: var(--fg); /* el texto heredado del body sería el de la estética de la web */
 	/* Base fija (mismos nombres que la web, valores propios del OS). */
 	--bg: var(--cmd-slate);

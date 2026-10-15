@@ -5,6 +5,7 @@
 	bloqueo. La abre el clic derecho del escritorio («Cambiar fondo…»), el Panel de control y el buscador.
 -->
 <script lang="ts">
+	import UiIcon from '../../icons/UiIcon.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
 	import { desk } from '../../os.svelte.ts';
@@ -135,7 +136,7 @@
 						<span class="mini"><WallLayer source={s} preview /></span>
 						<span class="name">{p.label}</span>
 					</button>
-					<button type="button" class="add" aria-pressed={inShow(s)} onclick={() => toggleShow(s)} title={inShow(s) ? 'Quitar de la presentación' : 'Añadir a la presentación'}>{inShow(s) ? '✓' : '+'}</button>
+					<button type="button" class="add" aria-pressed={inShow(s)} onclick={() => toggleShow(s)} title={inShow(s) ? 'Quitar de la presentación' : 'Añadir a la presentación'}><UiIcon id={inShow(s) ? 'check' : 'plus'} size={12} /></button>
 				</li>
 			{/each}
 		</ul>
@@ -174,8 +175,8 @@
 						<span class="mini"><img src={thumbs[i.id]} alt="" /></span>
 						<span class="name">{i.name}</span>
 					</button>
-					<button type="button" class="add" aria-pressed={inShow(s)} onclick={() => toggleShow(s)} title="Presentación">{inShow(s) ? '✓' : '+'}</button>
-					<button type="button" class="del" onclick={() => remove(i.id)} aria-label="Borrar {i.name}" title="Borrar">×</button>
+					<button type="button" class="add" aria-pressed={inShow(s)} onclick={() => toggleShow(s)} title="Presentación"><UiIcon id={inShow(s) ? 'check' : 'plus'} size={12} /></button>
+					<button type="button" class="del" onclick={() => remove(i.id)} aria-label="Borrar {i.name}" title="Borrar"><UiIcon id="close" size={12} /></button>
 				</li>
 			{/each}
 		</ul>
@@ -310,6 +311,8 @@
 	.del {
 		position: absolute;
 		top: var(--sp-8);
+		display: grid;
+		place-items: center;
 		width: var(--sp-20);
 		height: var(--sp-20);
 		padding: 0;
