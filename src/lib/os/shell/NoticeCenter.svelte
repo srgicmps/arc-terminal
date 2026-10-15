@@ -7,7 +7,7 @@
 	import { resolve } from '$app/paths';
 	import { clock } from '#lib/clock.svelte.ts';
 	import { when } from '#lib/format.ts';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { dismissToast, markAllSeen, shell, startNotices, toggle, unreadCount } from './shell.svelte.ts';
 	import type { Notice } from './notices.ts';
 
@@ -22,9 +22,21 @@
 
 	onMount(() => startNotices());
 
+	// Un temporizador por toast (no uno nuevo por cada cambio de la lista), y fuera todos al desmontar.
+	const timers = new Map<string, ReturnType<typeof setTimeout>>();
 	$effect(() => {
-		for (const t of shell.toasts) setTimeout(() => dismissToast(t.id), 8000);
+		for (const t of shell.toasts) {
+			if (timers.has(t.id)) continue;
+			timers.set(
+				t.id,
+				setTimeout(() => {
+					timers.delete(t.id);
+					dismissToast(t.id);
+				}, 8000)
+			);
+		}
 	});
+	onDestroy(() => timers.forEach(clearTimeout));
 
 	function go(n: Notice) {
 		if (n.href) onnavigate(n.href);
@@ -122,12 +134,24 @@
 	}
 	header a {
 		color: var(--amber);
+		text-decoration: none;
+	}
+	@media (hover: hover) {
+		header a:hover {
+			text-decoration: underline;
+		}
+	}
+	/* Estado vacío con la letra de la interfaz, no la de los textos de la web. */
+	.pop .empty {
+		font-family: var(--font-ui);
+		font-size: var(--fs-s);
+		line-height: var(--lh);
 	}
 	ul {
 		list-style: none;
 		margin: 0;
 		padding: 0;
-		max-height: 60vh;
+		max-height: 60dvh;
 		overflow: auto;
 	}
 	li + li {

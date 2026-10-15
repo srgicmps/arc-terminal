@@ -103,7 +103,7 @@
 		width: min(560px, calc(100vw - 2 * var(--sp-8)));
 		display: flex;
 		flex-direction: column;
-		max-height: min(70vh, 640px);
+		max-height: min(70dvh, 640px);
 	}
 	input {
 		margin: var(--sp-8);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildNotices, markSeen, toastsFor, unread } from './notices.ts';
 import { byCategory, categoryOf, parseIds, pushRecent, searchApps, togglePin } from './start.ts';
-import { addWidget, defaultWidgets, nudge, parseWidgets, removeWidget, snap, statusSummary } from './widgets.ts';
+import { addWidget, defaultWidgets, nudge, stackWidgets, parseWidgets, removeWidget, snap, statusSummary } from './widgets.ts';
 import { localZone, offsetFrom, openMarkets, timeIn } from './zones.ts';
 
 const wall = {
@@ -162,5 +162,16 @@ describe('iconos del escritorio', () => {
 	it('lo guardado se valida', () => {
 		expect(parseSpots('{"a":{"col":1,"row":2},"b":{"col":-1,"row":0},"c":"x"}')).toEqual({ a: { col: 1, row: 2 } });
 		expect(parseSpots('nada')).toEqual({});
+	});
+});
+
+describe('stackWidgets', () => {
+	const list = defaultWidgets(1280, 'mando');
+	it('apila según el alto real, con el mismo hueco y en la rejilla', () => {
+		expect(stackWidgets(list, [100, 50, 203]).map((w) => w.y)).toEqual([16, 136, 208]);
+	});
+	it('sin medir aún, se quedan donde estaban', () => {
+		expect(stackWidgets(list, [])).toBe(list);
+		expect(stackWidgets(list, [100, 0, 80])).toBe(list);
 	});
 });

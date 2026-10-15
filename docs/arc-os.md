@@ -137,3 +137,9 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
   pantalla de bloqueo.
 - Pendiente: la ficha de un valor (`/s?sym=`) no es una app del núcleo (`openPath` devuelve null). La prueba de humo
   falla a veces con «Failed to fetch dynamically imported module …/nodes/0.*.js» a 390 px; al relanzar pasa.
+
+## QA OS 11 · Pantallas y rendimiento (escritorio, 1024–2560 px, zoom, 15–20 ventanas)
+- [x] Las pestañas de la barra se pisaban con 8+ ventanas a 1024–1440 px: ahora encogen hasta el icono [QA OS 11]
+- [x] Una ventana minimizada o de otro escritorio seguía pintando (iframe a 60 fps, globo del mapa girando): `content-visibility: hidden`, sin recargarla [QA OS 11]
+- [x] Toasts: un temporizador por aviso y limpieza al desmontar [QA OS 11]
+- [x] Prueba de humo de /os con 12 ventanas (`scripts/smoke-os.ts`) [QA OS 11]
