@@ -30,6 +30,7 @@ import type {
 	YieldCurveData
 } from '../../src/lib/types.ts';
 import { minute } from '../history.ts';
+import { SITE } from '../site.ts';
 import { WORLD_FILES, WORLD_RULES, type WorldInputs } from './world.ts';
 import { decide, downSpan, madridTime } from '../issues.ts';
 import {
@@ -70,7 +71,7 @@ import {
 	type SessionKey
 } from './config.ts';
 
-export const SITE = 'https://srgicmps.github.io/arc-terminal';
+export { SITE };
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 

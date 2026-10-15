@@ -10,7 +10,7 @@
 import { gzipSync } from 'node:zlib';
 import { NEWS_SECTIONS } from '../../src/lib/news.ts';
 import type { ArchiveEntry, NewsArchive, NewsData, NewsItem } from '../../src/lib/types.ts';
-import { list, NO_CONTEXT, PUBLISHED, writeExtra, type Source } from '../lib.ts';
+import { fetchPublished, list, NO_CONTEXT, writeExtra, type Source } from '../lib.ts';
 import { normUrl } from './imp.ts';
 
 /** Meses que se guardan: el actual y los 3 anteriores (de 90 a 120 días). */
@@ -58,7 +58,7 @@ export function monthsBefore(month: string, n: number): string {
 
 /** Lo guardado de un mes en la web publicada. [] si aún no existe; error si no se puede leer. */
 async function published(month: string, known: boolean): Promise<ArchiveEntry[]> {
-	const res = await fetch(`${PUBLISHED}/${monthFile(month)}`, { signal: AbortSignal.timeout(30_000) }).catch(() => null);
+	const res = await fetchPublished(monthFile(month));
 	if (res?.ok) return list<ArchiveEntry>(await res.json());
 	if (!known && res?.status === 404) return [];
 	throw new Error(`no se puede leer el archivo de ${month} (${res ? `HTTP ${res.status}` : 'sin respuesta'})`);

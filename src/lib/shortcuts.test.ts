@@ -11,6 +11,8 @@ describe('shortcuts', () => {
 	it('reconoce las teclas', () => {
 		expect(isShortcut({ key: '/', shiftKey: false }, 'bar')).toBe(true);
 		expect(isShortcut({ key: 'F', shiftKey: true }, 'fullscreen')).toBe(true);
+		expect(isShortcut({ key: 'ArrowRight', shiftKey: false, altKey: true }, 'queue')).toBe(true);
+		expect(isShortcut({ key: 'ArrowRight', shiftKey: false }, 'queue')).toBe(false);
 		expect(isShortcut({ key: 'f', shiftKey: false }, 'fullscreen')).toBe(false);
 		expect(isShortcut({ key: 'M', shiftKey: true }, 'panel')).toBe(true);
 		expect(isShortcut({ key: 'Escape', shiftKey: false }, 'home')).toBe(true);

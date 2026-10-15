@@ -16,7 +16,7 @@ import type { ServiceStatus } from '../sources/statuspage.ts';
 import type { OutbreakNews } from '../sources/who.ts';
 import type { Draft, NotifyLog, Rule, RuleContext } from './rules.ts';
 
-const SITE = 'https://srgicmps.github.io/arc-terminal';
+import { SITE } from '../site.ts';
 const MIN = 60_000;
 const HOUR = 60 * MIN;
 
