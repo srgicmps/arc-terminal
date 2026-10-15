@@ -71,7 +71,7 @@
 	title="Experiencias: otras formas de usar Arc (Mayús + X)"
 	aria-label="Experiencias"
 >
-	{#if variant === 'keys'}<span aria-hidden="true">✦ EXP</span><span class="label">Experiencias</span>{:else}<span aria-hidden="true">✦</span>{/if}
+	{#if variant === 'keys'}✦ EXP<span class="label">Experiencias</span>{:else}<span aria-hidden="true">✦</span>{/if}
 </button>
 
 <dialog bind:this={dialog} class="exps" aria-label="Experiencias" onkeydown={onKey} onclick={(e) => e.target === dialog && close()}>
@@ -118,6 +118,7 @@
 
 	/* Como una tecla más de la fila de secciones (las .key del layout). */
 	.launch.keys {
+		color: var(--amber);
 		padding: var(--sp-4) var(--sp-10);
 		border: var(--border);
 		border-radius: var(--radius-s);
@@ -138,7 +139,7 @@
 		border-color: var(--amber-edge);
 	}
 
-	.launch span[aria-hidden] {
+	.launch.thumb span[aria-hidden] {
 		color: var(--amber);
 	}
 
