@@ -1,6 +1,7 @@
 <!--
 	Los valores que más suben, más bajan y más se negocian hoy (widget «hotlists» de TradingView, sin clave).
-	Sin gráfico (showChart: false) para que quede una lista densa. Un selector cambia de bolsa.
+	Sin gráfico (showChart: false) para que quede una lista densa. Un selector cambia de bolsa; con `exchange`,
+	la bolsa queda fija y no sale el selector (MOST pone las tres una al lado de otra).
 -->
 <script lang="ts">
 	import { rgba, token } from '#lib/color.ts';
@@ -10,9 +11,9 @@
 
 	interface Props {
 		height?: number;
+		/** Bolsa fija, sin selector. */
+		exchange?: Exchange;
 	}
-
-	let { height = 420 }: Props = $props();
 
 	// «exchange» del widget: US junta NYSE, Nasdaq y AMEX; XETR es Xetra (Alemania) y BME, la bolsa española.
 	const EXCHANGES = [
@@ -22,7 +23,9 @@
 	] as const;
 	type Exchange = (typeof EXCHANGES)[number]['value'];
 
-	let exchange = $state<Exchange>('US');
+	let { height = 420, exchange: fixed }: Props = $props();
+	// svelte-ignore state_referenced_locally
+	let exchange = $state<Exchange>(fixed ?? 'US');
 
 	// TradingView necesita los colores escritos: se leen de los tokens del tema activo.
 	const config = $derived.by(() => {
@@ -39,9 +42,11 @@
 	});
 </script>
 
-<div class="hot">
-	<Seg label="Bolsa" options={EXCHANGES} bind:value={exchange} />
-</div>
+{#if !fixed}
+	<div class="hot">
+		<Seg label="Bolsa" options={EXCHANGES} bind:value={exchange} />
+	</div>
+{/if}
 <TvWidget widget="hotlists" {config} {height} />
 
 <style>
