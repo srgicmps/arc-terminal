@@ -6,7 +6,7 @@
 	Esc vuelve a la portada. A diferencia del modo TV, no rota vistas: es una pantalla propia.
 -->
 <script lang="ts">
-	import { asset } from '$app/paths';
+	import { asset, resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { signed } from '#lib/format.ts';
 	import { MARKETS, marketStatus, until } from '#lib/markets.ts';
@@ -142,7 +142,8 @@
 	{/if}
 
 	<footer>
-		<span>ARC · MURO</span>
+		<a class="back" href={resolve('/')}>← Arc</a>
+		<span>MURO</span>
 		<span>{age === null ? '' : `datos de hace ${age} min · `}Esc para salir</span>
 		{#if !full}<button type="button" onclick={goFull}>Pantalla completa</button>{/if}
 	</footer>
@@ -294,11 +295,15 @@
 		font-size: var(--fs-xs);
 		letter-spacing: var(--track-code);
 	}
-	footer span:first-child {
+	footer .back {
+		color: var(--amber);
+		text-decoration: none;
+	}
+	footer span:first-of-type {
 		color: var(--amber);
 		letter-spacing: var(--track-brand);
 	}
-	footer span:nth-child(2) {
+	footer span:nth-of-type(2) {
 		margin-left: auto;
 	}
 	footer button {
