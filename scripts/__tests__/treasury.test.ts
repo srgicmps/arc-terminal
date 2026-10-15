@@ -110,6 +110,8 @@ describe('auctions', () => {
 			indirectPct: 69.1
 		});
 		expect(toAuction(row('2026-10-29', '2-Year', 'null', { floating_rate: 'Yes' }))).toMatchObject({ kind: 'FRN', bidToCover: null, indirectPct: null });
+		// TIPS: llegan como Note con inflation_index_security (sondeo del #581); no se mezclan con la nota a 10 años.
+		expect(toAuction(row('2026-10-23', '10-Year', '2.41', { inflation_index_security: 'Yes' }))).toMatchObject({ kind: 'TIPS' });
 		expect(toAuction({ security_term: '2-Year' })).toBeNull();
 	});
 
