@@ -1,6 +1,6 @@
 // EIA: inventarios semanales de petróleo de EE. UU. La clave va en la URL, así que no debe salir en los errores.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { eia, parseEia } from '../sources/eia.ts';
+import { EIA_SERIES, eia, parseEia } from '../sources/eia.ts';
 import { vsAvg5, weekChange } from '../../src/lib/eia.ts';
 import { mockFetch } from './mock.ts';
 
@@ -23,16 +23,31 @@ const weeks = (series: string, last: string, values: number[]) =>
 	}));
 
 describe('eia', () => {
-	it('necesita la clave, la manda en la URL y pide las cinco series', async () => {
+	it('necesita la clave, la manda en la URL y pide cada serie por separado', async () => {
 		expect(eia.requires).toBe('EIA_API_KEY');
-		const fetch = mockFetch(() => ({ response: { data: weeks('WCESTUS1', '2026-10-09', [420000, 418500]) } }));
+		expect(eia.deadlineMs).toBe(180_000);
+		const fetch = mockFetch((u) => {
+			const id = new URL(u).searchParams.get('facets[series][]')!;
+			return { response: { data: weeks(id, '2026-10-09', [420000, 418500]) } };
+		});
 		const data = await eia.fetch(undefined);
-		expect(data.stocks).toHaveLength(1);
+		expect(data.stocks).toHaveLength(5);
 		expect(data.stocks[0].points.at(-1)).toEqual({ t: '2026-10-09', v: 418.5 });
-		const url = new URL(String(fetch.mock.calls[0][0]));
-		expect(url.searchParams.get('api_key')).toBe(KEY);
-		expect(url.searchParams.getAll('facets[series][]')).toHaveLength(5);
+		expect(fetch).toHaveBeenCalledTimes(5);
+		const urls = fetch.mock.calls.map((c) => new URL(String(c[0])));
+		expect(urls.every((u) => u.searchParams.get('api_key') === KEY)).toBe(true);
+		expect(urls.map((u) => u.searchParams.getAll('facets[series][]')).flat()).toEqual(EIA_SERIES.map((s) => s.id));
 		expect(JSON.stringify(data)).not.toContain(KEY);
+	});
+
+	it('si falla una serie, sigue con las demás', async () => {
+		mockFetch((u) => {
+			const id = new URL(u).searchParams.get('facets[series][]')!;
+			if (id === 'WGTSTUS1') return new Response('no', { status: 403 });
+			return { response: { data: weeks(id, '2026-10-09', [420000, 418500]) } };
+		});
+		const data = await eia.fetch(undefined);
+		expect(data.stocks.map((s) => s.id)).toEqual(['WCESTUS1', 'WDISTUS1', 'W_EPC0_SAX_YCUOK_MBBL', 'WCSSTUS1']);
 	});
 
 	it('si la API falla, el error no lleva la URL ni la clave', async () => {
