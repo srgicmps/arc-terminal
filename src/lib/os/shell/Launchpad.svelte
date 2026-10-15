@@ -107,9 +107,13 @@
 		padding: var(--sp-8) var(--sp-4);
 		border-radius: var(--radius);
 	}
-	li button:hover,
 	li button:focus-visible {
 		background: var(--amber-soft);
+	}
+	@media (hover: hover) {
+		li button:hover {
+			background: var(--amber-soft);
+		}
 	}
 	.name {
 		max-width: 100%;
@@ -117,5 +121,11 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		font-size: var(--fs-s);
+	}
+	/* iPhone e iPad: con menos de 16 px, Safari amplía la página al escribir (--fs-field vale 16 px en táctil). */
+	@media (pointer: coarse) {
+		input {
+			font-size: var(--fs-field);
+		}
 	}
 </style>

@@ -360,19 +360,27 @@
 		opacity: var(--os-btn-glyph);
 	}
 
-	.btns button:hover .glyph,
 	.btns button:focus-visible .glyph {
 		opacity: 1;
 	}
-
-	.btns button:hover {
-		box-shadow: inset 0 0 0 100vmax var(--os-btn-hover);
-		color: var(--fg);
+	@media (hover: hover) {
+		.btns button:hover .glyph {
+			opacity: 1;
+		}
 	}
 
-	.btns [data-btn='close']:hover {
-		box-shadow: inset 0 0 0 100vmax var(--os-btn-close-hover, var(--os-btn-hover));
-		color: var(--os-btn-close-hover-fg, var(--fg));
+	@media (hover: hover) {
+		.btns button:hover {
+			box-shadow: inset 0 0 0 100vmax var(--os-btn-hover);
+			color: var(--fg);
+		}
+	}
+
+	@media (hover: hover) {
+		.btns [data-btn='close']:hover {
+			box-shadow: inset 0 0 0 100vmax var(--os-btn-close-hover, var(--os-btn-hover));
+			color: var(--os-btn-close-hover-fg, var(--fg));
+		}
 	}
 
 	.body {

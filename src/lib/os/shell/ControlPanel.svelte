@@ -218,4 +218,10 @@
 		color: var(--amber);
 		font-size: var(--fs-s);
 	}
+	/* iPhone e iPad: con menos de 16 px, Safari amplía la página al escribir (--fs-field vale 16 px en táctil). */
+	@media (pointer: coarse) {
+		.name {
+			font-size: var(--fs-field);
+		}
+	}
 </style>

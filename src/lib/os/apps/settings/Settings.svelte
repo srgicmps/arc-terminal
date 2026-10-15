@@ -185,12 +185,17 @@
 		padding: var(--sp-12) var(--sp-8);
 	}
 
-	.tile:hover,
-	.hits button:hover,
 	.tile:focus-visible,
 	.hits button:focus-visible {
 		background: var(--raise);
 		border-color: var(--line);
+	}
+	@media (hover: hover) {
+		.tile:hover,
+		.hits button:hover {
+			background: var(--raise);
+			border-color: var(--line);
+		}
 	}
 
 	.ico {
@@ -270,8 +275,10 @@
 		border-radius: var(--radius-s);
 	}
 
-	nav button:hover {
-		background: var(--raise);
+	@media (hover: hover) {
+		nav button:hover {
+			background: var(--raise);
+		}
 	}
 
 	nav .g {
