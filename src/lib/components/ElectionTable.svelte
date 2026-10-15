@@ -31,11 +31,6 @@
 		white-space: normal;
 	}
 
-	a.name {
-		color: inherit;
-		text-decoration: none;
-	}
-
 	a.name.major {
 		color: var(--amber-dim);
 	}

@@ -7,9 +7,14 @@
 	Con `pin` lleva el 📌 para fijarlo en TOP (registro en pins.ts); en TOP, el 📌 abre el ancho y «Quitar».
 -->
 <script lang="ts">
+	import { page } from '$app/state';
+	import { foldKey, isFolded, toggleFold } from '#lib/folded.svelte.ts';
+	import { tv } from '#lib/tv.svelte.ts';
+	import { isShortcut } from '#lib/shortcuts.ts';
 	import type { Snippet } from 'svelte';
 	import { getModular, type Span } from '#lib/layout.svelte.ts';
 	import { inPinArea, isPinned, pinSpan, setPinnedSpan, togglePinned } from '#lib/pins.svelte.ts';
+	import { getPanelIndex } from '#lib/panelindex.svelte.ts';
 	import type { ShareSource } from '#lib/share.ts';
 	import Note from './ui/Note.svelte';
 	import Share from './ui/Share.svelte';
@@ -28,14 +33,19 @@
 		note?: Snippet;
 		/** Id estable del panel en la vista modular («luz», «boe»…). */
 		id?: string;
+		/** Se abre ya ampliado (p. ej. «NVDA GP» en la barra abre el gráfico de la ficha así). */
+		expand?: boolean;
 		/** Id del registro de pins.ts («pin:eco:bancos»): muestra el 📌 para fijarlo en TOP. */
 		pin?: string;
 	}
 
-	let { title, meta, accent, jump, share, children, note, id, pin }: Props = $props();
+	let { title, meta, accent, jump, share, children, note, id, expand = false, pin }: Props = $props();
 
 	// La vista modular, si este panel está en una (si no, undefined: el panel se ve como siempre).
 	const modular = getModular();
+	// Índice de paneles del móvil: el panel se apunta mientras está en la página.
+	const index = getPanelIndex();
+	$effect(() => index?.add(title, section));
 	const tools = $derived(modular && id ? modular : null);
 	/** Menú del asa: subir, bajar y ancho. */
 	let menu = $state(false);
@@ -46,6 +56,10 @@
 	const pinned = $derived(pin ? isPinned(pin) : false);
 
 	let max = $state(false);
+	// Plegado (M20): tocar el título lo pliega o despliega y se recuerda por vista y panel. Ampliar pasa a ⤢ y M.
+	const fkey = $derived(foldKey(page.route.id, title));
+	// En el modo TV no hay quien despliegue: ahí todos los paneles salen abiertos.
+	const shut = $derived(!max && !tv.on && isFolded(fkey));
 	let titleButton: HTMLButtonElement;
 	let section: HTMLElement;
 	let closeButton = $state<HTMLButtonElement>();
@@ -54,6 +68,11 @@
 		max = true;
 	}
 
+	// Como un watch de Vue con immediate: si llega `expand`, se amplía al montarse (y si cambia a true).
+	$effect(() => {
+		if (expand) open();
+	});
+
 	function close() {
 		max = false;
 		titleButton?.focus();
@@ -61,7 +80,7 @@
 
 	/** M con el foco en el título: abre o cierra. No llega a la barra de comandos (que escribiría la m). */
 	function titleKeydown(e: KeyboardEvent) {
-		if ((e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+		if (isShortcut(e, 'panel') && !e.ctrlKey && !e.metaKey && !e.altKey) {
 			e.preventDefault();
 			e.stopPropagation();
 			if (max) close();
@@ -115,59 +134,60 @@
 	<div class="scrim" aria-hidden="true" onclick={close}></div>
 {/if}
 
-<section bind:this={section} class="panel" class:max role={max ? 'dialog' : undefined} aria-modal={max ? 'true' : undefined} aria-label={max ? title : undefined}>
+<section bind:this={section} class="panel" class:max class:folded={shut} role={max ? 'dialog' : undefined} aria-modal={max ? 'true' : undefined} aria-label={max ? title : undefined}>
 	<header class="ph">
 		<h2>
 			<button
 				bind:this={titleButton}
 				class="ttl"
 				type="button"
-				aria-expanded={max}
-				title={max ? 'Volver a la vista (Esc)' : 'Ampliar el panel (M)'}
-				onclick={() => (max ? close() : open())}
+				aria-expanded={max || !shut}
+				title={max ? 'Volver a la vista (Esc)' : shut ? 'Desplegar' : 'Plegar · M para ampliar'}
+				onclick={() => (max ? close() : toggleFold(fkey))}
 				onkeydown={titleKeydown}
 			>
-				{title}<span class="ico" aria-hidden="true">⤢</span>
+				{#if !max}<span class="fold" aria-hidden="true">{shut ? '▸' : '▾'}</span>{/if}{title}
 			</button>
 		</h2>
-		{#if meta || jump || share || tools || pin || max}
-			<div class="ph-r">
-				{#if meta}<span class:accent>{meta}</span>{/if}
-				{#if share}<Share source={share} />{/if}
-				{#if jump}<a class="jump" href={jump.href}>{jump.code} ›</a>{/if}
-				{#if pin && !max}
-					<button
-						class="tool pin"
-						class:on={pinned}
-						type="button"
-						aria-pressed={pinArea ? undefined : pinned}
-						aria-expanded={pinArea ? pinMenu : undefined}
-						aria-label={pinArea ? `Ancho o quitar ${title} de TOP` : `Fijar ${title} en TOP`}
-						title={pinArea ? 'Ancho o quitar de TOP' : pinned ? 'Fijado en TOP · toca para soltarlo' : 'Fijar en TOP'}
-						onclick={() => (pinArea ? (pinMenu = !pinMenu) : togglePinned(pin))}>📌</button
-					>
-				{/if}
-				{#if max}
-					<button bind:this={closeButton} class="close" type="button" aria-label="Cerrar el panel ampliado" onclick={close}>✕</button>
-				{:else if tools && id}
-					<button
-						class="tool grip"
-						type="button"
-						draggable="true"
-						aria-expanded={menu}
-						aria-label="Mover o cambiar el ancho de {title}"
-						title="Arrastra para mover · toca para más opciones"
-						onclick={() => (menu = !menu)}
-						ondragstart={(e) => {
-							e.dataTransfer?.setData('text/plain', id);
-							tools.dragging = id;
-						}}
-						ondragend={() => (tools.dragging = null)}>⋮⋮</button
-					>
-					<button class="tool" type="button" aria-label="Ocultar {title}" title="Ocultar" onclick={() => tools.hide(id)}>✕</button>
-				{/if}
-			</div>
-		{/if}
+		<div class="ph-r">
+			{#if meta}<span class:accent>{meta}</span>{/if}
+			{#if share}<Share source={share} />{/if}
+			{#if jump}<a class="jump" href={jump.href}>{jump.code} ›</a>{/if}
+			{#if pin && !max}
+				<button
+					class="tool pin"
+					class:on={pinned}
+					type="button"
+					aria-pressed={pinArea ? undefined : pinned}
+					aria-expanded={pinArea ? pinMenu : undefined}
+					aria-label={pinArea ? `Ancho o quitar ${title} de TOP` : `Fijar ${title} en TOP`}
+					title={pinArea ? 'Ancho o quitar de TOP' : pinned ? 'Fijado en TOP · toca para soltarlo' : 'Fijar en TOP'}
+					onclick={() => (pinArea ? (pinMenu = !pinMenu) : togglePinned(pin))}>📌</button
+				>
+			{/if}
+			{#if max}
+				<button bind:this={closeButton} class="close" type="button" aria-label="Cerrar el panel ampliado" onclick={close}>✕</button>
+			{:else}
+				<button class="tool grow" type="button" aria-label="Ampliar {title}" title="Ampliar (M)" onclick={open}>⤢</button>
+			{/if}
+			{#if tools && id && !max}
+				<button
+					class="tool grip"
+					type="button"
+					draggable="true"
+					aria-expanded={menu}
+					aria-label="Mover o cambiar el ancho de {title}"
+					title="Arrastra para mover · toca para más opciones"
+					onclick={() => (menu = !menu)}
+					ondragstart={(e) => {
+						e.dataTransfer?.setData('text/plain', id);
+						tools.dragging = id;
+					}}
+					ondragend={() => (tools.dragging = null)}>⋮⋮</button
+				>
+				<button class="tool" type="button" aria-label="Ocultar {title}" title="Ocultar" onclick={() => tools.hide(id)}>✕</button>
+			{/if}
+		</div>
 	</header>
 	{#if tools && id && menu && !max}
 		<div class="menu">
@@ -193,13 +213,22 @@
 			<button type="button" onclick={() => togglePinned(pin)}>Quitar de TOP</button>
 		</div>
 	{/if}
-	{@render children()}
-	{#if note}
-		<Note>{@render note()}</Note>
+	{#if !shut}
+		{@render children()}
+		{#if note}
+			<Note>{@render note()}</Note>
+		{/if}
 	{/if}
 </section>
 
 <style>
+	/* Al saltar desde el índice de paneles del móvil, el panel queda justo debajo de él. */
+	@media (max-width: 720px) {
+		.panel {
+			scroll-margin-top: calc(var(--index-chip) + var(--sp-16));
+		}
+	}
+
 	/* container-type: lo de dentro se adapta al ancho del panel con @container, no al de la pantalla. */
 	.panel {
 		background: var(--panel);
@@ -213,7 +242,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: var(--sp-6) var(--sp-12);
-		padding: var(--row-y) var(--pad-x);
+		padding: var(--head-y) var(--pad-x);
 		border-bottom: var(--border);
 	}
 
@@ -235,7 +264,7 @@
 	}
 
 	.accent {
-		color: var(--amber);
+		color: var(--amber-dim);
 	}
 
 	/* Controles de la vista modular: discretos, del color del texto terciario. */
@@ -368,17 +397,16 @@
 		outline-offset: var(--sp-2);
 	}
 
-	/* ⤢ solo se insinúa al pasar por encima o con el foco. */
-	.ico {
-		margin-left: var(--sp-6);
-		opacity: 0;
+	/* ▾ / ▸ delante del título: plegado o no, en --faint como los de ui/Disclosure. */
+	.fold {
+		display: inline-block;
+		width: var(--sp-12);
 		color: var(--faint);
 		font-weight: var(--fw-regular);
 	}
 
-	.ttl:hover .ico,
-	.ttl:focus-visible .ico {
-		opacity: 1;
+	.folded .ph {
+		border-bottom: 0;
 	}
 
 	.scrim {
@@ -457,6 +485,19 @@
 	@keyframes appear {
 		from {
 			opacity: 0;
+		}
+	}
+
+	/* Impreso: cada panel entero en su página y sin los botones de la cabecera (ampliar, compartir, mover, ocultar). */
+	@media print {
+		.panel {
+			break-inside: avoid;
+		}
+
+		.fold,
+		.ph-r :global(button),
+		.menu {
+			display: none;
 		}
 	}
 </style>

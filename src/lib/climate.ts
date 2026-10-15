@@ -33,6 +33,22 @@ export interface ClimateData {
 		/** El mismo día del año anterior (o el más cercano, ±7 días). */
 		yearAgo: Co2Day | null;
 	} | null;
+	/** El Niño / La Niña (índice ONI de la NOAA). Opcional: las copias anteriores no lo traen. */
+	enso?: Enso | null;
+}
+
+/** Un trimestre móvil del índice ONI: «JAS» de 2026 y su anomalía en °C. */
+export interface OniSeason {
+	season: string;
+	year: number;
+	anom: number;
+}
+
+export interface Enso extends OniSeason {
+	/** nino: ONI ≥ +0,5 · nina: ONI ≤ −0,5 · neutral: entre medias. */
+	phase: 'nino' | 'nina' | 'neutral';
+	/** Trimestres seguidos, hasta el último, en esa misma fase (cinco o más = episodio según la NOAA). */
+	streak: number;
 }
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
@@ -127,4 +143,29 @@ export function summarizeTemp(days: TempDay[]): ClimateData['temp'] {
 export function summarizeCo2(days: Co2Day[]): ClimateData['co2'] {
 	const last = days.at(-1);
 	return last ? { ...last, yearAgo: yearAgo(days, last.date) } : null;
+}
+
+/** Umbral del ONI para El Niño y La Niña, en °C. */
+const ENSO_THRESHOLD = 0.5;
+
+/** oni.ascii.txt de la NOAA: «SEAS YR TOTAL ANOM» por línea, de 1950 hasta hoy. */
+export function parseOni(text: string): OniSeason[] {
+	const out: OniSeason[] = [];
+	for (const line of text.split('\n')) {
+		const m = line.match(/^\s*([A-Z]{3})\s+(\d{4})\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*$/);
+		if (m) out.push({ season: m[1], year: Number(m[2]), anom: Number(m[4]) });
+	}
+	return out;
+}
+
+const phaseOf = (anom: number): Enso['phase'] => (anom >= ENSO_THRESHOLD ? 'nino' : anom <= -ENSO_THRESHOLD ? 'nina' : 'neutral');
+
+/** La fase del último trimestre y cuántos seguidos lleva. */
+export function summarizeEnso(seasons: OniSeason[]): Enso | null {
+	const last = seasons.at(-1);
+	if (!last) return null;
+	const phase = phaseOf(last.anom);
+	let streak = 0;
+	for (let i = seasons.length - 1; i >= 0 && phaseOf(seasons[i].anom) === phase; i--) streak++;
+	return { ...last, phase, streak };
 }

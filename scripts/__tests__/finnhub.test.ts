@@ -17,11 +17,12 @@ afterEach(() => {
 
 const t = (iso: string) => Date.parse(iso) / 1000;
 
-/** Respuestas con la forma de /calendar/earnings, /news y /quote. */
-function api(over: { earnings?: object; news?: object; quote?: (symbol: string) => object } = {}) {
+/** Respuestas con la forma de /calendar/earnings, /calendar/ipo, /news y /quote. */
+function api(over: { earnings?: object; ipos?: object; news?: object; quote?: (symbol: string) => object } = {}) {
 	return (url: string) => {
 		const u = new URL(url);
 		if (u.pathname.endsWith('/calendar/earnings')) return over.earnings;
+		if (u.pathname.endsWith('/calendar/ipo')) return over.ipos;
 		if (u.pathname.endsWith('/news')) return over.news;
 		if (u.pathname.endsWith('/quote')) return over.quote?.(u.searchParams.get('symbol')!);
 		return undefined;
@@ -70,7 +71,7 @@ describe('finnhub', () => {
 		expect(data.quotes).toEqual([{ symbol: 'NVDA', price: 190.5, change: 2.5, changePct: 1.33, prevClose: 188, time: '2026-10-13T20:00:00.000Z' }]);
 
 		// Calendario de 3 días atrás a 14 días adelante (día de Madrid).
-		const calendar = new URL(String(fetch.mock.calls.find((c) => String(c[0]).includes('/calendar/'))![0]));
+		const calendar = new URL(String(fetch.mock.calls.find((c) => String(c[0]).includes('/calendar/earnings'))![0]));
 		expect(calendar.searchParams.get('from')).toBe('2026-10-11');
 		expect(calendar.searchParams.get('to')).toBe('2026-10-28');
 
@@ -80,6 +81,35 @@ describe('finnhub', () => {
 			expect((init?.headers as Record<string, string>)['X-Finnhub-Token']).toBe(KEY);
 			expect(String(url)).not.toContain(KEY);
 		}
+	});
+
+	it('lee las salidas a bolsa: sin las retiradas ni las pequeñas, por fecha', async () => {
+		const fetch = mockFetch(
+			api({
+				ipos: {
+					ipoCalendar: [
+						{ date: '2026-10-30', exchange: 'NYSE', name: 'Grande &amp; Co', numberOfShares: 2e7, price: '18.00-20.00', status: 'expected', symbol: 'GRND', totalSharesValue: 4e8 },
+						{ date: '2026-10-16', exchange: 'NASDAQ Global', name: 'Fijada', numberOfShares: 1e7, price: '12.50', status: 'priced', symbol: 'FIJ', totalSharesValue: 1.25e8 },
+						// Retirada: fuera.
+						{ date: '2026-10-17', exchange: 'NYSE', name: 'Retirada', numberOfShares: 1e7, price: '10.00', status: 'withdrawn', symbol: 'RET', totalSharesValue: 1e8 },
+						// Menos de 50 M$: fuera.
+						{ date: '2026-10-17', exchange: 'NASDAQ Capital', name: 'Pequeña', numberOfShares: 1e6, price: '4.00', status: 'expected', symbol: 'PEQ', totalSharesValue: 4e6 },
+						// Sin importe ni símbolo: se queda.
+						{ date: '2026-10-20', exchange: null, name: 'Sin cifras', numberOfShares: null, price: null, status: 'filed', symbol: null, totalSharesValue: null }
+					]
+				},
+				quote: () => zero
+			})
+		);
+		const data = await finnhub.fetch(undefined);
+		expect(data.ipos?.map((i) => i.name)).toEqual(['Fijada', 'Sin cifras', 'Grande & Co']);
+		expect(data.ipos?.[2]).toEqual({ date: '2026-10-30', symbol: 'GRND', name: 'Grande & Co', exchange: 'NYSE', price: '18.00-20.00', shares: 2e7, value: 4e8, status: 'expected' });
+		expect(data.ipos?.[1]).toEqual({ date: '2026-10-20', symbol: '', name: 'Sin cifras', exchange: '', price: '', shares: null, value: null, status: 'filed' });
+
+		// De una semana atrás a 30 días adelante.
+		const calendar = new URL(String(fetch.mock.calls.find((c) => String(c[0]).includes('/calendar/ipo'))![0]));
+		expect(calendar.searchParams.get('from')).toBe('2026-10-07');
+		expect(calendar.searchParams.get('to')).toBe('2026-11-13');
 	});
 
 	it('aguanta campos ausentes o nulos y descarta lo que no sirve', async () => {
@@ -113,17 +143,20 @@ describe('finnhub', () => {
 		mockFetch(
 			api({
 				earnings: new Response('', { status: 403 }),
+				ipos: new Response('', { status: 403 }),
 				news: [{ headline: 'Nueva', url: 'https://x.com/n', source: 'X', datetime: t('2026-10-14T08:00:00Z') }],
 				quote: () => zero
 			})
 		);
 		const previous = {
+			ipos: [{ date: '2026-10-20', symbol: 'X', name: 'X', exchange: 'NYSE', price: '', shares: null, value: null, status: 'expected' }],
 			earnings: [{ date: '2026-10-20', symbol: 'NVDA', hour: '', quarter: 3, year: 2026, epsEstimate: null, epsActual: null, revenueEstimate: null, revenueActual: null }],
 			news: [],
 			quotes: [{ symbol: 'SPY', price: 1, change: null, changePct: null, prevClose: null, time: null }]
 		};
 		const data = await finnhub.fetch(previous);
 		expect(data.earnings).toBe(previous.earnings);
+		expect(data.ipos).toBe(previous.ipos);
 		expect(data.news.map((n) => n.title)).toEqual(['Nueva']);
 		// Las cotizaciones no fallan (son todas 0): se quedan vacías, no se reutilizan.
 		expect(data.quotes).toEqual([]);

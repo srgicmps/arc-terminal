@@ -3,6 +3,7 @@
 	import NewsList from '#lib/components/NewsList.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import QuakeTable from '#lib/components/QuakeTable.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { nf } from '#lib/format.ts';
@@ -17,7 +18,7 @@
 	const official = $derived((data.gov?.data.items ?? []).filter((i) => spainEu.has(i.source)));
 	// Del BOE, las disposiciones generales (leyes, reales decretos, órdenes).
 	const general = $derived(data.boe?.data.sections.find((s) => s.code === '1')?.items ?? []);
-	const get = $derived(seriesMap(data.eurostat, data.ecb, data.ine));
+	const get = $derived(seriesMap(data.eurostat, data.ecb, data.ine, data.afiliacion));
 	const premium = $derived(spread(get('bond10-es'), get('bond10-de'), 'premium-es', 'Prima de riesgo'));
 	const fuelAvg = $derived(data.fuel?.data.avg);
 	const pvpc = $derived(hourly(data.power?.data.pvpc ?? []));
@@ -35,9 +36,16 @@
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Titulares" meta="{items.length} noticias">
+		<Panel title="Titulares" meta="{items.length} noticias" jump={{ code: 'NEWS', href: `${resolve('/news')}?s=es` }}>
 			<NewsList {items} summaries />
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-es" />{/snippet}
+		</Panel>
+		<Panel title="Terremotos en España" meta="Últimos 10 días · los 15 más fuertes">
+			<QuakeTable
+				quakes={[...(data.quakes?.data ?? [])].sort((a, b) => b.mag - a.mag).slice(0, 15)}
+				empty={data.quakes ? 'Sin terremotos en España en los últimos 10 días.' : undefined}
+			/>
+			{#snippet note()}Fuente: Instituto Geográfico Nacional · <Updated at={data.quakes?.fetchedAt} source="quakes-es" />{/snippet}
 		</Panel>
 	</div>
 	<div class="col">
@@ -45,13 +53,12 @@
 			<SeriesTable next={data.next}
 				head="Indicador"
 				rows={[
-					{ series: get('ipc-es'), name: 'IPC (INE)', inverse: true },
+					{ series: get('ipc-es'), name: 'Inflación (IPC)', inverse: true, alt: { series: get('inflation-es'), label: 'IPCA' } },
 					{ series: get('ipc-ib'), name: 'IPC Baleares', inverse: true },
-					{ series: get('epa-es'), name: 'Paro (EPA)', decimals: 2, inverse: true },
+					{ series: get('epa-es'), name: 'Paro (EPA)', decimals: 2, inverse: true, alt: { series: get('unemployment-es'), label: 'Mensual', decimals: 1 } },
 					{ series: get('epa-ib'), name: 'Paro Baleares (EPA)', decimals: 2, inverse: true },
-					{ series: get('unemployment-es'), name: 'Paro mensual (Eurostat)', inverse: true },
+					{ series: get('afiliados-es'), name: 'Afiliados a la Seguridad Social (mill.)', decimals: 2 },
 					{ series: get('youth-unemployment-es'), name: 'Paro juvenil', inverse: true },
-					{ series: get('inflation-es'), name: 'Inflación (IPCA)', inverse: true },
 					{ series: get('gdp-es'), name: 'PIB, trimestral' },
 					{ series: get('debt-es'), name: 'Deuda pública (% PIB)', inverse: true },
 					{ series: get('bond10-es'), name: 'Bono a 10 años', decimals: 2 },
@@ -72,7 +79,7 @@
 					</li>
 				{/if}
 			</ul>
-			{#snippet note()}Fuentes: INE, Eurostat, BCE, Ministerio para la Transición Ecológica, REE e IGN{/snippet}
+			{#snippet note()}Fuentes: INE, Eurostat, Seguridad Social, BCE, Ministerio para la Transición Ecológica, REE e IGN{/snippet}
 		</Panel>
 		{#if get('turistas-es') || get('ipv-es')}
 			<Panel title="Turismo y vivienda" meta="INE · último dato">
@@ -96,7 +103,7 @@
 				<ul class="mini">
 					{#each general.slice(0, 12) as item (item.id)}
 						<li>
-							<a class="l" href={item.html} target="_blank" rel="noopener">{item.title}</a>
+							<a class="l" href={item.html || item.pdf} target="_blank" rel="noopener">{item.title}</a>
 						</li>
 					{/each}
 				</ul>

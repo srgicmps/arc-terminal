@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { edition, imf } from '../sources/imf.ts';
+import { edition, g20Rows, imf } from '../sources/imf.ts';
 import { mockFetch } from './mock.ts';
 
 // Respuestas de ejemplo con la forma documentada de la API DataMapper (cifras inventadas para el test).
@@ -76,5 +76,35 @@ describe('imf', () => {
 		expect(edition('World Economic Outlook (April 2027)')).toBe('abril de 2027');
 		expect(edition('WEO')).toBeNull();
 		expect(edition(undefined)).toBeNull();
+	});
+
+	it('arma la tabla del G20 con el año en curso, en su orden, sin los países vacíos', () => {
+		const rows = g20Rows({
+			gdp: { USA: [1.8, 2.1], ESP: [2.4, 1.9] },
+			cpi: { USA: [2.9, 2.3] },
+			unemployment: { USA: [4.3, 4.4], ARG: [7.1, 6.8] },
+			debt: { USA: [124, 126] },
+			balance: { USA: [-6.5, -6.1] }
+		});
+		expect(rows.map((r) => r.code)).toEqual(['USA', 'ESP', 'ARG']);
+		expect(rows[0]).toEqual({ code: 'USA', name: 'EE. UU.', gdp: 1.8, cpi: 2.9, unemployment: 4.3, debt: 124, balance: -6.5 });
+		expect(rows[1]).toMatchObject({ gdp: 2.4, cpi: null, unemployment: null });
+	});
+
+	it('si fallan paro, deuda o saldo, la tabla del G20 sale sin esas columnas y las previsiones siguen', async () => {
+		mockFetch((url) => {
+			if (url.endsWith('/indicators')) return indicators;
+			if (url.includes('/NGDP_RPCH/')) return values('NGDP_RPCH', { USA: { '2026': 1.8, '2027': 2.1 } });
+			if (url.includes('/PCPIPCH/')) return values('PCPIPCH', { USA: { '2026': 2.9, '2027': 2.3 } });
+			return new Response('caído', { status: 404 });
+		});
+		const data = await imf.fetch(undefined);
+		expect(data.rows.map((r) => r.code)).toEqual(['USA']);
+		expect(data.g20).toEqual([{ code: 'USA', name: 'EE. UU.', gdp: 1.8, cpi: 2.9, unemployment: null, debt: null, balance: null }]);
+	});
+
+	it('da por vieja la copia publicada que no trae la tabla del G20', () => {
+		expect(imf.isStale?.({ edition: null, years: [2026, 2027], rows: [] })).toBe(true);
+		expect(imf.isStale?.({ edition: null, years: [2026, 2027], rows: [], g20: [] })).toBe(false);
 	});
 });

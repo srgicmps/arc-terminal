@@ -1,6 +1,6 @@
 // Clima del planeta: lectura de los CSV de ERA5 y de Mauna Loa, puesto del día y CO₂ de hace un año.
 import { describe, expect, it } from 'vitest';
-import { parseCo2, parseEra5, rankDay, summarizeCo2, summarizeTemp, yearAgo } from './climate.ts';
+import { parseCo2, parseEra5, parseOni, rankDay, summarizeCo2, summarizeEnso, summarizeTemp, yearAgo } from './climate.ts';
 
 const ERA5 = `# Copernicus Climate Change Service
 # Global daily surface air temperature
@@ -61,5 +61,30 @@ describe('CO₂ de Mauna Loa', () => {
 	it('resumen de la última medida', () => {
 		expect(summarizeCo2(days)).toEqual({ date: '2026-10-12', ppm: 426.85, yearAgo: { date: '2025-10-09', ppm: 423.1 } });
 		expect(summarizeCo2([])).toBeNull();
+	});
+});
+
+describe('El Niño (ONI)', () => {
+	const txt = [
+		' SEAS  YR   TOTAL   ANOM',
+		' ASO 2025  26.14  -0.57',
+		' SON 2025  26.10  -0.61',
+		' OND 2025  26.04  -0.61',
+		' NDJ 2025  26.10  -0.55',
+		' DJF 2026  26.15  -0.52',
+		' JFM 2026  26.57  -0.21',
+		' FMA 2026  27.40   0.20',
+		' MAM 2026  28.09   0.55',
+		' AMJ 2026  28.30   0.62'
+	].join('\n');
+
+	it('lee los trimestres y da la fase del último y cuántos lleva seguidos', () => {
+		const seasons = parseOni(txt);
+		expect(seasons).toHaveLength(9);
+		expect(seasons[0]).toEqual({ season: 'ASO', year: 2025, anom: -0.57 });
+		expect(summarizeEnso(seasons)).toEqual({ season: 'AMJ', year: 2026, anom: 0.62, phase: 'nino', streak: 2 });
+		expect(summarizeEnso(seasons.slice(0, 5))).toMatchObject({ phase: 'nina', streak: 5 });
+		expect(summarizeEnso(seasons.slice(0, 7))).toMatchObject({ phase: 'neutral', streak: 2 });
+		expect(summarizeEnso([])).toBeNull();
 	});
 });

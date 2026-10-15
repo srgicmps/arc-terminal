@@ -2,20 +2,12 @@
 // los partes oficiales sobre brotes con riesgo internacional (cólera, ébola, gripe aviar…). API pública
 // OData de who.int, sin clave. Términos: contenido de la OMS reutilizable citando la fuente (CC BY-NC-SA
 // 3.0 IGO); no publican límite por IP. Salen pocos partes a la semana, así que se pide cada 3 h.
+import type { OutbreakNews } from '../../src/lib/types.ts';
 import { getJson, list, plain, type Source } from '../lib.ts';
 
 type Raw = Record<string, any>;
 
-export interface OutbreakNews {
-	/** Identificador del parte, p. ej. «2026-DON590». */
-	id: string;
-	title: string;
-	/** Fecha de publicación en ISO (UTC). */
-	date: string | null;
-	/** Primeras frases del resumen, en texto plano. */
-	summary: string;
-	url: string;
-}
+export type { OutbreakNews };
 
 // $select: sin él, cada parte trae todo el texto en HTML (epidemiología, respuesta, consejos…).
 export const WHO_URL =

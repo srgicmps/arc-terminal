@@ -107,9 +107,7 @@ export const COUNTRIES: Country[] = [
 
 /** Quita tildes y pasa a minúsculas, para comparar lo que escribe Sergi: «Japón» = «japon». */
 const fold = (s: string) =>
-	s
-		.normalize('NFD')
-		.replace(/\p{M}/gu, '')
+	plain(s)
 		.toLowerCase()
 		.replace(/[.\s]+/g, ' ')
 		.trim();
@@ -155,6 +153,15 @@ export function findCountry(query: string | null | undefined): Country | undefin
 		// Por el principio del nombre: «reino» → Reino Unido, «corea del s» → Corea del Sur.
 		(q.length >= 3 ? COUNTRIES.find((c) => fold(c.name).startsWith(q)) : undefined)
 	);
+}
+
+/**
+ * El país con ese nombre exacto (en español o en inglés, sin tildes ni mayúsculas), sin buscar por el
+ * principio del nombre: para fuentes que dan el nombre del país («Niger» no es Nigeria).
+ */
+export function countryByName(name: string | null | undefined): Country | undefined {
+	const q = fold(name ?? '');
+	return q ? COUNTRIES.find((c) => [c.name, ...(c.aliases ?? [])].some((n) => fold(n) === q)) : undefined;
 }
 
 // Una sola expresión con todos los nombres de todos los países, del más largo al más corto: en cada sitio del

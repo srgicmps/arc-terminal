@@ -46,12 +46,28 @@ export interface ImfRow {
 	cpi: [number | null, number | null];
 }
 
+/** Un país del G20 en el año en curso (estimación del WEO), para la tabla ECST. Todo en %. */
+export interface ImfCountry {
+	/** Código del FMI (ISO de 3 letras: USA, DEU…). */
+	code: string;
+	name: string;
+	/** Crecimiento del PIB real, inflación media y paro. */
+	gdp: number | null;
+	cpi: number | null;
+	unemployment: number | null;
+	/** Deuda pública bruta y saldo público (negativo = déficit), en % del PIB. */
+	debt: number | null;
+	balance: number | null;
+}
+
 export interface ImfData {
 	/** Edición del WEO en español («octubre de 2026»); null si la API no la dice. */
 	edition: string | null;
 	/** Los dos años de la tabla: [año actual, siguiente]. */
 	years: [number, number];
 	rows: ImfRow[];
+	/** Los países del G20 (y España, invitada permanente) en el año en curso. */
+	g20?: ImfCountry[];
 }
 
 // ---------- BOE ----------
@@ -79,6 +95,27 @@ export interface BoeData {
 	number: string;
 	pdf: string;
 	sections: BoeSection[];
+}
+
+/** Una disposición en la semana del BOE: sin enlaces, que salen del id (ver src/lib/boe.ts). */
+export interface BoeWeekItem {
+	id: string;
+	title: string;
+	dept: string;
+	epigraph: string;
+}
+
+/** Un sumario de la semana (static/data/boe-week.json, lo carga BOE al elegir «Semana»). */
+export interface BoeWeekDay {
+	/** «2026-10-14» */
+	date: string;
+	number: string;
+	sections: { code: string; name: string; total: number; items: BoeWeekItem[] }[];
+}
+
+/** Los sumarios de los últimos 7 días, del más reciente al más antiguo. */
+export interface BoeWeek {
+	days: BoeWeekDay[];
 }
 
 // ---------- Federal Register (EE. UU.) ----------
@@ -298,6 +335,12 @@ export interface YieldCurveData {
 	days: { date: string; values: (number | null)[] }[];
 }
 
+/** VIX y su curva (scripts/sources/vix.ts), con el VVIX y el SKEW de Cboe: último cierre y el anterior. */
+export interface VixData extends YieldCurveData {
+	vvix?: { date: string; value: number; previous: number | null } | null;
+	skew?: { date: string; value: number; previous: number | null } | null;
+}
+
 // ---------- Subastas de deuda de EE. UU. (Fiscal Data) ----------
 
 export interface Auction {
@@ -410,11 +453,97 @@ export interface Quote {
 	time: string | null;
 }
 
+/** Salida a bolsa del calendario de Finnhub. */
+export interface Ipo {
+	/** «2026-10-14» */
+	date: string;
+	/** Puede venir vacío si aún no tiene. */
+	symbol: string;
+	name: string;
+	exchange: string;
+	/** Precio o horquilla en $, tal cual lo da Finnhub: «18.00» o «18.00-20.00». Vacío si no se sabe. */
+	price: string;
+	shares: number | null;
+	/** Importe de la colocación, en $. */
+	value: number | null;
+	/** expected: prevista · priced: con precio fijado · filed: registrada. */
+	status: string;
+}
+
+/**
+ * Rentabilidad por plazos de cada valor (static/data/perf.json), en %. Claves de Finnhub sin el
+ * «PriceReturnDaily»: «5Day», «13Week», «26Week», «52Week», «yearToDate», «monthToDate»…
+ */
+export interface PerfData {
+	symbols: Record<string, Record<string, number>>;
+}
+
 export interface FinnhubData {
 	earnings: Earnings[];
 	news: NewsItem[];
 	quotes: Quote[];
+	/** Las copias guardadas antes de añadir las salidas a bolsa no lo tienen. */
+	ipos?: Ipo[];
 }
+
+// ---------- Ficha de valor: analistas, resultados y directivos (Finnhub) ----------
+
+/** Recomendaciones de los analistas en un mes (cuántos dicen cada cosa). */
+export interface AnalystRecs {
+	/** Mes de la encuesta: «2026-10-01». */
+	period: string;
+	strongBuy: number;
+	buy: number;
+	hold: number;
+	sell: number;
+	strongSell: number;
+}
+
+/** Beneficio por acción de un trimestre: lo esperado y lo que salió. */
+export interface EarningsSurprise {
+	/** Fin del trimestre: «2026-06-30». */
+	period: string;
+	actual: number | null;
+	estimate: number | null;
+	/** Sorpresa en %, positiva si superó lo esperado. */
+	surprisePct: number | null;
+}
+
+/** Compra o venta de acciones de un directivo (formulario 4 de la SEC). */
+export interface InsiderTrade {
+	name: string;
+	/** Acciones compradas (+) o vendidas (−). */
+	change: number;
+	price: number | null;
+	/** Fecha de la operación (ISO, día). */
+	date: string;
+	/** 'P' compra, 'S' venta. */
+	code: 'P' | 'S';
+}
+
+/** Precio objetivo medio de los analistas (solo si el plan de Finnhub lo da). */
+export interface PriceTarget {
+	mean: number | null;
+	high: number | null;
+	low: number | null;
+	/** Cuándo lo actualizó Finnhub (ISO). */
+	updated: string | null;
+}
+
+export interface StockAnalysis {
+	/** Cuándo se descargó este valor (ISO): se refresca a las 24 h. */
+	fetchedAt: string;
+	/** Los últimos meses, del más reciente al más antiguo. */
+	recs: AnalystRecs[];
+	/** Los últimos trimestres, del más reciente al más antiguo. */
+	surprises: EarningsSurprise[];
+	/** Compras y ventas de directivos en los últimos 90 días, de la más reciente a la más antigua. */
+	insiders: InsiderTrade[];
+	target?: PriceTarget;
+}
+
+/** Por código del valor («NVDA»). */
+export type AnalystsData = Record<string, StockAnalysis>;
 
 // ---------- Mercados de predicción (Polymarket) ----------
 
@@ -425,8 +554,11 @@ export interface Prediction {
 	/** Volumen negociado en 24 h, en dólares. */
 	volume24h: number;
 	endDate: string;
-	/** Opciones con su probabilidad implícita (0–1), de más a menos probable. */
-	outcomes: { label: string; p: number }[];
+	/**
+	 * Opciones con su probabilidad implícita (0–1), de más a menos probable, y `d`, cuánto ha cambiado en
+	 * 24 h (en tanto por uno: 0,05 = 5 puntos), si Polymarket lo da.
+	 */
+	outcomes: { label: string; p: number; d?: number }[];
 }
 
 export interface PredictionsData {
@@ -623,6 +755,8 @@ export interface ImpEntry {
 	sources: string[];
 	/** Puntuación (ver scripts/sources/imp.ts). */
 	score: number;
+	/** Secciones de titulares donde aparece (claves de NEWS_SECTIONS). En el histórico, desde M9. */
+	sections?: string[];
 	/** El enlace de cada medio. Solo en el top de ahora y en el día de hoy (no en días anteriores). */
 	links?: ImpLink[];
 }
@@ -904,7 +1038,8 @@ export interface ReleaseEvent {
 	/** Si el organismo no da la hora. */
 	allDay: boolean;
 	title: string;
-	source: 'Eurostat' | 'BLS' | 'INE';
+	/** Organismo: BEA (PIB y PCE), DOL (paro semanal) y Fed (H.4.1) llegan, como el BLS, con las fechas de FRED. */
+	source: 'Eurostat' | 'BLS' | 'INE' | 'BEA' | 'DOL' | 'Fed';
 	/** Tema (src/lib/nextrelease.ts) si es uno de los datos que enseña la terminal, o null. */
 	topic: string | null;
 	url?: string;
@@ -913,4 +1048,172 @@ export interface ReleaseEvent {
 export interface ReleaseCalData {
 	/** Próximas publicaciones de los datos que enseña la terminal (con tema), por fecha. */
 	events: ReleaseEvent[];
+	/** Las publicadas en los últimos 8 días (de la copia anterior), por fecha: para el resumen SEMANA. */
+	past?: ReleaseEvent[];
+}
+
+// ---------- NOVEDADES: lo fusionado en Arc Terminal (PR de GitHub) ----------
+
+export interface Change {
+	/** Número del PR. */
+	number: number;
+	title: string;
+	/** Cuándo se fusionó (ISO 8601). */
+	mergedAt: string;
+	url: string;
+}
+
+export interface ChangesData {
+	/** Lo fusionado en los últimos 7 días, de lo más reciente a lo más antiguo. */
+	items: Change[];
+}
+
+// ---------- Señales de riesgo: GDACS, IODA y OMS (scripts/sources/gdacs.ts, ioda.ts y who.ts) ----------
+
+/** Alerta naranja o roja de catástrofe de GDACS (ONU y Comisión Europea). */
+export type GdacsType = 'EQ' | 'TC' | 'FL' | 'VO' | 'DR' | 'WF';
+
+export interface GdacsEvent {
+	/** Tipo y número de evento de GDACS, p. ej. «EQ1501234». Estable entre episodios. */
+	id: string;
+	type: GdacsType;
+	/** Nombre del tipo en español. */
+	kind: string;
+	level: 'orange' | 'red';
+	name: string;
+	country: string;
+	/** Fecha de inicio, fin y última actualización, en ISO (UTC). */
+	from: string | null;
+	to: string | null;
+	updated: string | null;
+	/** Texto de gravedad de GDACS, p. ej. «Magnitude 7.1M, Depth:10km». */
+	severity: string;
+	/** Puntuación de alerta de GDACS (0–3 aprox.): sirve para ordenar dentro de un mismo nivel. */
+	score: number | null;
+	lat: number | null;
+	lon: number | null;
+	url: string;
+}
+
+/** Caída de internet de un país según IODA. */
+export interface IodaOutage {
+	/** Código ISO del país (p. ej. «IR»). */
+	code: string;
+	name: string;
+	/** El peor nivel de las señales que siguen en alerta. */
+	level: 'critical' | 'warning';
+	/** Señales en alerta ahora: «bgp», «ping-slash24», «merit-nt»… */
+	signals: string[];
+	/** Primera alerta de la racha actual y la última, en ISO (UTC). */
+	since: string;
+	last: string;
+	/** Cuánto ha caído la peor señal frente a lo normal, en % (p. ej. 85 = queda el 15 %). */
+	drop: number | null;
+	url: string;
+}
+
+/** Parte de brote de la OMS (Disease Outbreak News). */
+export interface OutbreakNews {
+	/** Identificador del parte, p. ej. «2026-DON590». */
+	id: string;
+	title: string;
+	/** Fecha de publicación en ISO (UTC). */
+	date: string | null;
+	/** Primeras frases del resumen, en texto plano. */
+	summary: string;
+	url: string;
+}
+
+// ---------- Demanda eléctrica en tiempo real (REE, scripts/sources/ree-demand.ts) ----------
+
+export interface DemandPoint {
+	/** Hora del dato en ISO (UTC). */
+	time: string;
+	real: number | null;
+	forecast: number | null;
+}
+
+export interface DemandData {
+	/** Último dato con demanda real y su prevista, en MW. */
+	time: string;
+	real: number;
+	forecast: number | null;
+	scheduled: number | null;
+	/** Cuánto está la real por debajo (+) o por encima (−) de la prevista, en %. */
+	gap: number | null;
+	/** Las dos últimas horas, para ver si la caída es brusca o progresiva. */
+	recent: DemandPoint[];
+}
+
+// ---------- Refugiados y desplazados (ACNUR, scripts/sources/unhcr.ts) ----------
+
+export interface UnhcrCountry {
+	/** ISO 3166-1 alfa-3: «SYR». */
+	iso3: string;
+	/** Nombre en inglés, como lo da ACNUR. */
+	name: string;
+	/** Refugiados y solicitantes de asilo originarios del país. */
+	from: number;
+	/** Refugiados y solicitantes de asilo acogidos en el país. */
+	hosted: number;
+	/** Desplazados internos. */
+	idps: number;
+}
+
+export interface UnhcrData {
+	/** Año del dato (fin de año). */
+	year: number;
+	countries: UnhcrCountry[];
+}
+
+// ---------- Asteroides que pasan cerca de la Tierra (NASA JPL CNEOS, scripts/sources/neo.ts) ----------
+
+export interface NeoPass {
+	/** Designación: «2026 TP6». */
+	des: string;
+	/** Momento de máximo acercamiento, en ISO (UTC). */
+	date: string;
+	/** Distancia mínima en distancias lunares (1 = 384 400 km). */
+	ld: number;
+	/** Velocidad relativa, en km/s. */
+	speed: number | null;
+	/** Tamaño en metros: el medido si lo hay; si no, la horquilla que sale de su brillo (albedo 0,25 a 0,05). */
+	size: { min: number; max: number; measured: boolean } | null;
+}
+
+// ---------- Red de bitcoin (mempool.space, scripts/sources/bitcoin.ts) ----------
+
+export interface BitcoinNet {
+	/** Comisión para entrar en el próximo bloque, en sat/vB. */
+	feeFast: number | null;
+	/** La del tercer bloque (unos 30 min). */
+	feeHalfHour: number | null;
+	/** Transacciones esperando (mempool) y su tamaño en vMB. */
+	mempoolTx: number | null;
+	mempoolVmb: number | null;
+	/** Potencia de minado, en EH/s. */
+	hashrate: number | null;
+	/** Altura del último bloque. */
+	height: number;
+	/** Próximo halving: su altura, bloques que faltan y fecha estimada (10 min por bloque). */
+	halving: { height: number; blocks: number; date: string };
+}
+
+// ---------- Inseguridad alimentaria aguda (FEWS NET, scripts/sources/fewsnet.ts) ----------
+
+export interface FoodInsecurity {
+	/** ISO 3166-1 alfa-2: «SO». */
+	code: string;
+	/** Nombre en inglés, como lo da FEWS NET. */
+	country: string;
+	/** Personas en fase IPC 3 o peor («crisis» o más), horquilla de FEWS NET. */
+	low: number;
+	high: number;
+	/** Periodo al que se refiere: «2026-08-01» a «2026-09-30». */
+	from: string;
+	to: string;
+	/** Situación actual, proyección o picos de necesidad del año. */
+	scenario: string;
+	/** Frente a hace un año: «Higher», «Similar», «Lower»… si lo da. */
+	vsYear: string | null;
 }

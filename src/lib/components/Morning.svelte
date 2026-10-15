@@ -2,16 +2,18 @@
 	«Mi mañana»: lo que conviene saber al empezar el día, en una fila compacta. Antes de las 11:00 (hora
 	de Madrid) sale entera; a partir de las 11 se pliega en una línea, que se abre al tocarla.
 	Solo usa datos que ya existen: tiempo (WX), luz (PVPC), resultados (Finnhub), reuniones del BCE y la
-	Fed, festivos, días sin bolsa y avisos meteorológicos. Lo monta la portada pasándole los datos.
+	Fed, datos macro que se publican hoy (calendario de publicaciones), festivos, días sin bolsa y avisos
+	meteorológicos. Lo monta la portada pasándole los datos.
 -->
 <script lang="ts">
 	import { clock } from '#lib/clock.svelte.ts';
-	import { nf } from '#lib/format.ts';
+	import { hm, nf } from '#lib/format.ts';
 	import { bmeHolidays, nyseHolidays } from '#lib/markets.ts';
 	import { BANKS, MEETINGS, madridDate } from '#lib/meetings.ts';
 	import { earningsLine, myEarnings } from '#lib/myearnings.ts';
+	import { TOPIC_LABEL } from '#lib/nextrelease.ts';
 	import { cheapestWindow, hourLabel, hourly, madridNow } from '#lib/power.ts';
-	import type { Earnings, HolidaysData, PowerData, WeatherData } from '#lib/types.ts';
+	import type { Earnings, HolidaysData, PowerData, ReleaseEvent, WeatherData } from '#lib/types.ts';
 	import { ALERT_NAMES, sky, type AlertsData } from '#lib/weather.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
 	import Tile from './ui/Tile.svelte';
@@ -22,11 +24,13 @@
 		earnings?: Earnings[];
 		holidays?: HolidaysData | null;
 		alerts?: AlertsData | null;
+		/** Publicaciones de datos macro (releases-cal): salen las de hoy. */
+		releases?: ReleaseEvent[];
 		/** Ciudad del tiempo: la de «Tu sitio», que pasa la portada. Sin ella, la primera de weather.json. */
 		city?: string;
 	}
 
-	let { weather = null, power = null, earnings = [], holidays = null, alerts = null, city }: Props = $props();
+	let { weather = null, power = null, earnings = [], holidays = null, alerts = null, releases = [], city }: Props = $props();
 
 	// Hasta que arranca el reloj en el navegador se usa la hora de construcción de la página.
 	const now = $derived(clock.now || Date.now());
@@ -58,12 +62,19 @@
 		return [...meetings, ...lines].slice(0, 3);
 	});
 
+	// Datos macro que se publican hoy (hora de Madrid), en orden: «IPC de España 09:00».
+	const macro = $derived(
+		releases
+			.filter((e) => madridDate(Date.parse(e.date)) === today)
+			.map((e) => `${(e.topic && TOPIC_LABEL[e.topic]) || e.title}${e.allDay ? '' : ` ${hm(e.date)}`}`)
+	);
+
 	// Festivo de hoy (España o Baleares) o día sin bolsa en Nueva York o Madrid.
 	const closed = $derived.by(() => {
 		const year = Number(today.slice(0, 4));
 		const fest = (holidays?.items ?? []).find((h) => h.date === today);
 		const markets = [...nyseHolidays(year), ...bmeHolidays(year)].filter((h) => h.date === today).map((h) => h.market);
-		return [fest ? `Festivo: ${fest.name}` : '', markets.length ? `Sin bolsa en ${markets.join(' y ')}` : '']
+		return [fest ? `${fest.scope === 'IB' ? 'Festivo en Baleares' : 'Festivo'}: ${fest.name}` : '', markets.length ? `Sin bolsa en ${markets.join(' y ')}` : '']
 			.filter(Boolean)
 			.join(' · ');
 	});
@@ -88,6 +99,7 @@
 				: null,
 			cheap ? { label: 'Luz más barata', value: `${hourLabel(cheap.first)}–${hourLabel(cheap.after)}`, sub: `${nf(cheap.avg, 3)} €/kWh` } : null,
 			agenda.length ? { label: 'Hoy', value: agenda[0], sub: agenda.slice(1).join(' · ') } : null,
+			macro.length ? { label: 'Datos de hoy', value: macro[0], sub: macro.slice(1, 3).join(' · ') } : null,
 			closed ? { label: 'Calendario', value: closed, sub: '' } : null,
 			warning ? { label: 'Aviso', value: warning, sub: '' } : null
 		].filter((i) => i !== null)

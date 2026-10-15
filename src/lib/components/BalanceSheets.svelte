@@ -25,7 +25,7 @@
 		<thead>
 			<tr>
 				<th class="l">Banco</th>
-				<th>Activo</th>
+				<th>Saldo</th>
 				<th>4 sem.</th>
 				<th>1 año</th>
 				<th class="sp"><span class="sr">Evolución en 3 años</span></th>
@@ -53,14 +53,6 @@
 {/if}
 
 <style>
-	a.name {
-		color: inherit;
-		text-decoration: none;
-	}
-
-	a.name:hover {
-		color: var(--amber);
-	}
 
 	.sp {
 		width: 80px;

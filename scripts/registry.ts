@@ -2,8 +2,7 @@
 // Todas las fuentes que descarga `pnpm data`, sin lista escrita a mano: se leen los archivos de
 // scripts/sources/ y se recoge todo lo que se exporte con forma de Source (o listas de ellas, como
 // newsSources). Así, una fuente nueva es un archivo nuevo y no toca ningún archivo compartido.
-// Transición: las que siguen en scripts/sources/index.ts van primero y en su orden; las demás, detrás,
-// por nombre de archivo. Si una está en los dos sitios, cuenta una vez (por `name`).
+// Van por orden de nombre de archivo; si un archivo exporta la misma fuente dos veces, cuenta una (por `name`).
 import { readdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { Source } from './lib.ts';
@@ -29,11 +28,6 @@ export function dedupe(lists: Source<unknown>[][]): Source<unknown>[] {
 
 export async function loadSources(dir = DIR): Promise<Source<any>[]> {
 	const files = (await readdir(dir)).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts')).sort();
-	const listed = files.includes('index.ts')
-		? ((await import(pathToFileURL(`${dir}/index.ts`).href)).sources as Source<unknown>[])
-		: [];
-	const found = await Promise.all(
-		files.filter((f) => f !== 'index.ts').map(async (f) => sourcesIn(await import(pathToFileURL(`${dir}/${f}`).href)))
-	);
-	return dedupe([listed, ...found]);
+	const found = await Promise.all(files.map(async (f) => sourcesIn(await import(pathToFileURL(`${dir}/${f}`).href))));
+	return dedupe(found);
 }

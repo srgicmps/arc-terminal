@@ -88,9 +88,18 @@ describe('apagón', () => {
 		const r = run(blackoutRule, { reeDemand: demand([27000, 26900, 26800, 12000, 11000]) });
 		expect(r.ids).toEqual(['blackout:2026-10-14:12']);
 		expect(r.alerts[0].body).toContain('63 % por debajo de la prevista');
+		expect(r.alerts[0].body).toContain('ha caído un 59 %');
 		// Espera de 6 h: una hora después, nada.
 		const later = demand([11000, 11500, 10000, 8000], 30000, NOW + 60 * MIN);
 		expect(run(blackoutRule, { reeDemand: later }, r.after, NOW + 60 * MIN).ids).toEqual([]);
+	});
+
+	it('con una caída enorme avisa aunque la prevista se haya rehecho (como hizo REE el 28/04/2025)', () => {
+		const redone = { ...demand([27075, 26968, 1785, 1778]), forecast: 1745, gap: -1.9 };
+		expect(run(blackoutRule, { reeDemand: redone }).ids).toEqual(['blackout:2026-10-14:12']);
+		// Una caída del 20 % sin diferencia con la prevista no basta.
+		const mid = { ...demand([30000, 30000, 24000]), forecast: 24000, gap: 0 };
+		expect(run(blackoutRule, { reeDemand: mid }).ids).toEqual([]);
 	});
 
 	it('no avisa por una bajada lenta, por poca diferencia ni con datos viejos', () => {
