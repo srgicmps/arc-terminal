@@ -28,6 +28,20 @@ describe('guardado', () => {
 		expect(parseSaved('{"moves":[],"orientation":"x","clock":{"base":"1"}}')).toEqual(emptyGame({ rival: 'human' }));
 	});
 
+	it('corta las jugadas en la primera ilegal (si no, la partida se atasca)', () => {
+		const raw = JSON.stringify({ moves: ['e2e4', 'e7e5', 'e2e4', 'g1f3'] });
+		expect(parseSaved(raw)?.moves).toEqual(['e2e4', 'e7e5']);
+		// Después de un mate no hay más jugadas legales.
+		const mate = ['f2f3', 'e7e5', 'g2g4', 'd8h4', 'a2a3'];
+		expect(parseSaved(JSON.stringify({ moves: mate }))?.moves).toEqual(mate.slice(0, 4));
+	});
+
+	it('un rival que ya no existe pasa al nivel por defecto', () => {
+		expect(parseSaved(JSON.stringify({ moves: [], rival: 'antiguo' }))?.rival).toBe('club');
+		expect(parseSaved(JSON.stringify({ moves: [], rival: 'max' }))?.rival).toBe('max');
+		expect(parseSaved(JSON.stringify({ moves: [], rival: 'human' }))?.rival).toBe('human');
+	});
+
 	it('guarda y vuelve a leer', () => {
 		const store = new Map<string, string>();
 		vi.stubGlobal('localStorage', {

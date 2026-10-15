@@ -1,7 +1,8 @@
 // Guardado de la partida en curso de CHESS en este navegador (localStorage). Si el navegador no deja
 // guardar (modo privado, cuota llena…) o lo guardado está roto, se empieza una partida nueva sin avisar.
 import type { Clock } from './clock.ts';
-import type { Color, Uci } from './game.ts';
+import { replay, type Color, type Uci } from './game.ts';
+import { LEVELS } from './uci.ts';
 
 const KEY = 'arc-chess';
 
@@ -44,6 +45,22 @@ function parseClock(c: unknown): Clock | null {
 	return { base: o.base as number, inc: o.inc as number, w: o.w as number, b: o.b as number, since: null };
 }
 
+/**
+ * Jugadas guardadas que se pueden repetir desde el principio. Se cortan en la primera ilegal: si no, la
+ * partida se quedaba atascada (las jugadas nuevas iban detrás de la ilegal y no se veían).
+ */
+function legalMoves(list: unknown[]): Uci[] {
+	const moves = list.filter((m): m is string => typeof m === 'string' && /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(m));
+	const n = replay(moves).history().length;
+	return moves.slice(0, n);
+}
+
+/** Rival válido: un nivel que exista o «human». Uno que ya no existe pasa al nivel por defecto. */
+function parseRival(r: unknown): string {
+	if (typeof r !== 'string') return 'human';
+	return r === 'human' || LEVELS.some((l) => l.value === r) ? r : emptyGame().rival;
+}
+
 /** Lee lo guardado y lo valida campo a campo. */
 export function parseSaved(raw: string | null): SavedGame | null {
 	if (!raw) return null;
@@ -51,12 +68,12 @@ export function parseSaved(raw: string | null): SavedGame | null {
 		const o = JSON.parse(raw) as Record<string, unknown>;
 		if (!o || !Array.isArray(o.moves)) return null;
 		return {
-			moves: o.moves.filter((m): m is string => typeof m === 'string' && /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(m)),
+			moves: legalMoves(o.moves),
 			orientation: isColor(o.orientation) ? o.orientation : 'w',
 			clock: parseClock(o.clock),
 			resigned: isColor(o.resigned) ? o.resigned : null,
 			flagged: isColor(o.flagged) ? o.flagged : null,
-			rival: typeof o.rival === 'string' ? o.rival : 'human',
+			rival: parseRival(o.rival),
 			human: isColor(o.human) ? o.human : 'w'
 		};
 	} catch {

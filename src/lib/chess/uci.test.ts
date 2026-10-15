@@ -104,6 +104,31 @@ describe('Engine', () => {
 		expect(await second).toBeNull();
 	});
 
+	it('si el worker falla a mitad de búsqueda, la búsqueda falla (no se queda colgada) y luego se reintenta', async () => {
+		const { w } = fakeWorker('bestmove e7e5', true);
+		let created = 0;
+		const engine = new Engine(() => (created++, w));
+		const search = engine.search([], 'w', HINT);
+		await new Promise((r) => setTimeout(r, 0));
+		w.onerror?.(new Error('sin memoria'));
+		await expect(search).rejects.toThrow('sin memoria');
+		// La siguiente arranca un motor nuevo.
+		const again = engine.search([], 'w', HINT);
+		await new Promise((r) => setTimeout(r, 0));
+		expect(created).toBe(2);
+		await engine.stop();
+		expect(await again).toBeNull();
+	});
+
+	it('destroy acaba la búsqueda en curso con null', async () => {
+		const { w } = fakeWorker('bestmove e7e5', true);
+		const engine = new Engine(() => w);
+		const search = engine.search([], 'w', HINT);
+		await new Promise((r) => setTimeout(r, 0));
+		engine.destroy();
+		expect(await search).toBeNull();
+	});
+
 	it('si el worker no se puede crear, init falla y se puede reintentar', async () => {
 		let tries = 0;
 		const engine = new Engine(() => {
