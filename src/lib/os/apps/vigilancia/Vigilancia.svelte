@@ -5,6 +5,7 @@
 	La lógica está en targets.ts e intel.ts (con tests); lo guardado, en store.svelte.ts.
 -->
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import ChipInput from '#lib/components/ui/ChipInput.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
 	import Note from '#lib/components/ui/Note.svelte';
@@ -28,7 +29,8 @@
 	let alerts = $state<Pick<AlertConfig, 'mis' | 'words' | 'on'> | null>(null);
 	let busy = $state<string | null>(null);
 
-	$effect(() => {
+	// Una sola vez al abrir: los init*() leen y escriben `ready`; en un $effect se volvería a ejecutar (y a descargar).
+	onMount(() => {
 		initWatch();
 		initWatchlist();
 		initFavCountries();
