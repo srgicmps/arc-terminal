@@ -22,6 +22,8 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { TICKERS, tvSymbol } from '#lib/tickers.ts';
 	import { sectionLabel } from '#lib/news.ts';
+	import { latestQuote, recent, whySentence, WHY_HOURS } from '#lib/why.ts';
+	import Change from '#lib/components/ui/Change.svelte';
 	import { shortStat } from '#lib/shortvol.ts';
 	import { stockShare, type ShareInfo } from '#lib/share.ts';
 	import { inWatchlist, toggleWatch } from '#lib/watchlist.svelte.ts';
@@ -48,6 +50,13 @@
 	const sec = $derived(data.sec?.data.companies[code]);
 	// Titulares de todas las secciones que nombran la empresa (scripts/news-index.ts).
 	const news = $derived(data.news?.data[code] ?? []);
+	// «Por qué se mueve» (F19): la hora de referencia es la de los datos al construir y, ya en el navegador, la de ahora.
+	let now = $state(0);
+	$effect(() => {
+		now = Date.now();
+	});
+	const fresh = $derived(recent(news, now || Date.parse(data.news?.fetchedAt ?? '') || 0).slice(0, 6));
+	const quote = $derived(latestQuote(code, data.quotes));
 	// Analistas, sorpresas de resultados y directivos (Finnhub; solo EE. UU. y con la clave).
 	const analysis = $derived(data.analysts?.data[code]);
 	// Frente a sus competidores (RV): solo los grandes valores de EE. UU. con cifras de Finnhub.
@@ -90,6 +99,23 @@
 				<Panel title="Cotización">
 					<TvWidget widget="symbol-info" config={{ symbol }} height={190} credit={false} />
 				</Panel>
+				{#if quote || fresh.length}
+					<Panel title="Por qué se mueve" meta={`${WHY_HOURS} h`}>
+						<p class="plain-why">{whySentence(name || code, quote?.changePct ?? null, fresh.length)}</p>
+						{#if quote}
+							<p class="move">
+								<span class="mut">Hoy</span> <Change value={quote.changePct} unit=" %" />
+								<span class="mut">· {quote.price.toLocaleString('es-ES', { maximumFractionDigits: 2 })} $</span>
+							</p>
+						{/if}
+						{#if fresh.length}
+							<NewsList items={fresh} tag={(item) => sectionLabel(item)} />
+						{:else}
+							<p class="empty">Ningún titular la nombra en las últimas {WHY_HOURS} h.</p>
+						{/if}
+						{#snippet note()}Variación de Finnhub{#if quote?.time} a las {new Date(quote.time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}{/if}; titulares de todas las secciones · <Updated at={data.news?.fetchedAt} source="news-eco" />{/snippet}
+					</Panel>
+				{/if}
 				<Panel title="Análisis técnico" expand={fn === 'ta'} jump={{ code: 'SIG', href: `${resolve('/sig')}?s=${encodeURIComponent(code)}` }}>
 					<TvWidget widget="technical-analysis" config={{ symbol, interval: '1D', showIntervalTabs: true, displayMode: 'single' }} height={420} credit={false} />
 				</Panel>
@@ -181,6 +207,21 @@
 {/if}
 
 <style>
+	.move {
+		margin: 0;
+		padding: var(--sp-6) var(--pad-x);
+		font-family: var(--mono);
+		font-size: var(--fs-s);
+		border-bottom: var(--border);
+	}
+	.plain-why {
+		display: none;
+		margin: 0;
+		padding: var(--sp-6) var(--pad-x);
+	}
+	:global([data-modo='sencillo']) .plain-why {
+		display: block;
+	}
 	.star {
 		background: none;
 		border: var(--border);
