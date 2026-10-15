@@ -8,6 +8,7 @@
 	import { onMount } from 'svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { cloud } from '#lib/cloud.svelte.ts';
+	import { accountLine } from '#lib/os/system/account.ts';
 	import * as os from './bridge.ts';
 	import { setBar, setName, setWidgets, shell } from './shell.svelte.ts';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from './widgets.ts';
@@ -39,6 +40,8 @@
 		shell.open = null;
 		os.navigate(href);
 	}
+	// Qué pasa con tu cuenta: sincronizada, sin conexión, sesión caducada… (cloud.svelte.ts → account.ts).
+	const account = $derived(accountLine(cloud.state, cloud.user, cloud.frozen));
 </script>
 
 <div id="os-control" class="control" role="dialog" aria-label="Panel de control">
@@ -80,11 +83,7 @@
 				<span class="mut">Cómo te llamamos</span>
 				<input class="name" type="text" maxlength="40" autocomplete="given-name" value={shell.name} onchange={(e) => setName(e.currentTarget.value)} />
 			</label>
-			{#if cloud.user}
-				<p>Ajustes en tu cuenta: <b>{cloud.user}</b>. Se sincronizan entre tus dispositivos.</p>
-			{:else}
-				<p class="mut">Sin cuenta: los ajustes se quedan en este navegador.</p>
-			{/if}
+			<p class:mut={!account.warn} class:warn={account.warn}>{account.text}</p>
 		</section>
 		<section>
 			<h3>Arc OS</h3>
@@ -104,6 +103,10 @@
 </div>
 
 <style>
+	.warn {
+		color: var(--amber-dim);
+	}
+
 	/* Botones de la shell sin el borde ni el fondo que algunas estéticas dan a todos los botones. */
 	button {
 		border: 0;
