@@ -2,7 +2,7 @@
 	Iconos del escritorio de Arc OS: lo que hay en la carpeta Escritorio (src/lib/os/fs/: accesos a apps y carpetas)
 	y la Papelera, como en un escritorio de verdad:
 	- Clic: seleccionar (Ctrl o ⌘ para añadir o quitar). Doble clic o Intro: abrir. Con el dedo, un toque abre.
-	  F2: cambiar el nombre. Supr: a la papelera. Ctrl+A: todos.
+	  F2: cambiar el nombre. Supr: a la papelera. Ctrl+A: todos. Flechas: al icono de al lado.
 	- Arrastrar: mueve el icono (o todos los seleccionados). Al soltar en el escritorio caen en la casilla libre más
 	  cercana; sobre una carpeta (de aquí o de una ventana) entran en ella, y sobre la Papelera, a la papelera.
 	- Arrastrar sobre el fondo: rectángulo de selección. Clic en el fondo: quita la selección.
@@ -18,7 +18,7 @@
 	import { DESKTOP, list, TRASH, type FsNode } from '../fs/fs.ts';
 	import { dropTarget, files, iconFor, mkdir, move, onDeskPlace, openNode, openTrash, rename, trash } from '../fs/fs.svelte.ts';
 	import * as os from './bridge.ts';
-	import { arrange, cellSize, cellToPx, inRect, moveGroup, nearestFree, pxToCell, rectOf, type Cell, type Rect, type Spots } from './icons.ts';
+	import { arrange, cellSize, cellToPx, inRect, moveGroup, nearestFree, neighbor, pxToCell, rectOf, type Cell, type Rect, type Spots } from './icons.ts';
 	import { setIcons, setWidgets, shell } from './shell.svelte.ts';
 	import type { StartApp } from './start.ts';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL } from './widgets.ts';
@@ -175,7 +175,13 @@
 		startRename(id);
 	}
 	function iconKey(e: KeyboardEvent, id: string) {
-		if (e.key === 'Enter') open(id);
+		const next = e.key.startsWith('Arrow') ? neighbor(spots, id, e.key) : null;
+		if (next) {
+			// Flechas: al icono de al lado (con Mayúsculas, añadiéndolo a la selección).
+			e.preventDefault();
+			selected = e.shiftKey ? [...new Set([...selected, id, next])] : [next];
+			layer?.querySelector<HTMLElement>(`[data-icon="${next}"] button`)?.focus();
+		} else if (e.key === 'Enter') open(id);
 		else if (e.key === 'F2') {
 			e.preventDefault();
 			startRename(id);

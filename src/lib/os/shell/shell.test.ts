@@ -159,7 +159,7 @@ describe('aspectos', () => {
 	});
 });
 
-import { arrange, cellToPx, inRect, moveGroup, nearestFree, parseSpots, pxToCell, rectOf } from './icons.ts';
+import { arrange, cellToPx, inRect, moveGroup, nearestFree, neighbor, parseSpots, pxToCell, rectOf } from './icons.ts';
 
 describe('iconos del escritorio', () => {
 	const size = { w: 100, h: 100 };
@@ -169,6 +169,14 @@ describe('iconos del escritorio', () => {
 		const before = arrange(['a', 'b'], {}, 3, 2);
 		expect(arrange(['nueva', 'a', 'b'], {}, 3, 2).a).not.toEqual(before.a);
 		expect(arrange(['nueva', 'a', 'b'], before, 3, 2)).toMatchObject(before);
+	});
+	it('las flechas van al icono de al lado', () => {
+		const spots = { a: { col: 0, row: 0 }, b: { col: 0, row: 1 }, c: { col: 1, row: 0 }, d: { col: 3, row: 1 } };
+		expect(neighbor(spots, 'a', 'ArrowDown')).toBe('b');
+		expect(neighbor(spots, 'a', 'ArrowRight')).toBe('c');
+		expect(neighbor(spots, 'b', 'ArrowRight')).toBe('d');
+		expect(neighbor(spots, 'a', 'ArrowUp')).toBeNull();
+		expect(neighbor(spots, 'a', 'Enter')).toBeNull();
 	});
 	it('caen en la casilla libre más cercana', () => {
 		const spots = { a: { col: 0, row: 0 }, b: { col: 1, row: 0 } };

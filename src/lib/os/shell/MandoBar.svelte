@@ -189,6 +189,7 @@
 	}
 	/* Con muchas ventanas, cada pestaña encoge (hasta quedarse en el icono) en vez de pisar a la de al lado. */
 	.tabs li {
+		flex: 0 1 180px;
 		min-width: 0;
 		display: flex;
 		overflow: hidden;
