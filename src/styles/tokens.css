@@ -158,6 +158,7 @@
 	--os-logo-big: 56px; /* logo de la pantalla de inicio */
 	--fs-clock: 72px; /* hora de la pantalla de bloqueo */
 	--os-boot-bar: 160px; /* ancho de la barra de progreso del arranque */
+	--os-thumb-w: 168px; /* miniatura de ventana del Alt+Tab */
 	/* Decoración de ventana: cada aspecto (data-os-skin: Windows, Mac, Linux…) la cambia aquí, sin tocar Window.svelte. */
 	--os-win-shadow-active: var(--os-win-shadow); /* sombra de la ventana con el foco */
 	--os-win-radius-snapped: 0; /* esquinas encajada o maximizada */
