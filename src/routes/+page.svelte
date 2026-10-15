@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { asset, resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
-	import { HOME_DONE, HOME_KEY, startCommand } from '#lib/home.ts';
+	import { HOME_DONE, HOME_KEY, startPath } from '#lib/home.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import { latestWatched } from '#lib/boe.ts';
 	import { clock } from '#lib/clock.svelte.ts';
@@ -61,12 +61,12 @@
 	$effect(initVisit);
 	// Vista de inicio (HELP): al abrir la web, una vez por pestaña, se va a la elegida en lugar de TOP.
 	$effect(() => {
-		let go: ReturnType<typeof startCommand> = null;
+		let go: string | null = null;
 		try {
-			go = startCommand(localStorage.getItem(HOME_KEY), sessionStorage.getItem(HOME_DONE) === '1', location.search);
+			go = startPath(localStorage.getItem(HOME_KEY), sessionStorage.getItem(HOME_DONE) === '1', location.search);
 			sessionStorage.setItem(HOME_DONE, '1');
 		} catch {}
-		if (go) goto(routeHref(go.route), { replaceState: true });
+		if (go) goto(routeHref(go as '/'), { replaceState: true });
 	});
 	$effect(initRefCountry);
 
