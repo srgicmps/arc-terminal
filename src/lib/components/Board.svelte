@@ -48,6 +48,12 @@
 	let promo = $state<{ from: Square; to: Square; color: Color } | null>(null);
 	/** Si al soltar hay que deseleccionar (se ha vuelto a tocar la pieza elegida). */
 	let deselectOnUp = false;
+	/**
+	 * El selector de coronación se abre en el pointerdown; en pantallas táctiles, el «click» de ese mismo toque
+	 * llega después a la pieza que acaba de aparecer debajo del dedo (la dama) y coronaba sin preguntar.
+	 * Ese primer click se descarta; cualquier toque nuevo lo vuelve a permitir.
+	 */
+	let swallowClick = false;
 	let downAt = { x: 0, y: 0 };
 
 	const pieces = $derived(piecesFromFen(fen));
@@ -90,12 +96,14 @@
 		const piece = at.get(from);
 		if (piece?.type === 'p' && (to[1] === '8' || to[1] === '1')) {
 			promo = { from, to, color: piece.color };
+			swallowClick = true;
 			return;
 		}
 		onmove?.(from, to);
 	}
 
 	function onpointerdown(e: PointerEvent) {
+		swallowClick = false;
 		if (promo || e.button > 0) return;
 		const { x, y, sq } = point(e);
 		if (!sq) return;
@@ -108,8 +116,11 @@
 		if (piece && piece.color === movable && dests.has(sq)) {
 			deselectOnUp = selected === sq;
 			selected = sq;
-			// Arrastrar, solo con ratón: en el móvil el dedo sigue haciendo scroll.
-			if (e.pointerType === 'mouse') {
+			// Arrastrar, solo con ratón: en el móvil el dedo sigue haciendo scroll. Sin arrastre no hay
+			// pointerup que deseleccione, así que volver a tocar la pieza la suelta aquí mismo.
+			if (e.pointerType !== 'mouse') {
+				if (deselectOnUp) selected = null;
+			} else {
 				drag = { from: sq, x, y, active: false };
 				downAt = { x, y };
 				svg.setPointerCapture(e.pointerId);
@@ -139,7 +150,7 @@
 	}
 
 	function choose(type: PieceSymbol) {
-		if (!promo) return;
+		if (!promo || swallowClick) return;
 		const { from, to } = promo;
 		promo = null;
 		onmove?.(from, to, type);
@@ -267,7 +278,7 @@
 	{/if}
 
 	{#if promo}
-		<rect class="veil" width={SIZE} height={SIZE} role="presentation" onclick={() => (promo = null)} />
+		<rect class="veil" width={SIZE} height={SIZE} role="presentation" onclick={() => !swallowClick && (promo = null)} />
 		{#each promoSquares as o (o.type)}
 			<g
 				class="promo"
@@ -275,7 +286,11 @@
 				tabindex="0"
 				aria-label="Coronar: {({ q: 'dama', n: 'caballo', r: 'torre', b: 'alfil' } as Record<string, string>)[o.type]}"
 				onclick={() => choose(o.type)}
-				onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && choose(o.type)}
+				onkeydown={(e) => {
+					if (e.key !== 'Enter' && e.key !== ' ') return;
+					swallowClick = false;
+					choose(o.type);
+				}}
 			>
 				<rect x={o.x + 0.5} y={o.y + 0.5} width={S - 1} height={S - 1} />
 				<g class="piece {promo.color}" transform="translate({o.x} {o.y})">
