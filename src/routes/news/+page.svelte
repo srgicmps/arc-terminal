@@ -1,40 +1,54 @@
 <script lang="ts">
 	import { asset } from '$app/paths';
 	import { page } from '$app/state';
+	import EntityCard from '#lib/components/EntityCard.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
+	import { findEntity } from '#lib/entities.ts';
+	import { newsPrefs, setMuted, setOrigin, type NewsOrigin } from '#lib/newsprefs.svelte.ts';
 	import Panel from '#lib/components/Panel.svelte';
+	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { NEWS_SECTIONS as SECTIONS } from '#lib/news.ts';
 	import Seg from '#lib/components/ui/Seg.svelte';
-	import { MIN_QUERY } from '#lib/search.ts';
+	import Search from '#lib/components/ui/Search.svelte';
+	import { fold, hasWords, MIN_QUERY, queryWords } from '#lib/search.ts';
 	import type { ArchiveEntry, NewsItem } from '#lib/types.ts';
+	import { urlState, writeParams } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
+	// Lo buscado (?q=) y la sección (?s=, la que abre «Titulares › NEWS» de cada vista) van en la URL: se
+	// pueden compartir y sobreviven a recargar. «NEWS inflación» en la barra abre /news?q=inflación.
+	// El buscador es un $state local: copia la URL al abrir la vista o si cambia desde fuera (la barra), y la
+	// escribe con 300 ms de retraso, para no hacer una navegación por tecla ni perder letras o el foco.
 	let query = $state('');
-	let section = $state<string>('all');
-
-	// «NEWS inflación» en la barra abre /news?q=inflación y rellena el buscador (solo en el navegador).
+	let written = '';
 	$effect(() => {
-		query = page.url.searchParams.get('q') ?? '';
+		const fromUrl = page.url.searchParams.get('q') ?? '';
+		if (fromUrl !== written) query = written = fromUrl;
 	});
-
-	const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-
-	const filtered = $derived.by(() => {
-		const words = norm(query).split(/\s+/).filter(Boolean);
-		return data.items.filter(
-			(i) =>
-				(section === 'all' || i.section === section) &&
-				words.every((w) => norm(`${i.title} ${i.summary} ${i.source}`).includes(w))
-		);
+	$effect(() => {
+		const text = query;
+		if (text === written) return;
+		const t = setTimeout(() => {
+			written = text;
+			writeParams({ q: text || null });
+		}, 300);
+		return () => clearTimeout(t);
 	});
+	const sectionSel = urlState<string>('s', 'all', (v) => SECTIONS.some((x) => x.key === v));
+	const section = $derived(sectionSel.value);
+
+	const words = $derived(queryWords(query));
+	// Si lo buscado tiene ficha (valor, líder, banco central o país), sale arriba y los titulares debajo.
+	const entity = $derived(findEntity(query));
+	const inSection = $derived(data.items.filter((i) => section === 'all' || i.section === section));
+	const filtered = $derived(inSection.filter((i) => hasWords(`${i.title} ${i.summary} ${i.source}`, words)));
 
 	// Archivo de 3 meses (scripts/sources/archive.ts): cada mes es un JSON aparte (de 1 a 2 MB, unos
 	// 700 KB con gzip) que solo se pide al buscar algo de 3 letras o más. Primero el mes en curso; los
 	// anteriores, de uno en uno con el botón. Se guarda ya normalizado.
-	const words = $derived(norm(query).split(/\s+/).filter(Boolean));
 	const searching = $derived(words.join('').length >= MIN_QUERY);
 	// $state.raw (como shallowRef en Vue): son miles de titulares y no hace falta que cada uno sea reactivo.
 	let archive = $state.raw<Record<string, { e: ArchiveEntry; key: string }[]>>({});
@@ -51,7 +65,7 @@
 				const res = await fetch(asset(`data/news-archive/${month}.json` as Parameters<typeof asset>[0]));
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
 				const list = (await res.json()) as ArchiveEntry[];
-				archive = { ...archive, [month]: list.map((e) => ({ e, key: norm(`${e.t} ${e.s}`) })) };
+				archive = { ...archive, [month]: list.map((e) => ({ e, key: fold(`${e.t} ${e.s}`) })) };
 			} catch {
 				failed = true;
 				break;
@@ -78,6 +92,17 @@
 			.map(({ e }) => ({ title: e.t, url: e.u, source: e.s, time: e.d, summary: '' }));
 	});
 
+	// Tus medios (M23): encendidos los que se ven; al apagar uno, se silencia en todas las vistas.
+	const sources = $derived([...new Set(data.items.map((i) => i.source))].sort((a, b) => a.localeCompare(b, 'es')));
+	const sourceOptions = $derived(sources.map((s) => ({ value: s, label: s })));
+	const origins = [
+		{ value: 'all', label: 'Todos' },
+		{ value: 'es', label: 'En español' },
+		{ value: 'en', label: 'En inglés' }
+	] as const satisfies readonly { value: NewsOrigin; label: string }[];
+	const shownSources = () => sources.filter((s) => !newsPrefs.muted.includes(s));
+	const setShown = (on: string[]) => setMuted(sources.filter((s) => !on.includes(s)));
+
 	const label = Object.fromEntries(SECTIONS.map((s) => [s.key, s.label.toUpperCase()]));
 	const sectionOf = $derived(new Map(data.items.map((i) => [i.url, i.section])));
 </script>
@@ -85,14 +110,16 @@
 <ViewHeader code="NEWS" title="Buscador de titulares" sub="{data.items.length} titulares de todas las secciones, los más recientes primero" />
 
 <div class="controls">
-	<input type="search" bind:value={query} placeholder="Buscar: Lagarde, aranceles, Menorca, Nvidia…" aria-label="Buscar en los titulares" />
-	<Seg label="Sección" options={[{ value: 'all', label: 'Todas' }, ...SECTIONS.map((s) => ({ value: s.key, label: s.label }))]} bind:value={section} />
+	<Search label="Buscar en los titulares" placeholder="Buscar: Lagarde, aranceles, Menorca, Nvidia…" bind:value={query} />
+	<Seg label="Sección" options={[{ value: 'all', label: 'Todas' }, ...SECTIONS.map((s) => ({ value: s.key, label: s.label }))]} bind:value={() => sectionSel.value, (v) => (sectionSel.value = v ?? 'all')} />
 </div>
 
 <div class="grid">
 	<div class="col">
-		<Panel title="Resultados" meta="{filtered.length} titulares">
+		{#if entity}<EntityCard {entity} />{/if}
+		<Panel title="Resultados" meta={words.length ? `${filtered.length} de ${inSection.length}` : `${filtered.length} titulares`}>
 			<NewsList items={filtered.slice(0, 150)} summaries tag={(i) => label[sectionOf.get(i.url) ?? '']} />
+			{#snippet note()}{#if data.updated}<Updated at={data.updated.at} source={data.updated.source} />{/if}{/snippet}
 		</Panel>
 		{#if searching && data.months.length}
 			<Panel
@@ -111,6 +138,13 @@
 				{/snippet}
 			</Panel>
 		{/if}
+		<Panel title="Tus medios" meta={newsPrefs.muted.length ? `${newsPrefs.muted.length} silenciados` : 'Todos'}>
+			<div class="prefs">
+				<Seg label="Idioma original" options={origins} bind:value={() => newsPrefs.origin, setOrigin} />
+				{#if sources.length}<Seg label="Medios" options={sourceOptions} bind:values={shownSources, setShown} />{/if}
+			</div>
+			{#snippet note()}Se aplica a los titulares de todas las vistas y se guarda en este navegador. Apaga un medio para silenciarlo.{/snippet}
+		</Panel>
 	</div>
 </div>
 
@@ -122,14 +156,10 @@
 		margin-bottom: var(--sp-12);
 	}
 
-	input {
-		flex: 1 1 280px;
-		height: var(--control-h);
-		padding: 0 var(--sp-10);
-		background: var(--panel);
-		border: var(--border);
-		font-family: var(--sans);
-		font-size: var(--fs-l);
+	.prefs {
+		display: grid;
+		gap: var(--sp-8);
+		padding: var(--sp-8) var(--pad-x);
 	}
 
 	.more {
@@ -148,10 +178,5 @@
 
 	.more:hover {
 		background: var(--amber-soft);
-	}
-
-	input:focus {
-		outline: none;
-		border-color: var(--amber);
 	}
 </style>

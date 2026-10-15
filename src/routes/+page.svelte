@@ -1,16 +1,32 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { asset, resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
+	import { HOME_DONE, HOME_KEY, startCommand } from '#lib/home.ts';
+	import { routeHref } from '#lib/routes.ts';
+	import { latestWatched } from '#lib/boe.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
-	import { nf, when } from '#lib/format.ts';
+	import { dm, nf, when } from '#lib/format.ts';
 	import { cheapestNow, hourLabel, hourly, isHour, madridNow } from '#lib/power.ts';
 	import { seriesMap, spread } from '#lib/series.ts';
 	import { compass, sky } from '#lib/weather.ts';
 	import ModularGrid from '#lib/components/ModularGrid.svelte';
+	import Morning from '#lib/components/Morning.svelte';
+	import MarketSessions from '#lib/components/MarketSessions.svelte';
+	import RiskGauge from '#lib/components/RiskGauge.svelte';
+	import Agenda from '#lib/components/top/Agenda.svelte';
+	import Markets from '#lib/components/top/Markets.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
+	import Listen from '#lib/components/ui/Listen.svelte';
+	import Select from '#lib/components/ui/Select.svelte';
+	import { initRefCountry, REF_COUNTRIES, refCountry, refName, setRefCountry } from '#lib/refcountry.svelte.ts';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
+	import type { BoeWeek } from '#lib/types.ts';
+	import { initWatchwords, matches, watchwords } from '#lib/watchwords.svelte.ts';
+	import { zoneFor } from '#lib/fuel.ts';
+	import { inMenorca, inSpain, place } from '#lib/place.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
 	import type { PageProps } from './$types';
 
@@ -21,6 +37,7 @@
 		{ id: 'rates', title: 'Tipos y bonos' },
 		{ id: 'macro', title: 'Macro' },
 		{ id: 'fx', title: 'Divisas y cripto' },
+		{ id: 'important', title: 'Lo importante' },
 		{ id: 'news', title: 'Titulares' },
 		{ id: 'weather', title: 'Tiempo' },
 		{ id: 'power', title: 'Luz' },
@@ -28,11 +45,28 @@
 		{ id: 'boe', title: 'BOE de hoy' },
 		{ id: 'quakes', title: 'Terremotos' },
 		{ id: 'predictions', title: 'Mercados de predicción' },
-		{ id: 'hn', title: 'Hacker News' }
+		{ id: 'hn', title: 'Hacker News' },
+		// Solo en la portada modular (en la general ya están la cinta de cotizaciones y CAL).
+		{ id: 'agenda', title: 'Hoy en la agenda' },
+		{ id: 'markets', title: 'Mercados' },
+		{ id: 'sessions', title: 'Sesiones de las bolsas' },
+		{ id: 'risk', title: 'Termómetro de riesgo' },
+		{ id: 'puzzle', title: 'Problema del día' },
+		{ id: 'week', title: 'Tu semana' }
 	]);
 	// Como onMounted en Vue: lo guardado en el navegador se lee al arrancar en él.
 	$effect(() => top.load());
 	$effect(initVisit);
+	// Vista de inicio (HELP): al abrir la web, una vez por pestaña, se va a la elegida en lugar de TOP.
+	$effect(() => {
+		let go: ReturnType<typeof startCommand> = null;
+		try {
+			go = startCommand(localStorage.getItem(HOME_KEY), sessionStorage.getItem(HOME_DONE) === '1', location.search);
+			sessionStorage.setItem(HOME_DONE, '1');
+		} catch {}
+		if (go) goto(routeHref(go.route), { replaceState: true });
+	});
+	$effect(initRefCountry);
 
 	const get = $derived(seriesMap(data.ecb, data.eurostat, data.bls));
 	const premium = $derived(spread(get('bond10-es'), get('bond10-de'), 'premium-es', 'Prima de riesgo'));
@@ -53,7 +87,17 @@
 	});
 	const todayAvg = $derived(today.length ? today.reduce((a, p) => a + p.kwh, 0) / today.length : null);
 
-	const mao = $derived(data.weather?.data.places.find((p) => p.name === 'Maó'));
+	// El tiempo de «Tu sitio» si es una de las ciudades de weather.json; si no, Maó.
+	const mao = $derived(
+		data.weather?.data.places.find((p) => p.name === place.current.name) ?? data.weather?.data.places.find((p) => p.name === 'Maó')
+	);
+	// Gasolina: la provincia de «Tu sitio» si lo has elegido y está en España (fuera de Menorca); fuera de España,
+	// la media de España; si no lo has elegido, Menorca.
+	const fuelAbroad = $derived(place.chosen && !inSpain(place.current));
+	const fuelProvince = $derived.by(() => {
+		const id = place.chosen ? zoneFor(place.current, data.fuelProvinces) : null;
+		return id && id !== 'menorca' ? (data.fuelProvinces.find((p) => p.id === id) ?? null) : null;
+	});
 
 	const g95 = $derived(
 		(data.fuel?.data.stations ?? [])
@@ -62,12 +106,50 @@
 			.slice(0, 3)
 	);
 
+	// Los 3 temas de más peso de hoy (vista IMP); los elige +page.server.ts.
+	const important = $derived(data.important.slice(0, 3));
+
+	// «Escuchar» (lote 25): los 5 titulares más importantes de hoy y las cifras clave, en voz alta.
+	const spoken = () => {
+		const figure = (id: string, name: string, d = 1) => {
+			const v = get(id)?.points.at(-1)?.v;
+			return v === undefined ? [] : [{ text: `${name}: ${nf(v, d)} %.`, lang: 'es' as const }];
+		};
+		return [
+			{ text: 'Lo más importante de hoy.', lang: 'es' as const },
+			...data.important.map((e) => ({ text: `${e.titleEs ?? e.title}.`, lang: e.titleEs || e.lang !== 'en' ? ('es' as const) : ('en' as const) })),
+			{ text: 'Las cifras.', lang: 'es' as const },
+			...figure(`unemployment-${refCountry.code}`, `Paro en ${refName()}`),
+			...figure(`inflation-${refCountry.code}`, `Inflación en ${refName()}`),
+			...figure('euribor-12m', 'Euríbor a doce meses', 2)
+		];
+	};
+
 	const boeGeneral = $derived(data.boe?.data.sections.find((s) => s.code === '1'));
+	// Titulares de la portada que nombran alguna palabra vigilada (resaltadas en la lista).
+	const watchedNews = $derived(data.headlines.filter((h) => matches(h.title, watchwords.words).length).length);
+	// Lunes en Madrid (hasta que arranca el reloj en el navegador, no: la página se construye cualquier día).
+	const monday = $derived(!!clock.now && new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'Europe/Madrid' }).format(clock.now) === 'Mon');
 	const boeTotal = $derived((data.boe?.data.sections ?? []).reduce((n, s) => n + s.total, 0));
+
+	// Palabras vigiladas (las de la vista BOE, guardadas en este navegador): cuántas disposiciones del último
+	// sumario las nombran. boe-week.json se pide en el navegador y solo si hay alguna palabra.
+	let boeWeek = $state.raw<BoeWeek | null>(null);
+	$effect(() => initWatchwords());
+	$effect(() => {
+		if (!watchwords.ready || !watchwords.words.length || boeWeek) return;
+		fetch(asset('data/boe-week.json' as Parameters<typeof asset>[0]))
+			.then((res) => (res.ok ? (res.json() as Promise<BoeWeek>) : null))
+			.then((w) => (boeWeek = w))
+			.catch(() => {});
+	});
+	const boeWatch = $derived(latestWatched(boeWeek, watchwords.words));
 
 	// Línea de arriba: titulares nuevos desde la última visita y la franja de luz más barata.
 	const fresh = $derived(clock.now && visit.ready ? newSinceText(newCount(data.headlines, visit.last), visit.last, clock.now) : '');
 	const cheapWindow = $derived(clock.now ? cheapestNow(pvpc, clock.now) : null);
+	// La luz de mañana en la línea «hoy», solo si «Tu sitio» está en España (el PVPC es de España).
+	const luzManana = $derived(!!cheapWindow?.tomorrow && inSpain(place.current));
 
 	// Terremotos de las últimas 48 h, los más fuertes.
 	const quakes = $derived(
@@ -99,12 +181,18 @@
 
 {#snippet macro()}
 	<Panel id="macro" title="Macro" meta="Último dato" jump={{ code: 'ECO', href: resolve('/eco') }}>
+		<div class="ref">
+			<Select label="País" value={refCountry.code} onchange={setRefCountry}>
+				{#each REF_COUNTRIES as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+			</Select>
+		</div>
 		<SeriesTable
 			head="Indicador"
 			spark={13}
 			rows={[
-				{ series: get('unemployment-es'), name: 'Paro España', inverse: true },
-				{ series: get('inflation-es'), name: 'IPCA España', inverse: true },
+				{ series: get(`unemployment-${refCountry.code}`), name: `Paro ${refName()}`, inverse: true },
+				{ series: get(`inflation-${refCountry.code}`), name: `IPCA ${refName()}`, inverse: true },
+				{ series: get(`debt-${refCountry.code}`), name: `Deuda ${refName()} (% PIB)`, decimals: 1, inverse: true },
 				{ series: get('inflation-ea'), name: 'IPCA zona euro', inverse: true },
 				{ series: get('cpi-us'), name: 'IPC EE. UU.', inverse: true },
 				{ series: get('unemployment-us'), name: 'Paro EE. UU.', inverse: true }
@@ -137,8 +225,75 @@
 	</Panel>
 {/snippet}
 
+{#snippet semana()}
+	<Panel id="week" title="Tu semana en 2 minutos" meta="Últimos 7 días" jump={{ code: 'SEMANA', href: resolve('/semana') }}>
+		<ul class="mini">
+			{#each data.week.top as t (t.k)}
+				<li><a class="l" href={t.url} target="_blank" rel="noopener">{t.title}</a><b class="mut">{t.days} {t.days === 1 ? 'día' : 'días'}</b></li>
+			{/each}
+			{#each data.week.markets as m (m.label)}
+				<li>
+					<span class="l">{m.label} <small>{nf(m.last, m.decimals)}</small></span>
+					<b><Change value={m.change} digits={m.kind === 'pct' ? 1 : 0} unit={m.kind === 'pct' ? ' %' : ' pb'} /></b>
+				</li>
+			{/each}
+			{#if !data.week.top.length && !data.week.markets.length}<li><span class="l">Sin datos todavía</span></li>{/if}
+		</ul>
+	</Panel>
+{/snippet}
+
+{#snippet importante()}
+	<Panel id="important" title="Lo importante" meta="Hoy" jump={{ code: 'IMP', href: resolve('/imp') }}>
+		{#if important.length}
+			<ul class="mini">
+				{#each important as e (e.k)}
+					<li>
+						<a class="l" href={e.url} target="_blank" rel="noopener">{e.title}</a>
+						<b class="mut">{e.sources.length} {e.sources.length === 1 ? 'medio' : 'medios'}</b>
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<p class="empty">Sin datos todavía</p>
+		{/if}
+		{#snippet note()}<Listen lines={spoken} label="Escuchar los 5 titulares y las cifras" />{/snippet}
+	</Panel>
+{/snippet}
+
+{#snippet agenda()}
+	<Agenda earnings={data.earnings} holidays={data.holidays} />
+{/snippet}
+
+{#snippet markets()}
+	<Markets />
+{/snippet}
+
+{#snippet sessions()}
+	<Panel id="sessions" title="Sesiones de las bolsas" meta="24 h · hora de Madrid" jump={{ code: 'WS', href: resolve('/ws') }}>
+		<MarketSessions />
+	</Panel>
+{/snippet}
+
+{#snippet risk()}
+	<RiskGauge id="risk" risk={data.risk} />
+{/snippet}
+
+{#snippet puzzle()}
+	<!-- Se carga aparte (import dinámico): lleva chess.js, unos 17 KB que la portada no necesita si no está este panel. -->
+	{#await import('#lib/components/PuzzleCard.svelte')}
+		<Panel id="puzzle" title="Problema del día"><p class="empty">Cargando…</p></Panel>
+	{:then { default: PuzzleCard }}
+		<PuzzleCard id="puzzle" puzzle={data.puzzle} />
+	{/await}
+{/snippet}
+
 {#snippet titulares()}
-	<Panel id="news" title="Titulares" meta="Todas las secciones">
+	<Panel
+		id="news"
+		title="Titulares"
+		meta={`${data.headlines.length} de ${data.headlinesTotal}${watchedNews ? ` · ${watchedNews} con tus palabras` : ''}`}
+		jump={{ code: 'NEWS', href: resolve('/news') }}
+	>
 		<NewsList items={data.headlines} tag={(i) => tags.get(i.url)} />
 	</Panel>
 {/snippet}
@@ -146,9 +301,9 @@
 {#snippet menorca()}
 	{#if mao}
 		{@const s = sky(mao.current.code)}
-		<Panel id="weather" title="Menorca" meta={s.label} jump={{ code: 'WX', href: resolve('/wx') }}>
+		<Panel id="weather" title={mao.name === 'Maó' ? 'Menorca' : mao.name} meta={s.label} jump={{ code: 'WX', href: resolve('/wx') }}>
 			<ul class="mini">
-				<li><span class="l">Maó ahora</span><b>{nf(mao.current.temp, 0)}° · {nf(mao.current.wind, 0)} km/h {compass(mao.current.windDir)}</b></li>
+				<li><span class="l">{mao.name === 'Maó' ? 'Maó ahora' : 'Ahora'}</span><b>{nf(mao.current.temp, 0)}° · {nf(mao.current.wind, 0)} km/h {compass(mao.current.windDir)}</b></li>
 				{#if mao.sea !== null}<li><span class="l">Agua del mar</span><b>{nf(mao.sea, 1)}°</b></li>{/if}
 				{#if mao.daily[1]}<li><span class="l">Mañana</span><b>{nf(mao.daily[1].min, 0)}° / {nf(mao.daily[1].max, 0)}° · {sky(mao.daily[1].code).label}</b></li>{/if}
 			</ul>
@@ -161,6 +316,7 @@
 		<ul class="mini">
 			{#if current}<li><span class="l">Ahora</span><b>{nf(current.kwh, 3)}</b></li>{/if}
 			{#if cheapest}<li><span class="l">Más barata hoy</span><b class="up">{hourLabel(cheapest)} · {nf(cheapest.kwh, 3)}</b></li>{/if}
+			{#if cheapWindow}<li><span class="l">Franja de 2 h{cheapWindow.tomorrow ? ', mañana' : ''}</span><b class="up">{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)} · {nf(cheapWindow.avg, 3)}</b></li>{/if}
 			{#if tomorrow !== null}
 				<li>
 					<span class="l">Mañana, media</span>
@@ -173,14 +329,21 @@
 {/snippet}
 
 {#snippet gasolina()}
-	<Panel id="fuel" title="Gasolina 95 · Menorca" meta="€/L" jump={{ code: 'FUEL', href: resolve('/fuel') }}>
+	<Panel id="fuel" title="Gasolina 95 · {fuelAbroad ? 'España' : (fuelProvince?.name ?? 'Menorca')}" meta="€/L" jump={{ code: 'FUEL', href: resolve('/fuel') }}>
 		<ul class="mini">
-			{#each g95 as st, i (st.id)}
-				<li>
-					<span class="l">{st.name}<small>{st.town}</small></span>
-					<b class:up={i === 0}>{nf(st.prices.g95, 3)}</b>
-				</li>
-			{/each}
+			{#if fuelAbroad}
+				<li><span class="l">Media de España</span><b>{nf(data.fuelSpain, 3)}</b></li>
+			{:else if fuelProvince}
+				<li><span class="l">Media de la provincia</span><b>{nf(fuelProvince.avg, 3)}</b></li>
+				<li><span class="l">La más barata</span><b class="up">{nf(fuelProvince.min, 3)}</b></li>
+			{:else}
+				{#each g95 as st, i (st.id)}
+					<li>
+						<span class="l">{st.name}<small>{st.town}</small></span>
+						<b class:up={i === 0}>{nf(st.prices.g95, 3)}</b>
+					</li>
+				{/each}
+			{/if}
 		</ul>
 	</Panel>
 {/snippet}
@@ -188,8 +351,16 @@
 {#snippet boe()}
 	<Panel id="boe" title="BOE de hoy" meta="{boeTotal} publicaciones" jump={{ code: 'BOE', href: resolve('/boe') }}>
 		<ul class="mini">
+			{#if boeWatch}
+				<li>
+					<a class="l" href={resolve('/boe')}
+						>Con tus palabras vigiladas{#if boeWatch.date !== now?.day}<small>BOE del {dm(boeWatch.date)}</small>{/if}</a
+					>
+					<b class:strong={boeWatch.count > 0}>{boeWatch.count}</b>
+				</li>
+			{/if}
 			{#each (boeGeneral?.items ?? []).slice(0, 4) as item (item.id)}
-				<li><a class="l" href={item.html} target="_blank" rel="noopener">{item.title}</a></li>
+				<li><a class="l" href={item.html || item.pdf} target="_blank" rel="noopener">{item.title}</a></li>
 			{:else}
 				<li><span class="l">Hoy no hay disposiciones generales.</span></li>
 			{/each}
@@ -239,17 +410,28 @@
 	</Panel>
 {/snippet}
 
-<!-- Hoy, en una línea: titulares nuevos y la luz más barata. Siempre ocupa su sitio para que nada salte al cargar. -->
+<!-- «Mi mañana»: el tiempo de «Tu sitio», la luz, la agenda y los avisos de hoy (se pliega a partir de las 11).
+	La luz (PVPC) solo si «Tu sitio» está en España, y los avisos de MeteoAlarm (son los de Menorca) solo en Menorca. -->
+<Morning
+	weather={data.weather?.data}
+	power={inSpain(place.current) ? data.power?.data : null}
+	earnings={data.earnings}
+	holidays={{ items: data.holidays }}
+	alerts={inMenorca(place.current) ? data.alerts?.data : null}
+	releases={data.releases}
+	city={place.current.name}
+/>
+
+<!-- Hoy, en una línea: titulares nuevos y la luz de mañana (la de hoy ya está en «Mi mañana»). Siempre ocupa su
+	sitio para que nada salte al cargar. -->
 <p class="today">
-	{fresh}{#if fresh && cheapWindow}{' · '}{/if}{#if cheapWindow}Luz más barata {cheapWindow.tomorrow
-			? 'mañana'
-			: 'hoy'}: <b>{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)}</b> · {nf(cheapWindow.avg, 3)} €/kWh{/if}
+	{fresh}{#if fresh && luzManana}{' · '}{/if}{#if luzManana && cheapWindow}Luz más barata mañana: <b>{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)}</b> · {nf(cheapWindow.avg, 3)} €/kWh{/if}
 </p>
 
 {#if mode.modular}
 	<ModularGrid
 		layout={top}
-		panels={{ rates: tipos, macro, fx: divisas, news: titulares, weather: menorca, power: luz, fuel: gasolina, boe, quakes: terremotos, predictions: predicciones, hn }}
+		panels={{ rates: tipos, macro, fx: divisas, important: importante, news: titulares, weather: menorca, power: luz, fuel: gasolina, boe, quakes: terremotos, predictions: predicciones, hn, agenda, markets, sessions, risk, puzzle, week: semana }}
 	/>
 {:else}
 	<div class="grid grid-3">
@@ -260,6 +442,9 @@
 		</div>
 
 		<div class="col">
+			<!-- Los lunes, el resumen de la semana encima de «Lo importante» (en la modular, cuando se quiera). -->
+			{#if monday}{@render semana()}{/if}
+			{@render importante()}
 			{@render titulares()}
 		</div>
 
@@ -276,6 +461,12 @@
 {/if}
 
 <style>
+	/* «País» del panel Macro: una fila discreta encima de la tabla. */
+	.ref {
+		padding: var(--sp-6) var(--pad-x);
+		border-bottom: var(--border);
+	}
+
 	.today {
 		min-height: calc(var(--fs-xs) * var(--lh));
 		margin: 0 0 var(--sp-8);

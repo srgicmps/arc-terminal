@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { canonical, resolveInput, suggest, targetPath, type Option } from './cmdline.ts';
-import { leaderEntries, prepare, searchIndex, searchOptions, symbolOf } from './search.ts';
+import { hasWords, leaderEntries, prepare, queryWords, searchIndex, searchOptions, symbolOf } from './search.ts';
 import type { SearchEntry } from './types.ts';
 
 const entry = (t: string, s: SearchEntry['s'] = 'NEWS', u = `https://a.example/${encodeURIComponent(t)}`): SearchEntry => ({ t, u, s });
@@ -114,5 +114,17 @@ describe('leaderEntries', () => {
 		const target = resolveInput('trump', suggest('trump', leaderEntries()));
 		expect(target && canonical(target)).toBe('LIDER trump');
 		expect(target && targetPath(target)).toEqual({ route: '/lider', search: '?id=trump' });
+	});
+});
+
+describe('queryWords y hasWords', () => {
+	it('separa palabras sin tildes ni mayúsculas', () => {
+		expect(queryWords('  Banco   de ESPAÑA ')).toEqual(['banco', 'de', 'espana']);
+		expect(queryWords('   ')).toEqual([]);
+	});
+	it('encaja con todas las palabras en cualquier orden', () => {
+		expect(hasWords('Ayudas a la vivienda en Menorca', queryWords('menorca vivienda'))).toBe(true);
+		expect(hasWords('Ayudas a la vivienda', queryWords('vivienda menorca'))).toBe(false);
+		expect(hasWords('Cualquier cosa', [])).toBe(true);
 	});
 });

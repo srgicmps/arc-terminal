@@ -74,6 +74,36 @@ https://stats.bis.org/api/v1/data/WS_SPP/Q.US+ES+KR.N+R.771/all?lastNObservation
 # ECO: índice FAO de precios de los alimentos (CSV y fecha de publicación)
 https://www.fao.org/worldfoodsituation/foodpricesindex/en/ ~ (Release date|Next release)[^<]{0,80}
 https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv ~ 202[56]-\d\d[^ ]{0,80}
+# GEO/PAIS: gasto militar del SIPRI (Milex), enlace al Excel
+https://www.sipri.org/databases/milex ~ [^"' <>]{0,200}\.xlsx[^"' <>]{0,40}
+# M41: sanciones del Reino Unido (OFSI) en la API de búsqueda de GOV.UK
+https://www.gov.uk/api/search.json?filter_organisations=office-of-financial-sanctions-implementation&count=3&order=-public_timestamp&fields=title,link,description,public_timestamp,content_store_document_type
+# M33: control de exportaciones de la BIS en el Federal Register
+https://www.federalregister.gov/api/v1/documents.json?per_page=3&order=newest&conditions%5Bagencies%5D%5B%5D=industry-and-security-bureau&fields%5B%5D=title&fields%5B%5D=publication_date
+# COT de la CFTC (Socrata, sin clave): informe «legacy» solo futuros, último informe de oro, WTI, euro, yen, bono a 10 años, S&P 500 (E-mini) y bitcoin
+https://publicreporting.cftc.gov/resource/6dca-aqww.json?$select=report_date_as_yyyy_mm_dd,market_and_exchange_names,cftc_contract_market_code,open_interest_all,noncomm_positions_long_all,noncomm_positions_short_all,change_in_noncomm_long_all,change_in_noncomm_short_all&$where=cftc_contract_market_code%20in('088691','067651','099741','097741','043602','13874A','133741')&$order=report_date_as_yyyy_mm_dd%20DESC&$limit=8
+https://publicreporting.cftc.gov/resource/6dca-aqww.json?$select=count(*)&$where=cftc_contract_market_code='088691'
+https://www.cftc.gov/MarketReports/CommitmentsofTraders/ReleaseSchedule/index.htm ~ .{0,80}2026.{0,200}
+# Lote 22: ACNUR, población por país de origen (para ver la forma de la respuesta)
+https://api.unhcr.org/population/v1/population/?limit=3&yearFrom=2025&yearTo=2025&coo_all=true
+# WX (2e.16): feeds de MeteoAlarm por país; solo el título del feed, para comprobar los nombres
+https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-portugal ~ <title>[^<]{0,80}
+https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-switzerland ~ <title>[^<]{0,80}
+https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-greece ~ <title>[^<]{0,80}
+# M40: ¿trae cada mercado de Polymarket su cambio en 24 h (oneDayPriceChange)?
+https://gamma-api.polymarket.com/events?active=true&closed=false&limit=2&order=volume24hr&ascending=false&tag_slug=geopolitics ~ oneDayPriceChange
+# WS/ECO: quién tiene la deuda de EE. UU. (TIC, tabla 5)
+https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt
+# WX: asteroides que pasan cerca en 30 días (NASA JPL, cad.api)
+https://ssd-api.jpl.nasa.gov/cad.api?dist-max=10LD&date-min=now&date-max=%2B30&sort=dist&diameter=true&fullname=true
+# WS: red de bitcoin (mempool.space), las tres consultas de la fuente
+https://mempool.space/api/v1/fees/mempool-blocks ~ medianFee.{0,20}
+https://mempool.space/api/v1/mining/hashrate/3d ~ currentHashrate.{0,30}
+https://mempool.space/api/blocks/tip/height
+# GEO y PAIS: FEWS NET, población en fase IPC 3+ por país (la consulta de la fuente, recortada)
+https://fdw.fews.net/api/ipcpopulationsize/?format=json&phase=3%2B&unit_type=admin0&start_date=2025-10-01&page_size=2 ~ "country_code":"[A-Z]{2}".{0,40}
+# WS: Pink Sheet del Banco Mundial, enlace al .xlsx mensual
+https://www.worldbank.org/en/research/commodity-markets ~ CMO-Historical-Data-Monthly
 # LIDER: quién preside ahora la Fed y quién forma el Comité Ejecutivo del BCE
 https://www.federalreserve.gov/aboutthefed/bios/board/default.htm ~ .{0,120}(Chair|Powell).{0,60}
 https://www.ecb.europa.eu/ecb/orga/decisions/eb/html/index.en.html ~ .{0,100}(Vice-President|Member of the Executive Board).{0,20}

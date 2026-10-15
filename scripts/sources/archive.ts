@@ -10,10 +10,9 @@
 import { gzipSync } from 'node:zlib';
 import { NEWS_SECTIONS } from '../../src/lib/news.ts';
 import type { ArchiveEntry, NewsArchive, NewsData, NewsItem } from '../../src/lib/types.ts';
-import { list, NO_CONTEXT, writeExtra, type Source } from '../lib.ts';
+import { list, NO_CONTEXT, PUBLISHED, writeExtra, type Source } from '../lib.ts';
 import { normUrl } from './imp.ts';
 
-const PUBLISHED = 'https://srgicmps.github.io/arc-terminal/data';
 /** Meses que se guardan: el actual y los 3 anteriores (de 90 a 120 días). */
 export const MONTHS = 4;
 

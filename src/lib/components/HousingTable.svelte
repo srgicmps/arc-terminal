@@ -32,7 +32,7 @@
 				<th>Nominal</th>
 				<th>Real</th>
 				<th class="per">Trimestre</th>
-				<th class="sp"><span class="sr">Cinco años</span></th>
+				<th class="spark"><span class="sr">Cinco años</span></th>
 			</tr>
 		</thead>
 		<tbody>
@@ -42,7 +42,7 @@
 					<td>{signed(r.now?.v, 1)} %</td>
 					<td class="mut">{r.real && r.real.t === r.now?.t ? `${signed(r.real.v, 1)} %` : '—'}</td>
 					<td class="mut per">{r.now ? period(r.now.t) : ''}</td>
-					<td class="sp"><Spark values={r.n.points.slice(-20).map((p) => p.v)} /></td>
+					<td class="spark"><Spark values={r.n.points.slice(-20).map((p) => p.v)} /></td>
 				</tr>
 			{/each}
 		</tbody>
@@ -51,31 +51,3 @@
 	<p class="empty">Sin datos todavía.</p>
 {/if}
 
-<style>
-	a.name {
-		color: inherit;
-		text-decoration: none;
-	}
-
-	a.name:hover {
-		color: var(--amber);
-	}
-
-	.sp {
-		width: 80px;
-		padding-block: 0;
-	}
-
-	/* Como en SeriesTable: en paneles estrechos el trimestre cede su sitio al minigráfico, y luego este. */
-	@container (max-width: 440px) {
-		.per {
-			display: none;
-		}
-	}
-
-	@container (max-width: 300px) {
-		.sp {
-			display: none;
-		}
-	}
-</style>

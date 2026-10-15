@@ -1,7 +1,7 @@
 // Calendarios de publicación (Eurostat, BLS, INE) y su relación con las series de la terminal.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextFor, nextMap, shortDay, topicOf } from '../../src/lib/nextrelease.ts';
-import { releasesCal, upcoming } from '../sources/releases-cal.ts';
+import { pastEvents, releasesCal, upcoming } from '../sources/releases-cal.ts';
 import { mockFetch } from './mock.ts';
 
 beforeEach(() => {
@@ -31,6 +31,8 @@ describe('releases-cal', () => {
 		expect(topicOf('BLS', 'The Employment Situation for October')).toBe('us-jobs');
 		expect(topicOf('INE', 'Encuesta de Población Activa (EPA). Tercer trimestre')).toBe('es-epa');
 		expect(topicOf('INE', 'Estadística de Hipotecas')).toBeNull();
+		expect(topicOf('INE', 'Contabilidad Nacional Trimestral de España (CNTR). Avance')).toBe('es-gdp');
+		expect(topicOf('Fed', 'H.4.1 Factors Affecting Reserve Balances')).toBe('us-h41');
 	});
 
 	it('se queda con los próximos 45 días', () => {
@@ -70,6 +72,23 @@ describe('releases-cal', () => {
 		vi.unstubAllEnvs();
 	});
 
+	it('PIB y PCE (BEA), paro semanal (DOL) y H.4.1 (Fed), cada uno con su hora; si uno falla, siguen los demás', async () => {
+		vi.stubEnv('FRED_API_KEY', 'clave');
+		mockFetch((url) => {
+			if (url.includes('release_id=53')) return { release_dates: [{ date: '2026-10-29' }] };
+			if (url.includes('release_id=180')) return { release_dates: [{ date: '2026-10-15' }] };
+			if (url.includes('release_id=20')) return { release_dates: [{ date: '2026-10-15' }] };
+			return undefined;
+		});
+		const { events } = await releasesCal.fetch(undefined);
+		expect(events.map((e) => [e.source, e.date, e.topic])).toEqual([
+			['DOL', '2026-10-15T12:30:00.000Z', 'us-claims'],
+			['Fed', '2026-10-15T20:30:00.000Z', 'us-h41'],
+			['BEA', '2026-10-29T12:30:00.000Z', 'us-gdp']
+		]);
+		vi.unstubAllEnvs();
+	});
+
 	it('sin la clave de FRED, solo el INE', async () => {
 		mockFetch((url) => (url.includes('ine.es') ? INE : undefined));
 		const { events } = await releasesCal.fetch(undefined);
@@ -96,5 +115,21 @@ describe('releases-cal', () => {
 			'cpi-us': { date: '2026-11-13T13:30:00.000Z', title: 'Consumer Price Index for October 2026' },
 			'core-cpi-us': { date: '2026-11-13T13:30:00.000Z', title: 'Consumer Price Index for October 2026' }
 		});
+	});
+});
+
+describe('pastEvents', () => {
+	const ev = (date: string, title: string) => ({ date, allDay: false, title, source: 'INE' as const, topic: 'ipc' });
+	it('guarda las de los últimos 8 días, sin repetir y por fecha', () => {
+		const from = new Date('2026-10-14T00:00:00Z');
+		const previous = {
+			past: [ev('2026-10-01T07:00:00Z', 'muy vieja'), ev('2026-10-10T07:00:00Z', 'IPC')],
+			events: [ev('2026-10-10T07:00:00Z', 'IPC'), ev('2026-10-13T07:00:00Z', 'EPA'), ev('2026-10-14T07:00:00Z', 'hoy')]
+		};
+		expect(pastEvents(previous, from).map((e) => e.title)).toEqual(['IPC', 'EPA']);
+	});
+
+	it('sin copia anterior, nada', () => {
+		expect(pastEvents(undefined, new Date())).toEqual([]);
 	});
 });

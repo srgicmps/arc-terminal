@@ -4,20 +4,29 @@
 	su bloque no se pinta. El país se lee de la URL al arrancar en el navegador, como el valor en /s.
 -->
 <script lang="ts">
+	import EuPowerTable from '#lib/components/EuPowerTable.svelte';
+	import IndeedPanel from '#lib/components/IndeedPanel.svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import Change from '#lib/components/ui/Change.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
+	import { favCountries, initFavCountries, toggleFavCountry } from '#lib/favcountries.svelte.ts';
+	import { goTo } from '#lib/paisgoto.ts';
+	import { routeHref } from '#lib/routes.ts';
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
+	import { LEVELS } from '#lib/advisories.ts';
 	import { COUNTRIES, findCountry } from '#lib/countries.ts';
 	import type { CountryProfile, Rate } from '#lib/country.ts';
-	import { nf, period, signed } from '#lib/format.ts';
+	import { compact, dm, nf, period, signed } from '#lib/format.ts';
+	import { peopleRange, vsYearText } from '#lib/food.ts';
 	import { sectionLabel } from '#lib/news.ts';
 	import type { PageProps } from './$types';
 
@@ -30,14 +39,30 @@
 
 	const country = $derived(findCountry(query));
 	// La ficha viene calculada del servidor; un país sin ningún dato tiene la ficha vacía (solo titulares).
-	const EMPTY: CountryProfile = { kpis: [], policy: null, bond: null, premium: null, fx: [], imf: null };
+	const EMPTY: CountryProfile = { kpis: [], policy: null, bond: null, premium: null, fx: [], imf: null, fiscal: null };
 	const profile = $derived(country && (data.profiles[country.code] ?? EMPTY));
 	const news = $derived(country ? (data.news[country.code] ?? []) : []);
+	const travel = $derived(country ? data.travel[country.code] : undefined);
+	const risk = $derived(country ? data.risks[country.code] : undefined);
+	const refugees = $derived(country ? data.refugees[country.code] : undefined);
+	const food = $derived(country ? data.food[country.code] : undefined);
+	const hasPower = $derived(!!country && data.eupower.some((z) => z.country === country.code));
 	const rates = $derived(profile ? [profile.policy, profile.bond, profile.premium].filter((r): r is Rate => r !== null) : []);
-	const empty = $derived(profile && !profile.kpis.length && !rates.length && !profile.fx.length && !profile.imf && !news.length);
+	const military = $derived(country ? (data.military[country.code] ?? null) : null);
+	const jobs = $derived(country ? data.jobs[country.code] : undefined);
+	const empty = $derived(
+		profile && !profile.kpis.length && !rates.length && !profile.fx.length && !profile.imf && !profile.fiscal && !military && !jobs && !news.length
+	);
 
 	// Para la lista y el desplegable, por orden alfabético.
 	const sorted = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+	// Tus países (favcountries.svelte.ts): arriba del desplegable y de la lista; se marcan con ★.
+	$effect(initFavCountries);
+	const favs = $derived(favCountries.codes.map((code) => COUNTRIES.find((c) => c.code === code)).filter((c) => c !== undefined));
+	// Fila «Ir a» (paisgoto.ts): titulares del país, sus vistas y tus otros países.
+	const links = $derived(country ? goTo(country, favs) : []);
+	const followed = $derived(!!country && favCountries.codes.includes(country.code));
 
 	function choose(code: string) {
 		goto(resolve('/pais') + `?c=${code}`);
@@ -58,16 +83,47 @@
 		: 'Cifras, tipos, moneda, previsiones y titulares de cada país'}
 >
 	{#snippet aside()}
+		{#if country}
+			{@const code = country.code}
+			<Seg
+				label="Tus países"
+				options={[{ value: 'fav', label: followed ? '★ Siguiendo' : '☆ Seguir' }]}
+				bind:values={() => (followed ? ['fav'] : []), () => toggleFavCountry(code)}
+			/>
+		{/if}
 		<Select label="País" value={country?.code ?? ''} onchange={choose}>
 			{#if !country}<option value="" disabled>Elige…</option>{/if}
-			{#each sorted as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+			{#if favs.length}
+				<optgroup label="Tus países">
+					{#each favs as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+				</optgroup>
+			{/if}
+			<optgroup label="Todos">
+				{#each sorted as c (c.code)}<option value={c.code}>{c.name}</option>{/each}
+			</optgroup>
 		</Select>
 	{/snippet}
 </ViewHeader>
 
+{#if links.length}
+	<nav class="goto" aria-label="Ir a">
+		<span class="mut">Ir a</span>
+		{#each links as g (g.code)}<a href="{routeHref(g.route)}{g.query ? `?${g.query}` : ''}" title={g.what}>{g.code} ›</a>{/each}
+	</nav>
+{/if}
+
 {#if !country}
 	<div class="grid">
 		<div class="col">
+			{#if favs.length}
+				<Panel title="Tus países" meta="Los que sigues (★ en su ficha)">
+					<ul class="mini">
+						{#each favs as c (c.code)}
+							<li><a class="l" href="{resolve('/pais')}?c={c.code}">{c.name}</a><b class="mut">{c.code}</b></li>
+						{/each}
+					</ul>
+				</Panel>
+			{/if}
 			<Panel title="Países" meta="{COUNTRIES.length} países">
 				{#if query}<p class="empty">No conozco «{query}». Prueba con el nombre o el código: PAIS Alemania, PAIS DE.</p>{/if}
 				<Table>
@@ -122,6 +178,17 @@
 				</Panel>
 			{/if}
 
+			{#if hasPower}
+				<Panel title="Luz" meta="Mercado mayorista · €/MWh">
+					<EuPowerTable zones={data.eupower} country={country.code} />
+					{#snippet note()}
+						Media del día, frente a la media de las zonas europeas que sigue la terminal. Fuente:
+						{country.code === 'ES' ? 'Red Eléctrica' : 'Energy-Charts / SMARD (Bundesnetzagentur), CC BY 4.0'} ·
+						<Updated at={data.eupowerAt} source="energycharts" />
+					{/snippet}
+				</Panel>
+			{/if}
+
 			{#if profile.fx.length}
 				<Panel title="Moneda" meta={country.currency}>
 					<Table>
@@ -160,6 +227,39 @@
 				</Panel>
 			{/if}
 
+			{#if profile.fiscal}
+				{@const f = profile.fiscal}
+				<Panel title="Deuda y déficit" meta="FMI · {f.year}">
+					<Tiles>
+						<Tile label="Deuda pública" value={f.debt === null ? '—' : `${nf(f.debt, 1)} %`} tone={f.debt === null ? 'mut' : undefined} sub="del PIB" />
+						<Tile
+							label={f.balance !== null && f.balance < 0 ? 'Déficit público' : 'Saldo público'}
+							value={f.balance === null ? '—' : `${nf(Math.abs(f.balance), 1)} %`}
+							tone={f.balance === null ? 'mut' : undefined}
+							sub="del PIB"
+						/>
+						<Tile label="Deuda frente al G20" value={f.debtRank === null ? '—' : `${f.debtRank}.º`} tone={f.debtRank === null ? 'mut' : undefined} sub="de {f.of}, de más a menos deuda" />
+					</Tiles>
+					{#snippet note()}World Economic Outlook del FMI: deuda bruta y saldo de las administraciones públicas, previsión del año.{/snippet}
+				</Panel>
+			{/if}
+
+			{#if jobs}<IndeedPanel series={[jobs]} fetchedAt={data.jobsAt ?? undefined} />{/if}
+
+			{#if military}
+				<Panel title="Gasto militar" meta={data.militaryYear ? String(data.militaryYear) : undefined}>
+					<Tiles>
+						<Tile label="Gasto" value="{nf(military.usd / 1000, 1)} mil M$" sub="{military.rank}.º del mundo" />
+						<Tile label="% del PIB" value={military.gdp === null ? '—' : `${nf(military.gdp, 1)} %`} />
+						<Tile label="Variación real" value={military.real === null ? '—' : `${signed(military.real, 1)} %`} sub="Frente al año anterior" />
+					</Tiles>
+					{#snippet note()}
+						Fuente: <a href="https://www.sipri.org/databases/milex" target="_blank" rel="noopener">SIPRI</a>, en dólares corrientes; la
+						variación, en dólares constantes · <Updated at={data.militaryAt} source="sipri" />
+					{/snippet}
+				</Panel>
+			{/if}
+
 			{#if empty}
 				<Panel title="Datos">
 					<p class="empty">Ninguna fuente de la terminal publica cifras de {country.name}: aquí solo saldrán sus titulares.</p>
@@ -168,6 +268,81 @@
 		</div>
 
 		<div class="col">
+			{#if travel || risk || food}
+				{@const at = data.riskAt}
+				<Panel title="Riesgo" meta="Aviso de viaje, catástrofes, internet y brotes">
+					<ul class="mini">
+						{#if travel}
+							<li>
+								<a class="l" href={travel.url} target="_blank" rel="noopener">
+									<span class:grave={travel.level === 4}>Viaje · {LEVELS[travel.level]}</span>
+									<small>
+										Nivel {travel.level} de 4 · {#if travel.prevLevel && travel.changedAt}antes nivel {travel.prevLevel}, cambió el {dm(
+												travel.changedAt
+											)}{:else}actualizado el {dm(travel.updated)}{/if}
+									</small>
+								</a>
+							</li>
+						{/if}
+						{#each risk?.disasters ?? [] as e (e.id)}
+							<li>
+								<a class="l" href={e.url} target="_blank" rel="noopener">{e.kind} · {e.name}<small>Alerta de GDACS</small></a>
+								<span class:grave={e.level === 'red'} class:mut={e.level !== 'red'}>{e.level === 'red' ? 'Roja' : 'Naranja'}</span>
+							</li>
+						{/each}
+						{#if risk?.outage}
+							{@const o = risk.outage}
+							<li>
+								<a class="l" href={o.url} target="_blank" rel="noopener">Caída de internet<small>Desde el {dm(o.since)} · IODA</small></a>
+								<span class:grave={o.level === 'critical'} class:mut={o.level !== 'critical'}
+									>{o.drop === null ? (o.level === 'critical' ? 'Crítica' : 'Aviso') : `−${nf(o.drop, 0)} %`}</span
+								>
+							</li>
+						{/if}
+						{#if food}
+							<li>
+								<a class="l" href="https://fews.net" target="_blank" rel="noopener"
+									>Hambre aguda<small>Personas en fase IPC 3 o peor · {period(food.from.slice(0, 7))}{vsYearText(food.vsYear)
+											? ` · ${vsYearText(food.vsYear)}`
+											: ''}</small
+									></a
+								>
+								<span>{peopleRange(food.low, food.high)}</span>
+							</li>
+						{/if}
+						{#each risk?.outbreaks ?? [] as o (o.id)}
+							<li>
+								<a class="l" href={o.url} target="_blank" rel="noopener">{o.title}<small>Parte de la OMS</small></a>
+								<span class="mut">{o.date ? dm(o.date) : ''}</span>
+							</li>
+						{/each}
+					</ul>
+					{#snippet note()}
+						{#if travel}Aviso del Departamento de Estado de EE. UU., para viajeros estadounidenses · <Updated
+								at={data.travelAt}
+								source="advisories"
+							/>.{/if}
+						{#if risk}Alertas naranjas y rojas de GDACS{#if at.gdacs}&nbsp;· <Updated at={at.gdacs} source="gdacs" />{/if}; caídas de internet de IODA (Georgia Tech){#if at.ioda}&nbsp;· <Updated
+									at={at.ioda}
+									source="ioda"
+								/>{/if}; brotes de los últimos 30 días de la OMS{#if at.who}&nbsp;· <Updated at={at.who} source="who-don" />{/if}.{/if}
+						{#if food}Hambre aguda: FEWS NET{#if data.foodAt}&nbsp;· <Updated at={data.foodAt} source="fewsnet" />{/if}.{/if}
+					{/snippet}
+				</Panel>
+			{/if}
+			{#if refugees}
+				<Panel title="Refugiados" meta="ACNUR · fin de {data.refugeesYear}">
+					<Tiles>
+						<Tile label="Han huido" value={compact(refugees.from)} sub="refugiados y solicitantes de asilo" />
+						<Tile label="Acogidos" value={compact(refugees.hosted)} sub="en {country.name}" />
+						<Tile label="Desplazados" value={compact(refugees.idps)} sub="dentro del país" />
+					</Tiles>
+					{#snippet note()}
+						Fuente: <a href="https://www.unhcr.org/refugee-statistics/" target="_blank" rel="noopener">ACNUR, Refugee Data Finder</a>{#if data.refugeesAt}&nbsp;·
+							<Updated at={data.refugeesAt} source="unhcr" />{/if}
+					{/snippet}
+				</Panel>
+			{/if}
 			<Panel title="En las noticias" meta="{news.length} {news.length === 1 ? 'titular' : 'titulares'}">
 				{#if news.length}
 					<NewsList items={news} tag={(item) => sectionLabel(item)} />
@@ -181,6 +356,10 @@
 {/if}
 
 <style>
+	.grave {
+		color: var(--down);
+	}
+
 	.pick {
 		color: var(--fg);
 		text-decoration: none;
@@ -192,5 +371,35 @@
 
 	.own td {
 		color: var(--amber);
+	}
+
+	/* Fila «Ir a»: los mismos saltos que el «ECO ›» de los paneles, en una línea bajo la cabecera. */
+	.goto {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--sp-4) var(--sp-12);
+		margin-bottom: var(--sp-12);
+		font-family: var(--mono);
+		font-size: var(--fs-xs);
+		letter-spacing: var(--track-code);
+	}
+
+	.goto a {
+		color: var(--muted);
+		text-decoration: none;
+	}
+
+	.goto a:hover {
+		color: var(--amber);
+	}
+
+	/* En pantallas táctiles, cada salto con 44 px de alto pulsable. */
+	@media (pointer: coarse) {
+		.goto a {
+			display: inline-flex;
+			align-items: center;
+			min-height: var(--touch);
+		}
 	}
 </style>
