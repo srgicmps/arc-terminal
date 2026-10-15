@@ -1,10 +1,8 @@
 // Periódico: la portada de IMP como titulares, las secciones de NEWS y las cifras del día como breves. Se recorta
 // aquí (al construir): al navegador solo llega lo que se pinta.
 import { dataset } from '#lib/data.ts';
-import { FIGURE_SERIES, figures } from '#lib/exp/figures.ts';
-import { seriesMap } from '#lib/series.ts';
-import { pickSeries } from '#lib/trim.ts';
-import type { ImpData, NewsData, NewsItem, SeriesData } from '#lib/types.ts';
+import { loadFigures, loadTop } from '#lib/exp/load.ts';
+import type { NewsData, NewsItem } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
 
 /** Secciones del diario y de qué titulares salen (static/data/news-<clave>.json). */
@@ -23,22 +21,12 @@ const slim = (i: NewsItem) => ({ title: i.title, titleEs: i.titleEs, lang: i.lan
 
 export const load: PageServerLoad = async () => {
 	const keys = [...new Set(SECTIONS.flatMap((s) => s.from))];
-	const [news, imp, ecb, eurostat, bls, fred] = await Promise.all([
-		Promise.all(keys.map((k) => dataset<NewsData>(`news-${k}`))),
-		dataset<ImpData>('imp'),
-		dataset<SeriesData>('ecb'),
-		dataset<SeriesData>('eurostat'),
-		dataset<SeriesData>('bls'),
-		dataset<SeriesData>('fred')
-	]);
+	const [news, imp, figures] = await Promise.all([Promise.all(keys.map((k) => dataset<NewsData>(`news-${k}`))), loadTop(7), loadFigures()]);
 	const byKey = new Map(keys.map((k, i) => [k, news[i]?.data.items ?? []]));
-	const tail = (d: typeof ecb) => pickSeries(d, FIGURE_SERIES, 3);
-	const get = seriesMap(tail(ecb), tail(eurostat), tail(bls), tail(fred));
 
 	return {
-		fetchedAt: imp?.fetchedAt ?? null,
 		// Los temas de más peso ahora mismo: el primero abre el periódico.
-		top: (imp?.data.current ?? []).slice(0, 7).map(({ k, title, titleEs, lang, url, sources, sections, time }) => ({ k, title, titleEs, lang, url, sources, sections, time })),
+		...imp,
 		sections: SECTIONS.map((s) => {
 			const seen = new Set<string>();
 			const items = s.from
@@ -49,6 +37,6 @@ export const load: PageServerLoad = async () => {
 				.map(slim);
 			return { id: s.id, label: s.label, view: s.view, items };
 		}),
-		figures: figures(get)
+		figures
 	};
 };
