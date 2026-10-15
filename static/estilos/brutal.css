@@ -537,6 +537,12 @@
 	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] .col > [data-ui='panel']:not(.max) {
 		position: relative;
 	}
+	/* Un panel girado en la columna de la derecha asomaba 2 px fuera de la página y daba scroll de lado: se recorta
+	   en el borde de la pantalla (clip no crea caja de scroll, así que lo pegajoso sigue pegado). */
+	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] {
+		overflow-x: clip;
+		overflow-clip-margin: var(--gutter);
+	}
 	[data-style='brutal'][data-style]:not([data-fit]) [data-ui='main'] .col > [data-ui='panel']:not(.max):nth-child(3n + 1) {
 		rotate: -0.6deg;
 	}
