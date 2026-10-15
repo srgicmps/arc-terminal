@@ -10,12 +10,13 @@
 // Uso: `node scripts/issues.ts` (lee static/data/status.json y status-history.json).
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { SITE } from './site.ts';
 import type { SourceHistory, SourceStatus, StateSpan } from '../src/lib/data.ts';
 
 /** Pasadas seguidas en «error» para abrir el issue (cada pasada son unos 15 minutos). */
 export const DOWN_AFTER = 3;
 export const LABEL = 'fuente-caida';
-const STATUS_URL = 'https://srgicmps.github.io/arc-terminal/status';
+const STATUS_URL = `${SITE}/status`;
 const API = 'https://api.github.com';
 
 export const title = (name: string) => `Fuente caída: ${name}`;

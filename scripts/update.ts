@@ -17,6 +17,7 @@ import {
 	makeContext,
 	NO_CONTEXT,
 	level,
+	fetchPublished,
 	waves,
 	withDeadline,
 	writeExtra,
@@ -29,12 +30,11 @@ import { loadSources } from './registry.ts';
 const OUT_DIR = 'static/data';
 // En los PR, una muestra de cada fuente al final del registro, para revisar la forma real de los datos.
 const samples: string[] = [];
-const PUBLISHED = 'https://srgicmps.github.io/arc-terminal/data';
 
 async function published(name: string): Promise<Dataset<unknown> | null> {
 	try {
-		const res = await fetch(`${PUBLISHED}/${name}.json`, { signal: AbortSignal.timeout(20_000) });
-		if (!res.ok) return null;
+		const res = await fetchPublished(`${name}.json`, 20_000);
+		if (!res?.ok) return null;
 		const body = (await res.json()) as Dataset<unknown>;
 		return body && body.fetchedAt && 'data' in body ? body : null;
 	} catch {
@@ -56,7 +56,7 @@ async function copyExtra(source: Source, dataset: Dataset<unknown>) {
 	const paths = source.files?.(dataset.data) ?? [];
 	await Promise.all(
 		paths.map(async (path) => {
-			const res = await fetch(`${PUBLISHED}/${path}`, { signal: AbortSignal.timeout(30_000) }).catch(() => null);
+			const res = await fetchPublished(path);
 			if (res?.ok) await writeExtra(path, await res.json());
 		})
 	);
