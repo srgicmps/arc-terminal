@@ -163,7 +163,7 @@ Un cambio de estética se hace en un solo sitio.
   `ajustes` (`src/styles/ajustes.css`: densidad y modo Sencillo). Clave `arc-style`, sincronizada con la cuenta. Sin
   nada guardado, `src/app.html` decide: «Terminal» si el navegador ya usaba la web, «Grafito» si es nuevo.
   En Arc OS (`/os`) el escritorio, la barra, los menús y la decoración de ventana no usan la estética, el acento ni la
-  densidad: tienen un aspecto propio y fijo (`src/lib/os/look.ts`, colores al final de `tokens.css`). El contenido de
+  densidad: tienen un aspecto propio y fijo (`src/lib/os/look.ts`; el aspecto «Mando» está en `tokens.css`). El contenido de
   las ventanas sí los usa.
   Lo único fuera de los tokens son los iconos (`static/favicon.svg` y los PNG de la PWA): llevan el ámbar
   escrito: se rehacen con `node scripts/icons.ts` (iconos, maskable, apple-touch y arranque del iPhone) a partir de

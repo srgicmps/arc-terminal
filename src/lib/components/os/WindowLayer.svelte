@@ -5,7 +5,8 @@
 -->
 <script lang="ts">
 	import { SvelteSet } from 'svelte/reactivity';
-	import { appOf, close, cycle, focusedWin, goDesk, loadOs, maximize, minimize, openApp, os, sendToDesk, setArea, snap, tile, toggleTop } from '#lib/os/os.svelte.ts';
+	import { switchStep } from '#lib/os/system/switcher.svelte.ts';
+	import { appOf, close, focusedWin, goDesk, loadOs, maximize, minimize, openApp, os, sendToDesk, setArea, snap, tile, toggleTop } from '#lib/os/os.svelte.ts';
 	import { findWin } from '#lib/os/wm.ts';
 	import ContextMenu, { type MenuEntry } from './ContextMenu.svelte';
 	import { snapRect, type Snap } from '#lib/os/wm.ts';
@@ -32,6 +33,8 @@
 	 * del navegador: no se pueden usar. Devuelve si era un atajo.
 	 */
 	export function handleKey(e: Key): boolean {
+		// Ctrl+Alt+T: una Terminal nueva, como en Linux (OS 3, src/lib/os/apps/terminal.ts).
+		if (e.ctrlKey && e.altKey && e.code === 'KeyT') return (openApp('terminal'), true);
 		const f = focusedWin();
 		if (e.metaKey && !e.altKey && !e.ctrlKey && f) {
 			const to: Record<string, Snap | null> = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'max', ArrowDown: null };
@@ -40,8 +43,8 @@
 			return true;
 		}
 		if (!e.altKey || e.ctrlKey || e.metaKey) return false;
-		if (e.key === 'Tab') return (cycle(e.shiftKey ? -1 : 1), true);
-		if (e.code === 'Backquote' || e.code === 'IntlBackslash') return (cycle(e.shiftKey ? -1 : 1), true);
+		// Siguiente ventana con el Alt+Tab visual de «OS 5» (src/lib/os/system/switcher.svelte.ts).
+		if (e.key === 'Tab' || e.code === 'Backquote' || e.code === 'IntlBackslash') return (switchStep(e.shiftKey ? -1 : 1), true);
 		const n = /^Digit([1-6])$/.exec(e.code);
 		if (n) {
 			const d = os.state.desks[Number(n[1]) - 1];

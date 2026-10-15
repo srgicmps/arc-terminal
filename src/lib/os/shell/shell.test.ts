@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildNotices, markSeen, toastsFor, unread } from './notices.ts';
 import { byCategory, categoryOf, parseIds, pushRecent, searchApps, togglePin } from './start.ts';
 import { addWidget, defaultWidgets, nudge, parseWidgets, removeWidget, snap, statusSummary } from './widgets.ts';
-import { offsetFrom, openMarkets, timeIn } from './zones.ts';
+import { localZone, offsetFrom, openMarkets, timeIn } from './zones.ts';
 
 const wall = {
 	headlines: [],
@@ -84,6 +84,11 @@ describe('reloj', () => {
 		expect(offsetFrom('Asia/Kolkata', 'Europe/Madrid', now)).toBe('+3,5');
 		expect(offsetFrom('Europe/Madrid', 'Europe/Madrid', now)).toBe('0');
 	});
+	it('sin zona de verdad en el navegador, la de Madrid', () => {
+		expect(localZone('UTC')).toBe('Europe/Madrid');
+		expect(localZone('Etc/GMT')).toBe('Europe/Madrid');
+		expect(localZone('America/Bogota')).toBe('America/Bogota');
+	});
 	it('cuenta las bolsas abiertas', () => {
 		// Jueves a las 14:00 de Madrid: abiertas Londres, Madrid y Fráncfort (Bombay cerró a las 12:00).
 		expect(openMarkets(now)).toBe(3);
@@ -110,6 +115,7 @@ describe('aspectos', () => {
 		expect(layoutOf('mac', 'top')).toEqual({ top: 'menubar', bottom: 'dock' });
 		expect(layoutOf('linux', 'bottom')).toEqual({ top: 'topbar', bottom: null });
 		expect(layoutOf('dsm', 'bottom')).toEqual({ top: 'dsmbar', bottom: null });
+		expect(layoutOf('mando', 'bottom')).toEqual({ top: 'mandobar', bottom: 'mandostrip' });
 		expect(isSkin('mac')).toBe(true);
 		expect(isSkin('beos')).toBe(false);
 	});

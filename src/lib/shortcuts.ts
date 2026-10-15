@@ -16,7 +16,7 @@ export interface Shortcut {
 	/** Qué hace. */
 	action: string;
 	/** Tecla que se escucha (KeyboardEvent.key) y si va con Mayúsculas. Sin match, es solo informativo. */
-	match?: { key: string; shift?: boolean; alt?: boolean };
+	match?: { key: string; shift?: boolean; alt?: boolean; ctrl?: boolean; code?: string };
 }
 
 export const SHORTCUTS = [
@@ -43,7 +43,7 @@ export const SHORTCUTS = [
 	{ id: 'tv-pause', group: 'TV', keys: ['Espacio'], how: 'en modo TV', action: 'Pausar o seguir', match: { key: ' ' } },
 	{ id: 'tv-exit', group: 'TV', keys: ['Esc'], how: 'en modo TV', action: 'Salir', match: { key: 'Escape' } },
 	// Arc OS (src/lib/components/os/WindowLayer.svelte, handleKey): todos con Alt, también con el foco dentro de una ventana.
-	{ id: 'os-next', group: 'Arc OS', keys: ['Alt', 'º'], combo: true, how: 'o Alt+Tab si el sistema lo deja; con ⇧, la anterior', action: 'Siguiente ventana' },
+	{ id: 'os-next', group: 'Arc OS', keys: ['Alt', 'º'], combo: true, how: 'o Alt+Tab si el sistema lo deja; con ⇧, la anterior', action: 'Cambiar de ventana: salen las miniaturas; al soltar Alt, vas a la elegida (Esc cancela)' },
 	{ id: 'os-max', group: 'Arc OS', keys: ['Alt', '↑'], combo: true, action: 'Maximizar o restaurar la ventana' },
 	{ id: 'os-min', group: 'Arc OS', keys: ['Alt', '↓'], combo: true, action: 'Desencajar o minimizar la ventana' },
 	{ id: 'os-half', group: 'Arc OS', keys: ['Alt', '⇧', '←', '→'], combo: true, how: 'o ⌘/Super + flechas', action: 'Ventana a media pantalla' },
@@ -51,7 +51,10 @@ export const SHORTCUTS = [
 	{ id: 'os-close', group: 'Arc OS', keys: ['Alt', 'W'], combo: true, action: 'Cerrar la ventana' },
 	{ id: 'os-tile', group: 'Arc OS', keys: ['Alt', 'T'], combo: true, action: 'Mosaico: todas las ventanas en rejilla' },
 	{ id: 'os-keys', group: 'Arc OS', keys: ['←', '↑', '→', '↓'], how: 'con el foco en la barra de título (con ⇧, cambia el tamaño)', action: 'Mover la ventana' },
-	{ id: 'os-desk', group: 'Arc OS', keys: ['Alt', '1…6'], combo: true, action: 'Ir a un escritorio' }
+	{ id: 'os-terminal', group: 'Arc OS', keys: ['Ctrl', 'Alt', 'T'], combo: true, action: 'Abrir una Terminal (la barra de comandos como consola)' },
+	{ id: 'os-desk', group: 'Arc OS', keys: ['Alt', '1…6'], combo: true, action: 'Ir a un escritorio' },
+	// Sistema de Arc OS (src/lib/os/system/SystemLayer.svelte). `code` porque en el Mac ⌥ cambia la letra.
+	{ id: 'os-lock', group: 'Arc OS', keys: ['Ctrl', 'Alt', 'L'], combo: true, action: 'Bloquear la pantalla (se entra con un clic o una tecla)', match: { key: 'l', ctrl: true, alt: true, code: 'KeyL' } }
 ] as const satisfies readonly Shortcut[];
 
 export type ShortcutId = (typeof SHORTCUTS)[number]['id'];
@@ -59,9 +62,13 @@ export type ShortcutId = (typeof SHORTCUTS)[number]['id'];
 const byId = new Map<string, Shortcut>(SHORTCUTS.map((s) => [s.id, s]));
 
 /** ¿La tecla pulsada es la de este atajo? Las letras valen en mayúscula o minúscula, salvo si piden ⇧. */
-export function isShortcut(e: Pick<KeyboardEvent, 'key' | 'shiftKey'> & { altKey?: boolean }, id: ShortcutId): boolean {
+export function isShortcut(
+	e: Pick<KeyboardEvent, 'key' | 'shiftKey'> & { altKey?: boolean; ctrlKey?: boolean; code?: string },
+	id: ShortcutId
+): boolean {
 	const m = byId.get(id)?.match;
 	if (!m) return false;
+	if (m.ctrl) return e.ctrlKey === true && e.altKey === !!m.alt && (m.code ? e.code === m.code : e.key.toLowerCase() === m.key);
 	if (m.alt) return e.altKey === true && e.key === m.key;
 	if (m.shift) return e.shiftKey && e.key === m.key;
 	return e.key.length === 1 ? e.key.toLowerCase() === m.key.toLowerCase() : e.key === m.key;

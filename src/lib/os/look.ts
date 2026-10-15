@@ -1,6 +1,6 @@
 // Arc OS tiene su propio aspecto: el escritorio, la barra, los menús y la decoración de ventana no usan la estética
-// de la web (data-style, acento ni densidad), sino los colores y la letra del aspecto (data-os-skin, tokens al final
-// de tokens.css). Las vistas dentro de las ventanas (?embed=1) sí siguen la estética: son otro documento, y
+// de la web (data-style, acento ni densidad), sino los colores y la letra del aspecto (data-os-skin, «Mando» en
+// tokens.css). Las vistas dentro de las ventanas (?embed=1) sí siguen la estética: son otro documento, y
 // webLook las mantiene al día. Fuera de /os todo sigue igual: al salir se vuelve a lo guardado.
 // src/app.html hace lo mismo antes de pintar (data-os-look), para que no parpadee.
 

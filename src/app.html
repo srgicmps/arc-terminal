@@ -42,9 +42,9 @@
 				document.documentElement.dataset.osLook = '1';
 				try {
 					var sk = localStorage.getItem('arc-os-skin');
-					document.documentElement.dataset.osSkin = sk && /^[a-z]+$/.test(sk) ? sk : 'dsm';
+					document.documentElement.dataset.osSkin = sk && /^[a-z]+$/.test(sk) ? sk : 'mando';
 				} catch (e) {
-					document.documentElement.dataset.osSkin = 'dsm';
+					document.documentElement.dataset.osSkin = 'mando';
 				}
 			}
 			// Color de acento elegido en «A tu gusto» (src/lib/taste.svelte.ts); sin nada, el ámbar.

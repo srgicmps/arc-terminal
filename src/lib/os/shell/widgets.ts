@@ -31,7 +31,7 @@ export const GRID = 8;
 /** Los de quien entra por primera vez: a la derecha, en columna. En DSM, los del sistema (como su panel). */
 export function defaultWidgets(deskW: number, skin = ''): Placed[] {
 	const x = Math.max(GRID, deskW - WIDGET_W - 3 * GRID);
-	if (skin === 'dsm')
+	if (skin === 'dsm' || skin === 'mando')
 		return [
 			{ kind: 'sistema', x, y: 2 * GRID },
 			{ kind: 'registro', x, y: 22 * GRID },
