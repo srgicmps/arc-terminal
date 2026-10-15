@@ -12,6 +12,7 @@
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import AnalystPanel from '#lib/components/AnalystPanel.svelte';
 	import FilingList from '#lib/components/FilingList.svelte';
+	import HoldersTable from '#lib/components/HoldersTable.svelte';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import ShortVolume from '#lib/components/ShortVolume.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -42,6 +43,8 @@
 	const news = $derived(data.news?.data[code] ?? []);
 	// Analistas, sorpresas de resultados y directivos (Finnhub; solo EE. UU. y con la clave).
 	const analysis = $derived(data.analysts?.data[code]);
+	// Fondos de FONDOS que la tienen (HDS, 13F de la SEC).
+	const held = $derived(data.hds?.holders[code] ?? []);
 
 	// «Compartir»: símbolo y nombre, con ?sym en el enlace (la ficha sin ?sym abre NVDA).
 	function share(): ShareInfo {
@@ -103,6 +106,19 @@
 						{#snippet note()}Recomendaciones del último mes, BPA de los últimos trimestres y operaciones de directivos (formulario 4) ·
 							<Updated at={analysis.fetchedAt} source="analysts" />{/snippet}
 					</Panel>
+				</div>
+			</div>
+		{/if}
+		{#if held.length}
+			<div class="grid">
+				<div class="col">
+					{#each held as issuer (issuer.name)}
+						<Panel title="Fondos que la tienen" meta="{issuer.name} · 13F" jump={{ code: 'HDS', href: `${resolve('/hds')}?s=${encodeURIComponent(code)}` }}>
+							<HoldersTable holders={issuer.holders} names={data.hds?.fundNames ?? {}} />
+							{#snippet note()}Solo los fondos de FONDOS, con el retraso del 13F (hasta 45 días tras el trimestre) · Fuente: SEC EDGAR ·
+								<Updated at={data.hds?.fetchedAt} source="funds" />{/snippet}
+						</Panel>
+					{/each}
 				</div>
 			</div>
 		{/if}
