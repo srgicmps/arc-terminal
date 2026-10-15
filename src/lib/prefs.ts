@@ -29,6 +29,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-leaders', storage: 'local', what: 'Los líderes que salen en LIDER y su orden', where: 'LIDER, «Tus líderes»', kind: 'ajuste' },
 	{ key: 'arc-countries', storage: 'local', what: 'Tus países favoritos (hasta 8)', where: 'PAIS, botón ☆ Seguir', kind: 'dato' },
 	{ key: 'arc-shell', storage: 'local', what: 'Terminal clásico o Modo OS (escritorio con ventanas; en el móvil, pantalla de inicio)', where: 'BIENVENIDA, botón ⧉ de la cabecera o «Salir de Arc OS»', kind: 'ajuste' },
+	{ key: 'arc-os-badges', storage: 'local', what: 'Cuándo abriste cada app en el Modo OS del móvil, para las insignias de cosas nuevas', where: 'Modo OS en el móvil', kind: 'dato' },
 	{ key: 'arc-os-invite', storage: 'local', what: 'Ya has visto el aviso «Prueba el Modo OS»', where: 'Al entrar, una sola vez', kind: 'dato' },
 	{ key: 'arc-home', storage: 'local', what: 'Vista o experiencia que se abre al entrar', where: 'HELP, «Al entrar»', kind: 'ajuste' },
 	{ key: 'arc-welcome', storage: 'local', what: 'Lo que elegiste en la bienvenida (intereses, perfil) y la propuesta de avisos', where: 'BIENVENIDA (también desde HELP)', kind: 'ajuste' },

@@ -18,10 +18,14 @@ export const isHomeCode = (code: string) => homeChoices().some((c) => c.code ===
 
 /**
  * A qué ruta ir al abrir la portada, o null para quedarse en TOP: solo la primera vez en la pestaña,
- * si la portada se abrió sin parámetros (un enlace compartido manda) y si hay otra vista o una experiencia elegida.
+ * si la portada se abrió sin parámetros (un enlace compartido manda) y si hay otra vista o una experiencia elegida
+ * (o el Modo OS, que manda sobre la vista de inicio).
  */
-export function startPath(saved: string | null, started: boolean, search: string): string | null {
-	if (started || search || !saved || saved === 'TOP') return null;
+export function startPath(saved: string | null, started: boolean, search: string, shell: string | null = null): string | null {
+	if (started || search) return null;
+	// En el Modo OS (arc-shell, src/lib/os/mode.ts), al escritorio o a la pantalla de inicio del móvil.
+	if (shell === 'os') return '/os';
+	if (!saved || saved === 'TOP') return null;
 	const exp = fromHomeValue(saved, EXPERIENCES);
 	if (exp) return expHref(exp);
 	return homeChoices().find((c) => c.code === saved)?.route ?? null;

@@ -9,6 +9,11 @@
 	import Desktop from '#lib/os/shell/Desktop.svelte';
 	import OsChrome from '#lib/os/shell/OsChrome.svelte';
 	import { loadShell, shell } from '#lib/os/shell/shell.svelte.ts';
+	import MobileHome from '#lib/os/mobile/MobileHome.svelte';
+	import { MediaQuery } from 'svelte/reactivity';
+
+	// En el móvil (≤ 900 px), pantalla de inicio de teléfono (OS 3); sin el escritorio, así no carga sus iframes.
+	const phone = new MediaQuery('max-width: 900px', false);
 
 	// La shell de «OS 2» (aspecto, barras, escritorio con iconos y widgets) alrededor de las ventanas del núcleo.
 	$effect(() => loadShell(['top', 'imp', 'eco', 'ws', 'geo']));
@@ -18,16 +23,20 @@
 	<title>Arc OS</title>
 </svelte:head>
 
-<div class="os" data-ui="os" data-os-skin={shell.skin} data-os-bar={shell.skin === 'windows' ? shell.bar : 'top'}>
-	<div class="top"><OsChrome where="top" /></div>
-	<div class="desk">
-		<Desktop {apps} onopen={open} onnavigate={navigate}>
-			<WindowLayer />
-		</Desktop>
+{#if phone.current}
+	<MobileHome />
+{:else}
+	<div class="os" data-ui="os" data-os-skin={shell.skin} data-os-bar={shell.skin === 'windows' ? shell.bar : 'top'}>
+		<div class="top"><OsChrome where="top" /></div>
+		<div class="desk">
+			<Desktop {apps} onopen={open} onnavigate={navigate}>
+				<WindowLayer />
+			</Desktop>
+		</div>
+		<div class="bottom"><OsChrome where="bottom" /></div>
+		<OsChrome where="over" />
 	</div>
-	<div class="bottom"><OsChrome where="bottom" /></div>
-	<OsChrome where="over" />
-</div>
+{/if}
 
 <style>
 	.os {

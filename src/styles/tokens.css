@@ -153,6 +153,19 @@
 	--os-title-fg: var(--muted); /* texto de la barra de título */
 	--os-title-fg-active: var(--fg); /* texto de la barra de título con el foco */
 	--os-snap: var(--amber-soft); /* zona donde va a encajar la ventana al soltarla */
+	/* Arc OS en el móvil (≤ 900 px): pantalla de inicio de teléfono. */
+	--os-phone-font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; /* letra del sistema del teléfono */
+	--os-phone-wall: radial-gradient(120% 70% at 20% 0%, var(--amber-soft), transparent 60%), var(--os-desk); /* fondo de pantalla */
+	--os-glass: color-mix(in srgb, var(--panel) 72%, transparent); /* fondo translúcido de dock, widgets y centros */
+	--os-glass-blur: blur(24px) saturate(1.4); /* desenfoque detrás del cristal */
+	--os-glass-strong: color-mix(in srgb, var(--bg) 86%, transparent); /* cristal de lo que tapa la pantalla: Spotlight, centros, multitarea */
+	--os-icon-size: 58px; /* lado de un icono */
+	--os-icon-radius: 27%; /* esquinas «squircle» de los iconos */
+	--os-icon-bg: linear-gradient(160deg, var(--raise), var(--panel)); /* fondo de un icono */
+	--os-icon-fg: var(--amber); /* dibujo de un icono */
+	--os-badge-bg: var(--down); /* insignia con número */
+	--os-badge-fg: var(--bg);
+	--os-radius-l: 22px; /* esquinas de widgets, dock y tarjetas */
 	--os-bar-h: calc(var(--control-h) + var(--sp-12)); /* alto de la barra de tareas (crece sola en pantallas táctiles) */
 	--os-dock-h: 64px; /* alto del dock del aspecto Mac (iconos de 40 px y su lupa) */
 	--os-font: var(--sans); /* letra de la barra, los menús y los títulos de ventana; cada aspecto pone la suya */
