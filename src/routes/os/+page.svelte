@@ -6,6 +6,7 @@
 <script lang="ts">
 	import Taskbar from '#lib/components/os/Taskbar.svelte';
 	import WindowLayer from '#lib/components/os/WindowLayer.svelte';
+	import SystemLayer from '#lib/os/system/SystemLayer.svelte';
 </script>
 
 <svelte:head>
@@ -16,6 +17,7 @@
 	<div class="desk"><WindowLayer /></div>
 	<Taskbar />
 </div>
+<SystemLayer />
 
 <style>
 	.os {

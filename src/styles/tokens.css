@@ -153,6 +153,11 @@
 	--os-title-fg: var(--muted); /* texto de la barra de título */
 	--os-title-fg-active: var(--fg); /* texto de la barra de título con el foco */
 	--os-snap: var(--amber-soft); /* zona donde va a encajar la ventana al soltarla */
+	--z-system: 120; /* Arc OS: arranque, bloqueo y Alt+Tab, por encima de todo el escritorio */
+	--os-sys-bg: var(--bg); /* fondo de la pantalla de inicio y de bloqueo */
+	--os-logo-big: 56px; /* logo de la pantalla de inicio */
+	--fs-clock: 72px; /* hora de la pantalla de bloqueo */
+	--os-boot-bar: 160px; /* ancho de la barra de progreso del arranque */
 	/* Decoración de ventana: cada aspecto (data-os-skin: Windows, Mac, Linux…) la cambia aquí, sin tocar Window.svelte. */
 	--os-win-shadow-active: var(--os-win-shadow); /* sombra de la ventana con el foco */
 	--os-win-radius-snapped: 0; /* esquinas encajada o maximizada */
