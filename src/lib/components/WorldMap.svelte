@@ -1,10 +1,11 @@
 <!--
 	Mapa del mundo con capas de puntos (src/lib/geo/layers.ts): terremotos, ciclones, incendios y volcanes,
 	estrechos, sanciones por país y crisis. Proyección equirectangular: sencilla y suficiente para situar
-	cada cosa. Al tocar un punto sale una ficha con el enlace a su fuente.
+	cada cosa. Al tocar un punto sale una ficha con el enlace a su fuente y, si es un país, a su ficha en PAIS.
 	Colores: ámbar y grises del tema; rojo y verde quedan para subidas y bajadas.
 -->
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { LayerId, MapPoint } from '#lib/geo/layers.ts';
 	import { LAND } from '#lib/world.ts';
 
@@ -68,6 +69,7 @@
 				<b>{shown.title}</b>
 				<span>{shown.sub}</span>
 			</div>
+			{#if shown.country}<a href="{resolve('/pais')}?c={shown.country}">PAIS ›</a>{/if}
 			<a href={shown.url} target="_blank" rel="noopener">Abrir ›</a>
 			<button type="button" aria-label="Cerrar la ficha" onclick={() => (selected = null)}>×</button>
 		</div>

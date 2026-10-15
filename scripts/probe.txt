@@ -104,3 +104,6 @@ https://mempool.space/api/blocks/tip/height
 https://fdw.fews.net/api/ipcpopulationsize/?format=json&phase=3%2B&unit_type=admin0&start_date=2025-10-01&page_size=2 ~ "country_code":"[A-Z]{2}".{0,40}
 # WS: Pink Sheet del Banco Mundial, enlace al .xlsx mensual
 https://www.worldbank.org/en/research/commodity-markets ~ CMO-Historical-Data-Monthly
+# LIDER: quién preside ahora la Fed y quién forma el Comité Ejecutivo del BCE
+https://www.federalreserve.gov/aboutthefed/bios/board/default.htm ~ .{0,120}(Chair|Powell).{0,60}
+https://www.ecb.europa.eu/ecb/orga/decisions/eb/html/index.en.html ~ .{0,100}(Vice-President|Member of the Executive Board).{0,20}

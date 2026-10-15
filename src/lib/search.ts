@@ -1,6 +1,7 @@
 // Búsqueda de la barra de comandos en el índice static/data/search.json (scripts/sources/search.ts).
 // Lógica pura, sin Svelte, para probarla con Vitest. El índice se carga aparte, en diferido.
 import { commandWithArg, findCommand, isTickerLike, norm, splitInput, symbolFunction, type Option } from './cmdline.ts';
+import { LEADERS } from './leaders.ts';
 import { plain } from './news.ts';
 import type { SearchEntry } from './types.ts';
 
@@ -118,4 +119,18 @@ function indexHits(raw: string, suggestions: Option[], index: Indexed[], limit: 
 		hits.unshift({ code: q, desc: 'Ficha del valor', kind: 'Valor', run: q });
 	}
 	return hits;
+}
+
+/**
+ * Los líderes de LIDER como opciones de la barra: «lagarde» o «trump» + Intro abren su ficha
+ * (/lider?id=lagarde). El código es el id en mayúsculas, para que «LID» no los saque todos.
+ */
+export function leaderEntries(): Option[] {
+	return LEADERS.map((l) => ({
+		code: l.id.toUpperCase(),
+		desc: `${l.name} · ${l.role}`,
+		kind: 'Líder',
+		aliases: [l.name, ...l.aliases],
+		run: `LIDER ${l.id}`
+	}));
 }
