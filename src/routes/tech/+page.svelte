@@ -8,6 +8,7 @@
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import QuoteBoard from '#lib/components/QuoteBoard.svelte';
+	import RadarPanel from '#lib/components/RadarPanel.svelte';
 	import ReleaseList from '#lib/components/ReleaseList.svelte';
 	import TradeList from '#lib/components/TradeList.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -48,6 +49,8 @@
 			<QuoteBoard name="Tecnológicas" codes={BIG_TECH} />
 		</Panel>
 		<InternetStatusPanel />
+		<!-- Sin el token CLOUDFLARE_RADAR_TOKEN no hay datos: el panel no sale. -->
+		{#if data.ddos}<RadarPanel {...data.ddos} />{/if}
 		<LaunchesPanel />
 		{#if data.reg?.data.items.length}
 			<Panel title="Regulación" meta="UE · ley de IA, mercado digital y multas de datos">

@@ -2,21 +2,25 @@
 // viaje de EE. UU.). Lógica pura, con tests: el +page.server.ts la llama y al navegador llega solo esto.
 import { levelCounts } from './advisories.ts';
 import { COUNTRIES, findCountries } from './countries.ts';
-import type { AdvisoriesData, GdacsEvent, IodaOutage, OutbreakNews } from './types.ts';
+import type { AdvisoriesData, GdacsEvent, IodaOutage, OutbreakNews, RadarOutage } from './types.ts';
 
 const DAY = 86_400_000;
 /** Brotes de la OMS que cuentan: los publicados en los últimos 30 días. */
 const OUTBREAK_DAYS = 30;
+/** Cortes de Cloudflare Radar que cuentan: los que siguen en curso o acabaron hace menos de 24 h. */
+const RADAR_HOURS = 24;
 
 export interface RiskSignals {
 	counts: { red: number; orange: number; outages: number; outbreaks: number; level4: number | null };
 	disasters: GdacsEvent[];
 	outages: (IodaOutage & { country: string })[];
 	outbreaks: OutbreakNews[];
+	/** Cortes verificados por Cloudflare Radar, con su causa (complementan a IODA). */
+	verified: (Pick<RadarOutage, 'id' | 'cause' | 'scope' | 'start' | 'end' | 'url'> & { country: string })[];
 }
 
 /** Nombre del país en español a partir del código ISO; si no se sabe, el que da la fuente. */
-function countryName(code: string, fallback: string): string {
+export function countryName(code: string, fallback: string): string {
 	try {
 		return new Intl.DisplayNames('es', { type: 'region' }).of(code) ?? fallback;
 	} catch {
@@ -25,19 +29,28 @@ function countryName(code: string, fallback: string): string {
 }
 
 export function riskSignals(
-	input: { gdacs?: GdacsEvent[] | null; ioda?: IodaOutage[] | null; who?: OutbreakNews[] | null; advisories?: AdvisoriesData | null },
+	input: {
+		gdacs?: GdacsEvent[] | null;
+		ioda?: IodaOutage[] | null;
+		radar?: RadarOutage[] | null;
+		who?: OutbreakNews[] | null;
+		advisories?: AdvisoriesData | null;
+	},
 	now: number,
 	limit = 5
 ): RiskSignals {
 	const gdacs = input.gdacs ?? [];
 	const ioda = input.ioda ?? [];
+	const radar = (input.radar ?? []).filter((o) => !o.end || Date.parse(o.end) >= now - RADAR_HOURS * 3_600_000);
+	// Países sin internet: los de IODA y los de un corte de Cloudflare Radar que sigue en curso, sin repetir.
+	const offline = new Set([...ioda.map((o) => o.code), ...radar.filter((o) => !o.end).flatMap((o) => o.codes)]);
 	const outbreaks = (input.who ?? []).filter((o) => o.date && Date.parse(o.date) >= now - OUTBREAK_DAYS * DAY);
 	const level4 = input.advisories ? levelCounts(input.advisories.items)[3] : null;
 	return {
 		counts: {
 			red: gdacs.filter((e) => e.level === 'red').length,
 			orange: gdacs.filter((e) => e.level === 'orange').length,
-			outages: ioda.length,
+			outages: offline.size,
 			outbreaks: outbreaks.length,
 			level4
 		},
@@ -55,7 +68,16 @@ export function riskSignals(
 			.sort((a, b) => Number(b.level === 'critical') - Number(a.level === 'critical') || (b.drop ?? 0) - (a.drop ?? 0))
 			.slice(0, limit)
 			.map((o) => ({ ...o, country: countryName(o.code, o.name) })),
-		outbreaks: outbreaks.slice(0, 3)
+		outbreaks: outbreaks.slice(0, 3),
+		verified: radar.slice(0, 3).map((o) => ({
+			id: o.id,
+			cause: o.cause,
+			scope: o.scope,
+			start: o.start,
+			end: o.end,
+			url: o.url,
+			country: o.codes.map((c) => countryName(c, c)).join(', ') || 'Varios países'
+		}))
 	};
 }
 

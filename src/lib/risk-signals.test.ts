@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countryRisks, riskSignals } from './risk-signals.ts';
-import type { GdacsEvent, IodaOutage, OutbreakNews } from './types.ts';
+import type { GdacsEvent, IodaOutage, OutbreakNews, RadarOutage } from './types.ts';
 
 const NOW = Date.parse('2026-10-14T12:00:00Z');
 
@@ -12,6 +12,9 @@ const outage = (code: string, level: IodaOutage['level'], drop: number | null): 
 	code, name: code, level, signals: ['bgp'], since: '2026-10-14T06:00:00Z', last: '2026-10-14T10:00:00Z', drop, url: ''
 });
 const outbreak = (id: string, date: string | null): OutbreakNews => ({ id, title: id, date, summary: '', url: '' });
+const cut = (id: string, codes: string[], end: string | null): RadarOutage => ({
+	id, codes, cause: 'corte de cable', scope: 'nacional', networks: [], start: '2026-10-13T00:00:00Z', end, url: null
+});
 
 describe('riskSignals', () => {
 	it('cuenta y ordena: rojas antes, críticas antes, brotes de los últimos 30 días', () => {
@@ -36,8 +39,28 @@ describe('riskSignals', () => {
 			counts: { red: 0, orange: 0, outages: 0, outbreaks: 0, level4: null },
 			disasters: [],
 			outages: [],
-			outbreaks: []
+			outbreaks: [],
+			verified: []
 		});
+	});
+
+	it('Cloudflare Radar: suma a «sin internet» los países con un corte en curso, sin repetir los de IODA', () => {
+		const r = riskSignals(
+			{
+				ioda: [outage('IR', 'critical', 60)],
+				radar: [
+					cut('curso', ['IR', 'PK'], null),
+					cut('ayer', ['CU'], '2026-10-14T02:00:00Z'),
+					cut('viejo', ['SY'], '2026-10-10T00:00:00Z'),
+					cut('sin país', [], null)
+				]
+			},
+			NOW
+		);
+		expect(r.counts.outages).toBe(2);
+		expect(r.verified.map((o) => o.id)).toEqual(['curso', 'ayer', 'sin país']);
+		expect(r.verified[0].country).toBe('Irán, Pakistán');
+		expect(r.verified[2].country).toBe('Varios países');
 	});
 
 	it('recorta a `limit`', () => {

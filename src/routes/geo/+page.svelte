@@ -158,6 +158,8 @@
 				{#snippet note()}
 					Fuentes: GDACS (ONU y Comisión Europea), alertas naranjas y rojas{#if at.gdacs}&nbsp;· <Updated at={at.gdacs} source="gdacs" />{/if};
 					IODA (Georgia Tech), caídas de internet de las últimas 12 h{#if at.ioda}&nbsp;· <Updated at={at.ioda} source="ioda" />{/if};
+					{#if at.radar}<a href="https://radar.cloudflare.com/outage-center" target="_blank" rel="noopener">Cloudflare Radar</a>, cortes
+						verificados con su causa (CC BY-NC 4.0)&nbsp;· <Updated at={at.radar} source="radar" />;{/if}
 					OMS, Disease Outbreak News{#if at.who}&nbsp;· <Updated at={at.who} source="who-don" />{/if}; y avisos de viaje del
 					Departamento de Estado de EE. UU.
 				{/snippet}
