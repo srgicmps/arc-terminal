@@ -11,23 +11,26 @@
 <script lang="ts">
 	import { routeHref } from '#lib/routes.ts';
 	import { clock } from '#lib/clock.svelte.ts';
-	import { barData, loadBarData } from '#lib/bar/bardata.svelte.ts';
 	import { COMMANDS } from '#lib/commands.ts';
-	import type { ChangesData } from '#lib/types.ts';
+	import { markAllSeen, shell, startNotices } from '../shell/shell.svelte.ts';
+	import { markSeen as seenWith } from '../shell/notices.ts';
+	import { EVENTS_KEY, isEvents, isoDay } from '../apps/cal/cal.ts';
 	import { APPS, appOfPath, embedSrc, findApp } from '../apps.ts';
 	import { os } from '../os.svelte.ts';
 	import {
 		ARRANGE_KEY,
-		BADGES_KEY,
+		WIDGETS,
+		addWidget,
 		arrange,
-		badges,
+		badgesFor,
+		noticesOf,
+		removeWidget,
 		dockApps,
 		drop,
 		folderName,
 		gesture,
 		layout,
 		place,
-		readSeen,
 		rename,
 		takeOut,
 		touch,
@@ -35,7 +38,8 @@
 		type Folder,
 		type PhoneApp,
 		type Src,
-		type Target
+		type Target,
+		type WidgetId
 	} from './home.ts';
 	import PhoneStatus from './PhoneStatus.svelte';
 	import PhoneIcon from './PhoneIcon.svelte';
@@ -55,7 +59,7 @@
 
 	// Tu orden: inicio y dock, con carpetas.
 	const ids = $derived(apps.map((a) => a.id));
-	let arr = $state<Arrangement>({ items: [], dock: [] });
+	let arr = $state<Arrangement>({ items: [], dock: [], widgets: [] });
 	$effect(() => {
 		let raw: string | null = null;
 		try {
@@ -82,25 +86,43 @@
 	let paths = $state<Record<string, string>>({});
 	let sheet = $state<null | 'notif' | 'control' | 'spot' | 'switch'>(null);
 
-	// Insignias: NOVEDADES desde la última vez que la abriste aquí.
-	let seen = $state<Record<string, number>>({});
+	// Insignias: lo no leído del centro de notificaciones de Arc OS (el mismo que el del escritorio), en la app a la
+	// que lleva cada aviso; y en Calendario, tus eventos de hoy.
+	$effect(() => startNotices());
+	const appIdOf = (href: string) => appOfPath(href.split(/[?#]/)[0])?.id;
+	let todayEvents = $state(0);
 	$effect(() => {
+		const day = isoDay(new Date(now));
 		try {
-			seen = readSeen(localStorage.getItem(BADGES_KEY));
+			const list: unknown = JSON.parse(localStorage.getItem(EVENTS_KEY) ?? '[]');
+			todayEvents = isEvents(list) ? list.filter((e) => e.date === day).length : 0;
 		} catch {}
-		loadBarData(['changes']);
 	});
-	const changes = $derived((barData.changes as ChangesData | null | undefined)?.items ?? []);
-	const badge = $derived(badges(changes, seen, now));
+	const badge: Record<string, number> = $derived({ ...badgesFor(shell.notices, shell.seen, appIdOf), ...(todayEvents ? { calendario: todayEvents } : {}) });
 	const folderBadge = (f: Folder) => f.apps.reduce((n, id) => n + (badge[id] ?? 0), 0);
 	const notice = $derived(os.notice && now - os.notice.at < 10 * 60_000 ? os.notice.text : null);
+	/** Lo que estaba sin leer al abrir las notificaciones (se marca leído al abrirlas, pero se distingue). */
+	let unreadAtOpen = $state(new Set<string>());
 
+	/** Al abrir una app, lo suyo del centro de notificaciones queda leído. */
 	function markSeen(id: string) {
-		seen = { ...seen, [id]: Date.now() };
+		const ids = noticesOf(shell.notices, id, appIdOf);
+		if (!ids.length || ids.every((x) => shell.seen.includes(x))) return;
+		shell.seen = seenWith(shell.seen, ids);
 		try {
-			localStorage.setItem(BADGES_KEY, JSON.stringify(seen));
+			localStorage.setItem('arc-os-seen', JSON.stringify(shell.seen));
 		} catch {}
 	}
+	$effect(() => {
+		if (sheet !== 'notif') return;
+		unreadAtOpen = new Set(shell.notices.filter((n) => !shell.seen.includes(n.id)).map((n) => n.id));
+		markAllSeen();
+	});
+
+	// Widgets: en el modo edición se quitan («−») o se añaden («+», arriba a la izquierda).
+	let picking = $state(false);
+	const addable = $derived(WIDGETS.filter((w) => addWidget(arr, w.id) !== arr));
+	const widgetName = (id: WidgetId) => WIDGETS.find((w) => w.id === id)?.name ?? id;
 
 	function launch(a: PhoneApp, path?: string) {
 		sheet = null;
@@ -329,7 +351,8 @@
 	<div class="top">
 		<PhoneStatus {time} onnotif={() => (sheet = 'notif')} oncontrol={() => (sheet = 'control')} />
 		{#if editing && current === null}
-			<button class="done" onclick={() => (editing = false)}>Listo</button>
+			<button class="add" onclick={() => (picking = true)} disabled={!addable.length} aria-label="Añadir un widget">+</button>
+			<button class="done" onclick={() => ((editing = false), (picking = false))}>Listo</button>
 		{/if}
 	</div>
 
@@ -355,7 +378,12 @@
 								{/if}
 							</div>
 						{:else}
-							<div class="cell w-{c.size}"><PhoneWidget id={c.id} {now} onopen={launchCode} /></div>
+							<div class="cell w-{c.size}">
+								<PhoneWidget id={c.id} {now} notices={shell.notices} onopen={launchCode} onpath={launchPath} />
+								{#if editing}
+									<button class="minus" onclick={() => save(removeWidget(arr, c.id))} aria-label="Quitar el widget {widgetName(c.id)}">−</button>
+								{/if}
+							</div>
 						{/if}
 					{/each}
 				</section>
@@ -447,6 +475,22 @@
 	/>
 {/if}
 
+{#if picking}
+	<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+	<div class="pick-scrim" onclick={() => (picking = false)}></div>
+	<div class="picker" role="dialog" aria-modal="true" aria-label="Añadir un widget">
+		<h2>Widgets</h2>
+		{#each addable as w (w.id)}
+			<button class="wrow" onclick={() => (save(addWidget(arr, w.id)), (picking = false))}>
+				<b>{w.name} <small>{w.size === 'l' ? 'grande' : 'pequeño'}</small></b>
+				<span>{w.desc}</span>
+			</button>
+		{:else}
+			<p>No cabe ninguno más: quita uno antes.</p>
+		{/each}
+	</div>
+{/if}
+
 {#if drag}
 	<div class="drag" style:left="{drag.x}px" style:top="{drag.y}px" aria-hidden="true">
 		{#if dragApp}
@@ -460,7 +504,7 @@
 {#if sheet === 'spot'}
 	<Spotlight {apps} {now} onapp={(a) => launch(a)} onpath={launchPath} onhit={runPhoneHit} onclose={() => (sheet = null)} />
 {:else if sheet === 'notif' || sheet === 'control'}
-	<CenterSheet kind={sheet} {changes} {notice} {now} onclose={() => (sheet = null)} onpath={launchPath} />
+	<CenterSheet kind={sheet} notices={shell.notices} unread={unreadAtOpen} {notice} {now} onclose={() => (sheet = null)} onpath={launchPath} />
 {/if}
 
 </div>
@@ -506,6 +550,101 @@
 		color: var(--fg);
 		font: var(--fw-bold) var(--fs-s) var(--os-phone-font);
 		cursor: pointer;
+	}
+	.add {
+		position: absolute;
+		left: var(--sp-12);
+		top: 50%;
+		transform: translateY(-50%);
+		width: var(--control-h);
+		height: var(--control-h);
+		padding: 0;
+		border: 0;
+		border-radius: var(--os-radius-l);
+		background: var(--raise);
+		box-shadow: inset 0 0 0 var(--hair) var(--line);
+		color: var(--fg);
+		font: var(--fw-bold) var(--fs-l) var(--os-phone-font);
+		cursor: pointer;
+	}
+	.add:disabled {
+		opacity: 0.4;
+	}
+	.editing:not(.in-app) .top :global(.t) {
+		visibility: hidden;
+	}
+	.w-l,
+	.w-s {
+		position: relative;
+	}
+	.minus {
+		position: absolute;
+		top: calc(-1 * var(--sp-6));
+		left: calc(-1 * var(--sp-6));
+		z-index: 1;
+		width: 24px;
+		height: 24px;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: var(--raise);
+		box-shadow: inset 0 0 0 var(--hair) var(--line);
+		color: var(--fg);
+		font: var(--fw-bold) var(--fs-m) / 24px var(--os-phone-font);
+		cursor: pointer;
+	}
+	.pick-scrim {
+		position: fixed;
+		inset: 0;
+		z-index: calc(var(--z-modal) + 2);
+		background: var(--os-glass-strong);
+	}
+	.picker {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: calc(var(--z-modal) + 3);
+		display: flex;
+		flex-direction: column;
+		gap: var(--hair);
+		max-height: 70dvh;
+		overflow-y: auto;
+		padding: var(--sp-16) var(--sp-16) calc(env(safe-area-inset-bottom, 0px) + var(--sp-16));
+		border-radius: var(--os-radius-xl) var(--os-radius-xl) 0 0;
+		background: var(--panel);
+		box-shadow: inset 0 var(--hair) 0 var(--cmd-cold-dim);
+		font-family: var(--os-phone-font);
+		color: var(--fg);
+	}
+	.picker h2 {
+		margin: 0 0 var(--sp-8);
+		font-size: var(--fs-l);
+	}
+	.picker p {
+		color: var(--muted);
+		font-size: var(--fs-s);
+	}
+	.wrow {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: var(--sp-2);
+		padding: var(--sp-12);
+		border: 0;
+		background: var(--raise);
+		color: var(--fg);
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+	.wrow small {
+		color: var(--muted);
+		font-weight: var(--fw-normal);
+	}
+	.wrow span {
+		color: var(--muted);
+		font-size: var(--fs-s);
 	}
 	.editing:not(.in-app) .top :global(.ic) {
 		visibility: hidden;

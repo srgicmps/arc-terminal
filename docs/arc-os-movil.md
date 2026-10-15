@@ -13,7 +13,7 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
   - [x] Inicio con rejilla 4×6, iconos squircle con nombre, páginas con puntos y «Buscar»
   - [x] Widgets entre iconos («Hoy», «Mundo», «Mercados») con las respuestas de la barra
   - [x] Dock de 4 (TOP, IMP, WS, Terminal)
-  - [x] Insignias (`badges()` de `home.ts`, clave `arc-os-badges`; de momento solo NOVEDADES)
+  - [x] Insignias (ver abajo: ya salen del centro de notificaciones)
   - [x] Apps a pantalla completa (iframe `?embed=1`; herramientas con su componente) y barra de inicio
   - [x] Multitarea en tarjetas (apps vivas, hasta 4; mantener la barra o deslizar largo)
   - [x] Notificaciones (arriba izquierda) y centro de control (arriba derecha)
@@ -32,5 +32,8 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
   las acciones se hacen en el teléfono (`runPhoneHit` de `MobileHome`), no en ventanas.
 - [ ] Pantalla de bloqueo/arranque de OS 5 en el móvil (le pedí aspecto de teléfono, por encima de `--z-modal`+4).
 - [ ] Apps de OS 4 (Calculadora, Reloj, Notas, Monitor, Calendario, Ajustes, Archivos) a pantalla completa: comprobar a 390 px.
-- [ ] Más insignias (AVISOS, CAL de hoy…) y widgets editables.
+- [x] Insignias del centro de notificaciones de Arc OS (`shell.notices`, lo mismo que en el escritorio): cada aviso o
+  novedad sin leer cuenta en la app de su enlace y todos los avisos en AVISOS; Calendario, tus eventos de hoy.
+- [x] Widgets elegibles: en el modo edición, «−» quita y «+» añade (Hoy, Mundo, Mercados, Avisos, Cripto, Bonos, Macro y
+  Gasolina; hasta 16 casillas). Se guardan en `arc-os-phone`.
 - [ ] Probar en un iPhone de verdad (safe-area, PWA instalada, gestos frente al «atrás» del navegador).
