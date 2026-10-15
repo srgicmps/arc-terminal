@@ -139,4 +139,12 @@ describe('estéticas', () => {
 				expect(doc, n).toContain(`\`${n}\``);
 			}
 	});
+
+	it('el acento de «A tu gusto» no se aplica justo en las estéticas con color fijo (ajustes.css = registro)', () => {
+		const css = readFileSync('src/styles/ajustes.css', 'utf8');
+		const fixed = ESTILOS.filter((e) => e.fixedAccent).map((e) => e.id).sort();
+		const blocks = [...css.matchAll(/:root(?:\[data-theme='light'\])?\[data-accent='\w+'\]:not\(([^)]*)\)/g)];
+		expect(blocks.length).toBe(6);
+		for (const b of blocks) expect([...b[1].matchAll(/data-style='(\w+)'/g)].map((m) => m[1]).sort()).toEqual(fixed);
+	});
 });
