@@ -20,8 +20,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
   # NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
   pull-requests: read
   # Órdenes de la barra (scripts/requests.ts): leer y cerrar los issues [alerta]/[mis]/[vigila].
@@ -118,23 +116,8 @@ jobs:
 
       - run: pnpm build --logLevel warn
 
+      # Publica en Cloudflare Pages (web privada, Cloudflare Access delante), como deploy.yml.
       - if: github.event_name != 'pull_request'
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: build
-
-      # Cloudflare Pages (web privada, Cloudflare Access delante): la misma web, construida en la raíz.
-      # Convive con GitHub Pages: si falla, no frena la publicación. Sin los Secrets, se salta. La primera vez
-      # crea el proyecto «arc-terminal» (si ya existe, el aviso de error se ignora).
-      - if: github.event_name != 'pull_request'
-        id: cf
-        run: echo "on=${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}" >> "$GITHUB_OUTPUT"
-      - if: steps.cf.outputs.on == 'true'
-        id: cfbuild
-        run: BASE_PATH= pnpm build --logLevel warn
-        continue-on-error: true
-      - if: steps.cfbuild.outcome == 'success'
-        continue-on-error: true
         run: |
           node scripts/cf-config.ts
           npx --yes wrangler@4.145.0 pages project create arc-terminal --production-branch=main || true
@@ -148,14 +131,3 @@ jobs:
           D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}
           ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
           ACCESS_AUD: ${{ vars.ACCESS_AUD }}
-
-  deploy:
-    if: github.event_name != 'pull_request'
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
