@@ -166,3 +166,55 @@ export function leaderEntries(): Option[] {
 		run: `LIDER ${l.id}`
 	}));
 }
+
+// ---- Filtros de NEWS escritos en la búsqueda: «inflación /eco /7d» ----
+
+/** Lo buscado en NEWS, separado en texto, sección y antigüedad máxima. */
+export interface NewsQuery {
+	text: string;
+	/** Clave de la sección («eco»), o null si no se filtra. */
+	section: string | null;
+	/** Horas hacia atrás, o null si no se filtra. */
+	hours: number | null;
+}
+
+/** «/24h», «/7d», «/2s» (semanas), «/3m» (meses). */
+const HOURS_PER: Record<string, number> = { h: 1, d: 24, s: 24 * 7, m: 24 * 30 };
+
+/**
+ * Separa los filtros del texto: «/eco» o «/economia» (clave o principio del nombre de la sección) y
+ * «/7d» (antigüedad). Un «/algo» que no es ningún filtro se queda en el texto. Si hay dos, gana el último.
+ */
+export function parseNewsQuery(raw: string, sections: readonly { key: string; label: string }[]): NewsQuery {
+	const out: NewsQuery = { text: '', section: null, hours: null };
+	const rest: string[] = [];
+	for (const token of raw.split(/\s+/).filter(Boolean)) {
+		const age = /^\/(\d{1,3})([hdsm])$/i.exec(token);
+		const name = fold(token.slice(1));
+		const section =
+			token.startsWith('/') && name
+				? (sections.find((s) => s.key === name) ?? (name.length >= 3 ? sections.find((s) => fold(s.label).startsWith(name)) : undefined))
+				: undefined;
+		if (age && Number(age[1]) > 0) out.hours = Number(age[1]) * HOURS_PER[age[2].toLowerCase()];
+		else if (section) out.section = section.key;
+		else rest.push(token);
+	}
+	out.text = rest.join(' ');
+	return out;
+}
+
+/** ¿Es de las últimas `hours` horas? Sin filtro, todo vale; sin fecha, no. */
+export function withinHours(time: string | null | undefined, hours: number | null, now = Date.now()): boolean {
+	if (hours === null) return true;
+	const t = time ? Date.parse(time) : NaN;
+	return Number.isFinite(t) && now - t <= hours * 3_600_000;
+}
+
+/** Quita de lo buscado el filtro de sección («inflación /eco» → «inflación»), al elegir otra a mano. */
+export function dropSectionFilter(raw: string, sections: readonly { key: string; label: string }[]): string {
+	return raw
+		.split(/\s+/)
+		.filter((t) => !t || !t.startsWith('/') || parseNewsQuery(t, sections).section === null)
+		.join(' ')
+		.trim();
+}

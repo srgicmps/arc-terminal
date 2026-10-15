@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { canonical, resolveInput, suggest, targetPath, type Option } from './cmdline.ts';
-import { countryEntries, hasWords, leaderEntries, prepare, queryWords, searchIndex, searchOptions, symbolOf } from './search.ts';
+import { NEWS_SECTIONS } from './news.ts';
+import {
+	countryEntries,
+	dropSectionFilter,
+	hasWords,
+	leaderEntries,
+	parseNewsQuery,
+	prepare,
+	queryWords,
+	searchIndex,
+	searchOptions,
+	symbolOf,
+	withinHours
+} from './search.ts';
 import type { SearchEntry } from './types.ts';
 
 const entry = (t: string, s: SearchEntry['s'] = 'NEWS', u = `https://a.example/${encodeURIComponent(t)}`): SearchEntry => ({ t, u, s });
@@ -158,5 +171,32 @@ describe('queryWords y hasWords', () => {
 		expect(hasWords('Ayudas a la vivienda en Menorca', queryWords('menorca vivienda'))).toBe(true);
 		expect(hasWords('Ayudas a la vivienda', queryWords('vivienda menorca'))).toBe(false);
 		expect(hasWords('Cualquier cosa', [])).toBe(true);
+	});
+});
+
+describe('filtros de NEWS', () => {
+	const parse = (q: string) => parseNewsQuery(q, NEWS_SECTIONS);
+
+	it('separa sección y antigüedad del texto', () => {
+		expect(parse('inflación /eco /7d')).toEqual({ text: 'inflación', section: 'eco', hours: 168 });
+		expect(parse('/24h Lagarde')).toEqual({ text: 'Lagarde', section: null, hours: 24 });
+		expect(parse('chips /2s /tecnología')).toEqual({ text: 'chips', section: 'tech', hours: 336 });
+		expect(parse('/3m /merc')).toEqual({ text: '', section: 'ws', hours: 2160 });
+	});
+
+	it('un «/algo» que no es filtro se queda en el texto', () => {
+		expect(parse('24/7 /xyz /0d')).toEqual({ text: '24/7 /xyz /0d', section: null, hours: null });
+	});
+
+	it('withinHours filtra por fecha; sin filtro todo vale', () => {
+		const now = Date.parse('2026-10-15T12:00:00Z');
+		expect(withinHours('2026-10-15T01:00Z', 24, now)).toBe(true);
+		expect(withinHours('2026-10-13T01:00Z', 24, now)).toBe(false);
+		expect(withinHours(undefined, 24, now)).toBe(false);
+		expect(withinHours(undefined, null, now)).toBe(true);
+	});
+
+	it('dropSectionFilter quita solo la sección', () => {
+		expect(dropSectionFilter('inflación /eco /7d', NEWS_SECTIONS)).toBe('inflación /7d');
 	});
 });
