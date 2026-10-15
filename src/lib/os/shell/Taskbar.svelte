@@ -5,6 +5,8 @@
 -->
 <script lang="ts">
 	import Logo from '#lib/components/Logo.svelte';
+	import ContextMenu, { type MenuEntry } from '#lib/components/os/ContextMenu.svelte';
+	import { appMenu, winMenu } from './menus.ts';
 	import { cloud } from '#lib/cloud.svelte.ts';
 	import NoticeCenter from './NoticeCenter.svelte';
 	import { shell, toggle } from './shell.svelte.ts';
@@ -30,6 +32,9 @@
 	// Ancladas sin ventana abierta (las abiertas ya salen como ventana).
 	const pinnedIdle = $derived(shell.pinned.filter((id) => byId.has(id) && !windows.some((w) => w.appId === id)).map((id) => byId.get(id)!));
 	const short = (s: string) => s.slice(0, 2);
+
+	let menu = $state<{ x: number; y: number; items: MenuEntry[] } | null>(null);
+	const ctx = (e: MouseEvent, items: MenuEntry[]) => (e.preventDefault(), (menu = { x: e.clientX, y: e.clientY, items }));
 </script>
 
 <nav class="taskbar" class:top={shell.bar === 'top'} aria-label="Barra de tareas">
@@ -42,7 +47,7 @@
 
 	<ul class="tasks">
 		{#each pinnedIdle as a (a.id)}
-			<li><button type="button" class="task idle" title={a.title} aria-label={`Abrir ${a.title}`} onclick={() => onopen(a.id)}><span class="ico">{a.icon ?? short(a.code ?? a.title)}</span></button></li>
+			<li><button type="button" class="task idle" title={a.title} aria-label={`Abrir ${a.title}`} onclick={() => onopen(a.id)} oncontextmenu={(e) => ctx(e, appMenu(a.id))}><span class="ico">{a.icon ?? short(a.code ?? a.title)}</span></button></li>
 		{/each}
 		{#each windows as w (w.id)}
 			<li>
@@ -54,6 +59,7 @@
 					aria-pressed={w.focused}
 					title={`${w.title}${w.minimized ? ' (minimizada)' : ''}`}
 					onclick={() => onactivate(w.id)}
+					oncontextmenu={(e) => ctx(e, winMenu(w))}
 				>
 					<span class="ico">{w.icon ?? byId.get(w.appId)?.icon ?? short(w.title)}</span>
 					<span class="label">{w.title}</span>
@@ -84,6 +90,7 @@
 		<span class="user mut" title={cloud.user || 'Sin cuenta (solo en este navegador)'}>{cloud.user ? cloud.user.slice(0, 1).toUpperCase() : '·'}</span>
 	</div>
 </nav>
+{#if menu}<ContextMenu x={menu.x} y={menu.y} items={menu.items} label="Menú de la ventana" onclose={() => (menu = null)} />{/if}
 
 <style>
 	/* Botones de la shell sin el borde ni el fondo que algunas estéticas dan a todos los botones. */

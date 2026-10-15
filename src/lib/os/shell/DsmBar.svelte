@@ -5,12 +5,15 @@
 -->
 <script lang="ts">
 	import { cloud } from '#lib/cloud.svelte.ts';
+	import ContextMenu, { type MenuEntry } from '#lib/components/os/ContextMenu.svelte';
 	import * as os from './bridge.ts';
+	import { winMenu } from './menus.ts';
 	import NoticeCenter from './NoticeCenter.svelte';
 	import { shell, toggle } from './shell.svelte.ts';
 	import TrayClock from './TrayClock.svelte';
 
 	const wins = $derived(os.windows());
+	let menu = $state<{ x: number; y: number; items: MenuEntry[] } | null>(null);
 </script>
 
 <nav class="dsm" aria-label="Barra principal">
@@ -23,7 +26,7 @@
 	<ul class="tabs" aria-label="Apps abiertas">
 		{#each wins as w (w.id)}
 			<li>
-				<button type="button" class:on={w.focused} class:min={w.minimized} aria-pressed={w.focused} title={w.title} onclick={() => os.activate(w.id)}>
+				<button type="button" class:on={w.focused} class:min={w.minimized} aria-pressed={w.focused} title={w.title} onclick={() => os.activate(w.id)} oncontextmenu={(e) => (e.preventDefault(), (menu = { x: e.clientX, y: e.clientY, items: winMenu(w) }))}>
 					<span class="ico" aria-hidden="true">{w.icon ?? '·'}</span><span class="t">{w.title}</span>
 				</button>
 			</li>
@@ -39,6 +42,7 @@
 		<span class="user" title={cloud.user || 'Sin cuenta (solo en este navegador)'}>{cloud.user ? cloud.user.slice(0, 1).toUpperCase() : '·'}</span>
 	</div>
 </nav>
+{#if menu}<ContextMenu x={menu.x} y={menu.y} items={menu.items} label="Menú de la ventana" onclose={() => (menu = null)} />{/if}
 
 <style>
 	button {

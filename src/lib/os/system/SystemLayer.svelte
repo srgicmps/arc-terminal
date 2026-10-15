@@ -8,11 +8,20 @@
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import Boot from './Boot.svelte';
 	import Lock from './Lock.svelte';
+	import { shell } from '../shell/shell.svelte.ts';
 	import Switcher from './Switcher.svelte';
 	import { cancel, commit, sw } from './switcher.svelte.ts';
-	import { bootDone, lock, startSystem, sys, unlock } from './system.svelte.ts';
+	import { bootDone, lock, sound, startSystem, sys, unlock } from './system.svelte.ts';
 
 	onMount(() => startSystem());
+
+	// Un aviso nuevo (toast de la shell) suena, si los sonidos están encendidos.
+	let toasts = 0;
+	$effect(() => {
+		const n = shell.toasts.length;
+		if (n > toasts) sound('notify');
+		toasts = n;
+	});
 
 	function key(e: KeyboardEvent) {
 		if (sw.open && e.key === 'Escape') return (e.preventDefault(), cancel());

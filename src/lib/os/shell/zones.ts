@@ -44,3 +44,11 @@ export function offsetFrom(tz: string, base: string, now: number): string {
 export function openMarkets(now: number, zones = ZONES): number {
 	return zones.filter((z) => z.market && marketStatus(z.market, now).isOpen).length;
 }
+
+/**
+ * La zona del reloj de la bandeja: la del navegador; si el navegador no da una de verdad (UTC, Etc/…, como en
+ * algunos equipos y en las pruebas), la de Madrid, que es la de Arc.
+ */
+export function localZone(tz = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : ''): string {
+	return !tz || tz === 'UTC' || tz.startsWith('Etc/') ? 'Europe/Madrid' : tz;
+}

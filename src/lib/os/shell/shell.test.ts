@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildNotices, markSeen, toastsFor, unread } from './notices.ts';
 import { byCategory, categoryOf, parseIds, pushRecent, searchApps, togglePin } from './start.ts';
 import { addWidget, defaultWidgets, nudge, parseWidgets, removeWidget, snap, statusSummary } from './widgets.ts';
-import { offsetFrom, openMarkets, timeIn } from './zones.ts';
+import { localZone, offsetFrom, openMarkets, timeIn } from './zones.ts';
 
 const wall = {
 	headlines: [],
@@ -84,6 +84,11 @@ describe('reloj', () => {
 		expect(offsetFrom('Asia/Kolkata', 'Europe/Madrid', now)).toBe('+3,5');
 		expect(offsetFrom('Europe/Madrid', 'Europe/Madrid', now)).toBe('0');
 	});
+	it('sin zona de verdad en el navegador, la de Madrid', () => {
+		expect(localZone('UTC')).toBe('Europe/Madrid');
+		expect(localZone('Etc/GMT')).toBe('Europe/Madrid');
+		expect(localZone('America/Bogota')).toBe('America/Bogota');
+	});
 	it('cuenta las bolsas abiertas', () => {
 		// Jueves a las 14:00 de Madrid: abiertas Londres, Madrid y Fráncfort (Bombay cerró a las 12:00).
 		expect(openMarkets(now)).toBe(3);
@@ -123,5 +128,39 @@ describe('aspectos', () => {
 	it('Ctrl+Espacio abre el buscador', () => {
 		expect(isSpotlightKey({ code: 'Space', ctrlKey: true, metaKey: false, altKey: false })).toBe(true);
 		expect(isSpotlightKey({ code: 'Space', ctrlKey: false, metaKey: false, altKey: false })).toBe(false);
+	});
+});
+
+import { arrange, cellToPx, inRect, moveGroup, nearestFree, parseSpots, pxToCell, rectOf } from './icons.ts';
+
+describe('iconos del escritorio', () => {
+	const size = { w: 100, h: 100 };
+	it('colocan los nuevos en la primera casilla libre, columna a columna', () => {
+		expect(arrange(['a', 'b', 'c'], { b: { col: 0, row: 0 } }, 3, 2)).toEqual({ b: { col: 0, row: 0 }, a: { col: 0, row: 1 }, c: { col: 1, row: 0 } });
+	});
+	it('caen en la casilla libre más cercana', () => {
+		const spots = { a: { col: 0, row: 0 }, b: { col: 1, row: 0 } };
+		// «a» se está moviendo: su casilla cuenta como libre y es la más cercana.
+		expect(nearestFree({ col: 1, row: 0 }, spots, ['a'], 3, 3)).toEqual({ col: 0, row: 0 });
+		expect(nearestFree({ col: 1, row: 0 }, spots, [], 3, 3)).toEqual({ col: 1, row: 1 });
+		expect(nearestFree({ col: 2, row: 2 }, spots, [], 3, 3)).toEqual({ col: 2, row: 2 });
+	});
+	it('se mueven en grupo sin pisarse', () => {
+		const spots = { a: { col: 0, row: 0 }, b: { col: 0, row: 1 }, c: { col: 1, row: 0 } };
+		const out = moveGroup(spots, ['a', 'b'], { col: 0, row: 0 }, { col: 1, row: 0 }, 3, 3);
+		expect(out.c).toEqual({ col: 1, row: 0 });
+		expect(out.b).toEqual({ col: 1, row: 1 });
+		expect(out.a).not.toEqual(out.c);
+	});
+	it('px ↔ casilla y selección rectangular', () => {
+		expect(pxToCell(220, 115, size, 5, 5)).toEqual({ col: 2, row: 1 });
+		expect(pxToCell(9999, -50, size, 5, 5)).toEqual({ col: 4, row: 0 });
+		expect(cellToPx({ col: 1, row: 1 }, size)).toEqual({ x: 112, y: 112 });
+		const spots = { a: { col: 0, row: 0 }, b: { col: 1, row: 1 }, c: { col: 3, row: 3 } };
+		expect(inRect(rectOf({ x: 150, y: 150 }, { x: 0, y: 0 }), spots, size).sort()).toEqual(['a', 'b']);
+	});
+	it('lo guardado se valida', () => {
+		expect(parseSpots('{"a":{"col":1,"row":2},"b":{"col":-1,"row":0},"c":"x"}')).toEqual({ a: { col: 1, row: 2 } });
+		expect(parseSpots('nada')).toEqual({});
 	});
 });

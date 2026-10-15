@@ -2,7 +2,7 @@
 // ventanas y escritorios a la forma mínima de types.ts, y las acciones de la shell a las suyas. Son funciones
 // que leen estado reactivo: dentro de un $derived o de la plantilla se actualizan solas.
 import { leaveOS } from '../mode.svelte.ts';
-import { APPS, appOf, close, desk, focus, focusedWin, goDesk, maximize, minimize, newDesk, openApp, openPath, os } from '../os.svelte.ts';
+import { APPS, appOf, close, desk, focus, focusedWin, goDesk, maximize, minimize, newDesk, openApp, openPath, os, tile } from '../os.svelte.ts';
 import { opened } from './shell.svelte.ts';
 import type { StartApp } from './start.ts';
 import type { DeskInfo, TaskWin } from './types.ts';
@@ -28,6 +28,11 @@ export const deskW = () => os.area.w;
 export function open(id: string) {
 	if (openApp(id)) opened(id);
 }
+/** Otra ventana de la misma app, aunque ya haya una. */
+export function openFresh(id: string) {
+	if (openApp(id, undefined, true)) opened(id);
+}
+export const tileWins = () => void tile();
 /** Tocar la ventana que está delante la minimiza; cualquier otra, la trae al frente (y la restaura). */
 export function activate(uid: string) {
 	const f = focusedWin();
