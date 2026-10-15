@@ -12,6 +12,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { cellText, csvName, toCsv } from '#lib/csv.ts';
+	import { edgeFade } from '#lib/edgefade.ts';
 
 	interface Props {
 		/** Alto máximo (p. ej. «420px»): a partir de ahí, la tabla se desplaza en vertical. */
@@ -54,6 +55,7 @@
 	}
 </script>
 
+<!-- Si es más ancha que el panel (móvil), un fundido leve en el lado por el que sigue: use:edgeFade. -->
 <div class="wrap" data-ui="table">
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex (solo cuando se desplaza: así se mueve con las flechas) -->
 	<div
@@ -64,6 +66,7 @@
 		tabindex={scrolls ? 0 : undefined}
 		role={scrolls ? 'region' : undefined}
 		aria-label={scrolls ? name : undefined}
+		use:edgeFade
 	>
 		<table class="t" bind:this={table}>
 			{@render children()}
