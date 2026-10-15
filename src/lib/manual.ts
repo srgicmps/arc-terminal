@@ -13,6 +13,7 @@ import {
 	QUAKE,
 	QUOTAS,
 	RATES,
+	SESSIONS,
 	STOCKS,
 	STRAITS,
 	SUMMARIES,
@@ -139,7 +140,8 @@ const LEVEL_WHAT: Record<Level, string[]> = {
 		`Lanzamientos espaciales destacados, ${LAUNCHES.fromMin}–${LAUNCHES.toMin} minutos antes.`
 	],
 	4: [
-		`Resumen de la mañana (desde las ${SUMMARIES.morning.from}) y de la noche (desde las ${SUMMARIES.evening.from}).`,
+		`Resumen de la mañana (desde las ${SUMMARIES.morning.from}) y de la noche, con el cierre de Wall Street (desde las ${SUMMARIES.evening.from}).`,
+		`Bolsas, de lunes a viernes y a la hora local de cada plaza: ${SESSIONS.map((s) => s.title.toLowerCase()).join(', ')}.`,
 		`SEMANA: los domingos a las ${SUMMARIES.week.from}, los ${WEEK.top} temas de más peso de IMP.`
 	]
 };
@@ -209,6 +211,10 @@ export const FAQ: Faq[] = [
 	{
 		q: '¿Cómo comparto una vista?',
 		a: '«compartir WS» copia el enlace de esa vista (en el móvil abre el menú de compartir); «compartir» solo, el de la vista abierta. También vale con un valor: «compartir NVDA».'
+	},
+	{
+		q: '¿Puedo crear alertas o cambiar MIS desde la barra?',
+		a: '«alerta NVDA > 150», «alerta BTC -5%» o «alerta diésel < 1,40» avisan al móvil cuando se cumplen, una sola vez. «+NVDA» y «-AAPL» añaden o quitan de MIS, y «vigila aranceles» añade una palabra vigilada. Como la web no tiene servidor, la barra abre un issue de GitHub ya escrito: pulsa «Submit» y la Action lo aplica en la pasada siguiente. Ojo: el repo es público y esos issues se ven. «alertas» abre las tuyas; para borrar una, cierra su issue.'
 	},
 	{
 		q: '¿Usa inteligencia artificial?',

@@ -389,5 +389,24 @@ export const SUMMARIES = {
 	week: { from: '19:00', until: '23:59' }
 };
 
+/**
+ * Resúmenes de las bolsas (P4), en la hora local de cada plaza: así se ajustan solos a los cambios de hora
+ * de Madrid, Nueva York y Tokio, que no van a la vez. Solo de lunes a viernes (día local de la plaza).
+ * - `from`/`until`: ventana en la que sale (si una pasada se retrasa, sale igual mientras tenga sentido).
+ */
+export const SESSIONS = [
+	{ key: 'tokyo-open', title: 'Tokio abre', zone: 'Asia/Tokyo', from: '09:00', until: '10:59' },
+	{ key: 'tokyo-close', title: 'Tokio cierra', zone: 'Asia/Tokyo', from: '15:30', until: '17:29' },
+	{ key: 'europe-open', title: 'Europa abre', zone: 'Europe/Madrid', from: '09:05', until: '10:59' },
+	{ key: 'midday', title: 'Mediodía', zone: 'Europe/Madrid', from: '13:30', until: '14:29' },
+	{ key: 'wall-open', title: 'Wall Street abre', zone: 'America/New_York', from: '09:35', until: '11:29' },
+	{ key: 'europe-close', title: 'Europa cierra', zone: 'Europe/Madrid', from: '17:40', until: '19:29' }
+] as const;
+
+export type SessionKey = (typeof SESSIONS)[number]['key'];
+
+/** Valores seguidos que más se mueven: cuántos salen en los resúmenes de Wall Street. */
+export const MOVERS = 3;
+
 /** SEMANA: cuántos temas de IMP (los de más puntuación de los últimos 7 días). */
 export const WEEK = { top: 5 };
