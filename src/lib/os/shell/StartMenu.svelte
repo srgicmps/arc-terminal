@@ -5,15 +5,15 @@
 -->
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { leave as onleave } from './bridge.ts';
 	import { opened, pin, shell } from './shell.svelte.ts';
 	import { byCategory, searchApps, type StartApp } from './start.ts';
 
 	interface Props {
 		apps: StartApp[];
 		onopen: (id: string) => void;
-		onleave: () => void;
 	}
-	let { apps, onopen, onleave }: Props = $props();
+	let { apps, onopen }: Props = $props();
 
 	let query = $state('');
 	let input = $state<HTMLInputElement>();

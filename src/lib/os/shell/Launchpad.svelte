@@ -1,0 +1,131 @@
+<!--
+	Launchpad (aspecto Mac) y «Mostrar aplicaciones» (Linux): todas las apps en una rejilla grande a pantalla
+	completa, por categorías, con buscador. Tocar una la abre; Escape o tocar el fondo, cierra.
+-->
+<script lang="ts">
+	import { tick } from 'svelte';
+	import * as os from './bridge.ts';
+	import { shell } from './shell.svelte.ts';
+	import { byCategory, searchApps } from './start.ts';
+
+	let query = $state('');
+	let input = $state<HTMLInputElement>();
+	const groups = $derived(query.trim() ? [{ category: 'Resultados', apps: searchApps(os.apps, query) }] : byCategory(os.apps));
+
+	$effect(() => {
+		tick().then(() => input?.focus());
+	});
+
+	function go(id: string) {
+		shell.open = null;
+		os.open(id);
+	}
+	function key(e: KeyboardEvent) {
+		if (e.key === 'Escape') shell.open = null;
+		if (e.key === 'Enter' && query.trim() && groups[0]?.apps[0]) go(groups[0].apps[0].id);
+	}
+</script>
+
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+<div class="pad" role="dialog" aria-label="Todas las apps" tabindex="-1" onkeydown={key} onclick={(e) => e.target === e.currentTarget && (shell.open = null)}>
+	<input bind:this={input} bind:value={query} type="search" placeholder="Buscar" aria-label="Buscar apps" />
+	<div class="scroll">
+		{#each groups as g (g.category)}
+			<h3>{g.category}</h3>
+			<ul>
+				{#each g.apps as a (a.id)}
+					<li>
+						<button type="button" onclick={() => go(a.id)} title={a.desc}>
+							<span class="ico" aria-hidden="true">{a.icon ?? '·'}</span>
+							<span class="name">{a.title}</span>
+						</button>
+					</li>
+				{/each}
+			</ul>
+		{/each}
+	</div>
+</div>
+
+<style>
+	button {
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
+	.pad {
+		position: fixed;
+		inset: 0;
+		z-index: var(--z-modal);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: var(--sp-24) var(--sp-24) 0;
+		background: var(--os-veil);
+		backdrop-filter: var(--os-blur);
+	}
+	input {
+		width: min(280px, 80vw);
+		height: var(--control-h);
+		padding: 0 var(--sp-12);
+		border: var(--hair) solid var(--panel-edge);
+		border-radius: var(--os-menu-radius, var(--radius));
+		background: var(--panel);
+		color: var(--fg);
+		font: inherit;
+		text-align: center;
+	}
+	.scroll {
+		width: min(1100px, 100%);
+		overflow: auto;
+		padding-bottom: var(--sp-24);
+	}
+	h3 {
+		margin: var(--sp-20) 0 var(--sp-8);
+		color: var(--fg);
+		font-size: var(--fs-xs);
+		font-weight: var(--fw-medium);
+		letter-spacing: var(--track-caps);
+		text-transform: uppercase;
+		opacity: 0.7;
+	}
+	ul {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+		gap: var(--sp-12);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	li button {
+		display: grid;
+		justify-items: center;
+		gap: var(--sp-6);
+		width: 100%;
+		padding: var(--sp-8) var(--sp-4);
+		border-radius: var(--radius);
+	}
+	li button:hover,
+	li button:focus-visible {
+		background: var(--amber-soft);
+	}
+	.ico {
+		display: grid;
+		place-items: center;
+		width: 56px;
+		height: 56px;
+		border-radius: var(--os-icon-radius, var(--radius));
+		background: var(--panel);
+		box-shadow: var(--shadow);
+		color: var(--amber);
+		font-size: var(--fs-xl);
+	}
+	.name {
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: var(--fs-s);
+	}
+</style>
