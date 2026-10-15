@@ -12,7 +12,7 @@
 	import { routeHref } from '#lib/routes.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import { COMMANDS } from '#lib/commands.ts';
-	import { pushState } from '$app/navigation';
+	import { pushState, replaceState } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { page as nav } from '$app/state';
 	import { markAllSeen, shell, startNotices } from '../shell/shell.svelte.ts';
@@ -33,6 +33,8 @@
 		folderName,
 		gesture,
 		keyboardFit,
+		readSession,
+		SESSION_KEY,
 		layout,
 		place,
 		rename,
@@ -144,6 +146,38 @@
 	}
 	/** Rutas sin app (la ficha de un valor, MODO…): se abren con una app de paso (webApp) mientras siguen abiertas. */
 	let extra = $state<Record<string, PhoneApp>>({});
+	// Tras recargar, siguen las apps abiertas y la de delante (sessionStorage de esta pestaña, como arc-os-desks en
+	// el escritorio).
+	let restored = false;
+	$effect(() =>
+		untrack(() => {
+			let raw: string | null = null;
+			try {
+				raw = sessionStorage.getItem(SESSION_KEY);
+			} catch {}
+			const s = readSession(raw, (id) => !!(findApp(id) ?? apps.find((a) => a.id === id)));
+			extra = Object.fromEntries(s.open.filter((id) => id.startsWith('web:')).map((id) => [id, webApp(id.slice(4), s.names[id])]));
+			paths = s.paths;
+			open = s.open;
+			restored = true;
+			// Si había algo abierto, la entrada del historial en la que estamos es la suya, pero page.state no sobrevive a
+			// la recarga: se le vuelve a poner (replaceState, ya con el enrutador de SvelteKit en marcha). Así «atrás»
+			// cierra la app de delante y no se apila otra entrada en cada recarga.
+			if (s.entry)
+				setTimeout(() => {
+					replaceState('', { phone: 'app' });
+					pushed = true;
+					current = s.current;
+				});
+		})
+	);
+	$effect(() => {
+		const data = JSON.stringify({ open, current, paths, names: Object.fromEntries(Object.values(extra).map((w) => [w.id, w.name])), entry: layer !== null });
+		if (!restored) return;
+		try {
+			sessionStorage.setItem(SESSION_KEY, data);
+		} catch {}
+	});
 	/** Una ruta de la web («/news?q=x»): la abre su app, con esa ruta; si no tiene, una app de paso. */
 	function launchPath(path: string, name?: string) {
 		const clean = base && path.startsWith(base) ? path.slice(base.length) || '/' : path;

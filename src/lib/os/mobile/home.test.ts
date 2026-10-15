@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { APPS } from '../apps.ts';
-import { addWidget, arrange, badgesFor, badgeText, CELLS, dockApps, drop, folderName, gesture, keyboardFit, layout, webApp, noticesOf, place, removeWidget, rename, takeOut, touch, used } from './home.ts';
+import { addWidget, arrange, badgesFor, badgeText, CELLS, dockApps, drop, folderName, gesture, keyboardFit, layout, readSession, webApp, noticesOf, place, removeWidget, rename, takeOut, touch, used } from './home.ts';
 
 describe('Modo OS en el móvil', () => {
 	it('dock de 4 con la Terminal y sin repetir en las páginas', () => {
@@ -52,6 +52,13 @@ describe('Modo OS en el móvil', () => {
 		expect(keyboardFit({ height: 500, offsetTop: 40, scale: 1 }, 844)).toEqual({ top: 40, h: 500 });
 		expect(keyboardFit({ height: 800, offsetTop: 0, scale: 1 }, 844)).toBeNull();
 		expect(keyboardFit({ height: 400, offsetTop: 0, scale: 2 }, 844)).toBeNull();
+	});
+	it('apps abiertas tras recargar: solo las que existen, sin rutas raras', () => {
+		const known = (id: string) => ['imp', 'eco'].includes(id);
+		const raw = JSON.stringify({ open: ['imp', 'nada', 'web:/s?sym=NVDA', 'imp', 'eco'], current: 'eco', paths: { imp: '/imp?p=semana', eco: 'javascript:x' }, names: { 'web:/s?sym=NVDA': 'NVIDIA' } });
+		expect(readSession(raw, known)).toEqual({ open: ['imp', 'web:/s?sym=NVDA', 'eco'], current: 'eco', paths: { imp: '/imp?p=semana' }, names: { 'web:/s?sym=NVDA': 'NVIDIA' }, entry: false });
+		expect(readSession('{', known)).toMatchObject({ open: [], current: null });
+		expect(readSession(JSON.stringify({ open: ['imp'], current: 'nada' }), known).current).toBeNull();
 	});
 	it('gestos', () => {
 		const size = { w: 390, h: 844 };
