@@ -413,7 +413,6 @@
 	--os-glass: color-mix(in srgb, var(--cmd-deck) 88%, transparent);
 	--os-glass-blur: blur(14px);
 	--os-glass-strong: color-mix(in srgb, var(--cmd-slate) 94%, transparent);
-	--os-icon-radius: 4px;
 	--os-icon-bg: linear-gradient(180deg, var(--raise), var(--cmd-deck));
 	--os-icon-edge: var(--cmd-cold-dim);
 	--os-icon-fg: var(--cmd-cold);

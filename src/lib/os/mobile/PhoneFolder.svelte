@@ -42,7 +42,7 @@
 	{:else}
 		<h2 class="title">{folder.name}</h2>
 	{/if}
-	<div class="grid">
+	<div class="fgrid">
 		{#each apps as a, i (a.id)}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
@@ -100,7 +100,7 @@
 	input.title:focus-visible {
 		box-shadow: inset 0 0 0 var(--hair) var(--amber);
 	}
-	.grid {
+	.fgrid {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
 		gap: var(--sp-16) var(--sp-8);

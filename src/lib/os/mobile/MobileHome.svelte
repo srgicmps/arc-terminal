@@ -50,6 +50,7 @@
 	import Spotlight from './Spotlight.svelte';
 	import CenterSheet from './CenterSheet.svelte';
 	import WallLayer from '../system/wall/WallLayer.svelte';
+	import OsIcon from '../icons/OsIcon.svelte';
 	import type { Hit } from '../system/search.ts';
 	import { lock } from '../system/system.svelte.ts';
 	import { leaveOS } from '../mode.svelte.ts';
@@ -456,7 +457,7 @@
 					<div class="slot" class:front={current === id} hidden={sheet !== 'switch' && current !== id}>
 						{#if sheet === 'switch'}
 							<div class="card-head">
-								<span>{a.icon} {a.name}</span>
+								<span class="ch"><OsIcon id={a.id} size={16} /> {a.name}</span>
 								<button onclick={() => closeApp(id)} aria-label="Cerrar {a.name}">✕</button>
 							</div>
 						{/if}
@@ -949,6 +950,11 @@
 		background: var(--raise);
 		font-size: var(--fs-s);
 		font-weight: var(--fw-medium);
+	}
+	.ch {
+		display: flex;
+		align-items: center;
+		gap: var(--sp-6);
 	}
 	.card-head button {
 		position: relative;
