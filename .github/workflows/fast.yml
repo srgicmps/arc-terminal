@@ -34,7 +34,7 @@ concurrency:
 env:
   # Fuentes urgentes (si alguna deja de existir, update.ts la ignora). Mercados, para que un -10 % de
   # Bitcoin o de un valor seguido avise en ≤5 min:
-  # crypto son 2 peticiones a CoinGecko y alert-quotes, 16 a Finnhub por pasada (límites: ~30/min y 60/min).
+  # crypto son 2 peticiones a CoinGecko y alert-quotes, ~22 a Finnhub por pasada (la mitad de sus valores, por turnos; límites: ~30/min y 60/min).
   URGENT: >-
     quakes quakes-es alerts hazards gdacs statuspage ioda ree-demand
     crypto alert-quotes
