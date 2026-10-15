@@ -382,6 +382,7 @@
 		radial-gradient(ellipse 80% 60% at 50% 40%, var(--cmd-cold-soft), transparent 70%);
 	--os-font: var(--mono);
 	--os-bar-h: calc(var(--control-h) + var(--sp-8));
+	--os-strip-h: var(--sp-24); /* franja de estado de abajo (MandoStrip) */
 	--os-topbar-bg: var(--cmd-deck);
 	--os-topbar-fg: var(--fg);
 	--os-topbar-hover: var(--cmd-cold-soft);

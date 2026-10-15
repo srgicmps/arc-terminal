@@ -574,10 +574,15 @@
 		cursor: pointer;
 	}
 
-	button:hover,
 	button:focus-visible {
 		border-color: var(--amber-edge);
 		color: var(--amber);
+	}
+	@media (hover: hover) {
+		button:hover {
+			border-color: var(--amber-edge);
+			color: var(--amber);
+		}
 	}
 
 	button:disabled {

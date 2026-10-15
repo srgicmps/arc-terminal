@@ -3,7 +3,7 @@
 	resaltado. Al pasar el dedo o el ratón muestra el valor de cada punto.
 -->
 <script lang="ts">
-	import { axisTicks, periodChoices, periodDate, periodStart } from '#lib/chart.ts';
+	import { axisTicks, periodChoices, valueTicks, periodDate, periodStart } from '#lib/chart.ts';
 	import Seg from './ui/Seg.svelte';
 	import { persisted } from '#lib/persisted.svelte.ts';
 	import { nf, period } from '#lib/format.ts';
@@ -63,11 +63,7 @@
 	const y = (v: number) =>
 		pad.t + (1 - (v - range.lo) / (range.hi - range.lo || 1)) * (height - pad.t - pad.b);
 
-	const ticks = $derived.by(() => {
-		const out: number[] = [];
-		for (let v = range.lo; v <= range.hi + range.step / 2; v += range.step) out.push(v);
-		return out;
-	});
+	const ticks = $derived(valueTicks(range.lo, range.hi, range.step));
 
 	// Etiquetas del eje X: tantas como quepan sin pisarse. Cada carácter de la letra de datos (11 px) mide
 	// unos 7 px; la primera y la última se alinean al borde, así que se deja hueco y medio entre ellas.
@@ -93,14 +89,16 @@
 	const fmt = (v: number) => `${nf(v, decimals)}${unit}`;
 </script>
 
-<div class="chart" data-ui="chart" bind:clientWidth={width}>
+<div class="chart" data-ui="chart">
+	<!-- Se mide un envoltorio sin padding: clientWidth de .chart contaría --pad-x y el SVG se saldría del panel. -->
+	<div bind:clientWidth={width}>
 	{#if ts.length && values.length}
 		<svg
 			viewBox="0 0 {width} {height}"
 			{width}
 			{height}
 			role="img"
-			aria-label={lines.map((l) => `${l.label}: ${fmt(l.points.at(-1)?.v ?? 0)}`).join(', ')}
+			aria-label={lines.map((l) => `${l.label}: ${l.points.length ? fmt(l.points.at(-1)!.v) : 'sin dato'}`).join(', ')}
 			onpointermove={onmove}
 			onpointerleave={() => (hover = null)}
 		>
@@ -109,7 +107,7 @@
 				<text class="lbl" x={width - pad.r + 8} y={y(v) + 4}>{nf(v, range.step < 0.01 ? 3 : range.step < 1 ? 2 : 0)}</text>
 			{/each}
 			{#each xLabels as { t, i } (t)}
-				<text class="lbl" x={x(i)} y={height - 6} text-anchor={i === 0 ? 'start' : i === ts.length - 1 ? 'end' : 'middle'}>
+				<text class="lbl" x={x(i)} y={height - 6} text-anchor={ts.length === 1 ? 'middle' : i === 0 ? 'start' : i === ts.length - 1 ? 'end' : 'middle'}>
 					{period(t)}
 				</text>
 			{/each}
@@ -134,6 +132,7 @@
 	{:else}
 		<p class="empty">Aún no hay historial: se irá llenando día a día.</p>
 	{/if}
+	</div>
 </div>
 
 <style>
@@ -143,6 +142,8 @@
 
 	svg {
 		display: block;
+		/* Antes de medir (HTML prerenderizado) el SVG mide 600 px: que no se salga en el móvil. */
+		max-width: 100%;
 		touch-action: pan-y;
 	}
 

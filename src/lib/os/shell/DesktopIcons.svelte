@@ -344,8 +344,10 @@
 		border-radius: var(--radius-s);
 		user-select: none;
 	}
-	.icon:hover {
-		background: var(--amber-soft);
+	@media (hover: hover) {
+		.icon:hover {
+			background: var(--amber-soft);
+		}
 	}
 	.icon.sel {
 		background: var(--amber-soft);
@@ -403,5 +405,11 @@
 		background: var(--amber-soft);
 		border: var(--hair) solid var(--amber);
 		pointer-events: none;
+	}
+	/* iPhone e iPad: con menos de 16 px, Safari amplía la página al escribir (--fs-field vale 16 px en táctil). */
+	@media (pointer: coarse) {
+		.rename {
+			font-size: var(--fs-field);
+		}
 	}
 </style>

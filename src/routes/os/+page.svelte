@@ -13,6 +13,7 @@
 	import { loadFiles } from '#lib/os/fs/fs.svelte.ts';
 	import SystemLayer from '#lib/os/system/SystemLayer.svelte';
 	import MobileHome from '#lib/os/mobile/MobileHome.svelte';
+	import { coverViewport } from '#lib/os/mobile/viewport.ts';
 	import { untrack } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 
@@ -27,6 +28,8 @@
 			loadFiles(shell.pinned.map((id) => apps.find((a) => a.id === id)).filter((a) => !!a).map((a) => ({ id: a.id, name: a.title })));
 		})
 	);
+	// En iPhone y iPad, hasta los bordes: sin esto, Safari pone a 0 las zonas seguras (muesca y barra de inicio).
+	$effect(() => coverViewport());
 	// Dentro de Arc OS, los colores y la letra son los del aspecto, no la estética de la web (src/lib/os/look.ts).
 	let look: ReturnType<typeof osLook> | undefined;
 	$effect(() => {

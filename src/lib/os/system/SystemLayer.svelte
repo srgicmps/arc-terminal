@@ -6,6 +6,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { isShortcut } from '#lib/shortcuts.ts';
+	import { startAccount } from './account.svelte.ts';
 	import { startAlerts } from './alerts.svelte.ts';
 	import Boot from './Boot.svelte';
 	import Lock from './Lock.svelte';
@@ -19,7 +20,13 @@
 		startSystem();
 		// Las alarmas de la app Reloj (OS 4) suenan aunque la app esté cerrada; se cargan aparte, sin pesar.
 		import('../apps/clock/alarms.svelte.ts').then((m) => m.startAlarms()).catch(() => {});
-		return startAlerts();
+		// Si la cuenta deja de sincronizar (sin conexión, sesión caducada) o algo no cabe, un aviso (account.svelte.ts).
+		const stopAccount = startAccount();
+		const stopAlerts = startAlerts();
+		return () => {
+			stopAccount();
+			stopAlerts?.();
+		};
 	});
 
 	// Un aviso nuevo (toast de la shell) suena, si los sonidos están encendidos.

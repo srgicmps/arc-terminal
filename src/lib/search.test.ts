@@ -200,3 +200,10 @@ describe('filtros de NEWS', () => {
 		expect(dropSectionFilter('inflación /eco /7d', NEWS_SECTIONS)).toBe('inflación /7d');
 	});
 });
+
+describe('valores con bolsa (QA T7)', () => {
+	it('«BME:REP» y «NYSE:ES» abren su ficha, no NEWS', () => {
+		expect(searchOptions('BME:REP', [], [])[0]).toMatchObject({ code: 'BME:REP', kind: 'Valor' });
+		expect(searchOptions('NYSE:ES', [], [])[0]).toMatchObject({ code: 'NYSE:ES', kind: 'Valor' });
+	});
+});

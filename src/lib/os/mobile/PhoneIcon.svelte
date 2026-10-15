@@ -43,6 +43,16 @@
 		height: var(--os-icon-size);
 		transition: transform var(--dur-fast) var(--ease);
 	}
+	/* El dibujo llena el hueco: --os-icon-size cambia en tablet y en horizontal (MobileHome). */
+	.sq > :global(.os-icon) {
+		width: 100% !important;
+		height: 100% !important;
+	}
+	.sq :global(.tile),
+	.sq :global(svg) {
+		width: 100%;
+		height: 100%;
+	}
 	.app:active .sq {
 		transform: scale(0.92);
 		filter: brightness(0.85);

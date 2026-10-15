@@ -21,4 +21,5 @@
 	const shown = $derived(text ?? (value === null || value === undefined ? '—' : signed(value, digits) + unit));
 </script>
 
-<span class={trend(invert && value ? -value : value)}>{shown}</span>
+<!-- El color sale del número que se ve: lo que se redondea a «0,0» va en gris, no en verde o rojo. -->
+<span class={trend(invert && value ? -value : value, text === undefined ? digits : undefined)}>{shown}</span>

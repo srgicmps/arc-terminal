@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diff, merge, readMemory, startPlan } from './cloud.ts';
+import { diff, LIMITS, merge, mergeFitting, oversized, readMemory, startPlan } from './cloud.ts';
 
 describe('merge', () => {
 	it('primera vez con el servidor vacío: sube todo lo de aquí (migración)', () => {
@@ -45,4 +45,35 @@ it('diff y readMemory', () => {
 	expect(diff({ a: '1', b: '2' }, { a: '1', c: '3' })).toEqual({ set: { c: '3' }, del: ['b'] });
 	expect(readMemory('no')).toBeNull();
 	expect(readMemory(JSON.stringify({ user: 'a', base: {} }))).toEqual({ user: 'a', base: {} });
+});
+
+describe('claves que no caben en la cuenta', () => {
+	const big = 'x'.repeat(LIMITS.value + 1);
+	it('una nota enorme no bloquea el resto: se queda aquí y lo demás sube', () => {
+		const plan = mergeFitting({ 'arc-os-note-n1': big, 'arc-os-name': 'Ana' }, {}, {});
+		expect(plan.frozen).toEqual(['arc-os-note-n1']);
+		expect(plan.push).toEqual({ set: { 'arc-os-name': 'Ana' }, del: [] });
+		expect(plan.apply).toEqual({ set: {}, del: [] });
+	});
+	it('no se borra aquí ni se pisa con la copia vieja del servidor', () => {
+		const base = { n: 'corta' };
+		const plan = mergeFitting({ n: big }, { n: 'corta' }, base);
+		expect(plan.apply).toEqual({ set: {}, del: [] });
+		expect(plan.push).toEqual({ set: {}, del: [] });
+		expect(plan.result).toEqual(base);
+		// Cuando vuelve a caber, gana la de aquí.
+		expect(mergeFitting({ n: 'nueva' }, { n: 'corta' }, plan.result).push).toEqual({ set: { n: 'nueva' }, del: [] });
+	});
+	it('si el total no cabe, se quedan fuera las más grandes', () => {
+		const local: Record<string, string> = {};
+		for (let i = 0; i < 10; i++) local[`k${i}`] = 'y'.repeat(60_000 - i);
+		const out = oversized(local);
+		expect(out[0]).toBe('k0');
+		const left = Object.entries(local).filter(([k]) => !out.includes(k));
+		expect(left.reduce((n, [k, v]) => n + k.length + v.length, 0)).toBeLessThanOrEqual(LIMITS.total);
+	});
+	it('al cambiar de usuario no se congela nada: se cambia todo por lo de su cuenta', () => {
+		const plan = startPlan({ a: big }, { b: '1' }, { user: 'ana@x', base: {} }, 'bea@x');
+		expect(plan.apply).toEqual({ set: { b: '1' }, del: ['a'] });
+	});
 });
