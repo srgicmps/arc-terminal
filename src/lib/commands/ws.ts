@@ -2,6 +2,12 @@ import type { Command } from '../commands.ts';
 
 export default {
 	order: 60, code: 'WS', route: '/ws', key: 'Wall Street', desc: 'Wall Street: mapa de calor, curva de tipos, divisas y cripto', sources: 'TradingView, Tesoro de EE. UU., BCE, CoinGecko, CNBC, WSJ', pinned: true, aliases: ['bolsa', 'wall street'],
+	bloomberg: [
+		{ code: 'WEI', panel: 'Mercados' },
+		{ code: 'FXC', panel: 'Divisas' },
+		{ code: 'GC', panel: 'Curvas de tipos' },
+		{ code: 'YCRV', panel: 'Curvas de tipos' }
+	],
 	manual: {
 		section: 'Economía y mercados',
 		what: 'Wall Street e inversión: mapa de calor, índices y materias primas en directo, curvas de tipos, divisas, cripto y subastas del Tesoro.',

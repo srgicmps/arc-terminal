@@ -2,6 +2,7 @@ import type { Command } from '../commands.ts';
 
 export default {
 	order: 80, code: 'AI', route: '/ai', key: 'IA', desc: 'Inteligencia artificial', sources: 'MIT Technology Review, Hugging Face, OpenAI, Google, The Verge', pinned: true,
+	bloomberg: [{ code: 'BI' }],
 	manual: {
 		section: 'Tecnología',
 		what: 'Inteligencia artificial: titulares, lo que se habla en Hacker News, modelos en tendencia y papers del día.',

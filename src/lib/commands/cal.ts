@@ -2,6 +2,7 @@ import type { Command } from '../commands.ts';
 
 export default {
 	order: 220, code: 'CAL', route: '/cal', key: 'Agenda', desc: 'Agenda económica de la semana', sources: 'TradingView',
+	bloomberg: [{ code: 'ECOW' }, { code: 'EVTS' }],
 	manual: {
 		section: 'Economía y mercados',
 		what: 'Agenda de la semana: calendario económico, reuniones de bancos centrales, próximos datos oficiales, festivos y resultados de empresas.',

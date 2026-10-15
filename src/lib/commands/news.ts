@@ -2,6 +2,7 @@ import type { Command } from '../commands.ts';
 
 export default {
 	order: 190, code: 'NEWS', route: '/news', key: 'Buscar', desc: 'Buscador en todos los titulares de todas las secciones', sources: 'Todos los medios', arg: { param: 'q', label: 'Buscar en los titulares', example: 'NEWS inflación' },
+	bloomberg: [{ code: 'N' }, { code: 'CN' }],
 	manual: {
 		section: 'Utilidades',
 		what: 'Buscador en todos los titulares de todas las secciones, con filtro por sección y un archivo de los últimos meses.',

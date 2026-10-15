@@ -310,3 +310,33 @@ describe('ir a un panel y ayuda (M47, M48)', () => {
 		expect(t && canonical(t)).toBe('WX ?');
 	});
 });
+
+describe('códigos de Bloomberg (M45)', () => {
+	it('llevan al comando y, si toca, a su panel', () => {
+		expect(open('WEI')).toBe('/ws#panel=Mercados');
+		expect(open('fxc')).toBe('/ws#panel=Divisas');
+		expect(open('YCRV')).toBe('/ws#panel=Curvas%20de%20tipos');
+		expect(open('GC')).toBe('/ws#panel=Curvas%20de%20tipos');
+		expect(open('WIRP')).toBe('/eco#panel=Pr%C3%B3ximas%20reuniones');
+		expect(open('ECOW')).toBe('/cal');
+		expect(open('EVTS')).toBe('/cal');
+		expect(open('N')).toBe('/news');
+		expect(open('CN')).toBe('/news');
+		expect(open('BI')).toBe('/ai');
+	});
+
+	it('cada código es único, no pisa un comando y su panel existe', () => {
+		const codes = COMMANDS.flatMap((c) => (c.bloomberg ?? []).map((b) => b.code));
+		expect(new Set(codes).size).toBe(codes.length);
+		for (const c of COMMANDS)
+			for (const b of c.bloomberg ?? []) {
+				expect(findCommand(b.code), b.code).toBeUndefined();
+				if (b.panel) expect(c.manual?.panels?.some((p) => p.name === b.panel), `${b.code}: ${b.panel}`).toBe(true);
+			}
+	});
+
+	it('salen en las sugerencias al escribir el código', () => {
+		expect(suggest('FXC', ALL)[0]).toMatchObject({ code: 'FXC', kind: 'Bloomberg' });
+		expect(suggest('YCR', ALL).some((o) => o.code === 'YCRV')).toBe(true);
+	});
+});

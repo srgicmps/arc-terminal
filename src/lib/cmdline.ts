@@ -39,6 +39,21 @@ export function findCommand(raw: string): Command | undefined {
 	return COMMANDS.find((c) => c.code === q) ?? COMMANDS.find((c) => c.aliases?.some((a) => norm(a) === q));
 }
 
+/** Un código de Bloomberg («WEI», «fxc»): su comando y, si lo tiene, el panel al que va (M45). */
+export function findBloomberg(raw: string): { command: Command; panel?: string } | undefined {
+	const q = norm(raw);
+	for (const command of COMMANDS) {
+		const b = command.bloomberg?.find((x) => x.code === q);
+		if (b) return { command, panel: b.panel };
+	}
+	return undefined;
+}
+
+/** Los códigos de Bloomberg como sugerencias: «FXC · Divisas · WS (Bloomberg)». */
+const BLOOMBERG: Option[] = COMMANDS.flatMap((c) =>
+	(c.bloomberg ?? []).map((b) => ({ code: b.code, desc: `${b.panel ? `${b.panel} · ` : ''}${c.code} (Bloomberg)`, kind: 'Bloomberg' }))
+);
+
 /**
  * Sugerencias para lo escrito, por orden: el código exacto, los códigos que empiezan igual,
  * los alias que empiezan igual y, al final, los que lo contienen en un alias o en la descripción.
@@ -71,7 +86,9 @@ export function suggest(raw: string, all: Option[], limit = 8): Option[] {
 		if (aliases.some((a) => a.includes(q)) || norm(o.desc).includes(q)) return 3;
 		return -1;
 	};
-	return all
+	// Los códigos de Bloomberg solo salen al escribir el código (por el principio), no por la descripción.
+	const bloomberg = BLOOMBERG.filter((o) => o.code.startsWith(q));
+	return [...all, ...bloomberg]
 		.map((o) => ({ o, r: rank(o) }))
 		.filter((x) => x.r >= 0)
 		.sort((a, b) => a.r - b.r)
@@ -204,6 +221,8 @@ export function resolveInput(raw: string, suggestions: Option[]): Target | null 
 	if (!q) return null;
 	const command = findCommand(q);
 	if (command) return { kind: 'command', command };
+	const bloomberg = findBloomberg(q);
+	if (bloomberg) return { kind: 'command', ...bloomberg };
 	const help = commandHelp(raw);
 	if (help) return { kind: 'help', command: help };
 	const panel = commandPanel(raw);

@@ -57,7 +57,7 @@
 	<div class="col">
 		<Panel title="Comandos" meta="{COMMANDS.length} funciones" jump={{ code: 'MANUAL', href: resolve('/manual') }}>
 			<Table>
-				<thead><tr><th>Comando</th><th class="l">Qué abre</th><th class="l">Fuentes</th></tr></thead>
+				<thead><tr><th>Comando</th><th class="l">Qué abre</th><th class="l">Equivalente Bloomberg</th><th class="l">Fuentes</th></tr></thead>
 				<tbody>
 					{#each COMMANDS as c (c.code)}
 						<tr>
@@ -65,6 +65,9 @@
 							<td class="l wrap">
 								{c.desc}
 								{#if c.aliases}<small class="mut">También: {c.aliases.join(', ')}</small>{/if}
+							</td>
+							<td class="l wrap">
+								{#each c.bloomberg ?? [] as b, i (b.code)}{i ? ', ' : ''}<span title={b.panel ?? c.code}>{b.code}</span>{/each}
 							</td>
 							<td class="l wrap mut">{c.sources}</td>
 						</tr>
