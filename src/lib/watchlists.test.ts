@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addList, FIRST_NAME, MAX_LISTS, readLists, removeList } from './watchlists.ts';
+import { addList, FIRST_NAME, MAX_LISTS, readLists, removeList, splitCodes } from './watchlists.ts';
 
 describe('varias listas en MIS', () => {
 	it('pasa la lista de siempre a la primera, «Mi lista», si aún no hay listas', () => {
@@ -36,5 +36,16 @@ describe('varias listas en MIS', () => {
 		expect(removeList(s, 0)).toMatchObject({ active: 0, lists: [{ name: 'B' }, { name: 'C' }] });
 		const one = { active: 0, lists: [{ name: 'A', codes: [] }] };
 		expect(removeList(one, 0)).toBe(one);
+	});
+});
+
+describe('códigos de MIS', () => {
+	it('parte lo escrito por comas o espacios y aparta lo que no es un código', () => {
+		expect(splitCodes('nvda, aapl  bme:rep;NVDA')).toEqual({ codes: ['NVDA', 'AAPL', 'BME:REP'], bad: [] });
+		expect(splitCodes('BRK.B ¿qué?')).toEqual({ codes: ['BRK.B'], bad: ['¿QUÉ?'] });
+	});
+	it('lo guardado sale en mayúsculas, válido y sin repetir (un código doble rompía la lista)', () => {
+		const saved = JSON.stringify({ active: 0, lists: [{ name: 'A', codes: ['nvda', 'NVDA', ' aapl ', 'NVDA, AAPL', ''] }] });
+		expect(readLists(saved, null).lists[0].codes).toEqual(['NVDA', 'AAPL']);
 	});
 });

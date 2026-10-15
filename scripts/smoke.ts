@@ -14,6 +14,7 @@
 import { createRequire } from 'node:module';
 import { gzipSync } from 'node:zlib';
 import { launch, preview, viewPaths } from './browser.ts';
+import { osChecks } from './smoke-os.ts';
 
 const PATHS = [...viewPaths(), '/s?sym=NVDA'];
 const WIDTHS = [390, 1280];
@@ -85,6 +86,14 @@ try {
 			await page.waitForTimeout(300);
 			const check = await page.evaluate(() => ({
 				scroll: document.documentElement.scrollWidth - window.innerWidth,
+				// Campos con letra de menos de 16 px: Safari del iPhone amplía la página al tocarlos (app.css lo evita).
+				zoom: [...document.querySelectorAll<HTMLElement>('input, select, textarea')]
+					.filter((e) => !/^(checkbox|radio|range|color|button|submit|hidden)$/.test((e as HTMLInputElement).type) && e.offsetParent)
+					.filter((e) => parseFloat(getComputedStyle(e).fontSize) < 16)
+					.map((e) => e.id || e.getAttribute('aria-label') || e.tagName.toLowerCase()),
+				// Pestañas de arriba (TOP, ECO… y «Más»): todas del mismo alto. Un botón estirado por el mínimo táctil
+				// de app.css descolocaba la fila entera.
+				keys: [...new Set([...document.querySelectorAll('.keys .key')].map((e) => Math.round(e.getBoundingClientRect().height)))],
 				panels: document.querySelectorAll('section.panel').length,
 				missing: [...document.querySelectorAll('.empty')]
 					.map((e) => e.textContent?.trim() ?? '')
@@ -102,6 +111,8 @@ try {
 				})()
 			}));
 			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px`);
+			if (width < 600) for (const f of new Set(check.zoom)) failures.push(`${where}: el campo «${f}» tiene letra de menos de 16 px (el iPhone amplía al tocarlo)`);
+			if (check.keys.length > 1) failures.push(`${where}: pestañas de arriba de alturas distintas (${check.keys.join(', ')} px)`);
 			if (!NO_PANELS.has(path) && !check.panels) failures.push(`${where}: sin paneles`);
 			for (const text of check.missing) failures.push(`${where}: panel sin datos («${text}»)`);
 			for (const text of check.glitches) failures.push(`${where}: «${text}» en la vista`);
@@ -123,6 +134,8 @@ try {
 		}
 		await context.close();
 	}
+	// Arc OS en el escritorio, con 12 ventanas (scripts/smoke-os.ts).
+	failures.push(...(await osChecks(browser, ROOT)));
 	await browser.close();
 } catch (error) {
 	failures.push(String(error));

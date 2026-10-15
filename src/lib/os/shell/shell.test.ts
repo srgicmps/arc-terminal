@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildNotices, markSeen, toastsFor, unread } from './notices.ts';
+import { addNotice, buildNotices, markSeen, noticeTime, toastsFor, unread } from './notices.ts';
 import { byCategory, categoryOf, parseIds, pushRecent, searchApps, togglePin } from './start.ts';
-import { addWidget, defaultWidgets, nudge, parseWidgets, removeWidget, snap, statusSummary } from './widgets.ts';
+import { addWidget, defaultWidgets, nudge, stackWidgets, parseWidgets, removeWidget, snap, statusSummary } from './widgets.ts';
 import { localZone, offsetFrom, openMarkets, timeIn } from './zones.ts';
 
 const wall = {
@@ -12,6 +12,17 @@ const wall = {
 const changes = { items: [{ number: 471, title: 'Experiencias: galería', mergedAt: '2026-10-15T11:00:00Z', url: '' }] };
 
 describe('notificaciones', () => {
+	it('un aviso lleva la hora del suceso, no la de ahora (y la de ahora si no trae una válida)', () => {
+		const now = new Date('2026-10-15T12:00:00Z');
+		expect(noticeTime('2026-10-15T11:50:00Z', now)).toBe('2026-10-15T11:50:00.000Z');
+		expect(noticeTime(undefined, now)).toBe(now.toISOString());
+		expect(noticeTime('ayer', now)).toBe(now.toISOString());
+	});
+	it('un aviso nuevo pero antiguo se coloca en su sitio, no arriba', () => {
+		const list = buildNotices(wall, changes);
+		const old = { id: 's:1', kind: 'aviso' as const, title: 'VIX', detail: '', time: '2026-10-15T09:00:00Z' };
+		expect(addNotice(list, old).map((n) => n.id).at(-1)).toBe('s:1');
+	});
 	it('junta avisos y novedades, de la más nueva a la más vieja', () => {
 		const list = buildNotices(wall, changes);
 		expect(list.map((n) => n.kind)).toEqual(['novedad', 'aviso']);
@@ -162,5 +173,16 @@ describe('iconos del escritorio', () => {
 	it('lo guardado se valida', () => {
 		expect(parseSpots('{"a":{"col":1,"row":2},"b":{"col":-1,"row":0},"c":"x"}')).toEqual({ a: { col: 1, row: 2 } });
 		expect(parseSpots('nada')).toEqual({});
+	});
+});
+
+describe('stackWidgets', () => {
+	const list = defaultWidgets(1280, 'mando');
+	it('apila según el alto real, con el mismo hueco y en la rejilla', () => {
+		expect(stackWidgets(list, [100, 50, 203]).map((w) => w.y)).toEqual([16, 136, 208]);
+	});
+	it('sin medir aún, se quedan donde estaban', () => {
+		expect(stackWidgets(list, [])).toBe(list);
+		expect(stackWidgets(list, [100, 0, 80])).toBe(list);
 	});
 });

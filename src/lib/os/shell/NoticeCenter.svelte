@@ -4,12 +4,14 @@
 	derecha, que se va solo a los 8 s (o con ✕). Tus avisos al móvil se configuran en AVISOS.
 -->
 <script lang="ts">
+	import UiIcon from '../icons/UiIcon.svelte';
 	import { resolve } from '$app/paths';
 	import { clock } from '#lib/clock.svelte.ts';
 	import { when } from '#lib/format.ts';
 	import { onMount } from 'svelte';
-	import { dismissToast, markAllSeen, shell, startNotices, toggle, unreadCount } from './shell.svelte.ts';
+	import { markAllSeen, shell, startNotices, toggle, unreadCount } from './shell.svelte.ts';
 	import type { Notice } from './notices.ts';
+	import Toasts from './Toasts.svelte';
 
 	interface Props {
 		/** Abrir una ruta de la web (en una ventana, si el núcleo puede). */
@@ -22,9 +24,9 @@
 
 	onMount(() => startNotices());
 
-	$effect(() => {
-		for (const t of shell.toasts) setTimeout(() => dismissToast(t.id), 8000);
-	});
+	/** Lo que estaba sin leer al abrir (se marca leído al abrir, pero se sigue distinguiendo con un punto). */
+	let fresh = $state(new Set<string>());
+	let root = $state<HTMLElement>();
 
 	function go(n: Notice) {
 		if (n.href) onnavigate(n.href);
@@ -32,11 +34,25 @@
 	}
 	function toggleCenter() {
 		toggle('notices');
-		if (shell.open === 'notices') markAllSeen();
+		if (shell.open !== 'notices') return;
+		fresh = new Set(shell.notices.filter((n) => !shell.seen.includes(n.id)).map((n) => n.id));
+		markAllSeen();
+	}
+	// Como los demás paneles: Escape o un clic fuera lo cierran.
+	function onkey(e: KeyboardEvent) {
+		if (!isOpen || e.key !== 'Escape') return;
+		e.preventDefault();
+		shell.open = null;
+		root?.querySelector<HTMLElement>('.tray-btn')?.focus();
+	}
+	function onpointer(e: PointerEvent) {
+		if (isOpen && root && !root.contains(e.target as Node)) shell.open = null;
 	}
 </script>
 
-<div class="center">
+<svelte:window onkeydown={onkey} onpointerdown={onpointer} />
+
+<div class="center" bind:this={root}>
 	<button
 		type="button"
 		class="tray-btn"
@@ -45,7 +61,7 @@
 		aria-label={count ? `Notificaciones: ${count} sin leer` : 'Notificaciones'}
 		onclick={toggleCenter}
 	>
-		<span aria-hidden="true">◬</span>
+		<UiIcon id="bell" size={16} />
 		{#if count}<span class="badge">{count}</span>{/if}
 	</button>
 	{#if isOpen}
@@ -58,7 +74,7 @@
 				<ul>
 					{#each shell.notices as n (n.id)}
 						<li>
-							<button type="button" onclick={() => go(n)}>
+							<button type="button" class:fresh={fresh.has(n.id)} onclick={() => go(n)}>
 								<span class="kind" class:alert={n.kind === 'aviso'}>{n.kind === 'aviso' ? 'Aviso' : 'Novedad'}</span>
 								<span class="t">{n.title}</span>
 								<span class="d mut">{n.detail} · {when(n.time, clock.now)}</span>
@@ -73,17 +89,7 @@
 	{/if}
 </div>
 
-<div class="toasts" aria-live="polite">
-	{#each shell.toasts as t (t.id)}
-		<div class="toast" role="status">
-			<button type="button" class="body" onclick={() => (go(t), dismissToast(t.id))}>
-				<b>{t.title}</b>
-				<span class="mut">{t.detail}</span>
-			</button>
-			<button type="button" class="x" aria-label="Cerrar aviso" onclick={() => dismissToast(t.id)}>✕</button>
-		</div>
-	{/each}
-</div>
+<Toasts ongo={go} />
 
 <style>
 	/* Botones de la shell sin el borde ni el fondo que algunas estéticas dan a todos los botones. */
@@ -122,12 +128,24 @@
 	}
 	header a {
 		color: var(--amber);
+		text-decoration: none;
+	}
+	@media (hover: hover) {
+		header a:hover {
+			text-decoration: underline;
+		}
+	}
+	/* Estado vacío con la letra de la interfaz, no la de los textos de la web. */
+	.pop .empty {
+		font-family: var(--font-ui);
+		font-size: var(--fs-s);
+		line-height: var(--lh);
 	}
 	ul {
 		list-style: none;
 		margin: 0;
 		padding: 0;
-		max-height: 60vh;
+		max-height: 60dvh;
 		overflow: auto;
 	}
 	li + li {
@@ -139,6 +157,10 @@
 		width: 100%;
 		padding: var(--row-y) var(--pad-x);
 		text-align: left;
+	}
+	/* Sin leer al abrir: un punto de acento a la izquierda. */
+	li button.fresh {
+		box-shadow: inset var(--sp-2) 0 0 var(--amber);
 	}
 	@media (hover: hover) {
 		li button:hover {
@@ -160,40 +182,5 @@
 	}
 	.d {
 		font-size: var(--fs-xs);
-	}
-	.toasts {
-		position: fixed;
-		right: var(--sp-12);
-		bottom: calc(var(--os-bar-h) + var(--sp-12));
-		z-index: var(--z-popover);
-		display: grid;
-		gap: var(--sp-8);
-		width: min(320px, calc(100vw - 2 * var(--sp-12)));
-	}
-	:global([data-os-bar='top']) .toasts {
-		bottom: var(--sp-12);
-	}
-	:global([data-os-skin='mac']) .toasts {
-		bottom: calc(var(--os-dock-h) + var(--sp-12));
-	}
-	.toast {
-		display: flex;
-		align-items: flex-start;
-		background: var(--panel);
-		border: var(--border) solid var(--amber-edge);
-		border-radius: var(--radius);
-		box-shadow: var(--shadow-pop);
-	}
-	.toast .body {
-		flex: 1;
-		display: grid;
-		gap: var(--sp-2);
-		padding: var(--sp-8) var(--sp-10);
-		text-align: left;
-		font-size: var(--fs-s);
-	}
-	.toast .x {
-		padding: var(--sp-8);
-		color: var(--muted);
 	}
 </style>

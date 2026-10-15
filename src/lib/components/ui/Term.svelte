@@ -76,14 +76,19 @@
 	// Mientras está abierta: se cierra con Esc, tocando fuera o si se desplaza la página.
 	$effect(() => {
 		if (!open) return;
-		const key = (e: KeyboardEvent) => e.key === 'Escape' && close();
+		// En captura y con preventDefault: la barra ve que Esc ya ha cerrado algo y no vuelve a la portada.
+		const key = (e: KeyboardEvent) => {
+			if (e.key !== 'Escape') return;
+			e.preventDefault();
+			close();
+		};
 		const outside = (e: PointerEvent) => !button?.contains(e.target as Node) && close();
-		window.addEventListener('keydown', key);
+		window.addEventListener('keydown', key, true);
 		window.addEventListener('pointerdown', outside);
 		window.addEventListener('scroll', close, { capture: true, passive: true });
 		window.addEventListener('resize', close);
 		return () => {
-			window.removeEventListener('keydown', key);
+			window.removeEventListener('keydown', key, true);
 			window.removeEventListener('pointerdown', outside);
 			window.removeEventListener('scroll', close, { capture: true });
 			window.removeEventListener('resize', close);
@@ -153,6 +158,8 @@
 	@media (pointer: coarse) {
 		.i {
 			position: relative;
+			/* Sin el mínimo de 44 px de app.css: si no, la ⓘ alarga la línea de su etiqueta. */
+			min-height: 0;
 		}
 
 		.i::after {

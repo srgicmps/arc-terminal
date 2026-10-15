@@ -16,6 +16,10 @@ describe('eupower', () => {
 		expect(vsAverage(zones, 'ES', 'today')).toEqual({ diff: -30, pct: (-30 / 90) * 100 });
 		expect(vsAverage(zones, 'FR', 'tomorrow')).toBeNull();
 		expect(vsAverage(zones, 'XX', 'today')).toBeNull();
+		// Media negativa: España más barata sigue siendo un % negativo; con la media casi a cero, sin %.
+		const neg = [z('ES', 'ES', -5, null), z('FR', 'FR', 1, null)];
+		expect(vsAverage(neg, 'ES', 'today')?.pct).toBeLessThan(0);
+		expect(vsAverage([z('ES', 'ES', -1, null), z('FR', 'FR', 1.5, null)], 'ES', 'today')).toBeNull();
 	});
 
 	it('zonas de un país', () => {

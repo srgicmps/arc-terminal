@@ -19,10 +19,12 @@ describe('Arc OS en iPhone', () => {
 	it('/os pone viewport-fit=cover (si no, las zonas seguras valen 0)', () => {
 		expect(src('../../../routes/os/+page.svelte')).toMatch(/coverViewport\(\)/);
 	});
-	it('el teléfono tiene rejilla para horizontal, sin zoom por doble toque y fuera de la muesca', () => {
+	it('el teléfono tiene rejilla para horizontal, sin zoom por doble toque, gestos verticales para JS y fuera de la muesca', () => {
 		const home = src('./MobileHome.svelte');
 		expect(home).toMatch(/@media \(orientation: landscape\) and \(max-height: 540px\)/);
 		expect(home).toMatch(/touch-action: manipulation/);
+		expect(home).toMatch(/\.home {\s*touch-action: pan-x;/);
+		expect(home).toMatch(/overscroll-behavior: none/);
 		expect(home).toMatch(/env\(safe-area-inset-left/);
 	});
 });

@@ -4,31 +4,37 @@
 	import { convert } from '../../../fx.ts';
 	import { fxLive, loadFxRates } from '../../../fxlive.svelte.ts';
 	import { parseNum } from './fin.ts';
+	import { calc } from './state.svelte.ts';
 
 	onMount(loadFxRates);
 
-	let amount = $state('100');
-	let from = $state('EUR');
-	let to = $state('USD');
+	// La cantidad y las divisas viven en state.svelte.ts: no se pierden al cambiar de pestaña.
+	const x = calc.fx;
 	const codes = $derived(fxLive.rates ? [...fxLive.rates.keys()].sort() : []);
-	const result = $derived(fxLive.rates ? convert(parseNum(amount), from, to, fxLive.rates) : null);
-	const date = $derived(fxLive.rates?.get(from === 'EUR' ? to : from)?.date ?? '');
-	const swap = () => ([from, to] = [to, from]);
+	const result = $derived(fxLive.rates ? convert(parseNum(x.amount), x.from, x.to, fxLive.rates) : null);
+	const date = $derived(fxLive.rates?.get(x.from === 'EUR' ? x.to : x.from)?.date ?? '');
+	const swap = () => ([x.from, x.to] = [x.to, x.from]);
+	// loadFxRates() solo descarga si nunca lo ha intentado: tras un fallo, se vuelve a dejar en «idle».
+	function retry() {
+		fxLive.status = 'idle';
+		loadFxRates();
+	}
 </script>
 
 <div class="fx">
 	{#if fxLive.status === 'error'}
-		<p class="empty">No se han podido cargar los cambios del BCE.</p>
+		<p class="empty">No se han podido cargar los cambios del BCE (¿sin conexión?).</p>
+		<button type="button" class="retry" onclick={retry}>Reintentar</button>
 	{:else if !fxLive.rates}
 		<p class="empty">Cargando los cambios del BCE…</p>
 	{:else}
 		<div class="row">
-			<label>Cantidad<input inputmode="decimal" bind:value={amount} /></label>
-			<label>De<select bind:value={from}>{#each codes as c (c)}<option>{c}</option>{/each}</select></label>
+			<label>Cantidad<input inputmode="decimal" bind:value={x.amount} /></label>
+			<label>De<select bind:value={x.from}>{#each codes as c (c)}<option>{c}</option>{/each}</select></label>
 			<button type="button" onclick={swap} aria-label="Cambiar el orden" title="Cambiar el orden">⇄</button>
-			<label>A<select bind:value={to}>{#each codes as c (c)}<option>{c}</option>{/each}</select></label>
+			<label>A<select bind:value={x.to}>{#each codes as c (c)}<option>{c}</option>{/each}</select></label>
 		</div>
-		<p class="res">{result === null ? '—' : `${result.toLocaleString('es-ES', { maximumFractionDigits: 4 })} ${to}`}</p>
+		<p class="res">{result === null ? '—' : `${result.toLocaleString('es-ES', { maximumFractionDigits: 4 })} ${x.to}`}</p>
 		<p class="note">Cambio de referencia del BCE{date ? ` · ${date}` : ''}. Orientativo: tu banco aplica su margen.</p>
 	{/if}
 </div>
@@ -38,6 +44,16 @@
 		display: grid;
 		gap: var(--sp-12);
 		max-width: 520px;
+		margin: 0 auto;
+	}
+
+	.empty {
+		margin: 0;
+		color: var(--muted);
+	}
+
+	.retry {
+		justify-self: start;
 	}
 
 	.row {

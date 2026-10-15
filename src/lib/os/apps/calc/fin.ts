@@ -24,9 +24,13 @@ export function cagr(start: number, end: number, years: number): number {
 	return ((end / start) ** (1 / years) - 1) * 100;
 }
 
-/** Un número escrito a la española («1.250,5») o a la inglesa («1250.5»). NaN si no lo es. */
+/**
+ * Un número escrito a la española («1.250,5», «10.000») o a la inglesa («1250.5»). NaN si no lo es. Sin coma, un
+ * punto seguido de tres cifras justas es de miles («150.000»), como en parseAmount de calc.ts; si no, decimal («1.5»).
+ */
 export function parseNum(s: string): number {
 	let t = s.trim().replace(/\s|€|%/g, '');
 	if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+	else if (/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
 	return t === '' ? NaN : Number(t);
 }

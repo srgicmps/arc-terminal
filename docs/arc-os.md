@@ -112,6 +112,14 @@ nada en los traspasos entre sesiones.
 - [x] Multitarea, centro de control, buscador y gestos [OS 3] #494; Spotlight universal y «atrás» [OS 3 2] #528 #534
 - [x] Cambiar entre «Terminal clásico» y «Modo OS» (`mode.svelte.ts`) [OS 3] #478
 
+## QA 9 · Vistas de Arc en ventanas
+- [x] La ficha de un valor abre ventana (buscador, Terminal, Expediente, Línea de tiempo) y en el móvil; la misma ruta no se repite
+- [x] Una app ya abierta a la que se pide otra ruta (PAIS de otro país) carga esa ruta, no solo cambia el título
+- [x] Un enlace de una vista a otra app (Portada → «LUZ ›») la abre en su ventana (`onEmbedLink` de `embed.ts`)
+- [x] Con el foco dentro de una vista llegan todos los atajos del escritorio: Ctrl+Espacio, Alt+Tab, Ctrl+Alt+L
+- [x] Títulos en claro («País · CN», «Noticias · aranceles») y HELP sin scroll horizontal en ventana estrecha
+- [x] Prueba de humo `scripts/smoke-vistas-os.ts` en el job `checks`: todas las vistas embebidas a 390 px y el escritorio
+
 ## OS 6 · Centro de mando (detalle de #503 y #513–#516)
 Aspecto «Mando» y apps de análisis inspiradas en las plataformas de inteligencia, sin marcas ni logos de nadie y
 sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
@@ -126,8 +134,9 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - [x] **Grafo de entidades** (`grafo`): países, líderes, bancos, valores, sanciones, sucesos y temas de IMP con aristas por co-mención y relación; fuerzas propias, expandir, filtrar, buscar [OS 6] #516
 - [x] **Expediente** (`expediente`): ficha de cualquier entidad (resumen, datos, mapa, relaciones, cronología), exportar a Markdown/JSON e imprimir. API: `openDossier(kind, key)`, `openDossierFor('Lagarde')`, `openGraph()` (`apps/intel/open.ts`) [OS 6] #516
 - [x] Iconos SVG de las cinco apps en `icons/glyphs.ts` (mapa, vigilancia y línea de tiempo de OS 2b; grafo y expediente de OS 6) [OS 6]
-- [ ] Título de ventana: no enseñar el path en las herramientas sin `href` («Expediente · /expediente#country:CN») [núcleo]
+- [x] Título de ventana: no enseñar el path en las herramientas sin `href` («Expediente · /expediente#country:CN») [núcleo] (QA 9, `winTitle` de `apps.ts`)
 - [x] Contraste AA en /os: `--muted` de Mando a 4,5:1 también sobre el fondo con acento [OS 6] #533
+- [x] QA del Centro de mando (QA OS 8): nivel de alerta con «Sin datos» y avisos caducados por hora, pilotos que dejan el verde si los datos se paran y con forma por estado, Mapa operacional en el móvil (pellizco, línea de tiempo táctil) [QA OS 8] #541
 
 ## OS 4 · Cómo están hechas las apps del sistema
 - Cada app es un archivo `src/lib/os/apps/<id>.ts` (registro, `load` diferido) y su carpeta. Marco común
@@ -135,5 +144,11 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - Lógica pura en un `.ts` con tests al lado; el estado del navegador en `.svelte.ts`.
 - Probar en local: `pnpm build`, `vite preview` y Playwright con `localStorage` `arc-shell=os`; Intro pasa la
   pantalla de bloqueo.
-- Pendiente: la ficha de un valor (`/s?sym=`) no es una app del núcleo (`openPath` devuelve null). La prueba de humo
+- La ficha de un valor (`/s?sym=`) es la app `valor` (`src/lib/os/apps/valor.ts`): «NVDA» abre «Valor · NVDA» (QA 9). La prueba de humo
   falla a veces con «Failed to fetch dynamically imported module …/nodes/0.*.js» a 390 px; al relanzar pasa.
+
+## QA OS 11 · Pantallas y rendimiento (escritorio, 1024–2560 px, zoom, 15–20 ventanas)
+- [x] Las pestañas de la barra se pisaban con 8+ ventanas a 1024–1440 px: ahora encogen hasta el icono [QA OS 11]
+- [x] Una ventana minimizada o de otro escritorio seguía pintando (iframe a 60 fps, globo del mapa girando): `content-visibility: hidden`, sin recargarla [QA OS 11]
+- [x] Toasts: un temporizador por aviso y limpieza al desmontar [QA OS 11]
+- [x] Prueba de humo de /os con 12 ventanas (`scripts/smoke-os.ts`) [QA OS 11]

@@ -16,14 +16,14 @@
 		view: ViewBox;
 		/** El mundo entero en la proporción de la ventana: el tope al alejar. */
 		max: ViewBox;
-		/** Desde cuándo un suceso es «reciente» (late, si el sistema no pide menos movimiento). */
-		recentSince: number;
+		/** Los sucesos «recientes» (laten, si el sistema no pide menos movimiento): los mismos que en el globo. */
+		flash: Set<string>;
 		onpick: (p: OpPoint | null) => void;
 		/** Coordenadas bajo el ratón, para el rótulo de la esquina. */
 		onhover?: (at: { lat: number; lon: number } | null) => void;
 	}
 
-	let { points, selected, view = $bindable(), max, recentSince, onpick, onhover }: Props = $props();
+	let { points, selected, view = $bindable(), max, flash, onpick, onhover }: Props = $props();
 
 	let svg = $state<SVGSVGElement>();
 	let pw = $state(1);
@@ -31,6 +31,14 @@
 	/** Arrastre en curso: el último punto y si ya se ha movido (entonces no es un clic). */
 	let drag: { x: number; y: number; moved: boolean; id: number } | null = null;
 	let dragged = false;
+	/** Dedos en la pantalla: con dos, pellizcar acerca o aleja (como en el globo). */
+	const touches = new Map<number, { x: number; y: number }>();
+	let pinch = 0;
+
+	const spread = () => {
+		const [a, b] = [...touches.values()];
+		return { d: Math.hypot(a.x - b.x, a.y - b.y), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+	};
 
 	/** Grados del mapa por px: los puntos y los trazos miden lo mismo a cualquier zoom. */
 	const k = $derived(view.w / Math.max(1, pw));
@@ -60,13 +68,34 @@
 
 	function down(e: PointerEvent) {
 		if (e.button !== 0) return;
+		if (e.pointerType !== 'mouse') {
+			touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+			if (touches.size === 2) {
+				// El segundo dedo: deja de arrastrar y empieza a pellizcar.
+				svg?.setPointerCapture(e.pointerId);
+				pinch = spread().d;
+				drag = null;
+				dragged = true;
+				return;
+			}
+		}
 		drag = { x: e.clientX, y: e.clientY, moved: false, id: e.pointerId };
 		dragged = false;
 	}
 
 	function move(e: PointerEvent) {
 		const { fx, fy } = frac(e);
-		onhover?.({ lat: 90 - (view.y + fy * view.h), lon: view.x + fx * view.w - 180 });
+		if (e.pointerType === 'mouse') onhover?.({ lat: 90 - (view.y + fy * view.h), lon: view.x + fx * view.w - 180 });
+		if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+		if (touches.size >= 2) {
+			const s = spread();
+			if (pinch > 0 && s.d > 0) {
+				const m = frac({ clientX: s.x, clientY: s.y });
+				view = zoomAt(view, pinch / s.d, m.fx, m.fy, max);
+			}
+			pinch = s.d;
+			return;
+		}
 		if (!drag || drag.id !== e.pointerId) return;
 		const dx = e.clientX - drag.x;
 		const dy = e.clientY - drag.y;
@@ -79,8 +108,13 @@
 		drag.y = e.clientY;
 	}
 
-	function up() {
-		drag = null;
+	function up(e: PointerEvent) {
+		touches.delete(e.pointerId);
+		pinch = 0;
+		if (drag?.id === e.pointerId || touches.size === 0) drag = null;
+		// Si queda un dedo después de pellizcar, sigue arrastrando con él sin dar un salto.
+		const rest = [...touches.entries()][0];
+		if (rest && !drag) drag = { x: rest[1].x, y: rest[1].y, moved: true, id: rest[0] };
 	}
 
 	function click(p: OpPoint | null) {
@@ -138,7 +172,7 @@
 				class="pt"
 				class:strong={p.strong}
 				class:on={selected === p.id}
-				class:recent={p.at !== null && p.at >= recentSince}
+				class:recent={flash.has(p.id)}
 				role="button"
 				tabindex="-1"
 				aria-label="{p.title}. {p.sub}"
@@ -148,7 +182,7 @@
 				}}
 			>
 				<circle class="hit" {cx} {cy} r={Math.max(r, 7 * k)} />
-				{#if p.at !== null && p.at >= recentSince}<circle class="halo" {cx} {cy} {r} />{/if}
+				{#if flash.has(p.id)}<circle class="halo" {cx} {cy} {r} />{/if}
 				{#if s.shape === 'diamond'}
 					<rect
 						x={cx - r * 0.9}

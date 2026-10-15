@@ -6,7 +6,7 @@
 <script lang="ts">
 	import type { Dataset } from '#lib/data.ts';
 	import { nf } from '#lib/format.ts';
-	import { sepTable } from '#lib/sep.ts';
+	import { SEP_ROWS, sepTable } from '#lib/sep.ts';
 	import type { SeriesData } from '#lib/types.ts';
 	import Panel from './Panel.svelte';
 	import Updated from './Updated.svelte';
@@ -46,7 +46,7 @@
 							</td>
 						{/each}
 						{#if table.longRun !== undefined}
-							<td>{#if i === 0}{nf(table.longRun, 2)}{:else}<span class="mut">—</span>{/if}</td>
+							<td>{#if r.name === SEP_ROWS[0].name}{nf(table.longRun, 2)}{:else}<span class="mut">—</span>{/if}</td>
 						{/if}
 					</tr>
 				{/each}

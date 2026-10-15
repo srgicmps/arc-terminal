@@ -9,30 +9,39 @@
 	import * as os from './bridge.ts';
 	import { alertLevel, hms } from './mando.ts';
 	import NoticeCenter from './NoticeCenter.svelte';
+	import OsIcon from '../icons/OsIcon.svelte';
+	import UiIcon from '../icons/UiIcon.svelte';
 	import { shell, toggle } from './shell.svelte.ts';
 	import { wdata } from './widgetdata.svelte.ts';
 
 	const wins = $derived(os.windows());
-	const alert = $derived(alertLevel(wdata.wall));
-
-	// Relojes con segundos: un tic por segundo solo mientras la barra está montada.
+	// Relojes con segundos: un tic por segundo solo mientras la barra está montada, alineado con el cambio de
+	// segundo (con un intervalo suelto, la hora iba hasta 1 s tarde y a veces se saltaba un segundo).
 	let now = $state(Date.now());
 	$effect(() => {
-		const id = setInterval(() => (now = Date.now()), 1000);
-		return () => clearInterval(id);
+		let id: ReturnType<typeof setTimeout>;
+		const tick = () => {
+			now = Date.now();
+			id = setTimeout(tick, 1000 - (now % 1000) + 5);
+		};
+		tick();
+		return () => clearTimeout(id);
 	});
+	// El nivel, con la hora por minutos: los avisos caducan aunque muro.json no cambie.
+	const minute = $derived(Math.floor(now / 60_000) * 60_000);
+	const alert = $derived(wdata.loaded ? alertLevel(wdata.wall, minute) : alertLevel(null));
 	const account = $derived(accountLine(cloud.state, cloud.user, cloud.frozen));
 </script>
 
 <nav class="mando" aria-label="Barra del centro de mando">
 	<span class="brand" aria-hidden="true"><b>◆</b> ARC<span class="sep">·</span>MANDO</span>
-	<button type="button" class="tool" aria-label="Todas las apps" aria-expanded={shell.open === 'launchpad'} onclick={() => toggle('launchpad')}>▦</button>
-	<button type="button" class="tool" title="Mostrar escritorio" aria-label="Mostrar escritorio" onclick={os.showDesktop}>▭</button>
+	<button type="button" class="tool" aria-label="Todas las apps" aria-expanded={shell.open === 'launchpad'} onclick={() => toggle('launchpad')}><UiIcon id="apps" size={16} /></button>
+	<button type="button" class="tool" title="Mostrar escritorio" aria-label="Mostrar escritorio" onclick={os.showDesktop}><UiIcon id="desktop" size={16} /></button>
 	<ul class="tabs" aria-label="Apps abiertas">
 		{#each wins as w (w.id)}
 			<li>
 				<button type="button" class:on={w.focused} class:min={w.minimized} aria-pressed={w.focused} title={w.title} onclick={() => os.activate(w.id)}>
-					<span class="ico" aria-hidden="true">{w.icon ?? '·'}</span><span class="t">{w.title}</span>
+					<OsIcon id={w.appId} size={14} /><span class="t">{w.title}</span>
 				</button>
 			</li>
 		{/each}
@@ -41,15 +50,15 @@
 		<span class="k">Alerta</span>
 		<span class="pips" aria-hidden="true">{#each [1, 2, 3, 4, 5] as n (n)}<i class:on={n <= alert.level}></i>{/each}</span>
 		<b>{alert.label}</b>
-		<span class="sr">nivel {alert.level} de 5: {alert.reasons.join('. ')}</span>
+		<span class="sr">{alert.level ? `nivel ${alert.level} de 5` : 'sin datos'}: {alert.reasons.join('. ')}</span>
 	</div>
 	<div class="tray">
-		<button type="button" class="tray-btn" aria-label="Buscar (Ctrl+Espacio)" aria-expanded={shell.open === 'spotlight'} onclick={() => toggle('spotlight')}>⌕</button>
+		<button type="button" class="tray-btn" aria-label="Buscar (Ctrl+Espacio)" aria-expanded={shell.open === 'spotlight'} onclick={() => toggle('spotlight')}><UiIcon id="search" size={16} /></button>
 		<NoticeCenter onnavigate={os.navigate} />
 		<span class="clk" title="Hora universal coordinada"><span class="k">UTC</span>{hms('UTC', now)}</span>
 		<span class="clk" title="Hora de Madrid"><span class="k">MAD</span>{hms('Europe/Madrid', now)}</span>
-		<button type="button" class="tray-btn" aria-label="Panel de control" aria-expanded={shell.open === 'control'} onclick={() => toggle('control')}>⚙</button>
-		<span class="user" class:warn={account.warn} title={account.text}>{cloud.user ? cloud.user.slice(0, 1).toUpperCase() : '·'}</span>
+		<button type="button" class="tray-btn" aria-label="Panel de control" aria-expanded={shell.open === 'control'} onclick={() => toggle('control')}><UiIcon id="gear" size={16} /></button>
+		<span class="user" class:warn={account.warn} title={account.text}>{#if cloud.user}{cloud.user.slice(0, 1).toUpperCase()}{:else}<UiIcon id="user" size={12} />{/if}</span>
 	</div>
 </nav>
 
@@ -113,14 +122,19 @@
 		padding: 0 var(--sp-8);
 		list-style: none;
 		border-left: var(--hair) solid var(--line);
+		overflow: hidden;
 	}
+	/* Con muchas ventanas, cada pestaña encoge (hasta quedarse en el icono) en vez de pisar a la de al lado. */
 	.tabs li {
 		min-width: 0;
+		display: flex;
+		overflow: hidden;
 	}
 	.tabs button {
 		display: flex;
 		align-items: center;
 		gap: var(--sp-6);
+		min-width: 0;
 		max-width: 180px;
 		height: var(--os-bar-h);
 		padding: 0 var(--sp-10);
@@ -138,11 +152,10 @@
 		border-bottom-color: var(--cmd-cold);
 		color: var(--fg);
 	}
+	/* Minimizada: más apagada, pero legible (con opacidad 0,6 bajaba a 3:1, por debajo de AA). */
 	.tabs button.min {
-		opacity: 0.6;
-	}
-	.ico {
-		color: var(--cmd-cold);
+		color: var(--faint);
+		font-style: italic;
 	}
 	.t {
 		overflow: hidden;
@@ -181,13 +194,18 @@
 		display: flex;
 		gap: var(--sp-2);
 	}
+	/* Apagado: solo el borde (antes, relleno de --line a 1,2:1: la escala de 5 casi no se veía). */
 	.pips i {
 		width: var(--sp-4);
 		height: var(--sp-10);
-		background: var(--line);
+		box-shadow: inset 0 0 0 var(--hair) var(--faint);
 	}
 	.pips i.on {
 		background: var(--lv);
+		box-shadow: none;
+	}
+	.level[data-level='0'] b {
+		color: var(--muted);
 	}
 	/* Nivel máximo: un latido lento, sin parpadeo. */
 	.level[data-level='5'] .pips i.on {

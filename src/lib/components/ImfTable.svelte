@@ -2,12 +2,13 @@
 <script lang="ts">
 	import { nf } from '#lib/format.ts';
 	import type { ImfData } from '#lib/types.ts';
+	import Table from './ui/Table.svelte';
 
 	let { data }: { data: ImfData } = $props();
 </script>
 
-<div class="scroll">
-	<table class="t">
+<!-- Table trae el scroll horizontal: a 390 px las cinco columnas no caben. -->
+<Table>
 		<thead>
 			<tr>
 				<th>País</th>
@@ -24,8 +25,7 @@
 				</tr>
 			{/each}
 		</tbody>
-	</table>
-</div>
+</Table>
 
 <style>
 	td:not(:first-child) {
@@ -36,6 +36,6 @@
 	/* Separa el bloque del PIB del de la inflación con la misma línea de 1 px de la tabla. */
 	th:nth-child(4),
 	td:nth-child(4) {
-		border-left: 1px solid var(--line);
+		border-left: var(--border);
 	}
 </style>

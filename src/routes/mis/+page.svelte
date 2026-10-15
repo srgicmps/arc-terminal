@@ -14,8 +14,8 @@
 	import { clock } from '#lib/clock.svelte.ts';
 	import { madridDate } from '#lib/meetings.ts';
 	import { earningsLine, myEarnings } from '#lib/myearnings.ts';
-	import { deleteList, moveWatch, newList, setTape, toggleWatch, useList, watchlist } from '#lib/watchlist.svelte.ts';
-	import { MAX_LISTS } from '#lib/watchlists.ts';
+	import { deleteList, moveWatch, newList, setCodes, setTape, toggleWatch, useList, watchlist } from '#lib/watchlist.svelte.ts';
+	import { MAX_LISTS, splitCodes } from '#lib/watchlists.ts';
 	import type { Mention } from '#lib/news.ts';
 	import type { PageProps } from './$types';
 
@@ -87,8 +87,13 @@
 			.slice(0, 20)
 	);
 
-	function add(code: string) {
-		if (!watchlist.codes.includes(code)) toggleWatch(code);
+	/** Lo que no se pudo añadir: «NVDA, AAPL» se parte en dos; «¿?» no es un código. */
+	let rejected = $state('');
+	function add(text: string) {
+		const { codes, bad } = splitCodes(text);
+		const fresh = codes.filter((c) => !watchlist.codes.includes(c));
+		if (fresh.length) setCodes([...watchlist.codes, ...fresh]);
+		rejected = bad.join(' ');
 	}
 </script>
 
@@ -159,6 +164,9 @@
 				</div>
 			{/if}
 			<ChipInput label="Código del valor" placeholder="Código: NVDA, SAN, BME:REP…" upper onadd={add} />
+			{#if rejected}
+				<p class="empty" role="status">No es un código válido: {rejected}</p>
+			{/if}
 			{#if watchlist.codes.length}
 				<ul class="mini">
 					{#each watchlist.codes as code, i (code)}

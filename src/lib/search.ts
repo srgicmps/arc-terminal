@@ -93,7 +93,7 @@ export function searchOptions(raw: string, suggestions: Option[], index: Indexed
 	if (norm(text).length < MIN_QUERY) return hits;
 	// Un código corto sin nada más (AMZN): Intro sigue abriendo su ficha, no el archivo.
 	const q = norm(raw);
-	if (!hits.length && !suggestions.length && isTickerLike(q) && q.length <= TICKER_MAX) {
+	if (!hits.length && !suggestions.length && isTickerLike(q) && (q.length <= TICKER_MAX || /[:.]/.test(q))) {
 		hits.push({ code: q, desc: 'Ficha del valor', kind: 'Valor', run: q });
 	}
 	// Buscar en NEWS, que mira también el archivo de 3 meses (lo carga en diferido): la barra sigue ligera.
@@ -133,7 +133,7 @@ function indexHits(raw: string, suggestions: Option[], index: Indexed[], limit: 
 		if (hits.length >= limit) break;
 	}
 	const q = norm(raw);
-	if (hits.length && !suggestions.length && isTickerLike(q) && q.length <= TICKER_MAX) {
+	if (hits.length && !suggestions.length && isTickerLike(q) && (q.length <= TICKER_MAX || /[:.]/.test(q))) {
 		hits.unshift({ code: q, desc: 'Ficha del valor', kind: 'Valor', run: q });
 	}
 	return hits;
@@ -148,7 +148,8 @@ export function countryEntries(): Option[] {
 		code: norm(c.name),
 		desc: `Ficha · ${c.code}`,
 		kind: 'País',
-		aliases: [...(c.aliases ?? []), ...demonymForms(c.demonym)],
+		// El código ISO también («FR», «DE»): solo cuenta escrito entero (ver strongMatch en cmdline.ts).
+		aliases: [...(c.aliases ?? []), ...demonymForms(c.demonym), c.code],
 		run: `PAIS ${c.code}`
 	}));
 }

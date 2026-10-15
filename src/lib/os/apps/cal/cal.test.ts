@@ -30,8 +30,27 @@ describe('Calendario', () => {
 
 	it('las alarmas que se repiten salen en sus días', () => {
 		const alarm = { id: 'a', time: '07:00', label: 'Gym', on: true, days: [1] };
-		expect(dayItems('2026-10-12', null, [], [alarm], null)).toEqual([{ kind: 'alarma', time: '07:00', text: 'Gym' }]);
-		expect(dayItems('2026-10-13', null, [], [alarm], null)).toEqual([]);
+		const now = new Date(2026, 9, 12, 8);
+		expect(dayItems('2026-10-12', null, [], [alarm], null, now)).toEqual([{ kind: 'alarma', time: '07:00', text: 'Gym' }]);
+		expect(dayItems('2026-10-13', null, [], [alarm], null, now)).toEqual([]);
+		expect(dayItems('2026-10-19', null, [], [alarm], null, now)).toHaveLength(1);
+		// En los días pasados no salen.
+		expect(dayItems('2026-10-05', null, [], [alarm], null, now)).toEqual([]);
+	});
+
+	it('una alarma de una vez sale hoy o, si ya pasó su hora, mañana', () => {
+		const once = { id: 'b', time: '07:00', label: '', on: true, days: [] };
+		expect(dayItems('2026-10-12', null, [], [once], null, new Date(2026, 9, 12, 6))).toEqual([{ kind: 'alarma', time: '07:00', text: 'Alarma' }]);
+		expect(dayItems('2026-10-12', null, [], [once], null, new Date(2026, 9, 12, 8))).toEqual([]);
+		expect(dayItems('2026-10-13', null, [], [once], null, new Date(2026, 9, 12, 8))).toHaveLength(1);
+		// Pasada la medianoche, «hoy» es otro día: por eso la app le pasa la hora actual, no la de cuando se abrió.
+		expect(dayItems('2026-10-13', null, [], [once], null, new Date(2026, 9, 13, 0, 5))).toHaveLength(1);
+	});
+
+	it('los datos de todo el día caen en su día, sea cual sea la zona horaria', () => {
+		const f: CalFeed = { holidays: [], releases: [{ date: '2026-10-30T00:00:00Z', allDay: true, title: 'IPC', source: 'INE' }], earnings: [] };
+		expect(dayItems('2026-10-30', f, [], [], null).map((i) => i.text)).toEqual(['IPC · INE']);
+		expect(dayItems('2026-10-29', f, [], [], null)).toEqual([]);
 	});
 
 	it('valida y limpia', () => {

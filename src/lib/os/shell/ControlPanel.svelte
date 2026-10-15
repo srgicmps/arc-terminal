@@ -4,6 +4,7 @@
 	Administración. Lo de fuera de Arc OS se abre en su ventana (AVISOS, ESTILO, ADMIN).
 -->
 <script lang="ts">
+	import UiIcon from '../icons/UiIcon.svelte';
 	import { asset } from '$app/paths';
 	import { onMount } from 'svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
@@ -47,7 +48,7 @@
 <div id="os-control" class="control" role="dialog" aria-label="Panel de control">
 	<header>
 		<h2>Panel de control</h2>
-		<button type="button" aria-label="Cerrar el panel de control" onclick={() => (shell.open = null)}>✕</button>
+		<button type="button" aria-label="Cerrar el panel de control" onclick={() => (shell.open = null)}><UiIcon id="close" size={12} /></button>
 	</header>
 	<div class="scroll">
 		<section>
@@ -134,7 +135,7 @@
 	:global([data-os-skin='mac']) .control,
 	:global([data-os-skin='linux']) .control {
 		top: calc(var(--os-bar-h) + var(--sp-12));
-		bottom: var(--sp-12);
+		bottom: calc(var(--os-strip-h, 0px) + var(--sp-12));
 	}
 	:global([data-os-skin='mac']) .control {
 		bottom: calc(var(--os-dock-h) + var(--sp-12));
@@ -153,7 +154,9 @@
 		font-weight: var(--fw-medium);
 	}
 	header button {
-		padding: var(--sp-4) var(--sp-6);
+		display: grid;
+		place-items: center;
+		padding: var(--sp-6);
 		color: var(--muted);
 	}
 	.scroll {

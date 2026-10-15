@@ -61,3 +61,9 @@ export function toastsFor(list: Notice[], known: Set<string>, first: boolean): N
 	if (first) return [];
 	return list.filter((n) => n.kind === 'aviso' && !known.has(n.id)).slice(0, 3);
 }
+
+/** La hora de un aviso: la del suceso si es válida (uno de hace 10 min no es «ahora»); si no, `now`. */
+export const noticeTime = (t: string | undefined, now: Date) => (t && !Number.isNaN(Date.parse(t)) ? new Date(t).toISOString() : now.toISOString());
+
+/** Añade un aviso a la lista, que sigue de la más nueva a la más vieja. */
+export const addNotice = (list: Notice[], n: Notice) => [n, ...list].sort((a, b) => b.time.localeCompare(a.time));

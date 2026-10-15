@@ -377,8 +377,17 @@
 		letter-spacing: calc(-1 * var(--track-code));
 	}
 
-	/* En pantallas táctiles, 44 px pulsables sin que la cabecera crezca (como el enlace .jump). */
+	/* En pantallas táctiles, 44 px pulsables sin que la cabecera crezca (como el enlace .jump). El título
+	   (pliega el panel) también: si no, la zona que se toca es solo la línea de texto, unos 16 px. */
 	@media (pointer: coarse) {
+		/* h2 delante: la regla base de .ttl va más abajo y, si no, ganaría. */
+		h2 .ttl {
+			display: inline-flex;
+			align-items: center;
+			min-height: var(--touch);
+			margin-block: calc((var(--touch) - 1lh) / -2);
+		}
+
 		.tool {
 			display: inline-flex;
 			align-items: center;

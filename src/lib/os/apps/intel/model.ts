@@ -62,7 +62,10 @@ export interface IntelEdge {
 	a: string;
 	b: string;
 	w: number;
+	/** Cuántas veces se ha enlazado por cada motivo (lo que enseña whyText). */
 	why: Partial<Record<Why, number>>;
+	/** El peso que aporta cada motivo (la arista BCE↔país pesa 1 y la Fed↔EE. UU., 2). */
+	ws: Partial<Record<Why, number>>;
 }
 
 /** Algo con fecha que nombra una entidad: va a su cronología. */
@@ -170,7 +173,7 @@ export function link(g: Graph, a: string, b: string, w: number, why: Why) {
 	const k = edgeKey(a, b);
 	let e = g.edges.get(k);
 	if (!e) {
-		e = { a: a < b ? a : b, b: a < b ? b : a, w: 0, why: {} };
+		e = { a: a < b ? a : b, b: a < b ? b : a, w: 0, why: {}, ws: {} };
 		g.edges.set(k, e);
 		for (const [x, y] of [[a, b], [b, a]]) {
 			if (!g.adj.has(x)) g.adj.set(x, new Map());
@@ -179,6 +182,7 @@ export function link(g: Graph, a: string, b: string, w: number, why: Why) {
 	}
 	e.w += w;
 	e.why[why] = (e.why[why] ?? 0) + 1;
+	e.ws[why] = (e.ws[why] ?? 0) + w;
 }
 
 function addRef(g: Graph, id: string, ref: IntelRef) {

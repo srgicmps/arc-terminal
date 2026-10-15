@@ -12,7 +12,7 @@
 	import { COUNTRIES } from '#lib/countries.ts';
 	import { dm, weekday } from '#lib/format.ts';
 	import { place } from '#lib/place.svelte.ts';
-	import { ES_REGIONS, esRegion, holidaysFor, upcomingBreaks, type WorldHolidaysData } from '#lib/puentes.ts';
+	import { ES_REGIONS, esRegion, holidaysFor, upcomingBreaks, weekendOf, type WorldHolidaysData } from '#lib/puentes.ts';
 
 	interface Props {
 		/** Hoy en Madrid, «2026-10-15». */
@@ -43,10 +43,11 @@
 	const options = $derived([{ value: 'ES', label: 'España' }, ...(myCc ? [{ value: myCc, label: name(myCc) }] : [])]);
 	let region = $state<string>('');
 	$effect(() => {
-		if (!region) region = (place.current.cc === 'ES' && esRegion(place.current.admin1)) || 'ES-MD';
+		// Hasta que se lee Tu sitio (place.ready), place.current es Madrid: al recargar se quedaba ES-MD.
+		if (!region && place.ready) region = (place.current.cc === 'ES' && esRegion(place.current.admin1)) || 'ES-MD';
 	});
 	const items = $derived(data?.countries[country === 'ES' || country === myCc ? country : 'ES'] ?? []);
-	const breaks = $derived(upcomingBreaks(holidaysFor(items, country === 'ES' ? region : null), today).slice(0, 10));
+	const breaks = $derived(upcomingBreaks(holidaysFor(items, country === 'ES' ? region : null), today, 365, weekendOf(country === myCc && myCc ? myCc : 'ES')).slice(0, 10));
 
 	/** «sáb 7 nov» */
 	const short = (d: string) => `${weekday(d)} ${dm(`${d}T12:00:00Z`).split(' ')[1]}`;

@@ -77,14 +77,22 @@ export interface Break {
 const DAY = 86_400_000;
 const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
 const at = (d: string) => Date.parse(`${d}T12:00:00Z`);
-const weekend = (t: number) => [0, 6].includes(new Date(t).getUTCDay());
+
+/** Días de fin de semana (0 = domingo … 6 = sábado). Casi todos, sábado y domingo; en Oriente Medio, viernes y sábado. */
+const FRI_SAT = new Set(['IL', 'SA', 'EG', 'QA', 'KW', 'BH', 'OM', 'JO', 'IQ', 'YE', 'DZ', 'LY', 'SD']);
+export function weekendOf(cc: string): number[] {
+	if (FRI_SAT.has(cc)) return [5, 6];
+	if (cc === 'IR') return [5];
+	return [0, 6];
+}
 
 /**
  * Los próximos descansos que da cada festivo entre semana, de hoy a `horizon` días: el bloque libre en el que cae
  * (con el fin de semana) y, si con 1 o 2 días de vacaciones se junta con otro fin de semana, el puente. Los
  * festivos en sábado o domingo no dan nada y no salen. Un bloque con varios festivos sale una vez.
  */
-export function upcomingBreaks(holidays: Map<string, string[]>, today: string, horizon = 365): Break[] {
+export function upcomingBreaks(holidays: Map<string, string[]>, today: string, horizon = 365, weekendDays = [0, 6]): Break[] {
+	const weekend = (t: number) => weekendDays.includes(new Date(t).getUTCDay());
 	const off = (t: number) => weekend(t) || holidays.has(iso(t));
 	const start = at(today);
 	const end = start + horizon * DAY;

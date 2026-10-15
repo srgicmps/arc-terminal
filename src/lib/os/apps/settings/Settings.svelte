@@ -50,6 +50,16 @@
 		root?.closest('[data-ui="os-tool"]')?.querySelector('.main')?.scrollTo(0, 0);
 	}
 
+	// Intro en el buscador entra en el primer resultado.
+	function searchKey(e: KeyboardEvent) {
+		if (e.key !== 'Enter' || e.isComposing || !(e.target as HTMLElement).matches('input')) return;
+		const first = hits[0];
+		if (!first) return;
+		e.preventDefault();
+		query = '';
+		go(first.section.id as SectionId);
+	}
+
 	function onkeydown(e: KeyboardEvent) {
 		if (e.defaultPrevented || !section || !isShortcut(e, 'os-settings-home')) return;
 		const t = e.target as HTMLElement;
@@ -63,7 +73,8 @@
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="wrap" bind:this={root} {onkeydown}>
 		{#if !section}
-			<div class="home">
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="home" onkeydown={searchKey}>
 				<Search label="Buscar en los ajustes" placeholder="Buscar: tema, widgets, sonidos…" bind:value={query} />
 				{#if query.trim()}
 					{#if hits.length}

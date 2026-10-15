@@ -1,48 +1,35 @@
-<!-- Cronómetro con vueltas. Cuenta con la hora del sistema (Date.now), así no se desvía aunque la pestaña duerma. -->
+<!--
+	Cronómetro con vueltas. El estado vive en timers.svelte.ts: sigue contando al cambiar de pestaña o cerrar la
+	ventana. Aquí solo se repinta (cada 50 ms mientras se ve).
+-->
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import { stopwatchText } from './alarms.ts';
+	import { sw, swElapsed, swLap, swReset, swStart, swStop } from './timers.svelte.ts';
 
-	let base = $state(0); // ms acumulados antes del último «Seguir»
-	let since = $state<number | null>(null);
 	let now = $state(Date.now());
-	let laps = $state<number[]>([]);
-	let id: ReturnType<typeof setInterval> | undefined;
-
-	const elapsed = $derived(base + (since === null ? 0 : now - since));
-
-	function start() {
-		since = Date.now();
-		id = setInterval(() => (now = Date.now()), 50);
-	}
-	function stop() {
-		base = elapsed;
-		since = null;
-		clearInterval(id);
-	}
-	function reset() {
-		stop();
-		base = 0;
-		laps = [];
-	}
-	onDestroy(() => clearInterval(id));
+	onMount(() => {
+		const id = setInterval(() => (now = Date.now()), 50);
+		return () => clearInterval(id);
+	});
+	const elapsed = $derived(swElapsed(Math.max(now, sw.since ?? 0)));
 </script>
 
 <div class="sw">
 	<p class="big">{stopwatchText(elapsed)}</p>
 	<div class="btns">
-		{#if since === null}
-			<button type="button" class="go" onclick={start}>{elapsed ? 'Seguir' : 'Empezar'}</button>
-			<button type="button" onclick={reset} disabled={!elapsed}>Poner a cero</button>
+		{#if sw.since === null}
+			<button type="button" class="go" onclick={swStart}>{elapsed ? 'Seguir' : 'Empezar'}</button>
+			<button type="button" onclick={swReset} disabled={!elapsed}>Poner a cero</button>
 		{:else}
-			<button type="button" onclick={stop}>Parar</button>
-			<button type="button" onclick={() => (laps = [elapsed, ...laps])}>Vuelta</button>
+			<button type="button" onclick={swStop}>Parar</button>
+			<button type="button" onclick={swLap}>Vuelta</button>
 		{/if}
 	</div>
-	{#if laps.length}
+	{#if sw.laps.length}
 		<ol>
-			{#each laps as l, i (i)}
-				<li><span class="mut">Vuelta {laps.length - i}</span><span>+{stopwatchText(l - (laps[i + 1] ?? 0))}</span><b>{stopwatchText(l)}</b></li>
+			{#each sw.laps as l, i (i)}
+				<li><span class="mut">Vuelta {sw.laps.length - i}</span><span>+{stopwatchText(l - (sw.laps[i + 1] ?? 0))}</span><b>{stopwatchText(l)}</b></li>
 			{/each}
 		</ol>
 	{/if}

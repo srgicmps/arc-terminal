@@ -177,6 +177,24 @@
 		line-clamp: 2;
 		-webkit-box-orient: vertical;
 	}
+	/* Hueco bajo (pantallas pequeñas): menos aire, la hora más pequeña y, si no cabe, una fila. */
+	@container (max-height: 150px) {
+		.w {
+			gap: var(--sp-4);
+			padding: var(--sp-10) var(--sp-12);
+		}
+		.rows {
+			gap: var(--sp-4);
+		}
+		.big {
+			font-size: var(--fs-xl);
+		}
+	}
+	@container (max-height: 118px) {
+		.row:nth-of-type(n + 2) {
+			display: none;
+		}
+	}
 	.none {
 		margin: 0;
 		color: var(--muted);

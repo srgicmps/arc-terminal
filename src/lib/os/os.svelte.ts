@@ -77,7 +77,11 @@ export function openApp(id: string, path?: string, fresh = false): wm.Win | null
 /** Abre la app de una ruta de la web («/eco?x=1», «/x/zen»). null si la ruta no es de ninguna app. */
 export function openPath(path: string): wm.Win | null {
 	const app = appOfPath(path);
-	return app ? openApp(app.id, path === app.href ? undefined : path) : null;
+	if (!app) return null;
+	// Si ya hay una ventana enseñando esa misma ruta (la ficha de NVDA), se trae al frente en vez de abrir otra.
+	const same = desk().wins.find((w) => w.app === app.id && (w.path ?? app.href) === path);
+	if (same) return done((wm.focusWin(os.state, same.uid), same));
+	return openApp(app.id, path === app.href ? undefined : path);
 }
 
 export const focus = (uid: string) => done(wm.focusWin(os.state, uid));
