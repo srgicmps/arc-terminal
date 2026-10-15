@@ -74,3 +74,19 @@ Las mejoras sueltas se numeran **M1, M2…**; las decisiones de Sergi, **D1, D2�
 3. Revisar las ramas y los PR abiertos que quedaron a medias.
 4. Arrancar solo las sesiones Prog necesarias (con 3–6 suele bastar) y, si hace falta, Ideas o Mejora
    continua.
+
+## Estado al pausar (15-10-2026)
+
+- `main` en `95ca626` (tren 35). No quedan trenes a medias ni tareas programadas de Arc.
+- Todas las sesiones de Arc están archivadas.
+- **A medias:**
+  - #342, Cloudflare Radar: en borrador. La Action recibe vacío el Secret `CLOUDFLARE_RADAR_TOKEN`; hay
+    que comprobar que esté en *Repository secrets* y con ese nombre exacto.
+  - #202, #206, #209 y #212: fijar paneles en TOP, pin del mapa de GEO, mapa enlazado a PAIS y LIDER con
+    Warsh. Están en verde pero sin revisar, y chocan con `main`: hay que traer `main` antes de seguir.
+  - Pendientes de M1–M49 (todas de la barra de comandos): M25, M28, M30 (sin confirmar), M32, M45, M46, M47,
+    M48 y M49. De Mejora continua: países en la barra y texto suelto que abre NEWS.
+- **Se pueden cerrar** porque su contenido ya está en `main`: #183, #182, #265 y #257.
+- **Ramas que se pueden borrar:** las `tren/*`, `claude/probe-adr`, `claude/probe-lote` y
+  `claude/maximizar-pendiente`.
+- **Pendiente de Sergi:** D30, crear `EIA_API_KEY`.
