@@ -46,7 +46,7 @@ export const SHORTCUTS = [
 	{ id: 'os-next', group: 'Arc OS', keys: ['Alt', 'º'], combo: true, how: 'o Alt+Tab si el sistema lo deja; con ⇧, la anterior', action: 'Cambiar de ventana: salen las miniaturas; al soltar Alt, vas a la elegida (Esc cancela)' },
 	{ id: 'os-max', group: 'Arc OS', keys: ['Alt', '↑'], combo: true, action: 'Maximizar o restaurar la ventana' },
 	{ id: 'os-min', group: 'Arc OS', keys: ['Alt', '↓'], combo: true, action: 'Desencajar o minimizar la ventana' },
-	{ id: 'os-half', group: 'Arc OS', keys: ['Alt', '⇧', '←', '→'], combo: true, how: 'o ⌘/Super + flechas', action: 'Ventana a media pantalla' },
+	{ id: 'os-half', group: 'Arc OS', keys: ['Alt', '⇧', '←', '→'], combo: true, how: 'o ⌘/Super + flechas (después, ↑ o ↓ la pasan a un cuarto)', action: 'Ventana a media pantalla' },
 	{ id: 'os-menu', group: 'Arc OS', keys: ['⇧', 'F10'], combo: true, how: 'o clic derecho en la barra de título', action: 'Menú de la ventana (siempre encima, nueva ventana, mover a otro escritorio…)' },
 	{ id: 'os-close', group: 'Arc OS', keys: ['Alt', 'W'], combo: true, action: 'Cerrar la ventana' },
 	{ id: 'os-tile', group: 'Arc OS', keys: ['Alt', 'T'], combo: true, action: 'Mosaico: todas las ventanas en rejilla' },

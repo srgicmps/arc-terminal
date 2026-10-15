@@ -9,7 +9,7 @@
 	import { appOf, close, focusedWin, goDesk, loadOs, maximize, minimize, openApp, os, sendToDesk, setArea, snap, tile, toggleTop } from '#lib/os/os.svelte.ts';
 	import { findWin } from '#lib/os/wm.ts';
 	import ContextMenu, { type MenuEntry } from './ContextMenu.svelte';
-	import { snapRect, type Snap } from '#lib/os/wm.ts';
+	import { snapRect, superSnap, type Snap } from '#lib/os/wm.ts';
 	import Window from './Window.svelte';
 
 	let w = $state(0);
@@ -29,7 +29,7 @@
 	 * Atajos de Arc OS (todos con Alt, para no pisar los de la web): Alt+º o Alt+` siguiente ventana (con ⇧, la
 	 * anterior; Alt+Tab también, cuando el sistema lo deja llegar al navegador, p. ej. a pantalla completa),
 	 * Alt+↑ maximizar, Alt+↓ minimizar, Alt+⇧+← / → encajar a una mitad, Alt+W cerrar, Alt+T mosaico y Alt+1…6
-	 * escritorio. ⌘/Super+flechas encaja como en Mac y Windows (si el sistema no se lo queda). Ctrl+W y Ctrl+Tab son
+	 * escritorio. ⌘/Super+flechas encaja como en Windows, también a cuartos (wm.ts → superSnap; si el sistema no se lo queda). Ctrl+W y Ctrl+Tab son
 	 * del navegador: no se pueden usar. Devuelve si era un atajo.
 	 */
 	export function handleKey(e: Key): boolean {
@@ -37,9 +37,10 @@
 		if (e.ctrlKey && e.altKey && e.code === 'KeyT') return (openApp('terminal'), true);
 		const f = focusedWin();
 		if (e.metaKey && !e.altKey && !e.ctrlKey && f) {
-			const to: Record<string, Snap | null> = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'max', ArrowDown: null };
-			if (!(e.key in to)) return false;
-			snap(f.uid, to[e.key]);
+			if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return false;
+			const to = superSnap(f.snap, e.key);
+			if (to === 'min') minimize(f.uid);
+			else if (to !== (f.snap ?? null)) snap(f.uid, to);
 			return true;
 		}
 		if (!e.altKey || e.ctrlKey || e.metaKey) return false;
@@ -141,6 +142,12 @@
 	/* Y sin pintar: sus iframes, globos y gráficos no gastan mientras no se ve (como al minimizar). */
 	.desk.off {
 		content-visibility: hidden;
+	}
+
+	/* El escritorio (Desktop.svelte) pone esta capa sin puntero para que los iconos de debajo reciban los clics, y
+	   pointer-events se hereda: sin esto, el menú de la ventana no se podía pulsar (el clic iba al escritorio). */
+	.layer > :global([data-ui='os-menu']) {
+		pointer-events: auto;
 	}
 
 	.preview {
