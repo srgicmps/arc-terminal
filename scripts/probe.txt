@@ -107,3 +107,9 @@ https://www.worldbank.org/en/research/commodity-markets ~ CMO-Historical-Data-Mo
 # LIDER: quién preside ahora la Fed y quién forma el Comité Ejecutivo del BCE
 https://www.federalreserve.gov/aboutthefed/bios/board/default.htm ~ .{0,120}(Chair|Powell).{0,60}
 https://www.ecb.europa.eu/ecb/orga/decisions/eb/html/index.en.html ~ .{0,100}(Vice-President|Member of the Executive Board).{0,20}
+# 26B.1 ECO: sentimiento económico (ESI) y confianza del consumidor, Eurostat ei_bssi_m_r2
+https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ei_bssi_m_r2?format=JSON&lang=EN&lastTimePeriod=2&geo=EA20&geo=ES
+https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ei_bssi_m_r2?format=JSON&lang=EN&lastTimePeriod=2&indic=BS-ESI-I&indic=BS-CSMCI-BAL&s_adj=SA
+# 26B.2 Monthly Treasury Statement: tabla 1 (déficit) y tabla 4 (ingresos por fuente, aranceles)
+https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/mts/mts_table_1?sort=-record_date&page[size]=20
+https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/mts/mts_table_4?sort=-record_date&page[size]=60 ~ Customs|Total
