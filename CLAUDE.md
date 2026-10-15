@@ -120,7 +120,7 @@ vista `HELP`. Resumen:
 | `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FAO, FRED*, RSS |
 | `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5), Wikidata, SIPRI, Cloudflare Radar* |
 | `ES` | España en cifras, BOE, luz | INE, BOE, REE, RSS |
-| `WS` | Wall Street, mapa de calor, curva de tipos, divisas, cripto, materias primas | TradingView, Tesoro de EE. UU., BCE, CoinGecko, Banco Mundial (Pink Sheet) |
+| `WS` | Wall Street, mapa de calor, curva de tipos, divisas, cripto, materias primas | TradingView, Tesoro de EE. UU., BCE, CoinGecko, Banco Mundial (Pink Sheet), EIA* (inventarios de petróleo) |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |
 | `MIS` | Tu lista de valores (en el navegador) | TradingView |
 | `TECH` / `AI` | Tecnología e IA | Hacker News, Hugging Face, Cloudflare Radar*, RSS |
@@ -134,7 +134,7 @@ vista `HELP`. Resumen:
 | `FONDOS` | Carteras 13F de grandes fondos: mayores posiciones, compras y ventas | SEC* |
 | `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
 
-\* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`, `CLOUDFLARE_RADAR_TOKEN`):
+\* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`, `CLOUDFLARE_RADAR_TOKEN`, `EIA_API_KEY`):
 sin ella el panel no sale y no se rompe nada. `MYMEMORY_EMAIL` (también opcional) traduce al español los
 titulares en inglés (`scripts/translate.ts`); sin él, siguen en inglés.
 

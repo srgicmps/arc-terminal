@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import AuctionList from '#lib/components/AuctionList.svelte';
 	import CryptoTable from '#lib/components/CryptoTable.svelte';
+	import EiaStocks from '#lib/components/EiaStocks.svelte';
 	import DefenseQuotes from '#lib/components/DefenseQuotes.svelte';
 	import PinkSheetTable from '#lib/components/PinkSheetTable.svelte';
 	import TicTable from '#lib/components/TicTable.svelte';
@@ -211,6 +212,18 @@
 					del mes; se publica a primeros del siguiente. Fuente:
 					<a href="https://www.worldbank.org/en/research/commodity-markets" target="_blank" rel="noopener">Banco Mundial, Pink Sheet</a>
 					· <Updated at={data.pinksheet?.fetchedAt} source="pinksheet" />
+				{/snippet}
+			</Panel>
+		{/if}
+		{#if data.eia?.data.stocks.length}
+			{@const week = data.eia.data.stocks[0].points.at(-1)?.t}
+			<Panel title="Inventarios de petróleo" meta="EE. UU. · semana al {week ? dm(`${week}T12:00:00Z`) : '—'}">
+				<EiaStocks stocks={data.eia.data.stocks} />
+				{#snippet note()}
+					Millones de barriles. «Semana»: variación frente a la anterior; «vs 5 años»: frente a la media de esa misma
+					semana en los cinco años previos. Sale los miércoles. Fuente:
+					<a href="https://www.eia.gov/petroleum/supply/weekly/" target="_blank" rel="noopener">EIA</a>
+					· <Updated at={data.eia?.fetchedAt} source="eia" />
 				{/snippet}
 			</Panel>
 		{/if}
