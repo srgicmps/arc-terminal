@@ -100,6 +100,8 @@ const typing = () => {
 
 /** Se llama una vez desde +layout.svelte (como un onMounted). Devuelve la limpieza. */
 export function initCloud() {
+	// La API solo existe en Cloudflare, donde la web va en la raíz. En GitHub Pages (/arc-terminal/) ni se intenta.
+	if (new URL(url(), location.href).pathname !== '/api/prefs') return;
 	try {
 		memory = readMemory(localStorage.getItem(MEMORY));
 	} catch {
