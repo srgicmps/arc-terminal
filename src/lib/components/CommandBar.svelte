@@ -7,7 +7,7 @@
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import { toggleFullscreen } from '#lib/fit.svelte.ts';
-	import { goto } from '$app/navigation';
+	import { afterNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { isEmbedded } from '#lib/os/embed.ts';
 	import { resolve } from '$app/paths';
@@ -40,6 +40,7 @@
 	import type { Dataset } from '#lib/data.ts';
 	import { countryEntries, leaderEntries, prepare, searchOptions, type Indexed } from '#lib/search.ts';
 	import type { SearchEntry } from '#lib/types.ts';
+	import { isTyping } from '#lib/rownav.ts';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
 
@@ -84,6 +85,12 @@
 	// «ECO; WS CURVA»: lo que queda por abrir y cuántos eran (Intro con la barra vacía abre el siguiente).
 	let queue = $state<string[]>([]);
 	let queueTotal = $state(0);
+	// Si navegas por otro camino (una pestaña, un enlace, atrás), la cola se olvida: solo la barra la sigue.
+	let barNav = false;
+	afterNavigate(() => {
+		if (!barNav) queue = [];
+		barNav = false;
+	});
 	// Favoritos («fav ECO TIPOS», «1»), también de localStorage.
 	let favs = $state<string[]>([]);
 	// Última zona de FUEL (para «llenar 50L» y «diésel»); se lee al enfocar la barra.
@@ -177,7 +184,12 @@
 		favs = readFavs();
 		if (a.kind === 'open') {
 			const entry = favs[a.n - 1];
-			if (!entry) return false;
+			// Sin ese favorito, el número no abre otra cosa al azar (la primera sugerencia que lo contenga).
+			if (!entry) {
+				value = '';
+				flash(`No tienes el favorito ${a.n} · guárdalo con «fav ECO»`);
+				return true;
+			}
 			run(entry);
 			return true;
 		}
@@ -243,6 +255,7 @@
 			close();
 			recent = pushHistory(readHistory(), raw.trim());
 			writeHistory(recent);
+			barNav = true;
 			goto(routeHref(ct.route) + ct.search);
 			return;
 		}
@@ -259,6 +272,7 @@
 		recent = pushHistory(readHistory(), canonical(target));
 		writeHistory(recent);
 		const { route, search } = targetPath(target);
+		barNav = true;
 		goto(routeHref(route) + search);
 	}
 
@@ -266,7 +280,8 @@
 		const n = options.length;
 		// ↑ con la barra vacía (o recorriendo ya el historial) trae el comando anterior; ↓, el siguiente.
 		const browsing = histIdx >= 0 && value === recent[histIdx];
-		if ((e.key === 'ArrowUp' && (!value || browsing)) || (e.key === 'ArrowDown' && browsing)) {
+		// Si ya te mueves por la lista del historial con ↓, ↑ sube en la lista (no trae el último a la barra).
+		if ((e.key === 'ArrowUp' && ((!value && !moved) || browsing)) || (e.key === 'ArrowDown' && browsing)) {
 			e.preventDefault();
 			const step = historyStep(recent, browsing ? histIdx : -1, e.key === 'ArrowUp' ? 1 : -1);
 			histIdx = step.idx;
@@ -333,14 +348,15 @@
 		// En el Modo OS la barra no está a la vista: ni en /os ni en una vista dentro de una ventana (allí manda
 		// el teclado de la ventana y Esc no debe sacarte del escritorio).
 		if (page.route.id === '/os' || isEmbedded()) return;
-		// Alt+→ con una cola de «ECO; WS CURVA»: la siguiente vista (también con el foco en la barra).
-		if (queue.length && isShortcut(e, 'queue')) {
+		const typing = isTyping(document.activeElement);
+		// Alt+→ con una cola de «ECO; WS CURVA»: la siguiente vista (también con el foco en la barra, pero no en otro
+		// campo: allí ⌥→ salta de palabra).
+		if (queue.length && isShortcut(e, 'queue') && (!typing || document.activeElement === input)) {
 			e.preventDefault();
 			run('');
 			return;
 		}
-		const tag = (document.activeElement?.tagName ?? '').toUpperCase();
-		if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || e.ctrlKey || e.metaKey || e.altKey) return;
+		if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
 		if (isShortcut(e, 'bar')) {
 			e.preventDefault();
 			input.focus();
@@ -349,6 +365,8 @@
 			e.preventDefault();
 			toggleFullscreen();
 		} else if (isShortcut(e, 'home')) {
+			// Esc que ya ha cerrado otra cosa (un ⓘ, una hoja, un menú) no te saca de la vista.
+			if (e.defaultPrevented || document.querySelector('dialog[open], [role=dialog]')) return;
 			goto(resolve('/'));
 		} else if (e.key.length === 1 && /[a-z0-9]/i.test(e.key)) {
 			input.focus();
@@ -395,6 +413,7 @@
 			}, 120)}
 		type="text"
 		spellcheck="false"
+		autocorrect="off"
 		autocapitalize="characters"
 		enterkeyhint={phone ? 'search' : 'go'}
 		placeholder={notice ||
@@ -440,7 +459,7 @@
 						aria-selected={i === selected}
 						onmousedown={(e) => {
 							e.preventDefault();
-							choose(o);
+							if (e.button === 0) choose(o);
 						}}
 					>
 						<span class="code">{o.code}</span>
