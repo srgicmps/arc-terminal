@@ -1,0 +1,299 @@
+/* ── Estética «Cálido» (src/lib/estilos.ts) ───────────────────────────────────────────────────────────
+ * <html data-style="calido">: editorial y tranquila. Papel crema de día y marrón grafito de noche, acento
+ * terracota, títulos en serif (Newsreader) y texto en sans humanista (Source Sans 3), mucho aire, esquinas
+ * suaves y sombras cálidas muy leves en vez de líneas duras. No toca el acento elegido ([data-accent]). */
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;500;600&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	:root[data-style='calido'],
+	[data-style='calido'] {
+		/* ── Noche: marrón grafito, crema y terracota ── */
+		--bg: #1b1714;
+		--panel: #231e1a;
+		--raise: #2e2722;
+		--line: #3a312a;
+		--fg: #f1e8dc;
+		--muted: #bcae9c;
+		--faint: #a99a88;
+		--amber: #e9926a;
+		--amber-dim: #d6a288;
+		--amber-soft: rgba(233, 146, 106, 0.13);
+		--amber-edge: rgba(233, 146, 106, 0.45);
+		--on-amber: #22100a;
+		--up: #82c79a;
+		--down: #f2808d;
+		--neutral: #4d433a;
+		--series-2: #93b4cc;
+		--series-3: #cdb071;
+		--sq-light: #3a312a;
+		--sq-dark: #2a231e;
+		--scrim: rgba(18, 14, 11, 0.62);
+		--ca-line-soft: rgba(241, 232, 220, 0.07);
+		--ca-glow: rgba(233, 146, 106, 0.07);
+		--ca-shadow: rgba(0, 0, 0, 0.32);
+
+		/* ── Letras: serif editorial en títulos, sans humanista en lo demás (cifras tabulares) ── */
+		--ca-serif: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+		--ca-sans: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+		--sans: var(--ca-sans);
+		--mono: var(--ca-sans);
+		--font-ui: var(--ca-sans);
+		--title-font: var(--ca-serif);
+		--fs-xxs: 11px;
+		--fs-xs: 12px;
+		--fs-s: 13px;
+		--fs-m: 14px;
+		--fs-l: 15.5px;
+		--fs-xl: 21px;
+		--fs-big: 30px;
+		--fs-xxl: 32px;
+		--fs-title: 17px;
+		--fw-medium: 500;
+		--fw-bold: 600;
+		--lh: 1.5;
+		--lh-text: 1.5;
+		--lh-loose: 1.6;
+		--track-tight: 0.01em;
+		--track-code: 0.03em;
+		--track-caps: 0.07em;
+		--track-label: 0.02em;
+		--track-brand: 0.1em;
+		--title-case: none;
+		--title-track: -0.005em;
+		--title-color: var(--fg);
+
+		/* ── Aire ── */
+		--pad-x: var(--sp-16);
+		--row-y: var(--sp-8);
+		--head-y: var(--sp-10);
+		--gutter: var(--sp-20);
+		--gutter-touch: var(--sp-14);
+		--cmd-h: 40px;
+
+		/* ── Forma: tarjetas de esquinas suaves, sombra cálida y sin rejilla de líneas ── */
+		--border: var(--hair) solid var(--line);
+		--radius: 14px;
+		--radius-s: 8px;
+		--shadow: 0 0 0 var(--hair) var(--ca-line-soft), 0 1px 2px var(--ca-shadow), 0 10px 28px -14px var(--ca-shadow);
+		--shadow-pop: 0 0 0 var(--hair) var(--ca-line-soft), 0 18px 48px -12px var(--ca-shadow);
+		--panel-edge: 0;
+		--grid-gap: var(--sp-16);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-16);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-16);
+		--stack-edge: 0;
+		--fit-panel-min: 300px;
+		--bg-image: radial-gradient(1100px 520px at 12% -180px, var(--ca-glow), transparent 70%);
+		--dur-ui: 180ms;
+		--dur-fast: 180ms;
+		--ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+	}
+	:root[data-theme='light'][data-style='calido'],
+	:root[data-theme='light'] [data-style='calido'] {
+		/* ── Día: papel crema, tinta marrón y terracota ── */
+		--bg: #f5efe5;
+		--panel: #fcf9f3;
+		--raise: #f0e7da;
+		--line: #e5dacb;
+		--fg: #2b221c;
+		--muted: #6a5c4f;
+		--faint: #6e6052;
+		--amber: #a54a29;
+		--amber-dim: #96583d;
+		--amber-soft: rgba(165, 74, 41, 0.09);
+		--amber-edge: rgba(165, 74, 41, 0.4);
+		--on-amber: #ffffff;
+		--up: #2d7448;
+		--down: #b3273f;
+		--neutral: #cdbfad;
+		--series-2: #3d6688;
+		--series-3: #8a6a1f;
+		--sq-light: #f3ebdf;
+		--sq-dark: #dccdb8;
+		--scrim: rgba(43, 34, 28, 0.32);
+		--ca-line-soft: rgba(90, 64, 40, 0.07);
+		--ca-glow: rgba(165, 74, 41, 0.06);
+		--ca-shadow: rgba(90, 64, 40, 0.13);
+	}
+
+	/* ── Lo que un token no alcanza ───────────────────────────────────────────────────────────── */
+
+	/* Selección de texto y cursor de los campos en terracota. */
+	[data-style='calido'] ::selection {
+		background: var(--amber-soft);
+	}
+	[data-style='calido'] input {
+		caret-color: var(--amber);
+	}
+
+	/* Logotipo: «Arc» en serif, como la cabecera de un periódico. */
+	[data-style='calido'] .brand {
+		font-family: var(--ca-serif);
+		--fs-s: var(--fs-l);
+		--fw-bold: 500;
+	}
+
+	/* Cabecera de vista: titular grande en serif, el código pequeño y en versalitas de terracota. */
+	[data-style='calido'] .vh {
+		margin-block: var(--sp-6) var(--sp-8);
+	}
+	[data-style='calido'] .vh h1 {
+		--sans: var(--ca-serif);
+		--fw-medium: 500;
+		--fs-xl: 30px;
+		letter-spacing: -0.012em;
+		line-height: 1.15;
+	}
+	[data-style='calido'] .vh .code {
+		--mono: var(--ca-sans);
+		--fs-l: 12.5px;
+		--fw-bold: 600;
+		--track-code: 0.12em;
+		align-self: center;
+	}
+	[data-style='calido'] .vh .sum {
+		font-family: var(--ca-serif);
+		--fs-s: 16px;
+		--lh-snug: 1.45;
+		max-width: 72ch;
+	}
+	@media (max-width: 720px) {
+		[data-style='calido'] .vh h1 {
+			--fs-xl: 25px;
+		}
+	}
+
+	/* Paneles: la cabecera sin línea dura, solo un filete muy suave; el título en serif y el ▾ discreto. */
+	[data-style='calido'] .ph {
+		--border: var(--hair) solid var(--ca-line-soft);
+	}
+	[data-style='calido'] .ph h2 {
+		--fw-bold: 500;
+		line-height: 1.25;
+	}
+	[data-style='calido'] .ph .fold {
+		font-family: var(--ca-sans);
+		font-size: 0.7em;
+		vertical-align: 0.12em;
+	}
+
+	/* Filas y notas con separaciones más suaves que las de la terminal. */
+	[data-style='calido'] .mini,
+	[data-style='calido'] .t,
+	[data-style='calido'] .pnote {
+		--border: var(--hair) solid var(--ca-line-soft);
+	}
+	[data-style='calido'] .t th {
+		--track-caps: 0.08em;
+		--fs-xs: 11px;
+	}
+	[data-style='calido'] .t {
+		--sp-5: var(--sp-7);
+	}
+	/* La primera y la última columna, alineadas con el título del panel. */
+	[data-style='calido'] .t :is(th, td):is(:first-child, :last-child) {
+		--sp-10: var(--pad-x);
+	}
+
+	/* Cifras grandes en serif: se leen como un titular de cifras. */
+	[data-style='calido'] .tile b {
+		font-family: var(--ca-serif);
+		--fs-xl: 28px;
+		--fw-medium: 500;
+		letter-spacing: -0.01em;
+		line-height: 1.15;
+	}
+	[data-style='calido'] .tile {
+		--sp-12: var(--sp-16);
+	}
+	[data-style='calido'] .tiles {
+		--line: var(--ca-line-soft);
+		--border: var(--hair) solid var(--ca-line-soft);
+	}
+	/* Una tira de cifras suelta, fuera de un panel, es otra tarjeta. */
+	[data-style='calido'] .tiles:not(.panel .tiles) {
+		--border: 0 solid transparent;
+		border-radius: var(--radius);
+		box-shadow: var(--shadow);
+		overflow: hidden;
+	}
+
+	/* Barra de comandos: una píldora amplia con sombra leve; al escribir, un halo terracota. */
+	[data-style='calido'] .cmd {
+		--radius-s: 999px;
+		box-shadow: var(--shadow);
+	}
+	[data-style='calido'] .cmd:focus-within {
+		z-index: calc(var(--z-bar) + 1); /* sus sugerencias, sobre el índice de paneles del móvil */
+		box-shadow: 0 0 0 var(--sp-3) var(--amber-soft), var(--shadow);
+	}
+	[data-style='calido'] .cmd .prompt {
+		--sp-10: var(--sp-16);
+	}
+	[data-style='calido'] .cmd .go {
+		--sp-14: var(--sp-20);
+	}
+	[data-style='calido'] .cmd.sheet {
+		--radius-s: 0;
+		box-shadow: 0 -8px 24px -16px var(--ca-shadow);
+	}
+	[data-style='calido'] .suggest {
+		border-radius: var(--radius);
+		box-shadow: var(--shadow-pop);
+	}
+	[data-style='calido'] .cmd.sheet .suggest {
+		border-radius: var(--radius) var(--radius) 0 0;
+	}
+
+	/* Teclas de sección, segmentados y desplegables: píldoras suaves. */
+	[data-style='calido'] .pidx span,
+	[data-style='calido'] .place .chip {
+		border-radius: 999px;
+	}
+	[data-style='calido'] .key,
+	[data-style='calido'] .seg,
+	[data-style='calido'] .seg button {
+		--radius-s: 999px;
+	}
+	[data-style='calido'] .seg {
+		padding: var(--sp-2);
+		gap: var(--sp-2);
+	}
+	[data-style='calido'] .seg button {
+		--sp-10: var(--sp-12);
+	}
+	[data-style='calido'] select {
+		--radius-s: 999px;
+		--sp-8: var(--sp-12);
+	}
+	[data-style='calido'] .tape {
+		--radius-s: var(--radius);
+		box-shadow: var(--shadow);
+		--border: 0 solid transparent;
+	}
+
+	/* Barra inferior del móvil: papel, con una sombra hacia arriba en vez de línea. */
+	@media (max-width: 720px) {
+		[data-style='calido'] .thumb {
+			--border: 0 solid transparent;
+			box-shadow: 0 -8px 24px -16px var(--ca-shadow);
+		}
+	}
+
+	/* Movimiento: las tarjetas se elevan un poco al pasar el ratón; solo si el sistema no pide menos movimiento. */
+	@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+		[data-style='calido'] .panel {
+			transition: box-shadow var(--dur-ui) var(--ease);
+		}
+		[data-style='calido'] .panel:not(.max):hover {
+			--shadow: 0 0 0 var(--hair) var(--ca-line-soft), 0 2px 4px var(--ca-shadow), 0 16px 36px -16px var(--ca-shadow);
+		}
+		[data-style='calido'] .key,
+		[data-style='calido'] .mini a,
+		[data-style='calido'] .t a.name {
+			transition: color var(--dur-ui) var(--ease), border-color var(--dur-ui) var(--ease), background-color var(--dur-ui) var(--ease);
+		}
+	}
+}
