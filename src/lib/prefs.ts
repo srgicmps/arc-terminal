@@ -87,6 +87,8 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-os-skin', storage: 'local', what: 'Aspecto del escritorio de Arc OS: Windows, Mac o Linux', where: 'Arc OS, Panel de control y primer arranque', kind: 'ajuste' },
 	{ key: 'arc-os-seen', storage: 'local', what: 'Avisos y novedades ya vistos en el centro de notificaciones de Arc OS', where: 'Arc OS, campana de la barra', kind: 'dato' },
 	{ key: 'arc-os-alarms', storage: 'local', what: 'Tus alarmas del Reloj de Arc OS (hora, nombre y días)', where: 'Arc OS, app Reloj', kind: 'dato' },
+	{ key: 'arc-os-files', storage: 'local', what: 'Tus carpetas, accesos directos y papelera de Archivos (Arc OS)', where: 'Arc OS, app Archivos', kind: 'dato' },
+	{ key: 'arc-os-files-view', storage: 'local', what: 'Archivos en iconos o en lista', where: 'Arc OS, app Archivos', kind: 'ajuste' },
 	{ key: 'arc-os-note-<id>', prefix: 'arc-os-note-', storage: 'local', what: 'Tus notas de Arc OS (una clave por nota, hasta 40)', where: 'Arc OS, app Notas', kind: 'dato' },
 	{ key: 'arc-os-events', storage: 'local', what: 'Tus eventos del Calendario de Arc OS', where: 'Arc OS, app Calendario', kind: 'dato' },
 	{ key: 'arc-<versión>', storage: 'cache', what: 'Los archivos de la web publicada; se renueva en cada publicación', where: 'Sin conexión', kind: 'caché' },
