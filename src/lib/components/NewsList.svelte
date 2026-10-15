@@ -17,7 +17,6 @@
 	import { resolve } from '$app/paths';
 	import { initNewsPrefs, newsPrefs, visibleNews } from '#lib/newsprefs.svelte.ts';
 	import AutoTag from './AutoTag.svelte';
-	import FamilySend from './FamilySend.svelte';
 	import TitleLang from './TitleLang.svelte';
 
 	interface Props {
@@ -39,6 +38,14 @@
 	let entitiesIn = $state<((text: string) => EntityLink[]) | null>(null);
 	$effect(() => {
 		import('#lib/entities.ts').then((m) => (entitiesIn = m.entitiesIn));
+	});
+	// «Mandar» a la familia (F15): el botón se carga aparte y solo si hay a quién mandar (y con cuenta).
+	let FamilySend = $state<typeof import('./FamilySend.svelte').default | null>(null);
+	$effect(() => {
+		import('#lib/family.svelte.ts').then(async (f) => {
+			await f.loadFamily();
+			if (f.family.people.length) FamilySend = (await import('./FamilySend.svelte')).default;
+		});
 	});
 	// Traducción de los titulares en inglés (ES / EN, titles.svelte.ts).
 	// Tus medios (M23, se eligen en NEWS): sin los silenciados y del idioma original elegido.
@@ -88,7 +95,7 @@
 								</Disclosure>
 							</span>
 						{/if}
-						<FamilySend title={item.titleEs ?? item.title} url={item.url} />
+						{#if FamilySend}<FamilySend title={item.titleEs ?? item.title} url={item.url} />{/if}
 					</div>
 					{#if summaries && item.summary && item.summary !== item.title}
 						<p class="s">{item.summary}</p>
