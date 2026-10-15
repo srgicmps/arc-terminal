@@ -201,11 +201,16 @@ jobs:
       - if: steps.cfbuild.outcome == 'success'
         continue-on-error: true
         run: |
+          bash scripts/cf-config.sh
           npx --yes wrangler@4.145.0 pages project create arc-terminal --production-branch=main || true
           npx --yes wrangler@4.145.0 pages deploy build --project-name=arc-terminal --branch=main --commit-dirty=true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Ajustes por usuario (functions/, cloud/): Variables de GitHub, no secretas. Ver scripts/cf-config.sh.
+          D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}
+          ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN }}
+          ACCESS_AUD: ${{ vars.ACCESS_AUD }}
 
   deploy:
     needs: build
