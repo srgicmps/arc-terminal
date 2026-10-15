@@ -44,8 +44,9 @@ describe('RV: frente a sus competidores', () => {
 });
 
 describe('RV: competidores de Finnhub', () => {
-	it('quita el propio valor y los repetidos', () => {
+	it('quita el propio valor, los repetidos y los de fuera de EE. UU.', () => {
 		expect(toPeers('NVDA', ['NVDA', 'AMD', 'amd', 'AVGO', 3])).toEqual(['AMD', 'AVGO']);
+		expect(toPeers('TSM', ['2330.TW', 'ASML.AS', 'BRK.B', 'INTC'])).toEqual(['BRK.B', 'INTC']);
 		expect(toPeers('NVDA', { error: 'x' })).toEqual([]);
 	});
 

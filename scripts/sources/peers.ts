@@ -45,10 +45,17 @@ export function duePeerMetrics(data: PeersData, now: number, max = METRICS_PER_R
 		.slice(0, max);
 }
 
-/** La lista de Finnhub, sin el propio valor y sin repetidos. */
+/**
+ * ¿Cotiza en EE. UU.? Los de otras bolsas llevan sufijo («2330.TW», «ASML.AS») y sus cifras son de pago en
+ * Finnhub (HTTP 403). Las clases de acciones de EE. UU. («BRK.B») sí valen.
+ */
+export const isUsSymbol = (s: string) => /^[A-Z]+(\.[AB])?$/.test(s);
+
+/** La lista de Finnhub, sin el propio valor, sin repetidos y solo de EE. UU. */
 export function toPeers(code: string, body: unknown): string[] {
 	if (!Array.isArray(body)) return [];
-	return [...new Set(body.filter((s): s is string => typeof s === 'string' && s !== code).map((s) => s.toUpperCase()))].slice(0, MAX_PEERS);
+	const list = body.filter((s): s is string => typeof s === 'string').map((s) => s.toUpperCase());
+	return [...new Set(list.filter((s) => s !== code && isUsSymbol(s)))].slice(0, MAX_PEERS);
 }
 
 export const peers: Source<PeersData> = {

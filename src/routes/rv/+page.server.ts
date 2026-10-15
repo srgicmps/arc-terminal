@@ -7,8 +7,9 @@ import type { PageServerLoad } from './$types';
 // El valor se elige en el navegador (?s=NVDA).
 export const load: PageServerLoad = async () => {
 	const [perf, peers] = await Promise.all([dataset<PerfData>('perf'), dataset<PeersData>('peers')]);
-	const metrics = perf?.data.metrics;
-	if (!metrics || !peers) return { rv: null };
+	if (!perf || !peers) return { rv: null };
+	// Las copias de perf.json de antes de RV no traen las cifras: llegan en su próxima descarga.
+	const metrics = perf.data.metrics ?? {};
 	return {
 		rv: {
 			fetchedAt: perf.fetchedAt,

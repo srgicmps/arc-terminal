@@ -53,13 +53,17 @@
 
 {#if !data.rv}
 	<p class="empty">Sin datos todavía: hace falta la clave FINNHUB_API_KEY en la terminal.</p>
-{:else if !metrics[code]}
-	<p class="empty">Sin cifras de {code}: RV solo tiene unos 60 grandes valores de EE. UU. Prueba con {codes.slice(0, 6).join(', ')}…</p>
 {:else}
 	<div class="grid grid-2">
 		<div class="col">
 			<Panel title="Frente a su sector" meta="{code} · {name(code)} · {cmp.peers.length} competidores con datos">
-				<RvTable rows={cmp.rows} />
+				{#if !Object.keys(metrics).length}
+					<p class="empty">Sin cifras: llegan con la próxima descarga de Finnhub, una vez cada 12 horas.</p>
+				{:else if !metrics[code]}
+					<p class="empty">Sin cifras de {code}: RV solo tiene unos 60 grandes valores de EE. UU. Prueba con {codes.slice(0, 6).join(', ')}…</p>
+				{:else}
+					<RvTable rows={cmp.rows} />
+				{/if}
 				{#snippet note()}{@render source()}{/snippet}
 			</Panel>
 		</div>
@@ -68,7 +72,7 @@
 				<Table>
 					<thead><tr><th class="l">Valor</th><th>PER</th><th>Margen</th><th>Ventas</th><th>Capitalización</th></tr></thead>
 					<tbody>
-						{#each [code, ...cmp.peers] as c (c)}
+						{#each [code, ...peerList] as c (c)}
 							{@const m = metrics[c]}
 							<tr class:own={c === code}>
 								<td class="l name"><a href="{resolve('/rv')}?s={encodeURIComponent(c)}">{c}</a>{#if name(c) !== c}<span class="sub">{name(c)}</span>{/if}</td>
@@ -81,7 +85,7 @@
 					</tbody>
 				</Table>
 				{#snippet note()}
-					{#if without.length}Sin datos (fuera de la lista): {without.join(', ')}. {/if}Ventas: crecimiento en 12 meses ·
+					{#if without.length}Sin cifras aún: {without.join(', ')} (se completan poco a poco, unos 20 cada hora). {/if}Ventas: crecimiento en 12 meses ·
 					<Updated at={data.rv?.peersAt} source="peers" />
 				{/snippet}
 			</Panel>
