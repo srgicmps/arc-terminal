@@ -41,6 +41,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-install-hint', storage: 'local', what: 'Ya has cerrado el aviso «Instálala en tu móvil»', where: 'Móvil', kind: 'dato' },
 	{ key: 'arc-tv', storage: 'local', what: 'Vistas y segundos del modo TV', where: 'TV', kind: 'ajuste' },
 	{ key: 'arc-cal', storage: 'local', what: 'Países e importancia del calendario económico', where: 'CAL', kind: 'ajuste' },
+	{ key: 'arc-traffic', storage: 'local', what: 'Provincias del panel de tráfico (hasta 5)', where: 'ES, «Tráfico»', kind: 'dato' },
 	{ key: 'fuel-zone', storage: 'local', what: 'Última provincia elegida', where: 'FUEL', kind: 'ajuste' },
 	{ key: 'arc-place', storage: 'local', what: 'Tu sitio y hasta 5 favoritos', where: 'Chip «Tu sitio» de la cabecera, WX', kind: 'dato' },
 	{ key: 'arc-watchlists', storage: 'local', what: 'Tus listas de valores y cuál se enseña', where: 'MIS', kind: 'dato' },
