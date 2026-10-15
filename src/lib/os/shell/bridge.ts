@@ -3,7 +3,8 @@
 // que leen estado reactivo: dentro de un $derived o de la plantilla se actualizan solas.
 import { isInstalled } from '../packages.svelte.ts';
 import { leaveOS } from '../mode.svelte.ts';
-import { APPS, appOf, close, desk, focus, focusedWin, goDesk, maximize, minimize, newDesk, openApp, openPath, os, tile } from '../os.svelte.ts';
+import { APPS, appOf, close, desk, focus, focusedWin, goDesk, maximize, minimize, newDesk, openApp, openPath, os, removeDesk, tile } from '../os.svelte.ts';
+import { MAX_DESKS } from '../wm.ts';
 import { opened } from './shell.svelte.ts';
 import type { StartApp } from './start.ts';
 import type { DeskInfo, TaskWin } from './types.ts';
@@ -17,7 +18,7 @@ export function windows(): TaskWin[] {
 	return desk()
 		.wins.map((w) => ({ w, app: appOf(w) }))
 		.filter((x) => !!x.app)
-		.map(({ w, app }) => ({ id: w.uid, appId: w.app, title: app!.name, icon: app!.icon, minimized: !!w.min, focused: f?.uid === w.uid && !w.min }));
+		.map(({ w, app }) => ({ id: w.uid, appId: w.app, title: app!.title?.(w.path) ?? app!.name, icon: app!.icon, minimized: !!w.min, focused: f?.uid === w.uid && !w.min }));
 }
 
 export const desks = (): DeskInfo[] => os.state.desks.map((d) => ({ id: d.id, name: d.name, active: d.id === os.state.active }));
@@ -27,9 +28,14 @@ export const focused = (): TaskWin | null => windows().find((w) => w.focused) ??
 
 export const status = () => (os.notice && Date.now() - os.notice.at < 8000 ? os.notice.text : null);
 export const deskW = () => os.area.w;
+export const deskH = () => os.area.h;
 
 export function open(id: string) {
 	if (openApp(id)) opened(id);
+}
+/** Una app en un sitio concreto (Ajustes en una sección: `openAt('ajustes', 'cuenta')`). */
+export function openAt(id: string, path: string) {
+	if (openApp(id, path)) opened(id);
 }
 /** Otra ventana de la misma app, aunque ya haya una. */
 export function openFresh(id: string) {
@@ -49,6 +55,9 @@ export function navigate(href: string) {
 }
 export const switchDesk = (id: string) => goDesk(id);
 export const addDesk = () => void newDesk();
+export const canAddDesk = () => os.state.desks.length < MAX_DESKS;
+/** Quita un escritorio; sus ventanas pasan al de al lado (núcleo). */
+export const closeDesk = (id: string) => removeDesk(id);
 export const leave = () => leaveOS();
 export const winClose = (uid: string) => close(uid);
 export const winMin = (uid: string) => minimize(uid);

@@ -1,12 +1,16 @@
 <!--
 	Barra de arriba del aspecto «Mando» (centro de mando): marca de la sesión, menú de apps, las ventanas abiertas
-	como pestañas, el nivel de alerta global (mando.ts → alertLevel, de los avisos graves y los temas grandes) y
-	los relojes UTC y Madrid con segundos. Debajo del escritorio va su franja de estado (MandoStrip.svelte).
+	como pestañas (clic derecho: su menú), los escritorios virtuales (1…6 y «+»), el nivel de alerta global
+	(mando.ts → alertLevel, de los avisos graves y los temas grandes), los relojes UTC y Madrid con segundos y el
+	menú de la cuenta. Clic derecho en lo vacío de la barra: el menú de la barra. Debajo del escritorio va su franja de estado (MandoStrip.svelte).
 -->
 <script lang="ts">
 	import { cloud } from '#lib/cloud.svelte.ts';
 	import { accountLine } from '#lib/os/system/account.ts';
+	import ContextMenu, { type MenuEntry } from '#lib/components/os/ContextMenu.svelte';
+	import { lock } from '../system/system.svelte.ts';
 	import * as os from './bridge.ts';
+	import { winMenu } from './menus.ts';
 	import { alertLevel, hms } from './mando.ts';
 	import NoticeCenter from './NoticeCenter.svelte';
 	import OsIcon from '../icons/OsIcon.svelte';
@@ -15,6 +19,55 @@
 	import { wdata } from './widgetdata.svelte.ts';
 
 	const wins = $derived(os.windows());
+	const desks = $derived(os.desks());
+
+	let menu = $state<{ x: number; y: number; items: MenuEntry[]; label: string } | null>(null);
+	const ctx = (e: MouseEvent, items: MenuEntry[], label: string) => (e.preventDefault(), e.stopPropagation(), (menu = { x: e.clientX, y: e.clientY, items, label }));
+
+	/** Clic derecho en lo vacío de la barra. */
+	function barMenu(e: MouseEvent) {
+		if ((e.target as Element).closest('button, a, input')) return;
+		ctx(
+			e,
+			[
+				{ label: 'Todas las apps…', run: () => (shell.open = 'launchpad') },
+				{ label: 'Buscar…', kbd: 'Ctrl+Espacio', run: () => (shell.open = 'spotlight') },
+				'sep',
+				{ label: 'Mostrar escritorio', run: os.showDesktop },
+				{ label: 'Ventanas en mosaico', run: os.tileWins },
+				{ label: 'Escritorio nuevo', disabled: !os.canAddDesk(), run: os.addDesk },
+				'sep',
+				{ label: 'Panel de control', run: () => (shell.open = 'control') }
+			],
+			'Menú de la barra'
+		);
+	}
+	function deskItems(id: string, i: number): MenuEntry[] {
+		return [
+			{ label: 'Ir a este escritorio', kbd: `Alt+${i + 1}`, run: () => os.switchDesk(id) },
+			{ label: 'Escritorio nuevo', disabled: !os.canAddDesk(), run: os.addDesk },
+			'sep',
+			{ label: 'Cerrar escritorio (sus ventanas pasan al de al lado)', disabled: desks.length < 2, run: () => os.closeDesk(id) }
+		];
+	}
+	/** La inicial de la cuenta abre su menú, debajo. */
+	function userMenu(e: MouseEvent) {
+		const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		menu = {
+			x: r.right,
+			y: r.bottom,
+			label: 'Menú de la cuenta',
+			items: [
+				{ label: account.text, disabled: true, run: () => {} },
+				'sep',
+				{ label: 'Cuenta y ajustes…', run: () => os.openAt('ajustes', 'cuenta') },
+				{ label: 'Bloquear la pantalla', kbd: 'Ctrl+Alt+L', run: lock },
+				'sep',
+				{ label: 'Volver a la web clásica', run: os.leave }
+			]
+		};
+	}
+
 	// Relojes con segundos: un tic por segundo solo mientras la barra está montada, alineado con el cambio de
 	// segundo (con un intervalo suelto, la hora iba hasta 1 s tarde y a veces se saltaba un segundo).
 	let now = $state(Date.now());
@@ -33,15 +86,21 @@
 	const account = $derived(accountLine(cloud.state, cloud.user, cloud.frozen));
 </script>
 
-<nav class="mando" aria-label="Barra del centro de mando">
+<nav class="mando" aria-label="Barra del centro de mando" oncontextmenu={barMenu}>
 	<span class="brand" aria-hidden="true"><b>◆</b> ARC<span class="sep">·</span>MANDO</span>
 	<button type="button" class="tool" aria-label="Todas las apps" aria-expanded={shell.open === 'launchpad'} onclick={() => toggle('launchpad')}><UiIcon id="apps" size={16} /></button>
 	<button type="button" class="tool" title="Mostrar escritorio" aria-label="Mostrar escritorio" onclick={os.showDesktop}><UiIcon id="desktop" size={16} /></button>
+	<div class="desks" role="group" aria-label="Escritorios">
+		{#each desks as d, i (d.id)}
+			<button type="button" class="desk" aria-pressed={d.active} title={`${d.name} (Alt+${i + 1})`} aria-label={d.name} onclick={() => os.switchDesk(d.id)} oncontextmenu={(e) => ctx(e, deskItems(d.id, i), `Menú de ${d.name}`)}>{i + 1}</button>
+		{/each}
+		{#if os.canAddDesk()}<button type="button" class="desk add" title="Escritorio nuevo" aria-label="Escritorio nuevo" onclick={os.addDesk}>+</button>{/if}
+	</div>
 	<ul class="tabs" aria-label="Apps abiertas">
 		{#each wins as w (w.id)}
 			<li>
-				<button type="button" class:on={w.focused} class:min={w.minimized} aria-pressed={w.focused} title={w.title} onclick={() => os.activate(w.id)}>
-					<OsIcon id={w.appId} size={14} /><span class="t">{w.title}</span>
+				<button type="button" class:on={w.focused} class:min={w.minimized} aria-pressed={w.focused} title={w.title} onclick={() => os.activate(w.id)} oncontextmenu={(e) => ctx(e, winMenu(w), `Menú de ${w.title}`)}>
+					<span class="ico" aria-hidden="true"><OsIcon id={w.appId} size={14} /></span><span class="t">{w.title}</span>
 				</button>
 			</li>
 		{/each}
@@ -57,10 +116,14 @@
 		<NoticeCenter onnavigate={os.navigate} />
 		<span class="clk" title="Hora universal coordinada"><span class="k">UTC</span>{hms('UTC', now)}</span>
 		<span class="clk" title="Hora de Madrid"><span class="k">MAD</span>{hms('Europe/Madrid', now)}</span>
-		<button type="button" class="tray-btn" aria-label="Panel de control" aria-expanded={shell.open === 'control'} onclick={() => toggle('control')}><UiIcon id="gear" size={16} /></button>
-		<span class="user" class:warn={account.warn} title={account.text}>{#if cloud.user}{cloud.user.slice(0, 1).toUpperCase()}{:else}<UiIcon id="user" size={12} />{/if}</span>
+		<button type="button" class="tray-btn" aria-label="Panel de control" aria-controls="os-control" aria-expanded={shell.open === 'control'} onclick={() => toggle('control')}><UiIcon id="gear" size={16} /></button>
+		<button type="button" class="user" class:warn={account.warn} title={account.text} aria-label="Cuenta" aria-haspopup="menu" aria-expanded={menu?.label === 'Menú de la cuenta'} onclick={userMenu}>
+			{#if cloud.user}{cloud.user.slice(0, 1).toUpperCase()}{:else}<UiIcon id="user" size={12} />{/if}
+		</button>
 	</div>
 </nav>
+
+{#if menu}<ContextMenu x={menu.x} y={menu.y} items={menu.items} label={menu.label} onclose={() => (menu = null)} />{/if}
 
 <style>
 	button {
@@ -126,6 +189,7 @@
 	}
 	/* Con muchas ventanas, cada pestaña encoge (hasta quedarse en el icono) en vez de pisar a la de al lado. */
 	.tabs li {
+		flex: 0 1 180px;
 		min-width: 0;
 		display: flex;
 		overflow: hidden;
@@ -156,6 +220,39 @@
 	.tabs button.min {
 		color: var(--faint);
 		font-style: italic;
+	}
+	.desks {
+		display: flex;
+		align-items: center;
+		gap: var(--sp-2);
+		padding: 0 var(--sp-6);
+		border-left: var(--hair) solid var(--line);
+	}
+	.desk {
+		display: grid;
+		place-items: center;
+		min-width: var(--sp-20);
+		height: var(--sp-20);
+		border: var(--hair) solid var(--line);
+		color: var(--muted);
+		font-size: var(--fs-xxs);
+		font-variant-numeric: tabular-nums;
+	}
+	@media (hover: hover) {
+		.desk:hover {
+			background: var(--os-topbar-hover);
+			color: var(--fg);
+		}
+		.user:hover {
+			background: var(--os-topbar-hover);
+		}
+	}
+	.desk[aria-pressed='true'] {
+		border-color: var(--cmd-cold);
+		color: var(--cmd-cold);
+	}
+	.desk.add {
+		border-style: dashed;
 	}
 	.t {
 		overflow: hidden;
@@ -267,6 +364,7 @@
 	}
 	.user {
 		display: grid;
+		padding: 0;
 		place-items: center;
 		width: var(--sp-20);
 		height: var(--sp-20);
@@ -279,6 +377,9 @@
 	.user.warn {
 		border-color: var(--amber-edge);
 		color: var(--amber);
+	}
+	.user[aria-expanded='true'] {
+		background: var(--os-topbar-hover);
 	}
 	/* Pantallas estrechas: fuera la marca y Madrid; quedan las pestañas, el nivel y UTC. */
 	@media (max-width: 900px) {
