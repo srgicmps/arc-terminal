@@ -3,6 +3,7 @@
 	import NewsList from '#lib/components/NewsList.svelte';
 	import SeriesTable from '#lib/components/SeriesTable.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import Traffic from '#lib/components/Traffic.svelte';
 	import QuakeTable from '#lib/components/QuakeTable.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import { euriborPhrase, fuelPhrase, gdpPhrase, inflationPhrase, phrases, powerPhrase, premiumPhrase, unemploymentPhrase } from '#lib/plain.ts';
@@ -58,6 +59,7 @@
 			<NewsList {items} summaries />
 			{#snippet note()}<Updated at={data.news?.fetchedAt} source="news-es" />{/snippet}
 		</Panel>
+		<Traffic data={data.traffic} />
 		<Panel title="Terremotos en España" meta="Últimos 10 días · los 15 más fuertes">
 			<QuakeTable
 				quakes={[...(data.quakes?.data ?? [])].sort((a, b) => b.mag - a.mag).slice(0, 15)}

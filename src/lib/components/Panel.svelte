@@ -273,6 +273,10 @@
 	/* container-type: lo de dentro se adapta al ancho del panel con @container, no al de la pantalla. */
 	.panel {
 		background: var(--panel);
+		border: var(--panel-edge);
+		border-radius: var(--radius);
+		box-shadow: var(--shadow);
+		backdrop-filter: var(--panel-blur);
 		min-width: 0;
 		container-type: inline-size;
 	}
@@ -294,7 +298,7 @@
 		font-weight: var(--fw-bold);
 		letter-spacing: var(--title-track);
 		text-transform: var(--title-case);
-		color: var(--amber);
+		color: var(--title-color);
 	}
 
 	.ph-r {
@@ -318,6 +322,7 @@
 		font-size: var(--fs-xs);
 		line-height: 1;
 		cursor: pointer;
+		transition: color var(--dur-ui) var(--ease);
 	}
 
 	.tool:hover {
@@ -379,6 +384,7 @@
 	.menu button {
 		background: none;
 		border: var(--border);
+		border-radius: var(--radius-s);
 		padding: 0 var(--sp-8);
 		color: var(--muted);
 		font-size: var(--fs-xs);
@@ -469,6 +475,8 @@
 		flex-direction: column;
 		overflow: auto;
 		border: var(--border);
+		border-radius: var(--radius-s);
+		box-shadow: var(--shadow-pop);
 	}
 
 	/* Lo de dentro mide lo que necesita (no se encoge para caber): el que desplaza es el panel. */
@@ -492,6 +500,7 @@
 		height: var(--btn-sm);
 		background: none;
 		border: var(--border);
+		border-radius: var(--radius-s);
 		color: var(--muted);
 		font-size: var(--fs-s);
 		cursor: pointer;

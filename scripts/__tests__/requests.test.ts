@@ -43,11 +43,11 @@ const ctx = (log: NotifyLog = emptyLog(), updates: ((l: NotifyLog) => void)[] = 
 });
 
 describe('alertas propias', () => {
-	const req = (title: string) => ({ ...emptyRequests(), alerts: [{ issue: 12, alert: parseAlert(title)! }] });
+	const req = (title: string) => ({ words: null, alerts: [{ id: 'ab12cd34', alert: parseAlert(title)! }] });
 	it('valor por encima del nivel', () => {
 		const d = { alertQuotes: [{ symbol: 'NVDA', price: 151.2, changePct: 2 }] } as UserInputs;
 		const [a] = userAlertRule(req('NVDA > 150')).run(d, ctx());
-		expect(a).toMatchObject({ id: 'user-alert:12', title: 'Alerta: NVDA > 150' });
+		expect(a).toMatchObject({ id: 'user-alert:ab12cd34', title: 'Alerta: NVDA > 150' });
 		expect(userAlertRule(req('NVDA > 160')).run(d, ctx())).toEqual([]);
 	});
 	it('bitcoin baja un 5 %', () => {
@@ -71,7 +71,7 @@ describe('palabras vigiladas', () => {
 		{ t: 'Aranceles: NVDA', u: '/s?sym=NVDA', s: 'Valor' }
 	] as UserInputs['search'];
 	it('una palabra nueva no avisa de lo que ya había; lo siguiente sí', () => {
-		const req = { ...emptyRequests(), words: ['aranceles'] };
+		const req = { alerts: [], words: ['aranceles'] };
 		const log = emptyLog();
 		const updates: ((l: NotifyLog) => void)[] = [];
 		expect(watchRule(req).run({ search } as UserInputs, ctx(log, updates))).toEqual([]);
@@ -83,6 +83,6 @@ describe('palabras vigiladas', () => {
 		expect(a.click).toBe('https://a/3');
 	});
 	it('sin palabras, nada', () => {
-		expect(watchRule(emptyRequests()).run({ search } as UserInputs, ctx())).toEqual([]);
+		expect(watchRule({ alerts: [], words: null }).run({ search } as UserInputs, ctx())).toEqual([]);
 	});
 });
