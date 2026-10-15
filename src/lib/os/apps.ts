@@ -48,7 +48,7 @@ const ICONS: Record<string, string> = {
 	MOST: '⇅', EQS: '⌕', IMAP: '▤', RV: '⚖', SIG: '⚑', MIS: '☆', TECH: '⌘', AI: '✧', BOE: '§', USGOV: '⚐',
 	LUZ: 'ϟ', WX: '☁', VIAJE: '✈', FUEL: '⛽', HIPOTECA: '⌂', CARTERA: '◧', CAL: '▣', CHESS: '♞', FONDOS: '◑',
 	HDS: '◐', RSS: '◉', ESTILO: '◈', AVISOS: '◬', NEWS: '≡', WIKI: 'W', STATUS: '●', HELP: '?', MANUAL: '❡',
-	PAIS: '⚑', LIDER: '♟', AGUA: '≈', CMP: '⇆', DOC: '¶', ECST: '∑', NOVEDADES: '✦', PORT: '⚓'
+	GLOBO: '⊕', PAIS: '⚑', LIDER: '♟', AGUA: '≈', CMP: '⇆', DOC: '¶', ECST: '∑', NOVEDADES: '✦', PORT: '⚓'
 };
 
 /** Tamaños que no son el de por defecto (los que piden más o menos sitio). */
