@@ -91,6 +91,7 @@
 				<div class="layers"><Seg label="Capas del mapa" options={available} bind:values={on} /></div>
 			{/if}
 			<WorldMap {points} legend={available} />
+			<p class="to3d"><a href={resolve('/globo')}>Ver en 3D ›</a></p>
 		</Panel>
 	</div>
 </div>
@@ -297,6 +298,18 @@
 
 	:global([data-modo='sencillo']) .plain-czib {
 		display: block;
+	}
+
+	.to3d {
+		margin: 0;
+		padding: 0 var(--pad-x) var(--sp-6);
+		font-size: var(--fs-xs);
+		text-align: right;
+	}
+
+	.to3d a {
+		color: var(--amber);
+		text-decoration: none;
 	}
 
 	.layers {
