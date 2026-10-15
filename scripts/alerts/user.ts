@@ -1,7 +1,8 @@
-// Reglas de las órdenes de la barra (scripts/requests.ts): alertas propias y palabras vigiladas.
-// Archivo aparte de rules.ts para no mezclarlo con las reglas fijas; notify.ts las añade a RULES.
-// - Alerta propia (P1, siempre llega): una sola vez por issue (id user-alert:<n.º de issue>). Al enviarla,
-//   notify.ts cierra el issue.
+// Reglas de las órdenes de cada uno (barra o AVISOS, guardadas en su cuenta: src/lib/alertconfig.ts):
+// alertas de precio propias y palabras vigiladas. Archivo aparte de rules.ts para no mezclarlo con las reglas
+// fijas; notify.ts las añade a RULES para Sergi y users.ts, a las de cada usuario.
+// - Alerta propia (P1, siempre llega): una sola vez (id user-alert:<id de la alerta>). Al enviarla, notify.ts
+//   pide a la web que la borre (/api/alerts?fired=1).
 // - Palabras vigiladas (P3): titulares y BOE del índice de búsqueda (search.json) que las nombran. Un aviso
 //   por pasada con todo lo nuevo; cada titular, una sola vez (vigila:<hash del enlace>). Una palabra recién
 //   añadida no avisa de lo que ya había: eso se da por visto.
@@ -10,7 +11,7 @@ import type { SearchEntry } from '../../src/lib/types.ts';
 import { alertHit, alertText, type UserAlert } from '../../src/lib/useralerts.ts';
 import { matches } from '../../src/lib/watchwords.ts';
 import { minute } from '../history.ts';
-import type { Requests } from '../requests.ts';
+import type { AlertConfig } from '../../src/lib/alertconfig.ts';
 import { dieselSeries, num, signed, SITE, type Draft, type Inputs, type NotifyLog, type Rule, type RuleContext } from './rules.ts';
 
 /** Lo que leen estas reglas además de Inputs: el índice de búsqueda. */
@@ -35,15 +36,27 @@ export function readUserAsset(a: UserAlert, d: UserInputs): { price: number | nu
 	return q && ok(q.price) ? { price: q.price, change: ok(q.changePct) ? q.changePct : null, zone: false } : null;
 }
 
-export const alertId = (issue: number) => `user-alert:${issue}`;
+export const alertId = (id: string) => `user-alert:${id}`;
+
+/** Lo que leen estas reglas: las alertas (con su id) y las palabras de una cuenta. */
+export interface Orders {
+	alerts: { id: string; alert: UserAlert }[];
+	words: string[] | null;
+}
+
+/** Las órdenes de una configuración de AVISOS. */
+export const ordersOf = (c: AlertConfig): Orders => ({
+	alerts: c.prices.map((p) => ({ id: p.id, alert: p })),
+	words: c.words
+});
 
 /** Alertas propias que se cumplen ahora. */
-export function userAlertRule(req: Requests): Rule {
+export function userAlertRule(req: Orders): Rule {
 	return {
 		type: 'user-alert',
 		level: 1,
 		run: (d: UserInputs, { now }: RuleContext): Draft[] =>
-			req.alerts.flatMap(({ issue, alert }) => {
+			req.alerts.flatMap(({ id, alert }) => {
 				const r = readUserAsset(alert, d);
 				if (!r || !alertHit(alert, r.price, r.change)) return [];
 				const digits = alert.asset === 'diesel' ? 3 : 2;
@@ -52,9 +65,9 @@ export function userAlertRule(req: Requests): Rule {
 				const where = alert.asset === 'diesel' && r.zone ? ' · tu zona' : '';
 				return [
 					{
-						id: alertId(issue),
+						id: alertId(id),
 						title: `Alerta: ${alertText(alert)}${where}`,
-						body: `${price}${change}. Se cierra la alerta.`,
+						body: `${price}${change}. La alerta se borra.`,
 						tags: 'bell',
 						click: alert.asset === 'diesel' ? `${SITE}/fuel` : alert.asset.startsWith('coin:') ? `${SITE}/ws` : `${SITE}/s?sym=${encodeURIComponent(alert.asset)}`,
 						time: now
@@ -70,7 +83,7 @@ const WORDS_KEY = 'vigila:palabras';
 const SHOW = 5;
 
 /** Titulares y BOE nuevos que nombran alguna palabra vigilada. */
-export function watchRule(req: Requests): Rule {
+export function watchRule(req: Orders): Rule {
 	return {
 		type: 'vigila',
 		level: 3,
@@ -119,5 +132,11 @@ export function watchRule(req: Requests): Rule {
 	};
 }
 
-/** Las reglas de las órdenes de la barra. */
-export const userRules = (req: Requests): Rule[] => [userAlertRule(req), watchRule(req)];
+/** Las reglas de las órdenes de una cuenta. */
+export const userRules = (req: Orders): Rule[] => [userAlertRule(req), watchRule(req)];
+
+/** Las alertas que ya han avisado (o fallado: no se reintentan) según un historial: sus ids. */
+export const firedIds = (req: Orders, log: NotifyLog): string[] => {
+	const tried = new Set(log.entries.filter((e) => e.s !== 'baseline').map((e) => e.k));
+	return req.alerts.filter((a) => tried.has(alertId(a.id))).map((a) => a.id);
+};

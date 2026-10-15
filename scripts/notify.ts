@@ -51,10 +51,13 @@ import { minute } from './history.ts';
 import { EU_ADRS, EU_GAP_MS, fetchQuotes } from './sources/alert-quotes.ts';
 import { accessHeaders, fetchPublished } from './lib.ts';
 import { github, redact } from './issues.ts';
-import { closeIssue, emptyRequests, loadRequests, type Api, type Requests } from './requests.ts';
-import { alertId, userRules, type UserInputs } from './alerts/user.ts';
+import { closeIssue, loadRequests, type Api, type Requests } from './requests.ts';
+import { OWNER } from '../src/lib/useralerts.ts';
+import { newPrice } from '../src/lib/alertconfig.ts';
+import { firedIds, ordersOf, userRules, type Orders, type UserInputs } from './alerts/user.ts';
 import { weatherAt } from './alerts/brief.ts';
-import { loadUsers, postMails, runUsers, type BriefMail, type RemoteUser } from './alerts/users.ts';
+import { airAt } from './alerts/home.ts';
+import { loadUsers, postFired, postMigration, postMails, runUsers, type BriefMail, type RemoteUser } from './alerts/users.ts';
 
 const NTFY = 'https://ntfy.sh';
 const DAY = 86_400_000;
@@ -266,11 +269,14 @@ const isEuAdr = (key: string) => key === ADR_KEY || EU_ADRS.some((s) => key === 
  * La copia del historial que se publica en la web, sin rastro de los ADR europeos (D25: datos de Finnhub
  * solo para los avisos; el estado de los escalones lleva sus precios). La caché de Actions guarda la entera.
  */
+/** Lo de la cuenta de Sergi (alertas y palabras vigiladas, privadas desde F14) tampoco se publica. */
+const isPrivate = (k: string) => isEuAdr(k) || k.startsWith('user-alert:') || k.startsWith('vigila:');
+
 export function publicLog(log: NotifyLog): NotifyLog {
 	return {
 		...log,
-		entries: log.entries.filter((e) => !isEuAdr(e.k)),
-		last: Object.fromEntries(Object.entries(log.last).filter(([k]) => !isEuAdr(k)))
+		entries: log.entries.filter((e) => !isPrivate(e.k)),
+		last: Object.fromEntries(Object.entries(log.last).filter(([k]) => !isPrivate(k)))
 	};
 }
 
@@ -328,20 +334,26 @@ export async function readUserLogs(path: string): Promise<Record<string, NotifyL
 const USER_QUOTES = 15;
 
 /**
- * Cierra los issues de la barra que ya han hecho su trabajo: alertas avisadas (o fallidas: no se
- * reintentan), y los que planRequests manda cerrar. Los comentarios son públicos: sin datos privados.
+ * Las órdenes que quedaban en issues de GitHub (D41, antes de F14) pasan a la cuenta de Sergi (privada, D1) y los
+ * issues se cierran. Solo trabaja mientras quede alguno abierto del dueño; luego no hace nada más que mirar.
+ * Los comentarios son públicos: sin datos privados.
  */
-async function closeRequests(api: Api, repo: string, req: Requests, log: NotifyLog, say: (line: string) => void) {
-	const tried = new Map(log.entries.filter((e) => e.s !== 'baseline').map((e) => [e.k, e.s]));
-	const done = req.alerts.flatMap(({ issue }) => {
-		const s = tried.get(alertId(issue));
-		if (!s) return [];
-		return [{ issue, reason: s === 'sent' ? 'La alerta se ha cumplido y ha llegado al móvil. Se cierra.' : 'La alerta se ha cumplido, pero el aviso no se pudo enviar. Se cierra.' }];
-	});
-	for (const { issue, reason } of [...done, ...req.close]) {
+async function migrateIssues(api: Api, repo: string, say: (line: string) => void) {
+	const req: Requests = await loadRequests(api, repo);
+	const issues = [...req.alerts.map((a) => a.issue), ...req.close.map((c) => c.issue)];
+	const { mis, words } = req;
+	if (!issues.length && mis === null && words === null) return;
+	const moved = await postMigration({ prices: req.alerts.map((a) => newPrice(a.alert)), mis: mis ?? [], words: words ?? [] });
+	if (!moved) {
+		say('ntfy: no se pudieron pasar los issues de la barra a tu cuenta; se reintenta en la próxima pasada');
+		return;
+	}
+	const all = await api<{ number: number; title: string }[]>(`/repos/${repo}/issues?state=open&creator=${OWNER}&per_page=100`);
+	const open = (Array.isArray(all) ? all : []).filter((i) => /^\s*\[(alerta|mis|vigila)\]/i.test(i.title)).map((i) => i.number);
+	for (const issue of new Set([...issues, ...open])) {
 		try {
-			await closeIssue(api, repo, issue, reason);
-			say(`ntfy: issue #${issue} cerrado`);
+			await closeIssue(api, repo, issue, 'Pasado a tu cuenta de Arc Terminal (privada): ahora se ve y se cambia en AVISOS. Se cierra.');
+			say(`ntfy: issue #${issue} pasado a la cuenta y cerrado`);
 		} catch {
 			say(`ntfy: no se pudo cerrar el issue #${issue}`);
 		}
@@ -405,17 +417,12 @@ export async function runNotify({
 			// Sin decir cuál: la zona no sale en el registro.
 			else say('ntfy: ALERT_FUEL_ZONE no corresponde a ninguna zona; el diésel se vigila solo en España');
 		}
-		// Órdenes de la barra (27-B): alertas propias, MIS y palabras vigiladas, de los issues del dueño.
-		let req: Requests = emptyRequests();
-		let api: Api | null = null;
-		if (repo && token) {
+		// Órdenes que aún queden en issues de GitHub (antes de F14): pasan a la cuenta de Sergi y se cierran.
+		if (repo && token && Object.keys(accessHeaders()).length) {
 			try {
-				api = github(token);
-				req = await loadRequests(api, repo);
-				say(`ntfy: órdenes de la barra: ${req.alerts.length} alertas, MIS ${req.mis?.length ?? '—'}, ${req.words?.length ?? 0} palabras`);
+				await migrateIssues(github(token), repo, say);
 			} catch (error) {
-				api = null;
-				say(`ntfy: no se pudieron leer las órdenes de la barra (${error instanceof Error ? error.message : 'error'})`);
+				say(`ntfy: no se pudieron revisar los issues de la barra (${error instanceof Error ? error.message : 'error'})`);
 			}
 		}
 		// Avisos de los usuarios de la web (alerts/users.ts): solo con la caché, donde va su historial, y con el
@@ -423,15 +430,19 @@ export async function runNotify({
 		let users: RemoteUser[] | null = null;
 		if (cache && Object.keys(accessHeaders()).length) {
 			users = await loadUsers();
-			for (const u of users ?? []) hidden.push(u.topic);
+			for (const u of users ?? []) if (u.topic) hidden.push(u.topic);
 			say(users ? `ntfy: ${users.length} usuarios con avisos` : 'ntfy: sin lista de usuarios (sin service token o sin /api/alerts)');
 		}
+		// Las alertas, MIS y palabras de Sergi: las de su cuenta (AVISOS), que salen por su tema de siempre.
+		const admin = users?.find((u) => u.admin) ?? null;
+		const req: Orders = admin ? ordersOf(admin.config) : { alerts: [], words: null };
+		if (admin) say(`ntfy: tus órdenes: ${req.alerts.length} alertas, MIS ${admin.config.mis.length}, ${req.words?.length ?? 0} palabras`);
 		// Los valores que sigue Sergi (alert-quotes.json y los ADR europeos): los que «baseStocks» da a los demás.
 		const base = new Set<string>([...(inputs.alertQuotes ?? []).flatMap((q) => (q?.symbol ? [q.symbol] : [])), ...EU_ADRS]);
 		(inputs as UserInputs).search = (await readData(dir, 'search')) as UserInputs['search'];
 		// Valores de MIS y de las alertas que no estén ya en alert-quotes: cotización solo en memoria.
 		const have = new Set((inputs.alertQuotes ?? []).map((q) => q?.symbol));
-		const wanted = [...(req.mis ?? []), ...req.alerts.map((a) => a.alert.asset), ...(users ?? []).flatMap((u) => u.config.mis)];
+		const wanted = [...(users ?? []).flatMap((u) => [...u.config.mis, ...u.config.prices.map((p) => p.asset)])];
 		const extra = [...new Set(wanted)].filter((s) => /^[A-Z0-9.]{1,12}$/.test(s) && !have.has(s)).slice(0, USER_QUOTES);
 		if (extra.length && finnhubKey?.trim()) {
 			const { quotes, failed } = await fetchQuotes(extra, finnhubKey.trim(), euGap);
@@ -473,7 +484,6 @@ export async function runNotify({
 			}
 			if (skipped.length) say(`ntfy: ${skipped.length} avisos no caben en los cupos de hoy`);
 			if (!send.length && !skipped.length) say('ntfy: nada que avisar');
-			if (api && repo) await closeRequests(api, repo, req, log, say);
 		}
 		if (adrDue) log.last[ADR_KEY] = new Date(now).toISOString();
 		const file = (data: NotifyLog) => JSON.stringify({ name: 'notify-log', fetchedAt: new Date(now).toISOString(), data }) + '\n';
@@ -487,12 +497,21 @@ export async function runNotify({
 		if (cache && users) {
 			const path = join(dirname(cache), USERS_FILE);
 			const logs = await readUserLogs(path);
-			const engine = { pickAlerts, baselineLog, trim, post, hello: HELLO, minute, weather: (lat: number, lon: number) => weatherAt(lat, lon) };
+			const engine = { pickAlerts, baselineLog, trim, post, hello: HELLO, minute, weather: (lat: number, lon: number) => weatherAt(lat, lon), air: (lat: number, lon: number) => airAt(lat, lon) };
 			const mails: BriefMail[] = [];
 			const next = await runUsers(users, inputs, base, logs, now, engine, say, undefined, mails);
 			await writeFile(path, JSON.stringify({ users: next }) + '\n');
 			const mailed = await postMails(mails);
 			if (mailed) say(mailed);
+		}
+		// Las alertas de precio que ya han avisado se borran de cada cuenta (de la de Sergi, con su historial).
+		if (users) {
+			const userLogs = cache ? await readUserLogs(join(dirname(cache), USERS_FILE)) : {};
+			const fired = users.flatMap((u) => {
+				const ids = firedIds(ordersOf(u.config), u.admin ? log : (userLogs[u.uid] ?? { entries: [], last: {}, poly: {} }));
+				return ids.length ? [{ uid: u.uid, ids }] : [];
+			});
+			if (fired.length) say(await postFired(fired));
 		}
 	} catch (error) {
 		say(`::warning title=ntfy::${error instanceof Error ? error.message : String(error)}`);
