@@ -316,14 +316,13 @@ try {
 
 	// Lo que tiene que volver igual al recargar.
 	const snapshot = async () => ({
-		// App, minimizada o no, y caja redondeada a 8 px: al recargar, el escritorio se mide otra vez y las ventanas se
-		// recolocan en la rejilla (wm.fit), así que unos px de diferencia no son un fallo.
+		// App, minimizada o no, y caja exacta: al recargar, el mosaico y lo encajado vuelven al px (relayout solo
+		// recoloca las que se salen).
 		wins: (
 			await p.$$eval('section.win[data-ui="os-win"]', (els) =>
 				els.map((e) => {
 					const h = e as HTMLElement;
-					const r8 = (v: string) => Math.round(parseFloat(v) / 8) * 8;
-					return `${e.getAttribute('data-app')} ${r8(h.style.left)},${r8(h.style.top)} ${r8(h.style.width)}×${r8(h.style.height)}${e.classList.contains('min') ? ' (min)' : ''}`;
+					return `${e.getAttribute('data-app')} ${h.style.left},${h.style.top} ${h.style.width}×${h.style.height}${e.classList.contains('min') ? ' (min)' : ''}`;
 				})
 			)
 		).sort(),
