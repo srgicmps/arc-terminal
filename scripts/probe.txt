@@ -107,3 +107,7 @@ https://www.worldbank.org/en/research/commodity-markets ~ CMO-Historical-Data-Mo
 # LIDER: quién preside ahora la Fed y quién forma el Comité Ejecutivo del BCE
 https://www.federalreserve.gov/aboutthefed/bios/board/default.htm ~ .{0,120}(Chair|Powell).{0,60}
 https://www.ecb.europa.eu/ecb/orga/decisions/eb/html/index.en.html ~ .{0,100}(Vice-President|Member of the Executive Board).{0,20}
+# 26B.5 ES: el CSV del año pasado del SEPE (para la variación anual)
+https://sede.sepe.gob.es/es/portaltrabaja/resources/sede/datos_abiertos/datos/Paro_por_municipios_2025_csv.csv
+# 26B.7 GEO: ¿publica Frontex sus datos en data.europa.eu con otra URL de descarga?
+https://data.europa.eu/api/hub/search/search?q=frontex%20illegal%20border%20crossings&limit=5 ~ .{0,120}(xlsx|access_url|download_url).{0,200}
