@@ -8,8 +8,12 @@
 // Uso: node scripts/thumbs.ts [raíz de la web] (por defecto, la publicada; p. ej. la de `vite preview`).
 import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from 'node:fs';
 import { launch } from './browser.ts';
+import { accessHeaders } from './lib.ts';
+import { LEGACY_SITE, SITE } from './site.ts';
 
-const ROOT = (process.argv[2] ?? 'https://srgicmps.github.io/arc-terminal').replace(/\/$/, '');
+// La web privada, si hay service token de Access; si no, la de GitHub Pages mientras conviva.
+const ACCESS = accessHeaders();
+const ROOT = (process.argv[2] ?? (Object.keys(ACCESS).length ? SITE : LEGACY_SITE)).replace(/\/$/, '');
 const DIR = 'static/manual';
 /** 1280 px × 0,375 = 480 px de ancho. */
 const SCALE = 0.375;
@@ -44,6 +48,14 @@ try {
 			colorScheme: 'dark'
 		});
 		await context.addInitScript(() => localStorage.setItem('arc-theme', 'dark'));
+		// El service token solo va a la propia web, nunca a TradingView ni a otros dominios.
+		if (Object.keys(ACCESS).length) {
+			const origin = new URL(ROOT).origin;
+			await context.route(
+				(url) => url.origin === origin,
+				(route) => route.continue({ headers: { ...route.request().headers(), ...ACCESS } })
+			);
+		}
 		for (const route of list) {
 			const slug = thumbSlug(route);
 			const tmp = `${DIR}/${slug}.tmp`;

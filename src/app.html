@@ -5,8 +5,8 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="color-scheme" content="dark light" />
 		<meta name="theme-color" content="#080a0d" />
-		<!-- PWA: se puede instalar en la pantalla de inicio (las rutas son relativas a /arc-terminal/) -->
-		<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
+		<!-- PWA: se puede instalar en la pantalla de inicio (rutas relativas a la base; use-credentials: con Cloudflare Access, el manifest también lleva la cookie del login) -->
+		<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" crossorigin="use-credentials" />
 		<link rel="apple-touch-icon" href="%sveltekit.assets%/apple-touch-icon.png" />
 		<!-- iOS: a pantalla completa, con la barra de estado oscura sobre nuestro fondo -->
 		<meta name="apple-mobile-web-app-capable" content="yes" />

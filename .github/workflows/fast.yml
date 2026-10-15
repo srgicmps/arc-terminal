@@ -67,6 +67,11 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          # Service token de Cloudflare Access: para leer la copia anterior de la web privada (scripts/lib.ts).
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          # URL de la web (scripts/site.ts). Variable de GitHub opcional: p. ej. al pasar a un dominio propio.
+          SITE_URL: ${{ vars.SITE_URL }}
 
       # Avisos al móvil con ntfy, como en deploy.yml y con la misma caché del historial (las cachés son por
       # rama, así que las dos vías comparten la de main y ninguna repite un aviso de la otra). Si falla, no
@@ -87,6 +92,11 @@ jobs:
           ALERT_FUEL_ZONE: ${{ secrets.ALERT_FUEL_ZONE }}
           # Opcional: con ella, notify.ts pide los ADR europeos (D25), solo para los avisos.
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          # Service token de Cloudflare Access: para leer la copia anterior de la web privada (scripts/lib.ts).
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          # URL de la web (scripts/site.ts). Variable de GitHub opcional: p. ej. al pasar a un dominio propio.
+          SITE_URL: ${{ vars.SITE_URL }}
           # Órdenes de la barra (scripts/requests.ts): lee los issues [alerta]/[mis]/[vigila] del dueño y cierra
           # las alertas que avisan.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -112,6 +122,25 @@ jobs:
         uses: actions/upload-pages-artifact@v4
         with:
           path: build
+
+      # Cloudflare Pages (web privada, Cloudflare Access delante): la misma web, construida en la raíz.
+      # Convive con GitHub Pages: si falla, no frena la publicación. Sin los Secrets, se salta. La primera vez
+      # crea el proyecto «arc-terminal» (si ya existe, el aviso de error se ignora).
+      - if: github.event_name != 'pull_request'
+        id: cf
+        run: echo "on=${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}" >> "$GITHUB_OUTPUT"
+      - if: steps.cf.outputs.on == 'true'
+        id: cfbuild
+        run: BASE_PATH= pnpm build --logLevel warn
+        continue-on-error: true
+      - if: steps.cfbuild.outcome == 'success'
+        continue-on-error: true
+        run: |
+          npx --yes wrangler@4.145.0 pages project create arc-terminal --production-branch=main || true
+          npx --yes wrangler@4.145.0 pages deploy build --project-name=arc-terminal --branch=main --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   deploy:
     if: github.event_name != 'pull_request'
