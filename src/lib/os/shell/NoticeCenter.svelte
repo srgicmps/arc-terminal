@@ -39,7 +39,6 @@
 		}
 	});
 	onDestroy(() => timers.forEach(clearTimeout));
-	import { overlay } from '../focus.ts';
 
 	function go(n: Notice) {
 		if (n.href) onnavigate(n.href);
