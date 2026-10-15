@@ -49,6 +49,19 @@ export function initTaste() {
 	if (read(KEYS.density) === 'comoda') taste.density = 'comoda';
 	taste.top = cleanCodes(json(KEYS.top)) ?? [...DEFAULT_TOP];
 	taste.thumb = cleanCodes(json(KEYS.thumb), THUMB_MAX) ?? [...DEFAULT_THUMB];
+	// <html data-scrolled> en cuanto la página baja un poco: para estéticas con títulos grandes que se encogen o
+	// barras que ganan sombra al hacer scroll (docs/estilos.md, «Estructura»).
+	const root = document.documentElement;
+	const onScroll = () => {
+		const down = scrollY > 24;
+		if (down !== ('scrolled' in root.dataset)) {
+			if (down) root.dataset.scrolled = '';
+			else delete root.dataset.scrolled;
+		}
+	};
+	onScroll();
+	addEventListener('scroll', onScroll, { passive: true });
+	return () => removeEventListener('scroll', onScroll);
 }
 
 /** Estética: siempre se guarda (también «Terminal»), para que src/app.html no la vuelva a decidir. */

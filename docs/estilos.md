@@ -56,6 +56,52 @@ Colores (`--bg`, `--panel`, `--raise`, `--line`, `--fg`, `--muted`, `--faint`, `
 `--title-color`), espaciado (`--sp-*`, `--pad-x`, `--row-y`, `--head-y`, `--gutter`), fondo (`--bg-image`) y
 movimiento (`--dur-ui`, `--dur-fast`, `--ease`), foco (`--focus-w`). Ejemplo completo: `static/estilos/grafito.css`.
 
+## Estructura: mover cosas de sitio
+Una estética puede cambiar la estructura, no solo los colores, **solo con CSS** de su archivo: rejillas con áreas,
+`order`, `position`, mostrar u ocultar piezas, pseudo-elementos (`::before`/`::after`, p. ej. marcos de texto), animaciones.
+Engánchate SIEMPRE a estos atributos `data-ui` (son la API estable; las clases internas pueden cambiar):
+
+| `data-ui` | Qué es |
+|---|---|
+| `app` | Contenedor de toda la página (cabecera, navegación, cinta, main, pestañas, pie) |
+| `top` | Cabecera: marca, barra de comandos, sitio, relojes, botones |
+| `brand` | Logotipo y nombre |
+| `place` | Chip «Tu sitio» |
+| `clocks` | Relojes de las bolsas |
+| `cmd` | Barra de comandos (en el móvil, hoja con `.sheet`) |
+| `keys` | Fila de secciones (teclas) |
+| `key` | Cada tecla de sección (código y, en un `<span>`, el nombre; la actual lleva `aria-current`). Lleva `data-code` (TOP, ECO…), como los enlaces de `tabs`: sirve para poner iconos por sección |
+| `tape` | Cinta de cotizaciones |
+| `panel-index` | Índice de paneles del móvil |
+| `main` | Contenido de la vista |
+| `tabs` | Barra de pestañas de abajo (hoy solo en el móvil; una estética puede sacarla también en escritorio) |
+| `foot` | Pie |
+| `view-head` | Cabecera de vista (código, título, fuentes, resumen) |
+| `view-title` / `view-code` | Su título (h1) y el código dentro (ECO, WS…) |
+| `view-sub` | De dónde salen los datos |
+| `view-sum` | Resumen en una línea (o, en Sencillo, la lista de frases) |
+| `panel` | Panel (`.max`: ampliado, como hoja modal; `.folded`: plegado) |
+| `panel-head` | Cabecera del panel (título, datos, botones) |
+| `panel-meta` | El dato de la derecha de la cabecera del panel |
+| `fold` | El ▾/▸ de plegar del título del panel |
+| `panel-grow` / `panel-close` | El ⤢ de ampliar el panel y el ✕ del panel ampliado |
+| `note` | Nota al pie de un panel (fuente, aclaraciones) |
+| `table` | Tabla densa |
+| `tiles` / `tile` | Fila de cifras grandes y cada cifra |
+| `chart` | Gráfico de líneas |
+
+Las rejillas de las vistas usan las clases globales de `app.css`, también estables: `.grid` (y `.grid-2`, `.grid-2e`,
+`.grid-3`) y `.col` (una columna de paneles). Además, `<html data-scrolled>` cuando la página ha bajado (títulos que se encogen, barras con sombra).
+
+Reglas:
+- Estos retoques van **fuera** de `@layer` y con el prefijo `[data-style='id'][data-style]` (ver la plantilla), para
+  ganar al CSS de los componentes. Ejemplo: `[data-style='id'][data-style] [data-ui='tabs'] { display: flex; }`.
+- No ocultes información: se puede mover, agrupar o plegar, no quitar. Todo lo que se pueda pulsar sigue pulsable y
+  con foco visible. Nada de `display: none` en la barra de comandos ni en la navegación sin dar otro camino.
+- En el móvil (≤720 px) la barra de pestañas y el índice de paneles ya existen: aprovéchalos.
+- `prefers-reduced-motion`: sin animaciones de estructura.
+- Haz capturas también con «encajar en pantalla» (botón ⤢, ≥1280 px) y con un panel ampliado.
+
 ## Comprobar
 `pnpm check`, `pnpm test` (sobre todo `src/lib/estilos.test.ts`), `pnpm build` y capturas a 390 y 1280 px en noche
 y día de ECO, WS (gráficos), HELP y ESTILO.
