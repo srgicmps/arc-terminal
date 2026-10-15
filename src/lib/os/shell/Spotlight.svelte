@@ -7,14 +7,16 @@
 	import OsIcon from '../icons/OsIcon.svelte';
 	import { tick } from 'svelte';
 	import { installedApps } from '../packages.svelte.ts';
-	import { searchAll, type Hit } from '../system/search.ts';
+	import { recentHits, searchAll, type Hit } from '../system/search.ts';
 	import { runHit } from '../system/search.svelte.ts';
 	import { shell } from './shell.svelte.ts';
 
 	let query = $state('');
 	let sel = $state(0);
 	let input = $state<HTMLInputElement>();
-	const found = $derived(searchAll(query, installedApps(), 10));
+	// Sin texto, las últimas apps abiertas, para volver a una con Intro.
+	const empty = $derived(!query.trim());
+	const found = $derived(empty ? recentHits(shell.recent, installedApps()) : searchAll(query, installedApps(), 10));
 
 	$effect(() => {
 		tick().then(() => input?.focus());
@@ -54,7 +56,8 @@
 		aria-activedescendant={found[sel] ? `os-spot-${found[sel].id}` : undefined}
 	/>
 	{#if found.length}
-		<ul id="os-spot-list" role="listbox" aria-label="Resultados">
+		{#if empty}<p class="head" aria-hidden="true">Recientes</p>{/if}
+		<ul id="os-spot-list" role="listbox" aria-label={empty ? 'Apps recientes' : 'Resultados'}>
 			{#each found as h, i (h.id)}
 				{@const app = appOf(h)}
 				<li id={`os-spot-${h.id}`} role="option" aria-selected={i === sel}>
@@ -78,6 +81,18 @@
 		color: inherit;
 		font: inherit;
 		cursor: pointer;
+	}
+	.head {
+		margin: 0;
+		padding: var(--sp-6) var(--sp-16) 0;
+		border-top: var(--hair) solid var(--line);
+		color: var(--muted);
+		font-size: var(--fs-xxs);
+		letter-spacing: var(--track-caps);
+		text-transform: uppercase;
+	}
+	.head + ul {
+		border-top: 0;
 	}
 	.scrim {
 		position: fixed;
