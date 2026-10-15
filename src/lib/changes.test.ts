@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byDay, changeCommand } from './changes.ts';
+import { byDay, changeCommand, changeExperience } from './changes.ts';
 import { merged } from '../../scripts/sources/changes.ts';
 
 const pull = (number: number, title: string, merged_at: string | null) => ({
@@ -63,5 +63,14 @@ describe('byDay', () => {
 			['Ayer', [1]],
 			['dom 11 oct', [0]]
 		]);
+	});
+});
+
+describe('changeExperience', () => {
+	it('lleva a la experiencia si el título empieza por «Experiencia <nombre>»', () => {
+		expect(changeExperience('Experiencia Radio: informativo hablado (#427)')?.id).toBe('radio');
+		expect(changeExperience('Experiencia Sala de control: el mundo en un mapa (#462)')?.id).toBe('sala');
+		expect(changeExperience('Experiencias: galería con vistas previas')).toBeNull();
+		expect(changeExperience('LUZ: horas baratas')).toBeNull();
 	});
 });

@@ -1,28 +1,46 @@
 /*
- * Ajustes que van por encima de la estética: densidad «Cómoda» y modo «Sencillo». Van en la capa «ajustes», que
- * manda sobre la de las estéticas (static/estilos/, capa «estilos») por el orden de capas de app.css: elijas la
- * estética que elijas, «Cómoda» y «Sencillo» dan su letra y su aire.
+ * Ajustes que van por encima de la estética: densidad, acento elegido y modo «Sencillo». Van en la capa «ajustes»,
+ * que manda sobre la de las estéticas (static/estilos/, capa «estilos») por el orden de capas de app.css: elijas la
+ * estética que elijas, la densidad, el acento y «Sencillo» se notan.
  */
 @layer tokens, estilos, ajustes;
 @layer ajustes {
-	/* ── Densidad «Cómoda» («A tu gusto», src/lib/taste.svelte.ts) ──────────────────────────────
-	 * Sin data-density, la compacta de arriba. La cómoda da más aire a filas y paneles y sube la letra 1 px; no toca
-	 * --control-h (el alto de los controles es el mismo en las dos). Va en su propio bloque: no pisa el acento. */
+	/* ── Densidad («A tu gusto», src/lib/taste.svelte.ts) ─────────────────────────────────────────
+	 * Sin data-density, la «Normal»: la de cada estética. «Compacta» aprieta filas, márgenes y letra (más paneles en
+	 * pantalla); «Cómoda» da mucho aire y letra 2 px mayor. No tocan --control-h (los controles miden lo mismo). */
+	:root[data-density='compacta'] {
+		--pad-x: var(--sp-6);
+		--row-y: var(--sp-3);
+		--head-y: var(--sp-2);
+		--gutter: var(--sp-6);
+		--gutter-touch: var(--sp-8);
+		--fs-xxs: 9px;
+		--fs-xs: 10px;
+		--fs-s: 11px;
+		--fs-m: 12px;
+		--fs-l: 13px;
+		--fs-xl: 17px;
+		--fs-big: 22px;
+		--fs-xxl: 24px;
+		--lh: 1.3;
+		--fit-panel-min: 220px;
+	}
 	:root[data-density='comoda'] {
-		--pad-x: var(--sp-14);
-		--row-y: var(--sp-8);
-		--head-y: var(--sp-6);
-		--gutter: var(--sp-12);
-		--gutter-touch: var(--sp-16);
-		--fs-xxs: 11px;
-		--fs-xs: 12px;
-		--fs-s: 13px;
-		--fs-m: 14px;
-		--fs-l: 15.5px;
-		--fs-xl: 21px;
-		--fs-big: 27px;
-		--fs-xxl: 29px;
-		--fit-panel-min: 320px;
+		--pad-x: var(--sp-18);
+		--row-y: var(--sp-10);
+		--head-y: var(--sp-8);
+		--gutter: var(--sp-16);
+		--gutter-touch: var(--sp-18);
+		--fs-xxs: 12px;
+		--fs-xs: 13px;
+		--fs-s: 14px;
+		--fs-m: 15px;
+		--fs-l: 16.5px;
+		--fs-xl: 23px;
+		--fs-big: 30px;
+		--fs-xxl: 32px;
+		--lh: 1.55;
+		--fit-panel-min: 360px;
 	}
 
 	/* ── Modo «Sencillo» (src/lib/modo.ts) ───────────────────────────────────────────────────────
@@ -47,5 +65,55 @@
 		--title-track: 0;
 		--title-font: var(--sans);
 		--fit-panel-min: 340px;
+	}
+
+	/* ── Acento elegido («A tu gusto», src/lib/taste.svelte.ts) ─────────────────────────────────────
+	 * Sin data-accent («De la estética»), cada estética usa el suyo (en Terminal, el ámbar). Si eliges uno, manda el
+	 * tuyo en todas, salvo en las que tienen el color fijado por diseño (fixedAccent en src/lib/estilos.ts): Fósforo,
+	 * Alto contraste, Brutalista y Bauhaus. Mismo contraste que el ámbar o más (AA sobre --panel). Los nombres siguen
+	 * siendo --amber*: son «el acento». Con el azul, la segunda serie de los gráficos pasa a ámbar. */
+	:root[data-accent='amber']:not([data-style='retro'], [data-style='contraste'], [data-style='brutal'], [data-style='bauhaus']) {
+		--amber: #f2a83b;
+		--amber-dim: #c99447;
+		--amber-soft: rgba(242, 168, 59, 0.13);
+		--amber-edge: rgba(242, 168, 59, 0.42);
+		--on-amber: #120c02;
+	}
+	:root[data-theme='light'][data-accent='amber']:not([data-style='retro'], [data-style='contraste'], [data-style='brutal'], [data-style='bauhaus']) {
+		--amber: #9a5a00;
+		--amber-dim: #8a5d2c;
+		--amber-soft: rgba(154, 90, 0, 0.1);
+		--amber-edge: rgba(154, 90, 0, 0.4);
+		--on-amber: #ffffff;
+	}
+	:root[data-accent='cyan']:not([data-style='retro'], [data-style='contraste'], [data-style='brutal'], [data-style='bauhaus']) {
+		--amber: #4fd6c8;
+		--amber-dim: #6fb3ab;
+		--amber-soft: rgba(79, 214, 200, 0.12);
+		--amber-edge: rgba(79, 214, 200, 0.4);
+		--on-amber: #04120f;
+	}
+	:root[data-accent='blue']:not([data-style='retro'], [data-style='contraste'], [data-style='brutal'], [data-style='bauhaus']) {
+		--amber: #5eb1ef;
+		--amber-dim: #7fa3c4;
+		--amber-soft: rgba(94, 177, 239, 0.13);
+		--amber-edge: rgba(94, 177, 239, 0.42);
+		--on-amber: #04101a;
+		--series-2: #f2a83b;
+	}
+	:root[data-theme='light'][data-accent='cyan']:not([data-style='retro'], [data-style='contraste'], [data-style='brutal'], [data-style='bauhaus']) {
+		--amber: #0b7a70;
+		--amber-dim: #2f6a64;
+		--amber-soft: rgba(11, 122, 112, 0.1);
+		--amber-edge: rgba(11, 122, 112, 0.4);
+		--on-amber: #ffffff;
+	}
+	:root[data-theme='light'][data-accent='blue']:not([data-style='retro'], [data-style='contraste'], [data-style='brutal'], [data-style='bauhaus']) {
+		--amber: #1f63a8;
+		--amber-dim: #3f5f80;
+		--amber-soft: rgba(31, 99, 168, 0.1);
+		--amber-edge: rgba(31, 99, 168, 0.4);
+		--on-amber: #ffffff;
+		--series-2: #9a5a00;
 	}
 }

@@ -23,6 +23,9 @@ const WANTED: Wanted[] = [
 	{ key: 'FM.M.U2.EUR.RT.MM.EURIBOR3MD_.HSTA', id: 'euribor-3m', label: 'Euríbor a 3 meses', unit: '%', geo: 'EA', last: 36 },
 	{ key: 'FM.M.U2.EUR.RT.MM.EURIBOR1YD_.HSTA', id: 'euribor-12m', label: 'Euríbor a 12 meses', unit: '%', geo: 'EA', last: 36 },
 	{ key: 'MIR.M.ES.B.A2C.AM.R.A.2250.EUR.N', id: 'mortgage-es', label: 'Hipotecas nuevas', unit: '%', geo: 'ES', last: 36 },
+	// Depósitos nuevos de hogares en España (AHORRO): a la vista y a plazo hasta un año.
+	{ key: 'MIR.M.ES.B.L21.A.R.A.2250.EUR.N', id: 'deposit-on-es', label: 'Depósitos a la vista', unit: '%', geo: 'ES', last: 36 },
+	{ key: 'MIR.M.ES.B.L22.F.R.A.2250.EUR.N', id: 'deposit-1y-es', label: 'Depósitos a plazo hasta un año', unit: '%', geo: 'ES', last: 36 },
 	{ key: 'MIR.M.U2.B.A2C.AM.R.A.2250.EUR.N', id: 'mortgage-ea', label: 'Hipotecas nuevas', unit: '%', geo: 'EA', last: 36 },
 	{ key: 'IRS.M.ES.L.L40.CI.0000.EUR.N.Z', id: 'bond10-es', label: 'Bono a 10 años', unit: '%', geo: 'ES', last: 36 },
 	{ key: 'IRS.M.DE.L.L40.CI.0000.EUR.N.Z', id: 'bond10-de', label: 'Bono a 10 años', unit: '%', geo: 'DE', last: 36 },

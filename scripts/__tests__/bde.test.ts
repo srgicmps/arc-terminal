@@ -24,7 +24,8 @@ describe('bde', () => {
 
 	it('toma las columnas por su código, pasa la prima a pb, ordena y se salta los «_»', () => {
 		const series = parseBde(CSV);
-		expect(series.map((s) => s.id)).toEqual(['premium-es-d', 'bond10-es-d', 'bond10-de-d']);
+		expect(series.map((s) => s.id)).toEqual(['premium-es-d', 'bond10-es-d', 'bond10-de-d', 'letras12-es-d']);
+		expect(series[3].points.map((p) => p.v)).toEqual([2.0, 2.1]);
 		const premium = series[0];
 		expect(premium.unit).toBe('pb');
 		expect(premium.points).toEqual([
