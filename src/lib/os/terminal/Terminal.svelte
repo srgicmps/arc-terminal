@@ -17,6 +17,9 @@
 
 	let { onopen, autofocus = true }: { onopen?: (href: string, label: string) => void; autofocus?: boolean } = $props();
 
+	// Ids únicos: Arc OS puede tener varias consolas abiertas.
+	const uid = $props.id();
+
 	const ALL: Option[] = [
 		...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función', aliases: c.aliases })),
 		...TICKERS.map((t) => ({ code: t.code, desc: t.name, kind: 'Valor' }))
@@ -99,9 +102,9 @@
 		{/each}
 	</div>
 	<form class="prompt" onsubmit={submit}>
-		<label for="term-input">{PROMPT}</label>
+		<label for="{uid}-in">{PROMPT}</label>
 		<input
-			id="term-input"
+			id="{uid}-in"
 			bind:this={input}
 			bind:value
 			{onkeydown}
@@ -109,9 +112,9 @@
 			autocapitalize="off"
 			spellcheck="false"
 			enterkeyhint="go"
-			aria-describedby="term-help"
+			aria-describedby="{uid}-help"
 		/>
-		<span id="term-help" class="sr">{helpLines().at(-1)?.text}</span>
+		<span id="{uid}-help" class="sr">{helpLines().at(-1)?.text}</span>
 	</form>
 </div>
 
