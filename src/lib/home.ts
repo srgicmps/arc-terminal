@@ -8,7 +8,7 @@ export const HOME_KEY = 'arc-home';
 export const HOME_DONE = 'arc-home-done';
 
 /** Lo que no tiene sentido como inicio: el modo TV, la ayuda y los textos largos. */
-const SKIP = new Set(['TV', 'HELP', 'DOC', 'MANUAL', 'NOVEDADES', 'STATUS']);
+const SKIP = new Set(['TV', 'HELP', 'DOC', 'MANUAL', 'NOVEDADES', 'STATUS', 'BIENVENIDA']);
 
 export const homeChoices = (): Command[] => COMMANDS.filter((c) => !SKIP.has(c.code));
 
