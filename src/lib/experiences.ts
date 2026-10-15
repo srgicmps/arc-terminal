@@ -27,6 +27,7 @@ const LIST: Experience[] = [
 	{ id: 'bitacora', name: 'Bitácora', desc: 'Tu diario privado: notas por valor, país o tema, ideas con precio de entrada que se siguen solas y recordatorios.', icon: '✎', order: 100, aliases: ['notas', 'journal', 'apuntes'] },
 	{ id: 'muro', name: 'Muro', desc: 'Para una tele o un segundo monitor: hora enorme, bolsas abiertas o cerradas, titulares que rotan, cinta de cotizaciones y avisos a pantalla completa.', icon: '▣', order: 70, aliases: ['pared', 'tele', 'monitor'] },
 	{ id: 'radio', name: 'Radio', desc: 'Un informativo hablado con lo de hoy (titulares, mercados, economía, agenda y tus valores), a manos libres.', icon: '♪', order: 60, aliases: ['informativo', 'escuchar', 'briefing'] },
+	{ id: 'predicciones', name: 'Predicciones', desc: 'Juego: adivina el próximo IPC, paro o tipo del BCE antes de que salga, con rachas y clasificación.', icon: '◎', order: 80, aliases: ['juego', 'pred', 'apuestas'] },
 ];
 
 export const EXPERIENCES: Experience[] = [...LIST].sort((a, b) => a.order - b.order);
