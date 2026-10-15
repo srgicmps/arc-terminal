@@ -326,7 +326,7 @@
 	background: linear-gradient(var(--k-muted) 0 0) top / 100% calc(100% - var(--r-cmd-row)) no-repeat;
 }
 /* Con la barra de comandos abierta como hoja (móvil), la fila del prompt sale de la cabecera. */
-[data-style='retro'][data-style] [data-ui='top']:has(> .sheet) {
+[data-style='retro'][data-style] [data-ui='top']:has(> [data-ui='cmd'].sheet) {
 	--r-cmd-row: 0px;
 }
 [data-style='retro'][data-style] [data-ui='top'] [data-ui='brand'] {
