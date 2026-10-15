@@ -23,7 +23,12 @@ export class Engine {
 	private ready: Promise<void> | null = null;
 	private listeners = new Set<(line: string) => void>();
 	/** Búsqueda en curso: se resuelve con su «bestmove». */
-	private current: { resolve: (r: SearchResult | null) => void; done: Promise<void> } | null = null;
+	private current: {
+		resolve: (r: SearchResult | null) => void;
+		/** Acaba la búsqueda sin esperar al motor: con error (worker caído) o con null (destroy). */
+		abort: (error?: unknown) => void;
+		done: Promise<void>;
+	} | null = null;
 	/** Sube con cada búsqueda y con cada stop(): una búsqueda que aún arrancaba sabe que ya no cuenta. */
 	private gen = 0;
 
@@ -48,7 +53,7 @@ export class Engine {
 	/** Arranca el motor (una vez). Se puede llamar antes de tiempo para que vaya cargando. */
 	init(): Promise<void> {
 		if (this.ready) return this.ready;
-		this.ready = new Promise<void>((resolve, reject) => {
+		const ready = new Promise<void>((resolve, reject) => {
 			try {
 				this.worker = this.create();
 			} catch (error) {
@@ -58,7 +63,10 @@ export class Engine {
 			this.worker.onmessage = (e) => {
 				for (const line of String(e.data).split('\n')) for (const fn of [...this.listeners]) fn(line.trim());
 			};
-			this.worker.onerror = (e) => reject(e);
+			this.worker.onerror = (e) => {
+				reject(e);
+				this.crash(e);
+			};
 			this.waitFor((l) => l === 'uciok')
 				.then(() => {
 					this.send('isready');
@@ -67,13 +75,16 @@ export class Engine {
 				.then(() => resolve());
 			this.send('uci');
 		});
-		// Si falla (navegador sin WebAssembly…), la próxima vez se vuelve a intentar.
-		this.ready.catch(() => {
+		this.ready = ready;
+		// Si falla (navegador sin WebAssembly…), la próxima vez se vuelve a intentar. Solo si nadie ha
+		// arrancado ya otro motor entretanto: si no, se cerraría el nuevo.
+		ready.catch(() => {
+			if (this.ready !== ready) return;
 			this.ready = null;
 			this.worker?.terminate();
 			this.worker = null;
 		});
-		return this.ready;
+		return ready;
 	}
 
 	/**
@@ -91,9 +102,20 @@ export class Engine {
 		await this.init();
 		if (gen !== this.gen) return null;
 		let resolve!: (r: SearchResult | null) => void;
-		const result = new Promise<SearchResult | null>((r) => (resolve = r));
+		let reject!: (error: unknown) => void;
+		const result = new Promise<SearchResult | null>((ok, ko) => ((resolve = ok), (reject = ko)));
 		let finished!: () => void;
-		const job = { resolve, done: new Promise<void>((r) => (finished = r)) };
+		const done = new Promise<void>((r) => (finished = r));
+		const job = {
+			resolve,
+			done,
+			abort: (error?: unknown) => {
+				this.listeners.delete(fn);
+				finished();
+				if (error === undefined) resolve(null);
+				else reject(error);
+			}
+		};
 		this.current = job;
 
 		let last: Info | null = null;
@@ -138,11 +160,26 @@ export class Engine {
 		await job.done;
 	}
 
-	/** Para todo y cierra el worker (al salir de CHESS). */
+	/**
+	 * El worker ha fallado (WebAssembly sin memoria en el móvil…): la búsqueda en curso falla en vez de
+	 * quedarse esperando para siempre su «bestmove», y la próxima vuelve a arrancar el motor.
+	 */
+	private crash(error: unknown) {
+		const job = this.current;
+		this.current = null;
+		this.listeners.clear();
+		this.worker?.terminate();
+		this.worker = null;
+		this.ready = null;
+		job?.abort(error ?? new Error('el motor se ha parado'));
+	}
+
+	/** Para todo y cierra el worker (al salir de CHESS). La búsqueda en curso devuelve null. */
 	destroy() {
 		this.gen++;
-		this.current?.resolve(null);
+		const job = this.current;
 		this.current = null;
+		job?.abort();
 		this.listeners.clear();
 		this.worker?.terminate();
 		this.worker = null;
