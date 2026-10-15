@@ -105,6 +105,28 @@ describe('mosaico y teclado', () => {
 	});
 });
 
+describe('como un sistema operativo', () => {
+	it('«Nueva ventana» abre otra instancia de la misma app', () => {
+		const s = wm.emptyState();
+		const a = wm.openWin(s, app('eco'), area).win!;
+		const b = wm.openWin(s, app('eco'), area, undefined, true).win!;
+		expect(b.uid).not.toBe(a.uid);
+		expect(wm.activeDesk(s).wins.filter((w) => w.app === 'eco')).toHaveLength(2);
+	});
+
+	it('siempre encima se pinta delante aunque otra tenga el foco, y se guarda', () => {
+		const s = wm.emptyState();
+		const a = wm.openWin(s, app('a'), area).win!;
+		const b = wm.openWin(s, app('b'), area).win!;
+		wm.toggleTop(s, a.uid);
+		expect(wm.focused(wm.activeDesk(s))?.uid).toBe(b.uid);
+		expect(wm.stackZ(a)).toBeGreaterThan(wm.stackZ(b));
+		expect(wm.reconcileOs(JSON.parse(JSON.stringify(s)), () => true).desks[0].wins[0].top).toBe(true);
+		wm.toggleTop(s, a.uid);
+		expect(a.top).toBeUndefined();
+	});
+});
+
 describe('escritorios', () => {
 	it('añade, renombra, cambia y quita sin perder ventanas', () => {
 		const s = wm.emptyState();
