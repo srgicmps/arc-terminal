@@ -186,27 +186,6 @@ export const used = (page: Cell[]) => page.reduce((n, c) => n + (c.kind === 'wid
 export const dockApps = (apps: PhoneApp[], dock: readonly string[] = DOCK) =>
 	dock.map((id) => apps.find((a) => a.id === id)).filter((a): a is PhoneApp => !!a);
 
-/** Buscar (Spotlight): por nombre, código o descripción, sin tildes; primero las que empiezan así. */
-const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-export function findApps(apps: PhoneApp[], q: string, limit = 8): PhoneApp[] {
-	const w = fold(q.trim());
-	if (!w) return [];
-	const score = (a: PhoneApp) => {
-		const name = fold(a.name);
-		const code = fold(a.code ?? '');
-		if (code === w || name === w) return 0;
-		if (code.startsWith(w) || name.startsWith(w)) return 1;
-		if (name.includes(w) || fold(a.desc ?? '').includes(w)) return 2;
-		return -1;
-	};
-	return apps
-		.map((a) => ({ a, s: score(a) }))
-		.filter((x) => x.s >= 0)
-		.sort((x, y) => x.s - y.s)
-		.slice(0, limit)
-		.map((x) => x.a);
-}
-
 // ---- Multitarea: las apps abiertas, de la última a la primera ----
 
 /** Apps que se quedan vivas a la vez (cada una es un iframe: más pesaría demasiado en un móvil). */

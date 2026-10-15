@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { APPS } from '../apps.ts';
-import { arrange, folderName, place, rename, takeOut, badges, badgeText, CELLS, dockApps, drop, findApps, gesture, layout, readSeen, touch, used } from './home.ts';
+import { arrange, folderName, place, rename, takeOut, badges, badgeText, CELLS, dockApps, drop, gesture, layout, readSeen, touch, used } from './home.ts';
 
 describe('Modo OS en el móvil', () => {
 	it('dock de 4 con la Terminal y sin repetir en las páginas', () => {
@@ -15,11 +15,6 @@ describe('Modo OS en el móvil', () => {
 		expect(pages.every((p) => used(p) <= CELLS)).toBe(true);
 		expect(used(pages[0])).toBe(CELLS);
 		expect(pages[0].filter((c) => c.kind === 'widget').length).toBe(3);
-	});
-	it('Spotlight busca sin tildes, primero lo exacto', () => {
-		expect(findApps(APPS, 'eco')[0].id).toBe('eco');
-		expect(findApps(APPS, 'periodico').length).toBeGreaterThan(0);
-		expect(findApps(APPS, '')).toEqual([]);
 	});
 	it('multitarea: la última, delante, como mucho 4', () => {
 		expect(touch(['a', 'b', 'c', 'd'], 'e')).toEqual(['e', 'a', 'b', 'c']);

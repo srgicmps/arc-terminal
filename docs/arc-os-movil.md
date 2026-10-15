@@ -28,7 +28,8 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
 - [x] **Carpetas** al arrastrar un icono sobre otro; orden de iconos y dock editables y guardados (`arc-os-phone`, en la
   cuenta). Modelo propio del teléfono, de un nivel como en iOS (`place`, `takeOut`, `arrange` de `home.ts`), no el árbol
   de archivos de OS 2.
-- [ ] Spotlight con `searchAll()` de OS 5 (`src/lib/os/system/search.ts`) cuando esté en main.
+- [x] Spotlight con `searchAll()` de OS 5: apps, valores, países, líderes y ajustes (bloquear, centro de control…);
+  las acciones se hacen en el teléfono (`runPhoneHit` de `MobileHome`), no en ventanas.
 - [ ] Pantalla de bloqueo/arranque de OS 5 en el móvil (le pedí aspecto de teléfono, por encima de `--z-modal`+4).
 - [ ] Apps de OS 4 (Calculadora, Reloj, Notas, Monitor, Calendario, Ajustes, Archivos) a pantalla completa: comprobar a 390 px.
 - [ ] Más insignias (AVISOS, CAL de hoy…) y widgets editables.

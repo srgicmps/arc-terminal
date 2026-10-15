@@ -42,6 +42,9 @@
 	import PhoneWidget from './PhoneWidget.svelte';
 	import Spotlight from './Spotlight.svelte';
 	import CenterSheet from './CenterSheet.svelte';
+	import type { Hit } from '../system/search.ts';
+	import { lock } from '../system/system.svelte.ts';
+	import { leaveOS } from '../mode.svelte.ts';
 	import PhoneFolder from './PhoneFolder.svelte';
 	import PhoneFolderIcon from './PhoneFolderIcon.svelte';
 
@@ -300,6 +303,20 @@
 		return { index: folder.apps.indexOf(key), side: at < list.length ? ('before' as const) : ('after' as const) };
 	});
 
+	/** Un resultado del buscador universal, en el teléfono: apps y rutas a pantalla completa; el resto, aquí. */
+	function runPhoneHit(h: Hit) {
+		const a = h.action;
+		if ('app' in a) {
+			const app = appOf(a.app);
+			if (app) launch(app);
+		} else if ('path' in a) launchPath(a.path);
+		else if (a.sys === 'lock') ((sheet = null), lock());
+		else if (a.sys === 'leave') leaveOS();
+		else if (a.sys === 'control') sheet = 'control';
+		else if (a.sys === 'notices') sheet = 'notif';
+		else goHome();
+	}
+
 	/** Lo que se carga en el iframe de cada app abierta. */
 	const src = (id: string) => base + embedSrc(paths[id] ?? appOf(id)?.href ?? '/');
 </script>
@@ -441,7 +458,7 @@
 {/if}
 
 {#if sheet === 'spot'}
-	<Spotlight {apps} {now} onapp={(a) => launch(a)} onpath={launchPath} onclose={() => (sheet = null)} />
+	<Spotlight {apps} {now} onapp={(a) => launch(a)} onpath={launchPath} onhit={runPhoneHit} onclose={() => (sheet = null)} />
 {:else if sheet === 'notif' || sheet === 'control'}
 	<CenterSheet kind={sheet} {changes} {notice} {now} onclose={() => (sheet = null)} onpath={launchPath} />
 {/if}
