@@ -1,18 +1,20 @@
 // «A tu gusto»: la parte sin Svelte (para probarla con Vitest). El estado está en taste.svelte.ts.
 import { COMMANDS } from './commands.ts';
 
-export type Accent = 'amber' | 'cyan' | 'blue';
+export type Accent = 'auto' | 'amber' | 'cyan' | 'blue';
 
 export const ACCENTS: { value: Accent; label: string }[] = [
+	{ value: 'auto', label: 'De la estética' },
 	{ value: 'amber', label: 'Ámbar' },
 	{ value: 'cyan', label: 'Cian' },
 	{ value: 'blue', label: 'Azul' }
 ];
 
-/** Densidad: la compacta de siempre o una más aireada (tokens.css, :root[data-density='comoda']). */
-export type Density = 'compacta' | 'comoda';
+/** Densidad (ajustes.css): «Normal» es la de cada estética; «Compacta» aprieta, «Cómoda» da mucho aire. */
+export type Density = 'compacta' | 'normal' | 'comoda';
 export const DENSITIES: { value: Density; label: string }[] = [
 	{ value: 'compacta', label: 'Compacta' },
+	{ value: 'normal', label: 'Normal' },
 	{ value: 'comoda', label: 'Cómoda' }
 ];
 

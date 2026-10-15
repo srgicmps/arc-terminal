@@ -11,8 +11,8 @@ const KEYS = { style: 'arc-style', accent: 'arc-accent', density: 'arc-density',
 
 export const taste = $state({
 	style: 'terminal',
-	accent: 'amber' as Accent,
-	density: 'compacta' as Density,
+	accent: 'auto' as Accent,
+	density: 'normal' as Density,
 	top: [...DEFAULT_TOP],
 	thumb: [...DEFAULT_THUMB]
 });
@@ -45,8 +45,9 @@ export function initTaste() {
 	// src/app.html ya ha elegido y guardado la estética antes de pintar: aquí solo se lee.
 	taste.style = document.documentElement.dataset.style ?? 'terminal';
 	const accent = read(KEYS.accent);
-	if (accent === 'cyan' || accent === 'blue') taste.accent = accent;
-	if (read(KEYS.density) === 'comoda') taste.density = 'comoda';
+	if (accent === 'amber' || accent === 'cyan' || accent === 'blue') taste.accent = accent;
+	const density = read(KEYS.density);
+	if (density === 'compacta' || density === 'comoda') taste.density = density;
 	taste.top = cleanCodes(json(KEYS.top)) ?? [...DEFAULT_TOP];
 	taste.thumb = cleanCodes(json(KEYS.thumb), THUMB_MAX) ?? [...DEFAULT_THUMB];
 	// <html data-scrolled> en cuanto la página baja un poco: para estéticas con títulos grandes que se encogen o
@@ -75,17 +76,17 @@ export function setStyle(style: string) {
 
 export function setAccent(accent: Accent) {
 	taste.accent = accent;
-	if (accent === 'amber') delete document.documentElement.dataset.accent;
+	if (accent === 'auto') delete document.documentElement.dataset.accent;
 	else document.documentElement.dataset.accent = accent;
-	write(KEYS.accent, accent === 'amber' ? null : accent);
+	write(KEYS.accent, accent === 'auto' ? null : accent);
 }
 
 /** Densidad: como el acento, en <html data-density> (también lo pone src/app.html antes de pintar). */
 export function setDensity(density: Density) {
 	taste.density = density;
-	if (density === 'compacta') delete document.documentElement.dataset.density;
+	if (density === 'normal') delete document.documentElement.dataset.density;
 	else document.documentElement.dataset.density = density;
-	write(KEYS.density, density === 'compacta' ? null : density);
+	write(KEYS.density, density === 'normal' ? null : density);
 }
 
 export function setTop(codes: string[]) {
@@ -104,8 +105,8 @@ export function setThumb(codes: string[]) {
 
 /** Vuelve a lo de la web. */
 export function resetTaste() {
-	setAccent('amber');
-	setDensity('compacta');
+	setAccent('auto');
+	setDensity('normal');
 	taste.top = [...DEFAULT_TOP];
 	taste.thumb = [...DEFAULT_THUMB];
 	write(KEYS.top, null);
