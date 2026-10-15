@@ -142,6 +142,13 @@
 		stroke: var(--amber);
 	}
 
+	/* Espacio aéreo en conflicto: anillo discontinuo, sin relleno. */
+	.airspace circle:not(.hit) {
+		fill: none;
+		stroke: var(--amber);
+		stroke-dasharray: 2 2;
+	}
+
 	.sanctions rect {
 		fill: var(--amber-soft);
 		stroke: var(--amber);
@@ -233,6 +240,10 @@
 	.legend i.events {
 		background: var(--muted);
 		border-color: var(--muted);
+	}
+
+	.legend i.airspace {
+		border-style: dashed;
 	}
 
 	.legend i.sanctions {
