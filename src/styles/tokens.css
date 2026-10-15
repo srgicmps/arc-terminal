@@ -291,26 +291,53 @@
 }
 
 /*
- * Aspecto «Mando» (centro de mando): pizarra muy oscura con rejilla técnica tenue, letra mono, acento frío para
- * la estructura y ámbar para lo que importa, bordes de 1 px y esquinas casi rectas. Los --cmd-* también los usan
- * las apps de análisis (mapa operacional, grafo, expediente, línea de tiempo y vigilancia).
+ * Aspecto «Mando» (centro de mando): el único estilo del escritorio de Arc OS (decisión de Sergi). Es fijo: no
+ * cambia con la estética, el acento, la densidad ni el tema de la web, que solo se aplican dentro de las apps.
+ * Por eso redefine aquí la paleta, la letra y las formas de base sobre el contenedor de /os. Pizarra muy oscura
+ * con rejilla técnica tenue, letra mono, acento frío para la estructura y ámbar para lo que importa, bordes de
+ * 1 px y esquinas casi rectas. Los --cmd-* también los usan las apps de análisis (mapa operacional, grafo,
+ * expediente, línea de tiempo y vigilancia).
  */
 [data-os-skin] {
-	--cmd-slate: color-mix(in srgb, var(--bg) 70%, #0f1a26); /* fondo del escritorio */
-	--cmd-deck: color-mix(in srgb, var(--panel) 80%, #0f1a26); /* barras y paneles */
+	--cmd-slate: #070c12; /* fondo del escritorio */
+	--cmd-deck: #0b131b; /* barras, ventanas y paneles */
 	--cmd-cold: #6aaecf; /* acento frío: estructura, pilotos, selección */
-	--cmd-cold-dim: color-mix(in srgb, var(--cmd-cold) 45%, transparent);
-	--cmd-cold-soft: color-mix(in srgb, var(--cmd-cold) 12%, transparent);
-	--cmd-grid: color-mix(in srgb, var(--cmd-cold) 7%, transparent); /* rejilla del fondo */
+	--cmd-cold-dim: rgba(106, 174, 207, 0.4);
+	--cmd-cold-soft: rgba(106, 174, 207, 0.12);
+	--cmd-grid: rgba(106, 174, 207, 0.06); /* rejilla del fondo */
 	--cmd-grid-size: 24px;
-}
-:root[data-theme='light'] [data-os-skin] {
-	--cmd-slate: color-mix(in srgb, var(--bg) 85%, #c9d6e2);
-	--cmd-deck: color-mix(in srgb, var(--panel) 85%, #c9d6e2);
-	--cmd-cold: #22678a;
 }
 
 [data-os-skin='mando'] {
+	color-scheme: dark;
+	color: var(--fg); /* el texto heredado del body sería el de la estética de la web */
+	/* Base fija (mismos nombres que la web, valores propios del OS). */
+	--bg: var(--cmd-slate);
+	--panel: var(--cmd-deck);
+	--raise: #111c27;
+	--line: #1a2734;
+	--fg: #d5dde5;
+	--muted: #818d9a;
+	--faint: #75818e;
+	--amber: #f2a83b;
+	--amber-dim: #c99447;
+	--amber-soft: rgba(242, 168, 59, 0.13);
+	--amber-edge: rgba(242, 168, 59, 0.42);
+	--on-amber: #0b131b;
+	--up: #4cc48a;
+	--down: #f0646f;
+	--neutral: #3a4654;
+	--scrim: rgba(3, 6, 10, 0.6);
+	--mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	--sans: 'IBM Plex Sans Condensed', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+	--font-ui: var(--mono);
+	--radius: 2px;
+	--radius-s: 0;
+	--border: var(--hair) solid var(--line);
+	--panel-edge: var(--cmd-cold-dim);
+	--panel-blur: none;
+	--shadow: none;
+	--shadow-pop: 0 0 0 var(--hair) var(--cmd-cold-dim), 0 12px 32px rgba(0, 0, 0, 0.5);
 	--os-desk: var(--cmd-slate);
 	--bg-image:
 		repeating-linear-gradient(var(--cmd-grid) 0 var(--hair), transparent var(--hair) var(--cmd-grid-size)),
