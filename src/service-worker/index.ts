@@ -101,6 +101,9 @@ self.addEventListener('fetch', (event) => {
 	// Solo nos ocupamos de lo nuestro; TradingView y demás terceros van directos a la red.
 	if (target.origin !== scope.origin || !target.pathname.startsWith(scope.pathname)) return;
 
+	// Tus ajustes (/api/prefs): siempre a la red, nunca de la caché.
+	if (target.pathname.startsWith(`${scope.pathname}api/`)) return;
+
 	if (request.mode === 'navigate') {
 		event.respondWith(page(request));
 		return;

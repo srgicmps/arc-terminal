@@ -1,0 +1,17 @@
+# Cloudflare Pages (arcterminal.dev). Lo lee `wrangler pages deploy` en las Actions (deploy.yml y fast.yml).
+# Sin secretos: scripts/cf-config.ts sustituye los marcadores de abajo al publicar (busca o crea la base D1 y lee
+# el AUD de Access con la API de Cloudflare). Si no puede, se publica sin este archivo y /api/* responde «sin
+# configurar» (la web sigue igual, sin cuentas).
+name = "arc-terminal"
+pages_build_output_dir = "build"
+compatibility_date = "2026-10-01"
+
+# Ajustes de cada usuario (functions/api/prefs.ts → cloud/prefs.ts). La tabla se crea sola.
+[[d1_databases]]
+binding = "DB"
+database_name = "arc-terminal-users"
+database_id = "__D1_DATABASE_ID__"
+
+[vars]
+ACCESS_TEAM_DOMAIN = "__ACCESS_TEAM_DOMAIN__"
+ACCESS_AUD = "__ACCESS_AUD__"
