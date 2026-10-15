@@ -42,6 +42,45 @@ export interface AlertConfig {
 	baseStocks: boolean;
 	/** Silencio (hora de Madrid, «23:00»–«07:30»): solo llegan los urgentes (P1). null: sin silencio. */
 	quiet: { from: string; until: string } | null;
+	/** «Tu mañana»: un resumen personal al día, a su hora (de Madrid), por ntfy y, si lo pide, por email. */
+	brief: Brief;
+}
+
+export interface Brief {
+	on: boolean;
+	/** Hora de Madrid, «hh:mm», de BRIEF_HOURS. */
+	at: string;
+	/** También por email (a su cuenta; lo manda la web con Brevo, el email nunca sale de Cloudflare). */
+	email: boolean;
+	/** Su sitio, para el tiempo (el de LUGAR). null: sin tiempo. */
+	place: { name: string; lat: number; lon: number } | null;
+}
+
+/** Horas para «Tu mañana»: de 06:00 a 11:00, cada media hora. */
+export const BRIEF_HOURS = Array.from({ length: 11 }, (_, i) => `${String(6 + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`);
+
+export const DEFAULT_BRIEF: Brief = { on: false, at: '08:00', email: false, place: null };
+
+/** Un «Tu mañana» comprobado; lo que no valga, por defecto. */
+export function parseBrief(raw: unknown): Brief {
+	const o = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+	const p = o.place as { name?: unknown; lat?: unknown; lon?: unknown } | null | undefined;
+	const place =
+		p &&
+		typeof p.name === 'string' &&
+		p.name.trim() &&
+		typeof p.lat === 'number' &&
+		typeof p.lon === 'number' &&
+		Math.abs(p.lat) <= 90 &&
+		Math.abs(p.lon) <= 180
+			? { name: p.name.trim().slice(0, 60), lat: Math.round(p.lat * 100) / 100, lon: Math.round(p.lon * 100) / 100 }
+			: null;
+	return {
+		on: o.on === true,
+		at: typeof o.at === 'string' && BRIEF_HOURS.includes(o.at) ? o.at : DEFAULT_BRIEF.at,
+		email: o.email === true,
+		place
+	};
 }
 
 export const DAILY_MAX = 100;
@@ -55,7 +94,8 @@ export const DEFAULT_CONFIG: AlertConfig = {
 	daily: DAILY_MAX,
 	mis: [],
 	baseStocks: true,
-	quiet: null
+	quiet: null,
+	brief: DEFAULT_BRIEF
 };
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -88,7 +128,7 @@ export function parseConfig(raw: unknown): AlertConfig {
 		q.from !== q.until
 			? { from: q.from, until: q.until }
 			: null;
-	return { on: o.on === true, groups, level, daily, mis, baseStocks: o.baseStocks !== false, quiet };
+	return { on: o.on === true, groups, level, daily, mis, baseStocks: o.baseStocks !== false, quiet, brief: parseBrief(o.brief) };
 }
 
 /** ¿Está «hh:mm» dentro del silencio? Admite silencios que cruzan la medianoche (23:00–07:00). */
