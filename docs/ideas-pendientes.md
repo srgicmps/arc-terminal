@@ -356,6 +356,13 @@ demás queda «a probar». Esfuerzo: S (horas), M (un PR) y L (varios PR). ★ =
 AVISOS). D añade fuentes y vistas nuevas; F18 lee `news` sin cambiarlo. Compruébalo con las sesiones Producto A–G
 (bienvenida y modo sencillo) antes de repartir C.
 
+## 2i. Modo Sencillo v2: APARCADO por Sergi (15/10)
+
+Feedback de Sergi: el Sencillo actual queda «muy tonto». Lo quiere más bonito y más «web-like» (menos terminal),
+**sin perder información**: no hay que simplificarlo en exceso. Hubo un primer intento como app aparte en `/app`
+(pestañas, tarjetas con cifra grande y explicación, noticias como historias): rama `sencillo/app`, PR #431 cerrado
+sin fusionar. Sirve de punto de partida si se retoma, pero con más densidad de datos.
+
 ## 3. Decisiones de Sergi que hay que respetar
 
 - Arc Terminal es **mundial**: nada nuevo centrado en Menorca, salvo los puertos AIS de Maó y Ciutadella.

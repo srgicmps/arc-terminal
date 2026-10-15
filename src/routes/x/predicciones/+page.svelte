@@ -6,7 +6,8 @@
 -->
 <script lang="ts">
 	import Panel from '#lib/components/Panel.svelte';
-	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import ExpHeader from '#lib/components/ExpHeader.svelte';
+	import { EXPERIENCES } from '#lib/experiences.ts';
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
@@ -14,6 +15,8 @@
 	import { until } from '#lib/markets.ts';
 	import { exact, median, score, standings, type Round } from '#lib/exp/forecasts.ts';
 	import { game, loadGame, placeBet, removeBet, setAlias } from '#lib/exp/forecasts.svelte.ts';
+
+	const exp = EXPERIENCES.find((e) => e.id === 'predicciones')!;
 
 	$effect(() => void loadGame());
 
@@ -52,7 +55,7 @@
 	const others = (r: Round) => game.bets.filter((b) => b.round === r.id).map((b) => b.value);
 </script>
 
-<ViewHeader code="PRED" title="Predicciones" sub="Adivina el próximo dato antes de que salga: IPC, paro, tipos del BCE. Se puntúa al publicarse" />
+<ExpHeader {exp} sub="Adivina el próximo dato antes de que salga: IPC, paro, tipos del BCE. Se puntúa al publicarse" />
 
 {#if game.mode === 'cuenta' || mine}
 	<Tiles cols={4}>
