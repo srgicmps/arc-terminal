@@ -98,7 +98,7 @@
 					{#each d.wins as win (win.uid)}
 						{@const app = appOf(win)}
 						{#if app}
-							<Window {win} {app} active={d.id === os.state.active && focusedWin()?.uid === win.uid} onpreview={(s) => (preview = s)} onkey={handleKey} onmenu={(x, y) => (menu = { uid: win.uid, x, y })} />
+							<Window {win} {app} active={d.id === os.state.active && focusedWin()?.uid === win.uid} onpreview={(s) => (preview = s)} onmenu={(x, y) => (menu = { uid: win.uid, x, y })} />
 						{/if}
 					{/each}
 				</div>
