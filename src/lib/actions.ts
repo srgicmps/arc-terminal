@@ -1,11 +1,10 @@
 // Acciones de la barra (lote 27-B): órdenes que no abren una vista, sino que hacen algo.
 // - «compartir WS»: copia (o comparte, en el móvil) el enlace de una vista; «compartir» solo, la abierta.
-// - «+NVDA» / «-AAPL»: añade o quita de MIS y, para los avisos al móvil, abre el issue con la lista.
-// - «vigila aranceles»: palabra vigilada (BOE y titulares) y su issue para los avisos.
-// - «alerta NVDA > 150», «alerta BTC -5%», «alerta diésel < 1,40»: abre el issue de la alerta.
-//   «alertas» (o «alerta» solo) abre la lista de alertas abiertas.
+// - «+NVDA» / «-AAPL»: añade o quita de MIS y de tus valores de AVISOS.
+// - «vigila aranceles»: palabra vigilada (BOE y titulares), también para los avisos.
+// - «alerta NVDA > 150», «alerta BTC -5%», «alerta diésel < 1,40»: la guarda en tu cuenta (F14).
+//   «alertas» (o «alerta» solo) abre AVISOS, donde están todas.
 // Lógica pura, sin Svelte, para poder probarla con Vitest; la ejecuta src/lib/runaction.svelte.ts.
-// Por qué issues: ver src/lib/useralerts.ts.
 import { canonical, norm, resolveInput, splitInput, suggest, targetPath, type Option, type Target } from './cmdline.ts';
 import type { ShareInfo } from './share.ts';
 import { alertText, cleanWord, parseAlert, type UserAlert } from './useralerts.ts';
@@ -53,7 +52,7 @@ export function nextMis(codes: string[], action: { add: boolean; code: string })
 	return action.add ? [...rest, action.code] : rest;
 }
 
-const ISSUE = 'abre el issue para los avisos al móvil (pulsa «Submit»)';
+const ACCOUNT = 'se guarda en tu cuenta para los avisos al móvil';
 
 /** La sugerencia de la barra: qué hará Intro. */
 export function actionOption(action: Action, raw: string, all: Option[]): Option {
@@ -72,16 +71,16 @@ export function actionOption(action: Action, raw: string, all: Option[]): Option
 			return {
 				...base,
 				code: `${action.add ? '+' : '−'}${action.code}`,
-				desc: `${action.add ? 'Añade a' : 'Quita de'} MIS y ${ISSUE}`
+				desc: `${action.add ? 'Añade a' : 'Quita de'} MIS (y tus valores de AVISOS)`
 			};
 		case 'watch':
 			return action.word
-				? { ...base, code: `VIGILA ${action.word}`, desc: `Palabra vigilada (BOE y titulares); ${ISSUE}` }
+				? { ...base, code: `VIGILA ${action.word}`, desc: `Palabra vigilada (BOE y titulares); ${ACCOUNT}` }
 				: { ...base, code: 'VIGILA', desc: action.raw ? `«${action.raw}» no vale (máx. 40 letras)` : 'Escribe una palabra: vigila aranceles' };
 		case 'alert':
-			if (action.alert) return { ...base, code: `ALERTA ${alertText(action.alert)}`, desc: `Aviso al móvil cuando se cumpla; ${ISSUE}` };
+			if (action.alert) return { ...base, code: `ALERTA ${alertText(action.alert)}`, desc: `Aviso al móvil cuando se cumpla; ${ACCOUNT}` };
 			return action.raw
 				? { ...base, code: 'ALERTA ?', desc: 'No la entiendo. Ejemplos: alerta NVDA > 150 · alerta BTC -5% · alerta diésel < 1,40' }
-				: { ...base, code: 'ALERTAS', desc: 'Tus alertas abiertas (issues de GitHub). Nueva: alerta NVDA > 150' };
+				: { ...base, code: 'ALERTAS', desc: 'Tus alertas, en AVISOS. Nueva: alerta NVDA > 150' };
 	}
 }

@@ -8,17 +8,21 @@
 // - Cada uno tiene su historial (qué se le ha enviado), como el de Sergi, guardado SOLO en la caché de Actions
 //   (notify-users.json, junto a notify-log.json), con su uid. Nunca en static/data: no se publica.
 // SECRETO: los temas de ntfy no se escriben en ningún registro ni archivo (notify.ts los quita de cada línea).
-import { DAILY_MAX, parseConfig, wants, type AlertConfig } from '../../src/lib/alertconfig.ts';
+import { DAILY_MAX, inQuiet, parseConfig, wants, type AlertConfig } from '../../src/lib/alertconfig.ts';
 import { accessHeaders } from '../lib.ts';
 import { PAGES_SITE, SITE } from '../site.ts';
 import { briefAlert, briefDue, briefLines, type Weather } from './brief.ts';
 import { QUOTAS } from './config.ts';
 import { madrid, RULES, type Alert, type Inputs, type NotifyLog, type Rule } from './rules.ts';
+import { ordersOf, userRules } from './user.ts';
 
 export interface RemoteUser {
 	uid: string;
-	topic: string;
+	/** null solo en la cuenta del administrador si no tiene los avisos activados (sus alertas van por NTFY_TOPIC). */
+	topic: string | null;
 	config: AlertConfig;
+	/** La cuenta de Sergi: sus alertas y palabras salen con los avisos de Sergi (notify.ts), no aquí. */
+	admin?: boolean;
 }
 
 const UID = /^[0-9a-f]{16}$/;
@@ -28,11 +32,13 @@ const TOPIC = /^arc-[0-9a-f]{32}$/;
 export function parseUsers(body: unknown): RemoteUser[] {
 	const users = (body as { users?: unknown } | null)?.users;
 	if (!Array.isArray(users)) return [];
-	return users.flatMap((u) => {
-		const { uid, topic, config } = (u ?? {}) as Record<string, unknown>;
-		if (typeof uid !== 'string' || !UID.test(uid) || typeof topic !== 'string' || !TOPIC.test(topic)) return [];
+	return users.flatMap((u): RemoteUser[] => {
+		const { uid, topic, config, admin } = (u ?? {}) as Record<string, unknown>;
+		if (typeof uid !== 'string' || !UID.test(uid)) return [];
+		const t = typeof topic === 'string' && TOPIC.test(topic) ? topic : null;
 		const c = parseConfig(config);
-		return c.on ? [{ uid, topic, config: c }] : [];
+		if (admin === true) return [{ uid, topic: c.on ? t : null, config: c, admin: true }];
+		return c.on && t ? [{ uid, topic: t, config: c }] : [];
 	});
 }
 
@@ -53,6 +59,42 @@ export async function loadUsers(fetcher: typeof fetch = fetch): Promise<RemoteUs
 		}
 	}
 	return null;
+}
+
+/** POST con el service token a /api/alerts (la web privada o, si no responde, la de Pages). El JSON o null. */
+async function postAlerts(query: string, body: unknown, fetcher: typeof fetch): Promise<Record<string, unknown> | null> {
+	const headers = accessHeaders();
+	if (!Object.keys(headers).length) return null;
+	for (const site of [...new Set([SITE, PAGES_SITE])]) {
+		try {
+			const res = await fetcher(`${site}/api/alerts?${query}`, {
+				method: 'POST',
+				headers: { ...headers, 'content-type': 'application/json' },
+				body: JSON.stringify(body),
+				redirect: 'manual',
+				signal: AbortSignal.timeout(20_000)
+			});
+			if (res.ok && res.headers.get('content-type')?.includes('application/json')) return (await res.json()) as Record<string, unknown>;
+		} catch {
+			// La siguiente dirección.
+		}
+	}
+	return null;
+}
+
+/** Borra de cada cuenta las alertas de precio que ya han avisado. Una línea para el registro (sin uids). */
+export async function postFired(fired: { uid: string; ids: string[] }[], fetcher: typeof fetch = fetch): Promise<string> {
+	const body = await postAlerts('fired=1', { fired }, fetcher);
+	const n = fired.reduce((sum, f) => sum + f.ids.length, 0);
+	return body ? `ntfy: ${body.removed ?? 0} de ${n} alertas cumplidas borradas` : `ntfy: no se pudieron borrar ${n} alertas cumplidas (se reintenta)`;
+}
+
+/** Pasa a la cuenta de Sergi las órdenes que había en issues. true si la web lo ha guardado. */
+export async function postMigration(
+	orders: { prices: unknown[]; mis: string[]; words: string[] },
+	fetcher: typeof fetch = fetch
+): Promise<boolean> {
+	return (await postAlerts('migrate=1', orders, fetcher)) !== null;
 }
 
 /**
@@ -95,9 +137,22 @@ export function rulesFor(config: AlertConfig, now: number, rules: Rule[] = RULES
 		}));
 }
 
+/**
+ * Sus alertas de precio (siempre llegan, como los P1) y sus palabras vigiladas (fuera de su silencio). Las de
+ * Sergi no: salen con sus avisos de siempre (notify.ts).
+ */
+export function ownRulesFor(u: RemoteUser, now: number): Rule[] {
+	if (u.admin) return [];
+	const hm = madrid(now).hm;
+	return userRules(ordersOf(u.config)).map((r) =>
+		r.type === 'vigila' ? { ...r, run: (d, ctx) => (inQuiet(hm, u.config.quiet) ? [] : r.run(d, ctx)) } : r
+	);
+}
+
 /** Los datos para un usuario: sin la zona del diésel de Sergi y con sus valores. */
 export function inputsFor(d: Inputs, config: AlertConfig, base: Set<string>): Inputs {
-	const mine = new Set(config.mis);
+	// Sus valores y los de sus alertas de precio.
+	const mine = new Set([...config.mis, ...config.prices.map((p) => p.asset)]);
 	const alertQuotes = (d.alertQuotes ?? []).filter(
 		(q) => q?.symbol && ((config.baseStocks && base.has(q.symbol)) || mine.has(q.symbol))
 	);
@@ -154,11 +209,13 @@ export async function runUsers(
 		return skies.get(key)!;
 	};
 	for (const u of users) {
-		const rules = rulesFor(u.config, now, all);
+		if (!u.topic || !u.config.on) continue;
+		const topic = u.topic;
+		const rules = [...rulesFor(u.config, now, all), ...ownRulesFor(u, now)];
 		const input = inputsFor(d, u.config, base);
 		const who = `usuario ${u.uid.slice(0, 4)}`;
 		const send = async (alert: Alert, log: NotifyLog) => {
-			const { status } = await engine.post(u.topic, alert);
+			const { status } = await engine.post(topic, alert);
 			const ok = status !== null && status >= 200 && status < 300;
 			log.entries.push({ k: alert.id, t: engine.minute(now), s: ok ? 'sent' : 'failed', p: alert.level });
 			return ok;
