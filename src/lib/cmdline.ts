@@ -3,6 +3,7 @@
 
 import { COMMANDS, type Command } from './commands.ts';
 import { FUNCTIONS, findFunction } from './functions.ts';
+import { panelHash } from './panelhash.ts';
 import { TICKERS } from './tickers.ts';
 
 /** Una sugerencia de la barra. */
@@ -38,6 +39,21 @@ export function findCommand(raw: string): Command | undefined {
 	return COMMANDS.find((c) => c.code === q) ?? COMMANDS.find((c) => c.aliases?.some((a) => norm(a) === q));
 }
 
+/** Un código de Bloomberg («WEI», «fxc»): su comando y, si lo tiene, el panel al que va (M45). */
+export function findBloomberg(raw: string): { command: Command; panel?: string } | undefined {
+	const q = norm(raw);
+	for (const command of COMMANDS) {
+		const b = command.bloomberg?.find((x) => x.code === q);
+		if (b) return { command, panel: b.panel };
+	}
+	return undefined;
+}
+
+/** Los códigos de Bloomberg como sugerencias: «FXC · Divisas · WS (Bloomberg)». */
+const BLOOMBERG: Option[] = COMMANDS.flatMap((c) =>
+	(c.bloomberg ?? []).map((b) => ({ code: b.code, desc: `${b.panel ? `${b.panel} · ` : ''}${c.code} (Bloomberg)`, kind: 'Bloomberg' }))
+);
+
 /**
  * Sugerencias para lo escrito, por orden: el código exacto, los códigos que empiezan igual,
  * los alias que empiezan igual y, al final, los que lo contienen en un alias o en la descripción.
@@ -45,9 +61,20 @@ export function findCommand(raw: string): Command | undefined {
 export function suggest(raw: string, all: Option[], limit = 8): Option[] {
 	const q = norm(raw);
 	if (!q) return [];
-	// «NEWS inflación»: la única sugerencia es ejecutar el comando con ese texto.
+	// «ECO ?»: la ayuda del comando.
+	const help = commandHelp(raw);
+	if (help) return [helpOption(help, 'Ayuda')];
+	// «ECO TIP»: los paneles del comando que coinciden; «NEWS inflación»: ejecutar el comando con ese texto
+	// (y, detrás, los paneles que coincidan).
+	const panels = panelOptions(raw);
 	const withArg = commandWithArg(raw);
-	if (withArg) return [argOption(withArg.command, withArg.arg, 'Función')];
+	if (withArg) {
+		const arg = argOption(withArg.command, withArg.arg, 'Función');
+		// Con el título entero («WX Mar»), Intro va al panel: sale el primero.
+		const list = commandPanel(raw) ? [...(panels ?? []), arg] : [arg, ...(panels ?? [])];
+		return list.slice(0, limit);
+	}
+	if (panels) return panels.slice(0, limit);
 	// «NVDA » o «NVDA G»: las funciones del valor (GP, DES…).
 	const fns = functionOptions(raw);
 	if (fns) return fns;
@@ -59,7 +86,9 @@ export function suggest(raw: string, all: Option[], limit = 8): Option[] {
 		if (aliases.some((a) => a.includes(q)) || norm(o.desc).includes(q)) return 3;
 		return -1;
 	};
-	return all
+	// Los códigos de Bloomberg solo salen al escribir el código (por el principio), no por la descripción.
+	const bloomberg = BLOOMBERG.filter((o) => o.code.startsWith(q));
+	return [...all, ...bloomberg]
 		.map((o) => ({ o, r: rank(o) }))
 		.filter((x) => x.r >= 0)
 		.sort((a, b) => a.r - b.r)
@@ -71,7 +100,10 @@ export function suggest(raw: string, all: Option[], limit = 8): Option[] {
  * Lo que abre la barra: una función o la ficha de un valor. `fn` es la función del valor en minúsculas
  * («gp» en «NVDA GP», ver src/lib/functions.ts).
  */
-export type Target = { kind: 'command'; command: Command; arg?: string } | { kind: 'symbol'; sym: string; fn?: string };
+export type Target =
+	| { kind: 'command'; command: Command; arg?: string; panel?: string }
+	| { kind: 'help'; command: Command }
+	| { kind: 'symbol'; sym: string; fn?: string };
 
 /**
  * «NVDA GP», «bme:rep des»: un valor y una de sus funciones. Los comandos ganan: «ES GP» no llega aquí
@@ -113,6 +145,67 @@ export function commandWithArg(raw: string): { command: Command; arg: string } |
 	return command?.arg && arg ? { command, arg } : null;
 }
 
+/** Las palabras de un texto, normalizadas: «Curvas de tipos» → CURVAS, DE, TIPOS. */
+const words = (s: string) => norm(s).split(/[^A-Z0-9]+/).filter(Boolean);
+
+/**
+ * Los paneles de un comando a los que lleva un texto, por orden: el título o una key enteros, luego los que
+ * coinciden por el título y al final por sus `keys`. Cada palabra escrita tiene que ser el principio de una palabra del título («CURVA» → «Curvas de
+ * tipos»). Con `exact`, el texto tiene que ser el título (o una key) entero: así «WX Mar» va al panel, pero
+ * «WX Mar del Plata» sigue siendo un lugar.
+ */
+export function findPanels(command: Command, raw: string, exact = false): string[] {
+	const q = words(raw);
+	if (!q.length) return [];
+	const whole = (text: string) => words(text).join(' ') === q.join(' ');
+	const starts = (text: string) => !exact && q.every((x) => words(text).some((y) => y.startsWith(x)));
+	const panels = command.manual?.panels ?? [];
+	const names = (p: (typeof panels)[number]) => [p.name, ...(p.keys ?? [])];
+	const ranked = [
+		...panels.filter((p) => names(p).some(whole)),
+		...panels.filter((p) => starts(p.name)),
+		...panels.filter((p) => p.keys?.some(starts))
+	];
+	return [...new Set(ranked.map((p) => p.name))];
+}
+
+/**
+ * «ECO TIPOS», «WS curva»: un comando y uno de sus paneles. En los comandos que aceptan texto, el panel tiene
+ * que ir entero (si no, el texto es del comando: «FUEL Madrid», «NEWS paro»).
+ */
+export function commandPanel(raw: string): { command: Command; panel: string } | null {
+	if (findCommand(raw)) return null;
+	const { head, arg } = splitInput(raw);
+	const command = findCommand(head);
+	const panel = command && arg ? findPanels(command, arg, !!command.arg)[0] : undefined;
+	return command && panel ? { command, panel } : null;
+}
+
+/** Sugerencias de paneles para «ECO TIP», o null si no hay ninguno. */
+function panelOptions(raw: string): Option[] | null {
+	if (findCommand(raw)) return null;
+	const { head, arg } = splitInput(raw);
+	const command = findCommand(head);
+	if (!command || !arg) return null;
+	const list = findPanels(command, arg).map((name) => panelOption(command, name, 'Panel'));
+	return list.length ? list : null;
+}
+
+function panelOption(command: Command, name: string, kind: string): Option {
+	const what = command.manual?.panels?.find((p) => p.name === name)?.what;
+	return { code: `${command.code} ${name}`, desc: what ? `Panel · ${what}` : 'Panel', kind, run: `${command.code} ${name}` };
+}
+
+/** «ECO ?»: la ayuda de un comando (su ficha del MANUAL). */
+export function commandHelp(raw: string): Command | null {
+	const { head, arg } = splitInput(raw);
+	return arg === '?' ? (findCommand(head) ?? null) : null;
+}
+
+function helpOption(command: Command, kind: string): Option {
+	return { code: `${command.code} ?`, desc: `Ayuda de ${command.code} en el MANUAL`, kind, run: `${command.code} ?` };
+}
+
 function argOption(command: Command, arg: string, kind: string): Option {
 	return { code: command.code, desc: `${command.arg?.label}: ${arg}`, kind, run: `${command.code} ${arg}` };
 }
@@ -128,6 +221,12 @@ export function resolveInput(raw: string, suggestions: Option[]): Target | null 
 	if (!q) return null;
 	const command = findCommand(q);
 	if (command) return { kind: 'command', command };
+	const bloomberg = findBloomberg(q);
+	if (bloomberg) return { kind: 'command', ...bloomberg };
+	const help = commandHelp(raw);
+	if (help) return { kind: 'help', command: help };
+	const panel = commandPanel(raw);
+	if (panel) return { kind: 'command', ...panel };
 	const withArg = commandWithArg(raw);
 	if (withArg) return { kind: 'command', ...withArg };
 	// Un comando sin argumento seguido de texto («ECO paro»): abre el comando.
@@ -144,16 +243,23 @@ export function resolveInput(raw: string, suggestions: Option[]): Target | null 
 /** Cómo se guarda en el historial: «FUEL», «NEWS inflación», «NVDA». */
 export function canonical(target: Target): string {
 	if (target.kind === 'symbol') return target.fn ? `${target.sym} ${target.fn.toUpperCase()}` : target.sym;
+	if (target.kind === 'help') return `${target.command.code} ?`;
+	if (target.panel) return `${target.command.code} ${target.panel}`;
 	return target.arg ? `${target.command.code} ${target.arg}` : target.command.code;
 }
 
-/** La ruta y la búsqueda de la URL: «/news» + «?q=inflaci%C3%B3n». La base la pone el componente. */
-export function targetPath(target: Target): { route: Command['route'] | '/s'; search: string } {
+/**
+ * La ruta y lo que va detrás en la URL: «/news» + «?q=inflaci%C3%B3n», «/eco» + «#panel=Bancos%20centrales».
+ * La base la pone el componente.
+ */
+export function targetPath(target: Target): { route: Command['route'] | '/s' | '/manual'; search: string } {
 	if (target.kind === 'symbol') {
 		const fn = target.fn ? `&fn=${encodeURIComponent(target.fn)}` : '';
 		return { route: '/s', search: `?sym=${encodeURIComponent(target.sym)}${fn}` };
 	}
-	const { command, arg } = target;
+	if (target.kind === 'help') return { route: '/manual', search: `#cmd-${target.command.code}` };
+	const { command, arg, panel } = target;
+	if (panel) return { route: command.route, search: panelHash(panel) };
 	const search = arg && command.arg ? `?${command.arg.param}=${encodeURIComponent(arg)}` : '';
 	return { route: command.route, search };
 }
@@ -203,6 +309,10 @@ export function writeHistory(list: string[], store: () => Store | undefined = br
 /** Las entradas del historial como sugerencias: «FUEL · Gasolineras…», «NVDA · NVIDIA». */
 export function historyOptions(list: string[]): Option[] {
 	return list.map((entry) => {
+		const help = commandHelp(entry);
+		if (help) return helpOption(help, 'Reciente');
+		const panel = commandPanel(entry);
+		if (panel) return panelOption(panel.command, panel.panel, 'Reciente');
 		const withArg = commandWithArg(entry);
 		if (withArg) return argOption(withArg.command, withArg.arg, 'Reciente');
 		const command = findCommand(entry);

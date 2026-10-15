@@ -1,6 +1,7 @@
 // Búsqueda de la barra de comandos en el índice static/data/search.json (scripts/sources/search.ts).
 // Lógica pura, sin Svelte, para probarla con Vitest. El índice se carga aparte, en diferido.
 import { commandWithArg, findCommand, isTickerLike, norm, splitInput, symbolFunction, type Option } from './cmdline.ts';
+import { COUNTRIES, demonymForms } from './countries.ts';
 import { LEADERS } from './leaders.ts';
 import { plain } from './news.ts';
 import type { SearchEntry } from './types.ts';
@@ -81,7 +82,8 @@ const TICKER_MAX = 5;
  * («ECO paro»): ahí Intro abre ese comando, como siempre.
  *
  * Si no hay sugerencias y lo escrito parece un código de valor corto (como mucho 5 caracteres), la primera
- * fila es la ficha de ese valor: así Intro hace lo mismo que antes de existir la búsqueda.
+ * fila es la ficha de ese valor: así Intro hace lo mismo que antes de existir la búsqueda. Si es texto
+ * suelto, la primera fila es «Buscar en NEWS» y debajo van los titulares.
  */
 export function searchOptions(raw: string, suggestions: Option[], index: Indexed[] | null, limit = 5): Option[] {
 	if (!raw.trim()) return [];
@@ -94,18 +96,34 @@ export function searchOptions(raw: string, suggestions: Option[], index: Indexed
 	if (!hits.length && !suggestions.length && isTickerLike(q) && q.length <= TICKER_MAX) {
 		hits.push({ code: q, desc: 'Ficha del valor', kind: 'Valor', run: q });
 	}
-	// Al final, buscar en el archivo de 3 meses (NEWS lo carga en diferido): la barra sigue ligera.
-	hits.push({ code: 'NEWS', desc: `Buscar «${text}» en el archivo de 3 meses`, kind: 'Archivo', run: `NEWS ${text}` });
+	// Buscar en NEWS, que mira también el archivo de 3 meses (lo carga en diferido): la barra sigue ligera.
+	const news = { code: 'NEWS', desc: `Buscar «${text}» en los titulares y el archivo`, kind: 'Buscar', run: `NEWS ${text}` };
+	// Texto suelto que no es un comando ni un valor («aranceles china»): va primero, e Intro abre NEWS.
+	if (!suggestions.length && hits[0]?.kind !== 'Valor') return [news, ...hits];
+	hits.push(news);
 	return hits;
 }
 
-/** Titulares, BOE y valores del índice ligero que encajan con lo escrito. */
+/** El líder de un enlace interno a LIDER («/lider?id=lagarde» → «lagarde»), o null si es otro enlace. */
+export function leaderOf(url: string): string | null {
+	const m = /^\/lider\?id=([^&#]+)/.exec(url);
+	return m ? decodeURIComponent(m[1]) : null;
+}
+
+/** Titulares, BOE, valores y actos de agenda del índice ligero que encajan con lo escrito. */
 function indexHits(raw: string, suggestions: Option[], index: Indexed[], limit: number): Option[] {
 	if (!index.length) return [];
 	const listed = new Set(suggestions.map((o) => o.code));
 	const hits: Option[] = [];
+	// Un acto por líder: todos abren la misma ficha.
+	const leaders = new Set<string>();
 	for (const e of searchIndex(raw, index, limit + listed.size)) {
-		if (e.s === 'Valor') {
+		if (e.s === 'Agenda') {
+			const id = leaderOf(e.u);
+			if (!id || leaders.has(id)) continue;
+			leaders.add(id);
+			hits.push({ code: 'AGENDA', desc: e.t, kind: 'Agenda', run: `LIDER ${id}` });
+		} else if (e.s === 'Valor') {
 			const sym = symbolOf(e.u);
 			if (!sym || listed.has(sym)) continue;
 			hits.push({ code: sym, desc: e.t.replace(/^\S+ · /, ''), kind: 'Valor', run: sym });
@@ -122,6 +140,20 @@ function indexHits(raw: string, suggestions: Option[], index: Indexed[], limit: 
 }
 
 /**
+ * Los países de PAIS como opciones de la barra: «alemania», «japón» o «francés» + Intro abren su ficha
+ * (/pais?c=DE). El código es el nombre, no «DE»: ese es también un valor (Deere) y «ES», un comando.
+ */
+export function countryEntries(): Option[] {
+	return COUNTRIES.map((c) => ({
+		code: norm(c.name),
+		desc: `Ficha · ${c.code}`,
+		kind: 'País',
+		aliases: [...(c.aliases ?? []), ...demonymForms(c.demonym)],
+		run: `PAIS ${c.code}`
+	}));
+}
+
+/**
  * Los líderes de LIDER como opciones de la barra: «lagarde» o «trump» + Intro abren su ficha
  * (/lider?id=lagarde). El código es el id en mayúsculas, para que «LID» no los saque todos.
  */
@@ -133,4 +165,56 @@ export function leaderEntries(): Option[] {
 		aliases: [l.name, ...l.aliases],
 		run: `LIDER ${l.id}`
 	}));
+}
+
+// ---- Filtros de NEWS escritos en la búsqueda: «inflación /eco /7d» ----
+
+/** Lo buscado en NEWS, separado en texto, sección y antigüedad máxima. */
+export interface NewsQuery {
+	text: string;
+	/** Clave de la sección («eco»), o null si no se filtra. */
+	section: string | null;
+	/** Horas hacia atrás, o null si no se filtra. */
+	hours: number | null;
+}
+
+/** «/24h», «/7d», «/2s» (semanas), «/3m» (meses). */
+const HOURS_PER: Record<string, number> = { h: 1, d: 24, s: 24 * 7, m: 24 * 30 };
+
+/**
+ * Separa los filtros del texto: «/eco» o «/economia» (clave o principio del nombre de la sección) y
+ * «/7d» (antigüedad). Un «/algo» que no es ningún filtro se queda en el texto. Si hay dos, gana el último.
+ */
+export function parseNewsQuery(raw: string, sections: readonly { key: string; label: string }[]): NewsQuery {
+	const out: NewsQuery = { text: '', section: null, hours: null };
+	const rest: string[] = [];
+	for (const token of raw.split(/\s+/).filter(Boolean)) {
+		const age = /^\/(\d{1,3})([hdsm])$/i.exec(token);
+		const name = fold(token.slice(1));
+		const section =
+			token.startsWith('/') && name
+				? (sections.find((s) => s.key === name) ?? (name.length >= 3 ? sections.find((s) => fold(s.label).startsWith(name)) : undefined))
+				: undefined;
+		if (age && Number(age[1]) > 0) out.hours = Number(age[1]) * HOURS_PER[age[2].toLowerCase()];
+		else if (section) out.section = section.key;
+		else rest.push(token);
+	}
+	out.text = rest.join(' ');
+	return out;
+}
+
+/** ¿Es de las últimas `hours` horas? Sin filtro, todo vale; sin fecha, no. */
+export function withinHours(time: string | null | undefined, hours: number | null, now = Date.now()): boolean {
+	if (hours === null) return true;
+	const t = time ? Date.parse(time) : NaN;
+	return Number.isFinite(t) && now - t <= hours * 3_600_000;
+}
+
+/** Quita de lo buscado el filtro de sección («inflación /eco» → «inflación»), al elegir otra a mano. */
+export function dropSectionFilter(raw: string, sections: readonly { key: string; label: string }[]): string {
+	return raw
+		.split(/\s+/)
+		.filter((t) => !t || !t.startsWith('/') || parseNewsQuery(t, sections).section === null)
+		.join(' ')
+		.trim();
 }

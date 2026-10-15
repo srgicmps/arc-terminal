@@ -19,6 +19,7 @@
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
+	import { summaryLine, trend } from '#lib/summary.ts';
 	import { compact, dm, nf, period, signed } from '#lib/format.ts';
 	import { change, diffDays, last, seriesMap, spread } from '#lib/series.ts';
 	import type { MtsData } from '#lib/mts.ts';
@@ -42,6 +43,8 @@
 	);
 	const geos = ['es', 'ea', 'de', 'fr', 'it', 'pt'];
 	const byGeo = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), inverse: !id.startsWith('gdp') }));
+	// Confianza: más es mejor (sube en verde) y una cifra decimal.
+	const confidence = (id: string) => geos.map((g) => ({ series: get(`${id}-${g}`), decimals: 1 }));
 
 	// EE. UU., Reino Unido, Japón y China, detrás de los europeos. EE. UU. sale de BLS (va al día); los demás, de
 	// la OCDE vía DBnomics (oecd-g4) o de la inflación del G20, que van unos meses por detrás. Aparte de `get`
@@ -109,9 +112,18 @@
 		})
 	);
 	const fedNow = $derived(last(get('fedfunds-us')));
+	// Resumen en una línea (src/lib/summary.ts): inflación y paro de la zona euro y de EE. UU.
+	const summary = $derived(
+		summaryLine([
+			trend('Inflación euro', get('inflation-ea')?.points),
+			trend('paro euro', get('unemployment-ea')?.points),
+			trend('IPC EE. UU.', get('cpi-us')?.points),
+			trend('paro EE. UU.', get('unemployment-us')?.points)
+		])
+	);
 </script>
 
-<ViewHeader code="ECO" title="Economía y macro" sub="Eurostat, Banco Central Europeo, BLS, Tesoro de EE. UU. y FRED" />
+<ViewHeader code="ECO" title="Economía y macro" sub="Eurostat, Banco Central Europeo, BLS, Tesoro de EE. UU. y FRED" {summary} />
 
 {#if strip.length}
 	<Tiles cols={3}>
@@ -166,6 +178,17 @@
 			<SeriesTable next={data.next} head="País" rows={byGeo('debt')} />
 			{#snippet note()}Fuente: Eurostat · <Updated at={data.eurostat?.fetchedAt} source="eurostat" />{/snippet}
 		</Panel>
+		{#if get('esi-ea')}
+			<Panel title="Sentimiento económico" meta="Encuestas de la Comisión Europea · mensual">
+				<SeriesTable head="ESI · 100 = media" rows={confidence('esi')} spark={12} />
+				<SeriesTable head="Consumidor · saldo" rows={confidence('consumer-conf')} spark={12} />
+				{#snippet note()}
+					El ESI junta la confianza de industria, servicios, consumidores, comercio y construcción; por encima de 100, mejor
+					que la media a largo plazo. La confianza del consumidor es el saldo entre optimistas y pesimistas, en puntos. Fuente:
+					Eurostat · <Updated at={data.eurostat?.fetchedAt} source="eurostat" />
+				{/snippet}
+			</Panel>
+		{/if}
 		{#if data.fao?.data.series.length}
 			{@const fao = data.fao}
 			<Panel title="Precios de los alimentos" meta="Índice FAO · 2014–2016 = 100">
@@ -269,7 +292,7 @@
 				head="Banco"
 				rows={(data.bis?.data.series ?? []).map((series) => ({ series, name: series.label, decimals: 2 }))}
 			/>
-			{#snippet note()}Fuente: BIS, tipos oficiales de los bancos centrales · <Updated at={data.bis?.fetchedAt} />{/snippet}
+			{#snippet note()}Fuente: BIS, tipos oficiales de los bancos centrales · <Updated at={data.bis?.fetchedAt} source="bis" />{/snippet}
 		</Panel>
 		<Panel title="Balances de los bancos centrales" meta="Total del activo y liquidez neta · semanal">
 			<BalanceSheets

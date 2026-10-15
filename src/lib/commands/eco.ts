@@ -2,6 +2,7 @@ import type { Command } from '../commands.ts';
 
 export default {
 	order: 30, code: 'ECO', route: '/eco', key: 'Economía', desc: 'Economía y macro: paro, inflación, PIB, tipos', sources: 'Eurostat, BCE, BLS, Tesoro de EE. UU., El País, Expansión, FT', pinned: true,
+	bloomberg: [{ code: 'WIRP', panel: 'Próximas reuniones' }],
 	manual: {
 		section: 'Economía y mercados',
 		what: 'Economía y macro: paro, inflación, PIB, deuda, tipos de los bancos centrales, bonos y vivienda, con los titulares de economía.',
@@ -22,7 +23,7 @@ export default {
 			{ name: 'Tu hipoteca', what: 'Calculadora de hipoteca variable con el euríbor a 12 meses; recuerda lo que escribes.' },
 			{ name: 'Previsiones del FMI', what: 'PIB real e inflación previstos.' },
 			{ name: 'Discursos de banqueros centrales', what: 'Los más recientes.' },
-			{ name: 'Bancos centrales', what: 'Tipo oficial de cada banco y su último cambio.' },
+			{ name: 'Bancos centrales', what: 'Tipo oficial de cada banco y su último cambio.', keys: ['tipos'] },
 			{ name: 'Balances de los bancos centrales', what: 'Total del activo, semanal.' },
 			{ name: 'Bonos a 10 años', what: 'Rentabilidad media mensual.' },
 			{ name: 'Primas de riesgo', what: 'Frente al bono alemán, en puntos básicos.' },

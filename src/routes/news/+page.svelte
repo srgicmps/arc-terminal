@@ -11,7 +11,7 @@
 	import { NEWS_SECTIONS as SECTIONS } from '#lib/news.ts';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Search from '#lib/components/ui/Search.svelte';
-	import { fold, hasWords, MIN_QUERY, queryWords } from '#lib/search.ts';
+	import { dropSectionFilter, fold, hasWords, MIN_QUERY, parseNewsQuery, queryWords, withinHours } from '#lib/search.ts';
 	import type { ArchiveEntry, NewsItem } from '#lib/types.ts';
 	import { urlState, writeParams } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
@@ -38,12 +38,20 @@
 		return () => clearTimeout(t);
 	});
 	const sectionSel = urlState<string>('s', 'all', (v) => SECTIONS.some((x) => x.key === v));
-	const section = $derived(sectionSel.value);
+	// Filtros escritos en la búsqueda (M32): «inflación /eco /7d». La sección escrita manda sobre la elegida.
+	const parsed = $derived(parseNewsQuery(query, SECTIONS));
+	const section = $derived(parsed.section ?? sectionSel.value);
+	function pickSection(v: string | undefined) {
+		if (parsed.section) query = dropSectionFilter(query, SECTIONS);
+		sectionSel.value = v ?? 'all';
+	}
 
-	const words = $derived(queryWords(query));
+	const words = $derived(queryWords(parsed.text));
 	// Si lo buscado tiene ficha (valor, líder, banco central o país), sale arriba y los titulares debajo.
-	const entity = $derived(findEntity(query));
-	const inSection = $derived(data.items.filter((i) => section === 'all' || i.section === section));
+	const entity = $derived(findEntity(parsed.text));
+	const inSection = $derived(
+		data.items.filter((i) => (section === 'all' || i.section === section) && withinHours(i.time, parsed.hours))
+	);
 	const filtered = $derived(inSection.filter((i) => hasWords(`${i.title} ${i.summary} ${i.source}`, words)));
 
 	// Archivo de 3 meses (scripts/sources/archive.ts): cada mes es un JSON aparte (de 1 a 2 MB, unos
@@ -88,7 +96,7 @@
 		const now = new Set(data.items.map((i) => i.url));
 		return data.months
 			.flatMap((m) => archive[m.month] ?? [])
-			.filter(({ e, key }) => !now.has(e.u) && words.every((w) => key.includes(w)))
+			.filter(({ e, key }) => !now.has(e.u) && withinHours(e.d, parsed.hours) && words.every((w) => key.includes(w)))
 			.map(({ e }) => ({ title: e.t, url: e.u, source: e.s, time: e.d, summary: '' }));
 	});
 
@@ -110,8 +118,8 @@
 <ViewHeader code="NEWS" title="Buscador de titulares" sub="{data.items.length} titulares de todas las secciones, los más recientes primero" />
 
 <div class="controls">
-	<Search label="Buscar en los titulares" placeholder="Buscar: Lagarde, aranceles, Menorca, Nvidia…" bind:value={query} />
-	<Seg label="Sección" options={[{ value: 'all', label: 'Todas' }, ...SECTIONS.map((s) => ({ value: s.key, label: s.label }))]} bind:value={() => sectionSel.value, (v) => (sectionSel.value = v ?? 'all')} />
+	<Search label="Buscar en los titulares" placeholder="Buscar: Lagarde, aranceles… Filtros: /eco /7d" bind:value={query} />
+	<Seg label="Sección" options={[{ value: 'all', label: 'Todas' }, ...SECTIONS.map((s) => ({ value: s.key, label: s.label }))]} bind:value={() => section, pickSection} />
 </div>
 
 <div class="grid">

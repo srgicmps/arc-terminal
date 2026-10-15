@@ -13,6 +13,7 @@
 	import { TICKERS } from '#lib/tickers.ts';
 	import {
 		canonical,
+		findCommand,
 		historyOptions,
 		pushHistory,
 		readHistory,
@@ -22,14 +23,16 @@
 		writeHistory,
 		type Option
 	} from '#lib/cmdline.ts';
+	import { argOptions } from '#lib/argcomplete.ts';
 	import type { Dataset } from '#lib/data.ts';
-	import { leaderEntries, prepare, searchOptions, type Indexed } from '#lib/search.ts';
+	import { countryEntries, leaderEntries, prepare, searchOptions, type Indexed } from '#lib/search.ts';
 	import type { SearchEntry } from '#lib/types.ts';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
 
 	const LEADER_OPTIONS = leaderEntries();
-	// Tus valores primero; después, las funciones, los líderes y los valores populares.
+	const COUNTRY_OPTIONS = countryEntries();
+	// Tus valores primero; después, las funciones, los líderes, los países y los valores populares.
 	const ALL: Option[] = $derived([
 		...watchlist.codes.map((code) => ({
 			code,
@@ -38,6 +41,7 @@
 		})),
 		...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función', aliases: c.aliases })),
 		...LEADER_OPTIONS,
+		...COUNTRY_OPTIONS,
 		...TICKERS.filter((t) => !watchlist.codes.includes(t.code)).map((t) => ({
 			code: t.code,
 			desc: t.name,
@@ -77,7 +81,8 @@
 	}
 
 	// Con la barra vacía, el historial; al escribir, las sugerencias y debajo los resultados de búsqueda.
-	const suggestions = $derived(value.trim() ? suggest(value, ALL) : historyOptions(recent));
+	// Tras un comando y un espacio («LIDER », «PAIS ale»), las opciones de su argumento.
+	const suggestions = $derived(value.trim() ? (argOptions(value) ?? suggest(value, ALL)) : historyOptions(recent));
 	const results = $derived(searchOptions(value, suggestions, index));
 	const options = $derived([...suggestions, ...results]);
 
@@ -118,6 +123,18 @@
 			open = true;
 			moved = true;
 			selected = (selected - 1 + n) % n;
+		} else if (isShortcut(e, 'complete') && !e.shiftKey && n && value.trim()) {
+			// Tab completa la barra con la sugerencia marcada (o la primera) sin abrirla. Si es un comando
+			// que acepta texto, deja un espacio: así salen sus opciones («LID» → «LIDER »).
+			const o = options[selected >= 0 ? selected : 0];
+			if (o.url) return;
+			e.preventDefault();
+			const text = pick(o);
+			const command = findCommand(text);
+			value = command?.arg && text === command.code ? `${text} ` : text;
+			open = true;
+			moved = false;
+			selected = 0;
 		} else if (e.key === 'Escape') {
 			e.preventDefault();
 			if (open && n) open = false;

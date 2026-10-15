@@ -58,6 +58,22 @@ const WANTED: Wanted[] = [
 		label: 'Deuda pública',
 		unit: '% PIB',
 		params: { unit: 'PC_GDP', sector: 'S13', na_item: 'GD', lastTimePeriod: '8' }
+	},
+	{
+		// Encuestas de la Comisión Europea: índice de sentimiento económico (100 = media a largo plazo).
+		dataset: 'ei_bssi_m_r2',
+		id: 'esi',
+		label: 'Sentimiento económico (ESI)',
+		unit: 'índice',
+		params: { indic: 'BS-ESI-I', s_adj: 'SA', lastTimePeriod: '25' }
+	},
+	{
+		// Saldo de respuestas: % de optimistas menos % de pesimistas.
+		dataset: 'ei_bssi_m_r2',
+		id: 'consumer-conf',
+		label: 'Confianza del consumidor',
+		unit: 'saldo',
+		params: { indic: 'BS-CSMCI-BAL', s_adj: 'SA', lastTimePeriod: '25' }
 	}
 ];
 
@@ -122,7 +138,7 @@ async function fetchDataset(w: Wanted): Promise<Series[]> {
 
 export const eurostat: Source<SeriesData> = {
 	name: 'eurostat',
-	label: 'Paro, inflación, PIB y deuda · Eurostat',
+	label: 'Paro, inflación, PIB, deuda y confianza · Eurostat',
 	maxAgeMinutes: 355,
 	// Si a la copia le falta alguna serie (p. ej., una recién añadida), se descarga de nuevo sin esperar.
 	isStale: (previous) =>

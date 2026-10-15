@@ -1,4 +1,5 @@
-<!-- Cabecera de cada vista: código en ámbar, título y de dónde salen los datos. -->
+<!-- Cabecera de cada vista: código en ámbar, título, de dónde salen los datos y, con `summary`, el resumen en una
+	línea hecho con los datos (src/lib/summary.ts). -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
@@ -8,9 +9,11 @@
 		sub?: string;
 		/** Contenido a la derecha (fecha, botones…). */
 		aside?: Snippet;
+		/** Resumen en una línea con los datos de la vista («Inflación euro baja al 2,1 % · …»). */
+		summary?: string;
 	}
 
-	let { code, title, sub, aside }: Props = $props();
+	let { code, title, sub, aside, summary }: Props = $props();
 </script>
 
 <svelte:head>
@@ -21,6 +24,7 @@
 	<div>
 		<h1><span class="code">{code}</span>{title}</h1>
 		{#if sub}<p>{sub}</p>{/if}
+		{#if summary}<p class="sum">{summary}</p>{/if}
 	</div>
 	{#if aside}<div class="vh-r">{@render aside()}</div>{/if}
 </div>
@@ -58,6 +62,13 @@
 		margin: var(--sp-4) 0 0;
 		color: var(--muted);
 		font-size: var(--fs-xs);
+	}
+
+	/* El resumen se lee antes que las fuentes: en el color del texto, un punto más grande. */
+	.sum {
+		color: var(--fg);
+		font-size: var(--fs-s);
+		line-height: var(--lh-snug);
 	}
 
 	.vh-r {

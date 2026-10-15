@@ -24,6 +24,11 @@ export interface Command {
 	 * (/news?q=inflación), qué hace con él y un ejemplo para la ayuda.
 	 */
 	arg?: { param: string; label: string; example: string };
+	/**
+	 * Códigos de Bloomberg que llevan aquí (M45), para quien viene de su terminal: «WEI», «FXC»… Con `panel`,
+	 * van a ese panel de la vista (su título, como en `manual.panels`).
+	 */
+	bloomberg?: { code: string; panel?: string }[];
 	/** Su ficha en el MANUAL (src/routes/manual): un test falla si falta. */
 	manual?: Manual;
 }
@@ -40,8 +45,11 @@ export interface Manual {
 	/** Qué acepta detrás. Cada ejemplo es una entrada completa de la barra («FUEL Madrid»). */
 	args?: { label: string; examples: string[]; options?: string[] }[];
 	tips?: string[];
-	/** Sus paneles: el título tal y como sale y qué enseña. */
-	panels?: { name: string; what: string }[];
+	/**
+	 * Sus paneles: el título tal y como sale y qué enseña. `keys`: otras palabras para ir a él desde la barra
+	 * («ECO TIPOS» lleva a «Bancos centrales»).
+	 */
+	panels?: { name: string; what: string; keys?: string[] }[];
 }
 
 const modules = import.meta.glob<Command>('./commands/*.ts', { eager: true, import: 'default' });

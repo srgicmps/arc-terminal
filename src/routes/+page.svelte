@@ -15,6 +15,7 @@
 	import ModularGrid from '#lib/components/ModularGrid.svelte';
 	import PinnedPanels from '#lib/components/PinnedPanels.svelte';
 	import Morning from '#lib/components/Morning.svelte';
+	import { riskPhrase } from '#lib/summary.ts';
 	import MarketSessions from '#lib/components/MarketSessions.svelte';
 	import RiskGauge from '#lib/components/RiskGauge.svelte';
 	import Agenda from '#lib/components/top/Agenda.svelte';
@@ -150,6 +151,8 @@
 	const fresh = $derived(clock.now && visit.ready ? newSinceText(newCount(data.headlines, visit.last), visit.last, clock.now) : '');
 	const cheapWindow = $derived(clock.now ? cheapestNow(pvpc, clock.now) : null);
 	// La luz de mañana en la línea «hoy», solo si «Tu sitio» está en España (el PVPC es de España).
+	// Resumen en una línea (src/lib/summary.ts): el termómetro y el semáforo de riesgo.
+	const summary = $derived(riskPhrase(data.risk.parts.length ? data.risk.score : null, data.lights));
 	const luzManana = $derived(!!cheapWindow?.tomorrow && inSpain(place.current));
 
 	// Terremotos de las últimas 48 h, los más fuertes.
@@ -276,7 +279,7 @@
 {/snippet}
 
 {#snippet risk()}
-	<RiskGauge id="risk" risk={data.risk} />
+	<RiskGauge id="risk" risk={data.risk} lights={data.lights} />
 {/snippet}
 
 {#snippet puzzle()}
@@ -423,10 +426,10 @@
 	city={place.current.name}
 />
 
-<!-- Hoy, en una línea: titulares nuevos y la luz de mañana (la de hoy ya está en «Mi mañana»). Siempre ocupa su
+<!-- Hoy, en una línea: el resumen de riesgo (src/lib/summary.ts; TOP no tiene ViewHeader), titulares nuevos y la luz de mañana (la de hoy ya está en «Mi mañana»). Siempre ocupa su
 	sitio para que nada salte al cargar. -->
 <p class="today">
-	{fresh}{#if fresh && luzManana}{' · '}{/if}{#if luzManana && cheapWindow}Luz más barata mañana: <b>{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)}</b> · {nf(cheapWindow.avg, 3)} €/kWh{/if}
+	{#if summary}<span class="sum">{summary}</span>{#if fresh || luzManana}{' · '}{/if}{/if}{fresh}{#if fresh && luzManana}{' · '}{/if}{#if luzManana && cheapWindow}Luz más barata mañana: <b>{hourLabel(cheapWindow.first)}–{hourLabel(cheapWindow.after)}</b> · {nf(cheapWindow.avg, 3)} €/kWh{/if}
 </p>
 
 <PinnedPanels />
@@ -475,6 +478,10 @@
 		margin: 0 0 var(--sp-8);
 		font-size: var(--fs-xs);
 		color: var(--faint);
+	}
+
+	.today .sum {
+		color: var(--fg);
 	}
 
 	.today b {

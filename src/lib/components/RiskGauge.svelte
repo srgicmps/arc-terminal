@@ -7,10 +7,12 @@
 <script lang="ts">
 	import Panel from './Panel.svelte';
 	import Table from './ui/Table.svelte';
+	import RiskLights from './RiskLights.svelte';
 	import { riskLabel, type Risk } from '#lib/risk.ts';
+	import type { Light } from '#lib/risk-lights.ts';
 
-	/** `id`: el del panel en la vista modular (TOP). */
-	let { risk, id }: { risk: Risk; id?: string } = $props();
+	/** `id`: el del panel en la vista modular (TOP). `lights`: el semáforo de TOP, encima de la barra. */
+	let { risk, id, lights = [] }: { risk: Risk; id?: string; lights?: Light[] } = $props();
 
 	let expanded = $state(false);
 
@@ -21,6 +23,7 @@
 </script>
 
 <Panel {id} title="Termómetro de riesgo" meta={risk.parts.length ? `${risk.parts.length} indicadores` : undefined}>
+	<RiskLights {lights} />
 	{#if risk.parts.length}
 		<button type="button" class="gauge" aria-expanded={expanded} onclick={() => (expanded = !expanded)}>
 			<span class="head">
@@ -57,7 +60,12 @@
 		<p class="empty">Sin datos suficientes para el termómetro.</p>
 	{/if}
 	{#snippet note()}
-		Cada indicador frente a su último año (z-score), con signo: + apetito por el riesgo, − miedo. La media va de −100 a
+		{#if lights.length}
+			Semáforo: nivel de cada indicador con umbrales fijos (punto gris, calma; ámbar tenue, vigilancia; ámbar,
+			tensión); toca o pasa el ratón por uno para ver sus umbrales. Barra: cada indicador
+		{:else}
+			Cada indicador
+		{/if} frente a su último año (z-score), con signo: + apetito por el riesgo, − miedo. La media va de −100 a
 		+100. Fuentes: {[...new Set(risk.parts.map((p) => p.source))].join(', ') || '—'}.
 	{/snippet}
 </Panel>
