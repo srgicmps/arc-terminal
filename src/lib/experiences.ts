@@ -21,6 +21,7 @@ export interface Experience {
 const LIST: Experience[] = [
 	{ id: 'periodico', name: 'Periódico', desc: 'Arc como un diario: portada a columnas, breves con las cifras del día y ediciones de mañana y de tarde.', icon: '📰', order: 10, aliases: ['diario', 'prensa'] },
 	{ id: 'zen', name: 'Zen', desc: 'Una sola cosa cada vez, en grande y explicada con palabras sencillas. Deslizar o flechas para la siguiente.', icon: '○', order: 30, aliases: ['tranquilo', 'calma'] },
+	{ id: 'constelacion', name: 'Constelación', desc: 'Un mapa de quién sale con quién en las noticias: países, líderes, bancos centrales, empresas y temas. Toca un punto y ve sus titulares.', icon: '✦', order: 90, aliases: ['mapa', 'relaciones', 'red', 'grafo'] },
 ];
 
 export const EXPERIENCES: Experience[] = [...LIST].sort((a, b) => a.order - b.order);
