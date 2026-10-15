@@ -89,6 +89,10 @@
 		--dur-ui: 180ms;
 		--ease: cubic-bezier(0.25, 0.8, 0.25, 1);
 
+		/* Barras de desplazamiento: tubo magenta tenue; brillo suave al pasar por encima (fuera de la capa). */
+		--scroll-thumb: #9a46ad;
+		--scroll-track: transparent;
+
 		/* Fondo: cielo morado, sol tras el horizonte y la rejilla en perspectiva (meridianos desde el punto de fuga
 		   y paralelos cada vez más juntos hacia él). Fija y tapada por los paneles: solo asoma en los huecos. */
 		--bg-image:
@@ -161,6 +165,7 @@
 		--nx-hz: rgba(176, 16, 140, 0.35);
 		--nx-lat: rgba(176, 16, 140, 0.14);
 		--nx-ray: rgba(0, 111, 134, 0.11);
+		--scroll-thumb: #a46bbb;
 	}
 
 	/* ── Piezas ─────────────────────────────────────────────────────────────────────────────────── */
@@ -182,37 +187,9 @@
 		}
 	}
 
-	/* Esquinas de visor: dos escuadras cian en las esquinas de cada panel. */
-	[data-style='neon'] .panel {
-		position: relative;
-	}
-	[data-style='neon'] .panel::before,
-	[data-style='neon'] .panel::after {
-		content: '';
-		position: absolute;
-		width: var(--sp-10);
-		height: var(--sp-10);
-		pointer-events: none;
-	}
-	[data-style='neon'] .panel::before {
-		top: calc(-1 * var(--hair));
-		left: calc(-1 * var(--hair));
-		border-top: var(--hair) solid var(--nx-corner);
-		border-left: var(--hair) solid var(--nx-corner);
-		border-top-left-radius: var(--radius);
-	}
-	[data-style='neon'] .panel::after {
-		right: calc(-1 * var(--hair));
-		bottom: calc(-1 * var(--hair));
-		border-right: var(--hair) solid var(--nx-corner);
-		border-bottom: var(--hair) solid var(--nx-corner);
-		border-bottom-right-radius: var(--radius);
-	}
-
 	/* Cabecera del panel: un velo magenta que se apaga hacia la derecha y una línea magenta debajo. */
 	[data-style='neon'] .panel .ph {
 		--border: var(--hair) solid var(--amber-edge);
-		background-image: linear-gradient(90deg, var(--nx-head), transparent 65%);
 	}
 
 	/* Cifras grandes en Orbitron. */
@@ -308,4 +285,56 @@
 			box-shadow: none;
 		}
 	}
+}
+
+/* ── Retoques fuera de la capa (ganan al CSS de los componentes) ─────────────────────────────────── */
+
+/* Esquinas de visor: dos escuadras cian, pintadas en el fondo del panel sobre su filo (no en ::before/::after: el
+   panel las recortaría y, al encajar, crearían una barra de scroll horizontal de 1 px). */
+[data-style='neon'][data-style] [data-ui='panel'] {
+	--nx-mark: linear-gradient(var(--nx-corner), var(--nx-corner));
+	background-image: var(--nx-mark), var(--nx-mark), var(--nx-mark), var(--nx-mark);
+	background-origin: border-box;
+	background-size:
+		var(--sp-10) var(--hair),
+		var(--hair) var(--sp-10),
+		var(--sp-10) var(--hair),
+		var(--hair) var(--sp-10);
+	background-position:
+		left top,
+		left top,
+		right bottom,
+		right bottom;
+	background-repeat: no-repeat;
+}
+/* Cabecera: un velo magenta que se apaga hacia la derecha, también cuando es fija (al encajar y ampliada). */
+[data-style='neon'][data-style] [data-ui='panel'] > [data-ui='panel-head'].ph {
+	background-image: linear-gradient(90deg, var(--nx-head), transparent 65%);
+}
+
+/* Barras de desplazamiento: al pasar por encima, magenta con un halo interior muy suave. */
+:root[data-style='neon'][data-style]::-webkit-scrollbar-thumb:hover,
+[data-style='neon'][data-style] ::-webkit-scrollbar-thumb:hover {
+	background-color: var(--amber-dim);
+}
+@media (prefers-reduced-motion: no-preference) and (not (prefers-reduced-transparency: reduce)) {
+	:root[data-style='neon'][data-style]::-webkit-scrollbar-thumb,
+	[data-style='neon'][data-style] ::-webkit-scrollbar-thumb {
+		box-shadow: inset 0 0 var(--sp-4) var(--nx-glow-m);
+	}
+}
+
+/* «Encajar en pantalla»: la vista hace scroll por dentro y recortaría el filo y el halo de los paneles. */
+@media (min-width: 1280px) {
+	:root[data-style='neon'][data-style][data-fit] [data-ui='main'] {
+		margin-inline: calc(-1 * var(--sp-2));
+		padding: var(--sp-2) var(--sp-2) var(--sp-2);
+	}
+}
+
+/* Foco con teclado en un botón activo (relleno del acento) dentro de un panel: el contorno va hacia dentro y, del
+   color del acento, no se vería; se pinta con el color del texto sobre el acento, un poco más adentro. */
+[data-style='neon'][data-style] [data-ui='panel'].panel :is([aria-checked='true'], [aria-pressed='true'], .go):focus-visible {
+	outline-color: var(--on-amber);
+	outline-offset: calc(-1 * var(--sp-3));
 }

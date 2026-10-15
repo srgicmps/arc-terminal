@@ -68,7 +68,12 @@
 		--stack-edge: 0;
 
 		--dur-ui: 140ms;
-		scrollbar-color: var(--line) var(--bg);
+
+		/* Barras de desplazamiento: una regla técnica. Pieza recta del color de las líneas sobre un carril con
+		   marcas cada 8 px (fuera de la capa, abajo). */
+		--scroll-w: 10px;
+		--scroll-thumb: #7ea6d6;
+		--scroll-track: transparent;
 	}
 	:root[data-theme='light'][data-style='plano'],
 	:root[data-theme='light'] [data-style='plano'] {
@@ -96,32 +101,9 @@
 		--grid-minor: rgba(31, 99, 168, 0.07);
 		--grid-major: rgba(31, 99, 168, 0.15);
 		--shadow-pop: 0 0 0 var(--hair) var(--fg), 0 var(--sp-12) var(--sp-24) rgba(11, 47, 92, 0.18);
+		--scroll-thumb: #6f93bd;
 	}
 
-	/* ── Paneles: esquinas marcadas, como las marcas de corte de un plano ─────────────────────────── */
-	[data-style='plano'] .panel {
-		position: relative;
-	}
-	[data-style='plano'] .panel::before,
-	[data-style='plano'] .panel::after {
-		content: '';
-		position: absolute;
-		width: var(--sp-10);
-		height: var(--sp-10);
-		pointer-events: none;
-	}
-	[data-style='plano'] .panel::before {
-		top: calc(-1 * var(--sp-3));
-		left: calc(-1 * var(--sp-3));
-		border-top: var(--sp-2) solid var(--corner);
-		border-left: var(--sp-2) solid var(--corner);
-	}
-	[data-style='plano'] .panel::after {
-		bottom: calc(-1 * var(--sp-3));
-		right: calc(-1 * var(--sp-3));
-		border-bottom: var(--sp-2) solid var(--corner);
-		border-right: var(--sp-2) solid var(--corner);
-	}
 	[data-style='plano'] .panel h2 {
 		--fw-bold: 600;
 	}
@@ -208,10 +190,73 @@
 		background: var(--amber);
 		color: var(--on-amber);
 	}
-	@media print {
-		[data-style='plano'] .panel::before,
-		[data-style='plano'] .panel::after {
-			display: none;
-		}
+}
+
+/* ── Retoques fuera de la capa (ganan al CSS de los componentes) ─────────────────────────────────── */
+
+/* Paneles: esquinas marcadas, como las marcas de corte de un plano. Van pintadas en el fondo del panel (arriba a la
+   izquierda y abajo a la derecha) y no en ::before/::after: así no las recorta el panel ni crean scroll de
+   sobra al encajar, y se quedan en su esquina aunque el panel se desplace por dentro. */
+[data-style='plano'][data-style] [data-ui='panel'] {
+	--mark: linear-gradient(var(--corner), var(--corner));
+	background-image: var(--mark), var(--mark), var(--mark), var(--mark);
+	background-size:
+		var(--sp-10) var(--sp-2),
+		var(--sp-2) var(--sp-10),
+		var(--sp-10) var(--sp-2),
+		var(--sp-2) var(--sp-10);
+	background-position:
+		left top,
+		left top,
+		right bottom,
+		right bottom;
+	background-repeat: no-repeat;
+}
+/* La cabecera fija (al encajar y en el panel ampliado) tapa el fondo del panel: lleva su propia marca. */
+[data-style='plano'][data-style] [data-ui='panel'] > [data-ui='panel-head'].ph {
+	background-image: var(--mark), var(--mark);
+	background-size:
+		var(--sp-10) var(--sp-2),
+		var(--sp-2) var(--sp-10);
+	background-position: left top;
+	background-repeat: no-repeat;
+}
+@media print {
+	[data-style='plano'][data-style] [data-ui='panel'],
+	[data-style='plano'][data-style] [data-ui='panel'] > [data-ui='panel-head'].ph {
+		background-image: none;
 	}
+}
+
+/* Barras de desplazamiento: pieza recta y carril con marcas, como una regla. */
+:root[data-style='plano'][data-style]::-webkit-scrollbar-thumb,
+[data-style='plano'][data-style] ::-webkit-scrollbar-thumb {
+	border-radius: 0;
+}
+:root[data-style='plano'][data-style]::-webkit-scrollbar-thumb:hover,
+[data-style='plano'][data-style] ::-webkit-scrollbar-thumb:hover {
+	background-color: var(--fg);
+}
+:root[data-style='plano'][data-style]::-webkit-scrollbar-track:vertical,
+[data-style='plano'][data-style] ::-webkit-scrollbar-track:vertical {
+	background-image: repeating-linear-gradient(to bottom, var(--grid-major) 0 var(--hair), transparent var(--hair) var(--sp-8));
+}
+:root[data-style='plano'][data-style]::-webkit-scrollbar-track:horizontal,
+[data-style='plano'][data-style] ::-webkit-scrollbar-track:horizontal {
+	background-image: repeating-linear-gradient(to right, var(--grid-major) 0 var(--hair), transparent var(--hair) var(--sp-8));
+}
+
+/* «Encajar en pantalla»: la vista hace scroll por dentro y recortaría el marco (1 px por fuera de cada panel). */
+@media (min-width: 1280px) {
+	:root[data-style='plano'][data-style][data-fit] [data-ui='main'] {
+		margin-inline: calc(-1 * var(--sp-2));
+		padding: var(--sp-2) var(--sp-2) var(--sp-2);
+	}
+}
+
+/* Foco con teclado en un botón activo (relleno del acento) dentro de un panel: el contorno va hacia dentro y, del
+   color del acento, no se vería; se pinta con el color del texto sobre el acento, un poco más adentro. */
+[data-style='plano'][data-style] [data-ui='panel'].panel :is([aria-checked='true'], [aria-pressed='true'], .go):focus-visible {
+	outline-color: var(--on-amber);
+	outline-offset: calc(-1 * var(--sp-3));
 }
