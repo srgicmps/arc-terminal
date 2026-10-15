@@ -129,19 +129,19 @@
 		line-height: 1;
 		letter-spacing: 0.02em;
 	}
-	[data-style='retro'] .brand {
+	[data-style='retro'] [data-ui='brand'] {
 		font-family: var(--pixel);
 		--fs-s: 20px;
 		--track-brand: 0.08em;
 	}
-	[data-style='retro'] .key {
+	[data-style='retro'] [data-ui='keys'] > a {
 		font-family: var(--pixel);
 		--fs-s: 19px;
 		--track-code: 0.04em;
 		line-height: 1;
 	}
 	/* La descripción de cada tecla, en Plex Mono y a su tamaño de siempre (el --fs-s de la tecla es el de VT323). */
-	[data-style='retro'] .key span {
+	[data-style='retro'] [data-ui='keys'] > a span {
 		font-size: calc(var(--fs-xs) + var(--sp-1));
 	}
 
@@ -288,11 +288,11 @@
 	color: var(--fg);
 }
 /* Mercado cerrado: el punto, a media tinta (abierto, tinta entera; festivo, hueco). */
-[data-style='retro'][data-style] [data-ui='top'] .dot:not(.on, .holiday) {
+[data-style='retro'][data-style] [data-ui='clocks'] .dot:not(.on, .holiday) {
 	opacity: 0.45;
 }
-[data-style='retro'][data-style] [data-ui='top'] > :is(button, .place .chip):hover,
-[data-style='retro'][data-style] [data-ui='top'] .place .chip:hover {
+[data-style='retro'][data-style] [data-ui='top'] > button:hover,
+[data-style='retro'][data-style] [data-ui='place'] > button:hover {
 	text-decoration: underline;
 }
 
@@ -363,44 +363,28 @@
 }
 
 /* ── Teclas de función ──────────────────────────────────────────────────────────────────────────────── */
-/* Cada sección, «F1 TOP Portada»: el número en claro y la etiqueta en un bloque invertido. */
+/* Cada sección, un bloque invertido con su código y su nombre («TOP Portada»), como el menú de un programa de
+   MS-DOS. Sin «F1…»: la web no tiene esos atajos. */
 [data-style='retro'][data-style] [data-ui='keys'] {
-	counter-reset: r-fk;
-	gap: var(--sp-4) var(--sp-8);
+	gap: var(--sp-4) var(--sp-6);
 	padding-block: var(--sp-6);
 }
-[data-style='retro'][data-style] [data-ui='keys'] .key {
-	--r-key: var(--line);
-	counter-increment: r-fk;
-	display: inline-flex;
-	align-items: baseline;
-	padding: var(--sp-1) var(--sp-8) var(--sp-1) 0;
+[data-style='retro'][data-style] [data-ui='keys'] > a {
+	padding: var(--sp-1) var(--sp-8);
 	border: 0;
+	background: var(--line);
 	color: var(--fg);
-	/* El bloque invertido empieza tras el número (4ch); el número ocupa 4,5ch, así la etiqueta lleva medio
-	   carácter de margen dentro del bloque. */
-	background: linear-gradient(var(--r-key) 0 0) right / calc(100% - 4ch) 100% no-repeat;
 }
-[data-style='retro'][data-style] [data-ui='keys'] .key::before {
-	content: 'F' counter(r-fk);
-	content: 'F' counter(r-fk) / '';
-	flex: none;
-	width: 4.5ch;
-	color: var(--muted);
-}
-[data-style='retro'][data-style] [data-ui='keys'] .key span {
+[data-style='retro'][data-style] [data-ui='keys'] > a span {
 	color: inherit;
 }
-[data-style='retro'][data-style] [data-ui='keys'] .key:hover {
+[data-style='retro'][data-style] [data-ui='keys'] > a:hover {
 	text-decoration: underline;
 	text-underline-offset: var(--sp-3);
 }
-[data-style='retro'][data-style] [data-ui='keys'] .key[aria-current='page'] {
-	--r-key: var(--amber);
+[data-style='retro'][data-style] [data-ui='keys'] > a[aria-current='page'] {
+	background: var(--amber);
 	color: var(--on-amber);
-}
-[data-style='retro'][data-style] [data-ui='keys'] .key[aria-current='page']::before {
-	color: var(--amber);
 }
 /* En escritorio, la fila va abajo del todo y se queda fija al hacer scroll, como la barra de un programa de
    MS-DOS. Es sticky (no fixed): si las teclas ocupan dos líneas, nada queda tapado. */
@@ -428,7 +412,7 @@
 	border-bottom: var(--r-double);
 }
 /* El código de la vista, como el directorio del prompt: «ECO>». */
-[data-style='retro'][data-style] [data-ui='view-head'] h1 .code::after {
+[data-style='retro'][data-style] [data-ui='view-code']::after {
 	content: '>';
 	content: '>' / '';
 }
