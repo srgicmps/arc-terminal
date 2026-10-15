@@ -35,7 +35,7 @@ export const SHORTCUTS: Shortcut[] = [
 	{ code: 'BONO', id: 'bond10-es', name: 'Bono español a 10 años', keys: ['españa'] },
 	{ code: 'BTP', id: 'bond10-it', name: 'Bono italiano a 10 años', keys: ['italia'] },
 	{ code: 'OAT', id: 'bond10-fr', name: 'Bono francés a 10 años', keys: ['francia'] },
-	{ code: 'SOFR', id: 'sofr-us', name: 'SOFR' },
+	{ code: 'SOFR', id: 'nyfed-sofr', name: 'SOFR' },
 	{ code: 'FED', id: 'fedfunds-us', name: 'Fondos federales', keys: ['effr'] },
 	{ code: 'ESTR', id: 'estr', name: '€STR' },
 	{ code: 'DEPO', id: 'ecb-dfr', name: 'Facilidad de depósito del BCE', keys: ['bce'] },
