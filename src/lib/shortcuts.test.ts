@@ -17,5 +17,7 @@ describe('shortcuts', () => {
 		expect(isShortcut({ key: 'M', shiftKey: true }, 'panel')).toBe(true);
 		expect(isShortcut({ key: 'Escape', shiftKey: false }, 'home')).toBe(true);
 		expect(isShortcut({ key: 'Enter', shiftKey: false }, 'open')).toBe(false);
+		expect(isShortcut({ key: '¬', code: 'KeyL', shiftKey: false, altKey: true, ctrlKey: true }, 'os-lock')).toBe(true);
+		expect(isShortcut({ key: 'l', code: 'KeyL', shiftKey: false, altKey: true }, 'os-lock')).toBe(false);
 	});
 });
