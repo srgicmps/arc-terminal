@@ -36,10 +36,10 @@ const url = (path: string) => new URL(path.replace(/^\//, ''), scope).href;
 const IMMUTABLE = immutable.map((f) => url(f.path));
 /** JSON de datos: data/fuel.json, data/fuel/07.json, eco/__data.json… */
 const DATA = /(\/data\/.+|__data)\.json$/;
-/** De static/ solo el manifest, los iconos y el favicon (no los JSON de data/). */
+/** De static/ solo el manifest, los iconos y el favicon (no los JSON de data/ ni las pantallas de arranque de iOS, que solo pide el iPhone al instalar). */
 const STATIC = assets
 	.map((f) => url(f.path))
-	.filter((href) => /\.(webmanifest|png|svg|ico)$/.test(href) && !DATA.test(new URL(href).pathname));
+	.filter((href) => /\.(webmanifest|png|svg|ico)$/.test(href) && !DATA.test(new URL(href).pathname) && !/\/splash-[^/]*$/.test(href));
 const PRECACHE = [...IMMUTABLE, ...STATIC];
 /** Archivos del motor de ajedrez de esta publicación (static/engine/): lo demás de su caché sobra. */
 const ENGINE_FILES = assets

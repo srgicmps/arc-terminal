@@ -136,7 +136,8 @@ Un cambio de estética se hace en un solo sitio.
   Sergi también puede elegir cian o azul en HELP, «A tu gusto» (`src/lib/taste.svelte.ts`): son bloques
   `[data-accent]` al final de `tokens.css` que redefinen `--amber*`; nada lleva el acento escrito a mano.
   Lo único fuera de los tokens son los iconos (`static/favicon.svg` y los PNG de la PWA): llevan el ámbar
-  escrito y hay que rehacerlos si cambia el acento.
+  escrito: se rehacen con `node scripts/icons.ts` (iconos, maskable, apple-touch y arranque del iPhone) a partir de
+  `static/favicon.svg`. El logo en la web es `Logo.svelte` (mismo dibujo, con `--amber`).
 
 ## Comandos y fuentes
 Un archivo por comando en `src/lib/commands/` (`eco.ts`, `geo.ts`…); `src/lib/commands.ts` los junta solos y `order`
