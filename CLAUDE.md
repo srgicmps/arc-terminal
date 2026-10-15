@@ -123,7 +123,7 @@ vista `HELP`. Resumen:
 | `WS` | Wall Street, mapa de calor, curva de tipos, divisas, cripto, materias primas | TradingView, Tesoro de EE. UU., BCE, CoinGecko, Banco Mundial (Pink Sheet), EIA* (inventarios de petróleo) |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |
 | `MIS` | Tu lista de valores (en el navegador) | TradingView |
-| `TECH` / `AI` | Tecnología e IA | Hacker News, Hugging Face, Cloudflare Radar*, RSS |
+| `TECH` / `AI` | Tecnología e IA | Hacker News, Hugging Face, OpenRouter, Epoch AI (CC BY 4.0), Cloudflare Radar*, RSS |
 | `BOE` / `USGOV` | Boletines oficiales | BOE, Federal Register |
 | `LUZ` | Precio de la luz y mix de generación | REE |
 | `WX` | Tiempo, mar, aire, avisos, sol y luna | Open-Meteo, MeteoAlarm, Copernicus (ERA5), NOAA (CO₂) |
