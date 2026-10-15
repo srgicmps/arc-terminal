@@ -49,6 +49,7 @@
 	import PhoneWidget from './PhoneWidget.svelte';
 	import Spotlight from './Spotlight.svelte';
 	import CenterSheet from './CenterSheet.svelte';
+	import Toasts from '../shell/Toasts.svelte';
 	import WallLayer from '../system/wall/WallLayer.svelte';
 	import OsIcon from '../icons/OsIcon.svelte';
 	import type { Hit } from '../system/search.ts';
@@ -118,10 +119,13 @@
 			localStorage.setItem('arc-os-seen', JSON.stringify(shell.seen));
 		} catch {}
 	}
+	// Solo depende de `sheet`: markAllSeen() reescribe shell.seen y, si se leyera aquí, el efecto se relanzaría sin fin.
 	$effect(() => {
 		if (sheet !== 'notif') return;
-		unreadAtOpen = new Set(shell.notices.filter((n) => !shell.seen.includes(n.id)).map((n) => n.id));
-		markAllSeen();
+		untrack(() => {
+			unreadAtOpen = new Set(shell.notices.filter((n) => !shell.seen.includes(n.id)).map((n) => n.id));
+			markAllSeen();
+		});
 	});
 
 	// Widgets: en el modo edición se quitan («−») o se añaden («+», arriba a la izquierda).
@@ -535,6 +539,8 @@
 {:else if sheet === 'notif' || sheet === 'control'}
 	<CenterSheet kind={sheet} notices={shell.notices} unread={unreadAtOpen} {notice} {now} onclose={() => (sheet = null)} onpath={launchPath} />
 {/if}
+<!-- Los avisos nuevos (notify() y los del centro) como banner arriba, también con una app abierta. -->
+<Toasts phone ongo={(t) => t.href && launchPath(t.href)} />
 
 </div>
 

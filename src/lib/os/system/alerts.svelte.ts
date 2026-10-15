@@ -17,7 +17,7 @@ async function poll() {
 		for (const a of freshAlerts(entries, since).reverse())
 			if (!shown.has(a.id)) {
 				shown.add(a.id);
-				notify({ title: a.title, detail: a.detail, href: a.href, kind: 'aviso' });
+				notify({ title: a.title, detail: a.detail, href: a.href, kind: 'aviso', time: a.time });
 			}
 		since = lastTime(entries) || since || '';
 	} catch {}
