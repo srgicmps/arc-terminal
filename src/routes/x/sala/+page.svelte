@@ -276,6 +276,12 @@
 		stroke: var(--amber);
 	}
 
+	.airspace .mark {
+		fill: none;
+		stroke: var(--amber-dim);
+		stroke-dasharray: 2 2;
+	}
+
 	.elections .mark,
 	.internet .mark {
 		fill: none;
