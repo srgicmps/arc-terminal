@@ -4,7 +4,7 @@ import { GLYPHS, hasIcon, iconOf } from './glyphs.ts';
 
 const PATH = /^[MmLlHhVvCcSsQqTtAaZz0-9.,\-\s]*$/;
 const HEX = /^#[0-9a-f]{6}$/;
-const SYSTEM = ['folder', 'folder-open', 'file', 'trash', 'trash-full', 'settings', 'wallpaper', 'search', 'calculadora', 'reloj', 'notas', 'monitor', 'explorador', 'terminal'];
+const SYSTEM = ['folder', 'folder-open', 'file', 'trash', 'trash-full', 'settings', 'wallpaper', 'search', 'calculadora', 'reloj', 'notas', 'monitor', 'explorador', 'terminal', 'mapa-op', 'grafo', 'expediente', 'cronologia', 'vigilancia'];
 
 describe('iconos de Arc OS', () => {
 	it('cada vista y experiencia tiene icono propio, y también los de sistema', () => {
