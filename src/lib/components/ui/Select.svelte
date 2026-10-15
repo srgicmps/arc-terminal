@@ -35,6 +35,7 @@
 	select {
 		background: var(--raise);
 		border: var(--border);
+		border-radius: var(--radius-s);
 		color: var(--fg);
 		height: var(--control-h);
 		padding: 0 var(--sp-8);

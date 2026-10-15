@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { airspacePoints, countriesIn, quakePoints, sanctionPoints, straitPoints } from './layers.ts';
+import { airspacePoints, countriesIn, maritimePoints, quakePoints, sanctionPoints, straitPoints } from './layers.ts';
 
 describe('capas del mapa', () => {
 	it('encuentra países por nombre y gentilicio, sin confundir Sudán con Sudán del Sur', () => {
@@ -43,5 +43,12 @@ describe('airspacePoints (F22)', () => {
 			['a-B', undefined]
 		]);
 		expect(pts[1].lat).toBe(26.2);
+	});
+});
+
+describe('maritimePoints (F21)', () => {
+	it('un punto por aviso con coordenadas', () => {
+		const w = (id: string, at: [number, number] | null) => ({ id, region: 'Mar Rojo', place: '', kind: 'Minas', text: '', issued: null, at });
+		expect(maritimePoints([w('A', [20, 38]), w('B', null)]).map((p) => [p.id, p.lat, p.lon])).toEqual([['n-A', 20, 38]]);
 	});
 });

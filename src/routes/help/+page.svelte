@@ -21,6 +21,7 @@
 	import Share from '#lib/components/ui/Share.svelte';
 	import { collect, decode, encode, HASH } from '#lib/transfer.ts';
 	import { cloud } from '#lib/cloud.svelte.ts';
+	import StylePicker from '#lib/components/StylePicker.svelte';
 	import Tour from '#lib/onboarding/Tour.svelte';
 	import { startTour, tour } from '#lib/onboarding/tour.svelte.ts';
 	import { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, resetTaste, setAccent, setDensity, setThumb, setTop, taste, THUMB_MAX } from '#lib/taste.svelte.ts';
@@ -105,6 +106,8 @@
 			<dl class="taste">
 				<dt>Modo</dt>
 				<dd><Seg label="Modo" options={MODOS} bind:value={() => modo.value, setModo} /></dd>
+				<dt>Estética</dt>
+				<dd><StylePicker /></dd>
 				<dt>Acento</dt>
 				<dd><Seg label="Color de acento" options={ACCENTS} bind:value={() => taste.accent, setAccent} /></dd>
 				<dt>Densidad</dt>

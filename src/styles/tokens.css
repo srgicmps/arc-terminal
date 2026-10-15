@@ -4,7 +4,8 @@
  * Para cambiar la estética, se cambia aquí. Por ejemplo, el acento: --amber (y su versión de día, abajo).
  * Explicación completa en CLAUDE.md, «Sistema de diseño».
  */
-:root {
+:root,
+[data-style='terminal'] {
 	/* ── Colores · tema de noche (el de por defecto) ─────────────────────────────────────── */
 	color-scheme: dark;
 	--bg: #080a0d; /* fondo de la página */
@@ -121,6 +122,29 @@
 	--scrim: rgba(8, 10, 13, 0.72); /* fondo atenuado detrás del panel maximizado */
 	--dur-fast: 120ms; /* aparición breve (se quita con prefers-reduced-motion) */
 
+	/* ── Estética («Terminal», la de por defecto; cada estética la redefine en static/estilos/<id>.css) ──
+	 * Solo forma: esquinas, sombras, cómo se separan los paneles, títulos y la letra base. Los colores van
+	 * arriba; la densidad, en su bloque. Un componente usa estos tokens y no sabe en qué estética está. */
+	--font-ui: var(--mono); /* letra base de la página (body) */
+	--radius: 0; /* esquinas de paneles y tarjetas */
+	--radius-s: 0; /* esquinas de controles: botones, segmentados, campos, chips */
+	--shadow: none; /* sombra de un panel */
+	--shadow-pop: none; /* sombra de lo que flota: desplegables, burbujas, panel maximizado */
+	--grid-gap: var(--hair); /* separación entre columnas de una rejilla */
+	--grid-fill: var(--line); /* lo que se ve en esa separación (la línea de 1 px) */
+	--grid-edge: var(--border); /* borde exterior de la rejilla */
+	--grid-join: calc(-1 * var(--hair)); /* margen entre dos rejillas seguidas (negativo: una sola línea) */
+	--col-fill: var(--panel); /* fondo de una columna */
+	--stack-gap: 0px; /* separación entre paneles de una misma columna */
+	--stack-edge: var(--border); /* la línea entre ellos */
+	--panel-edge: 0; /* borde propio de cada panel */
+	--title-color: var(--amber); /* color de los títulos de panel (tamaño, letra y mayúsculas: --fs-title, --title-*) */
+	--bg-image: none; /* dibujo de fondo de la página (rejilla, degradado…) */
+	--panel-blur: none; /* backdrop-filter de los paneles (cristal) */
+	--focus-w: var(--hair); /* grosor del contorno de foco con teclado */
+	--dur-ui: 0ms; /* transición de botones y filas al pasar el ratón */
+	--ease: cubic-bezier(0.2, 0, 0, 1);
+
 	/*
 	 * Puntos de corte (las @media no aceptan variables, así que se documentan aquí):
 	 *   720 px  móvil: una columna, barra inferior, cabecera compacta
@@ -146,7 +170,8 @@
  * modo «auto», cuando el sistema está en claro. Solo redefine tokens de color.
  * Contraste comprobado (WCAG AA, 4,5:1) de --muted, --faint, ámbar, verde y rojo sobre --bg, --panel y --raise.
  */
-:root[data-theme='light'] {
+:root[data-theme='light'],
+:root[data-theme='light'] [data-style='terminal'] {
 	color-scheme: light;
 	--bg: #f5f4f0;
 	--panel: #ffffff;
@@ -174,48 +199,20 @@
 	--scrim: rgba(22, 25, 29, 0.42);
 }
 
-/* ── Densidad «Cómoda» («A tu gusto», src/lib/taste.svelte.ts) ──────────────────────────────
- * Sin data-density, la compacta de arriba. La cómoda da más aire a filas y paneles y sube la letra 1 px; no toca
- * --control-h (el alto de los controles es el mismo en las dos). Va en su propio bloque: no pisa el acento. */
-:root[data-density='comoda'] {
-	--pad-x: var(--sp-14);
-	--row-y: var(--sp-8);
-	--head-y: var(--sp-6);
-	--gutter: var(--sp-12);
-	--gutter-touch: var(--sp-16);
-	--fs-xxs: 11px;
-	--fs-xs: 12px;
-	--fs-s: 13px;
-	--fs-m: 14px;
-	--fs-l: 15.5px;
-	--fs-xl: 21px;
-	--fs-big: 27px;
-	--fs-xxl: 29px;
-	--fit-panel-min: 320px;
-}
-
-/* ── Modo «Sencillo» (src/lib/modo.ts) ───────────────────────────────────────────────────────
- * Para quien no es experto: letra algo mayor que la «Cómoda», más aire y títulos de panel como se escriben, sin
- * mayúsculas ni espaciado de terminal. Va detrás de la densidad para mandar sobre ella; no toca --control-h. */
-:root[data-modo='sencillo'] {
-	--pad-x: var(--sp-14);
-	--row-y: var(--sp-9);
-	--head-y: var(--sp-7);
-	--gutter: var(--sp-12);
-	--gutter-touch: var(--sp-16);
-	--fs-xxs: 12px;
-	--fs-xs: 13px;
-	--fs-s: 14px;
-	--fs-m: 15px;
-	--fs-l: 16.5px;
-	--fs-xl: 22px;
-	--fs-big: 28px;
-	--fs-xxl: 30px;
-	--fs-title: var(--fs-m);
-	--title-case: none;
-	--title-track: 0;
-	--title-font: var(--sans);
-	--fit-panel-min: 340px;
+/* ── Vistas previas de estéticas (HELP, ESTILO) ──────────────────────────────────────────────
+ * Un elemento con data-style dentro de la página se pinta con esa estética. Los tokens que dependen de otros se
+ * vuelven a calcular en él (si no, heredaría el valor ya calculado en <html>). Cada estilo puede pisarlos. */
+[data-style] {
+	--bg-image: none;
+	--panel-blur: none;
+	--border: var(--hair) solid var(--line);
+	--font-ui: var(--mono);
+	--title-font: var(--mono);
+	--title-color: var(--amber);
+	background-color: var(--bg);
+	background-image: var(--bg-image);
+	color: var(--fg);
+	font-family: var(--font-ui);
 }
 
 /* ── Acento elegido («A tu gusto», src/lib/taste.svelte.ts) ─────────────────────────────────

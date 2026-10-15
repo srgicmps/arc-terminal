@@ -3,12 +3,14 @@
 // El acento va en <html data-accent> (lo pone ya src/app.html antes de pintar, para que no parpadee) y
 // tokens.css redefine --amber y compañía: ningún componente sabe de qué color es el acento.
 import { ACCENTS, cleanCodes, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, THUMB_MAX, type Accent, type Density } from './taste.ts';
+import { useSheet } from './estilos-css.ts';
 
 export { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, THUMB_MAX, type Accent, type Density };
 
-const KEYS = { accent: 'arc-accent', density: 'arc-density', top: 'arc-keys', thumb: 'arc-thumb' };
+const KEYS = { style: 'arc-style', accent: 'arc-accent', density: 'arc-density', top: 'arc-keys', thumb: 'arc-thumb' };
 
 export const taste = $state({
+	style: 'terminal',
 	accent: 'amber' as Accent,
 	density: 'compacta' as Density,
 	top: [...DEFAULT_TOP],
@@ -40,12 +42,36 @@ function json(key: string): unknown {
 
 /** Se llama al arrancar en el navegador (desde el layout). */
 export function initTaste() {
+	// src/app.html ya ha elegido y guardado la estética antes de pintar: aquí solo se lee.
+	taste.style = document.documentElement.dataset.style ?? 'terminal';
 	const accent = read(KEYS.accent);
 	if (accent === 'cyan' || accent === 'blue') taste.accent = accent;
 	if (read(KEYS.density) === 'comoda') taste.density = 'comoda';
 	taste.top = cleanCodes(json(KEYS.top)) ?? [...DEFAULT_TOP];
 	taste.thumb = cleanCodes(json(KEYS.thumb), THUMB_MAX) ?? [...DEFAULT_THUMB];
+	// <html data-scrolled> en cuanto la página baja un poco: para estéticas con títulos grandes que se encogen o
+	// barras que ganan sombra al hacer scroll (docs/estilos.md, «Estructura»).
+	const root = document.documentElement;
+	const onScroll = () => {
+		const down = scrollY > 24;
+		if (down !== ('scrolled' in root.dataset)) {
+			if (down) root.dataset.scrolled = '';
+			else delete root.dataset.scrolled;
+		}
+	};
+	onScroll();
+	addEventListener('scroll', onScroll, { passive: true });
+	return () => removeEventListener('scroll', onScroll);
 }
+
+/** Estética: siempre se guarda (también «Terminal»), para que src/app.html no la vuelva a decidir. */
+export function setStyle(style: string) {
+	taste.style = style;
+	document.documentElement.dataset.style = style;
+	write(KEYS.style, style);
+	useSheet(style, 'style-sheet');
+}
+
 
 export function setAccent(accent: Accent) {
 	taste.accent = accent;

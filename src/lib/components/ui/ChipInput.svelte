@@ -59,6 +59,7 @@
 		padding: 0 var(--sp-9);
 		background: var(--amber-soft);
 		border: var(--hair) solid var(--amber-edge);
+		border-radius: var(--radius-s);
 		color: var(--amber);
 		font-family: var(--mono);
 		font-size: var(--fs-xs);
@@ -86,6 +87,7 @@
 		padding: 0 var(--sp-10);
 		background: var(--raise);
 		border: var(--border);
+		border-radius: var(--radius-s);
 	}
 
 	input.upper {
@@ -102,6 +104,7 @@
 		padding: 0 var(--pad-x);
 		background: none;
 		border: var(--hair) solid var(--amber-edge);
+		border-radius: var(--radius-s);
 		color: var(--amber);
 		font-size: var(--fs-s);
 		cursor: pointer;

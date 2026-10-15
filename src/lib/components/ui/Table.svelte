@@ -39,7 +39,7 @@
 	}
 </script>
 
-<div class="wrap">
+<div class="wrap" data-ui="table">
 	<div class="scroll" class:capped={maxHeight} style:max-height={maxHeight}>
 		<table class="t" bind:this={table}>
 			{@render children()}
