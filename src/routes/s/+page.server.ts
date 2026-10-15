@@ -34,7 +34,7 @@ export const load: PageServerLoad = async () => {
 	const issuers = funds ? (funds.data.holders ?? holdersFromTop(funds.data.funds)) : [];
 	const holders = Object.fromEntries(
 		TICKERS.filter((t) => t.cik)
-			.map((t) => [t.code, issuersFor(t.code, issuers).map((e) => ({ name: e.name, holders: e.holders.map(({ shares: _, ...h }) => h) }))] as const)
+			.map((t) => [t.code, issuersFor(t.code, issuers).map((e) => ({ cusip: e.cusip, name: e.name, holders: e.holders.map(({ shares: _, ...h }) => h) }))] as const)
 			.filter(([, list]) => list.length)
 	);
 	const fundNames = Object.fromEntries((funds?.data.funds ?? []).map((f) => [f.key, f.name]));
