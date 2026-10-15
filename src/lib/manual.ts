@@ -17,6 +17,7 @@ import {
 	STOCKS,
 	STRAITS,
 	SUMMARIES,
+	VIX,
 	WAR,
 	WEEK,
 	type Level
@@ -139,7 +140,8 @@ const LEVEL_WHAT: Record<Level, string[]> = {
 		'Catástrofes en alerta roja (GDACS), un apagón en España y caídas de internet de un país.'
 	],
 	2: [
-		'Datos macro nuevos: IPC, paro, PIB, euríbor…, con la diferencia frente al anterior.',
+		'Datos macro nuevos: IPC, paro, PIB, euríbor, sentimiento económico, peticiones de paro…, con la diferencia frente al anterior y si es un máximo o mínimo de varios años.',
+		`Inventarios de petróleo de EE. UU. cada semana, el VIX si sube un ${VIX.jump} % o su curva se invierte, y subastas flojas del Tesoro de EE. UU.`,
 		'Mercados que se mueven más que su umbral (bolsas, bonos, primas de riesgo, divisas, cripto, petróleo).',
 		`Valores seguidos que se mueven un ${STOCKS.threshold} % o más.`,
 		'Sanciones y aranceles del Federal Register, elecciones del G20 y la UE, y gas almacenado en la UE.',
