@@ -12,6 +12,7 @@
 //   newDesk · rename · removeDesk · goDesk · sendToDesk
 // El modo (Terminal clásico ↔ Modo OS, clave arc-shell) lo lleva src/lib/os/mode.svelte.ts (OS 3).
 import { APPS, appOfPath, findApp, type OsApp } from './apps.ts';
+import { logSession } from './apps/logs/session.svelte.ts';
 import * as wm from './wm.ts';
 
 export const OS_KEY = 'arc-os-desks';
@@ -69,6 +70,7 @@ export function openApp(id: string, path?: string, fresh = false): wm.Win | null
 		say(`Hay ${wm.MAX_WINS} ventanas en este escritorio: cierra alguna o abre otro escritorio.`);
 		return null;
 	}
+	if (r.created) logSession('abre', app.name);
 	return done(r.win);
 }
 
@@ -86,6 +88,8 @@ export function close(uid: string) {
 /** Quita la ventana ya (lo llama la ventana al acabar la animación de cierre). */
 export function closeNow(uid: string) {
 	os.closing = os.closing.filter((u) => u !== uid);
+	const w = wm.findWin(os.state, uid);
+	if (w) logSession('cierra', appOf(w)?.name ?? w.app);
 	done(wm.closeWin(os.state, uid));
 }
 export const toggleTop = (uid: string) => done(wm.toggleTop(os.state, uid));
