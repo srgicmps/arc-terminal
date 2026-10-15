@@ -4,6 +4,8 @@
 	Solo usa datos que ya existen: tiempo (WX), luz (PVPC), resultados (Finnhub), reuniones del BCE y la
 	Fed, datos macro que se publican hoy (calendario de publicaciones), festivos, días sin bolsa y avisos
 	meteorológicos. Lo monta la portada pasándole los datos.
+	`tail`: la línea «hoy» de la portada (riesgo, titulares nuevos, luz de mañana). Va en la misma franja: plegada,
+	al final de la línea; abierta, en una fila fina debajo de los recuadros. Así hay una franja y no dos.
 -->
 <script lang="ts">
 	import { clock } from '#lib/clock.svelte.ts';
@@ -16,6 +18,7 @@
 	import type { Earnings, HolidaysData, PowerData, ReleaseEvent, WeatherData } from '#lib/types.ts';
 	import { ALERT_NAMES, sky, type AlertsData } from '#lib/weather.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
+	import type { Snippet } from 'svelte';
 	import Tile from './ui/Tile.svelte';
 
 	interface Props {
@@ -28,9 +31,11 @@
 		releases?: ReleaseEvent[];
 		/** Ciudad del tiempo: la de «Tu sitio», que pasa la portada. Sin ella, la primera de weather.json. */
 		city?: string;
+		/** Lo de «hoy» que añade la portada, en la misma franja. */
+		tail?: Snippet;
 	}
 
-	let { weather = null, power = null, earnings = [], holidays = null, alerts = null, releases = [], city }: Props = $props();
+	let { weather = null, power = null, earnings = [], holidays = null, alerts = null, releases = [], city, tail }: Props = $props();
 
 	// Hasta que arranca el reloj en el navegador se usa la hora de construcción de la página.
 	const now = $derived(clock.now || Date.now());
@@ -112,7 +117,7 @@
 			<button type="button" class="line" onclick={() => (open = true)} aria-expanded="false">
 				<!-- Etiqueta en gris con la clase común .mut de app.css: sin CSS propio que copie el de Tile. -->
 				<span class="mut">Mi mañana</span>
-				{items.map((i) => i.value).join(' · ')}
+				{items.map((i) => i.value).join(' · ')}{#if tail}<span class="tail">{@render tail()}</span>{/if}
 			</button>
 		{:else}
 			{#each items as item (item.label)}
@@ -123,8 +128,11 @@
 			{#if hour >= 11}
 				<button type="button" class="close" onclick={() => (open = false)} aria-label="Plegar «Mi mañana»">−</button>
 			{/if}
+			{#if tail}<p class="tail row">{@render tail()}</p>{/if}
 		{/if}
 	</section>
+{:else if tail}
+	<p class="tail alone">{@render tail()}</p>
 {/if}
 
 <style>
@@ -132,6 +140,7 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: var(--hair);
+		margin-bottom: var(--sp-8);
 		background: var(--line);
 		border: var(--border);
 	}
@@ -179,5 +188,37 @@
 	.close {
 		padding: 0 var(--pad-x);
 		color: var(--muted);
+	}
+
+	/* La parte de «hoy»: en letra pequeña y gris; lo que importa lleva su propio color (lo pone la portada). */
+	.tail {
+		font-size: var(--fs-xs);
+		color: var(--faint);
+	}
+
+	.tail:empty {
+		display: none;
+	}
+
+	.line .tail::before {
+		content: '· ';
+	}
+
+	.line .tail {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.row {
+		flex: 1 0 100%;
+		margin: 0;
+		padding: var(--sp-4) var(--pad-x);
+		background: var(--panel);
+	}
+
+	.alone {
+		min-height: calc(var(--fs-xs) * var(--lh));
+		margin: 0 0 var(--sp-8);
 	}
 </style>

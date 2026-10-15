@@ -213,9 +213,15 @@
 		}
 	}
 
+	/* «· cambiar» solo al pasar el ratón: en reposo, el chip es el pin y el nombre. */
 	.caret {
+		display: none;
 		color: var(--faint);
 		font-size: var(--fs-xs);
+	}
+
+	.chip:is(:hover, :focus-visible) .caret {
+		display: inline;
 	}
 
 	.pop {

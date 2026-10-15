@@ -22,9 +22,10 @@
 	import { collect, decode, encode, HASH } from '#lib/transfer.ts';
 	import { cloud } from '#lib/cloud.svelte.ts';
 	import StylePicker from '#lib/components/StylePicker.svelte';
+	import { takesAccent } from '#lib/estilos.ts';
 	import Tour from '#lib/onboarding/Tour.svelte';
 	import { startTour, tour } from '#lib/onboarding/tour.svelte.ts';
-	import { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, resetTaste, setAccent, setDensity, setThumb, setTop, taste, THUMB_MAX } from '#lib/taste.svelte.ts';
+	import { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, resetTaste, setAccent, setDensity, setThumb, setTop, taste, THUMB_MAX, VISIBLE_KEYS } from '#lib/taste.svelte.ts';
 
 	// «A tu gusto»: todas las vistas que se abren sin texto detrás pueden ir en la fila de arriba o abajo.
 	const sections = COMMANDS.map((c) => ({ value: c.code, label: c.code }));
@@ -53,7 +54,7 @@
 		location.reload();
 	}
 	const custom = $derived(
-		taste.accent !== 'amber' || taste.density !== 'compacta' || taste.top.join() !== DEFAULT_TOP.join() || taste.thumb.join() !== DEFAULT_THUMB.join()
+		taste.accent !== 'auto' || taste.density !== 'normal' || taste.top.join() !== DEFAULT_TOP.join() || taste.thumb.join() !== DEFAULT_THUMB.join()
 	);
 </script>
 
@@ -109,10 +110,16 @@
 				<dt>Estética</dt>
 				<dd><StylePicker /></dd>
 				<dt>Acento</dt>
-				<dd><Seg label="Color de acento" options={ACCENTS} bind:value={() => taste.accent, setAccent} /></dd>
+				<dd>
+					{#if takesAccent(taste.style)}
+						<Seg label="Color de acento" options={ACCENTS} bind:value={() => taste.accent, setAccent} />
+					{:else}
+						<span class="fixed">Esta estética lleva su propio color; el acento vale en las demás.</span>
+					{/if}
+				</dd>
 				<dt>Densidad</dt>
 				<dd><Seg label="Densidad" options={DENSITIES} bind:value={() => taste.density, setDensity} /></dd>
-				<dt>Fila de arriba</dt>
+				<dt>Fila de arriba <small>(se ven las {VISIBLE_KEYS} primeras; el resto, en «Más»)</small></dt>
 				<dd><Seg label="Secciones de la fila de arriba" options={sections} bind:values={() => taste.top, setTop} /></dd>
 				<dt>Barra del móvil <small>({taste.thumb.length} de {THUMB_MAX})</small></dt>
 				<dd><Seg label="Secciones de la barra inferior del móvil" options={sections} bind:values={() => taste.thumb, setThumb} /></dd>
@@ -179,6 +186,12 @@
 </div>
 
 <style>
+	.fixed {
+		color: var(--muted);
+		font-family: var(--sans);
+		font-size: var(--fs-s);
+	}
+
 	.taste {
 		display: grid;
 		grid-template-columns: max-content minmax(0, 1fr);

@@ -142,7 +142,7 @@
 	{/if}
 
 	<footer>
-		<a class="back" href={resolve('/')}>← Arc</a>
+		<a class="back" href={resolve('/')}>✕ Salir</a>
 		<span>MURO</span>
 		<span>{age === null ? '' : `datos de hace ${age} min · `}Esc para salir</span>
 		{#if !full}<button type="button" onclick={goFull}>Pantalla completa</button>{/if}

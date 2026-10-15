@@ -1,4 +1,4 @@
-// Recorrido corto (5 pasos) que sale al terminar la bienvenida y desde HELP. Cada paso puede señalar algo de la
+// Recorrido corto (6 pasos) que sale al terminar la bienvenida y desde HELP. Cada paso puede señalar algo de la
 // pantalla: la primera de sus `targets` (selectores CSS) que se vea. Si no hay ninguna, la tarjeta va sola.
 
 export interface TourStep {
@@ -22,6 +22,11 @@ export const TOUR: readonly TourStep[] = [
 		title: 'Toca un dato',
 		text: 'Casi todo se puede tocar: un titular abre la noticia, una cifra enseña su historia y un valor (NVDA) abre su ficha. El título de un panel lo pliega.',
 		targets: ['main section']
+	},
+	{
+		title: 'Otras formas de usar Arc',
+		text: 'Las experiencias cambian cómo usas Arc con los mismos datos: un periódico, una radio que te lo lee, un muro para la tele, un juego de predicciones… Ábrelas con ✦ (o Mayús + X) y sal con «✕ Salir». Una puede ser tu inicio.',
+		targets: ['button.launch.keys', 'button.launch.thumb']
 	},
 	{
 		title: 'Avisos al móvil',

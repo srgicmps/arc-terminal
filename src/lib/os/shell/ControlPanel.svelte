@@ -1,0 +1,182 @@
+<!--
+	Panel de control de Arc OS: Apariencia (estética con vista previa, el mismo selector que ESTILO; fondo y
+	barra arriba o abajo), Escritorio (widgets y escritorios virtuales), Avisos, Cuenta y, solo para el admin,
+	Administración. Lo de fuera de Arc OS se abre en su ventana (AVISOS, ESTILO, ADMIN).
+-->
+<script lang="ts">
+	import { asset } from '$app/paths';
+	import { onMount } from 'svelte';
+	import StylePicker from '#lib/components/StylePicker.svelte';
+	import Seg from '#lib/components/ui/Seg.svelte';
+	import { cloud } from '#lib/cloud.svelte.ts';
+	import { setBar, setWallpaper, setWidgets, shell, WALLPAPERS, type Wallpaper } from './shell.svelte.ts';
+	import type { DeskInfo } from './types.ts';
+	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from './widgets.ts';
+
+	interface Props {
+		desks: DeskInfo[];
+		deskW: number;
+		onnavigate: (href: string) => void;
+		onadddesk?: () => void;
+	}
+	let { desks, deskW, onnavigate, onadddesk }: Props = $props();
+
+	let admin = $state(false);
+	onMount(async () => {
+		try {
+			const r = await fetch(asset('api/admin?yo=1' as Parameters<typeof asset>[0]), { cache: 'no-store', redirect: 'manual' });
+			admin = r.ok && ((await r.json()) as { admin?: boolean }).admin === true;
+		} catch {}
+	});
+
+	let bar = $state(shell.bar);
+	let wallpaper = $state<Wallpaper>(shell.wallpaper);
+	$effect(() => setBar(bar));
+	$effect(() => setWallpaper(wallpaper));
+
+	const current = $derived(shell.widgets ?? defaultWidgets(deskW));
+	const has = (k: WidgetKind) => current.some((w) => w.kind === k);
+	function flip(k: WidgetKind) {
+		setWidgets(has(k) ? removeWidget(current, k) : addWidget(current, k, deskW));
+	}
+	function go(href: string) {
+		shell.open = null;
+		onnavigate(href);
+	}
+</script>
+
+<div id="os-control" class="control" role="dialog" aria-label="Panel de control">
+	<header>
+		<h2>Panel de control</h2>
+		<button type="button" aria-label="Cerrar el panel de control" onclick={() => (shell.open = null)}>✕</button>
+	</header>
+	<div class="scroll">
+		<section>
+			<h3>Apariencia</h3>
+			<StylePicker />
+			<div class="row">
+				<Seg label="Fondo del escritorio" options={WALLPAPERS.map((w) => ({ value: w.id, label: w.label }))} bind:value={wallpaper} />
+			</div>
+			<div class="row">
+				<Seg label="Barra de tareas" options={[{ value: 'bottom', label: 'Barra abajo' }, { value: 'top', label: 'Barra arriba' }]} bind:value={bar} />
+			</div>
+		</section>
+		<section>
+			<h3>Escritorio</h3>
+			<p class="mut">Widgets: arrástralos por su título o muévelos con las flechas.</p>
+			<div class="chips" role="group" aria-label="Widgets del escritorio">
+				{#each WIDGET_KINDS as k (k)}
+					<button type="button" aria-pressed={has(k)} onclick={() => flip(k)}>{WIDGET_LABEL[k]}</button>
+				{/each}
+			</div>
+			<p class="mut">Escritorios: {desks.length || 1}.</p>
+			{#if onadddesk}<button type="button" class="link" onclick={onadddesk}>Añadir escritorio</button>{/if}
+		</section>
+		<section>
+			<h3>Avisos</h3>
+			<p class="mut">Temas, nivel, silencio y «Tu mañana» al móvil.</p>
+			<button type="button" class="link" onclick={() => go('/avisos')}>Abrir AVISOS</button>
+		</section>
+		<section>
+			<h3>Cuenta</h3>
+			{#if cloud.user}
+				<p>Ajustes en tu cuenta: <b>{cloud.user}</b>. Se sincronizan entre tus dispositivos.</p>
+			{:else}
+				<p class="mut">Sin cuenta: los ajustes se quedan en este navegador.</p>
+			{/if}
+		</section>
+		{#if admin}
+			<section>
+				<h3>Administración</h3>
+				<button type="button" class="link" onclick={() => go('/admin')}>Usuarios, invitaciones y sugerencias</button>
+			</section>
+		{/if}
+	</div>
+</div>
+
+<style>
+	.control {
+		position: fixed;
+		right: var(--sp-12);
+		top: var(--sp-12);
+		bottom: calc(var(--os-bar-h) + var(--sp-12));
+		z-index: var(--z-modal);
+		display: flex;
+		flex-direction: column;
+		width: min(420px, calc(100vw - 2 * var(--sp-12)));
+		background: var(--panel);
+		border: var(--hair) solid var(--panel-edge);
+		border-radius: var(--radius);
+		box-shadow: var(--shadow-pop);
+	}
+	:global(.os-top) .control {
+		top: calc(var(--os-bar-h) + var(--sp-12));
+		bottom: var(--sp-12);
+	}
+	header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: var(--head-y) var(--pad-x);
+		border-bottom: var(--hair) solid var(--line);
+	}
+	h2 {
+		margin: 0;
+		font-family: var(--title-font);
+		font-size: var(--fs-title);
+		font-weight: var(--fw-medium);
+	}
+	header button {
+		padding: var(--sp-4) var(--sp-6);
+		color: var(--muted);
+	}
+	.scroll {
+		overflow: auto;
+		padding: 0 var(--pad-x) var(--sp-12);
+	}
+	section {
+		padding: var(--sp-12) 0;
+		border-bottom: var(--hair) solid var(--line);
+	}
+	section:last-child {
+		border-bottom: 0;
+	}
+	h3 {
+		margin: 0 0 var(--sp-8);
+		color: var(--muted);
+		font-size: var(--fs-xxs);
+		font-weight: var(--fw-medium);
+		letter-spacing: var(--track-caps);
+		text-transform: uppercase;
+	}
+	p {
+		margin: var(--sp-6) 0;
+		font-size: var(--fs-s);
+	}
+	.row {
+		margin-top: var(--sp-10);
+	}
+	.chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--sp-4);
+	}
+	.chips button {
+		height: var(--control-h);
+		padding: 0 var(--sp-10);
+		border: var(--hair) solid var(--line);
+		border-radius: var(--radius-s);
+		color: var(--muted);
+		font-size: var(--fs-s);
+	}
+	.chips button[aria-pressed='true'] {
+		border-color: var(--amber-edge);
+		color: var(--fg);
+		background: var(--amber-soft);
+	}
+	.link {
+		min-height: var(--control-h);
+		color: var(--amber);
+		font-size: var(--fs-s);
+	}
+</style>
