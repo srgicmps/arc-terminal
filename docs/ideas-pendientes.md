@@ -237,10 +237,29 @@ Sin red en el entorno de Ideas: ninguna fuente nueva está comprobada en vivo; l
 21. ⚠ M **Informe semanal**: PDF con la impresión del navegador (CSS de impresión en SEMANA, S); email desde Actions
     pide un servicio de correo (cuenta/clave): decisión de Sergi. ntfy con enlace a SEMANA, gratis.
 
+22. ✅ L **VENTANAS** (aprobada por Sergi; va con la 9): modo Launchpad solo en escritorio (≥1280 px). Paneles que se
+    arrastran, redimensionan, minimizan y pasan al frente; mezcla de vistas; varios escritorios con nombre guardados
+    en el navegador. En el móvil no cambia nada. Sin datos externos.
+    Encaje: es una **ruta propia** (`/ventanas`), no un modo de las vistas actuales. Así no toca la rejilla ni
+    «encajar en pantalla» de `+layout.svelte`: el lienzo ocupa el alto libre y cada ventana tiene su propio scroll.
+    Para mezclar vistas se reutiliza el registro de `pins.ts` (import dinámico del contenido + `dataset()`), que ya
+    monta paneles fuera de su vista en TOP. Los paneles que no están en `PINS` se añaden ahí, y así también sirven
+    para fijarlos.
+    Enfoque sin librerías: Pointer Events (`pointerdown`/`move`/`up` con `setPointerCapture`) en la cabecera para
+    mover, un asa en la esquina para redimensionar, z-index por orden de uso, ajuste a una cuadrícula de 8 px
+    (`--sp-8`) y límites dentro del lienzo. Estado en localStorage (`{escritorios: {nombre: [{pin, x, y, w, h,
+    min}]}}`) registrado en `prefs.ts`. Teclado: Tab entre ventanas y flechas para mover (accesibilidad).
+    Pegas: los widgets de TradingView se recargan si se vuelven a montar (se mueven con CSS, sin desmontarlos).
+    Con muchas ventanas pesa: tope de ~12 por escritorio.
+    Esfuerzo: 2 PR. (1) lienzo, ventanas y un escritorio; (2) varios escritorios, minimizar a una barra inferior y
+    DASH (9) como «escritorio en rejilla».
+
 **Bloques para programar, sin choques**
 - **A · Mercados (WS/ficha/FONDOS)**: 1, 2, 3, 4, 5, 13, 14. Datos: TradingView, Finnhub, SEC.
 - **B · Datos y gráficos (ECO/WS)**: 6, 7, 10, 11, 12. Fuentes: Tesoro, BCE, FRED, NY Fed.
-- **C · Interfaz (barra, layout, navegador)**: 8, 9, 17, 18, 19, 20, 21. Va tras Prog Barra 3/4; 9 y 19 en un solo PR de layout.
+- **C · Interfaz (barra, layout, navegador)**: 8, 17, 18, 19, 20, 21. Va tras Prog Barra 3/4.
+- **D · VENTANAS + DASH** (22 + 9), para una sola sesión: toca `pins.ts`, `prefs.ts` y una ruta nueva; no toca el
+  layout de las vistas. Coordinar con C solo en `prefs.ts`.
 - Fuera: 15 (❌). 16, aparte, si Sergi acepta la pega de privacidad.
 
 ## 3. Decisiones de Sergi que hay que respetar
