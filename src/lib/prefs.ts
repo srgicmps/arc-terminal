@@ -73,6 +73,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-last-visit', storage: 'local', what: 'Hora de tu última visita, para marcar lo nuevo', where: 'TOP y titulares', kind: 'dato' },
 	{ key: 'arc-last-visit-session', storage: 'session', what: 'La referencia de esta pestaña: recargar no borra lo marcado como nuevo', where: 'TOP y titulares', kind: 'dato' },
 	{ key: 'arc-os-desks', storage: 'local', what: 'Tus escritorios de Arc OS: nombres, apps abiertas, posiciones y tamaños de las ventanas', where: 'Arc OS (/os)', kind: 'dato' },
+	{ key: 'arc-os-phone-session', storage: 'session', what: 'Las apps abiertas en el Modo OS del móvil, para que sigan tras recargar', where: 'Arc OS en el móvil', kind: 'dato' },
 	{ key: 'arc-sync', storage: 'local', what: 'De quién son los ajustes de aquí y cómo quedaron en tu cuenta la última vez', where: 'Ajustes en tu cuenta (arcterminal.dev)', kind: 'caché' },
 	{ key: 'arc-sync-reload', storage: 'session', what: 'Esta pestaña ya ha recargado para traer los ajustes de tus otros dispositivos', where: 'Ajustes en tu cuenta', kind: 'dato' },
 	{ key: 'arc-login-reload', storage: 'session', what: 'Esta pestaña ya ha recargado para volver al login de Cloudflare Access (sesión caducada)', where: 'Al entrar', kind: 'dato' },
