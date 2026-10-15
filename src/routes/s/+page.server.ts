@@ -1,4 +1,5 @@
 import { dataset } from '#lib/data.ts';
+import { rvMetrics } from '#lib/rv.ts';
 import type { Mention } from '#lib/news.ts';
 import { summarize, type FinraData } from '#lib/shortvol.ts';
 import type { AnalystsData, PeersData, PerfData, SecData } from '#lib/types.ts';
@@ -14,13 +15,13 @@ export const load: PageServerLoad = async () => {
 		dataset<AnalystsData>('analysts'),
 		// Volumen en corto (FINRA): el último día y la media de unos mil valores de EE. UU., sin el historial (~30 KB).
 		dataset<FinraData>('finra'),
-		// RV: cifras de unos 60 valores de EE. UU. y sus competidores (Finnhub), unos 15 KB.
+		// RV: cifras de unos 60 valores de EE. UU. y de sus competidores (Finnhub), solo las que compara RV.
 		dataset<PerfData>('perf'),
 		dataset<PeersData>('peers')
 	]);
 	const rv = perf?.data.metrics && peers && {
 		fetchedAt: perf.fetchedAt,
-		metrics: perf.data.metrics,
+		metrics: rvMetrics(perf.data.metrics, peers.data.metrics),
 		peers: Object.fromEntries(Object.entries(peers.data.symbols).map(([k, v]) => [k, v.peers]))
 	};
 	return { sec, news, analysts, finra: finra && { ...finra, data: summarize(finra.data) }, rv };

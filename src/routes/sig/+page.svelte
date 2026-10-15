@@ -45,6 +45,8 @@
 			<Panel title={side.title} meta="Últimos {DAYS} días · {side.list.length} {side.list.length === 1 ? 'valor' : 'valores'}">
 				{#if !data.sig}
 					<p class="empty">Sin datos todavía: hace falta la clave FINNHUB_API_KEY en la terminal.</p>
+				{:else if !Object.keys(data.sig.metrics).length}
+					<p class="empty">Sin cifras: llegan con la próxima descarga de Finnhub, una vez cada 12 horas.</p>
 				{:else if side.list.length}
 					<Table>
 						<thead><tr><th class="l">Valor</th><th>Precio</th><th>Cuándo</th></tr></thead>

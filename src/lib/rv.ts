@@ -96,13 +96,13 @@ export interface RvRow {
  * Compara un valor con sus competidores. Un PER negativo (pérdidas) no cuenta para la mediana ni el puesto
  * del PER. Solo entran los competidores con cifras.
  */
-export function compareWithPeers(code: string, peers: string[], metrics: Record<string, Metrics>): { rows: RvRow[]; peers: string[] } {
+export function compareWithPeers(code: string, peers: string[], metrics: Record<string, Partial<Metrics>>): { rows: RvRow[]; peers: string[] } {
 	const own = metrics[code];
 	const others = peers.filter((p) => p !== code && metrics[p]);
 	const rows = RV_ROWS.map((r) => {
 		const ok = (v: number | null): v is number => v !== null && !(r.key === 'pe' && v <= 0);
 		const value = own?.[r.key] ?? null;
-		const peerValues = others.map((p) => metrics[p][r.key]).filter(ok);
+		const peerValues = others.map((p) => metrics[p][r.key] ?? null).filter(ok);
 		const med = median(peerValues);
 		const all = ok(value) ? [...peerValues, value] : peerValues;
 		const rank = r.better && ok(value) ? 1 + all.filter((v) => (r.better === 'high' ? v > value : v < value)).length : null;
@@ -110,4 +110,17 @@ export function compareWithPeers(code: string, peers: string[], metrics: Record<
 		return { key: r.key, label: r.label, unit: r.unit, value, median: med, rank, of: all.length, better };
 	});
 	return { rows, peers: others };
+}
+
+/** Solo las cifras que compara RV (y la capitalización), para mandar al navegador lo justo. */
+export type RvMetrics = Partial<Pick<Metrics, (typeof RV_ROWS)[number]['key'] | 'cap'>>;
+
+/**
+ * Las cifras de todos los valores que salen en RV: las de perf.json (los ~60 de la lista) y las de los
+ * competidores de fuera (peers.json). Si un valor está en los dos, mandan las de perf.json.
+ */
+export function rvMetrics(own: Record<string, Metrics> | undefined, peers: Record<string, Metrics> | undefined): Record<string, RvMetrics> {
+	const keys = [...RV_ROWS.map((r) => r.key), 'cap'] as const;
+	const slim = (m: Metrics) => Object.fromEntries(keys.map((k) => [k, m[k]])) as RvMetrics;
+	return Object.fromEntries(Object.entries({ ...peers, ...own }).map(([k, m]) => [k, slim(m)]));
 }

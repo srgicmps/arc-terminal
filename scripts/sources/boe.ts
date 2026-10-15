@@ -5,7 +5,7 @@
 // Van aparte, y no dentro de boe.json, porque TOP y ES pasan boe.json al navegador casi entero.
 // Los días ya guardados se leen de la copia publicada; solo se piden al BOE los que falten.
 import type { BoeData, BoeItem, BoeSection, BoeWeek, BoeWeekDay } from '../../src/lib/types.ts';
-import { getJson, list, madridDate, plain, PUBLISHED, request, writeExtra, type Source } from '../lib.ts';
+import { fetchPublished, list, madridDate, plain, request, writeExtra, type Source } from '../lib.ts';
 
 const API = 'https://www.boe.es/datosabiertos/api/boe/sumario';
 
@@ -120,7 +120,9 @@ function shift(day: string, n: number): string {
 /** La semana publicada; si no se puede leer, vacía (y se piden al BOE los días que falten). */
 async function publishedWeek(): Promise<BoeWeekDay[]> {
 	try {
-		return list<BoeWeekDay>((await getJson<BoeWeek>(`${PUBLISHED}/boe-week.json`)).days);
+		const res = await fetchPublished('boe-week.json');
+		if (!res?.ok) throw new Error(res ? `HTTP ${res.status}` : 'sin respuesta');
+		return list<BoeWeekDay>(((await res.json()) as BoeWeek).days);
 	} catch (error) {
 		console.log(`  boe · semana publicada: ${error instanceof Error ? error.message : error}`);
 		return [];

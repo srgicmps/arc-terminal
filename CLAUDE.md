@@ -45,8 +45,15 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   main) y `tv-shots` se lanzan a mano: Run workflow sobre la rama, con «herramienta».
 
 ## Arquitectura
-- **GitHub Pages** sirve la web estática en https://srgicmps.github.io/arc-terminal/ (por eso hay que
-  configurar `paths.base` en SvelteKit).
+- **La web es privada**: **Cloudflare Pages** la sirve en https://arcterminal.dev (dominio propio; también en https://arc-terminal.pages.dev), en la raíz, con
+  **Cloudflare Access** delante (login por código al email de Sergi). La URL está en un solo sitio, `scripts/site.ts`,
+  y se cambia sin tocar código con la Variable de GitHub `SITE_URL` (p. ej. al pasar a un dominio propio).
+  Las Actions publican con `wrangler` (Secrets `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`) y leen la copia
+  anterior con el service token de Access (`CF_ACCESS_CLIENT_ID`/`CF_ACCESS_CLIENT_SECRET`, `fetchPublished` en
+  `scripts/lib.ts`).
+- **Transición**: GitHub Pages sigue publicando la misma web en https://srgicmps.github.io/arc-terminal/ (por eso
+  `paths.base` es `/arc-terminal` salvo con `BASE_PATH` vacío, que usa el build de Cloudflare) hasta que Sergi
+  confirme que la nueva va bien; luego se apaga en otro PR.
 - Pages no tiene servidor, así que **GitHub Actions hace de servidor**: cada 15–30 min un script de Node
   descarga los datos, los guarda como JSON y vuelve a publicar la web. Así tampoco hay problemas de CORS.
 - **Dos velocidades**: `deploy.yml` (cada 15 min y en cada push a main) refresca todo lo caducado según el
@@ -58,6 +65,9 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - **Avisos al móvil** con ntfy (`scripts/notify.ts`, tras `pnpm data`): reglas P1–P4 en la lista `RULES` de
   `scripts/alerts/rules.ts`, umbrales y cupos en `scripts/alerts/config.ts`. El tema
   va en el Secret `NTFY_TOPIC` y es la única protección: nunca en el repo, en registros ni en JSON.
+- **Órdenes desde la barra** (D41): «alerta NVDA > 150», «+NVDA», «vigila aranceles» abren un issue ya escrito
+  (`src/lib/useralerts.ts`); `notify.ts` lee con `scripts/requests.ts` solo los issues abiertos **del dueño**,
+  los aplica (`scripts/alerts/user.ts`) y cierra la alerta al avisar. Los issues son públicos.
 
 ## Stack
 - SvelteKit con `adapter-static` + TypeScript, Svelte 5 (runes).
@@ -121,6 +131,11 @@ vista `HELP`. Resumen:
 | `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5), Wikidata, SIPRI, Cloudflare Radar* |
 | `ES` | España en cifras, paro registrado por comunidad, BOE, luz | INE, SEPE, Seguridad Social, BOE, REE, RSS |
 | `WS` | Wall Street, mapa de calor, curva de tipos, divisas, cripto, materias primas | TradingView, Tesoro de EE. UU., BCE, CoinGecko, Banco Mundial (Pink Sheet), EIA* (inventarios de petróleo) |
+| `WB` | Bonos a 2, 10 y 30 años de EE. UU., zona euro (AAA) y Japón, con pendientes | Tesoro de EE. UU., BCE, MOF de Japón |
+| `BTMM` | Mercado monetario de EE. UU. y zona euro: SOFR, EFFR, €STR, euríbor, letras | Fed de Nueva York, FRED*, Tesoro de EE. UU., BCE |
+| `G` | Gráfico de cualquier serie de la terminal (`G US10, BUND`); catálogo en `/data/g/series.json` y atajos en `src/lib/gseries.ts` | Todas |
+| `SEAS` | Estacionalidad mensual de una serie, con el historial que haya | Todas |
+| `MOST` | Los que más suben, bajan y se negocian hoy (EE. UU., Alemania, España) | TradingView |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |
 | `RV` | Un valor frente a sus competidores: PER, márgenes, crecimiento (unos 60 de EE. UU.) | Finnhub* |
 | `SIG` | Señales técnicas: máximos y mínimos de 52 semanas, medias y RSI | Finnhub*, TradingView |
@@ -156,7 +171,7 @@ Excepción aprobada por Sergi: puertos AIS de Maó y Ciutadella (D1).
 Cuando termine una fase, actualiza esta lista.
 
 ## Reglas
-- El repo y la web son **públicos**: nada privado, ninguna clave, ninguna URL interna.
+- El **repo es público** (la web, privada tras Access): nada privado en el repo, ninguna clave, ninguna URL interna.
 - Comprueba cada fuente al usarla: si el RSS sigue vivo, límites del plan gratuito, términos de uso.
 - Los datos de ejemplo se marcan siempre como de ejemplo; nunca se presentan como reales.
 - GitHub desactiva los cron de un repo público tras 60 días sin actividad: lo evita `.github/workflows/keepalive.yml`.

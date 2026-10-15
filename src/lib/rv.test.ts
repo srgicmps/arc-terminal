@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { duePeers, toPeers } from '../../scripts/sources/peers.ts';
-import { compareWithPeers, median, toMetrics, type Metrics } from './rv.ts';
+import { duePeerMetrics, duePeers, toPeers } from '../../scripts/sources/peers.ts';
+import { compareWithPeers, median, rvMetrics, toMetrics, type Metrics } from './rv.ts';
 
 const m = (o: Partial<Metrics>): Metrics => ({
 	pe: null, pb: null, ps: null, divYield: null, roe: null, margin: null, revGrowth: null, epsGrowth: null,
@@ -44,8 +44,9 @@ describe('RV: frente a sus competidores', () => {
 });
 
 describe('RV: competidores de Finnhub', () => {
-	it('quita el propio valor y los repetidos', () => {
+	it('quita el propio valor, los repetidos y los de fuera de EE. UU.', () => {
 		expect(toPeers('NVDA', ['NVDA', 'AMD', 'amd', 'AVGO', 3])).toEqual(['AMD', 'AVGO']);
+		expect(toPeers('TSM', ['2330.TW', 'ASML.AS', 'BRK.B', 'INTC'])).toEqual(['BRK.B', 'INTC']);
 		expect(toPeers('NVDA', { error: 'x' })).toEqual([]);
 	});
 
@@ -54,5 +55,24 @@ describe('RV: competidores de Finnhub', () => {
 		const prev = { symbols: { A: { peers: [], fetchedAt: '2026-10-14T00:00:00Z' }, B: { peers: [], fetchedAt: '2026-10-01T00:00:00Z' } } };
 		expect(duePeers(['A', 'B', 'C'], prev, now)).toEqual(['C', 'B']);
 		expect(duePeers(['A', 'B', 'C'], prev, now, 1)).toEqual(['C']);
+	});
+});
+
+describe('RV: cifras de los competidores de fuera', () => {
+	const now = Date.parse('2026-10-15T00:00:00Z');
+
+	it('pide las que faltan o caducan, sin los de la lista de perf', () => {
+		const data = {
+			symbols: { NVDA: { peers: ['AMD', 'MRVL', 'ALAB'], fetchedAt: '' } },
+			metrics: { MRVL: { ...m({}), fetchedAt: '2026-10-14T00:00:00Z' } }
+		};
+		expect(duePeerMetrics(data, now)).toEqual(['ALAB']);
+	});
+
+	it('junta las dos copias (manda perf) y deja solo lo que compara RV', () => {
+		const out = rvMetrics({ NVDA: m({ pe: 40, high52: 230 }) }, { NVDA: m({ pe: 1 }), MRVL: m({ pe: 30 }) });
+		expect(out.NVDA.pe).toBe(40);
+		expect(out.MRVL.pe).toBe(30);
+		expect(out.NVDA).not.toHaveProperty('high52');
 	});
 });

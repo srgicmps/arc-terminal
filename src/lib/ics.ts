@@ -18,7 +18,10 @@ export interface IcsEvent {
 	url?: string;
 }
 
-/** Sufijo de los UID: el dominio de la web. */
+/**
+ * Sufijo de los UID. Es el dominio antiguo a propósito: si cambiara, los calendarios ya suscritos
+ * duplicarían los eventos. Solo identifica, no es un enlace.
+ */
 const DOMAIN = 'srgicmps.github.io';
 const MADRID = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' });
 

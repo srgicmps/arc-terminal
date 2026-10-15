@@ -5,8 +5,9 @@ import type { PageServerLoad } from './$types';
 // Del perf.json, solo los máximos y mínimos de 52 semanas y sus fechas (unos 60 valores, pocos KB).
 export const load: PageServerLoad = async () => {
 	const perf = await dataset<PerfData>('perf');
-	const metrics = perf?.data.metrics;
-	if (!metrics) return { sig: null };
+	if (!perf) return { sig: null };
+	// Las copias de perf.json de antes de SIG no traen las cifras: llegan en su próxima descarga.
+	const metrics = perf.data.metrics ?? {};
 	return {
 		sig: {
 			fetchedAt: perf.fetchedAt,
