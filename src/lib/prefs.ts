@@ -24,6 +24,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-titles', storage: 'local', what: 'Idioma de los titulares (ES traducido o EN original)', where: 'Selector ES / EN de IMP', kind: 'ajuste' },
 	{ key: 'arc-news-prefs', storage: 'local', what: 'Medios silenciados e idioma original de los titulares', where: 'NEWS, «Tus medios»', kind: 'ajuste' },
 	{ key: 'arc-ref-country', storage: 'local', what: 'País de referencia para paro, inflación y deuda', where: 'TOP, panel «Macro»', kind: 'ajuste' },
+	{ key: 'arc-leaders', storage: 'local', what: 'Los líderes que salen en LIDER y su orden', where: 'LIDER, «Tus líderes»', kind: 'ajuste' },
 	{ key: 'arc-countries', storage: 'local', what: 'Tus países favoritos (hasta 8)', where: 'PAIS, botón ☆ Seguir', kind: 'dato' },
 	{ key: 'arc-home', storage: 'local', what: 'Vista que se abre al entrar', where: 'HELP, «Vista de inicio»', kind: 'ajuste' },
 	{ key: 'arc-home-done', storage: 'session', what: 'Esta pestaña ya ha abierto la vista de inicio (luego TOP es la portada)', where: 'Al entrar', kind: 'dato' },
