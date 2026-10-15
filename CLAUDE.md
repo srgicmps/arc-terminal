@@ -176,7 +176,7 @@ vista `HELP`. Resumen:
 | `SEMANA` | Resumen de la semana: top de IMP en 7 días, mercados, datos publicados y agenda | IMP, FRED*, BCE, Tesoro de EE. UU., CoinGecko, calendarios de publicaciones |
 | `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FAO, FRED*, RSS |
 | `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5), Wikidata, SIPRI, EASA (CZIB), NGA (avisos a navegantes), Cloudflare Radar* |
-| `ES` | España en cifras, paro registrado por comunidad, BOE, luz | INE, SEPE, Seguridad Social, BOE, REE, RSS |
+| `ES` | España en cifras, paro registrado por comunidad, tráfico por provincia, BOE, luz | INE, SEPE, Seguridad Social, DGT (DATEX II), BOE, REE, RSS |
 | `WS` | Wall Street, mapa de calor, curva de tipos, divisas, cripto, materias primas | TradingView, Tesoro de EE. UU., BCE, CoinGecko, Banco Mundial (Pink Sheet), EIA* (inventarios de petróleo) |
 | `WB` | Bonos a 2, 10 y 30 años de EE. UU., zona euro (AAA) y Japón, con pendientes | Tesoro de EE. UU., BCE, MOF de Japón |
 | `BTMM` | Mercado monetario de EE. UU. y zona euro: SOFR, EFFR, €STR, euríbor, letras | Fed de Nueva York, FRED*, Tesoro de EE. UU., BCE |
@@ -193,10 +193,11 @@ vista `HELP`. Resumen:
 | `BOE` / `USGOV` | Boletines oficiales | BOE, Federal Register |
 | `LUZ` | Precio de la luz y mix de generación | REE |
 | `WX` | Tiempo, mar, aire, avisos, sol y luna | Open-Meteo, MeteoAlarm, Copernicus (ERA5), NOAA (CO₂) |
+| `VIAJE` | Antes de un viaje: tiempo a 7 días, hora, moneda, aviso de viaje y festivos de cualquier ciudad | Open-Meteo, BCE, Departamento de Estado de EE. UU., Nager.Date |
 | `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica, Comisión Europea (Weekly Oil Bulletin) |
 | `HIPOTECA` | Tu hipoteca: cuota, cuadro de amortización y próxima revisión (datos solo tuyos, en tus ajustes) | BCE (euríbor a 12 meses) |
 | `CARTERA` | Tu cartera: posiciones, ganancia o pérdida y reparto (datos solo tuyos, en tus ajustes) | Finnhub* (EE. UU.), precio a mano, BCE |
-| `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
+| `CAL` | Agenda económica, resultados, festivos y puentes (`PUENTES`) | TradingView, Finnhub*, Nager.Date |
 | `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista, análisis y problema del día | Stockfish, chess.js, Lichess |
 | `MODO` | Modo Sencillo (lo esencial, letra mayor, explicaciones; por defecto para usuarios nuevos) o Terminal (todo) | — |
 | `TV` | Modo TV: las vistas rotan solas, encajadas y a pantalla completa | — |

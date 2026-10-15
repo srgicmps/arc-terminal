@@ -92,11 +92,11 @@
 	}
 	:root[data-theme='light'][data-style='lujo'],
 	:root[data-theme='light'] [data-style='lujo'] {
-		/* ── Día: marfil, tinta negra y oro viejo ── */
-		--bg: #f8f4eb;
-		--panel: #f8f4eb;
-		--raise: #efe8d9;
-		--line: #e3d9c4;
+		/* ── Día: papel salmón de diario financiero, tinta negra y oro viejo ── */
+		--bg: #fbeee2;
+		--panel: #fbeee2;
+		--raise: #f4e0cf;
+		--line: #e6cdb8;
 		--fg: #17140f;
 		--muted: #5c5345;
 		--faint: #62594a;
@@ -301,5 +301,273 @@
 		[data-style='lujo'] .jump {
 			transition: color var(--dur-ui) var(--ease), border-color var(--dur-ui) var(--ease), background-color var(--dur-ui) var(--ease);
 		}
+	}
+}
+
+/* ══ Estructura de revista financiera (fuera de la capa: gana al CSS de los componentes) ═══════════════════
+ * Cabecera centrada: la línea de servicio arriba (relojes, sitio, botones), la marca en Playfair enorme entre
+ * filetes dobles dorados y la barra debajo; las secciones, como menú centrado en versales. Cada vista abre como
+ * una portada (código, titular grande y entradilla en cursiva, centrados), las cifras grandes forman la franja
+ * de «cotizaciones del día» y las columnas se separan con filetes finos, como un diario. */
+
+/* ── Cabecera ── */
+[data-style='lujo'][data-style] [data-ui='top'] {
+	justify-content: center;
+	text-align: center;
+	row-gap: var(--sp-8);
+}
+[data-style='lujo'][data-style] [data-ui='brand'] {
+	flex: 1 0 100%;
+	justify-content: center;
+	gap: var(--sp-16);
+	padding-block: var(--sp-12) var(--sp-14);
+	border-block: var(--sp-3) double var(--lx-rule);
+	font-family: var(--lx-serif);
+	font-weight: 500;
+	text-transform: none;
+	letter-spacing: 0.01em;
+	line-height: 1;
+}
+[data-style='lujo'][data-style] [data-ui='brand'] .brand-sub {
+	font-style: italic;
+	font-weight: 400;
+	color: var(--amber);
+}
+
+@media (min-width: 721px) {
+	/* La línea de servicio (todo menos la marca y la barra) va arriba, centrada y discreta. */
+	[data-style='lujo'][data-style] [data-ui='top'] > * {
+		order: -1;
+	}
+	[data-style='lujo'][data-style] [data-ui='brand'] {
+		order: 1;
+		--logo: 0.7em;
+		margin-top: var(--sp-6);
+		font-size: clamp(44px, 6vw, 88px);
+	}
+	[data-style='lujo'][data-style] [data-ui='cmd'] {
+		order: 2;
+		flex: 0 1 640px;
+		margin-block: var(--sp-6) var(--sp-10);
+	}
+
+	/* ── Secciones: menú centrado en versales, separado por filetes dorados ── */
+	[data-style='lujo'][data-style] [data-ui='keys'] {
+		justify-content: center;
+		gap: 0;
+		padding-block: var(--sp-8);
+		margin-bottom: var(--sp-16);
+		border-bottom: var(--hair) solid var(--lx-rule);
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key {
+		display: inline-flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--sp-2);
+		padding: var(--sp-4) var(--sp-16);
+		border: 0;
+		border-left: var(--hair) solid var(--lx-rule-soft);
+		background: none;
+		color: var(--fg);
+		font-size: var(--fs-xs);
+		font-weight: 700;
+		letter-spacing: 0.2em;
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key:first-child {
+		border-left: 0;
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key span {
+		margin-left: 0;
+		font-family: var(--lx-serif);
+		font-style: italic;
+		font-size: var(--fs-s);
+		font-weight: 400;
+		letter-spacing: 0.01em;
+		color: var(--muted);
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key:hover,
+	[data-style='lujo'][data-style] [data-ui='keys'] .key[aria-current='page'] {
+		color: var(--amber);
+		background: none;
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key[aria-current='page'] span {
+		color: var(--amber);
+		text-decoration: underline var(--hair);
+		text-underline-offset: var(--sp-4);
+	}
+}
+
+/* ── Cabecera de vista: una portada, centrada ── */
+[data-style='lujo'][data-style] [data-ui='view-head'] {
+	justify-content: center;
+	text-align: center;
+	padding-block: var(--sp-16) var(--sp-20);
+}
+[data-style='lujo'][data-style] [data-ui='view-head'] > div:first-child {
+	flex: 1 1 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+[data-style='lujo'][data-style] [data-ui='view-head'] h1 {
+	flex-direction: column;
+	align-items: center;
+	gap: var(--sp-10);
+	--fs-xl: clamp(34px, 5vw, 64px);
+	line-height: 1.05;
+}
+[data-style='lujo'][data-style] [data-ui='view-head'] h1 .code {
+	padding-inline: var(--sp-12);
+	border-inline: var(--hair) solid var(--lx-rule);
+}
+/* Entradilla: las fuentes y el resumen, en cursiva. */
+[data-style='lujo'][data-style] [data-ui='view-head'] > div:first-child > p {
+	max-width: 64ch;
+	margin-top: var(--sp-10);
+	font-family: var(--lx-serif);
+	font-style: italic;
+	font-size: var(--fs-l);
+	letter-spacing: 0;
+}
+[data-style='lujo'][data-style] [data-ui='view-head'] > div:first-child > p.sum {
+	font-size: var(--fs-xl);
+	line-height: 1.35;
+	color: var(--fg);
+}
+/* Modo Sencillo: las frases con los datos, en una columna de lectura. */
+[data-style='lujo'][data-style] [data-ui='view-head'] > div:first-child > ul {
+	margin-top: var(--sp-16);
+	padding-top: var(--sp-12);
+	border-top: var(--hair) solid var(--lx-rule-soft);
+	text-align: left;
+}
+
+/* ── Cifras grandes: la franja de «cotizaciones del día» entre filetes dobles ── */
+[data-style='lujo'][data-style] [data-ui='tiles'] {
+	gap: 0;
+	background: var(--raise);
+	border-block: var(--sp-3) double var(--lx-rule);
+	margin-bottom: var(--grid-join);
+	padding-inline: var(--sp-8);
+}
+[data-style='lujo'][data-style] [data-ui='tiles']::before {
+	content: 'Las cifras del día' / '';
+	grid-column: 1 / -1;
+	padding-top: var(--sp-10);
+	text-align: center;
+	font-size: var(--fs-xxs);
+	font-weight: 700;
+	letter-spacing: 0.24em;
+	text-transform: uppercase;
+	color: var(--amber);
+}
+[data-style='lujo'][data-style] [data-ui='tiles'] > * {
+	background: transparent;
+	align-items: center;
+	text-align: center;
+	border-left: var(--hair) solid var(--lx-rule-soft);
+}
+[data-style='lujo'][data-style] [data-ui='tiles'] > :first-child {
+	border-left: 0;
+}
+/* En el móvil, como una tabla de cotizaciones: etiqueta a la izquierda y cifra a la derecha. */
+@media (max-width: 720px) {
+	[data-style='lujo'][data-style] [data-ui='tiles'] {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	[data-style='lujo'][data-style] [data-ui='tiles'] > * {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: baseline;
+		column-gap: var(--sp-12);
+		padding: var(--sp-10) var(--sp-4);
+		text-align: left;
+		border-left: 0;
+		border-top: var(--hair) solid var(--lx-rule-soft);
+	}
+	[data-style='lujo'][data-style] [data-ui='tiles'] > :first-child {
+		border-top: 0;
+	}
+	[data-style='lujo'][data-style] [data-ui='tiles'] > * > :nth-child(n + 3) {
+		grid-column: 1 / -1;
+	}
+	[data-style='lujo'][data-style] [data-ui='tiles'] > * > b {
+		text-align: right;
+	}
+}
+
+/* ── Columnas de diario: filetes finos dorados entre columnas y subcolumnas ── */
+@media (min-width: 1100px) {
+	[data-style='lujo'][data-style] [data-ui='main'] > .grid > .col + .col {
+		position: relative;
+	}
+	[data-style='lujo'][data-style] [data-ui='main'] > .grid > .col + .col::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: calc(var(--grid-gap) / -2);
+		width: var(--hair);
+		background: var(--lx-rule-soft);
+	}
+	[data-style='lujo'][data-style] [data-ui='main'] > .grid > .col {
+		column-gap: var(--grid-gap);
+		column-rule: var(--hair) solid var(--lx-rule-soft);
+	}
+}
+/* La cabecera del panel: los datos en cursiva, como el antetítulo de una sección. */
+[data-style='lujo'][data-style] [data-ui='panel-head'] .ph-r > span:first-child {
+	font-family: var(--lx-serif);
+	font-style: italic;
+	font-size: var(--fs-s);
+	letter-spacing: 0.01em;
+}
+
+/* ── Pie: colofón centrado bajo un filete doble ── */
+[data-style='lujo'][data-style] [data-ui='foot'] {
+	justify-content: center;
+	text-align: center;
+	border-top: var(--sp-3) double var(--lx-rule);
+	margin-top: var(--sp-24);
+}
+
+/* ── Móvil: la marca centrada entre filetes dobles en su propia línea; debajo, sitio, tema y relojes ── */
+@media (max-width: 720px) {
+	[data-style='lujo'][data-style] [data-ui='brand'] {
+		order: -3;
+		--logo: 0.8em;
+		font-size: var(--fs-xxl);
+	}
+	[data-style='lujo'][data-style] [data-ui='top'] > :not([data-ui='brand'], [data-ui='cmd']) {
+		margin-block: 0;
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] {
+		gap: 0;
+		padding-block: var(--sp-4);
+		border-bottom: var(--hair) solid var(--lx-rule);
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key {
+		border: 0;
+		border-left: var(--hair) solid var(--lx-rule-soft);
+		background: none;
+		color: var(--fg);
+		letter-spacing: 0.18em;
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key:first-child {
+		border-left: 0;
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key[aria-current='page'] {
+		color: var(--amber);
+		background: none;
+	}
+	[data-style='lujo'][data-style] [data-ui='panel-index'] span {
+		border: 0;
+		font-family: var(--lx-serif);
+		font-style: italic;
+		text-transform: none;
+		letter-spacing: 0.01em;
+	}
+	[data-style='lujo'][data-style] [data-ui='panel-index'] button + button span {
+		border-left: var(--hair) solid var(--lx-rule-soft);
 	}
 }
