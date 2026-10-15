@@ -179,3 +179,59 @@ describe('lo guardado', () => {
 		expect(s.seq).toBe(10);
 	});
 });
+
+describe('QA del gestor de ventanas', () => {
+	it('arrastrada a la izquierda, deja título a la vista además de los botones', () => {
+		const r = wm.fit({ x: -5000, y: 10, w: 600, h: 400 }, area);
+		expect(r.x + r.w).toBe(wm.KEEP_LEFT);
+		expect(wm.KEEP_LEFT).toBeGreaterThan(3 * 30 + wm.KEEP); // tres botones de 30 px (Mando) y algo de título
+	});
+
+	it('redimensiona por los cuatro bordes y las esquinas, con el lado contrario quieto', () => {
+		const r = { x: 400, y: 200, w: 600, h: 400 };
+		expect(wm.resizeRect(r, 'w', -80, 0)).toEqual({ x: 320, y: 200, w: 680, h: 400 });
+		expect(wm.resizeRect(r, 'n', 0, -40)).toEqual({ x: 400, y: 160, w: 600, h: 440 });
+		expect(wm.resizeRect(r, 'ne', 40, 40)).toEqual({ x: 400, y: 240, w: 640, h: 360 });
+		expect(wm.resizeRect(r, 'sw', 80, 80)).toEqual({ x: 480, y: 200, w: 520, h: 480 });
+		expect(wm.resizeRect(r, 'se', 16, 16)).toEqual({ x: 400, y: 200, w: 616, h: 416 });
+		expect(wm.EDGES).toHaveLength(8);
+	});
+
+	it('al encoger no baja del mínimo ni se mueve el lado fijo; arriba no sale del escritorio', () => {
+		const r = { x: 400, y: 200, w: 600, h: 400 };
+		expect(wm.resizeRect(r, 'se', -2000, -2000)).toMatchObject({ x: 400, y: 200, w: wm.MIN_W, h: wm.MIN_H });
+		const nw = wm.resizeRect(r, 'nw', 2000, 2000);
+		expect(nw).toEqual({ x: 1000 - wm.MIN_W, y: 600 - wm.MIN_H, w: wm.MIN_W, h: wm.MIN_H });
+		expect(wm.resizeRect(r, 'n', 0, -5000)).toEqual({ x: 400, y: 0, w: 600, h: 600 });
+	});
+
+	it('⌘/Super + flechas: mitades, cuartos, maximizar, restaurar y minimizar', () => {
+		expect(wm.superSnap(undefined, 'ArrowLeft')).toBe('left');
+		expect(wm.superSnap('left', 'ArrowUp')).toBe('top-left');
+		expect(wm.superSnap('right', 'ArrowDown')).toBe('bottom-right');
+		expect(wm.superSnap('top-left', 'ArrowDown')).toBe('left');
+		expect(wm.superSnap('bottom-right', 'ArrowUp')).toBe('right');
+		expect(wm.superSnap('bottom-left', 'ArrowDown')).toBe('bottom-left');
+		expect(wm.superSnap(undefined, 'ArrowUp')).toBe('max');
+		expect(wm.superSnap('max', 'ArrowUp')).toBe('max');
+		expect(wm.superSnap('max', 'ArrowDown')).toBeNull();
+		expect(wm.superSnap(undefined, 'ArrowDown')).toBe('min');
+	});
+
+	it('la que se está cerrando ya no tiene el foco', () => {
+		const s = wm.emptyState();
+		const a = wm.openWin(s, app('eco'), area).win!;
+		const b = wm.openWin(s, app('geo'), area).win!;
+		const d = wm.activeDesk(s);
+		expect(wm.focused(d)?.uid).toBe(b.uid);
+		expect(wm.focused(d, [b.uid])?.uid).toBe(a.uid);
+	});
+
+	it('al recolocar, una guardada fuera de la pantalla vuelve dentro', () => {
+		const s = wm.reconcileOs({ v: 1, active: 'd1', seq: 2, desks: [{ id: 'd1', name: 'E', wins: [{ uid: 'w1', app: 'eco', x: 1700, y: 900, w: 400, h: 300, z: 1 }] }] }, () => true);
+		wm.relayout(s, { w: 1280, h: 720 });
+		const w = s.desks[0].wins[0];
+		expect(w.x).toBeLessThanOrEqual(1280 - wm.KEEP);
+		expect(w.y).toBeLessThanOrEqual(720 - wm.KEEP);
+	});
+});

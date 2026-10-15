@@ -32,6 +32,7 @@ nada en los traspasos entre sesiones.
 - [x] Doble clic en el título para maximizar [OS 1] #493/#496
 - [x] Restaurar la sesión de ventanas al volver (`arc-os-desks`) [OS 1] #477 (revisado por OS 5)
 - [x] /os sin tope de peso (`scripts/weight.ts` → `EXEMPT`) [OS 2] #497
+- [x] QA 4 (ventanas): redimensionar por los 4 bordes y las 4 esquinas (`resizeRect`), Esc cancela el arrastre, ⌘/Super+flechas a cuartos y ↓ minimiza (`superSnap`), título siempre agarrable por la izquierda (`KEEP_LEFT`), lo guardado fuera de pantalla vuelve dentro al cargar, y cerrar y reabrir al momento [QA OS 4]
 
 ## Aspecto (cambio de Sergi, manda sobre lo anterior)
 «El escritorio no tiene un estilo a elegir: tiene SU estilo y no puede cambiar; solo cambian las apps».
