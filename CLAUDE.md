@@ -199,6 +199,8 @@ vista `HELP`. Resumen:
 | `CARTERA` | Tu cartera: posiciones, ganancia o pérdida y reparto (datos solo tuyos, en tus ajustes) | Finnhub* (EE. UU.), precio a mano, BCE |
 | `AHORRO` | Dónde rinde el dinero, interés compuesto, lo que vale hoy el de otro año y tu inflación (MI IPC) | BCE, Banco de España, Eurostat (IPCA del INE) |
 | `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
+| `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
+| `TEST` | Test de la semana: cinco preguntas con titulares y datos de la semana, sin IA; puntuación en la cuenta de cada uno | IMP, FRED*, BCE, CoinGecko, USGS |
 | `CAL` | Agenda económica, resultados, festivos y puentes (`PUENTES`) | TradingView, Finnhub*, Nager.Date |
 | `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista, análisis y problema del día | Stockfish, chess.js, Lichess |
 | `MODO` | Modo Sencillo (lo esencial, letra mayor, explicaciones; por defecto para usuarios nuevos) o Terminal (todo) | — |
@@ -210,7 +212,7 @@ vista `HELP`. Resumen:
 | `ESTILO` | Estética: Terminal, Grafito, Cristal, Fósforo… (17), con vista previa | — |
 | `AVISOS` | Tus avisos al móvil: temas, nivel, tope, valores y silencio (solo con cuenta, en arcterminal.dev) | ntfy |
 | `QUIEN` | Quién lo cuenta: el mismo hecho en varios medios, cobertura por región y ángulos muertos (sin IA) | Todos los titulares |
-| `BIENVENIDA` | La primera vez (y desde HELP): intereses o perfil, ciudad y modo → portada, inicio, MIS de ejemplo y propuesta de avisos; recorrido de 5 pasos, solo en BIENVENIDA y HELP (`src/lib/onboarding/`) | — |
+| `BIENVENIDA` | La primera vez (y desde HELP): intereses o perfil, ciudad y modo → portada, inicio, MIS de ejemplo y propuesta de avisos; recorrido de 6 pasos (el último, las experiencias), solo en BIENVENIDA y HELP (`src/lib/onboarding/`) | — |
 | `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
 
 \* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`, `CLOUDFLARE_RADAR_TOKEN`, `EIA_API_KEY`):
