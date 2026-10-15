@@ -1,7 +1,8 @@
 <!--
 	Spotlight del teléfono (deslizar hacia abajo en la pantalla de inicio, o «Buscar»): la barra de comandos con
 	cara de buscador. Arriba, la respuesta rápida o la cuenta («=2*21», «euribor», «hora tokio»); debajo, las apps y
-	lo que abriría la barra con lo escrito («NEWS inflación», «NVDA»).
+	lo que abriría la barra con lo escrito («NEWS inflación», «NVDA»), y el resto del buscador universal de Arc OS
+	(searchAll de OS 5: valores, países, líderes y ajustes).
 -->
 <script lang="ts">
 	import { calcInput, canonical, resolveInput, suggest, targetPath, type Option } from '#lib/cmdline.ts';
@@ -11,10 +12,19 @@
 	import { TICKERS } from '#lib/tickers.ts';
 	import { parseConversion } from '#lib/calc.ts';
 	import { fxLive, loadFxRates } from '#lib/fxlive.svelte.ts';
-	import { findApps, type PhoneApp } from './home.ts';
+	import { searchAll, type Hit } from '../system/search.ts';
+	import type { OsApp } from '../apps.ts';
+	import type { PhoneApp } from './home.ts';
 	import PhoneIcon from './PhoneIcon.svelte';
 
-	let { apps, now, onapp, onpath, onclose }: { apps: PhoneApp[]; now: number; onapp: (a: PhoneApp) => void; onpath: (path: string) => void; onclose: () => void } = $props();
+	let {
+		apps,
+		now,
+		onapp,
+		onpath,
+		onhit,
+		onclose
+	}: { apps: PhoneApp[]; now: number; onapp: (a: PhoneApp) => void; onpath: (path: string) => void; onhit: (h: Hit) => void; onclose: () => void } = $props();
 
 	const ALL: Option[] = [
 		...COMMANDS.map((c) => ({ code: c.code, desc: c.desc, kind: 'Función', aliases: c.aliases })),
@@ -31,14 +41,23 @@
 
 	const calc = $derived(q.trim() ? calcInput(q, fxLive) : null);
 	const ans = $derived(q.trim() && !calc ? answerFor(q, { get: (n) => barData[n], now }) : null);
-	const found = $derived(findApps(apps, q, 8));
+	const hits = $derived(q.trim() ? searchAll(q, apps as OsApp[], 16) : []);
+	const found = $derived(hits.flatMap((h) => ('app' in h.action ? apps.filter((a) => a.id === (h.action as { app: string }).app) : [])));
+	/** El resto, por tipo («Valor», «País»…), sin las apps ni lo que ya sale en «Abrir». */
+	const groups = $derived.by(() => {
+		const out = new Map<string, Hit[]>();
+		for (const h of hits) if (!('app' in h.action) && h.kind !== 'Comando') out.set(h.kind, [...(out.get(h.kind) ?? []), h]);
+		return [...out];
+	});
 	const target = $derived(q.trim() && !calc ? resolveInput(q, suggest(q, ALL)) : null);
-	const go = $derived(target ? { label: canonical(target), path: (({ route, search }) => route + search)(targetPath(target)) } : null);
+	// Un valor adivinado («BLOQUEAR») no tapa lo que sí encuentra el buscador: searchAll ya ofrece el valor si no hay nada.
+	const go = $derived(target && !(target.kind === 'symbol' && hits.length) ? { label: canonical(target), path: (({ route, search }) => route + search)(targetPath(target)) } : null);
 
 	function submit(e: SubmitEvent) {
 		e.preventDefault();
 		if (found[0] && !go) onapp(found[0]);
 		else if (go) onpath(go.path);
+		else if (hits[0]) onhit(hits[0]);
 	}
 </script>
 
@@ -64,6 +83,17 @@
 			<h3>Abrir</h3>
 			<button class="card row" onclick={() => onpath(go.path)}><span class="v">{go.label}</span><span class="k">↵</span></button>
 		{/if}
+		{#each groups as [kind, list] (kind)}
+			<h3>{kind === 'País' ? 'Países' : kind === 'Líder' ? 'Líderes' : kind + 's'}</h3>
+			<div class="list">
+				{#each list.slice(0, 5) as h (h.id)}
+					<button class="card row" onclick={() => onhit(h)}>
+						<span class="ico" aria-hidden="true">{h.icon}</span>
+						<span class="t">{h.title}<small>{h.detail}</small></span>
+					</button>
+				{/each}
+			</div>
+		{/each}
 		{#if !q.trim()}
 			<p class="hint">Escribe una app, un valor (NVDA), una cuenta (=2*21) o una pregunta («euribor», «hora tokio»).</p>
 		{/if}
@@ -149,6 +179,38 @@
 		flex-direction: row;
 		justify-content: space-between;
 		align-items: center;
+	}
+	.list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--hair);
+		border-radius: var(--os-radius-l);
+		overflow: hidden;
+	}
+	.list .card {
+		justify-content: flex-start;
+		gap: var(--sp-12);
+		padding: var(--sp-10) var(--sp-14);
+		border-radius: 0;
+	}
+	.ico {
+		flex: none;
+		width: var(--sp-20);
+		color: var(--os-icon-fg);
+		text-align: center;
+	}
+	.t {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		font-size: var(--fs-m);
+	}
+	.t small {
+		overflow: hidden;
+		color: var(--muted);
+		font-size: var(--fs-xs);
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.k {
 		color: var(--muted);

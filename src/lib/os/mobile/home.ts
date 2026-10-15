@@ -7,7 +7,23 @@ import type { OsApp } from '../apps.ts';
 /** Lo mínimo de una app para el teléfono (así se prueba sin el registro entero). */
 export type PhoneApp = Pick<OsApp, 'id' | 'name' | 'icon'> & Partial<Pick<OsApp, 'href' | 'load' | 'code' | 'desc'>>;
 
-export type WidgetId = 'hoy' | 'mundo' | 'mercados';
+export type WidgetId = 'hoy' | 'mundo' | 'mercados' | 'cripto' | 'bonos' | 'macro' | 'gasolina' | 'avisos';
+
+/** Los widgets que se pueden poner en inicio (modo edición → «+»). El grande ocupa 4×2; los pequeños, 2×2. */
+export const WIDGETS: { id: WidgetId; name: string; size: 'l' | 's'; desc: string }[] = [
+	{ id: 'hoy', name: 'Hoy', size: 'l', desc: 'Fecha, hora, euríbor y prima de riesgo' },
+	{ id: 'mundo', name: 'Mundo', size: 's', desc: 'Hora en Nueva York y Tokio' },
+	{ id: 'mercados', name: 'Mercados', size: 's', desc: 'Bitcoin y prima de riesgo' },
+	{ id: 'avisos', name: 'Avisos', size: 's', desc: 'Lo último del centro de notificaciones' },
+	{ id: 'cripto', name: 'Cripto', size: 's', desc: 'Bitcoin y ether' },
+	{ id: 'bonos', name: 'Bonos', size: 's', desc: 'Bono de EE. UU. a 10 años y prima de riesgo' },
+	{ id: 'macro', name: 'Macro', size: 's', desc: 'Paro e inflación' },
+	{ id: 'gasolina', name: 'Gasolina', size: 's', desc: 'Gasolina 95 y diésel' }
+];
+export const DEFAULT_WIDGETS: WidgetId[] = ['hoy', 'mundo', 'mercados'];
+/** Casillas de la primera página que pueden ocupar los widgets (el resto, apps). */
+export const WIDGET_CELLS = 16;
+const sizeOf = (id: WidgetId) => WIDGETS.find((w) => w.id === id)?.size ?? 's';
 export type Cell =
 	| { kind: 'app'; app: PhoneApp }
 	| { kind: 'folder'; folder: Folder; apps: PhoneApp[] }
@@ -23,11 +39,6 @@ const SIZE = { l: 8, s: 4 } as const;
 export const DOCK = ['top', 'imp', 'ws', 'terminal'] as const;
 export const DOCK_MAX = 4;
 
-/**
- * La primera página lleva los widgets entre los iconos (uno grande arriba, dos filas de apps y dos pequeños abajo);
- * las siguientes, solo apps. Las del dock no se repiten.
- */
-export const FIRST: (WidgetId | 'apps')[] = ['hoy', 'apps', 'apps', 'mundo', 'mercados'];
 
 // ---- Orden y carpetas (como en un teléfono: un solo nivel, sin carpetas dentro de carpetas) ----
 
@@ -43,6 +54,8 @@ export type Slot = string | Folder;
 export interface Arrangement {
 	items: Slot[];
 	dock: string[];
+	/** Widgets de la primera página, en orden. */
+	widgets: WidgetId[];
 }
 
 export const ARRANGE_KEY = 'arc-os-phone';
@@ -70,7 +83,9 @@ export function arrange(raw: string | null, ids: string[], dock: readonly string
 		const v = JSON.parse(raw ?? 'null');
 		if (v && typeof v === 'object' && Array.isArray(v.items) && Array.isArray(v.dock)) saved = v;
 	} catch {}
-	const out: Arrangement = { items: [], dock: [] };
+	const out: Arrangement = { items: [], dock: [], widgets: [] };
+	for (const w of Array.isArray(saved?.widgets) ? saved.widgets : DEFAULT_WIDGETS)
+		if (WIDGETS.some((x) => x.id === w) && !out.widgets.includes(w)) out.widgets = addWidget(out, w).widgets;
 	for (const id of saved ? saved.dock! : dock) if (out.dock.length < DOCK_MAX && ok(id)) out.dock.push(id);
 	const folderIds = new Set<string>();
 	for (const s of saved?.items ?? []) {
@@ -145,7 +160,7 @@ export function place(a: Arrangement, src: Src, to: Target, name = 'Carpeta', ne
 		if (!f || !app || f.apps.length >= FOLDER_MAX) return a;
 		f.apps.splice(Math.max(0, Math.min(to.index, f.apps.length)), 0, app);
 	}
-	return { items: tidy(items), dock };
+	return { items: tidy(items), dock, widgets: a.widgets };
 }
 
 /** Saca una app de su carpeta y la deja justo detrás de ella. */
@@ -156,11 +171,25 @@ export function rename(a: Arrangement, folder: string, name: string): Arrangemen
 	return { ...a, items: a.items.map((s) => (isFolder(s) && s.id === folder ? { ...s, name: clean } : s)) };
 }
 
+/** Casillas que ocupan unos widgets. */
+export const widgetCells = (ws: WidgetId[]) => ws.reduce((n, w) => n + SIZE[sizeOf(w)], 0);
+
+/** Pone un widget al final de la primera página, si cabe (no más de WIDGET_CELLS casillas) y no está ya. */
+export function addWidget(a: Arrangement, id: WidgetId): Arrangement {
+	if (a.widgets.includes(id) || widgetCells([...a.widgets, id]) > WIDGET_CELLS) return a;
+	return { ...a, widgets: [...a.widgets, id] };
+}
+export const removeWidget = (a: Arrangement, id: WidgetId): Arrangement => ({ ...a, widgets: a.widgets.filter((w) => w !== id) });
+
 /** Nombre de una carpeta nueva: la sección del MANUAL si las dos apps la comparten («Mercados»); si no, «Carpeta». */
 export const folderName = (sections: (string | undefined)[]) =>
 	sections[0] && sections.every((s) => s === sections[0]) ? sections[0] : 'Carpeta';
 
 /** Las páginas de inicio: widgets en la primera y, después, las casillas en tu orden. */
+/**
+ * La primera página lleva los widgets entre los iconos: el primero arriba, dos filas de apps y los demás debajo; lo
+ * que sobra, apps. Las siguientes, solo apps. Las del dock no se repiten.
+ */
 export function layout(apps: PhoneApp[], a: Arrangement = arrange(null, apps.map((x) => x.id))): Cell[][] {
 	const byId = new Map(apps.map((x) => [x.id, x]));
 	const rest: Cell[] = a.items.flatMap((s): Cell[] => {
@@ -170,11 +199,12 @@ export function layout(apps: PhoneApp[], a: Arrangement = arrange(null, apps.map
 	});
 	let i = 0;
 	const take = (n: number): Cell[] => rest.slice(i, (i += n));
+	const widget = (id: WidgetId): Cell => ({ kind: 'widget', id, size: sizeOf(id) });
 	const first: Cell[] = [];
-	for (const row of FIRST) {
-		if (row === 'apps') first.push(...take(COLS));
-		else first.push({ kind: 'widget', id: row, size: row === 'hoy' ? 'l' : 's' });
-	}
+	const [top, ...more] = a.widgets;
+	if (top) first.push(widget(top), ...take(COLS * 2));
+	first.push(...more.map(widget));
+	first.push(...take(CELLS - used(first)));
 	const pages: Cell[][] = [first];
 	while (i < rest.length) pages.push(take(CELLS));
 	return pages;
@@ -186,27 +216,6 @@ export const used = (page: Cell[]) => page.reduce((n, c) => n + (c.kind === 'wid
 export const dockApps = (apps: PhoneApp[], dock: readonly string[] = DOCK) =>
 	dock.map((id) => apps.find((a) => a.id === id)).filter((a): a is PhoneApp => !!a);
 
-/** Buscar (Spotlight): por nombre, código o descripción, sin tildes; primero las que empiezan así. */
-const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-export function findApps(apps: PhoneApp[], q: string, limit = 8): PhoneApp[] {
-	const w = fold(q.trim());
-	if (!w) return [];
-	const score = (a: PhoneApp) => {
-		const name = fold(a.name);
-		const code = fold(a.code ?? '');
-		if (code === w || name === w) return 0;
-		if (code.startsWith(w) || name.startsWith(w)) return 1;
-		if (name.includes(w) || fold(a.desc ?? '').includes(w)) return 2;
-		return -1;
-	};
-	return apps
-		.map((a) => ({ a, s: score(a) }))
-		.filter((x) => x.s >= 0)
-		.sort((x, y) => x.s - y.s)
-		.slice(0, limit)
-		.map((x) => x.a);
-}
-
 // ---- Multitarea: las apps abiertas, de la última a la primera ----
 
 /** Apps que se quedan vivas a la vez (cada una es un iframe: más pesaría demasiado en un móvil). */
@@ -217,29 +226,31 @@ export function touch(list: string[], id: string, max = MAX_OPEN): string[] {
 }
 export const drop = (list: string[], id: string) => list.filter((x) => x !== id);
 
-// ---- Insignias: cuántas cosas nuevas tiene cada app desde que la abriste la última vez ----
-
-/** localStorage: cuándo abriste cada app en el teléfono por última vez ({ id: ms }). */
-export const BADGES_KEY = 'arc-os-badges';
-
-export function readSeen(raw: string | null): Record<string, number> {
-	try {
-		const v = JSON.parse(raw ?? '{}');
-		return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
-	} catch {
-		return {};
-	}
-}
+// ---- Insignias: lo que no has leído del centro de notificaciones, en la app a la que lleva ----
 
 /**
- * NOVEDADES: cambios fusionados después de la última vez que la abriste. Sin «última vez» (primera vuelta), cuenta
- * los de las últimas 24 h, para no estrenar el teléfono con 40 avisos.
+ * Cada aviso o novedad sin leer cuenta en la app de su enlace (`appOf`: ruta → id de app): los terremotos en GEO,
+ * las novedades en NOVEDADES… Todos los avisos cuentan además en AVISOS.
  */
-export function badges(changes: { mergedAt: string }[], seen: Record<string, number>, now: number): Record<string, number> {
-	const since = seen.novedades ?? now - 24 * 3600_000;
-	const n = changes.filter((c) => Date.parse(c.mergedAt) > since).length;
-	return n ? { novedades: n } : {};
+export function badgesFor(
+	notices: { id: string; kind: string; href?: string }[],
+	seen: Iterable<string>,
+	appOf: (href: string) => string | undefined
+): Record<string, number> {
+	const read = new Set(seen);
+	const out: Record<string, number> = {};
+	const add = (id: string | undefined) => id && (out[id] = (out[id] ?? 0) + 1);
+	for (const n of notices) {
+		if (read.has(n.id)) continue;
+		if (n.href) add(appOf(n.href));
+		if (n.kind === 'aviso') add('avisos');
+	}
+	return out;
 }
+
+/** Los avisos y novedades que se leen al abrir una app (los que cuentan en su insignia). */
+export const noticesOf = (notices: { id: string; kind: string; href?: string }[], app: string, appOf: (href: string) => string | undefined) =>
+	notices.filter((n) => (n.href && appOf(n.href) === app) || (app === 'avisos' && n.kind === 'aviso')).map((n) => n.id);
 
 /** Lo que se pinta en la insignia: hasta 99. */
 export const badgeText = (n: number) => (n > 99 ? '99+' : String(n));
