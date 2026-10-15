@@ -95,6 +95,7 @@
 	--cmd-h: 34px; /* barra de comandos */
 	--touch: 44px; /* zona pulsable mínima en pantallas táctiles */
 	--tabbar-h: 48px; /* barra inferior del móvil */
+	--fs-field: var(--fs-m); /* letra de los campos de texto: 16 px en táctil, para que iOS no amplíe al tocarlos */
 	--logo: 22px;
 	--dot: 6px; /* punto de estado (relojes) */
 	--swatch: 8px; /* cuadradito de leyenda */
@@ -132,6 +133,7 @@
 @media (pointer: coarse) {
 	:root {
 		--control-h: var(--touch);
+		--fs-field: 16px;
 	}
 }
 
