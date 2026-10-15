@@ -3,6 +3,7 @@
 	import { clock } from '#lib/clock.svelte.ts';
 	import { dayParam } from '#lib/dayparam.svelte.ts';
 	import Panel from '#lib/components/Panel.svelte';
+	import Puentes from '#lib/components/Puentes.svelte';
 	import TvWidget from '#lib/components/TvWidget.svelte';
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
@@ -66,6 +67,8 @@
 	const today = $derived(madridDate(clock.now || Date.now()));
 	// «CAL viernes» (M49): las filas de ese día, resaltadas.
 	const pick = dayParam();
+	// Modo Sencillo: el próximo puente, en una frase (lo calcula el panel «Puentes»).
+	let nextBreak = $state<string | null>(null);
 
 	// Próximas decisiones de tipos de los grandes bancos centrales (src/lib/cb-calendar.ts).
 	const decisions = $derived(cbUpcoming(today).slice(0, 10));
@@ -97,6 +100,7 @@
 </script>
 
 <ViewHeader
+	plain={nextBreak ? [nextBreak] : undefined}
 	code="CAL"
 	title="Agenda económica"
 	sub="Datos macro de la semana (TradingView), resultados empresariales y salidas a bolsa (Finnhub)"
@@ -205,6 +209,7 @@
 				incluidos.
 			{/snippet}
 		</Panel>
+		<Puentes {today} pick={pick.day} onnext={(t) => (nextBreak = t)} />
 		<Panel title="Resultados" meta="Grandes empresas de EE. UU. · próximas 2 semanas">
 			{#if !data.finnhub}
 				<p class="empty">{data.finnhubMissing}</p>
