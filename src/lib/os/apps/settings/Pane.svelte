@@ -1,7 +1,7 @@
 <!--
 	El contenido de cada sección de Ajustes (las secciones, en sections.ts). No duplica nada: usa los mismos
 	selectores y funciones que la cabecera de la web (Apariencia, Tu sitio, MODO), HELP (llevarte los ajustes) y el
-	sistema de Arc OS (fondo, barra, widgets, arranque, sonidos). Todo se guarda en la cuenta.
+	sistema de Arc OS (fondo, widgets, arranque, sonidos). Todo se guarda en la cuenta.
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
@@ -24,7 +24,7 @@
 	import { APPS, newDesk, openApp, os } from '../../os.svelte.ts';
 	import { playTone } from '../../system/sounds.ts';
 	import { lock, setSettings, sys } from '../../system/system.svelte.ts';
-	import { setBar, setWallpaper, setWidgets, shell, WALLPAPERS, type Wallpaper } from '../../shell/shell.svelte.ts';
+	import { setWallpaper, setWidgets, shell, WALLPAPERS, type Wallpaper } from '../../shell/shell.svelte.ts';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from '../../shell/widgets.ts';
 	import { findApp } from '../../apps.ts';
 	import type { SectionId } from './sections.ts';
@@ -124,7 +124,7 @@
 			<dd><Seg label="Densidad" options={DENSITIES} bind:value={() => taste.density, setDensity} /></dd>
 		</dl>
 		<h3>Estética</h3>
-		<p class="mut">Colores y letra de todo Arc.</p>
+		<p class="mut">Colores y letra de las vistas (en Arc OS, solo dentro de las ventanas).</p>
 		<StylePicker />
 	{:else if section === 'modo'}
 		<h2 tabindex="-1">Modo</h2>
@@ -152,17 +152,10 @@
 		{/if}
 		<p class="mut">Al arrancar, bloquear, entrar y con los avisos.</p>
 		<p><button type="button" onclick={() => playTone('notify')}>Probar</button></p>
-	{:else if section === 'barra'}
-		<h2 tabindex="-1">Barra de tareas</h2>
-		{#if shell.skin === 'windows'}
-			<Seg label="Barra de tareas" options={[{ value: 'bottom', label: 'Abajo' }, { value: 'top', label: 'Arriba' }]} bind:value={() => shell.bar, setBar} />
-		{:else}
-			<p class="mut">Con este escritorio, la barra va siempre en su sitio.</p>
-		{/if}
 	{:else if section === 'escritorio'}
 		<h2 tabindex="-1">Escritorio y fondo</h2>
 		<h3>Fondo</h3>
-		<Seg label="Fondo del escritorio" options={WALLPAPERS.map((w) => ({ value: w.id, label: w.label }))} bind:value={() => shell.wallpaper, (v: Wallpaper) => setWallpaper(v)} />
+		<Seg label="Fondo del escritorio" options={WALLPAPERS.map((w) => ({ value: w.id, label: w.id === 'sistema' ? 'Predeterminado' : w.label }))} bind:value={() => shell.wallpaper, (v: Wallpaper) => setWallpaper(v)} />
 		{#if findApp('wallpaper')}<p><button type="button" onclick={() => openApp('wallpaper')}>Fondo de pantalla…</button></p>{/if}
 		<h3>Escritorios virtuales</h3>
 		<p>{os.state.desks.length} · <button type="button" class="link" onclick={() => newDesk()}>Añadir escritorio</button></p>
