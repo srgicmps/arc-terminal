@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { suggest, type Option } from './cmdline.ts';
-import { hasWords, prepare, queryWords, searchIndex, searchOptions, symbolOf } from './search.ts';
+import { canonical, resolveInput, suggest, targetPath, type Option } from './cmdline.ts';
+import { hasWords, leaderEntries, prepare, queryWords, searchIndex, searchOptions, symbolOf } from './search.ts';
 import type { SearchEntry } from './types.ts';
 
 const entry = (t: string, s: SearchEntry['s'] = 'NEWS', u = `https://a.example/${encodeURIComponent(t)}`): SearchEntry => ({ t, u, s });
@@ -82,8 +82,8 @@ describe('searchOptions', () => {
 		const pymes = found('pymes', [], index);
 		expect(pymes[0]).toEqual({ code: 'PYMES', desc: 'Ficha del valor', kind: 'Valor', run: 'PYMES' });
 		expect(pymes[1].code).toBe('NEWS');
-		// Un alias de comando («trump» abre LIDER) no busca: lo ejecuta la barra.
-		expect(found('trump', [], index)).toEqual([]);
+		// Un líder («trump» abre su ficha en LIDER): con su sugerencia delante, no se ofrece la ficha del valor TRUMP.
+		expect(found('trump', suggest('trump', leaderEntries()), index).map((o) => o.code)).not.toContain('TRUMP');
 		// Más de 5 caracteres: ya no parece un valor y el primero es el titular.
 		expect(found('aranceles', [], index)[0].code).toBe('NEWS');
 	});
@@ -106,6 +106,14 @@ describe('searchOptions', () => {
 	it('symbolOf lee el valor de un enlace interno', () => {
 		expect(symbolOf('/s?sym=BME%3AREP')).toBe('BME:REP');
 		expect(symbolOf('https://a.example/s?sym=X')).toBeNull();
+	});
+});
+
+describe('leaderEntries', () => {
+	it('«trump» + Intro abre su ficha en LIDER', () => {
+		const target = resolveInput('trump', suggest('trump', leaderEntries()));
+		expect(target && canonical(target)).toBe('LIDER trump');
+		expect(target && targetPath(target)).toEqual({ route: '/lider', search: '?id=trump' });
 	});
 });
 
