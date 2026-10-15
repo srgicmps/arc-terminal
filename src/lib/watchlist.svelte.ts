@@ -76,6 +76,12 @@ export function toggleWatch(code: string) {
 	save();
 }
 
+/** Cambia la lista activa entera (acciones «+NVDA» / «-AAPL» de la barra). */
+export function setCodes(codes: string[]) {
+	watchlist.codes = codes.map((c) => c.trim().toUpperCase()).filter(Boolean);
+	save();
+}
+
 export function moveWatch(code: string, delta: -1 | 1) {
 	const i = watchlist.codes.indexOf(code);
 	const j = i + delta;

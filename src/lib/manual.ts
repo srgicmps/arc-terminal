@@ -229,6 +229,10 @@ export const FAQ: Faq[] = [
 		a: '«compartir WS» copia el enlace de esa vista (en el móvil abre el menú de compartir); «compartir» solo, el de la vista abierta. También vale con un valor: «compartir NVDA».'
 	},
 	{
+		q: '¿Puedo crear alertas o cambiar MIS desde la barra?',
+		a: '«alerta NVDA > 150», «alerta BTC -5%» o «alerta diésel < 1,40» avisan al móvil cuando se cumplen, una sola vez. «+NVDA» y «-AAPL» añaden o quitan de MIS, y «vigila aranceles» añade una palabra vigilada. Como la web no tiene servidor, la barra abre un issue de GitHub ya escrito: pulsa «Submit» y la Action lo aplica en la pasada siguiente. Ojo: el repo es público y esos issues se ven. «alertas» abre las tuyas; para borrar una, cierra su issue.'
+	},
+	{
 		q: '¿Usa inteligencia artificial?',
 		a: 'No para decidir qué es importante: IMP y los avisos usan reglas y puntos fijos. Solo se traducen titulares al español con un servicio de traducción automática o, si no, con el traductor del propio navegador.'
 	}
