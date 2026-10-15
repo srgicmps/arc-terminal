@@ -189,7 +189,7 @@
 	style:z-index={stackZ(win)}
 	bind:this={el}
 	onanimationend={(e) => closing && e.animationName.endsWith('os-close') && closeNow(win.uid)}
-	aria-label={app.name}
+	aria-label={title}
 	aria-hidden={win.min || undefined}
 	onpointerdown={() => !active && focus(win.uid)}
 >
