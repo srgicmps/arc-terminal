@@ -28,3 +28,6 @@ shots/
 
 # Historial de avisos para la caché de Actions (scripts/notify.ts)
 /.notify-cache
+
+# Miniaturas de las vistas para el MANUAL (scripts/thumbs.ts): se generan en la Action, nunca se suben
+/static/manual/

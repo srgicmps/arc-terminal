@@ -3,11 +3,15 @@ import { trimCurve } from '#lib/curves.ts';
 import { pctDays } from '#lib/series.ts';
 import { pickSeries, trim } from '#lib/trim.ts';
 import { computeRisk } from '#lib/risk.ts';
-import type { AuctionsData, CryptoData, NewsData, PredictionsData, SeriesData, YieldCurveData } from '#lib/types.ts';
+import type { CotData } from '#lib/cot.ts';
+import type { AuctionsData, BitcoinNet, CryptoData, NewsData, PredictionsData, SeriesData, VixData, YieldCurveData } from '#lib/types.ts';
+import type { PinkSheetData } from '#lib/pinksheet.ts';
+import type { StablecoinsData } from '#lib/stablecoins.ts';
+import type { TicData } from '#lib/tic.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [news, curve, eacurve, jgb, ecb, crypto, fred, predictions, auctions] = await Promise.all([
+	const [news, curve, eacurve, jgb, ecb, crypto, fred, predictions, auctions, stables, cot, vix, bitcoin, pinksheet, tic] = await Promise.all([
 		dataset<NewsData>('news-ws'),
 		dataset<YieldCurveData>('uscurve'),
 		dataset<YieldCurveData>('eacurve'),
@@ -16,7 +20,16 @@ export const load: PageServerLoad = async () => {
 		dataset<CryptoData>('crypto'),
 		dataset<SeriesData>('fred'),
 		dataset<PredictionsData>('predictions'),
-		dataset<AuctionsData>('auctions')
+		dataset<AuctionsData>('auctions'),
+		dataset<StablecoinsData>('stablecoins'),
+		dataset<CotData>('cot'),
+		// VIX y su curva: 30 días de 5 plazos, pequeño.
+		dataset<VixData>('vix'),
+		dataset<BitcoinNet>('bitcoin'),
+		// Materias primas del Banco Mundial: 21 filas de 13 meses, pequeño.
+		dataset<PinkSheetData>('pinksheet'),
+		// Quién tiene la deuda de EE. UU.: unos 20 países y 13 meses, pequeño.
+		dataset<TicData>('tic')
 	]);
 	// El termómetro de riesgo se calcula aquí, al construir: al navegador solo llega el resultado y su desglose.
 	const risk = computeRisk({ fred: fred?.data, ecb: ecb?.data, crypto: crypto?.data, predictions: predictions?.data });
@@ -28,6 +41,7 @@ export const load: PageServerLoad = async () => {
 	);
 	// De cada curva, solo hoy, hace una semana y hace un año (son más de 250 días cada una).
 	return {
+		bitcoin,
 		news,
 		curve: trim(curve, trimCurve),
 		eacurve: trim(eacurve, trimCurve),
@@ -37,6 +51,11 @@ export const load: PageServerLoad = async () => {
 		// El historial de bitcoin solo sirve para el termómetro.
 		crypto: crypto && { ...crypto, data: { coins: crypto.data.coins } },
 		risk,
-		auctions
+		auctions,
+		stables,
+		cot,
+		vix,
+		pinksheet,
+		tic
 	};
 };

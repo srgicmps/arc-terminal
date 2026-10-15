@@ -58,8 +58,11 @@ const time = (v: unknown): string => {
 	return Number.isFinite(t) ? new Date(t).toISOString() : '';
 };
 
-/** Avisos en vigor o próximos para Menorca. `now` en milisegundos, para poder probarlo. */
-export function parseAlerts(body: string, now = Date.now()): AlertsData {
+/**
+ * Todos los avisos en vigor o próximos de un feed Atom de MeteoAlarm (de cualquier país), sin repetir y
+ * del más grave al más leve. `zone`, si se da, filtra por el nombre de la zona. `now` en milisegundos.
+ */
+export function alertEntries(body: string, now = Date.now(), zone?: RegExp): WxAlert[] {
 	const doc = xml.parse(body) as Raw;
 	if (!doc?.feed) throw new Error('no se entiende el formato de MeteoAlarm');
 
@@ -67,7 +70,7 @@ export function parseAlerts(body: string, now = Date.now()): AlertsData {
 	const alerts: WxAlert[] = [];
 	for (const e of list<Raw>(doc.feed.entry)) {
 		const area = text(e.areaDesc);
-		if (!ZONE.test(area)) continue;
+		if (zone && !zone.test(area)) continue;
 		if (/^(cancel|ack|error)$/i.test(text(e.message_type))) continue;
 		if (/^(test|exercise|draft)$/i.test(text(e.status))) continue;
 
@@ -99,8 +102,12 @@ export function parseAlerts(body: string, now = Date.now()): AlertsData {
 	}
 
 	const rank: Record<AlertColor, number> = { red: 0, orange: 1, yellow: 2 };
-	alerts.sort((a, b) => rank[a.level] - rank[b.level] || a.onset.localeCompare(b.onset));
-	return { zone: 'Menorca', alerts };
+	return alerts.sort((a, b) => rank[a.level] - rank[b.level] || a.onset.localeCompare(b.onset));
+}
+
+/** Avisos en vigor o próximos para Menorca. `now` en milisegundos, para poder probarlo. */
+export function parseAlerts(body: string, now = Date.now()): AlertsData {
+	return { zone: 'Menorca', alerts: alertEntries(body, now, ZONE) };
 }
 
 export const alerts: Source<AlertsData> = {

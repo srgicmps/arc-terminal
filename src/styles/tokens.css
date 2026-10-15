@@ -76,9 +76,10 @@
 	--sp-20: 20px;
 	--sp-24: 24px;
 	/* Con nombre propio: el ritmo principal. */
-	/* Densidad «Compacta» (la de por defecto, al estilo Bloomberg). La «Cómoda» solo redefine estos tokens. */
+	/* Densidad «Compacta» (la de por defecto, al estilo Bloomberg). Si se añade una «Cómoda», solo tendrá que redefinir estos tokens. */
 	--pad-x: var(--sp-10); /* sangría horizontal de paneles, filas y tablas */
 	--row-y: var(--sp-6); /* margen vertical de una fila de lista */
+	--head-y: var(--sp-4); /* margen vertical de la cabecera de un panel: ~24 px de alto en total */
 	--gutter: var(--sp-8); /* margen lateral de la página (escritorio) */
 	--gutter-touch: var(--sp-12); /* el mismo en el móvil, por debajo de 720 px */
 
@@ -86,8 +87,11 @@
 	--hair: 1px; /* grosor de todas las líneas */
 	--border: var(--hair) solid var(--line);
 	--key-edge: 2px; /* borde inferior de <kbd> */
-	--btn-sm: 28px; /* botón cuadrado pequeño (tema) */
-	--control-h: 32px; /* buscadores y selectores de vista */
+	--control-h-desk: 28px;
+	/* Alto de TODOS los controles sueltos: botones, segmentados, desplegables y campos. 28 px con ratón y
+	   --touch (44 px) en pantallas táctiles: lo cambia la @media (pointer: coarse) de abajo. */
+	--control-h: var(--control-h-desk);
+	--btn-sm: var(--control-h-desk); /* botón cuadrado pequeño (tema, encajar, ✕): en táctil crece con ::after */
 	--cmd-h: 34px; /* barra de comandos */
 	--touch: 44px; /* zona pulsable mínima en pantallas táctiles */
 	--tabbar-h: 48px; /* barra inferior del móvil */
@@ -102,10 +106,12 @@
 	--col-min-wide: 420px; /* el mismo, en .grid-3 por debajo de 1100 px */
 	--z-popover: 50; /* burbujas del glosario (ⓘ): sobre la cabecera fija, bajo el panel maximizado */
 	--fit-panel-min: 280px; /* «encajar en pantalla»: alto mínimo de un panel (cabecera y unas 9 filas) */
-	--col-split: 400px; /* ancho mínimo de una subcolumna: una columna de más del doble se parte en dos o más */
+	--index-chip: 26px; /* chips del índice de paneles del móvil: fila fina */
+	--col-split: 400px; /* ancho mínimo de una subcolumna: una columna de más del doble se parte en dos */
 
 	/* ── Capas (z-index) y fondo atenuado ────────────────────────────────────────────────── */
 	--z-sticky: 1; /* cabeceras fijas dentro de un panel con scroll */
+	--z-bar: 20; /* índice de paneles del móvil, fijo arriba al hacer scroll */
 	--z-modal: 100; /* panel maximizado, por encima de todo */
 	--scrim: rgba(8, 10, 13, 0.72); /* fondo atenuado detrás del panel maximizado */
 	--dur-fast: 120ms; /* aparición breve (se quita con prefers-reduced-motion) */
@@ -115,8 +121,18 @@
 	 *   720 px  móvil: una columna, barra inferior, cabecera compacta
 	 *   860 px  rejillas de 2 y 3 columnas → 1
 	 *   1100 px rejilla de 3 columnas → 2
+	 *   1280 px «encajar en pantalla» (botón ⤢)
+	 *   1680 px al encajar, subcolumnas en las rejillas de 2 columnas (+layout.svelte)
+	 *   2500 px al encajar, subcolumnas en la de 3
 	 * Los paneles se adaptan además a su propio ancho con @container (300–480 px).
 	 */
+}
+
+/* Pantallas táctiles: todos los controles a la zona pulsable mínima. */
+@media (pointer: coarse) {
+	:root {
+		--control-h: var(--touch);
+	}
 }
 
 /*
@@ -150,4 +166,59 @@
 	--series-2: #2f639e;
 	--series-3: #7449a0;
 	--scrim: rgba(22, 25, 29, 0.42);
+}
+
+/* ── Densidad «Cómoda» («A tu gusto», src/lib/taste.svelte.ts) ──────────────────────────────
+ * Sin data-density, la compacta de arriba. La cómoda da más aire a filas y paneles y sube la letra 1 px; no toca
+ * --control-h (el alto de los controles es el mismo en las dos). Va en su propio bloque: no pisa el acento. */
+:root[data-density='comoda'] {
+	--pad-x: var(--sp-14);
+	--row-y: var(--sp-8);
+	--head-y: var(--sp-6);
+	--gutter: var(--sp-12);
+	--gutter-touch: var(--sp-16);
+	--fs-xxs: 11px;
+	--fs-xs: 12px;
+	--fs-s: 13px;
+	--fs-m: 14px;
+	--fs-l: 15.5px;
+	--fs-xl: 21px;
+	--fs-big: 27px;
+	--fs-xxl: 29px;
+	--fit-panel-min: 320px;
+}
+
+/* ── Acento elegido («A tu gusto», src/lib/taste.svelte.ts) ─────────────────────────────────
+ * Sin data-accent, el ámbar de arriba. Mismo contraste que el ámbar o más (WCAG AA sobre --panel). Cian y no verde: el verde es solo para las subidas. Los
+ * nombres siguen siendo --amber*: son «el acento», sea del color que sea. Con el azul, la segunda serie de
+ * los gráficos pasa a ámbar para no confundirse con la primera. */
+:root[data-accent='cyan'] {
+	--amber: #4fd6c8;
+	--amber-dim: #6fb3ab;
+	--amber-soft: rgba(79, 214, 200, 0.12);
+	--amber-edge: rgba(79, 214, 200, 0.4);
+	--on-amber: #04120f;
+}
+:root[data-accent='blue'] {
+	--amber: #5eb1ef;
+	--amber-dim: #7fa3c4;
+	--amber-soft: rgba(94, 177, 239, 0.13);
+	--amber-edge: rgba(94, 177, 239, 0.42);
+	--on-amber: #04101a;
+	--series-2: #f2a83b;
+}
+:root[data-theme='light'][data-accent='cyan'] {
+	--amber: #0b7a70;
+	--amber-dim: #2f6a64;
+	--amber-soft: rgba(11, 122, 112, 0.1);
+	--amber-edge: rgba(11, 122, 112, 0.4);
+	--on-amber: #ffffff;
+}
+:root[data-theme='light'][data-accent='blue'] {
+	--amber: #1f63a8;
+	--amber-dim: #3f5f80;
+	--amber-soft: rgba(31, 99, 168, 0.1);
+	--amber-edge: rgba(31, 99, 168, 0.4);
+	--on-amber: #ffffff;
+	--series-2: #9a5a00;
 }

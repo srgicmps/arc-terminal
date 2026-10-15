@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findCountry } from './countries.ts';
-import { countryProfile } from './country.ts';
+import { countryProfile, imfFiscal } from './country.ts';
 import type { ImfData, Series, YieldCurveData } from './types.ts';
 
 const s = (id: string, points: [string, number][], extra: Partial<Series> = {}): Series => ({
@@ -91,6 +91,26 @@ describe('countryProfile', () => {
 
 	it('un país sin datos se queda vacío, sin huecos', () => {
 		const p = countryProfile(findCountry('NG')!, sets);
-		expect(p).toEqual({ kpis: [], policy: null, bond: null, premium: null, fx: [], imf: null });
+		expect(p).toEqual({ kpis: [], policy: null, bond: null, premium: null, fx: [], imf: null, fiscal: null });
+	});
+});
+
+describe('imfFiscal', () => {
+	const g = (code: string, debt: number | null, balance: number | null) => ({ code, name: code, gdp: null, cpi: null, unemployment: null, debt, balance });
+	const imf: ImfData = {
+		edition: 'octubre de 2026',
+		years: [2026, 2027],
+		rows: [],
+		g20: [g('JPN', 230, -6), g('ESP', 101, -2.8), g('DEU', 63, -2), g('ITA', null, -3.5)]
+	};
+
+	it('deuda, saldo y puesto entre los que tienen deuda (1 = la más alta)', () => {
+		expect(imfFiscal(findCountry('España')!, imf)).toEqual({ year: 2026, debt: 101, balance: -2.8, debtRank: 2, of: 3 });
+		expect(imfFiscal(findCountry('Italia')!, imf)).toEqual({ year: 2026, debt: null, balance: -3.5, debtRank: null, of: 3 });
+	});
+
+	it('sin fila del país o sin g20, nada', () => {
+		expect(imfFiscal(findCountry('Francia')!, imf)).toBeNull();
+		expect(imfFiscal(findCountry('España')!, { ...imf, g20: undefined })).toBeNull();
 	});
 });

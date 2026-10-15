@@ -7,13 +7,22 @@ import { getJson, type Source } from '../lib.ts';
 import { toQuote } from './finnhub.ts';
 
 /**
- * Símbolos en formato de Finnhub. Solo de EE. UU.: el plan gratuito no da los europeos (Airbus, BAE,
- * Rheinmetall, Leonardo, Thales, Saab e Indra salían vacíos); van aparte, con otra fuente.
+ * Símbolos en formato de Finnhub. Solo de EE. UU.: el plan gratuito no da los europeos en sus bolsas
+ * (Airbus, BAE, Rheinmetall, Leonardo, Thales, Saab e Indra salían vacíos); van aparte, en EU_ADRS.
  */
 export const ALERT_TICKERS = [
 	'PLTR', 'LMT', 'RTX', 'NOC', 'GD', 'LHX', 'BA',
 	'NVDA', 'AAPL'
 ];
+
+/**
+ * Los 7 europeos de defensa por sus ADR en EE. UU. (D25): Finnhub gratis solo da su cierre diario, con un día
+ * de retraso. SOLO para los avisos ntfy: los pide scripts/notify.ts al enviar y no se guardan en
+ * static/data (los términos de Finnhub prohíben redistribuir sus datos; la web es pública).
+ */
+export const EU_ADRS = ['EADSY', 'BAESY', 'RNMBY', 'FINMY', 'THLLY', 'SAABY', 'ISMAY'];
+/** Pausa entre llamadas de los ADR: van justo después de la pasada de datos, y con 300 ms Finnhub daba 429. */
+export const EU_GAP_MS = 1500;
 
 const KEY = 'FINNHUB_API_KEY';
 /** Pausa entre llamadas, para no ir a ráfagas. */

@@ -37,7 +37,16 @@ export function initTheme() {
 	const media = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: light)') : null;
 	const onChange = () => theme.mode === 'auto' && apply();
 	media?.addEventListener('change', onChange);
-	return () => media?.removeEventListener('change', onChange);
+	// Al imprimir (informe de TOP o IMP), siempre el tema de día: papel blanco. Al acabar, el que había.
+	const paper = () => (document.documentElement.dataset.theme = 'light');
+	const back = () => (document.documentElement.dataset.theme = theme.resolved);
+	addEventListener('beforeprint', paper);
+	addEventListener('afterprint', back);
+	return () => {
+		media?.removeEventListener('change', onChange);
+		removeEventListener('beforeprint', paper);
+		removeEventListener('afterprint', back);
+	};
 }
 
 /** Auto → Día → Noche → Auto. */

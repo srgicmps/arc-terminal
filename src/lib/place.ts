@@ -71,7 +71,7 @@ const SPAIN_TZ = ['Europe/Madrid', 'Atlantic/Canary', 'Africa/Ceuta'];
 export const inSpain = (p: Place) => p.cc === 'ES' || (!p.cc && SPAIN_TZ.includes(p.tz));
 
 /** ¿Está en Menorca? Por coordenadas (la isla cabe en este recuadro). */
-export const inMenorca = (p: Place) => p.lat > 39.78 && p.lat < 40.11 && p.lon > 3.78 && p.lon < 4.35;
+export const inMenorca = (p: Pick<Place, 'lat' | 'lon'>) => p.lat > 39.78 && p.lat < 40.11 && p.lon > 3.78 && p.lon < 4.35;
 
 // ---------- Buscador de ciudades (Open-Meteo Geocoding, sin clave, desde el navegador) ----------
 
