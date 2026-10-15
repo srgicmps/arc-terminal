@@ -8,6 +8,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import ExpHeader from '#lib/components/ExpHeader.svelte';
+	import Globe from '#lib/components/Globe.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { clock } from '#lib/clock.svelte.ts';
 	import { EXPERIENCES } from '#lib/experiences.ts';
@@ -38,6 +39,12 @@
 
 	let layers = $state<string[]>(SALA_LAYERS.map((l) => l.value));
 	let region = $state<RegionId | 'all'>('all');
+	/** Mapa plano o globo 3D (el globo se carga solo si se elige). */
+	let look = $state<'map' | 'globe'>('map');
+	const LOOKS = [
+		{ value: 'map' as const, label: 'Mapa' },
+		{ value: 'globe' as const, label: 'Globo 3D' }
+	];
 	let selected = $state<SalaPoint | null>(null);
 
 	const points = $derived((data.points as SalaPoint[]).filter((p) => layers.includes(p.layer)));
@@ -68,6 +75,7 @@
 	let stage = $state<HTMLElement>();
 	const full = () => (document.fullscreenElement ? document.exitFullscreen() : stage?.requestFullscreen?.());
 
+	const flashSet = $derived(new Set(points.filter(flashes).map((p) => p.id)));
 	const now = $derived(clock.now || (data.fetchedAt ? Date.parse(data.fetchedAt) : 0));
 	const pick = (p: SalaPoint) => (selected = selected?.id === p.id ? null : p);
 </script>
@@ -88,6 +96,9 @@
 
 	<div class="main">
 		<div class="mapwrap">
+			{#if look === 'globe'}
+				<Globe {points} legend={SALA_LAYERS} flash={flashSet} />
+			{:else}
 			<svg viewBox={VIEWS[region]} role="img" aria-label="Mapa con {points.length} sucesos">
 				<path class="land" d={LAND} />
 				{#each points as p (p.id)}
@@ -118,7 +129,8 @@
 					</g>
 				{/each}
 			</svg>
-			{#if selected}
+			{/if}
+			{#if selected && look === 'map'}
 				<div class="card">
 					<b>{selected.title}</b>
 					<span>{selected.sub}{selected.t ? ` · ${when(selected.t, now)}` : ''}</span>
@@ -149,10 +161,17 @@
 
 	<div class="layers">
 		<Seg label="Capas" options={SALA_LAYERS} bind:values={layers} />
+		<Seg label="Vista" options={LOOKS} bind:value={look} />
 	</div>
 </section>
 
 <style>
+	.layers {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--sp-8);
+	}
+
 	.full {
 		height: var(--control-h);
 		padding: 0 var(--sp-10);
