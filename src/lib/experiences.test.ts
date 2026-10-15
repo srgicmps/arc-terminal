@@ -30,3 +30,10 @@ describe('experiencias', () => {
 		expect(fromHomeValue('IMP', LIST)).toBeNull();
 	});
 });
+
+describe('rutas de las experiencias', () => {
+	it('cada experiencia tiene su vista en src/routes/x/<id> y cada vista, su entrada', () => {
+		const pages = Object.keys(import.meta.glob('/src/routes/x/*/+page.svelte')).map((p) => p.split('/')[4]);
+		expect(pages.sort()).toEqual(EXPERIENCES.map((e) => e.id).sort());
+	});
+});
