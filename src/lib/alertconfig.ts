@@ -27,7 +27,7 @@ export const groupOf = (type: string): GroupId =>
 	GROUPS.find((g) => (g.types as readonly string[]).includes(type))?.id ?? 'agenda';
 
 /** Tipos que no se reparten por grupos: las alertas y palabras propias de cada uno (users.ts) y el saludo. */
-export const OWNER_ONLY = ['user-alert', 'vigila', 'hello'];
+export const OWNER_ONLY = ['user-alert', 'vigila', 'hello', 'casa'];
 
 export interface AlertConfig {
 	/** Avisos activados. */
@@ -49,6 +49,42 @@ export interface AlertConfig {
 	prices: PriceAlert[];
 	/** Palabras vigiladas («vigila aranceles»): titulares y BOE que las nombran. */
 	words: string[];
+	/** Avisos de casa (F16) y de sus resultados (F12): cada uno lo enciende en AVISOS. */
+	home: Home;
+}
+
+export interface Home {
+	/** Las horas baratas de la luz de mañana (PVPC), al publicarse por la noche. */
+	luz: boolean;
+	/** Polen moderado o alto mañana en su sitio (el de «Tu mañana»). */
+	pollen: boolean;
+	/** La víspera de los resultados de sus valores. */
+	results: boolean;
+	/** Su gasolinera favorita (la de FUEL): aviso cuando baja. null: sin aviso. */
+	fuel: HomeFuel | null;
+}
+
+export interface HomeFuel {
+	/** Zona de FUEL: «menorca» o el id de la provincia («07»). */
+	zone: string;
+	id: string;
+	name: string;
+	kind: 'g95' | 'diesel';
+}
+
+export const DEFAULT_HOME: Home = { luz: false, pollen: false, results: false, fuel: null };
+
+export function parseHomeFuel(raw: unknown): HomeFuel | null {
+	const f = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null;
+	if (!f || typeof f.zone !== 'string' || !/^(menorca|\d{2})$/.test(f.zone)) return null;
+	if (typeof f.id !== 'string' || !/^[\w-]{1,20}$/.test(f.id)) return null;
+	const name = typeof f.name === 'string' ? f.name.replace(/[\p{Cc}\s]+/gu, ' ').trim().slice(0, 60) : '';
+	return { zone: f.zone, id: f.id, name: name || 'Tu gasolinera', kind: f.kind === 'diesel' ? 'diesel' : 'g95' };
+}
+
+export function parseHome(raw: unknown): Home {
+	const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+	return { luz: o.luz === true, pollen: o.pollen === true, results: o.results === true, fuel: parseHomeFuel(o.fuel) };
 }
 
 /** Una alerta de precio con su id aleatorio (8 hex): así la Action la borra al avisar. */
@@ -143,7 +179,8 @@ export const DEFAULT_CONFIG: AlertConfig = {
 	quiet: null,
 	brief: DEFAULT_BRIEF,
 	prices: [],
-	words: []
+	words: [],
+	home: DEFAULT_HOME
 };
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -176,7 +213,7 @@ export function parseConfig(raw: unknown): AlertConfig {
 		q.from !== q.until
 			? { from: q.from, until: q.until }
 			: null;
-	return { on: o.on === true, groups, level, daily, mis, baseStocks: o.baseStocks !== false, quiet, brief: parseBrief(o.brief), prices: parsePrices(o.prices), words: parseWordList(o.words) };
+	return { on: o.on === true, groups, level, daily, mis, baseStocks: o.baseStocks !== false, quiet, brief: parseBrief(o.brief), prices: parsePrices(o.prices), words: parseWordList(o.words), home: parseHome(o.home) };
 }
 
 /** ¿Está «hh:mm» dentro del silencio? Admite silencios que cruzan la medianoche (23:00–07:00). */

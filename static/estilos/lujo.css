@@ -1,0 +1,573 @@
+/* ── Estética «Lujo» (src/lib/estilos.ts) ─────────────────────────────────────────────────────────────
+ * <html data-style="lujo">: revista financiera. Negro y oro de noche, marfil y oro viejo de día; Playfair
+ * Display (alto contraste) en títulos y cifras grandes, Lato en el texto; sin cajas ni radios: cada panel se
+ * abre con un filete dorado fino, como una sección impresa, y las etiquetas van en versales espaciadas. */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Lato:wght@400;700&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	:root[data-style='lujo'],
+	[data-style='lujo'] {
+		/* ── Noche: negro tinta, marfil y oro ── */
+		--bg: #0b0a08;
+		--panel: #0b0a08;
+		--raise: #18150f;
+		--line: #262017;
+		--fg: #eee7d8;
+		--muted: #aba08c;
+		--faint: #988d7a;
+		--amber: #d6b26e;
+		--amber-dim: #bfa26c;
+		--amber-soft: rgba(214, 178, 110, 0.1);
+		--amber-edge: rgba(214, 178, 110, 0.42);
+		--on-amber: #15100a;
+		--up: #74c294;
+		--down: #e9767f;
+		--neutral: #3b352b;
+		--series-2: #aab6c4;
+		--series-3: #b98d7c;
+		--sq-light: #2a241b;
+		--sq-dark: #17140f;
+		--scrim: rgba(5, 4, 3, 0.78);
+		--lx-rule: rgba(214, 178, 110, 0.55);
+		--lx-rule-soft: rgba(214, 178, 110, 0.18);
+		--lx-glow: rgba(214, 178, 110, 0.06);
+
+		/* ── Letras: serif de alto contraste para títulos y cifras; Lato para leer ── */
+		--lx-serif: 'Playfair Display', 'Bodoni 72', Didot, 'Times New Roman', Georgia, serif;
+		--lx-sans: 'Lato', 'Helvetica Neue', 'Segoe UI', system-ui, sans-serif;
+		--sans: var(--lx-sans);
+		--mono: var(--lx-sans);
+		--font-ui: var(--lx-sans);
+		--title-font: var(--lx-serif);
+		--fs-xxs: 10.5px;
+		--fs-xs: 11.5px;
+		--fs-s: 12.5px;
+		--fs-m: 13.5px;
+		--fs-l: 15px;
+		--fs-xl: 22px;
+		--fs-big: 32px;
+		--fs-xxl: 34px;
+		--fs-title: 18px;
+		/* Lato solo trae 400 y 700: «medio» es la regular, y no una negrita inventada. */
+		--fw-medium: 400;
+		--fw-bold: 700;
+		--lh: 1.5;
+		--lh-text: 1.5;
+		--track-tight: 0.02em;
+		--track-code: 0.12em;
+		--track-caps: 0.16em;
+		--track-label: 0.2em;
+		--track-brand: 0.34em;
+		--title-case: none;
+		--title-track: 0.005em;
+		--title-color: var(--fg);
+
+		/* ── Aire: márgenes de revista ── */
+		--pad-x: var(--sp-4);
+		--row-y: var(--sp-8);
+		--head-y: var(--sp-10);
+		--gutter: var(--sp-24);
+		--gutter-touch: var(--sp-16);
+		--cmd-h: 40px;
+
+		/* ── Forma: sin cajas ni radios; un filete dorado arriba de cada panel ── */
+		--border: var(--hair) solid var(--line);
+		--radius: 0;
+		--radius-s: 0;
+		--shadow: inset 0 var(--hair) 0 var(--lx-rule);
+		--shadow-pop: inset 0 var(--hair) 0 var(--lx-rule), 0 24px 64px rgba(0, 0, 0, 0.55);
+		--panel-edge: 0;
+		--grid-gap: var(--sp-24);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-24);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-24);
+		--stack-edge: 0;
+		--fit-panel-min: 300px;
+		--bg-image: radial-gradient(900px 420px at 50% -160px, var(--lx-glow), transparent 70%);
+		--dur-ui: 220ms;
+		--dur-fast: 200ms;
+		--ease: cubic-bezier(0.22, 1, 0.36, 1);
+	}
+	:root[data-theme='light'][data-style='lujo'],
+	:root[data-theme='light'] [data-style='lujo'] {
+		/* ── Día: papel salmón de diario financiero, tinta negra y oro viejo ── */
+		--bg: #fbeee2;
+		--panel: #fbeee2;
+		--raise: #f4e0cf;
+		--line: #e6cdb8;
+		--fg: #17140f;
+		--muted: #5c5345;
+		--faint: #62594a;
+		--amber: #7f6120;
+		--amber-dim: #6f5a30;
+		--amber-soft: rgba(127, 97, 32, 0.09);
+		--amber-edge: rgba(127, 97, 32, 0.42);
+		--on-amber: #ffffff;
+		--up: #1d6a43;
+		--down: #a52d3a;
+		--neutral: #cdc2ab;
+		--series-2: #44556b;
+		--series-3: #8c5346;
+		--sq-light: #f3ecdd;
+		--sq-dark: #d9cdb2;
+		--scrim: rgba(23, 20, 15, 0.4);
+		--lx-rule: rgba(127, 97, 32, 0.6);
+		--lx-rule-soft: rgba(127, 97, 32, 0.2);
+		--lx-glow: rgba(127, 97, 32, 0.05);
+	}
+
+	/* ── Lo que un token no alcanza ───────────────────────────────────────────────────────────── */
+
+	[data-style='lujo'] ::selection {
+		background: var(--amber-soft);
+	}
+	[data-style='lujo'] input {
+		caret-color: var(--amber);
+	}
+
+	/* Logotipo en serif, en versales muy espaciadas. */
+	[data-style='lujo'] .brand {
+		font-family: var(--lx-serif);
+		--fw-bold: 500;
+	}
+	@media (max-width: 720px) {
+		[data-style='lujo'] .brand {
+			--track-brand: 0.2em;
+		}
+	}
+
+	/* Cabecera de vista: titular en Playfair, el código en versales doradas y un filete doble debajo. */
+	[data-style='lujo'] .vh {
+		border-bottom: 3px double var(--lx-rule);
+		margin-bottom: var(--sp-20);
+	}
+	[data-style='lujo'] .vh h1 {
+		--sans: var(--lx-serif);
+		--fw-medium: 500;
+		--fs-xl: 34px;
+		letter-spacing: -0.005em;
+		line-height: 1.1;
+	}
+	[data-style='lujo'] .vh .code {
+		--fs-l: 11px;
+		--fw-bold: 700;
+		--track-code: 0.26em;
+		align-self: center;
+	}
+	[data-style='lujo'] .vh p {
+		--track-code: 0.12em;
+		letter-spacing: 0.02em;
+	}
+	[data-style='lujo'] .vh .sum {
+		font-family: var(--lx-serif);
+		--fs-s: 16px;
+		--lh-snug: 1.45;
+		max-width: 72ch;
+		letter-spacing: 0;
+	}
+	@media (max-width: 720px) {
+		[data-style='lujo'] .vh h1 {
+			--fs-xl: 27px;
+		}
+	}
+
+	/* Paneles: sin caja; la cabecera, sobre el filete dorado, con el título en serif y un filete fino debajo. */
+	[data-style='lujo'] .ph {
+		--border: var(--hair) solid var(--lx-rule-soft);
+	}
+	[data-style='lujo'] .ph h2 {
+		--fw-bold: 600;
+		line-height: 1.25;
+	}
+	[data-style='lujo'] .ph .fold {
+		font-family: var(--lx-sans);
+		font-size: 0.6em;
+		vertical-align: 0.2em;
+		color: var(--amber-dim);
+	}
+	[data-style='lujo'] .ph-r {
+		--track-code: 0.16em;
+	}
+	/* Ampliado, el panel sí necesita su margen interior. */
+	[data-style='lujo'] .panel.max {
+		--pad-x: var(--sp-20);
+		--border: var(--hair) solid var(--lx-rule-soft);
+	}
+
+	/* Tablas y listas: cabeceras en versales doradas, filas separadas por un filete muy tenue. */
+	[data-style='lujo'] .t th {
+		--faint: var(--amber-dim);
+		--fs-xs: 10.5px;
+	}
+	[data-style='lujo'] .t th:first-child,
+	[data-style='lujo'] .t td:first-child,
+	[data-style='lujo'] .t th:last-child,
+	[data-style='lujo'] .t td:last-child {
+		--sp-10: var(--sp-4);
+	}
+	[data-style='lujo'] .t {
+		--sp-5: var(--sp-7);
+	}
+
+	/* Cifras grandes en Playfair, con la etiqueta en versales doradas; filetes dorados entre ellas. */
+	[data-style='lujo'] .tiles {
+		--line: var(--lx-rule-soft);
+		--border: var(--hair) solid var(--lx-rule-soft);
+	}
+	[data-style='lujo'] .tile {
+		--sp-12: var(--sp-16);
+	}
+	[data-style='lujo'] .tile .lbl {
+		--muted: var(--amber-dim);
+		--track-code: 0.14em;
+	}
+	[data-style='lujo'] .tile b {
+		font-family: var(--lx-serif);
+		--fs-xl: 30px;
+		--fw-medium: 500;
+		line-height: 1.1;
+	}
+
+	/* Barra de comandos: sin caja, una sola línea dorada debajo, como un campo de formulario impreso. */
+	[data-style='lujo'] .cmd {
+		--border: 0 solid transparent;
+		box-shadow: inset 0 calc(-1 * var(--hair)) 0 var(--lx-rule);
+		transition: box-shadow var(--dur-ui) var(--ease);
+	}
+	[data-style='lujo'] .cmd:focus-within {
+		z-index: calc(var(--z-bar) + 1); /* sus sugerencias, sobre el índice de paneles del móvil */
+		box-shadow: inset 0 calc(-2 * var(--hair)) 0 var(--amber);
+	}
+	[data-style='lujo'] .cmd .prompt {
+		--sp-10: var(--sp-4);
+		font-family: var(--lx-serif);
+	}
+	[data-style='lujo'] .cmd input {
+		--track-tight: 0.14em;
+	}
+	[data-style='lujo'] .cmd .go {
+		--track-caps: 0.24em;
+		--sp-14: var(--sp-20);
+	}
+	[data-style='lujo'] .cmd.sheet {
+		box-shadow: inset 0 var(--hair) 0 var(--lx-rule);
+	}
+	[data-style='lujo'] .suggest {
+		--line: var(--lx-rule-soft);
+		--raise: var(--bg);
+		--pad-x: var(--sp-12);
+		box-shadow: var(--shadow-pop);
+	}
+
+	/* Teclas de sección, segmentados y botones: filetes dorados finos, en versales espaciadas. */
+	[data-style='lujo'] .key {
+		--border: var(--hair) solid var(--lx-rule-soft);
+		--track-code: 0.16em;
+		text-transform: uppercase;
+	}
+	[data-style='lujo'] .key span {
+		text-transform: none;
+	}
+	[data-style='lujo'] .seg,
+	[data-style='lujo'] select,
+	[data-style='lujo'] .theme {
+		--border: var(--hair) solid var(--lx-rule-soft);
+	}
+	[data-style='lujo'] .seg button {
+		letter-spacing: 0.06em;
+	}
+	[data-style='lujo'] .tape {
+		--border: 0 solid transparent;
+		box-shadow: inset 0 var(--hair) 0 var(--lx-rule-soft), inset 0 calc(-1 * var(--hair)) 0 var(--lx-rule-soft);
+	}
+	[data-style='lujo'] .status {
+		--border: var(--hair) solid var(--lx-rule-soft);
+		letter-spacing: 0.04em;
+	}
+	@media (max-width: 720px) {
+		[data-style='lujo'] .thumb {
+			--border: var(--hair) solid var(--lx-rule);
+			--track-code: 0.16em;
+		}
+	}
+
+	/* Enlaces y filas: el oro aparece despacio al pasar el ratón. */
+	@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+		[data-style='lujo'] .key,
+		[data-style='lujo'] .mini a,
+		[data-style='lujo'] .t a.name,
+		[data-style='lujo'] .jump {
+			transition: color var(--dur-ui) var(--ease), border-color var(--dur-ui) var(--ease), background-color var(--dur-ui) var(--ease);
+		}
+	}
+}
+
+/* ══ Estructura de revista financiera (fuera de la capa: gana al CSS de los componentes) ═══════════════════
+ * Cabecera centrada: la línea de servicio arriba (relojes, sitio, botones), la marca en Playfair enorme entre
+ * filetes dobles dorados y la barra debajo; las secciones, como menú centrado en versales. Cada vista abre como
+ * una portada (código, titular grande y entradilla en cursiva, centrados), las cifras grandes forman la franja
+ * de «cotizaciones del día» y las columnas se separan con filetes finos, como un diario. */
+
+/* ── Cabecera ── */
+[data-style='lujo'][data-style] [data-ui='top'] {
+	justify-content: center;
+	text-align: center;
+	row-gap: var(--sp-8);
+}
+[data-style='lujo'][data-style] [data-ui='brand'] {
+	flex: 1 0 100%;
+	justify-content: center;
+	gap: var(--sp-16);
+	padding-block: var(--sp-12) var(--sp-14);
+	border-block: var(--sp-3) double var(--lx-rule);
+	font-family: var(--lx-serif);
+	font-weight: 500;
+	text-transform: none;
+	letter-spacing: 0.01em;
+	line-height: 1;
+}
+[data-style='lujo'][data-style] [data-ui='brand'] .brand-sub {
+	font-style: italic;
+	font-weight: 400;
+	color: var(--amber);
+}
+
+@media (min-width: 721px) {
+	/* La línea de servicio (todo menos la marca y la barra) va arriba, centrada y discreta. */
+	[data-style='lujo'][data-style] [data-ui='top'] > * {
+		order: -1;
+	}
+	[data-style='lujo'][data-style] [data-ui='brand'] {
+		order: 1;
+		--logo: 0.7em;
+		margin-top: var(--sp-6);
+		font-size: clamp(44px, 6vw, 88px);
+	}
+	[data-style='lujo'][data-style] [data-ui='cmd'] {
+		order: 2;
+		flex: 0 1 640px;
+		margin-block: var(--sp-6) var(--sp-10);
+	}
+
+	/* ── Secciones: menú centrado en versales, separado por filetes dorados ── */
+	[data-style='lujo'][data-style] [data-ui='keys'] {
+		justify-content: center;
+		gap: 0;
+		padding-block: var(--sp-8);
+		margin-bottom: var(--sp-16);
+		border-bottom: var(--hair) solid var(--lx-rule);
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key {
+		display: inline-flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--sp-2);
+		padding: var(--sp-4) var(--sp-16);
+		border: 0;
+		border-left: var(--hair) solid var(--lx-rule-soft);
+		background: none;
+		color: var(--fg);
+		font-size: var(--fs-xs);
+		font-weight: 700;
+		letter-spacing: 0.2em;
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key:first-child {
+		border-left: 0;
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key span {
+		margin-left: 0;
+		font-family: var(--lx-serif);
+		font-style: italic;
+		font-size: var(--fs-s);
+		font-weight: 400;
+		letter-spacing: 0.01em;
+		color: var(--muted);
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key:hover,
+	[data-style='lujo'][data-style] [data-ui='keys'] .key[aria-current='page'] {
+		color: var(--amber);
+		background: none;
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key[aria-current='page'] span {
+		color: var(--amber);
+		text-decoration: underline var(--hair);
+		text-underline-offset: var(--sp-4);
+	}
+}
+
+/* ── Cabecera de vista: una portada, centrada ── */
+[data-style='lujo'][data-style] [data-ui='view-head'] {
+	justify-content: center;
+	text-align: center;
+	padding-block: var(--sp-16) var(--sp-20);
+}
+[data-style='lujo'][data-style] [data-ui='view-head'] > div:first-child {
+	flex: 1 1 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+[data-style='lujo'][data-style] [data-ui='view-head'] h1 {
+	flex-direction: column;
+	align-items: center;
+	gap: var(--sp-10);
+	--fs-xl: clamp(34px, 5vw, 64px);
+	line-height: 1.05;
+}
+[data-style='lujo'][data-style] [data-ui='view-head'] h1 .code {
+	padding-inline: var(--sp-12);
+	border-inline: var(--hair) solid var(--lx-rule);
+}
+/* Entradilla: las fuentes y el resumen, en cursiva. */
+[data-style='lujo'][data-style] [data-ui='view-head'] > div:first-child > p {
+	max-width: 64ch;
+	margin-top: var(--sp-10);
+	font-family: var(--lx-serif);
+	font-style: italic;
+	font-size: var(--fs-l);
+	letter-spacing: 0;
+}
+[data-style='lujo'][data-style] [data-ui='view-head'] > div:first-child > p.sum {
+	font-size: var(--fs-xl);
+	line-height: 1.35;
+	color: var(--fg);
+}
+/* Modo Sencillo: las frases con los datos, en una columna de lectura. */
+[data-style='lujo'][data-style] [data-ui='view-head'] > div:first-child > ul {
+	margin-top: var(--sp-16);
+	padding-top: var(--sp-12);
+	border-top: var(--hair) solid var(--lx-rule-soft);
+	text-align: left;
+}
+
+/* ── Cifras grandes: la franja de «cotizaciones del día» entre filetes dobles ── */
+[data-style='lujo'][data-style] [data-ui='tiles'] {
+	gap: 0;
+	background: var(--raise);
+	border-block: var(--sp-3) double var(--lx-rule);
+	margin-bottom: var(--grid-join);
+	padding-inline: var(--sp-8);
+}
+[data-style='lujo'][data-style] [data-ui='tiles']::before {
+	content: 'Las cifras del día' / '';
+	grid-column: 1 / -1;
+	padding-top: var(--sp-10);
+	text-align: center;
+	font-size: var(--fs-xxs);
+	font-weight: 700;
+	letter-spacing: 0.24em;
+	text-transform: uppercase;
+	color: var(--amber);
+}
+[data-style='lujo'][data-style] [data-ui='tiles'] > * {
+	background: transparent;
+	align-items: center;
+	text-align: center;
+	border-left: var(--hair) solid var(--lx-rule-soft);
+}
+[data-style='lujo'][data-style] [data-ui='tiles'] > :first-child {
+	border-left: 0;
+}
+/* En el móvil, como una tabla de cotizaciones: etiqueta a la izquierda y cifra a la derecha. */
+@media (max-width: 720px) {
+	[data-style='lujo'][data-style] [data-ui='tiles'] {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	[data-style='lujo'][data-style] [data-ui='tiles'] > * {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: baseline;
+		column-gap: var(--sp-12);
+		padding: var(--sp-10) var(--sp-4);
+		text-align: left;
+		border-left: 0;
+		border-top: var(--hair) solid var(--lx-rule-soft);
+	}
+	[data-style='lujo'][data-style] [data-ui='tiles'] > :first-child {
+		border-top: 0;
+	}
+	[data-style='lujo'][data-style] [data-ui='tiles'] > * > :nth-child(n + 3) {
+		grid-column: 1 / -1;
+	}
+	[data-style='lujo'][data-style] [data-ui='tiles'] > * > b {
+		text-align: right;
+	}
+}
+
+/* ── Columnas de diario: filetes finos dorados entre columnas y subcolumnas ── */
+@media (min-width: 1100px) {
+	[data-style='lujo'][data-style] [data-ui='main'] > .grid > .col + .col {
+		position: relative;
+	}
+	[data-style='lujo'][data-style] [data-ui='main'] > .grid > .col + .col::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: calc(var(--grid-gap) / -2);
+		width: var(--hair);
+		background: var(--lx-rule-soft);
+	}
+	[data-style='lujo'][data-style] [data-ui='main'] > .grid > .col {
+		column-gap: var(--grid-gap);
+		column-rule: var(--hair) solid var(--lx-rule-soft);
+	}
+}
+/* La cabecera del panel: los datos en cursiva, como el antetítulo de una sección. */
+[data-style='lujo'][data-style] [data-ui='panel-head'] .ph-r > span:first-child {
+	font-family: var(--lx-serif);
+	font-style: italic;
+	font-size: var(--fs-s);
+	letter-spacing: 0.01em;
+}
+
+/* ── Pie: colofón centrado bajo un filete doble ── */
+[data-style='lujo'][data-style] [data-ui='foot'] {
+	justify-content: center;
+	text-align: center;
+	border-top: var(--sp-3) double var(--lx-rule);
+	margin-top: var(--sp-24);
+}
+
+/* ── Móvil: la marca centrada entre filetes dobles en su propia línea; debajo, sitio, tema y relojes ── */
+@media (max-width: 720px) {
+	[data-style='lujo'][data-style] [data-ui='brand'] {
+		order: -3;
+		--logo: 0.8em;
+		font-size: var(--fs-xxl);
+	}
+	[data-style='lujo'][data-style] [data-ui='top'] > :not([data-ui='brand'], [data-ui='cmd']) {
+		margin-block: 0;
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] {
+		gap: 0;
+		padding-block: var(--sp-4);
+		border-bottom: var(--hair) solid var(--lx-rule);
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key {
+		border: 0;
+		border-left: var(--hair) solid var(--lx-rule-soft);
+		background: none;
+		color: var(--fg);
+		letter-spacing: 0.18em;
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key:first-child {
+		border-left: 0;
+	}
+	[data-style='lujo'][data-style] [data-ui='keys'] .key[aria-current='page'] {
+		color: var(--amber);
+		background: none;
+	}
+	[data-style='lujo'][data-style] [data-ui='panel-index'] span {
+		border: 0;
+		font-family: var(--lx-serif);
+		font-style: italic;
+		text-transform: none;
+		letter-spacing: 0.01em;
+	}
+	[data-style='lujo'][data-style] [data-ui='panel-index'] button + button span {
+		border-left: var(--hair) solid var(--lx-rule-soft);
+	}
+}

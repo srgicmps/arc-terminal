@@ -89,7 +89,7 @@
 
 <svelte:window onclick={onWindowClick} onscroll={() => (open = false)} />
 
-<div class="place" bind:this={root}>
+<div class="place" data-ui="place" bind:this={root}>
 	<button
 		class="chip"
 		bind:this={chip}
@@ -176,6 +176,7 @@
 		padding-inline: var(--sp-8);
 		background: none;
 		border: var(--border);
+		border-radius: var(--radius-s);
 		color: var(--muted);
 		font-size: var(--fs-s);
 		cursor: pointer;

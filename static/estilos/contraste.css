@@ -1,0 +1,188 @@
+/* ── Estética «Alto contraste» (src/lib/estilos.ts) ───────────────────────────────────────────────────
+ * <html data-style="contraste">: para leer sin esfuerzo (vista cansada, personas mayores). Contraste AAA (7:1 o
+ * más) en todo el texto, Atkinson Hyperlegible para todo, letra grande y con aire, controles de 40 px también
+ * con ratón, bordes claros de 2 px, foco grueso y sin transparencias, sombras ni movimiento. Noche: negro puro,
+ * blanco y amarillo. Día: blanco puro, negro y azul oscuro. Las subidas y bajadas llevan ▲/▼ además del color.
+ * Manda sobre el acento elegido en «A tu gusto» (los otros no llegan a AAA). */
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	:root[data-style='contraste'],
+	[data-style='contraste'] {
+		/* Colores de noche: negro puro, blanco y amarillo. Todo opaco. */
+		--bg: #000000;
+		--panel: #0c0c0c;
+		--raise: #1f1f1f;
+		--line: #8f8f8f;
+		--fg: #ffffff;
+		--muted: #d6d6d6;
+		--faint: #bdbdbd;
+		--amber: #ffd400;
+		--amber-dim: #ffe066;
+		--amber-soft: #332b00;
+		--amber-edge: #ffd400;
+		--on-amber: #000000;
+		--up: #3ddc84;
+		--down: #ff8080;
+		--neutral: #6e6e6e;
+		--series-2: #7cc4ff;
+		--series-3: #f0a6ff;
+		--scrim: #000000;
+		--sq-light: #3a3a3a;
+		--sq-dark: #1a1a1a;
+
+		/* Letra: Atkinson Hyperlegible para todo, más grande (unos 4 px), más gruesa y con más interlineado. */
+		--sans: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		--mono: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		--font-ui: var(--sans);
+		--fs-xxs: 14px;
+		--fs-xs: 15px;
+		--fs-s: 16px;
+		--fs-m: 17px;
+		--fs-l: 18.5px;
+		--fs-xl: 24px;
+		--fs-big: 30px;
+		--fs-xxl: 32px;
+		--fw-regular: 400;
+		--fw-medium: 700;
+		--fw-bold: 700;
+		--lh-loose: 1.7;
+		--lh: 1.6;
+		--lh-text: 1.6;
+		--lh-snug: 1.5;
+		--lh-tight: 1.4;
+		--track-tight: 0.01em;
+		--track-code: 0.02em;
+		--track-caps: 0.03em;
+		--track-label: 0.02em;
+		--track-brand: 0.08em;
+		--fs-title: var(--fs-l);
+		--title-case: none;
+		--title-track: 0;
+		--title-font: var(--sans);
+		--title-color: var(--fg);
+
+		/* Más espacio. */
+		--pad-x: var(--sp-16);
+		--row-y: var(--sp-10);
+		--head-y: var(--sp-8);
+		--gutter: var(--sp-16);
+		--gutter-touch: var(--sp-12);
+
+		/* Líneas de 2 px, paneles como recuadros separados, esquinas apenas redondeadas. */
+		--hair: 2px;
+		--border: var(--hair) solid var(--line);
+		--key-edge: 3px;
+		--radius: 4px;
+		--radius-s: 4px;
+		--shadow: none;
+		--shadow-pop: 0 0 0 var(--hair) var(--fg);
+		--panel-edge: var(--border);
+		--panel-blur: none;
+		--grid-gap: var(--sp-12);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-12);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-12);
+		--stack-edge: 0;
+		--bg-image: none;
+
+		/* Controles grandes, también con ratón (en táctil, --touch). */
+		--control-h-desk: 40px;
+		--btn-sm: 40px;
+		--cmd-h: 46px;
+		--touch: 48px;
+		--tabbar-h: 60px;
+		--index-chip: 34px;
+		--dot: 9px;
+		--swatch: 12px;
+		--bar-h: 9px;
+		--bar-h-thin: 6px;
+		--select-max: 240px;
+		--col-min: 380px;
+		--col-min-wide: 460px;
+		--fit-panel-min: 360px;
+
+		/* Sin movimiento. */
+		--dur-ui: 0ms;
+		--dur-fast: 0ms;
+	}
+	:root[data-theme='light'][data-style='contraste'],
+	:root[data-theme='light'] [data-style='contraste'] {
+		/* Colores de día: blanco puro, negro y azul oscuro. */
+		color-scheme: light;
+		--bg: #ffffff;
+		--panel: #ffffff;
+		--raise: #ececec;
+		--line: #4d4d4d;
+		--fg: #000000;
+		--muted: #262626;
+		--faint: #383838;
+		--amber: #003a8c;
+		--amber-dim: #0a3a7a;
+		--amber-soft: #dce8fa;
+		--amber-edge: #003a8c;
+		--on-amber: #ffffff;
+		--up: #005c2b;
+		--down: #a3001b;
+		--neutral: #8a8a8a;
+		--series-2: #8a4b00;
+		--series-3: #6a1b9a;
+		--scrim: #ffffff;
+		--sq-light: #f0f0f0;
+		--sq-dark: #b5b5b5;
+	}
+
+	/* Foco MUY visible: un anillo de 3 px del acento separado por un hueco del color del fondo. app.css (sin capa)
+	   ya pone un outline de --hair; el anillo va con box-shadow para sumarse a él (una capa no puede pisarlo). */
+	[data-style='contraste'] :focus-visible {
+		outline-color: var(--amber);
+		box-shadow:
+			0 0 0 var(--sp-2) var(--bg),
+			0 0 0 var(--sp-5) var(--amber);
+	}
+
+	/* Subidas y bajadas con forma, no solo color: ▲ y ▼ delante (el lector de pantalla ya lee el signo). Con @scope,
+	   para que no salgan en la vista previa de otra estética metida en la página (ni falten en la de esta). Cifra y
+	   flecha no se separan. Fuera <i> y los SVG: barras, puntos y minigráficos ya llevan su forma. */
+	@scope ([data-style='contraste']) to ([data-style]:not([data-style='contraste'])) {
+		:is(span, b, strong, td, li, p, dd, em, small):is(.up, .down)::before {
+			display: inline-block;
+			margin-inline-end: var(--sp-4);
+			font-size: 0.72em;
+			vertical-align: 0.08em;
+		}
+		:is(span, b):is(.up, .down) {
+			white-space: nowrap;
+		}
+		:is(span, b, strong, td, li, p, dd, em, small).up::before {
+			content: '▲';
+			content: '▲' / '';
+		}
+		:is(span, b, strong, td, li, p, dd, em, small).down::before {
+			content: '▼';
+			content: '▼' / '';
+		}
+	}
+
+	/* Enlaces de texto subrayados: se distinguen sin color. */
+	[data-style='contraste'] .panel a:not([class]) {
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+	}
+
+	/* Con la letra grande, el «· cambiar» del chip de tu sitio no deja sitio en la cabecera (en el móvil, la línea
+	   del logo; en escritorio, el botón del tema). El chip sigue diciendo la ciudad y se pulsa igual. */
+	:root[data-style='contraste'] .top .place .caret {
+		display: none;
+	}
+
+	/* Las cifras grandes sueltas (fuera de un panel) llevan su recuadro, como los paneles: si no, con el fondo igual
+	   que el panel, se funden con la página. */
+	[data-style='contraste'] .tiles:not(.panel .tiles) {
+		border: var(--border);
+		border-radius: var(--radius);
+		overflow: hidden;
+	}
+}

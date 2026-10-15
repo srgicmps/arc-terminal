@@ -23,6 +23,8 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import WorldMap from '#lib/components/WorldMap.svelte';
+	import { czibDate, czibSentence } from '#lib/czib.ts';
+	import { navSentence } from '#lib/navwarn.ts';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { LAYERS, type LayerId } from '#lib/geo/layers.ts';
 	import { DIPLOMACY_FEEDS } from '#lib/news.ts';
@@ -178,6 +180,43 @@
 				retraso · <Updated at={data.portwatch?.fetchedAt} source="portwatch" />
 			{/snippet}
 		</Panel>
+		{#if data.czib?.data.items.length}
+			<Panel title="Espacio aéreo en conflicto" meta="{data.czib.data.items.length} boletines CZIB activos · EASA">
+				<p class="plain-czib">{czibSentence(data.czib.data.items)}</p>
+				<Table csv={false}>
+					<tbody>
+						{#each data.czib.data.items as c (c.id)}
+							<tr>
+								<td class="name"><a class="name" href={c.url} target="_blank" rel="noopener">{c.area}</a></td>
+								<td class="mut per">{c.id}</td>
+								<td class="mut">hasta {czibDate(c.validUntil)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
+				{#snippet note()}
+					Avisos de la <a href="https://www.easa.europa.eu/en/domains/air-operations/czibs" target="_blank" rel="noopener">EASA</a> a las aerolíneas: no volar o
+					hacerlo por encima de cierta altura · <Updated at={data.czib?.fetchedAt} source="czib" />
+				{/snippet}
+			</Panel>
+		{/if}
+		{#if data.navwarn?.data.items.length}
+			<Panel title="Avisos a barcos" meta="Seguridad en zonas calientes · NGA">
+				<p class="plain-czib">{navSentence(data.navwarn.data.items)}</p>
+				<ul class="mini">
+					{#each data.navwarn.data.items as w (w.id)}
+						<li>
+							<b>{w.kind}</b> · {w.region}{#if w.place}<span class="mut"> · {w.place}</span>{/if}
+							<span class="mut">· {w.issued ? new Date(w.issued).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : w.id}</span>
+						</li>
+					{/each}
+				</ul>
+				{#snippet note()}
+					Avisos de radio HYDROPAC e HYDROLANT de la <a href="https://msi.nga.mil/NavWarnings" target="_blank" rel="noopener">NGA</a> (EE. UU.), en vigor;
+					solo los de maniobras, minas, misiles, ataques, drones o interferencias GPS · <Updated at={data.navwarn?.fetchedAt} source="navwarn" />
+				{/snippet}
+			</Panel>
+		{/if}
 		<!-- Sin datos (en local, o si Wikidata falla sin copia anterior), el panel no sale. -->
 		{#if data.elections?.data.items.length}
 			<Panel title="Próximas elecciones" meta="90 días · G20 y UE en ámbar">
@@ -250,6 +289,16 @@
 </div>
 
 <style>
+	.plain-czib {
+		display: none;
+		margin: 0;
+		padding: var(--sp-6) var(--pad-x);
+	}
+
+	:global([data-modo='sencillo']) .plain-czib {
+		display: block;
+	}
+
 	.layers {
 		padding: var(--sp-8) var(--pad-x) 0;
 	}
