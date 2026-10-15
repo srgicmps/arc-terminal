@@ -63,8 +63,17 @@ try {
 				missing: [...document.querySelectorAll('.empty')]
 					.map((e) => e.textContent?.trim() ?? '')
 					.filter((t) => /todav[ií]a/i.test(t)),
-				// Restos de un fallo técnico que no deben llegar nunca a la vista.
-				glitches: [...new Set(document.body.innerText.match(/\b(?:NaN|undefined|Infinity)\b|\[object Object\]/g) ?? [])]
+				// Restos de un fallo técnico que no deben llegar nunca a la vista. Se salta el texto de los enlaces
+				// externos (titulares, títulos de PR): es de otros y puede decir «undefined» a propósito.
+				glitches: (() => {
+					const found = new Set<string>();
+					const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+					for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+						if (n.parentElement?.closest('a[target="_blank"], script, style, noscript, template')) continue;
+						for (const m of n.textContent?.match(/\b(?:NaN|undefined|Infinity)\b|\[object Object\]/g) ?? []) found.add(m);
+					}
+					return [...found];
+				})()
 			}));
 			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px`);
 			if (!NO_PANELS.has(path) && !check.panels) failures.push(`${where}: sin paneles`);
