@@ -143,6 +143,8 @@ export async function handleAdmin(
 	const who = await person(request, env, fetcher);
 	if (who instanceof Response) return who;
 	if (!isAdmin(who.email, env)) return json(403, { error: 'solo el administrador' });
+	// ?yo=1: solo «¿soy el admin?» (Arc OS enseña o no «Administración» sin pedir la lista entera).
+	if (request.method === 'GET' && new URL(request.url).searchParams.has('yo')) return json(200, { admin: true });
 	const access = new AccessPolicies(env, fetcher);
 
 	if (request.method === 'GET') {
