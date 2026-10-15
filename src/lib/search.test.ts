@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { canonical, resolveInput, suggest, targetPath, type Option } from './cmdline.ts';
-import { hasWords, leaderEntries, prepare, queryWords, searchIndex, searchOptions, symbolOf } from './search.ts';
+import { NEWS_SECTIONS } from './news.ts';
+import {
+	dropSectionFilter,
+	hasWords,
+	leaderEntries,
+	parseNewsQuery,
+	prepare,
+	queryWords,
+	searchIndex,
+	searchOptions,
+	symbolOf,
+	withinHours
+} from './search.ts';
 import type { SearchEntry } from './types.ts';
 
 const entry = (t: string, s: SearchEntry['s'] = 'NEWS', u = `https://a.example/${encodeURIComponent(t)}`): SearchEntry => ({ t, u, s });
@@ -52,8 +64,8 @@ describe('searchOptions', () => {
 		{ code: 'NEWS', desc: 'Buscar en los titulares', kind: 'Función' },
 		{ code: 'NVDA', desc: 'NVIDIA', kind: 'Valor' }
 	];
-	// Los resultados del índice, sin la última fila («Buscar en el archivo»), que tiene su propio test.
-	const found = (...args: Parameters<typeof searchOptions>) => searchOptions(...args).filter((o) => o.kind !== 'Archivo');
+	// Los resultados del índice, sin la fila «Buscar en NEWS», que tiene su propio test.
+	const found = (...args: Parameters<typeof searchOptions>) => searchOptions(...args).filter((o) => o.kind !== 'Buscar');
 	const opts = (raw: string) => found(raw, suggest(raw, ALL), index);
 
 	it('convierte titulares y BOE en enlaces externos con su etiqueta', () => {
@@ -92,15 +104,21 @@ describe('searchOptions', () => {
 		expect(found('aranceles', [], null)).toEqual([]);
 	});
 
-	it('acaba con «Buscar en el archivo», también sin índice, si no es un comando y hay 3 letras', () => {
-		const archive = { code: 'NEWS', desc: 'Buscar «aranceles» en el archivo de 3 meses', kind: 'Archivo', run: 'NEWS aranceles' };
-		expect(searchOptions('aranceles', [], index).at(-1)).toEqual(archive);
-		expect(searchOptions(' aranceles ', [], null)).toEqual([archive]);
+	it('ofrece «Buscar en NEWS», también sin índice, si no es un comando y hay 3 letras', () => {
+		const news = { code: 'NEWS', desc: 'Buscar «aranceles» en los titulares y el archivo', kind: 'Buscar', run: 'NEWS aranceles' };
+		// Texto suelto sin sugerencias: la primera fila, para que Intro abra NEWS con esa búsqueda.
+		expect(searchOptions('aranceles', [], index)[0]).toEqual(news);
+		expect(searchOptions(' aranceles ', [], null)).toEqual([news]);
+		expect(searchOptions('aranceles china', [], null)[0].run).toBe('NEWS aranceles china');
+		// Con sugerencias de comandos delante, al final.
+		expect(searchOptions('aranceles', [{ code: 'X', desc: '', kind: 'Función' }], index).at(-1)).toEqual(news);
 		expect(searchOptions('UE', [], index)).toEqual([]);
 		expect(searchOptions('ECO', [], index)).toEqual([]);
 		expect(searchOptions('NEWS aranceles', [], index)).toEqual([]);
 		// Un código corto que no está en el índice: primero su ficha, para que Intro haga lo de siempre.
-		expect(searchOptions('AMZN', [], null).map((o) => o.kind)).toEqual(['Valor', 'Archivo']);
+		expect(searchOptions('AMZN', [], null).map((o) => o.kind)).toEqual(['Valor', 'Buscar']);
+		// Un valor del índice («berkshire»): también su ficha primero.
+		expect(searchOptions('berkshire', [], index)[0].kind).toBe('Valor');
 	});
 
 	it('symbolOf lee el valor de un enlace interno', () => {
@@ -126,5 +144,32 @@ describe('queryWords y hasWords', () => {
 		expect(hasWords('Ayudas a la vivienda en Menorca', queryWords('menorca vivienda'))).toBe(true);
 		expect(hasWords('Ayudas a la vivienda', queryWords('vivienda menorca'))).toBe(false);
 		expect(hasWords('Cualquier cosa', [])).toBe(true);
+	});
+});
+
+describe('filtros de NEWS', () => {
+	const parse = (q: string) => parseNewsQuery(q, NEWS_SECTIONS);
+
+	it('separa sección y antigüedad del texto', () => {
+		expect(parse('inflación /eco /7d')).toEqual({ text: 'inflación', section: 'eco', hours: 168 });
+		expect(parse('/24h Lagarde')).toEqual({ text: 'Lagarde', section: null, hours: 24 });
+		expect(parse('chips /2s /tecnología')).toEqual({ text: 'chips', section: 'tech', hours: 336 });
+		expect(parse('/3m /merc')).toEqual({ text: '', section: 'ws', hours: 2160 });
+	});
+
+	it('un «/algo» que no es filtro se queda en el texto', () => {
+		expect(parse('24/7 /xyz /0d')).toEqual({ text: '24/7 /xyz /0d', section: null, hours: null });
+	});
+
+	it('withinHours filtra por fecha; sin filtro todo vale', () => {
+		const now = Date.parse('2026-10-15T12:00:00Z');
+		expect(withinHours('2026-10-15T01:00Z', 24, now)).toBe(true);
+		expect(withinHours('2026-10-13T01:00Z', 24, now)).toBe(false);
+		expect(withinHours(undefined, 24, now)).toBe(false);
+		expect(withinHours(undefined, null, now)).toBe(true);
+	});
+
+	it('dropSectionFilter quita solo la sección', () => {
+		expect(dropSectionFilter('inflación /eco /7d', NEWS_SECTIONS)).toBe('inflación /7d');
 	});
 });

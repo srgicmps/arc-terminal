@@ -8,6 +8,8 @@ import { minus, topImportant } from '#lib/imp.ts';
 import type { AlertsData } from '#lib/weather.ts';
 import { madridDate } from '#lib/meetings.ts';
 import { computeRisk } from '#lib/risk.ts';
+import { riskLights } from '#lib/risk-lights.ts';
+import type { UncertaintyData } from '#lib/uncertainty.ts';
 import { seriesMap } from '#lib/series.ts';
 import { dailySeries, weekSummary } from '#lib/week.ts';
 import { pickSeries, trim } from '#lib/trim.ts';
@@ -24,6 +26,7 @@ import type {
 	Quake,
 	ReleaseCalData,
 	SeriesData,
+	VixData,
 	WeatherData
 } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
@@ -35,7 +38,7 @@ const TAIL = 40;
 export const load: PageServerLoad = async () => {
 	const today = madridDate(Date.now());
 	const tomorrow = minus(today, -1);
-	const [news, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn, predictions, imp, finnhub, holidays, fred, lichess, alerts, releases, fuelEs] = await Promise.all([
+	const [news, ecb, eurostat, bls, crypto, power, weather, fuel, boe, quakes, hn, predictions, imp, finnhub, holidays, fred, lichess, alerts, releases, fuelEs, vix, uncertainty] = await Promise.all([
 		Promise.all(SECTIONS.map((s) => dataset<NewsData>(`news-${s}`))),
 		dataset<SeriesData>('ecb'),
 		dataset<SeriesData>('eurostat'),
@@ -55,7 +58,9 @@ export const load: PageServerLoad = async () => {
 		dataset<Puzzle>('lichess'),
 		dataset<AlertsData>('alerts'),
 		dataset<ReleaseCalData>('releases-cal'),
-		dataset<FuelSpainData>('fuel-es')
+		dataset<FuelSpainData>('fuel-es'),
+		dataset<VixData>('vix'),
+		dataset<UncertaintyData>('uncertainty')
 	]);
 
 	// Titulares de portada: los 3 más recientes de cada sección, mezclados por hora (sin el resumen, que no se pinta).
@@ -118,6 +123,8 @@ export const load: PageServerLoad = async () => {
 		// Solo en la portada modular: el termómetro de riesgo de WS (ya calculado, con la historia entera) y
 		// el problema de ajedrez del día (unos cientos de bytes).
 		risk: computeRisk({ fred: fred?.data, ecb: ecb?.data, crypto: crypto?.data, predictions: predictions?.data }),
+		// Semáforo de riesgo (umbrales fijos, src/lib/risk-lights.ts): solo llegan las luces ya calculadas.
+		lights: riskLights({ get: seriesMap(ecb, fred, uncertainty), vix: vix?.data }),
 		puzzle: lichess?.data ?? null,
 		// «Tu semana en 2 minutos» (los lunes, y en la portada modular): los 3 temas de la semana en IMP y 3
 		// mercados con su variación en 7 días. Lo completo está en SEMANA.
