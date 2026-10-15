@@ -30,6 +30,7 @@ Dueño: OS 3 (hasta #494), ahora **OS 3 2**. La lista general de Arc OS está en
   de archivos de OS 2.
 - [ ] Spotlight con `searchAll()` de OS 5 (`src/lib/os/system/search.ts`) cuando esté en main.
 - [ ] Pantalla de bloqueo/arranque de OS 5 en el móvil (le pedí aspecto de teléfono, por encima de `--z-modal`+4).
-- [ ] Apps de OS 4 (Calculadora, Reloj, Notas, Monitor, Calendario, Ajustes, Archivos) a pantalla completa: comprobar a 390 px.
+- [x] Apps de OS 4 a pantalla completa a 390 px: Calculadora, Reloj, Monitor, Ajustes, Visor y Vigilancia, bien;
+  Notas (el `@container` se consultaba a sí mismo) y Calendario (fila de «Evento nuevo») arreglados.
 - [ ] Más insignias (AVISOS, CAL de hoy…) y widgets editables.
 - [ ] Probar en un iPhone de verdad (safe-area, PWA instalada, gestos frente al «atrás» del navegador).
