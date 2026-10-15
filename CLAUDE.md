@@ -135,6 +135,9 @@ Un cambio de estética se hace en un solo sitio.
 - **Modo Sencillo** (`src/lib/modo.ts`, `<html data-modo>`, clave `arc-modo`): bloque `[data-modo='sencillo']` de
   `tokens.css` (letra, aire, títulos de panel), paneles esenciales por vista y títulos claros en `src/lib/simple.ts`.
   `Panel` oculta solo lo que no es esencial y `ViewHeader` ofrece «Ver todos». Una vista nueva sin lista se ve entera.
+  Explicaciones (qué es, por qué importa, cómo leerlo) en `src/lib/explain.ts`, sobre el glosario: el ⓘ de `Term` y
+  del título de cada panel. Frases con los datos clave en `src/lib/plain.ts` (plantillas, sin IA), con la prop `plain`
+  de `ViewHeader`.
 - **Cambiar la estética**, por ejemplo el acento: `--amber` en `tokens.css` (y su versión de día, abajo en el
   mismo archivo). Para una web más densa o más aireada: `--pad-x` y `--row-y`, o la escala `--sp-*`.
   Sergi también puede elegir cian o azul en HELP, «A tu gusto» (`src/lib/taste.svelte.ts`): son bloques
