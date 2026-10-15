@@ -18,7 +18,8 @@ export interface IcsEvent {
 	url?: string;
 }
 
-const DOMAIN = 'arc-terminal';
+/** Sufijo de los UID: el dominio de la web. */
+const DOMAIN = 'srgicmps.github.io';
 const MADRID = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' });
 
 /** «14:15 (hora de Madrid)». */

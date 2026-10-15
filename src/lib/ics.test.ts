@@ -16,7 +16,7 @@ describe('agenda .ics', () => {
 		expect(e.description).toContain('14:15 (hora de Madrid)');
 		const ics = calendar([e], '2026-10-15T08:00:00Z');
 		expect(ics).toContain('DTSTART:20261029T131500Z');
-		expect(ics).toContain('UID:cb-ecb-2026-10-29@arc-terminal');
+		expect(ics).toContain('UID:cb-ecb-2026-10-29@srgicmps.github.io');
 		expect(ics.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true);
 		expect(ics.endsWith('END:VCALENDAR\r\n')).toBe(true);
 	});
