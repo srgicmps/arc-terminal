@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 	import { asset } from '$app/paths';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import Seg from '../../../components/ui/Seg.svelte';
 	import { initWatchlist, watchlist } from '../../../watchlist.svelte.ts';
 	import { openApp } from '../../os.svelte.ts';
@@ -17,10 +17,14 @@
 
 	let { win }: AppProps = $props();
 
-	const today = new Date();
-	let year = $state(today.getFullYear());
-	let month = $state(today.getMonth());
-	let picked = $state(isoDay(today));
+	// La hora se renueva cada minuto: pasada la medianoche cambia «hoy» y las alarmas de una vez pasan a mañana.
+	const opened = new Date();
+	let now = $state(opened);
+	const today = $derived(isoDay(now));
+	let year = $state(opened.getFullYear());
+	let month = $state(opened.getMonth());
+	let picked = $state(isoDay(opened));
+	let days: HTMLDivElement;
 	let feed = $state<CalFeed | null>(null);
 	let events = $state<MyEvent[]>([]);
 	let scope = $state<'mis' | 'all'>('mis');
@@ -39,12 +43,18 @@
 			if (e.key === EVENTS_KEY) events = readJson(EVENTS_KEY, [], isEvents);
 		};
 		addEventListener('storage', onStorage);
-		return () => removeEventListener('storage', onStorage);
+		const tickTimer = setInterval(() => (now = new Date()), 60_000);
+		return () => {
+			removeEventListener('storage', onStorage);
+			clearInterval(tickTimer);
+		};
 	});
 
 	const mine = $derived(scope === 'mis' && watchlist.codes.length ? new Set(watchlist.codes.map(bareSymbol)) : scope === 'mis' ? new Set<string>() : null);
 	const grid = $derived(monthGrid(year, month));
-	const items = (day: string) => dayItems(day, feed, events, alarms.list, mine);
+	/** El día al que se llega con Tab: el elegido si está en la rejilla; si no, el 1 del mes. */
+	const tabDay = $derived(grid.some((d) => isoDay(d) === picked) ? picked : isoDay(new Date(year, month, 1)));
+	const items = (day: string) => dayItems(day, feed, events, alarms.list, mine, now);
 	const list = $derived(items(picked));
 	const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 	const monthName = $derived(cap(new Date(year, month, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })));
@@ -56,9 +66,10 @@
 		month = d.getMonth();
 	}
 	function goToday() {
-		year = today.getFullYear();
-		month = today.getMonth();
-		picked = isoDay(today);
+		now = new Date();
+		year = now.getFullYear();
+		month = now.getMonth();
+		picked = isoDay(now);
 	}
 	function save() {
 		writeJson(EVENTS_KEY, $state.snapshot(events));
@@ -77,7 +88,7 @@
 		save();
 	}
 	/** Con las flechas se mueve el día elegido (como en un calendario de escritorio). */
-	function key(e: KeyboardEvent) {
+	async function key(e: KeyboardEvent) {
 		const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
 		if (!step) return;
 		e.preventDefault();
@@ -86,6 +97,9 @@
 		picked = isoDay(d);
 		year = d.getFullYear();
 		month = d.getMonth();
+		// El foco va con el día elegido (si no, se quedaba en el de antes).
+		await tick();
+		days.querySelector<HTMLButtonElement>(`[data-day="${picked}"]`)?.focus();
 	}
 
 	const LABEL: Record<Kind, string> = { fiesta: 'Festivo', dato: 'Dato', resultado: 'Resultados', alarma: 'Alarma', tuyo: 'Tuyo' };
@@ -107,7 +121,7 @@
 	{/snippet}
 	<div class="wrap"><div class="cal">
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-		<div class="days" role="grid" aria-label={monthName} tabindex="-1" onkeydown={key}>
+		<div class="days" bind:this={days} role="grid" aria-label={monthName} tabindex="-1" onkeydown={key}>
 			{#each WEEK as w (w)}<span class="wd" role="columnheader">{w}</span>{/each}
 			{#each grid as d (d.getTime())}
 				{@const day = isoDay(d)}
@@ -116,9 +130,11 @@
 					type="button"
 					role="gridcell"
 					class:out={d.getMonth() !== month}
-					class:today={day === isoDay(today)}
+					class:today={day === today}
 					class:holiday={ks.includes('fiesta') || d.getDay() === 0}
 					aria-selected={day === picked}
+					data-day={day}
+					tabindex={day === tabDay ? 0 : -1}
 					aria-label="{d.getDate()}{ks.length ? `, ${ks.map((k) => LABEL[k]).join(', ')}` : ''}"
 					onclick={() => (picked = day)}
 				>
@@ -146,8 +162,9 @@
 			<form onsubmit={add}>
 				<input bind:value={title} placeholder="Evento nuevo…" maxlength="80" aria-label="Evento nuevo" />
 				<input type="time" bind:value={time} aria-label="Hora (opcional)" />
-				<button type="submit">Añadir</button>
+				<button type="submit" disabled={events.length >= MAX_EVENTS}>Añadir</button>
 			</form>
+			{#if events.length >= MAX_EVENTS}<p class="mut note">Como mucho {MAX_EVENTS} eventos: quita alguno para añadir más.</p>{/if}
 			<p class="mut note">
 				{#if !feed}Sin la agenda de la web: solo tus eventos y alarmas.{:else if scope === 'mis' && !watchlist.codes.length}Sin valores en MIS: no salen resultados.{/if}
 				Agenda completa en <button type="button" class="link" onclick={() => openApp('cal')}>CAL</button>.
@@ -166,6 +183,11 @@
 		border: var(--border);
 		border-radius: var(--radius-s);
 		cursor: pointer;
+	}
+
+	button:disabled {
+		opacity: 0.5;
+		cursor: default;
 	}
 
 	.month {
@@ -190,7 +212,7 @@
 
 	.days {
 		display: grid;
-		grid-template-columns: repeat(7, 1fr);
+		grid-template-columns: repeat(7, minmax(0, 1fr));
 		gap: var(--sp-2);
 		align-content: start;
 		outline: none;

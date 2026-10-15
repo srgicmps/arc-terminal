@@ -62,3 +62,16 @@ export function whenText(ms: number, now = Date.now()): string {
 	if (days === 1) return 'ayer';
 	return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
 }
+
+/** Sin nada escrito (una nota nueva que se deja tal cual se borra al salir de ella). */
+export const isBlank = (html: string) => !plainText(html).trim();
+
+/**
+ * ¿Cabe una nota más? Las de la papelera también cuentan (cada una es una clave de la cuenta). Si no cabe pero hay
+ * algo en la papelera, `purge` es la más antigua de ella, que se borra del todo para hacer sitio.
+ */
+export function makeRoom(list: Note[], max = MAX_NOTES): { ok: boolean; purge?: string } {
+	if (list.length < max) return { ok: true };
+	const old = list.filter((n) => n.trashed).sort((a, b) => a.trashed! - b.trashed!)[0];
+	return old ? { ok: true, purge: old.id } : { ok: false };
+}
