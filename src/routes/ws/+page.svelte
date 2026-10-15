@@ -268,6 +268,31 @@
 			<FxConvert series={fx.map(get)} />
 			{#snippet note()}Tipo de referencia del BCE, no de cambio en ventanilla · <Updated at={data.ecb?.fetchedAt} source="ecb" />{/snippet}
 		</Panel>
+		{#if data.cot}
+			{@const cot = data.cot}
+			<Panel title="Posicionamiento" meta="Especuladores en futuros · COT de la CFTC">
+				<Table>
+					<thead><tr><th class="l">Mercado</th><th>Neto</th><th>% abierto</th><th>Semana</th><th>Rango 1 año</th></tr></thead>
+					<tbody>
+						{#each cot.data.markets as m (m.code)}
+							<tr>
+								<td class="l name">{m.name}</td>
+								<td class={m.net >= 0 ? 'up' : 'down'}>{nf(m.net, 0)}</td>
+								<td class="mut">{nf(m.pctOi, 1)} %</td>
+								<td><Change value={m.change} digits={0} /></td>
+								<td class="mut">{m.range === null ? '—' : `${m.range} %`}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</Table>
+				{#snippet note()}
+					Contratos netos (largos − cortos) de los no comerciales. Rango: 0 % = la posición más corta del último año,
+					100 % = la más larga. Informe del {dm(`${cot.data.date}T12:00:00Z`)} (sale los viernes). Fuente:
+					<a href="https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm" target="_blank" rel="noopener">CFTC</a> ·
+					<Updated at={cot.fetchedAt} source="cot" />
+				{/snippet}
+			</Panel>
+		{/if}
 	</div>
 	<div class="col">
 		{#if data.pinksheet?.data.rows.length}
@@ -328,31 +353,6 @@
 				separa medio céntimo o más del dólar. Fuente: DefiLlama · <Updated at={data.stables?.fetchedAt} source="stablecoins" />
 			{/snippet}
 		</Panel>
-		{#if data.cot}
-			{@const cot = data.cot}
-			<Panel title="Posicionamiento" meta="Especuladores en futuros · COT de la CFTC">
-				<Table>
-					<thead><tr><th class="l">Mercado</th><th>Neto</th><th>% abierto</th><th>Semana</th><th>Rango 1 año</th></tr></thead>
-					<tbody>
-						{#each cot.data.markets as m (m.code)}
-							<tr>
-								<td class="l name">{m.name}</td>
-								<td class={m.net >= 0 ? 'up' : 'down'}>{nf(m.net, 0)}</td>
-								<td class="mut">{nf(m.pctOi, 1)} %</td>
-								<td><Change value={m.change} digits={0} /></td>
-								<td class="mut">{m.range === null ? '—' : `${m.range} %`}</td>
-							</tr>
-						{/each}
-					</tbody>
-				</Table>
-				{#snippet note()}
-					Contratos netos (largos − cortos) de los no comerciales. Rango: 0 % = la posición más corta del último año,
-					100 % = la más larga. Informe del {dm(`${cot.data.date}T12:00:00Z`)} (sale los viernes). Fuente:
-					<a href="https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm" target="_blank" rel="noopener">CFTC</a> ·
-					<Updated at={cot.fetchedAt} source="cot" />
-				{/snippet}
-			</Panel>
-		{/if}
 	</div>
 </div>
 
