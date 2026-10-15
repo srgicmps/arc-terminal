@@ -16,8 +16,10 @@ import { gzipSync } from 'node:zlib';
 import { launch, preview, viewPaths } from './browser.ts';
 import { osChecks } from './smoke-os.ts';
 
+/** En WebKit (SMOKE_BROWSER) solo se mira la web clásica en el móvil: lo que cambia con Safari es el diseño. */
+const WEBKIT = !!process.env.SMOKE_BROWSER;
 /** Con las experiencias (/x/<id>, en su propia carpeta de build/). */
-const PATHS = process.env.SMOKE_ONLY ? process.env.SMOKE_ONLY.split(',') : [...viewPaths(), ...viewPaths('build/x').map((p) => `/x${p}`), '/s?sym=NVDA'];
+const PATHS = (process.env.SMOKE_ONLY ? process.env.SMOKE_ONLY.split(',') : [...viewPaths(), ...viewPaths('build/x').map((p) => `/x${p}`), '/s?sym=NVDA']).filter((p) => !WEBKIT || p !== '/os');
 /** SMOKE_WIDTHS y SMOKE_MODES (separados por comas) acotan la pasada; SMOKE_STYLE fija una estética con tema claro y
  *  acento azul (como el iPhone de Sergi). Los usa el paso de WebKit del CI. */
 const WIDTHS = process.env.SMOKE_WIDTHS ? process.env.SMOKE_WIDTHS.split(',').map(Number) : [390, 1280];
@@ -80,7 +82,7 @@ try {
 		// La primera vez, la portada lleva a la bienvenida: se comprueba aquí y luego se da por vista.
 		const fresh = await context.newPage();
 		await fresh.goto(ROOT + '/', { waitUntil: 'networkidle' });
-		await fresh.waitForURL(/\/bienvenida\?primera=1$/, { timeout: 5000 }).catch(() => failures.push(`/ a ${width} px: la primera vez no lleva a la bienvenida`));
+		if (!WEBKIT) await fresh.waitForURL(/\/bienvenida\?primera=1$/, { timeout: 5000 }).catch(() => failures.push(`/ a ${width} px: la primera vez no lleva a la bienvenida`));
 		await fresh.close();
 		await context.addInitScript(() => {
 			if (!localStorage.getItem('arc-welcome')) localStorage.setItem('arc-welcome', JSON.stringify({ v: 1, profile: null, interests: [], alerts: { groups: [], level: 2, daily: 10, mis: [] }, at: '' }));
@@ -89,7 +91,9 @@ try {
 			const where = `${path} a ${width} px (${mode})`;
 			const page = await context.newPage();
 			page.on('console', (m) => {
-				if (m.type() !== 'error') return;
+				// WebKit escribe en la consola cada 404 de /api/* (aquí no hay Pages Functions) y los avisos del widget de
+				// TradingView: no dicen nada del diseño, que es lo que mira esa pasada.
+				if (m.type() !== 'error' || WEBKIT) return;
 				if (/ 404 /.test(m.text()) && ONLY_PUBLISHED.some((f) => m.location().url.endsWith(f))) return;
 				failures.push(`${where}: consola: ${m.text()} (${m.location().url})`);
 			});
@@ -181,9 +185,9 @@ try {
 		await context.close();
 	}
 	// Arc OS en el escritorio, con 12 ventanas (scripts/smoke-os.ts).
-	failures.push(...(await osChecks(browser, ROOT)));
+	if (!WEBKIT) failures.push(...(await osChecks(browser, ROOT)));
 	// La pasada acotada de WebKit solo mira el móvil.
-	if (!process.env.SMOKE_BROWSER) await keyboard(browser);
+	if (!WEBKIT) await keyboard(browser);
 	await browser.close();
 } catch (error) {
 	failures.push(String(error));
