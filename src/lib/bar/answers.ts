@@ -51,13 +51,13 @@ interface SeriesTopic {
 }
 
 const SERIES: SeriesTopic[] = [
-	{ keys: ['euribor', 'euribor 12m', 'euribor 12 meses'], set: 'ecb', id: 'euribor-12m', label: 'Euríbor 12 m', dec: 3, open: 'ECO' },
-	{ keys: ['euribor 3m', 'euribor 3 meses'], set: 'ecb', id: 'euribor-3m', label: 'Euríbor 3 m', dec: 3, open: 'ECO' },
+	{ keys: ['euribor', 'euribor 12m', 'euribor 12 meses'], set: 'ecb', id: 'euribor-12m', label: 'Euríbor 12 m', dec: 3, open: 'BTMM' },
+	{ keys: ['euribor 3m', 'euribor 3 meses'], set: 'ecb', id: 'euribor-3m', label: 'Euríbor 3 m', dec: 3, open: 'BTMM' },
 	{ keys: ['prima', 'prima de riesgo', 'prima espana'], set: 'bde', id: 'premium-es-d', label: 'Prima de riesgo', dec: 0, open: 'ECO', daily: true },
 	{ keys: ['bund', 'bono aleman'], set: 'bde', id: 'bond10-de-d', label: 'Bund 10 a', dec: 2, open: 'ECO', daily: true },
 	{ keys: ['bono', 'bono espanol', 'bono es', 'bono 10a'], set: 'bde', id: 'bond10-es-d', label: 'Bono español 10 a', dec: 2, open: 'ECO', daily: true },
 	{ keys: ['tipos', 'tipos bce', 'tipo bce', 'bce tipos', 'facilidad de deposito'], set: 'ecb', id: 'ecb-dfr', label: 'BCE, facilidad de depósito', dec: 2, open: 'ECO', daily: true },
-	{ keys: ['estr', '€str'], set: 'ecb', id: 'estr', label: '€STR', dec: 3, open: 'ECO', daily: true },
+	{ keys: ['estr', '€str'], set: 'ecb', id: 'estr', label: '€STR', dec: 3, open: 'BTMM', daily: true },
 	{ keys: ['fed', 'tipos fed', 'fed funds'], set: 'fred', id: 'fedfunds-us', label: 'Fed funds', dec: 2, open: 'ECO', daily: true },
 	{ keys: ['eurusd', 'eur usd', 'euro dolar', 'dolar'], set: 'ecb', id: 'eurusd', label: 'EUR/USD (BCE)', dec: 4, open: 'WS', daily: true },
 	{ keys: ['wti', 'petroleo', 'crudo'], set: 'fred', id: 'wti', label: 'Petróleo WTI', dec: 2, open: 'WS', daily: true }
