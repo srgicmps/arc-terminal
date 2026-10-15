@@ -31,7 +31,7 @@
 	});
 
 	const icons = $derived(shell.pinned.map((id) => apps.find((a) => a.id === id)).filter((a): a is StartApp => !!a));
-	const widgets = $derived(shell.widgets ?? (w ? defaultWidgets(w) : []));
+	const widgets = $derived(shell.widgets ?? (w ? defaultWidgets(w, shell.skin) : []));
 
 	onMount(() => {
 		const go = () => refreshWidgets(place.current);
@@ -57,7 +57,7 @@
 			</li>
 		{/each}
 	</ul>
-	<div class="widgets">
+	<div class="widgets" class:hidden={shell.widgetsHidden}>
 		{#each widgets as wd (wd.kind)}
 			<Widget w={wd} desk={{ w, h }} onmove={moveTo} onremove={() => setWidgets(removeWidget(widgets, wd.kind))}>
 				<WidgetBody kind={wd.kind} {onnavigate} />
@@ -158,6 +158,25 @@
 	}
 	.widgets :global(.widget) {
 		pointer-events: auto;
+	}
+	.widgets.hidden {
+		display: none;
+	}
+	/* DSM: iconos grandes, en columnas desde arriba a la izquierda. */
+	:global([data-os-skin='dsm']) .icons {
+		grid-template-rows: repeat(auto-fill, 112px);
+	}
+	:global([data-os-skin='dsm']) .icons button {
+		width: 104px;
+	}
+	:global([data-os-skin='dsm']) .ico {
+		width: 64px;
+		height: 64px;
+		border-radius: var(--os-icon-radius);
+		font-size: var(--fs-xl);
+	}
+	:global([data-os-skin='dsm']) .desktop[data-wallpaper='sistema'] {
+		background-image: linear-gradient(180deg, var(--amber-soft) 0%, transparent 40%), radial-gradient(ellipse 70% 50% at 30% 100%, var(--raise), transparent 70%);
 	}
 	.wins {
 		position: absolute;

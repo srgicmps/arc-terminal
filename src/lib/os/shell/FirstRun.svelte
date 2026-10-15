@@ -18,7 +18,7 @@
 		<h2 id="os-first-title">¿Cómo quieres tu escritorio?</h2>
 		<p class="mut">Los mismos datos y las mismas ventanas, con la barra y los menús que te resulten más familiares. Lo puedes cambiar cuando quieras en el Panel de control (⚙).</p>
 		<SkinPicker />
-		<div class="go"><button type="button" onclick={() => setSkin(shell.skin)}>Empezar</button></div>
+		<div class="actions"><button type="button" onclick={() => setSkin(shell.skin)}>Empezar</button></div>
 	</div>
 </div>
 
@@ -52,12 +52,12 @@
 		font-size: var(--fs-s);
 		line-height: var(--lh-text);
 	}
-	.go {
+	.actions {
 		display: flex;
 		justify-content: flex-end;
 		margin-top: var(--sp-16);
 	}
-	.go button {
+	.actions button {
 		flex: 0 0 auto;
 		width: auto;
 		height: var(--control-h);

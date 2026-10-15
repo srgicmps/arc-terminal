@@ -46,3 +46,19 @@ export const winClose = (uid: string) => close(uid);
 export const winMin = (uid: string) => minimize(uid);
 export const winMax = (uid: string) => maximize(uid);
 export const focusWin = (uid: string) => focus(uid);
+
+let hidden: string[] = [];
+/**
+ * «Mostrar escritorio»: minimiza todas las ventanas a la vista; si ya no había ninguna, devuelve las que se
+ * escondieron así (como el botón de la esquina de Windows o el de DSM).
+ */
+export function showDesktop() {
+	const visible = desk().wins.filter((w) => !w.min);
+	if (visible.length) {
+		hidden = visible.map((w) => w.uid);
+		for (const w of visible) minimize(w.uid);
+	} else {
+		for (const uid of hidden) focus(uid);
+		hidden = [];
+	}
+}

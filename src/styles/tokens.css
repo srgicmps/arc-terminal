@@ -368,3 +368,27 @@
 	--os-topbar-fg: #f2f2f3;
 	--os-topbar-hover: color-mix(in srgb, var(--os-topbar-fg) 14%, transparent);
 }
+/* DSM: barra fina translúcida arriba, iconos grandes y ventanas con botones pequeños y redondeados a la derecha. */
+[data-os-skin='dsm'] {
+	--os-font: 'Segoe UI', system-ui, 'Noto Sans', sans-serif;
+	--os-bar-h: max(36px, var(--control-h));
+	--os-icon-radius: 14px;
+	--os-topbar-bg: color-mix(in srgb, var(--panel) 78%, transparent);
+	--os-topbar-fg: var(--fg);
+	--os-topbar-hover: var(--raise);
+	--os-title-h: 34px;
+	--os-btns-pad: 6px;
+	--os-btn-gap: 4px;
+	--os-btn-w: 24px;
+	--os-btn-h: 24px;
+	--os-btn-radius: var(--radius-s);
+	--os-btn-hover: var(--raise);
+	--os-btn-close-hover: var(--os-close-red);
+	--os-btn-close-hover-fg: #fff;
+	--os-win-radius: 6px;
+	--os-win-radius-snapped: 0;
+	--os-anim-open: 160ms;
+	--os-anim-min: 180ms;
+	--os-anim-max: 160ms;
+	--os-anim-close: 140ms;
+}

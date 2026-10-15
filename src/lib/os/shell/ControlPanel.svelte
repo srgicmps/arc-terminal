@@ -30,7 +30,7 @@
 	$effect(() => setBar(bar));
 	$effect(() => setWallpaper(wallpaper));
 
-	const current = $derived(shell.widgets ?? defaultWidgets(deskW));
+	const current = $derived(shell.widgets ?? defaultWidgets(deskW, shell.skin));
 	const has = (k: WidgetKind) => current.some((w) => w.kind === k);
 	function flip(k: WidgetKind) {
 		setWidgets(has(k) ? removeWidget(current, k) : addWidget(current, k, deskW));

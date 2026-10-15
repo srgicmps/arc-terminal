@@ -56,6 +56,8 @@ export const shell = $state({
 	seen: [] as string[],
 	notices: [] as Notice[],
 	toasts: [] as Notice[],
+	/** Widgets ocultos (botón ◫ de DSM); solo en esta visita. */
+	widgetsHidden: false,
 	/** Qué está desplegado: solo uno a la vez. */
 	open: null as null | 'start' | 'notices' | 'clock' | 'control' | 'spotlight' | 'launchpad' | 'activities' | 'menu'
 });

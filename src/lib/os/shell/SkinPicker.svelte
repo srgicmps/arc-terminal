@@ -21,7 +21,8 @@
 		{@const on = shell.skin === s.id}
 		<button type="button" role="radio" aria-checked={on} tabindex={on ? 0 : -1} class="card" onclick={() => setSkin(s.id as Skin)} onkeydown={(e) => move(e, i)}>
 			<span class="mini {s.id}" aria-hidden="true">
-				{#if s.id === 'mac'}<i class="menubar"></i>{/if}
+				{#if s.id === 'mac' || s.id === 'dsm'}<i class="menubar"></i>{/if}
+				{#if s.id === 'dsm'}<i class="bigicons"><b></b><b></b><b></b></i><i class="widgets"><b></b><b></b></i>{/if}
 				{#if s.id === 'linux'}<i class="topbar"><b></b></i>{/if}
 				<i class="win"><i class="title"><i class="btns"><i></i><i></i><i></i></i></i></i>
 				{#if s.id === 'windows'}<i class="taskbar"><b></b><b></b><b></b></i>{/if}
@@ -43,7 +44,7 @@
 	}
 	.skins {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
 		gap: var(--sp-8);
 	}
 	.card {
@@ -165,6 +166,38 @@
 		width: 10%;
 		height: 2px;
 		background: var(--bg);
+	}
+	.bigicons {
+		left: 4%;
+		top: 18%;
+		display: grid;
+		gap: 3px;
+	}
+	.bigicons b,
+	.widgets b {
+		position: static;
+		width: 7px;
+		height: 7px;
+		border-radius: 2px;
+		background: var(--amber);
+	}
+	.widgets {
+		right: 4%;
+		top: 18%;
+		display: grid;
+		gap: 3px;
+	}
+	.widgets b {
+		width: 16px;
+		height: 10px;
+		background: var(--panel);
+	}
+	.dsm .win {
+		left: 20%;
+		width: 56%;
+	}
+	.dsm .menubar {
+		opacity: 0.85;
 	}
 	.dock {
 		left: 30%;
