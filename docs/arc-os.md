@@ -124,7 +124,7 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - [x] **Línea de tiempo** (`cronologia`): 6 carriles de sucesos y 7 de mercados sobre un eje común, 24 h–1 año, zoom, cursor común, carriles a elegir [OS 6] #515
 - [x] **Grafo de entidades** (`grafo`): países, líderes, bancos, valores, sanciones, sucesos y temas de IMP con aristas por co-mención y relación; fuerzas propias, expandir, filtrar, buscar [OS 6] #516
 - [x] **Expediente** (`expediente`): ficha de cualquier entidad (resumen, datos, mapa, relaciones, cronología), exportar a Markdown/JSON e imprimir. API: `openDossier(kind, key)`, `openDossierFor('Lagarde')`, `openGraph()` (`apps/intel/open.ts`) [OS 6] #516
-- [ ] Iconos SVG de las cinco apps con el set de OS 2 (`OsIcon`) [OS 6, cuando esté el set]
+- [x] Iconos SVG de las cinco apps en `icons/glyphs.ts` (mapa, vigilancia y línea de tiempo de OS 2b; grafo y expediente de OS 6) [OS 6]
 - [ ] Título de ventana: no enseñar el path en las herramientas sin `href` («Expediente · /expediente#country:CN») [núcleo]
 - [x] Contraste AA en /os: `--muted` de Mando a 4,5:1 también sobre el fondo con acento [OS 6] #533
 
