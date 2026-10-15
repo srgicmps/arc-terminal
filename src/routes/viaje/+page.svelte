@@ -28,6 +28,9 @@
 
 	let { data }: PageProps = $props();
 
+	/** Atajos cuando aún no hay ciudad. */
+	const QUICK = ['Lisboa', 'París', 'Londres', 'Roma', 'Nueva York', 'Tokio'];
+
 	let query = $state('');
 	let city = $state<Place | null>(null);
 	let wx = $state<LocalWeather | null>(null);
@@ -102,11 +105,22 @@
 
 <ViewHeader code="VIAJE" title={city ? `Viaje a ${city.name}` : 'Viaje'} sub="Tiempo, hora, moneda, aviso de viaje y festivos de cualquier ciudad" {plain} />
 
-<form class="find" onsubmit={submit}>
-	<input bind:value={query} placeholder="Ciudad: Tokio, Lisboa…" aria-label="Ciudad del viaje" enterkeyhint="search" />
-	<button type="submit">Buscar</button>
-</form>
-{#if message}<p class="empty">{message}</p>{/if}
+<div class="grid">
+	<div class="col">
+		<Panel title="Destino" meta={city ? `${city.name}${city.country ? ` · ${city.country}` : ''}` : 'Elige una ciudad'}>
+			<form class="find" onsubmit={submit}>
+				<input bind:value={query} placeholder="Ciudad: Tokio, Lisboa…" aria-label="Ciudad del viaje" enterkeyhint="search" />
+				<button type="submit">Buscar</button>
+			</form>
+			{#if !city}
+				<div class="quick">
+					{#each QUICK as q (q)}<button type="button" onclick={() => writeParams({ ciudad: q })}>{q}</button>{/each}
+				</div>
+			{/if}
+			{#if message}<p class="empty">{message}</p>{:else if !city}<p class="empty">Escribe una ciudad para ver su tiempo, su hora, su moneda y si hay festivos.</p>{/if}
+		</Panel>
+	</div>
+</div>
 
 {#if city}
 	<Tiles cols={4}>
@@ -189,15 +203,31 @@
 			{/if}
 		</div>
 	</div>
-{:else if !message}
-	<p class="empty">Escribe una ciudad para ver su tiempo, su hora, su moneda y si hay festivos.</p>
 {/if}
 
 <style>
-	.find {
+	.find,
+	.quick {
 		display: flex;
+		flex-wrap: wrap;
 		gap: var(--sp-6);
-		padding: var(--sp-8) 0;
+		padding: var(--sp-8) var(--pad-x);
+	}
+	.quick {
+		padding-top: 0;
+	}
+	.quick button {
+		height: var(--control-h);
+		padding: 0 var(--sp-10);
+		background: none;
+		border: var(--hair) solid var(--line);
+		color: var(--fg);
+		font-size: var(--fs-s);
+		cursor: pointer;
+	}
+	.quick button:hover {
+		border-color: var(--amber-edge);
+		color: var(--amber);
 	}
 	.find input {
 		flex: 1;
