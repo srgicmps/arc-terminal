@@ -9,7 +9,7 @@ export interface Cell {
 export type Spots = Record<string, Cell>;
 
 /** Tamaño de cada casilla en px según el aspecto (DSM, iconos grandes). */
-export const cellSize = (skin: string) => (skin === 'dsm' ? { w: 112, h: 120 } : { w: 92, h: 96 });
+export const cellSize = (skin: string) => (skin === 'mando' ? { w: 112, h: 128 } : skin === 'dsm' ? { w: 112, h: 120 } : { w: 92, h: 96 });
 /** Margen del escritorio hasta la primera casilla. */
 export const ORIGIN = 12;
 

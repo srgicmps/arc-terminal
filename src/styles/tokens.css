@@ -190,6 +190,8 @@
 	--os-font: var(--sans); /* letra de la barra, los menús y los títulos de ventana; cada aspecto pone la suya */
 	--os-menu-radius: var(--radius); /* esquinas de menús, buscador y dock */
 	--os-icon-radius: var(--radius); /* esquinas de los iconos de app */
+	--os-icon-shadow: 0 1px 2px rgb(0 0 0 / 0.28); /* sombra de los iconos de app (una sola, de drop-shadow) */
+	--os-icon-ring: none; /* filo de los iconos de app (box-shadow; Mando lo usa como borde de 1 px) */
 	--os-topbar-bg: var(--panel); /* barra de arriba y vista Actividades del aspecto Linux */
 	--os-topbar-fg: var(--fg);
 	--os-topbar-hover: var(--raise);
@@ -398,6 +400,8 @@
 	--os-menu-bg: var(--cmd-deck);
 	--os-menu-radius: 2px;
 	--os-icon-radius: 2px;
+	--os-icon-ring: inset 0 0 0 var(--hair) var(--cmd-cold-dim);
+	--os-icon-shadow: 0 0 0 transparent;
 	--os-anim-open: 120ms;
 	--os-open-scale: 0.985;
 	--os-anim-min: 140ms;
@@ -485,16 +489,19 @@
 	--os-font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
 	--os-menu-radius: 8px;
 	--os-icon-radius: 4px;
+	--os-icon-shadow: 0 1px 1px rgb(0 0 0 / 0.3);
 }
 [data-os-skin='mac'] {
 	--os-font: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
 	--os-bar-h: max(28px, var(--control-h));
 	--os-icon-radius: 22%;
+	--os-icon-shadow: 0 3px 5px rgb(0 0 0 / 0.35);
 }
 [data-os-skin='linux'] {
 	--os-font: Cantarell, 'Noto Sans', Ubuntu, system-ui, sans-serif;
 	--os-bar-h: max(32px, var(--control-h));
 	--os-icon-radius: 50%;
+	--os-icon-shadow: 0 0 0 transparent;
 	--os-topbar-bg: #121214; /* barra negra, de día y de noche */
 	--os-topbar-fg: #f2f2f3;
 	--os-topbar-hover: color-mix(in srgb, var(--os-topbar-fg) 14%, transparent);
@@ -504,6 +511,7 @@
 	--os-font: 'Segoe UI', system-ui, 'Noto Sans', sans-serif;
 	--os-bar-h: max(36px, var(--control-h));
 	--os-icon-radius: 14px;
+	--os-icon-shadow: 0 0 6px rgb(255 255 255 / 0.12);
 	--os-topbar-bg: color-mix(in srgb, var(--panel) 78%, transparent);
 	--os-topbar-fg: var(--fg);
 	--os-topbar-hover: var(--raise);
@@ -522,6 +530,35 @@
 	--os-anim-min: 180ms;
 	--os-anim-max: 160ms;
 	--os-anim-close: 140ms;
+}
+
+/* Centro de mando: grafo y expediente */
+/* Se derivan de los tokens base de Mando (--cmd-slate, --cmd-deck, --cmd-cold, --cmd-grid…, bloque [data-os-skin]):
+   pizarra, acento frío y el ámbar para lo que se elige. El lienzo del grafo los lee con getComputedStyle. */
+[data-os-skin] {
+	--cmd-teal: color-mix(in srgb, var(--cmd-cold) 55%, var(--up)); /* bancos centrales */
+	--cmd-ice: color-mix(in srgb, var(--cmd-cold) 35%, var(--fg)); /* sucesos */
+	--cmd-steel: color-mix(in srgb, var(--cmd-cold) 30%, var(--muted)); /* temas de IMP */
+	--cmd-violet: color-mix(in srgb, var(--cmd-cold) 55%, var(--down)); /* valores */
+	--cmd-bg: var(--cmd-slate); /* fondo del lienzo */
+	--cmd-dossier-land: color-mix(in srgb, var(--cmd-cold) 14%, var(--cmd-deck)); /* tierra del mapa del expediente */
+	--cmd-link: var(--cmd-cold-dim); /* arista */
+	--cmd-edge-hot: var(--amber); /* aristas del nodo elegido */
+	--cmd-halo: var(--amber-edge); /* aro del nodo elegido */
+	--cmd-label: var(--fg); /* nombre de un nodo */
+	--cmd-label-bg: color-mix(in srgb, var(--cmd-slate) 80%, transparent); /* fondo del nombre */
+	--cmd-country: var(--cmd-cold);
+	--cmd-leader: var(--amber);
+	--cmd-bank: var(--cmd-teal);
+	--cmd-ticker: var(--cmd-violet);
+	--cmd-sanction: var(--amber-dim);
+	--cmd-event: var(--cmd-ice);
+	--cmd-story: var(--cmd-steel);
+	--cmd-node-r: 5px; /* radio del nodo más pequeño */
+	--cmd-node-r-max: 14px; /* radio del más nombrado */
+	--cmd-side: 300px; /* ancho del panel lateral del grafo */
+	--cmd-map-h: 160px; /* alto del mapa del expediente */
+	--cmd-results: 260px; /* alto máximo de la lista de resultados del buscador */
 }
 
 /* Centro de mando: línea de tiempo */
