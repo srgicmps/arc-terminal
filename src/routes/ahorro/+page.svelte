@@ -11,7 +11,7 @@
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
-	import { BASKET_KEY, myInflation, parseBasket } from '#lib/cesta.ts';
+	import { BASKET_KEY, basketToSave, myInflation, parseBasket } from '#lib/cesta.ts';
 	import { nf, period, signed } from '#lib/format.ts';
 	import { compound, realValue } from '#lib/savings.ts';
 
@@ -40,12 +40,12 @@
 	// Como un watch profundo: guarda cada cambio.
 	$effect(() => {
 		const f = JSON.stringify(form);
-		const b = JSON.stringify(basket);
+		const b = basketToSave(basket, codes);
 		if (!loaded) return;
 		try {
 			localStorage.setItem(SAVINGS_KEY, f);
-			if (b === '{}') localStorage.removeItem(BASKET_KEY);
-			else localStorage.setItem(BASKET_KEY, b);
+			if (b === null) localStorage.removeItem(BASKET_KEY);
+			else if (b !== undefined) localStorage.setItem(BASKET_KEY, b);
 		} catch {}
 	});
 
