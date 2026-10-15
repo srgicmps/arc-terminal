@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { leave as onleave } from './bridge.ts';
 	import { opened, pin, shell } from './shell.svelte.ts';
 	import { byCategory, searchApps, type StartApp } from './start.ts';
 
@@ -52,7 +53,7 @@
 			class:on={shell.pinned.includes(a.id)}
 			aria-pressed={shell.pinned.includes(a.id)}
 			aria-label={`${shell.pinned.includes(a.id) ? 'Desanclar' : 'Anclar'} ${a.title} en la barra`}
-			onclick={() => pin(a.id)}>☆</button
+			onclick={() => pin(a.id)}>{shell.pinned.includes(a.id) ? '★' : '☆'}</button
 		>
 	</li>
 {/snippet}
@@ -81,9 +82,21 @@
 			{/each}
 		{/if}
 	</div>
+	<footer>
+		<span class="mut">Arc OS</span>
+		<button type="button" onclick={onleave}>Salir de Arc OS</button>
+	</footer>
 </div>
 
 <style>
+	/* Botones de la shell sin el borde ni el fondo que algunas estéticas dan a todos los botones. */
+	button {
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
 	.start {
 		left: 0;
 		width: min(560px, calc(100vw - 2 * var(--sp-8)));
@@ -101,6 +114,18 @@
 		border-radius: var(--radius-s);
 		font: inherit;
 		font-size: var(--fs-field);
+	}
+	footer {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: var(--sp-4) var(--sp-12);
+		border-top: var(--hair) solid var(--line);
+		font-size: var(--fs-xs);
+	}
+	footer button {
+		min-height: var(--control-h);
+		color: var(--amber);
 	}
 	.scroll {
 		overflow: auto;

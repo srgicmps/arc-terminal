@@ -1,6 +1,8 @@
 // Widgets del escritorio de Arc OS (shell): qué hay, dónde está cada uno y cómo se mueven. Lógica pura.
 
-export const WIDGET_KINDS = ['reloj', 'cotizaciones', 'tiempo', 'titulares', 'luz', 'manana'] as const;
+import type { SourceStatus } from '../../data.ts';
+
+export const WIDGET_KINDS = ['reloj', 'cotizaciones', 'tiempo', 'titulares', 'luz', 'manana', 'sistema', 'registro', 'datos'] as const;
 export type WidgetKind = (typeof WIDGET_KINDS)[number];
 
 export const WIDGET_LABEL: Record<WidgetKind, string> = {
@@ -9,7 +11,10 @@ export const WIDGET_LABEL: Record<WidgetKind, string> = {
 	tiempo: 'Tiempo',
 	titulares: 'Titulares',
 	luz: 'Luz barata',
-	manana: 'Tu mañana'
+	manana: 'Tu mañana',
+	sistema: 'Estado del sistema',
+	registro: 'Registro',
+	datos: 'Datos'
 };
 
 export interface Placed {
@@ -23,13 +28,19 @@ export interface Placed {
 export const WIDGET_W = 240;
 export const GRID = 8;
 
-/** Los de quien entra por primera vez: a la derecha, en columna. */
-export function defaultWidgets(deskW: number): Placed[] {
+/** Los de quien entra por primera vez: a la derecha, en columna. En DSM, los del sistema (como su panel). */
+export function defaultWidgets(deskW: number, skin = ''): Placed[] {
 	const x = Math.max(GRID, deskW - WIDGET_W - 3 * GRID);
+	if (skin === 'dsm')
+		return [
+			{ kind: 'sistema', x, y: 2 * GRID },
+			{ kind: 'registro', x, y: 22 * GRID },
+			{ kind: 'datos', x, y: 48 * GRID }
+		];
 	return [
 		{ kind: 'reloj', x, y: 2 * GRID },
-		{ kind: 'cotizaciones', x, y: 20 * GRID },
-		{ kind: 'titulares', x, y: 44 * GRID }
+		{ kind: 'cotizaciones', x, y: 26 * GRID },
+		{ kind: 'titulares', x, y: 50 * GRID }
 	];
 }
 
@@ -55,7 +66,7 @@ export function nudge(p: Placed, key: string, big: boolean): Placed {
 export function addWidget(list: Placed[], kind: WidgetKind, deskW: number): Placed[] {
 	if (list.some((w) => w.kind === kind)) return list;
 	const x = Math.max(GRID, deskW - WIDGET_W - 3 * GRID);
-	const y = list.length ? Math.max(...list.map((w) => w.y)) + 20 * GRID : 2 * GRID;
+	const y = list.length ? Math.max(...list.map((w) => w.y)) + 24 * GRID : 2 * GRID;
 	return [...list, { kind, x, y }];
 }
 export const removeWidget = (list: Placed[], kind: WidgetKind) => list.filter((w) => w.kind !== kind);
@@ -73,4 +84,19 @@ export function parseWidgets(raw: string | null): Placed[] | null {
 	} catch {
 		return null;
 	}
+}
+
+/** El «monitor de recursos» de Arc: cómo están las fuentes de datos (status.json). */
+export function statusSummary(list: SourceStatus[]) {
+	const count = (st: SourceStatus['state'][]) => list.filter((s) => st.includes(s.state)).length;
+	const last = list.map((s) => s.fetchedAt ?? '').sort().at(-1) || null;
+	return {
+		total: list.length,
+		ok: count(['ok', 'cached']),
+		stale: count(['stale']),
+		error: count(['error']),
+		off: count(['off']),
+		last,
+		failing: list.filter((s) => s.state === 'stale' || s.state === 'error').map((s) => s.label)
+	};
 }
