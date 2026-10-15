@@ -1,7 +1,7 @@
 import type { Command } from '../commands.ts';
 
 export default {
-	order: 40, code: 'GEO', route: '/geo', key: 'Geopolítica', desc: 'Geopolítica, terremotos y elecciones', sources: 'BBC, Al Jazeera, DW, France 24, The Guardian, USGS, NOAA SWPC, Wikidata', pinned: true,
+	order: 40, code: 'GEO', route: '/geo', key: 'Geopolítica', desc: 'Geopolítica, terremotos y elecciones', sources: 'BBC, Al Jazeera, DW, France 24, The Guardian, USGS, NOAA SWPC, Wikidata, EASA', pinned: true,
 	manual: {
 		section: 'Mundo',
 		what: 'Geopolítica: titulares internacionales, un mapa con terremotos, ciclones, incendios, elecciones, sanciones y mercados de predicción.',
@@ -11,6 +11,7 @@ export default {
 			{ name: 'Titulares', what: 'Noticias internacionales.' },
 			{ name: 'Mercados de predicción', what: 'Probabilidades de Polymarket.' },
 			{ name: 'Rutas marítimas clave', what: 'Barcos al día por los estrechos y el cambio en un año.' },
+			{ name: 'Espacio aéreo en conflicto', what: 'Boletines CZIB activos de la EASA: zonas donde se pide a las aerolíneas no volar o volar alto. También es una capa del mapa.' },
 			{ name: 'Próximas elecciones', what: 'Los próximos 90 días; G20 y UE en ámbar.' },
 			{ name: 'Sanciones y aranceles de EE. UU.', what: 'OFAC, USTR e ITA.' },
 			{ name: 'Organismos internacionales', what: 'Comunicados de la ONU y la OMC.' },
