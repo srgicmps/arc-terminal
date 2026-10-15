@@ -14,7 +14,7 @@ export default {
 			{ name: 'Mar', what: 'Oleaje y agua (en Menorca, costa norte frente a sur).' },
 			{ name: 'Sol y luna', what: 'Salida y puesta del sol y fase de la luna.' },
 			{ name: 'Aire', what: 'Índice europeo de calidad del aire.' },
-			{ name: 'UV y polen', what: 'Índice UV y los pólenes que se notan.' }
+			{ name: 'UV y polen', what: 'UV de hoy y cuándo protegerse, el polen que se nota hoy y mañana (abedul, gramíneas, olivo, aliso, ambrosía y artemisa; solo en Europa) y la previsión por días.' }
 		]
 	}
 } satisfies Command;
