@@ -199,7 +199,7 @@
 
 <div class="grid grid-2">
 	<div class="col">
-		<Panel title="Mapa de calor" meta="{map.label} · variación del día">
+		<Panel title="Mapa de calor" meta="{map.label} · variación del día" jump={{ code: 'IMAP', href: resolve('/imap') }}>
 			<div class="maps">
 				<Seg label="Mapa de calor" options={MAPS.map((m) => ({ value: m.key, label: m.label }))} bind:value={mapSel.value} />
 			</div>
