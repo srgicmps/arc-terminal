@@ -48,6 +48,12 @@ describe('releases-cal', () => {
 		]);
 	});
 
+	it('el dato de día completo de hoy sigue; el de ayer no', () => {
+		const cal = ics([';VALUE=DATE:20261014', 'IPC hoy'], [';VALUE=DATE:20261013', 'IPC ayer']);
+		const events = upcoming('INE', cal, 'Europe/Madrid', new Date('2026-10-14T10:00:00Z'));
+		expect(events.map((e) => e.title)).toEqual(['IPC hoy']);
+	});
+
 	it('junta el INE y el BLS (fechas de FRED); si uno falla, usa su copia anterior', async () => {
 		vi.stubEnv('FRED_API_KEY', 'clave');
 		const fetch = mockFetch((url) => {
