@@ -120,10 +120,15 @@ export function sendToDesk(uid: string, id: string) {
 	persist();
 }
 
+let measured = false;
 /** El escritorio ha cambiado de tamaño (lo llama WindowLayer). */
 export function setArea(w: number, h: number) {
 	if (w < 1 || h < 1 || (w === os.area.w && h === os.area.h)) return;
+	// Lo que se veía entero se sigue viendo entero al hacer zoom o encoger el navegador (la primera medida no
+	// tiene un tamaño de antes: 1280 × 720 es solo el valor de partida).
+	const prev = measured ? os.area : undefined;
+	measured = true;
 	os.area = { w, h };
-	wm.relayout(os.state, os.area);
+	wm.relayout(os.state, os.area, prev);
 	persist();
 }

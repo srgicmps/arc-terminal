@@ -103,6 +103,32 @@ describe('mosaico y teclado', () => {
 		wm.nudgeWin(s, a.uid, 1, 0, true, area);
 		expect(a.w).toBe(w + wm.GRID);
 	});
+
+	it('al encoger el escritorio (zoom), lo que se veía entero se sigue viendo entero', () => {
+		const s = wm.emptyState();
+		const a = wm.openWin(s, app('eco'), area).win!;
+		wm.placeWin(s, a.uid, { x: 1200, y: 400, w: 400, h: 400 }, area);
+		const small = { w: 1000, h: 600 };
+		wm.relayout(s, small, area);
+		expect(a.x + a.w).toBeLessThanOrEqual(small.w);
+		expect(a.y + a.h).toBeLessThanOrEqual(small.h);
+		expect([a.w, a.h]).toEqual([400, 400]);
+		// Más grande que el escritorio: encoge.
+		wm.placeWin(s, a.uid, { x: 0, y: 0, w: 960, h: 560 }, small);
+		wm.relayout(s, { w: 800, h: 500 }, small);
+		expect([a.x, a.y, a.w, a.h]).toEqual([0, 0, 800, 500]);
+	});
+
+	it('una ventana medio fuera a propósito no se mete dentro; sin tamaño de antes, tampoco', () => {
+		const s = wm.emptyState();
+		const a = wm.openWin(s, app('eco'), area).win!;
+		wm.placeWin(s, a.uid, { x: 1400, y: 100, w: 600, h: 400 }, area);
+		wm.relayout(s, { w: 1500, h: 900 }, area);
+		expect(a.x).toBe(1400);
+		wm.placeWin(s, a.uid, { x: 800, y: 100, w: 600, h: 400 }, area);
+		wm.relayout(s, { w: 1000, h: 900 });
+		expect(a.x).toBe(800);
+	});
 });
 
 describe('como un sistema operativo', () => {
