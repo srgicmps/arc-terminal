@@ -12,7 +12,11 @@
 	import Table from '#lib/components/ui/Table.svelte';
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
+	import { resolve } from '$app/paths';
+	import { clock } from '#lib/clock.svelte.ts';
 	import { nf, signed, when } from '#lib/format.ts';
+	import { madridDate } from '#lib/meetings.ts';
+	import { earningsLine, myEarnings } from '#lib/myearnings.ts';
 	import { fxRates } from '#lib/fx.ts';
 	import { cleanPosition, MAX_POSITIONS, parsePortfolio, PORTFOLIO_KEY, summarize, type Position } from '#lib/portfolio.ts';
 
@@ -73,6 +77,8 @@
 
 	const rates = $derived(fxRates(data.fx));
 	const s = $derived(summarize(positions, data.quotes, rates));
+	const today = $derived(madridDate(clock.now || Date.now()));
+	const upcoming = $derived(myEarnings(data.earnings, positions.map((p) => p.sym), today));
 	const tone = (v: number | null) => (v === null ? 'mut' : v > 0 ? 'up' : v < 0 ? 'down' : 'flat');
 </script>
 
@@ -155,17 +161,34 @@
 	</Panel>
 </div>
 
+{#if positions.length}
+	<div class="grid">
+		<Panel title="Resultados de tus valores">
+			{#if upcoming.length}
+				<ul class="mini">
+					{#each upcoming as e (e.symbol + e.date)}
+						<li><a class="l" href="{resolve('/s')}?sym={encodeURIComponent(e.code)}">{earningsLine(e, today)}</a></li>
+					{/each}
+				</ul>
+			{:else}
+				<p class="empty">Ninguno de tus valores presenta resultados en las próximas 2 semanas.</p>
+			{/if}
+			<Note>Grandes empresas de EE. UU. (Finnhub). Para que te avise el móvil la víspera, añade tus valores en <a href={resolve('/avisos')}>AVISOS</a>.</Note>
+		</Panel>
+	</div>
+{/if}
+
 {#if s.value > 0}
 	<div class="grid grid-2">
 		<Panel title="Reparto por sector">
-			<ul class="mini">
+			<ul class="mini split">
 				{#each s.bySector as g (g.name)}
 					<li><span>{g.name}</span><Bar pct={g.pct} /><span class="num">{nf(g.pct, 0)} %</span></li>
 				{/each}
 			</ul>
 		</Panel>
 		<Panel title="Reparto por divisa">
-			<ul class="mini">
+			<ul class="mini split">
 				{#each s.byCurrency as g (g.name)}
 					<li><span>{g.name}</span><Bar pct={g.pct} /><span class="num">{nf(g.pct, 0)} %</span></li>
 				{/each}
@@ -244,7 +267,7 @@
 		color: var(--down);
 	}
 
-	.mini li {
+	.split li {
 		display: grid;
 		grid-template-columns: 10ch 1fr 5ch;
 		gap: var(--sp-8);

@@ -16,6 +16,8 @@ export const load: PageServerLoad = async () => {
 	return {
 		quotes: [...quotes.values()],
 		quotesAt: alert?.fetchedAt ?? finnhub?.fetchedAt ?? null,
-		fx: fx ? fx.data.series.filter((s) => /^eur[a-z]{3}$/.test(s.id)) : []
+		fx: fx ? fx.data.series.filter((s) => /^eur[a-z]{3}$/.test(s.id)) : [],
+		// Próximos resultados (2 semanas): se cruzan con tus posiciones en el navegador.
+		earnings: finnhub?.data.earnings ?? []
 	};
 };
