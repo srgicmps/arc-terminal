@@ -176,7 +176,7 @@
 	// A la vista, solo las primeras de la fila (como mucho VISIBLE_KEYS); el resto va en «Más».
 	const visibleKeys = $derived(keys.slice(0, VISIBLE_KEYS));
 	const hiddenKeys = $derived(keys.slice(VISIBLE_KEYS));
-	/** En /os el escritorio tapa la web: su cabecera, pestañas y pie siguen debajo, pero sin foco ni atajos. */
+	/** En /os el escritorio tapa la web: el atajo de Experiencias (⇧X) no debe abrir su diálogo encima ni sacarte de /os. */
 	const inOs = $derived(page.route.id === '/os');
 	const hiddenCurrent = $derived(hiddenKeys.find((k) => k.route === page.route.id));
 	const thumb = $derived(COMMANDS.filter((c) => taste.thumb.includes(c.code)));
@@ -216,7 +216,7 @@
 </svelte:head>
 
 <div class="app" data-ui="app">
-	<header class="top" data-ui="top" inert={inOs}>
+	<header class="top" data-ui="top">
 		<a class="brand" data-ui="brand" href={resolve('/')}>
 			<Logo />
 			<span>Arc <span class="brand-sub">Terminal</span></span>
@@ -261,7 +261,7 @@
 		</Menu>
 	</header>
 
-	<nav class="keys" data-ui="keys" aria-label="Secciones" inert={inOs}>
+	<nav class="keys" data-ui="keys" aria-label="Secciones">
 		{#each visibleKeys as key (key.code)}
 			<a
 				class="key"
@@ -316,7 +316,7 @@
 		{@render children()}
 	</main>
 
-	<nav class="thumb" data-ui="tabs" aria-label="Accesos rápidos" inert={inOs}>
+	<nav class="thumb" data-ui="tabs" aria-label="Accesos rápidos">
 		{#each thumb as c (c.code)}
 			<a href={routeHref(c.route)} data-code={c.code} aria-current={page.route.id === c.route ? 'page' : undefined}>{c.code}</a>
 		{/each}
@@ -338,7 +338,7 @@
 		{/if}
 	{/if}
 
-	<footer class="status" data-ui="foot" inert={inOs}>
+	<footer class="status" data-ui="foot">
 		<span>Datos públicos actualizados cada 15 min con GitHub Actions · cotizaciones de TradingView</span>
 		<a href={resolve('/status')}>Estado de las fuentes</a>
 		<Feedback />

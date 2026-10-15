@@ -8,7 +8,6 @@
 	import * as os from './bridge.ts';
 	import { setName, setSkin, setWallpaper, setWidgets, shell, WALLPAPERS } from './shell.svelte.ts';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from './widgets.ts';
-	import { sys } from '../system/system.svelte.ts';
 	import WallLayer from '../system/wall/WallLayer.svelte';
 	import { isPreset } from '../system/wall/wall.ts';
 
@@ -17,24 +16,10 @@
 	let step = $state(0);
 	let box = $state<HTMLElement>();
 
-	// El foco, al primer control del paso. Espera a que se quite el arranque o el bloqueo, que van encima y se lo
-	// quedarían (si no, al entrar el foco caía en <body>).
 	$effect(() => {
 		void step;
-		if (sys.phase !== 'on') return;
 		tick().then(() => box?.querySelector<HTMLElement>('[aria-checked="true"], [aria-pressed="true"], button')?.focus());
 	});
-
-	// Es un diálogo modal: Tab no sale de él y Escape es «Saltar».
-	function onkeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') return (e.preventDefault(), finish());
-		if (e.key !== 'Tab' || !box) return;
-		const items = [...box.querySelectorAll<HTMLElement>('button, input')];
-		const first = items[0];
-		const last = items.at(-1);
-		if (e.shiftKey && document.activeElement === first) (e.preventDefault(), last?.focus());
-		else if (!e.shiftKey && document.activeElement === last) (e.preventDefault(), first?.focus());
-	}
 
 	const current = $derived(shell.widgets ?? defaultWidgets(os.deskW(), shell.skin));
 	const has = (k: WidgetKind) => current.some((w) => w.kind === k);
@@ -46,7 +31,7 @@
 	}
 </script>
 
-<div class="first" role="dialog" aria-modal="true" aria-labelledby="os-first-title" tabindex="-1" bind:this={box} {onkeydown}>
+<div class="first" role="dialog" aria-modal="true" aria-labelledby="os-first-title" bind:this={box}>
 	<div class="card">
 		<p class="kicker">Bienvenido a Arc OS · paso {step + 1} de {STEPS.length}</p>
 		<ol class="dots" aria-hidden="true">
