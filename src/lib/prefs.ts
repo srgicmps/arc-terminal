@@ -41,6 +41,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-thumb', storage: 'local', what: 'Las 4 secciones de la barra inferior del móvil', where: 'HELP, «A tu gusto»', kind: 'ajuste' },
 	{ key: 'arc-ws-heatmap', storage: 'local', what: 'Último mapa de calor elegido', where: 'WS', kind: 'ajuste' },
 	{ key: 'arc-install-hint', storage: 'local', what: 'Ya has cerrado el aviso «Instálala en tu móvil»', where: 'Móvil', kind: 'dato' },
+	{ key: 'arc-quiz', storage: 'local', what: 'Tus respuestas y puntuación del test de la semana', where: 'TEST', kind: 'dato' },
 	{ key: 'arc-tv', storage: 'local', what: 'Vistas y segundos del modo TV', where: 'TV', kind: 'ajuste' },
 	{ key: 'arc-cal', storage: 'local', what: 'Países e importancia del calendario económico', where: 'CAL', kind: 'ajuste' },
 	{ key: 'arc-fuel-fav', storage: 'local', what: 'Tu gasolinera favorita y su precio de cada día que abriste FUEL (120 días)', where: 'FUEL, ☆ de cada estación', kind: 'dato' },

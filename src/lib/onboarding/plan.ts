@@ -64,6 +64,8 @@ export const INTERESTS: readonly Interest[] = [
 
 /** Siempre a la vista, te interese lo que te interese. */
 const ALWAYS = ['important', 'weather'];
+/** Paneles en la portada, contando los fijados: los suficientes para llenarla sin abrumar. */
+export const MAX_PANELS = 8;
 
 export type ProfileId = 'inversor' | 'curioso' | 'hogar' | 'todo';
 
@@ -158,10 +160,16 @@ const SPAIN = new Set(['SAN', 'ITX', 'IBE', 'BBVA', 'TEF', 'BTC']);
 export function buildPlan(interests: InterestId[], profileId: ProfileId | null, modules: readonly string[], simple: boolean): Plan {
 	const profile = findProfile(profileId);
 	const ids = interests.length ? interests : (profile?.interests ?? []);
-	const chosen = INTERESTS.filter((i) => ids.includes(i.id));
+	// En el orden del perfil (o en el que los marcaste): el primero manda.
+	const chosen = ids.flatMap((id) => INTERESTS.find((i) => i.id === id) ?? []);
 	const list = chosen.length ? chosen : INTERESTS;
-	const wanted = uniq([...ALWAYS, ...list.flatMap((i) => i.top)]).filter((id) => modules.includes(id));
 	const all = list.length === INTERESTS.length;
+	const pins = uniq(list.flatMap((i) => i.pins));
+	// Por turnos (el primero de cada interés, luego el segundo…), para que todos tengan sitio dentro del tope.
+	const turns = Array.from({ length: Math.max(...list.map((i) => i.top.length)) }, (_, n) => list.flatMap((i) => i.top[n] ?? []));
+	const wanted = uniq([...ALWAYS, ...turns.flat()])
+		.filter((id) => modules.includes(id))
+		.slice(0, all ? undefined : Math.max(MAX_PANELS - pins.length, 4));
 	const order = [...wanted, ...modules.filter((id) => !wanted.includes(id))];
 	const mis = profile?.mis ?? (list.some((i) => i.id === 'bolsa') ? PROFILES[0].mis : []);
 	const groups = uniq<GroupId>([...list.flatMap((i) => i.alerts), 'resumenes']);
@@ -170,7 +178,7 @@ export function buildPlan(interests: InterestId[], profileId: ProfileId | null, 
 		interests: list.map((i) => i.id),
 		home: profile?.home ?? 'TOP',
 		mis,
-		pins: uniq(list.flatMap((i) => i.pins)),
+		pins,
 		layout: { order, hidden: all ? [] : modules.filter((id) => !wanted.includes(id)), span: {} },
 		alerts: {
 			groups,

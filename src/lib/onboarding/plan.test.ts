@@ -42,6 +42,15 @@ describe('bienvenida', () => {
 		expect(plan.alerts.groups).toEqual(['energia', 'resumenes']);
 	});
 
+	it('cada perfil llena la portada sin abrumar: 6–8 paneles con los fijados', () => {
+		for (const p of PROFILES.filter((p) => p.id !== 'todo')) {
+			const plan = buildPlan([], p.id, MODULES, true);
+			const n = plan.layout.order.length - plan.layout.hidden.length + plan.pins.length;
+			expect(n, p.id).toBeGreaterThanOrEqual(6);
+			expect(n, p.id).toBeLessThanOrEqual(8);
+		}
+	});
+
 	it('«Todo» no oculta nada y los avisos solo llevan valores de EE. UU.', () => {
 		const plan = buildPlan([], 'todo', MODULES, false);
 		expect(plan.layout.hidden).toEqual([]);
