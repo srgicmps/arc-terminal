@@ -349,7 +349,7 @@
 }
 
 /* ---------- Aspectos de Arc OS (data-os-skin en /os, src/lib/os/shell/skins.ts) ----------
-   Solo letra y formas: los colores siguen siendo los de la estética activa. Letras del sistema: no se descarga nada. */
+   Letra y formas; los colores de cada aspecto van al final del archivo. Letras del sistema: no se descarga nada. */
 [data-os-skin='windows'] {
 	--os-font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
 	--os-menu-radius: 8px;

@@ -162,6 +162,8 @@ Un cambio de estética se hace en un solo sitio.
   (registro en `src/lib/estilos.ts`; cómo se hace una, en `docs/estilos.md`). Capas CSS: `tokens` < `estilos` <
   `ajustes` (`src/styles/ajustes.css`: densidad y modo Sencillo). Clave `arc-style`, sincronizada con la cuenta. Sin
   nada guardado, `src/app.html` decide: «Terminal» si el navegador ya usaba la web, «Grafito» si es nuevo.
+  Dentro de Arc OS (`/os` y sus ventanas) no se aplican la estética, el acento ni la densidad: manda el aspecto del OS
+  (`src/lib/os/look.ts`, colores al final de `tokens.css`).
   Lo único fuera de los tokens son los iconos (`static/favicon.svg` y los PNG de la PWA): llevan el ámbar
   escrito: se rehacen con `node scripts/icons.ts` (iconos, maskable, apple-touch y arranque del iPhone) a partir de
   `static/favicon.svg`. El logo en la web es `Logo.svelte` (mismo dibujo, con `--amber`).
