@@ -338,8 +338,10 @@
 		transition: color var(--dur-ui) var(--ease);
 	}
 
-	.tool:hover {
-		color: var(--amber);
+	@media (hover: hover) {
+		.tool:hover {
+			color: var(--amber);
+		}
 	}
 
 	/* El 📌 en gris y medio apagado; en color cuando el panel está fijado. */
@@ -348,10 +350,16 @@
 		opacity: 0.5;
 	}
 
-	.pin:hover,
 	.pin.on {
 		filter: none;
 		opacity: 1;
+	}
+
+	@media (hover: hover) {
+		.pin:hover {
+			filter: none;
+			opacity: 1;
+		}
 	}
 
 	/* Menos ruido: con ratón, ampliar, compartir, fijar, mover y ocultar solo aparecen al pasar por el panel o
@@ -443,8 +451,10 @@
 		letter-spacing: var(--track-code);
 	}
 
-	.jump:hover {
-		color: var(--amber);
+	@media (hover: hover) {
+		.jump:hover {
+			color: var(--amber);
+		}
 	}
 
 	/* En pantallas táctiles el enlace gana 44 px de alto pulsable; el margen negativo evita que la cabecera crezca. */
@@ -546,8 +556,10 @@
 		cursor: pointer;
 	}
 
-	.close:hover {
-		color: var(--amber);
+	@media (hover: hover) {
+		.close:hover {
+			color: var(--amber);
+		}
 	}
 
 	@media (pointer: coarse) {

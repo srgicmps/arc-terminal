@@ -221,8 +221,10 @@ kbd {
 	color: inherit;
 	text-decoration: none;
 }
-.mini a:hover {
-	color: var(--amber);
+@media (hover: hover) {
+	.mini a:hover {
+		color: var(--amber);
+	}
 }
 .mini b {
 	font-weight: var(--fw-medium);
