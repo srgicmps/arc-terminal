@@ -46,3 +46,22 @@ export function tripHolidays(items: WorldHoliday[], from: string, days = 60): { 
 	}
 	return [...out.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
+
+/** «AAAA-MM-DD» de hoy en la zona `tz` (en Madrid si la zona no vale o está vacía). */
+export function dayIn(tz: string, now: number): string {
+	const fmt = (timeZone: string) =>
+		new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(now));
+	try {
+		return fmt(tz || 'Europe/Madrid');
+	} catch {
+		return fmt('Europe/Madrid');
+	}
+}
+
+/** Si en `tz` es otro día que en Madrid: «allí ya es mañana», «allí aún es ayer»; si es el mismo, ''. */
+export function dayNote(tz: string, now: number): string {
+	const there = dayIn(tz, now);
+	const here = dayIn('Europe/Madrid', now);
+	if (!tz || there === here) return '';
+	return there > here ? 'allí ya es mañana' : 'allí aún es ayer';
+}
