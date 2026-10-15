@@ -175,7 +175,7 @@
 			</Panel>
 		{/if}
 
-		<Panel title="Tus ideas" meta={ideas.length ? `${ideas.length} abiertas` : ''}>
+		<Panel title="Tus ideas" meta={ideas.length ? `${ideas.length} ${ideas.length === 1 ? 'abierta' : 'abiertas'}` : ''}>
 			{#if ideas.length}
 				<Table csv={false}>
 					<thead>

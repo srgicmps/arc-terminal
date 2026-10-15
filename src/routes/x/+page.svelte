@@ -45,11 +45,11 @@
 				<li class:home={isHome}>
 					<a class="pic" href={href(expHref(e))} tabindex="-1" aria-hidden="true"><ExpPreview exp={e} /></a>
 					<div class="body">
-						<strong><span aria-hidden="true">{e.icon}</span> {e.name}</strong>
+						<strong id="exp-{e.id}"><span aria-hidden="true">{e.icon}</span> {e.name}</strong>
 						<span class="desc">{e.desc}</span>
 						<div class="actions">
-							<a class="open" href={href(expHref(e))}>Abrir</a>
-							<button type="button" aria-pressed={isHome} onclick={() => toggleHome(e)}>
+							<a class="open" href={href(expHref(e))} aria-describedby="exp-{e.id}">Abrir</a>
+							<button type="button" aria-pressed={isHome} aria-describedby="exp-{e.id}" onclick={() => toggleHome(e)}>
 								{isHome ? '✓ Se abre al entrar' : 'Usar al entrar'}
 							</button>
 							<code>EXP {e.id}</code>

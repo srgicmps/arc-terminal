@@ -23,6 +23,20 @@
 		const next = EXPERIENCES.find((e) => e.id === id);
 		if (next && next.id !== exp.id) goto(href(expHref(next)));
 	};
+	// Con el teclado, las flechas sobre el desplegable cerrado cambian el valor (y lanzan «change») a cada pulsación:
+	// solo se salta con Intro, o al salir del desplegable con otra elegida. Con el ratón o el dedo, al elegir.
+	let keyed = false;
+	function onKeydown(e: KeyboardEvent & { currentTarget: HTMLSelectElement }) {
+		if (e.key === 'Enter') jump(e.currentTarget.value);
+		else if (!e.altKey && (/^(Arrow|Page|Home$|End$)/.test(e.key) || (e.key.length === 1 && e.key !== ' '))) keyed = true;
+	}
+	function onChange(e: Event & { currentTarget: HTMLSelectElement }) {
+		if (!keyed) jump(e.currentTarget.value);
+	}
+	function onBlur(e: FocusEvent & { currentTarget: HTMLSelectElement }) {
+		if (keyed) jump(e.currentTarget.value);
+		keyed = false;
+	}
 </script>
 
 <svelte:head>
@@ -40,7 +54,7 @@
 		{#if EXPERIENCES.length > 1}
 			<label>
 				<span class="sr">Otra experiencia</span>
-				<select value={exp.id} onchange={(e) => jump(e.currentTarget.value)}>
+				<select value={exp.id} onchange={onChange} onkeydown={onKeydown} onblur={onBlur}>
 					{#each EXPERIENCES as e (e.id)}<option value={e.id}>{e.icon} {e.name}</option>{/each}
 				</select>
 			</label>

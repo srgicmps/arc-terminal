@@ -24,6 +24,8 @@
 	function onKey(e: KeyboardEvent) {
 		const el = e.target as HTMLElement | null;
 		if (e.ctrlKey || e.metaKey || e.altKey || el?.closest('input, textarea, select, [contenteditable]')) return;
+		// Espacio sobre un botón o un enlace es pulsarlo, no pasar de tarjeta.
+		if (e.key === ' ' && el?.closest('button, a, summary')) return;
 		if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') go(1);
 		else if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(-1);
 		else return;
