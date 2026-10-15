@@ -42,3 +42,18 @@ describe('alertconfig', () => {
 		expect(groupOf('desconocido')).toBe('agenda');
 	});
 });
+
+describe('alertas de precio y palabras (F14)', () => {
+	it('newPrice da un id; parsePrices quita repetidas, raras y lo que pase del tope', async () => {
+		const { newPrice, parsePrices, parseWordList } = await import('./alertconfig.ts');
+		const { parseAlert } = await import('./useralerts.ts');
+		const a = newPrice(parseAlert('NVDA > 150')!);
+		expect(a.id).toMatch(/^[0-9a-f]{8}$/);
+		const diesel = newPrice(parseAlert('diésel < 1,40')!);
+		const btc = newPrice(parseAlert('BTC -5%')!);
+		expect(parsePrices([a, { ...a, id: 'cccccccc' }, diesel, btc, { ...a, op: '!' }, 'x'])).toEqual([a, diesel, btc]);
+		const many = Array.from({ length: 30 }, (_, i) => newPrice(parseAlert(`NVDA > ${i + 1}`)!));
+		expect(parsePrices(many)).toHaveLength(20);
+		expect(parseWordList(['  aranceles ', 'ARANCELES', '<b>', 3])).toEqual(['ARANCELES']);
+	});
+});
