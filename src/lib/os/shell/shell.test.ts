@@ -110,6 +110,7 @@ describe('aspectos', () => {
 		expect(layoutOf('mac', 'top')).toEqual({ top: 'menubar', bottom: 'dock' });
 		expect(layoutOf('linux', 'bottom')).toEqual({ top: 'topbar', bottom: null });
 		expect(layoutOf('dsm', 'bottom')).toEqual({ top: 'dsmbar', bottom: null });
+		expect(layoutOf('mando', 'bottom')).toEqual({ top: 'mandobar', bottom: 'mandostrip' });
 		expect(isSkin('mac')).toBe(true);
 		expect(isSkin('beos')).toBe(false);
 	});
