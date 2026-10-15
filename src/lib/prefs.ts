@@ -5,8 +5,8 @@
 export interface Pref {
 	/** La clave tal y como se guarda. Las que llevan una parte variable, con <…>: «arc-layout-<vista>». */
 	key: string;
-	/** local: localStorage · session: sessionStorage (solo esta pestaña) · cache: Cache Storage del service worker. */
-	storage: 'local' | 'session' | 'cache';
+	/** local: localStorage · session: sessionStorage (solo esta pestaña) · cache: Cache Storage del service worker · idb: IndexedDB. */
+	storage: 'local' | 'session' | 'cache' | 'idb';
 	what: string;
 	/** Dónde se usa o se cambia. */
 	where: string;
@@ -29,7 +29,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-leaders', storage: 'local', what: 'Los líderes que salen en LIDER y su orden', where: 'LIDER, «Tus líderes»', kind: 'ajuste' },
 	{ key: 'arc-countries', storage: 'local', what: 'Tus países favoritos (hasta 8)', where: 'PAIS, botón ☆ Seguir', kind: 'dato' },
 	{ key: 'arc-shell', storage: 'local', what: 'Terminal clásico o Modo OS (escritorio con ventanas; en el móvil, pantalla de inicio)', where: 'BIENVENIDA, botón ⧉ de la cabecera o «Salir de Arc OS»', kind: 'ajuste' },
-	{ key: 'arc-os-badges', storage: 'local', what: 'Cuándo abriste cada app en el Modo OS del móvil, para las insignias de cosas nuevas', where: 'Modo OS en el móvil', kind: 'dato' },
+	{ key: 'arc-os-phone', storage: 'local', what: 'Orden de los iconos, carpetas, dock y widgets del Modo OS en el móvil', where: 'Modo OS en el móvil (mantén un icono)', kind: 'ajuste' },
 	{ key: 'arc-os-invite', storage: 'local', what: 'Ya has visto el aviso «Prueba el Modo OS»', where: 'Al entrar, una sola vez', kind: 'dato' },
 	{ key: 'arc-home', storage: 'local', what: 'Vista o experiencia que se abre al entrar', where: 'HELP, «Al entrar»', kind: 'ajuste' },
 	{ key: 'arc-welcome', storage: 'local', what: 'Lo que elegiste en la bienvenida (intereses, perfil) y la propuesta de avisos', where: 'BIENVENIDA (también desde HELP)', kind: 'ajuste' },
@@ -79,13 +79,21 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-localwx:<lat>,<lon>', prefix: 'arc-localwx:', storage: 'local', what: 'El tiempo de tu sitio, para no volver a pedirlo enseguida', where: 'WX', kind: 'caché' },
 	{ key: 'arc-os-pinned', storage: 'local', what: 'Apps ancladas en la barra de tareas de Arc OS', where: 'Arc OS, menú Inicio (clic derecho o «Anclar»)', kind: 'ajuste' },
 	{ key: 'arc-os-recent', storage: 'local', what: 'Las últimas apps abiertas en Arc OS (8)', where: 'Arc OS, menú Inicio', kind: 'dato' },
+	{ key: 'arc-os-packages', storage: 'local', what: 'Apps quitadas de Arc OS (salen de los menús; se siguen abriendo por comando)', where: 'Arc OS, Centro de paquetes', kind: 'ajuste' },
 	{ key: 'arc-os-widgets', storage: 'local', what: 'Widgets del escritorio de Arc OS y dónde está cada uno', where: 'Arc OS, escritorio y Panel de control', kind: 'ajuste' },
 	{ key: 'arc-os-bar', storage: 'local', what: 'Barra de tareas de Arc OS abajo o arriba', where: 'Arc OS, Panel de control', kind: 'ajuste' },
 	{ key: 'arc-os-wallpaper', storage: 'local', what: 'Fondo del escritorio de Arc OS', where: 'Arc OS, Panel de control', kind: 'ajuste' },
+	{ key: 'arc-os-wall', storage: 'local', what: 'Fondo de Arc OS: el general, uno por escritorio, presentación y pantalla de bloqueo (las imágenes propias van aparte, solo en este navegador)', where: 'Arc OS, app Fondo de pantalla', kind: 'ajuste' },
+	{ key: 'arc-os-images', storage: 'idb', what: 'Tus imágenes de fondo de Arc OS, comprimidas (no se sincronizan: no caben en la cuenta)', where: 'Arc OS, app Fondo de pantalla', kind: 'dato' },
 	{ key: 'arc-os-boot', storage: 'local', what: 'Día del último arranque de Arc OS (la pantalla de inicio sale una vez al día)', where: 'Arc OS, al entrar', kind: 'dato' },
 	{ key: 'arc-os-system', storage: 'local', what: 'Ajustes del sistema de Arc OS: pantalla de inicio, sonidos', where: 'Arc OS, Panel de control', kind: 'ajuste' },
-	{ key: 'arc-os-skin', storage: 'local', what: 'Aspecto del escritorio de Arc OS: Windows, Mac o Linux', where: 'Arc OS, Panel de control y primer arranque', kind: 'ajuste' },
+	{ key: 'arc-os-skin', storage: 'local', what: 'Que ya has pasado el primer arranque de Arc OS (y su aspecto, que es uno solo)', where: 'Arc OS, primer arranque', kind: 'ajuste' },
+	{ key: 'arc-os-name', storage: 'local', what: 'Cómo quieres que te llame Arc OS', where: 'Arc OS, primer arranque y Panel de control', kind: 'ajuste' },
+	{ key: 'arc-os-icons', storage: 'local', what: 'Dónde está cada icono del escritorio de Arc OS', where: 'Arc OS, arrastrando los iconos', kind: 'ajuste' },
+	{ key: 'arc-os-fs', storage: 'local', what: 'Tus carpetas del escritorio de Arc OS: qué hay en cada una y la papelera', where: 'Arc OS, escritorio y ventanas de carpeta', kind: 'dato' },
+	{ key: 'arc-os-watch', storage: 'local', what: 'Tus objetivos de Vigilancia (países, valores, líderes y temas), tu última visita y lo que ya habías visto', where: 'Arc OS, app Vigilancia', kind: 'dato' },
 	{ key: 'arc-os-seen', storage: 'local', what: 'Avisos y novedades ya vistos en el centro de notificaciones de Arc OS', where: 'Arc OS, campana de la barra', kind: 'dato' },
+	{ key: 'arc-os-cronologia', storage: 'local', what: 'Línea de tiempo de Arc OS: carriles visibles, su orden y el rango', where: 'Arc OS, app «Línea de tiempo» (botón «Carriles»)', kind: 'ajuste' },
 	{ key: 'arc-os-alarms', storage: 'local', what: 'Tus alarmas del Reloj de Arc OS (hora, nombre y días)', where: 'Arc OS, app Reloj', kind: 'dato' },
 	{ key: 'arc-os-files', storage: 'local', what: 'Tus carpetas, accesos directos y papelera de Archivos (Arc OS)', where: 'Arc OS, app Archivos', kind: 'dato' },
 	{ key: 'arc-os-files-view', storage: 'local', what: 'Archivos en iconos o en lista', where: 'Arc OS, app Archivos', kind: 'ajuste' },

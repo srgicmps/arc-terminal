@@ -26,6 +26,11 @@ const NO_PANELS = new Set(['/help', '/doc', '/bienvenida', '/os']);
 const WEIGHT_LIMIT = 300 * 1024;
 /** Sin aviso de peso: Arc OS no tiene tope (scripts/weight.ts → EXEMPT). */
 const NO_WEIGHT_LIMIT = new Set(['/os']);
+/**
+ * Datos que solo existen en la web publicada: notify-log.json lo escribe scripts/notify.ts en la pasada del cron,
+ * nunca en los PR. Si faltan aquí, su 404 no cuenta como fallo (Arc OS lo pide para sus avisos).
+ */
+const ONLY_PUBLISHED = ['/data/notify-log.json'];
 /** Reglas de axe-core que se miran: contraste y que todo control, enlace e imagen tenga nombre o etiqueta. */
 const AXE_RULES = ['color-contrast', 'label', 'select-name', 'button-name', 'link-name', 'image-alt', 'input-button-name', 'aria-input-field-name'];
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
@@ -62,7 +67,9 @@ try {
 			const where = `${path} a ${width} px (${mode})`;
 			const page = await context.newPage();
 			page.on('console', (m) => {
-				if (m.type() === 'error') failures.push(`${where}: consola: ${m.text()} (${m.location().url})`);
+				if (m.type() !== 'error') return;
+				if (/ 404 /.test(m.text()) && ONLY_PUBLISHED.some((f) => m.location().url.endsWith(f))) return;
+				failures.push(`${where}: consola: ${m.text()} (${m.location().url})`);
 			});
 			page.on('pageerror', (e) => failures.push(`${where}: excepción: ${e.message}`));
 			// Peso de la vista: cada respuesta de la propia web, comprimida (también las que el navegador ya tenía

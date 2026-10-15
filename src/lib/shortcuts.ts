@@ -54,7 +54,9 @@ export const SHORTCUTS = [
 	{ id: 'os-terminal', group: 'Arc OS', keys: ['Ctrl', 'Alt', 'T'], combo: true, action: 'Abrir una Terminal (la barra de comandos como consola)' },
 	{ id: 'os-desk', group: 'Arc OS', keys: ['Alt', '1…6'], combo: true, action: 'Ir a un escritorio' },
 	// Sistema de Arc OS (src/lib/os/system/SystemLayer.svelte). `code` porque en el Mac ⌥ cambia la letra.
-	{ id: 'os-lock', group: 'Arc OS', keys: ['Ctrl', 'Alt', 'L'], combo: true, action: 'Bloquear la pantalla (se entra con un clic o una tecla)', match: { key: 'l', ctrl: true, alt: true, code: 'KeyL' } }
+	{ id: 'os-lock', group: 'Arc OS', keys: ['Ctrl', 'Alt', 'L'], combo: true, action: 'Bloquear la pantalla (se entra con un clic o una tecla)', match: { key: 'l', ctrl: true, alt: true, code: 'KeyL' } },
+	// App Ajustes de Arc OS (src/lib/os/apps/settings/Settings.svelte).
+	{ id: 'os-settings-home', group: 'Arc OS', keys: ['Esc'], how: 'en Ajustes, dentro de una sección', action: 'Volver al panel con todos los ajustes', match: { key: 'Escape' } }
 ] as const satisfies readonly Shortcut[];
 
 export type ShortcutId = (typeof SHORTCUTS)[number]['id'];

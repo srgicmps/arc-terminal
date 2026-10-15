@@ -11,6 +11,10 @@
 	import Logo from '#lib/components/Logo.svelte';
 	import { refreshNotices, shell } from '../shell/shell.svelte.ts';
 	import { greeting, lockSummary, userName } from './boot.ts';
+	import WallLayer from './wall/WallLayer.svelte';
+	import { loadWall, wall } from './wall/wall.svelte.ts';
+
+	loadWall();
 
 	let { onunlock }: { onunlock: () => void } = $props();
 
@@ -66,6 +70,7 @@
 	onpointerup={up}
 	onkeydown={key}
 >
+	{#if wall.cfg.lock}<WallLayer />{/if}
 	<div class="when">
 		<p class="time">{time}</p>
 		<p class="date">{date}</p>
@@ -119,6 +124,12 @@
 		margin: 0;
 	}
 
+	/* Por encima del fondo (WallLayer va en absoluto, detrás). */
+	.when,
+	.card {
+		position: relative;
+	}
+
 	.time {
 		font-family: var(--mono);
 		font-size: var(--fs-clock);
@@ -145,7 +156,7 @@
 		gap: var(--sp-8);
 		width: min(100%, var(--os-lock-card));
 		padding: var(--sp-24) var(--sp-20);
-		background: var(--os-glass, var(--panel));
+		background: color-mix(in srgb, var(--panel) 72%, transparent); /* como --os-glass, calculado aquí */
 		backdrop-filter: var(--os-glass-blur, none);
 		border: var(--border);
 		border-radius: var(--os-win-radius);
@@ -234,7 +245,9 @@
 		.lock {
 			justify-content: flex-start;
 			padding-top: calc(var(--sp-24) * 3);
-			background: var(--os-phone-wall, var(--os-desk));
+			/* Como --os-phone-wall, pero calculado aquí: así coge los colores del aspecto de Arc OS. */
+			background: var(--os-desk);
+			background-image: radial-gradient(120% 70% at 20% 0%, var(--amber-soft), transparent 60%);
 			font-family: var(--os-phone-font, var(--sans));
 		}
 		.card {
@@ -261,7 +274,7 @@
 			padding: var(--sp-10) var(--sp-12);
 			border: 0;
 			border-radius: var(--os-win-radius);
-			background: var(--os-glass, var(--panel));
+			background: color-mix(in srgb, var(--panel) 72%, transparent); /* como --os-glass, calculado aquí */
 			backdrop-filter: var(--os-glass-blur, none);
 		}
 		.t {

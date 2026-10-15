@@ -6,16 +6,16 @@
 	import { clock } from '#lib/clock.svelte.ts';
 	import { marketStatus } from '#lib/markets.ts';
 	import { shell, toggle } from './shell.svelte.ts';
-	import { offsetFrom, openMarkets, timeIn, ZONES } from './zones.ts';
+	import { localZone, offsetFrom, openMarkets, timeIn, ZONES } from './zones.ts';
 
-	const here = $derived(typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'Europe/Madrid');
+	const here = localZone();
 	const isOpen = $derived(shell.open === 'clock');
 	const open = $derived(clock.now ? openMarkets(clock.now) : 0);
 </script>
 
 <div class="clock">
 	<button type="button" class="tray-btn" aria-expanded={isOpen} aria-controls="os-clock" onclick={() => toggle('clock')}>
-		<span class="mk" title="Bolsas abiertas ahora">{open ? `${open} abiertas` : 'Bolsas cerradas'}</span>
+		<span class="mk" title="Bolsas abiertas ahora">{open ? `${open} ${open === 1 ? 'bolsa abierta' : 'bolsas abiertas'}` : 'Bolsas cerradas'}</span>
 		<b>{clock.now ? timeIn(here, clock.now) : '--:--'}</b>
 	</button>
 	{#if isOpen}

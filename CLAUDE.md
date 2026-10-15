@@ -102,6 +102,9 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   Al avisar, la Action las borra (`?fired=1`). Los issues que queden se pasan a la cuenta de Sergi y se cierran
   (`?migrate=1`, `scripts/requests.ts`); nada privado en `notify-log.json`.
 
+- **Arc OS** (`/os`, comando `OS`): modo opcional que funciona como un sistema operativo (núcleo en `src/lib/os/`, shell en
+  `src/lib/os/shell/`). Lista de comprobación y dueños en `docs/arc-os.md`: cada PR marca ahí sus casillas.
+
 - **Experiencias** (`EXP`): cada una es una ruta `src/routes/x/<id>` que reutiliza datos y componentes; se apuntan en
   `src/lib/experiences.ts` (de ahí salen el índice `/x`, «EXP <nombre>», el selector de `ExpHeader` y «Al entrar» de
   HELP, que guarda `x:<id>` en `arc-home`). Sin tokens propios: funcionan con cualquier estilo y con el modo Sencillo.
@@ -162,6 +165,9 @@ Un cambio de estética se hace en un solo sitio.
   (registro en `src/lib/estilos.ts`; cómo se hace una, en `docs/estilos.md`). Capas CSS: `tokens` < `estilos` <
   `ajustes` (`src/styles/ajustes.css`: densidad y modo Sencillo). Clave `arc-style`, sincronizada con la cuenta. Sin
   nada guardado, `src/app.html` decide: «Terminal» si el navegador ya usaba la web, «Grafito» si es nuevo.
+  En Arc OS (`/os`) el escritorio, la barra, los menús y la decoración de ventana no usan la estética, el acento ni la
+  densidad: tienen un aspecto propio y fijo (`src/lib/os/look.ts`; el aspecto «Mando» está en `tokens.css`). El contenido de
+  las ventanas sí los usa.
   Lo único fuera de los tokens son los iconos (`static/favicon.svg` y los PNG de la PWA): llevan el ámbar
   escrito: se rehacen con `node scripts/icons.ts` (iconos, maskable, apple-touch y arranque del iPhone) a partir de
   `static/favicon.svg`. El logo en la web es `Logo.svelte` (mismo dibujo, con `--amber`).

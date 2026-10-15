@@ -4,7 +4,10 @@
 	Tocar una app abierta la trae al frente (o la minimiza si ya estaba delante); una cerrada, la abre.
 -->
 <script lang="ts">
+	import OsIcon from '../icons/OsIcon.svelte';
+	import ContextMenu, { type MenuEntry } from '#lib/components/os/ContextMenu.svelte';
 	import * as os from './bridge.ts';
+	import { appMenu, winMenu } from './menus.ts';
 	import { shell, toggle } from './shell.svelte.ts';
 	import { magnify } from './skins.ts';
 	import type { StartApp } from './start.ts';
@@ -28,6 +31,13 @@
 	}
 	const scale = (i: number) => (pointer === null || centers[i] === undefined ? 1 : magnify(pointer - centers[i]));
 
+	let menu = $state<{ x: number; y: number; items: MenuEntry[] } | null>(null);
+	function ctx(e: MouseEvent, a: StartApp) {
+		e.preventDefault();
+		const mine = wins.filter((w) => w.appId === a.id);
+		menu = { x: e.clientX, y: e.clientY, items: mine.length ? winMenu(mine.find((w) => w.focused) ?? mine[0]) : appMenu(a.id) };
+	}
+
 	function press(a: StartApp) {
 		const mine = wins.filter((w) => w.appId === a.id);
 		if (!mine.length) return os.open(a.id);
@@ -46,8 +56,8 @@
 		{#each items as a, i (a.id)}
 			{@const open = wins.some((w) => w.appId === a.id)}
 			<li style:--s={scale(i)}>
-				<button type="button" aria-label={`${a.title}${open ? ' (abierta)' : ''}`} onclick={() => press(a)}>
-					<span class="ico" aria-hidden="true">{a.icon ?? '·'}</span>
+				<button type="button" aria-label={`${a.title}${open ? ' (abierta)' : ''}`} onclick={() => press(a)} oncontextmenu={(e) => ctx(e, a)}>
+					<span class="ico"><OsIcon id={a.id} size={40} /></span>
 					<span class="tip" aria-hidden="true">{a.title}</span>
 				</button>
 				{#if open}<i class="dot" aria-hidden="true"></i>{/if}
@@ -56,12 +66,13 @@
 		<li class="sep" aria-hidden="true"></li>
 		<li style:--s={scale(items.length + 1)}>
 			<button type="button" aria-label="Launchpad: todas las apps" aria-expanded={shell.open === 'launchpad'} onclick={() => toggle('launchpad')}>
-				<span class="ico grid" aria-hidden="true">⊞</span>
+				<span class="ico"><OsIcon id="launchpad" size={40} /></span>
 				<span class="tip" aria-hidden="true">Launchpad</span>
 			</button>
 		</li>
 	</ul>
 </nav>
+{#if menu}<ContextMenu x={menu.x} y={menu.y} items={menu.items} label="Menú de la app" onclose={() => (menu = null)} />{/if}
 
 <style>
 	button {
@@ -99,12 +110,6 @@
 	.ico {
 		display: grid;
 		place-items: center;
-		width: 40px;
-		height: 40px;
-		border-radius: var(--os-icon-radius, var(--radius));
-		background: var(--raise);
-		color: var(--amber);
-		font-size: var(--fs-l);
 		transform: scale(var(--s, 1));
 		transform-origin: bottom center;
 		transition: transform var(--dur-fast) var(--ease);

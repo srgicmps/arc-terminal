@@ -34,8 +34,21 @@
 			} catch (e) {}
 			if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 			document.documentElement.dataset.theme = t;
+			// Arc OS (/os) no usa la estética, el acento ni la densidad de la web en el escritorio: lleva los colores de
+			// su aspecto (src/lib/os/look.ts). Las vistas de sus ventanas (?embed=1) sí los usan.
+			var embed = /[?&]embed=1(&|$)/.test(location.search) && window.parent !== window;
+			var osl = !embed && /\/os\/?$/.test(location.pathname);
+			if (osl) {
+				document.documentElement.dataset.osLook = '1';
+				try {
+					var sk = localStorage.getItem('arc-os-skin');
+					document.documentElement.dataset.osSkin = sk && /^[a-z]+$/.test(sk) ? sk : 'mando';
+				} catch (e) {
+					document.documentElement.dataset.osSkin = 'mando';
+				}
+			}
 			// Color de acento elegido en «A tu gusto» (src/lib/taste.svelte.ts); sin nada, el ámbar.
-			try {
+			if (!osl) try {
 				var a = localStorage.getItem('arc-accent');
 				if (a === 'amber' || a === 'cyan' || a === 'blue') document.documentElement.dataset.accent = a;
 				// Y la densidad («Normal», la de la estética, si no hay nada).
@@ -58,7 +71,7 @@
 			} catch (e) {}
 			document.documentElement.dataset.modo = m;
 			// Arc OS: una vista dentro de una ventana (?embed=1) va sin la cabecera de la web (src/lib/os/embed.ts).
-			if (/[?&]embed=1(&|$)/.test(location.search) && window.parent !== window) document.documentElement.dataset.embed = '1';
+			if (embed) document.documentElement.dataset.embed = '1';
 			// Estética: como decideStyle (src/lib/estilos.ts).
 			var st;
 			try {
@@ -73,8 +86,8 @@
 				}
 			} catch (e) {}
 			st = st || 'grafito';
-			document.documentElement.dataset.style = st;
-			if (st !== 'terminal') document.write('<link id="style-sheet" rel="stylesheet" href="%sveltekit.assets%/estilos/' + st + '.css">');
+			if (!osl) document.documentElement.dataset.style = st;
+			if (!osl && st !== 'terminal') document.write('<link id="style-sheet" rel="stylesheet" href="%sveltekit.assets%/estilos/' + st + '.css">');
 		</script>
 		%sveltekit.head%
 	</head>

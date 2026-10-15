@@ -3,6 +3,7 @@
 	completa, por categorías, con buscador. Tocar una la abre; Escape o tocar el fondo, cierra.
 -->
 <script lang="ts">
+	import OsIcon from '../icons/OsIcon.svelte';
 	import { tick } from 'svelte';
 	import * as os from './bridge.ts';
 	import { shell } from './shell.svelte.ts';
@@ -10,7 +11,7 @@
 
 	let query = $state('');
 	let input = $state<HTMLInputElement>();
-	const groups = $derived(query.trim() ? [{ category: 'Resultados', apps: searchApps(os.apps, query) }] : byCategory(os.apps));
+	const groups = $derived(query.trim() ? [{ category: 'Resultados', apps: searchApps(os.installed(), query) }] : byCategory(os.installed()));
 
 	$effect(() => {
 		tick().then(() => input?.focus());
@@ -36,7 +37,7 @@
 				{#each g.apps as a (a.id)}
 					<li>
 						<button type="button" onclick={() => go(a.id)} title={a.desc}>
-							<span class="ico" aria-hidden="true">{a.icon ?? '·'}</span>
+							<OsIcon id={a.id} size={64} />
 							<span class="name">{a.title}</span>
 						</button>
 					</li>
@@ -109,17 +110,6 @@
 	li button:hover,
 	li button:focus-visible {
 		background: var(--amber-soft);
-	}
-	.ico {
-		display: grid;
-		place-items: center;
-		width: 56px;
-		height: 56px;
-		border-radius: var(--os-icon-radius, var(--radius));
-		background: var(--panel);
-		box-shadow: var(--shadow);
-		color: var(--amber);
-		font-size: var(--fs-xl);
 	}
 	.name {
 		max-width: 100%;

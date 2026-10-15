@@ -6,7 +6,8 @@ import type { WallData } from '../../exp/muro.ts';
 import type { ChangesData } from '../../types.ts';
 import { buildNotices, markSeen, toastsFor, unread, type Notice } from './notices.ts';
 import { parseIds, pushRecent, togglePin } from './start.ts';
-import { DEFAULT_SKIN, isSkin, type Skin } from './skins.ts';
+import { parseSpots, type Spots } from './icons.ts';
+import { DEFAULT_SKIN, type Skin } from './skins.ts';
 import { parseWidgets, type Placed } from './widgets.ts';
 
 export const KEYS = {
@@ -16,16 +17,24 @@ export const KEYS = {
 	bar: 'arc-os-bar',
 	seen: 'arc-os-seen',
 	wallpaper: 'arc-os-wallpaper',
-	skin: 'arc-os-skin'
+	skin: 'arc-os-skin',
+	name: 'arc-os-name',
+	icons: 'arc-os-icons'
 } as const;
 
-/** Fondos del escritorio: «estilo» sigue la estética activa; los demás, sobre sus colores. */
+/** Fondos del escritorio, siempre con los colores del aspecto (dentro de /os no se aplican las estéticas de la web). */
 export const WALLPAPERS = [
 	{ id: 'sistema', label: 'El del aspecto' },
-	{ id: 'estilo', label: 'El de la estética' },
 	{ id: 'liso', label: 'Liso' },
 	{ id: 'rejilla', label: 'Rejilla' },
-	{ id: 'degradado', label: 'Degradado' }
+	{ id: 'degradado', label: 'Degradado' },
+	// De «OS 5»: los pinta src/lib/os/system/wall/WallLayer.svelte (lista completa en wall.ts → PRESETS).
+	{ id: 'aurora', label: 'Aurora' },
+	{ id: 'horizonte', label: 'Horizonte' },
+	{ id: 'duna', label: 'Duna' },
+	{ id: 'puntos', label: 'Puntos' },
+	{ id: 'globo', label: 'Vivo: el mundo ahora' },
+	{ id: 'cielo', label: 'Vivo: tu cielo' }
 ] as const;
 export type Wallpaper = (typeof WALLPAPERS)[number]['id'];
 
@@ -50,12 +59,17 @@ export const shell = $state({
 	widgets: null as Placed[] | null,
 	bar: 'bottom' as 'bottom' | 'top',
 	wallpaper: 'sistema' as Wallpaper,
+	/** Aspecto: uno solo y fijo (cambio de Sergi); el código de los demás queda, sin interfaz. */
 	skin: DEFAULT_SKIN as Skin,
-	/** Si ya ha elegido aspecto (si no, el primer arranque se lo pregunta). */
+	/** Si ya ha pasado el asistente del primer arranque (se apunta guardando arc-os-skin). */
 	skinChosen: true,
+	/** Cómo quiere que le llame Arc OS (asistente y Panel de control); vacío si no lo ha dicho. */
+	name: '',
 	seen: [] as string[],
 	notices: [] as Notice[],
 	toasts: [] as Notice[],
+	/** Casilla de cada icono del escritorio (los que no tienen, van a la primera libre). */
+	icons: {} as Spots,
 	/** Widgets ocultos (botón ◫ de DSM); solo en esta visita. */
 	widgetsHidden: false,
 	/** Qué está desplegado: solo uno a la vez. */
@@ -72,9 +86,13 @@ export function loadShell(defaultPinned: string[]) {
 	const wp = read(KEYS.wallpaper);
 	shell.wallpaper = WALLPAPERS.some((w) => w.id === wp) ? (wp as Wallpaper) : 'sistema';
 	const skin = read(KEYS.skin);
-	shell.skin = isSkin(skin) ? skin : DEFAULT_SKIN;
-	shell.skinChosen = isSkin(skin);
+	shell.skin = DEFAULT_SKIN;
+	shell.skinChosen = skin !== null;
+	// Quien eligió otro aspecto cuando se podía vuelve al único (src/app.html lo lee antes de pintar).
+	if (skin !== null && skin !== DEFAULT_SKIN) write(KEYS.skin, DEFAULT_SKIN);
+	shell.name = cleanName(read(KEYS.name) ?? '');
 	shell.seen = parseIds(read(KEYS.seen));
+	shell.icons = parseSpots(read(KEYS.icons));
 	shell.ready = true;
 }
 
@@ -90,6 +108,10 @@ export function setWidgets(list: Placed[]) {
 	shell.widgets = list;
 	write(KEYS.widgets, JSON.stringify(list));
 }
+export function setIcons(spots: Spots) {
+	shell.icons = spots;
+	write(KEYS.icons, JSON.stringify(spots));
+}
 export function setBar(pos: 'bottom' | 'top') {
 	shell.bar = pos;
 	write(KEYS.bar, pos);
@@ -102,6 +124,13 @@ export function setSkin(skin: Skin) {
 	shell.skin = skin;
 	shell.skinChosen = true;
 	write(KEYS.skin, skin);
+}
+/** Nombre limpio: una línea, sin espacios de más, 40 letras como mucho. */
+export const cleanName = (s: string) => s.replace(/\s+/g, ' ').trim().slice(0, 40);
+
+export function setName(name: string) {
+	shell.name = cleanName(name);
+	write(KEYS.name, shell.name);
 }
 export function toggle(what: NonNullable<typeof shell.open>) {
 	shell.open = shell.open === what ? null : what;

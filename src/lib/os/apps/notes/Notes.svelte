@@ -125,7 +125,7 @@
 </script>
 
 <Tool {win}>
-	<div class="notes" class:editing={current !== null}>
+	<div class="wrap"><div class="notes" class:editing={current !== null}>
 		<aside>
 			<div class="top">
 				<button type="button" class="new" onclick={create} disabled={live >= MAX_NOTES} title={live >= MAX_NOTES ? `Como mucho ${MAX_NOTES} notas` : 'Nota nueva'}>＋ Nueva</button>
@@ -180,12 +180,18 @@
 				<p class="empty pick">Elige una nota o crea una nueva.</p>
 			{/if}
 		</section>
-	</div>
+	</div></div>
 </Tool>
 
 <style>
-	.notes {
+	/* El contenedor de la consulta @container es el de fuera: un elemento no puede consultarse a sí mismo. */
+	.wrap {
 		container-type: inline-size;
+		height: 100%;
+		min-height: 0;
+	}
+
+	.notes {
 		display: grid;
 		grid-template-columns: minmax(200px, 32%) 1fr;
 		gap: var(--sp-12);

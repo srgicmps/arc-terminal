@@ -1,17 +1,15 @@
 <!--
-	Panel de control de Arc OS: Apariencia (estética con vista previa, el mismo selector que ESTILO; fondo y
-	barra arriba o abajo), Escritorio (widgets y escritorios virtuales), Avisos, Cuenta y, solo para el admin,
+	Panel de control de Arc OS: Apariencia (fondo y barra arriba o abajo; dentro de Arc OS manda el aspecto, no
+	la estética de la web), Escritorio (widgets y escritorios virtuales), Avisos, Cuenta y, solo para el admin,
 	Administración. Lo de fuera de Arc OS se abre en su ventana (AVISOS, ESTILO, ADMIN).
 -->
 <script lang="ts">
 	import { asset } from '$app/paths';
 	import { onMount } from 'svelte';
-	import StylePicker from '#lib/components/StylePicker.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import { cloud } from '#lib/cloud.svelte.ts';
 	import * as os from './bridge.ts';
-	import { setBar, setWallpaper, setWidgets, shell, WALLPAPERS, type Wallpaper } from './shell.svelte.ts';
-	import SkinPicker from './SkinPicker.svelte';
+	import { setBar, setName, setWidgets, shell } from './shell.svelte.ts';
 	import { addWidget, defaultWidgets, removeWidget, WIDGET_KINDS, WIDGET_LABEL, type WidgetKind } from './widgets.ts';
 
 	const desks = $derived(os.desks());
@@ -26,14 +24,16 @@
 	});
 
 	let bar = $state(shell.bar);
-	let wallpaper = $state<Wallpaper>(shell.wallpaper);
 	$effect(() => setBar(bar));
-	$effect(() => setWallpaper(wallpaper));
 
 	const current = $derived(shell.widgets ?? defaultWidgets(deskW, shell.skin));
 	const has = (k: WidgetKind) => current.some((w) => w.kind === k);
 	function flip(k: WidgetKind) {
 		setWidgets(has(k) ? removeWidget(current, k) : addWidget(current, k, deskW));
+	}
+	function app(id: string) {
+		shell.open = null;
+		os.open(id);
 	}
 	function go(href: string) {
 		shell.open = null;
@@ -48,16 +48,10 @@
 	</header>
 	<div class="scroll">
 		<section>
-			<h3>Aspecto del escritorio</h3>
-			<SkinPicker />
-		</section>
-		<section>
 			<h3>Apariencia</h3>
-			<p class="mut">Colores y letra de todo Arc (la estética).</p>
-			<StylePicker />
-			<div class="row">
-				<Seg label="Fondo del escritorio" options={WALLPAPERS.map((w) => ({ value: w.id, label: w.label }))} bind:value={wallpaper} />
-			</div>
+			<p class="mut">Arc OS tiene su propio aspecto. La estética, el acento y la densidad solo cambian el contenido de las apps.</p>
+			<button type="button" class="link" onclick={() => go('/estilo')}>Estética de las apps…</button>
+			<button type="button" class="link" onclick={() => app('wallpaper')}>Cambiar fondo…</button>
 			{#if shell.skin === 'windows'}
 				<div class="row">
 					<Seg label="Barra de tareas" options={[{ value: 'bottom', label: 'Barra abajo' }, { value: 'top', label: 'Barra arriba' }]} bind:value={bar} />
@@ -82,6 +76,10 @@
 		</section>
 		<section>
 			<h3>Cuenta</h3>
+			<label class="row">
+				<span class="mut">Cómo te llamamos</span>
+				<input class="name" type="text" maxlength="40" autocomplete="given-name" value={shell.name} onchange={(e) => setName(e.currentTarget.value)} />
+			</label>
 			{#if cloud.user}
 				<p>Ajustes en tu cuenta: <b>{cloud.user}</b>. Se sincronizan entre tus dispositivos.</p>
 			{:else}
@@ -92,6 +90,9 @@
 			<h3>Arc OS</h3>
 			<p class="mut">Es opcional: puedes volver a la web de siempre cuando quieras (y entrar otra vez con OS).</p>
 			<button type="button" class="link" onclick={os.leave}>Volver a la web clásica</button>
+		</section>
+		<section>
+			<button type="button" class="link" onclick={() => app('ajustes')}>Todos los ajustes…</button>
 		</section>
 		{#if admin}
 			<section>
@@ -177,6 +178,22 @@
 	}
 	.row {
 		margin-top: var(--sp-10);
+	}
+	label.row {
+		display: flex;
+		align-items: center;
+		gap: var(--sp-8);
+	}
+	.name {
+		flex: 1;
+		min-width: 0;
+		height: var(--control-h);
+		padding: 0 var(--sp-8);
+		border: var(--hair) solid var(--line);
+		border-radius: var(--radius-s);
+		background: var(--bg);
+		color: var(--fg);
+		font: inherit;
 	}
 	.chips {
 		display: flex;

@@ -29,7 +29,7 @@
 	<Overlays />
 {:else if piece === 'taskbar'}
 	<Taskbar
-		apps={os.apps}
+		apps={os.installed()}
 		windows={os.windows()}
 		desks={os.desks()}
 		onopen={os.open}

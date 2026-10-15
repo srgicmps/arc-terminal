@@ -5,29 +5,78 @@
 	barra de abajo: deslizar hacia arriba (o tocarla) lleva a inicio; deslizar más, o mantenerla, a la multitarea.
 	Desde arriba: a la izquierda, notificaciones; a la derecha, centro de control. Hacia abajo en inicio: Spotlight.
 	Lógica en home.ts. Las apps abiertas siguen vivas (hasta MAX_OPEN): la multitarea las enseña en tarjetas.
+	Mantener un icono entra en el modo edición: se arrastra para cambiarlo de sitio, al dock o sobre otro para hacer
+	una carpeta. El orden se guarda en arc-os-phone (va con la cuenta).
 -->
 <script lang="ts">
 	import { routeHref } from '#lib/routes.ts';
 	import { clock } from '#lib/clock.svelte.ts';
-	import { barData, loadBarData } from '#lib/bar/bardata.svelte.ts';
 	import { COMMANDS } from '#lib/commands.ts';
-	import type { ChangesData } from '#lib/types.ts';
+	import { markAllSeen, shell, startNotices } from '../shell/shell.svelte.ts';
+	import { markSeen as seenWith } from '../shell/notices.ts';
+	import { EVENTS_KEY, isEvents, isoDay } from '../apps/cal/cal.ts';
 	import { APPS, appOfPath, embedSrc, findApp } from '../apps.ts';
 	import { os } from '../os.svelte.ts';
-	import { BADGES_KEY, badges, dockApps, drop, gesture, layout, readSeen, touch, type PhoneApp } from './home.ts';
+	import {
+		ARRANGE_KEY,
+		WIDGETS,
+		addWidget,
+		arrange,
+		badgesFor,
+		noticesOf,
+		removeWidget,
+		dockApps,
+		drop,
+		folderName,
+		gesture,
+		layout,
+		place,
+		rename,
+		takeOut,
+		touch,
+		type Arrangement,
+		type Folder,
+		type PhoneApp,
+		type Src,
+		type Target,
+		type WidgetId
+	} from './home.ts';
 	import PhoneStatus from './PhoneStatus.svelte';
 	import PhoneIcon from './PhoneIcon.svelte';
 	import PhoneWidget from './PhoneWidget.svelte';
 	import Spotlight from './Spotlight.svelte';
 	import CenterSheet from './CenterSheet.svelte';
+	import WallLayer from '../system/wall/WallLayer.svelte';
+	import type { Hit } from '../system/search.ts';
+	import { lock } from '../system/system.svelte.ts';
+	import { leaveOS } from '../mode.svelte.ts';
+	import PhoneFolder from './PhoneFolder.svelte';
+	import PhoneFolderIcon from './PhoneFolderIcon.svelte';
 
 	/** La base de la web (vacía si se publica en la raíz), como en Window.svelte. */
 	const base = routeHref('/').replace(/\/$/, '');
 
 	let { apps = APPS as PhoneApp[] }: { apps?: PhoneApp[] } = $props();
 
-	const pages = $derived(layout(apps));
-	const dock = $derived(dockApps(apps));
+	// Tu orden: inicio y dock, con carpetas.
+	const ids = $derived(apps.map((a) => a.id));
+	let arr = $state<Arrangement>({ items: [], dock: [], widgets: [] });
+	$effect(() => {
+		let raw: string | null = null;
+		try {
+			raw = localStorage.getItem(ARRANGE_KEY);
+		} catch {}
+		arr = arrange(raw, ids);
+	});
+	function save(next: Arrangement) {
+		if (next === arr) return;
+		arr = next;
+		try {
+			localStorage.setItem(ARRANGE_KEY, JSON.stringify(next));
+		} catch {}
+	}
+	const pages = $derived(layout(apps, arr));
+	const dock = $derived(dockApps(apps, arr.dock));
 
 	const now = $derived(clock.now || Date.now());
 	const time = $derived(new Date(now).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }));
@@ -38,24 +87,43 @@
 	let paths = $state<Record<string, string>>({});
 	let sheet = $state<null | 'notif' | 'control' | 'spot' | 'switch'>(null);
 
-	// Insignias: NOVEDADES desde la última vez que la abriste aquí.
-	let seen = $state<Record<string, number>>({});
+	// Insignias: lo no leído del centro de notificaciones de Arc OS (el mismo que el del escritorio), en la app a la
+	// que lleva cada aviso; y en Calendario, tus eventos de hoy.
+	$effect(() => startNotices());
+	const appIdOf = (href: string) => appOfPath(href.split(/[?#]/)[0])?.id;
+	let todayEvents = $state(0);
 	$effect(() => {
+		const day = isoDay(new Date(now));
 		try {
-			seen = readSeen(localStorage.getItem(BADGES_KEY));
+			const list: unknown = JSON.parse(localStorage.getItem(EVENTS_KEY) ?? '[]');
+			todayEvents = isEvents(list) ? list.filter((e) => e.date === day).length : 0;
 		} catch {}
-		loadBarData(['changes']);
 	});
-	const changes = $derived((barData.changes as ChangesData | null | undefined)?.items ?? []);
-	const badge = $derived(badges(changes, seen, now));
+	const badge: Record<string, number> = $derived({ ...badgesFor(shell.notices, shell.seen, appIdOf), ...(todayEvents ? { calendario: todayEvents } : {}) });
+	const folderBadge = (f: Folder) => f.apps.reduce((n, id) => n + (badge[id] ?? 0), 0);
 	const notice = $derived(os.notice && now - os.notice.at < 10 * 60_000 ? os.notice.text : null);
+	/** Lo que estaba sin leer al abrir las notificaciones (se marca leído al abrirlas, pero se distingue). */
+	let unreadAtOpen = $state(new Set<string>());
 
+	/** Al abrir una app, lo suyo del centro de notificaciones queda leído. */
 	function markSeen(id: string) {
-		seen = { ...seen, [id]: Date.now() };
+		const ids = noticesOf(shell.notices, id, appIdOf);
+		if (!ids.length || ids.every((x) => shell.seen.includes(x))) return;
+		shell.seen = seenWith(shell.seen, ids);
 		try {
-			localStorage.setItem(BADGES_KEY, JSON.stringify(seen));
+			localStorage.setItem('arc-os-seen', JSON.stringify(shell.seen));
 		} catch {}
 	}
+	$effect(() => {
+		if (sheet !== 'notif') return;
+		unreadAtOpen = new Set(shell.notices.filter((n) => !shell.seen.includes(n.id)).map((n) => n.id));
+		markAllSeen();
+	});
+
+	// Widgets: en el modo edición se quitan («−») o se añaden («+», arriba a la izquierda).
+	let picking = $state(false);
+	const addable = $derived(WIDGETS.filter((w) => addWidget(arr, w.id) !== arr));
+	const widgetName = (id: WidgetId) => WIDGETS.find((w) => w.id === id)?.name ?? id;
 
 	function launch(a: PhoneApp, path?: string) {
 		sheet = null;
@@ -101,6 +169,7 @@
 	function up(e: PointerEvent) {
 		clearTimeout(hold);
 		if (!start) return;
+		if (editing || drag || openFolder) return void (start = null);
 		const g = gesture(start, { x: e.clientX, y: e.clientY }, { w: innerWidth, h: innerHeight }, current !== null);
 		start = null;
 		if (sheet) return;
@@ -118,21 +187,176 @@
 
 	function onkeydown(e: KeyboardEvent) {
 		if (e.key !== 'Escape') return;
-		if (sheet) sheet = null;
+		if (openFolder) openFolder = null;
+		else if (editing) editing = false;
+		else if (sheet) sheet = null;
 		else if (current) current = null;
 		else return;
 		e.preventDefault();
+	}
+
+	// ---- Modo edición, arrastrar y carpetas ----
+	let editing = $state(false);
+	let openFolder = $state<string | null>(null);
+	const folder = $derived(arr.items.find((s): s is Folder => typeof s !== 'string' && s.id === openFolder));
+	const folderApps = $derived(folder ? dockApps(apps, folder.apps) : []);
+
+	/** Lo que se arrastra (null: nada), dónde está el dedo y dónde caería. */
+	let drag = $state<{ src: Src; x: number; y: number; to: Target | null } | null>(null);
+	let press: { src: Src; x: number; y: number; armed: boolean; timer: ReturnType<typeof setTimeout> } | null = null;
+	/** Tras un arrastre o una pulsación larga, el clic que llega después no abre nada. */
+	let swallow = false;
+
+	const sectionOf = (id: string) => COMMANDS.find((c) => c.code.toLowerCase() === id)?.manual?.section;
+	const dragApp = $derived(drag ? (appOf(drag.src.id) ?? null) : null);
+	const dragFolder = $derived(drag && !dragApp ? (arr.items.find((s): s is Folder => typeof s !== 'string' && s.id === drag!.src.id) ?? null) : null);
+
+	function pressStart(e: PointerEvent, src: Src) {
+		if (e.button > 0 || current !== null) return;
+		clearTimeout(press?.timer);
+		swallow = false;
+		const p = { src, x: e.clientX, y: e.clientY, armed: editing, timer: undefined as unknown as ReturnType<typeof setTimeout> };
+		p.timer = setTimeout(() => {
+			p.armed = true;
+			swallow = true;
+			if (!editing) {
+				editing = true;
+				navigator.vibrate?.(10);
+			}
+		}, 450);
+		press = p;
+	}
+
+	/** Lo que hay bajo el dedo: una casilla de inicio, del dock o de la carpeta abierta. */
+	function targetAt(x: number, y: number): Target | null {
+		const src = drag!.src;
+		const el = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-drop]');
+		if (!el) return document.elementFromPoint(x, y)?.closest('.pager') ? { kind: 'end' } : null;
+		const [kind, val] = (el.dataset.drop ?? '').split(/:(.*)/);
+		const r = el.getBoundingClientRect();
+		const after = x > r.left + r.width / 2;
+		if (kind === 'item') {
+			if (val === src.id) return null;
+			const sq = el.querySelector('.sq')?.getBoundingClientRect() ?? r;
+			const inner = Math.abs(x - (sq.left + sq.width / 2)) < sq.width * 0.32 && Math.abs(y - (sq.top + sq.height / 2)) < sq.height * 0.32;
+			if (inner && dragApp) return { kind: 'merge', key: val };
+			return { kind: after ? 'after' : 'before', key: val };
+		}
+		if (kind === 'dock' || kind === 'fitem') {
+			const list = kind === 'dock' ? arr.dock : (folder?.apps ?? []);
+			let i = Number(val) + (after ? 1 : 0);
+			const from = list.indexOf(src.id);
+			if (from >= 0 && (kind === 'dock' ? !src.folder : src.folder === folder?.id) && from < i) i--;
+			return kind === 'dock' ? { kind: 'dock', index: i } : { kind: 'folder', folder: folder!.id, index: i };
+		}
+		if (kind === 'dockzone') return { kind: 'dock', index: arr.dock.length - (arr.dock.includes(src.id) ? 1 : 0) };
+		return null;
+	}
+
+	let edge: ReturnType<typeof setTimeout> | undefined;
+	function onmove(e: PointerEvent) {
+		if (!press && !drag) return;
+		if (press && !drag) {
+			const d = Math.hypot(e.clientX - press.x, e.clientY - press.y);
+			if (!press.armed) {
+				if (d > 10) (clearTimeout(press.timer), (press = null));
+				return;
+			}
+			if (d < 6) return;
+			drag = { src: press.src, x: e.clientX, y: e.clientY, to: null };
+		}
+		if (!drag) return;
+		drag.x = e.clientX;
+		drag.y = e.clientY;
+		// Fuera del recuadro de una carpeta abierta: se cierra y la app sale a inicio.
+		if (openFolder && drag.src.folder) {
+			const r = document.querySelector('[data-folder-panel]')?.getBoundingClientRect();
+			if (r && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) openFolder = null;
+		}
+		drag.to = targetAt(e.clientX, e.clientY);
+		// Cerca del borde, pasa de página.
+		const side = e.clientX < 24 ? -1 : e.clientX > innerWidth - 24 ? 1 : 0;
+		clearTimeout(edge);
+		if (side && !openFolder) edge = setTimeout(() => toPage(Math.max(0, Math.min(pages.length - 1, page + side))), 600);
+	}
+	function onrelease() {
+		clearTimeout(edge);
+		if (press) clearTimeout(press.timer);
+		press = null;
+		if (!drag) return;
+		const { src, to } = drag;
+		drag = null;
+		swallow = true;
+		const names = [to?.kind === 'merge' ? to.key : '', src.id].map(sectionOf);
+		const next = to ? place(arr, src, to, folderName(names)) : arr;
+		// Si sale de una carpeta y no cabe donde lo sueltas, queda justo detrás de la carpeta.
+		save(next === arr && src.folder && !openFolder ? takeOut(arr, src.folder, src.id) : next);
+	}
+	function oncancel() {
+		clearTimeout(edge);
+		if (press) clearTimeout(press.timer);
+		press = null;
+		drag = null;
+	}
+	/** Un toque en una app: la abre, salvo en el modo edición o justo después de arrastrar. */
+	function tap(a: PhoneApp) {
+		if (swallow || editing) return void (swallow = false);
+		launch(a);
+	}
+	function tapFolder(f: Folder) {
+		if (swallow) return void (swallow = false);
+		openFolder = f.id;
+	}
+	// Mientras se arrastra, el dedo no desplaza las páginas ni la carpeta (en iOS hace falta un touchmove activo).
+	$effect(() => {
+		const stop = (e: TouchEvent) => (drag || press?.armed) && e.cancelable && e.preventDefault();
+		addEventListener('touchmove', stop, { passive: false });
+		return () => removeEventListener('touchmove', stop);
+	});
+	/** La marca de dónde caería, para una casilla. */
+	const markOf = (key: string) => (drag?.to && 'key' in drag.to && drag.to.key === key ? drag.to.kind : null);
+	const dockMark = $derived(drag?.to?.kind === 'dock' ? drag.to.index : -1);
+	const folderMark = $derived.by(() => {
+		const to = drag?.to;
+		if (to?.kind !== 'folder' || !folder) return null;
+		const n = folder.apps.length - (drag!.src.folder === folder.id ? 1 : 0);
+		const list = folder.apps.filter((x) => x !== drag!.src.id);
+		const at = Math.min(to.index, n);
+		const key = at < list.length ? list[at] : list[list.length - 1];
+		return { index: folder.apps.indexOf(key), side: at < list.length ? ('before' as const) : ('after' as const) };
+	});
+
+	/** Un resultado del buscador universal, en el teléfono: apps y rutas a pantalla completa; el resto, aquí. */
+	function runPhoneHit(h: Hit) {
+		const a = h.action;
+		if ('app' in a) {
+			const app = appOf(a.app);
+			if (app) launch(app);
+		} else if ('path' in a) launchPath(a.path);
+		else if (a.sys === 'lock') ((sheet = null), lock());
+		else if (a.sys === 'leave') leaveOS();
+		else if (a.sys === 'control') sheet = 'control';
+		else if (a.sys === 'notices') sheet = 'notif';
+		else goHome();
 	}
 
 	/** Lo que se carga en el iframe de cada app abierta. */
 	const src = (id: string) => base + embedSrc(paths[id] ?? appOf(id)?.href ?? '/');
 </script>
 
-<svelte:window {onkeydown} />
+<svelte:window {onkeydown} onpointermove={onmove} onpointerup={onrelease} onpointercancel={oncancel} />
 
-<div class="phone" class:in-app={current !== null} role="application" aria-label="Modo OS" onpointerdown={down} onpointerup={up}>
+<!-- Arc OS tiene un solo estilo, «Mando» (tokens.css): también el teléfono y lo que se abre encima. -->
+<div class="skin" data-os-skin="mando" data-ui="os">
+<div class="phone" class:in-app={current !== null} class:editing role="application" oncontextmenu={(e) => e.preventDefault()} aria-label="Modo OS" onpointerdown={down} onpointerup={up}>
+	<!-- Fondo de pantalla: el que eliges en la app «Fondo de pantalla» de OS 5 (el mismo que el escritorio). -->
+	<div class="wall" aria-hidden="true"><WallLayer /></div>
 	<div class="top">
 		<PhoneStatus {time} onnotif={() => (sheet = 'notif')} oncontrol={() => (sheet = 'control')} />
+		{#if editing && current === null}
+			<button class="add" onclick={() => (picking = true)} disabled={!addable.length} aria-label="Añadir un widget">+</button>
+			<button class="done" onclick={() => ((editing = false), (picking = false))}>Listo</button>
+		{/if}
 	</div>
 
 	<!-- Pantalla de inicio -->
@@ -140,11 +364,29 @@
 		<div class="pager" bind:this={pager} {onscroll}>
 			{#each pages as cells, i (i)}
 				<section class="page" aria-label="Página {i + 1} de {pages.length}">
-					{#each cells as c (c.kind === 'app' ? c.app.id : c.id)}
-						{#if c.kind === 'app'}
-							<div class="cell"><PhoneIcon app={c.app} badge={badge[c.app.id] ?? 0} onopen={(a) => launch(a)} /></div>
+					{#each cells as c (c.kind === 'app' ? c.app.id : c.kind === 'folder' ? c.folder.id : c.id)}
+						{#if c.kind === 'app' || c.kind === 'folder'}
+							{@const key = c.kind === 'app' ? c.app.id : c.folder.id}
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
+							<div
+								class="cell icon mark-{markOf(key)}"
+								class:ghosted={drag?.src.id === key}
+								data-drop="item:{key}"
+								onpointerdown={(e) => pressStart(e, { id: key })}
+							>
+								{#if c.kind === 'app'}
+									<PhoneIcon app={c.app} badge={badge[c.app.id] ?? 0} onopen={tap} />
+								{:else}
+									<PhoneFolderIcon folder={c.folder} apps={c.apps} badge={folderBadge(c.folder)} onopen={() => tapFolder(c.folder)} />
+								{/if}
+							</div>
 						{:else}
-							<div class="cell w-{c.size}"><PhoneWidget id={c.id} {now} onopen={launchCode} /></div>
+							<div class="cell w-{c.size}">
+								<PhoneWidget id={c.id} {now} notices={shell.notices} onopen={launchCode} onpath={launchPath} />
+								{#if editing}
+									<button class="minus" onclick={() => save(removeWidget(arr, c.id))} aria-label="Quitar el widget {widgetName(c.id)}">−</button>
+								{/if}
+							</div>
 						{/if}
 					{/each}
 				</section>
@@ -163,8 +405,20 @@
 			</div>
 		</div>
 
-		<nav class="dock" aria-label="Dock">
-			{#each dock as a (a.id)}<PhoneIcon app={a} bare badge={badge[a.id] ?? 0} onopen={(x) => launch(x)} />{/each}
+		<nav class="dock" aria-label="Dock" data-drop="dockzone">
+			{#each dock as a, i (a.id)}
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div
+					class="icon"
+					class:ghosted={drag?.src.id === a.id}
+					class:mark-before={dockMark === i}
+					class:mark-after={dockMark === dock.length && i === dock.length - 1}
+					data-drop="dock:{i}"
+					onpointerdown={(e) => pressStart(e, { id: a.id })}
+				>
+					<PhoneIcon app={a} bare badge={badge[a.id] ?? 0} onopen={tap} />
+				</div>
+			{/each}
 		</nav>
 	</div>
 
@@ -209,13 +463,59 @@
 	{/if}
 </div>
 
-{#if sheet === 'spot'}
-	<Spotlight {apps} {now} onapp={(a) => launch(a)} onpath={launchPath} onclose={() => (sheet = null)} />
-{:else if sheet === 'notif' || sheet === 'control'}
-	<CenterSheet kind={sheet} {changes} {notice} {now} onclose={() => (sheet = null)} onpath={launchPath} />
+{#if folder}
+	<PhoneFolder
+		{folder}
+		apps={folderApps}
+		{badge}
+		{editing}
+		dragging={drag?.src.id ?? null}
+		mark={folderMark}
+		onopen={(a) => tap(a)}
+		onpress={(e, id) => pressStart(e, { id, folder: folder.id })}
+		onrename={(name) => save(rename(arr, folder.id, name))}
+		onclose={() => !drag && (openFolder = null)}
+	/>
 {/if}
 
+{#if picking}
+	<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+	<div class="pick-scrim" onclick={() => (picking = false)}></div>
+	<div class="picker" role="dialog" aria-modal="true" aria-label="Añadir un widget">
+		<h2>Widgets</h2>
+		{#each addable as w (w.id)}
+			<button class="wrow" onclick={() => (save(addWidget(arr, w.id)), (picking = false))}>
+				<b>{w.name} <small>{w.size === 'l' ? 'grande' : 'pequeño'}</small></b>
+				<span>{w.desc}</span>
+			</button>
+		{:else}
+			<p>No cabe ninguno más: quita uno antes.</p>
+		{/each}
+	</div>
+{/if}
+
+{#if drag}
+	<div class="drag" style:left="{drag.x}px" style:top="{drag.y}px" aria-hidden="true">
+		{#if dragApp}
+			<PhoneIcon app={dragApp} bare onopen={() => {}} />
+		{:else if dragFolder}
+			<PhoneFolderIcon folder={dragFolder} apps={dockApps(apps, dragFolder.apps)} onopen={() => {}} />
+		{/if}
+	</div>
+{/if}
+
+{#if sheet === 'spot'}
+	<Spotlight {apps} {now} onapp={(a) => launch(a)} onpath={launchPath} onhit={runPhoneHit} onclose={() => (sheet = null)} />
+{:else if sheet === 'notif' || sheet === 'control'}
+	<CenterSheet kind={sheet} notices={shell.notices} unread={unreadAtOpen} {notice} {now} onclose={() => (sheet = null)} onpath={launchPath} />
+{/if}
+
+</div>
+
 <style>
+	.skin {
+		display: contents;
+	}
 	.phone {
 		position: fixed;
 		inset: 0;
@@ -231,10 +531,184 @@
 		user-select: none;
 		-webkit-user-select: none;
 	}
+	.wall {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+	}
 	.top {
 		position: relative;
 		z-index: 3;
 		touch-action: none;
+	}
+	.phone {
+		-webkit-touch-callout: none;
+	}
+	.done {
+		position: absolute;
+		right: var(--sp-12);
+		top: 50%;
+		transform: translateY(-50%);
+		height: var(--control-h);
+		padding: 0 var(--sp-14);
+		border: 0;
+		border-radius: var(--os-radius-l);
+		background: var(--raise);
+		box-shadow: inset 0 0 0 var(--hair) var(--line);
+		color: var(--fg);
+		font: var(--fw-bold) var(--fs-s) var(--os-phone-font);
+		cursor: pointer;
+	}
+	.add {
+		position: absolute;
+		left: var(--sp-12);
+		top: 50%;
+		transform: translateY(-50%);
+		width: var(--control-h);
+		height: var(--control-h);
+		padding: 0;
+		border: 0;
+		border-radius: var(--os-radius-l);
+		background: var(--raise);
+		box-shadow: inset 0 0 0 var(--hair) var(--line);
+		color: var(--fg);
+		font: var(--fw-bold) var(--fs-l) var(--os-phone-font);
+		cursor: pointer;
+	}
+	.add:disabled {
+		opacity: 0.4;
+	}
+	.editing:not(.in-app) .top :global(.t) {
+		visibility: hidden;
+	}
+	.w-l,
+	.w-s {
+		position: relative;
+	}
+	.minus {
+		position: absolute;
+		top: calc(-1 * var(--sp-6));
+		left: calc(-1 * var(--sp-6));
+		z-index: 1;
+		width: 24px;
+		height: 24px;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: var(--raise);
+		box-shadow: inset 0 0 0 var(--hair) var(--line);
+		color: var(--fg);
+		font: var(--fw-bold) var(--fs-m) / 24px var(--os-phone-font);
+		cursor: pointer;
+	}
+	.pick-scrim {
+		position: fixed;
+		inset: 0;
+		z-index: calc(var(--z-modal) + 2);
+		background: var(--os-glass-strong);
+	}
+	.picker {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: calc(var(--z-modal) + 3);
+		display: flex;
+		flex-direction: column;
+		gap: var(--hair);
+		max-height: 70dvh;
+		overflow-y: auto;
+		padding: var(--sp-16) var(--sp-16) calc(env(safe-area-inset-bottom, 0px) + var(--sp-16));
+		border-radius: var(--os-radius-xl) var(--os-radius-xl) 0 0;
+		background: var(--panel);
+		box-shadow: inset 0 var(--hair) 0 var(--cmd-cold-dim);
+		font-family: var(--os-phone-font);
+		color: var(--fg);
+	}
+	.picker h2 {
+		margin: 0 0 var(--sp-8);
+		font-size: var(--fs-l);
+	}
+	.picker p {
+		color: var(--muted);
+		font-size: var(--fs-s);
+	}
+	.wrow {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: var(--sp-2);
+		padding: var(--sp-12);
+		border: 0;
+		background: var(--raise);
+		color: var(--fg);
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+	.wrow small {
+		color: var(--muted);
+		font-weight: var(--fw-normal);
+	}
+	.wrow span {
+		color: var(--muted);
+		font-size: var(--fs-s);
+	}
+	.editing:not(.in-app) .top :global(.ic) {
+		visibility: hidden;
+	}
+	/* Modo edición: los iconos se mecen un poco (sutil) y no desplazan la página al arrastrarlos. */
+	.editing .icon {
+		touch-action: none;
+	}
+	.editing .icon > :global(*) {
+		animation: sway 0.32s ease-in-out infinite alternate;
+	}
+	.editing .icon:nth-child(2n) > :global(*) {
+		animation-delay: -0.16s;
+	}
+	@keyframes sway {
+		from {
+			transform: rotate(-1deg);
+		}
+		to {
+			transform: rotate(1deg);
+		}
+	}
+	.icon {
+		position: relative;
+	}
+	.ghosted {
+		opacity: 0.3;
+	}
+	/* Dónde caería: una raya de acento a un lado, o el icono destino un poco mayor (carpeta). */
+	.mark-before::before,
+	.mark-after::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		width: var(--sp-2);
+		height: var(--os-icon-size);
+		border-radius: var(--sp-2);
+		background: var(--amber);
+	}
+	.mark-before::before {
+		left: calc(-1 * var(--sp-6));
+	}
+	.mark-after::after {
+		right: calc(-1 * var(--sp-6));
+	}
+	.mark-merge > :global(*) {
+		transform: scale(1.12);
+		transition: transform var(--dur-fast) var(--ease);
+	}
+	.drag {
+		position: fixed;
+		z-index: calc(var(--z-modal) + 5);
+		width: calc(var(--os-icon-size) + var(--sp-12));
+		transform: translate(-50%, -60%) scale(1.1);
+		pointer-events: none;
+		filter: drop-shadow(0 var(--sp-6) var(--sp-12) var(--bg));
 	}
 	.in-app .top {
 		background: var(--bg);
@@ -310,7 +784,7 @@
 		height: 30px;
 		padding: 0 var(--sp-14);
 		border: 0;
-		border-radius: 15px;
+		border-radius: var(--os-radius-pill);
 		background: var(--os-glass);
 		backdrop-filter: var(--os-glass-blur);
 		-webkit-backdrop-filter: var(--os-glass-blur);
@@ -350,7 +824,7 @@
 		grid-template-columns: repeat(4, 1fr);
 		margin: 0 var(--sp-12);
 		padding: var(--sp-14) var(--sp-12);
-		border-radius: calc(var(--os-radius-l) + var(--sp-8));
+		border-radius: var(--os-radius-xl);
 		background: var(--os-glass);
 		backdrop-filter: var(--os-glass-blur);
 		-webkit-backdrop-filter: var(--os-glass-blur);
@@ -493,7 +967,8 @@
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.home,
-		.slot {
+		.slot,
+		.editing .icon > :global(*) {
 			transition: none;
 			animation: none;
 		}
