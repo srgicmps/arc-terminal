@@ -85,7 +85,32 @@ try {
 			// Deja que arranquen el reloj y los $effect.
 			await page.waitForTimeout(300);
 			const check = await page.evaluate(() => ({
-				scroll: document.documentElement.scrollWidth - window.innerWidth,
+				// clientWidth, no innerWidth: en el móvil, innerWidth crece con la página si algo se sale y la resta da 0.
+				scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+				// Qué se sale: se oculta cada hijo por turnos y se baja por el que quita el scroll.
+				culprit: (() => {
+					const root = document.documentElement;
+					const over = () => root.scrollWidth - root.clientWidth;
+					if (over() <= 0) return '';
+					const path: string[] = [];
+					let el: Element = document.body;
+					for (let depth = 0; depth < 14; depth++) {
+						const before = over();
+						const kid = [...el.children].find((c) => {
+							const h = c as HTMLElement;
+							const prev = h.style.display;
+							h.style.display = 'none';
+							const gone = over() < before;
+							h.style.display = prev;
+							return gone;
+						});
+						if (!kid) break;
+						const cls = [...kid.classList].filter((c) => !c.startsWith('svelte-')).slice(0, 2).join('.');
+						path.push(kid.tagName.toLowerCase() + (cls ? '.' + cls : '') + (kid.getAttribute('data-ui') ? `[${kid.getAttribute('data-ui')}]` : ''));
+						el = kid;
+					}
+					return path.slice(-5).join(' > ') + ` «${(el.textContent ?? '').trim().slice(0, 40)}»`;
+				})(),
 				// Campos con letra de menos de 16 px: Safari del iPhone amplía la página al tocarlos (app.css lo evita).
 				zoom: [...document.querySelectorAll<HTMLElement>('input, select, textarea')]
 					.filter((e) => !/^(checkbox|radio|range|color|button|submit|hidden)$/.test((e as HTMLInputElement).type) && e.offsetParent)
@@ -110,7 +135,7 @@ try {
 					return [...found];
 				})()
 			}));
-			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px`);
+			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px (${check.culprit})`);
 			if (width < 600) for (const f of new Set(check.zoom)) failures.push(`${where}: el campo «${f}» tiene letra de menos de 16 px (el iPhone amplía al tocarlo)`);
 			if (check.keys.length > 1) failures.push(`${where}: pestañas de arriba de alturas distintas (${check.keys.join(', ')} px)`);
 			if (!NO_PANELS.has(path) && !check.panels) failures.push(`${where}: sin paneles`);
