@@ -161,6 +161,12 @@
 	--os-thumb-w: 168px; /* miniatura de ventana del Alt+Tab */
 	--os-lock-card: 360px; /* tarjeta de la pantalla de bloqueo */
 	--os-avatar: 56px; /* inicial del usuario en la pantalla de bloqueo */
+	--os-wall-preview: 280px; /* vista previa de la app Fondo de pantalla */
+	--os-wall-tile: 120px; /* miniatura de la galería de fondos */
+	--os-wall-drop: 72px; /* zona para soltar una imagen */
+	--os-wall-grid: 32px; /* paso del fondo Rejilla */
+	--os-live-opacity: 0.45; /* fondo vivo (el globo): tenue, para que no distraiga */
+	--os-wall-cool: color-mix(in srgb, var(--fg) 7%, transparent); /* segundo tono, neutro, del fondo Aurora */
 	/* Arc OS en el móvil (≤ 900 px): pantalla de inicio de teléfono. */
 	--os-phone-font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; /* letra del sistema del teléfono */
 	--os-phone-wall: radial-gradient(120% 70% at 20% 0%, var(--amber-soft), transparent 60%), var(--os-desk); /* fondo de pantalla */

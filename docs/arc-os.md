@@ -30,7 +30,7 @@ nada en los traspasos entre sesiones.
 - [x] Mosaico, teclado (Alt+º, Alt+↑/↓, Alt+⇧+←/→, Alt+W) y decoración de ventana por aspecto [OS 1] #493
 - [x] Menú de ventana con clic derecho en el título, «siempre encima», varias instancias y cierre animado [OS 1] #496
 - [x] Doble clic en el título para maximizar [OS 1] #493/#496
-- [x] Restaurar la sesión de ventanas al volver (`arc-os-desks`) [OS 1] #477 (OS 5 lo revisa)
+- [x] Restaurar la sesión de ventanas al volver (`arc-os-desks`) [OS 1] #477 (revisado por OS 5)
 - [x] /os sin tope de peso (`scripts/weight.ts` → `EXEMPT`) [OS 2] #497
 
 ## Aspecto (cambio de Sergi, manda sobre lo anterior)
@@ -44,11 +44,12 @@ nada en los traspasos entre sesiones.
       nombre [OS 2]
 - [ ] Las estéticas de la web (Apariencia: `data-style`, acento y densidad) solo afectan al **contenido de las
       apps** dentro de las ventanas, nunca al escritorio, la barra, los menús ni la decoración de ventana [OS 2]
-- [ ] El fondo de pantalla sí se puede cambiar (ver «Escritorio») [OS 5 + OS 2]
+- [x] El fondo de pantalla sí se puede cambiar: app «Fondo de pantalla», `openApp('wallpaper')` [OS 5] #511
 
 ## Escritorio
 - [x] Fondo por aspecto y fondos de tokens (sistema, estética, liso, rejilla, degradado) [OS 2] #476/#500
-- [ ] Fondo propio: subir imagen, galería, por escritorio, presentación y fondo «vivo» [OS 5]
+- [x] Fondo propio: galería (9 incluidos, día y noche con tokens), 2 vivos (el mundo ahora, tu cielo), color, degradado, tus imágenes (IndexedDB, comprimidas, solo este navegador; rellenar, ajustar, centrar, mosaico y punto focal), por escritorio, presentación y fondo de bloqueo (`src/lib/os/system/wall/`) [OS 5] #511
+- [ ] Fondo en la pantalla de inicio del móvil con `<WallLayer />` [OS 3]
 - [ ] «Cambiar fondo…» conectado en el clic derecho del escritorio y en el Panel de control [OS 2, cuando OS 5 tenga el selector]
 - [x] Widgets movibles: reloj mundial, cotizaciones, tiempo, titulares, luz barata, Tu mañana [OS 2] #476
 - [x] Widgets del sistema (estilo DSM): estado de las fuentes, registro, datos [OS 2] #500
@@ -76,15 +77,18 @@ nada en los traspasos entre sesiones.
 - [x] Bandeja: reloj con zonas y bolsas abiertas, avisos, cuenta y ajustes [OS 2] #476
 - [x] Panel de control: aspecto, estética, fondo, barra, widgets, avisos, cuenta y admin [OS 2] #476/#500
 - [x] Buscador (Ctrl+Espacio) con las apps [OS 2] #500
-- [ ] Buscador con más fuentes (vistas, valores, comandos y ajustes): `searchAll(q)` de OS 5, conectado en el buscador [OS 5 + OS 2]
+- [x] `searchAll(q)` + `runHit(hit)`: vistas, valores, países, líderes, comandos y ajustes [OS 5] #510
+- [ ] Conectado en el buscador del escritorio [OS 2]
 
 ## Sistema
-- [ ] Arranque breve (la primera vez del día) y pantalla de bloqueo [OS 5] (#499)
+- [x] Arranque breve (la primera vez del día) y pantalla de bloqueo, también en el móvil; Ctrl+Alt+L [OS 5] #499
 - [x] Asistente «Bienvenido a Arc OS»: aspecto, fondo y widgets [OS 2] #501
 - [x] Centro de notificaciones (campana) y toasts; `notify()` para el sistema y las apps [OS 2] #476/#500
-- [ ] Alt+Tab visual con miniaturas [OS 5]
-- [ ] Sonidos opcionales [OS 5]
-- [ ] Atajos del sistema en `shortcuts.ts` [OS 5]
+- [x] Alt+Tab visual con miniaturas [OS 5] #509
+- [x] Avisos de Arc (mercados, valores, macro…) como toasts con `notify()` [OS 5] #512
+- [x] Sonidos opcionales (Web Audio, apagados por defecto: `setSettings({ sounds })`) [OS 5] #511
+- [ ] Interruptores de «Pantalla de inicio» y «Sonidos» en Ajustes [OS 4]
+- [x] Atajos del sistema en `shortcuts.ts` (salen en HELP) [OS 5] #499/#509
 
 ## Apps del sistema
 - [ ] Explorador de archivos al estilo de un gestor web de archivos, con papelera (mismo modelo de carpetas que el escritorio) [OS 4]
