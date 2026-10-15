@@ -214,6 +214,7 @@
 			return;
 		}
 		if (!fromQueue) queue = [];
+		// Acciones (27-B): «compartir WS», «+NVDA», «vigila aranceles», «alerta NVDA > 150».
 		if (parseAction(raw)) {
 			close();
 			runAction(raw, ALL, flash);
