@@ -153,3 +153,9 @@ sin imitar a ningún gobierno (solo la franja «ARC · USO PRIVADO»).
 - [x] Una ventana minimizada o de otro escritorio seguía pintando (iframe a 60 fps, globo del mapa girando): `content-visibility: hidden`, sin recargarla [QA OS 11]
 - [x] Toasts: un temporizador por aviso y limpieza al desmontar [QA OS 11]
 - [x] Prueba de humo de /os con 12 ventanas (`scripts/smoke-os.ts`) [QA OS 11]
+
+## Recorridos de punta a punta (QA OS 13)
+`pnpm e2e:os` (tras `pnpm build`; `scripts/e2e-os.ts`): primer arranque, bienvenida, fondo propio, TOP/GEO/WS/MIS en
+ventanas, mosaico, carpeta con un icono dentro, Notas, Mapa operacional y Expediente, buscador universal, recargar y que
+todo vuelva igual, otro escritorio, y salir al Terminal clásico y volver. Job `e2e-os` de los PR: Chromium manda;
+Firefox y WebKit solo avisan. `E2E_SHOTS=<carpeta>` guarda una captura de cada paso que falla.

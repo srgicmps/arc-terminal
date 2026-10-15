@@ -15,7 +15,8 @@
 		"test": "vitest run",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"smoke": "node scripts/smoke.ts"
+		"smoke": "node scripts/smoke.ts",
+		"e2e:os": "node scripts/e2e-os.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

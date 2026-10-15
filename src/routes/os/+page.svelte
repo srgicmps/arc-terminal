@@ -25,6 +25,8 @@
 	$effect(() =>
 		untrack(() => {
 			loadShell(['top', 'imp', 'eco', 'ws', 'geo']);
+			// Al volver de la web clásica, sin el panel o el menú que quedó abierto al salir (el estado vive en memoria).
+			shell.open = null;
 			loadFiles(shell.pinned.map((id) => apps.find((a) => a.id === id)).filter((a) => !!a).map((a) => ({ id: a.id, name: a.title })));
 		})
 	);

@@ -38,7 +38,7 @@
 	function empty(src: WidgetSource, what: string, none: string) {
 		if (!wdata.loaded) return `Cargando ${what}…`;
 		const why = wdata.failed[src];
-		return why ? `No se han podido leer ${what} (${why}). Se vuelve a intentar a las ${retryAt}.` : none;
+		return why ? `Error al leer ${what} (${why}). Se vuelve a intentar a las ${retryAt}.` : none;
 	}
 
 	function go(e: MouseEvent, href: string) {
