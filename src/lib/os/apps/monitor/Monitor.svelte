@@ -4,6 +4,7 @@
 	(salud de las fuentes, almacenamiento y memoria del navegador) y «Recursos» (gráficas en directo, Resources.svelte). Lee /data/status.json al abrir y cada minuto.
 -->
 <script lang="ts">
+	import UiIcon from '../../icons/UiIcon.svelte';
 	import { asset } from '$app/paths';
 	import { onMount } from 'svelte';
 	import Search from '../../../components/ui/Search.svelte';
@@ -97,7 +98,7 @@
 	{#snippet bar()}
 		<Seg label="Monitor" options={TABS} bind:value={tab} />
 		<span class="gap"></span>
-		<button type="button" onclick={load} title="Volver a leer">↻</button>
+		<button type="button" onclick={load} title="Volver a leer" aria-label="Volver a leer"><UiIcon id="refresh" size={14} /></button>
 	{/snippet}
 	{#if tab === 'apps'}
 		<Table csv={false}>
