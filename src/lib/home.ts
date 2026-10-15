@@ -2,6 +2,7 @@
 // guarda en el navegador. Solo cuenta al abrir la web (una vez por pestaña): luego TOP y Esc siguen
 // llevando a la portada. Lógica pura, para probarla.
 import { COMMANDS, type Command } from './commands.ts';
+import { EXPERIENCES, expHref, fromHomeValue } from './experiences.ts';
 
 export const HOME_KEY = 'arc-home';
 /** En sessionStorage: esta pestaña ya ha pasado por el inicio. */
@@ -12,13 +13,16 @@ const SKIP = new Set(['TV', 'HELP', 'DOC', 'MANUAL', 'NOVEDADES', 'STATUS']);
 
 export const homeChoices = (): Command[] => COMMANDS.filter((c) => !SKIP.has(c.code));
 
-export const isHomeCode = (code: string) => homeChoices().some((c) => c.code === code);
+/** Vale un código de vista o una experiencia («x:periodico», experiences.ts). */
+export const isHomeCode = (code: string) => homeChoices().some((c) => c.code === code) || !!fromHomeValue(code, EXPERIENCES);
 
 /**
- * A qué vista ir al abrir la portada, o null para quedarse en TOP: solo la primera vez en la pestaña,
- * si la portada se abrió sin parámetros (un enlace compartido manda) y si hay otra vista elegida.
+ * A qué ruta ir al abrir la portada, o null para quedarse en TOP: solo la primera vez en la pestaña,
+ * si la portada se abrió sin parámetros (un enlace compartido manda) y si hay otra vista o una experiencia elegida.
  */
-export function startCommand(saved: string | null, started: boolean, search: string): Command | null {
+export function startPath(saved: string | null, started: boolean, search: string): string | null {
 	if (started || search || !saved || saved === 'TOP') return null;
-	return homeChoices().find((c) => c.code === saved) ?? null;
+	const exp = fromHomeValue(saved, EXPERIENCES);
+	if (exp) return expHref(exp);
+	return homeChoices().find((c) => c.code === saved)?.route ?? null;
 }
