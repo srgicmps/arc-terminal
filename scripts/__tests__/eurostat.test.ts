@@ -79,7 +79,7 @@ describe('eurostat', () => {
 
 describe('eurostat: copia incompleta', () => {
 	it('da por vieja la copia a la que le falta una serie (como gdp-yoy al añadirla)', () => {
-		const ids = ['unemployment', 'youth-unemployment', 'inflation', 'gdp', 'gdp-yoy', 'debt'];
+		const ids = ['unemployment', 'youth-unemployment', 'inflation', 'gdp', 'gdp-yoy', 'debt', 'esi', 'consumer-conf'];
 		const series = (list: string[]) => ({ series: list.map((id) => ({ id: `${id}-es` }) as Series) });
 		expect(eurostat.isStale?.(series(ids))).toBe(false);
 		// «gdp-yoy-es» no cuenta como «gdp»: si falta el trimestral, también es vieja.
