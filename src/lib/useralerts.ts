@@ -1,9 +1,7 @@
-// Órdenes de Sergi desde la barra que tiene que ver la Action (lote 27-B, decisión D41 = A): alertas
-// propias («alerta NVDA > 150»), la lista MIS para los avisos y las palabras vigiladas. La web es
-// estática y no puede escribir en el repo: la barra abre un issue de GitHub ya escrito y Sergi pulsa
-// «Submit». La Action (scripts/requests.ts) lee solo los issues abiertos que ha creado el dueño del repo.
-// Los issues son PÚBLICOS (el repo lo es): aquí no va nada privado, nunca el tema de ntfy ni la zona.
-// Este archivo es lógica pura que comparten la barra y la Action.
+// Alertas propias («alerta NVDA > 150»), valores y palabras vigiladas: cómo se leen y cuándo saltan.
+// Desde F14 se guardan en la cuenta de cada uno (src/lib/alertconfig.ts, D1). Antes iban en issues públicos de
+// GitHub (D41): parseTitle, parseMis y parseWords quedan para pasar los que aún haya (scripts/requests.ts).
+// Lógica pura que comparten la barra, la web y la Action.
 
 export const REPO = 'srgicmps/arc-terminal';
 export const OWNER = 'srgicmps';
@@ -93,11 +91,6 @@ export function cleanWord(raw: string): string | null {
 	return w && w.length <= LIMITS.wordLength && !/[\[\]<>]/.test(w) ? w : null;
 }
 
-/** El título del issue: «[alerta] NVDA > 150», «[mis] NVDA AAPL», «[vigila] aranceles, vivienda». */
-export function requestTitle(kind: RequestKind, payload: string): string {
-	return `[${kind}] ${payload}`;
-}
-
 /** Lee un título de issue: el tipo y lo que va detrás; null si no es una orden de la barra. */
 export function parseTitle(title: string): { kind: RequestKind; payload: string } | null {
 	const m = title.match(/^\s*\[(alerta|mis|vigila)\]\s*(.*)$/i);
@@ -114,22 +107,4 @@ export function parseMis(payload: string): string[] {
 export function parseWords(payload: string): string[] {
 	const words = payload.split(',').map(cleanWord).filter((w): w is string => !!w);
 	return [...new Map(words.map((w) => [w.toLowerCase(), w])).values()].slice(0, LIMITS.words);
-}
-
-const BODY: Record<RequestKind, string> = {
-	alerta: 'Alerta creada desde la barra de Arc Terminal. La Action la vigila en cada pasada y cierra este issue cuando avisa al móvil. Para borrarla, cierra el issue.',
-	mis: 'Lista MIS para los avisos de valores seguidos, desde la barra de Arc Terminal. Vale el issue abierto más reciente; la Action cierra los anteriores.',
-	vigila: 'Palabras vigiladas para los avisos (BOE y titulares), desde la barra de Arc Terminal. Vale el issue abierto más reciente; la Action cierra los anteriores.'
-};
-
-/** El enlace que abre el issue ya escrito: Sergi solo tiene que pulsar «Submit». */
-export function issueUrl(kind: RequestKind, payload: string): string {
-	const q = new URLSearchParams({ title: requestTitle(kind, payload), labels: kind, body: BODY[kind] });
-	return `https://github.com/${REPO}/issues/new?${q}`;
-}
-
-/** Los issues abiertos de un tipo, para revisarlos o cerrarlos a mano. */
-export function issuesUrl(kind: RequestKind): string {
-	const q = new URLSearchParams({ q: `is:issue is:open author:${OWNER} in:title "[${kind}]"` });
-	return `https://github.com/${REPO}/issues?${q}`;
 }
