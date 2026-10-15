@@ -31,6 +31,21 @@ export interface GuideSection {
 	items?: string[];
 }
 
+/** Lo que entiende la barra además de los comandos (lote 27-A). Cada PR de la barra añade su línea. */
+export const BAR: GuideSection = {
+	id: 'barra',
+	title: 'La barra de comandos',
+	paras: [
+		'Además de los comandos y los valores, la barra entiende estas formas. Todo se calcula en el navegador con los datos que ya tiene la web: nada se envía a ningún sitio.'
+	],
+	items: [
+		'↑ con la barra vacía: tu comando anterior, como en un terminal (guarda los 50 últimos); ↓ vuelve hacia los más recientes.',
+		'«fav ECO TIPOS»: lo guarda como favorito (hasta 9). Luego «1», «2», «3»… lo abren. «fav» los enseña y «fav -2» quita el segundo.',
+		'«=1250*1,21»: calculadora. «100 USD EUR»: conversor con el cambio del BCE.',
+		'«ECO ?»: la ficha del comando en este MANUAL. «LUZ mañana», «CAL viernes»: el comando en ese día.'
+	]
+};
+
 export const OFFLINE: GuideSection = {
 	id: 'sin-conexion',
 	title: 'Sin conexión e instalar en el móvil',
