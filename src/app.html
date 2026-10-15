@@ -56,6 +56,8 @@
 				}
 			} catch (e) {}
 			document.documentElement.dataset.modo = m;
+			// Arc OS: una vista dentro de una ventana (?embed=1) va sin la cabecera de la web (src/lib/os/embed.ts).
+			if (/[?&]embed=1(&|$)/.test(location.search) && window.parent !== window) document.documentElement.dataset.embed = '1';
 			// Estética: como decideStyle (src/lib/estilos.ts).
 			var st;
 			try {
