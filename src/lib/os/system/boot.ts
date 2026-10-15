@@ -41,3 +41,9 @@ export function lockSummary(notices: Notice[], seen: Iterable<string>, max = 3):
 				: `${pending.length} ${pending.length === 1 ? 'novedad' : 'novedades'} de Arc`;
 	return { headline, items: pending.slice(0, max) };
 }
+
+/** Nombre que enseña la pantalla de bloqueo: la parte del email antes de la @, con mayúscula («sergi»→«Sergi»). */
+export function userName(email: string): string {
+	const local = email.split('@')[0]?.split(/[._+-]/)[0] ?? '';
+	return local ? local[0].toUpperCase() + local.slice(1) : '';
+}

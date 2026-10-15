@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Notice } from '../shell/notices.ts';
-import { bootDue, dayKey, greeting, lockSummary } from './boot.ts';
+import { bootDue, dayKey, greeting, lockSummary, userName } from './boot.ts';
 
 const n = (id: string, kind: Notice['kind'] = 'aviso'): Notice => ({ id, kind, title: id, detail: '', time: '2026-10-15T10:00:00Z' });
 
@@ -31,5 +31,12 @@ describe('bloqueo', () => {
 	it('sin avisos, lo dice; solo novedades, las cuenta', () => {
 		expect(lockSummary([], []).headline).toBe('Sin avisos nuevos');
 		expect(lockSummary([n('x', 'novedad'), n('y', 'novedad')], []).headline).toBe('2 novedades de Arc');
+	});
+});
+
+describe('usuario', () => {
+	it('saca el nombre del email', () => {
+		expect(userName('ana.garcia@example.com')).toBe('Ana');
+		expect(userName('')).toBe('');
 	});
 });
