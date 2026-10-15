@@ -7,13 +7,14 @@ describe('capas del mapa', () => {
 		expect(countriesIn('South Sudan-related designations').map((c) => c.name)).toEqual(['Sudán del Sur']);
 		expect(countriesIn('Sudanese Rapid Support Forces').map((c) => c.name)).toEqual(['Sudán']);
 		expect(countriesIn('Nothing here')).toEqual([]);
+		expect(countriesIn('Tariffs on the European Union').map((c) => [c.name, c.code])).toEqual([['Unión Europea', undefined]]);
 	});
 
 	it('sanciones: un punto por país, más grande e intenso con más documentos', () => {
 		const doc = (title: string, abstract = '') => ({ title, abstract, url: `https://fr/${title}` });
 		const points = sanctionPoints([doc('Russia-related designations'), doc('Notice of OFAC Sanctions Actions', 'persons in Russia and Iran'), doc('Russian harmful foreign activities'), doc('Section 301 China')]);
 		const russia = points.find((p) => p.title.startsWith('Rusia'))!;
-		expect(russia).toMatchObject({ layer: 'sanctions', title: 'Rusia: 3 documentos', strong: true, url: 'https://fr/Russia-related designations' });
+		expect(russia).toMatchObject({ layer: 'sanctions', title: 'Rusia: 3 documentos', strong: true, url: 'https://fr/Russia-related designations', country: 'RU' });
 		expect(points.map((p) => p.title.split(':')[0]).sort()).toEqual(['China', 'Irán', 'Rusia']);
 	});
 
