@@ -5,16 +5,19 @@
 	estados…). Esc, ✕ o tocar fuera lo cierran, y el foco vuelve al título.
 	Dentro de una <ModularGrid>, si tiene id, la cabecera lleva además el asa ⋮⋮ y el ✕.
 	Con `pin` lleva el 📌 para fijarlo en TOP (registro en pins.ts); en TOP, el 📌 abre el ancho y «Quitar».
+	Si la URL lleva «#panel=Su título» (M47: «ECO TIPOS» en la barra), se despliega, se desplaza a la vista y
+	se resalta un momento.
 -->
 <script lang="ts">
 	import { page } from '$app/state';
 	import { foldKey, isFolded, toggleFold } from '#lib/folded.svelte.ts';
 	import { tv } from '#lib/tv.svelte.ts';
 	import { isShortcut } from '#lib/shortcuts.ts';
-	import type { Snippet } from 'svelte';
+	import { untrack, type Snippet } from 'svelte';
 	import { getModular, type Span } from '#lib/layout.svelte.ts';
 	import { inPinArea, isPinned, pinSpan, setPinnedSpan, togglePinned } from '#lib/pins.svelte.ts';
 	import { getPanelIndex } from '#lib/panelindex.svelte.ts';
+	import { hashPanel, samePanel } from '#lib/panelhash.ts';
 	import type { ShareSource } from '#lib/share.ts';
 	import Note from './ui/Note.svelte';
 	import Share from './ui/Share.svelte';
@@ -78,6 +81,22 @@
 		titleButton?.focus();
 	}
 
+	// M47: la barra pide este panel por el hash. Se mira al montarse y cada vez que cambia el hash.
+	let flash = $state(false);
+	$effect(() => {
+		const want = hashPanel(page.url.hash);
+		if (!want || !samePanel(want, title)) return;
+		untrack(() => isFolded(fkey) && toggleFold(fkey));
+		const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+		const frame = requestAnimationFrame(() => section.scrollIntoView({ block: 'start', behavior: smooth ? 'smooth' : 'auto' }));
+		flash = true;
+		const timer = setTimeout(() => (flash = false), 2000);
+		return () => {
+			cancelAnimationFrame(frame);
+			clearTimeout(timer);
+		};
+	});
+
 	/** M con el foco en el título: abre o cierra. No llega a la barra de comandos (que escribiría la m). */
 	function titleKeydown(e: KeyboardEvent) {
 		if (isShortcut(e, 'panel') && !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -134,7 +153,7 @@
 	<div class="scrim" aria-hidden="true" onclick={close}></div>
 {/if}
 
-<section bind:this={section} class="panel" class:max class:folded={shut} role={max ? 'dialog' : undefined} aria-modal={max ? 'true' : undefined} aria-label={max ? title : undefined}>
+<section bind:this={section} class="panel" class:max class:folded={shut} class:flash role={max ? 'dialog' : undefined} aria-modal={max ? 'true' : undefined} aria-label={max ? title : undefined}>
 	<header class="ph">
 		<h2>
 			<button
@@ -227,6 +246,12 @@
 		.panel {
 			scroll-margin-top: calc(var(--index-chip) + var(--sp-16));
 		}
+	}
+
+	/* M47: el panel al que lleva la barra se marca con el borde del acento, que se apaga solo. */
+	.panel.flash {
+		outline: var(--hair) solid var(--amber);
+		outline-offset: calc(-1 * var(--hair));
 	}
 
 	/* container-type: lo de dentro se adapta al ancho del panel con @container, no al de la pantalla. */

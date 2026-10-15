@@ -172,6 +172,33 @@ Fusionadas o quitadas: hicp-ea (ya en #165); alias de LIDER (Prog 5, F1); HELP g
 statuspage (dentro del #175); diplomacia (entra en FEEDS.intl en lugar de la tarea 5 de la lista 1); orden de ECO y
 vista modular (misma sesión). El fallo del ejemplo de WX en HELP ya lo tiene QA.
 
+## 2f. Lote 26-B (Ideas 3, 15/10): PROPUESTO, pendiente de Sergi
+
+Ninguna fuente está comprobada en vivo (el entorno de Ideas no tiene red): confirmarlas con probe. Ninguna pide
+clave ni registro. Comparar con el lote 26-A antes de repartir, por si algo se repite.
+
+**Bloque A · Macro y mercados**
+1. **ECO: sentimiento económico de la zona euro**: ESI y confianza del consumidor (Eurostat, mensual).
+2. **WS/ECO: cuentas del Tesoro de EE. UU.**: déficit del año fiscal y recaudación por aranceles (Monthly Treasury
+   Statement, dominio público).
+3. **ECO: nowcast de inflación de EE. UU.**: IPC y PCE del mes en curso (Fed de Cleveland, diario). Duda de licencia:
+   confirmar los términos de clevelandfed.org.
+
+**Bloque B · Fuentes nuevas de IA, España y mundo**
+4. ★ **AI: modelos frontera y cómputo**: últimos modelos notables, quién los hace y su cómputo de entrenamiento
+   (Epoch AI, CC BY).
+5. **ES: paro registrado** del SEPE, mensual y por comunidad, junto a la afiliación.
+6. **ES: Congreso de los Diputados**: votaciones e iniciativas de la semana (datos abiertos del Congreso; comprobar
+   el aviso legal y que no bloquee robots).
+7. **GEO: migración irregular a Europa por ruta** (Frontex, mensual; reutilización citando la fuente).
+
+**Bloque C · Uso y datos que ya se descargan**
+8. ★ **TOP: termómetro de riesgo**: una fila con semáforo (estrés financiero, VIX y su curva, diferenciales de
+   crédito, curva de tipos, señales de recesión, incertidumbre). Sin fuentes nuevas.
+9. ★ **Suscribirse a la agenda** (.ics): bancos centrales, datos macro y resultados, para el calendario del móvil.
+10. **Récords y extremos**: marcar cuando un dato toca su máximo o mínimo de varios años («paro mínimo desde 2008»).
+11. **Resumen en una línea** arriba de cada vista, hecho con los datos (sin IA), pensado para el móvil.
+
 ## 3. Decisiones de Sergi que hay que respetar
 
 - Arc Terminal es **mundial**: nada nuevo centrado en Menorca, salvo los puertos AIS de Maó y Ciutadella.
@@ -183,7 +210,7 @@ vista modular (misma sesión). El fallo del ejemplo de WX en HELP ya lo tiene QA
 - Claves ya en Secrets: FRED_API_KEY, FINNHUB_API_KEY, SEC_USER_AGENT (y HF_TOKEN opcional). EIA_API_KEY, en camino (D30).
 - NTFY_TOPIC y la zona de las alertas, solo en Secrets.
 - Descartadas: GDELT, el RSS de la CNMV, el RSS del Parlamento Europeo, el RSS de OFAC (retirado en 2025) y la
-  agenda de la Comisión y Xinhua. ReliefWeb, aparcado (falta el appname).
+  agenda de la Comisión y Xinhua.
 
 ## 4. Cómo se trabaja
 

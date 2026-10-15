@@ -25,10 +25,13 @@ export const EIA_SERIES = [
 	{ id: 'WCSSTUS1', label: 'Reserva estratégica' }
 ];
 
-/** La URL sin la clave (la clave se añade al pedirla). */
-export function eiaQuery(start: string): string {
+/**
+ * La URL de una serie, sin la clave (la clave se añade al pedirla). Una petición por serie: la API es lenta y
+ * una sola con las cinco se pasaba del tiempo máximo.
+ */
+export function eiaQuery(start: string, series: string): string {
 	const q = new URLSearchParams({ frequency: 'weekly', 'data[0]': 'value', start, 'sort[0][column]': 'period', 'sort[0][direction]': 'asc', length: '5000' });
-	for (const s of EIA_SERIES) q.append('facets[series][]', s.id);
+	q.append('facets[series][]', series);
 	return `${API}?${q}`;
 }
 
@@ -71,19 +74,30 @@ export const eia: Source<EiaData> = {
 	label: 'Inventarios de petróleo de EE. UU. · EIA',
 	maxAgeMinutes: 180,
 	requires: ENV,
+	// La API tarda: cinco peticiones en paralelo, cada una con sus reintentos de 45 s.
+	deadlineMs: 180_000,
 	async fetch() {
 		const start = iso(Date.now() - (YEARS + 1) * 366 * DAY);
 		const key = process.env[ENV] ?? '';
-		let body: Raw;
-		try {
-			body = await getJson<Raw>(`${eiaQuery(start)}&api_key=${encodeURIComponent(key)}`);
-		} catch (error) {
-			// Fuera la URL (lleva la clave): solo el «HTTP 403» o el fallo de red.
-			const msg = (error instanceof Error ? error.message : String(error)).replace(/ ?(en )?https?:\/\/\S+/g, '');
-			throw new Error(`La API de la EIA falla: ${key ? msg.replaceAll(key, '***') : msg}`);
-		}
-		if (body?.error) throw new Error(`La API de la EIA responde con error: ${plain(key ? String(body.error).replaceAll(key, '***') : body.error, 120)}`);
-		const stocks = parseEia(body);
+		const hide = (text: string) => (key ? text.replaceAll(key, '***') : text);
+		const one = async (series: string): Promise<Raw[]> => {
+			let body: Raw;
+			try {
+				body = await getJson<Raw>(`${eiaQuery(start, series)}&api_key=${encodeURIComponent(key)}`);
+			} catch (error) {
+				// Fuera la URL (lleva la clave): solo el «HTTP 403» o el fallo de red.
+				const msg = (error instanceof Error ? error.message : String(error)).replace(/ ?(en )?https?:\/\/\S+/g, '');
+				throw new Error(`La API de la EIA falla: ${hide(msg)}`);
+			}
+			if (body?.error) throw new Error(`La API de la EIA responde con error: ${plain(hide(String(body.error)), 120)}`);
+			return list<Raw>(body?.response?.data);
+		};
+		// Si falla una serie, siguen las demás; solo falla la fuente si no llega ninguna.
+		const results = await Promise.allSettled(EIA_SERIES.map((s) => one(s.id)));
+		const rows = results.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+		const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+		if (!rows.length && failed) throw failed.reason;
+		const stocks = parseEia({ response: { data: rows } });
 		if (!stocks.length) throw new Error('La EIA no devuelve inventarios');
 		return { stocks };
 	}

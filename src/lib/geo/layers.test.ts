@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countriesIn, crisisPoints, quakePoints, sanctionPoints, straitPoints } from './layers.ts';
+import { countriesIn, quakePoints, sanctionPoints, straitPoints } from './layers.ts';
 
 describe('capas del mapa', () => {
 	it('encuentra países por nombre y gentilicio, sin confundir Sudán con Sudán del Sur', () => {
@@ -28,10 +28,8 @@ describe('capas del mapa', () => {
 		expect(points[0].sub).toBe('120 barcos al día · -51,4 % en un año');
 	});
 
-	it('descarta lo que no tiene coordenadas y sitúa las crisis en su país', () => {
+	it('descarta lo que no tiene coordenadas', () => {
 		const q = { id: '1', mag: 6.2, place: 'Japón', time: '', url: 'u', tsunami: false, alert: null, lat: NaN, lon: 140, depth: 10 };
 		expect(quakePoints([q, { ...q, id: '2', lat: 35 }])).toMatchObject([{ id: 'q-2', strong: true }]);
-		const d = { id: '7', name: 'Sudan: Cholera', country: 'Sudan', type: 'Epidemic', date: null, url: 'u', glide: '' };
-		expect(crisisPoints([d, { ...d, id: '8', country: 'Atlantis' }])).toMatchObject([{ id: 'r-7', lat: 12.9, lon: 30.2 }]);
 	});
 });

@@ -81,7 +81,8 @@ const TICKER_MAX = 5;
  * («ECO paro»): ahí Intro abre ese comando, como siempre.
  *
  * Si no hay sugerencias y lo escrito parece un código de valor corto (como mucho 5 caracteres), la primera
- * fila es la ficha de ese valor: así Intro hace lo mismo que antes de existir la búsqueda.
+ * fila es la ficha de ese valor: así Intro hace lo mismo que antes de existir la búsqueda. Si es texto
+ * suelto, la primera fila es «Buscar en NEWS» y debajo van los titulares.
  */
 export function searchOptions(raw: string, suggestions: Option[], index: Indexed[] | null, limit = 5): Option[] {
 	if (!raw.trim()) return [];
@@ -94,8 +95,11 @@ export function searchOptions(raw: string, suggestions: Option[], index: Indexed
 	if (!hits.length && !suggestions.length && isTickerLike(q) && q.length <= TICKER_MAX) {
 		hits.push({ code: q, desc: 'Ficha del valor', kind: 'Valor', run: q });
 	}
-	// Al final, buscar en el archivo de 3 meses (NEWS lo carga en diferido): la barra sigue ligera.
-	hits.push({ code: 'NEWS', desc: `Buscar «${text}» en el archivo de 3 meses`, kind: 'Archivo', run: `NEWS ${text}` });
+	// Buscar en NEWS, que mira también el archivo de 3 meses (lo carga en diferido): la barra sigue ligera.
+	const news = { code: 'NEWS', desc: `Buscar «${text}» en los titulares y el archivo`, kind: 'Buscar', run: `NEWS ${text}` };
+	// Texto suelto que no es un comando ni un valor («aranceles china»): va primero, e Intro abre NEWS.
+	if (!suggestions.length && hits[0]?.kind !== 'Valor') return [news, ...hits];
+	hits.push(news);
 	return hits;
 }
 
