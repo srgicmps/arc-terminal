@@ -1,0 +1,311 @@
+/* ── Estética «Neón» (src/lib/estilos.ts) ────────────────────────────────────────────────────────────
+ * <html data-style="neon">: synthwave. Noche morada con una rejilla de horizonte fija al fondo, magenta como acento
+ * y cian en los títulos, Orbitron en títulos y Share Tech Mono en los datos, tarjetas con filo luminoso y esquinas
+ * de visor. El brillo es suave y solo con movimiento permitido; se apaga con «reducir transparencia».
+ * De día, lavanda pastel con magenta y cian oscuros (AA).
+ * Los componentes llevan su CSS sin capa, así que aquí se cambian sus tokens EN el elemento (p. ej. --sans en el
+ * título de la vista) o propiedades que ellos no fijan (text-shadow, ::before, ::after). */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Share+Tech+Mono&display=swap');
+@layer tokens, estilos, ajustes;
+@layer estilos {
+	:root[data-style='neon'],
+	[data-style='neon'] {
+		color-scheme: dark;
+		--bg: #0a0614;
+		--panel: #110a20;
+		--raise: #1c1132;
+		--line: #2c1d4a;
+		--fg: #f1eaff;
+		--muted: #b5a6d8;
+		--faint: #9a8ac4;
+		--amber: #ff5ad9;
+		--amber-dim: #e48fd6;
+		--amber-soft: rgba(255, 90, 217, 0.14);
+		--amber-edge: rgba(255, 90, 217, 0.5);
+		--on-amber: #1a0016;
+		--up: #3ef2a4;
+		--down: #ff7159;
+		--neutral: #3c2c62;
+		--series-2: #4fe6ff;
+		--series-3: #ffc861;
+		--sq-light: #2c1e4c;
+		--sq-dark: #1a1030;
+		--piece-b-edge: #c9b8f0;
+		--scrim: rgba(5, 2, 14, 0.78);
+
+		/* Colores propios de esta estética: cian de los títulos, brillos y líneas del horizonte. */
+		--nx-cyan: #63ecff;
+		--nx-edge: rgba(99, 236, 255, 0.18);
+		--nx-corner: rgba(99, 236, 255, 0.7);
+		--nx-glow-m: rgba(255, 90, 217, 0.55);
+		--nx-glow-c: rgba(99, 236, 255, 0.5);
+		--nx-halo: rgba(255, 90, 217, 0.22);
+		--nx-head: rgba(255, 90, 217, 0.1);
+		--nx-sky-1: #08041a;
+		--nx-sky-2: #1a0b33;
+		--nx-sky-fade: rgba(26, 11, 51, 0);
+		--nx-sun: rgba(255, 90, 217, 0.26);
+		--nx-sun-2: rgba(255, 200, 97, 0.1);
+		--nx-hz: rgba(255, 90, 217, 0.6);
+		--nx-lat: rgba(255, 90, 217, 0.26);
+		--nx-ray: rgba(99, 236, 255, 0.17);
+
+		/* Letras: Share Tech Mono para todo; Orbitron en títulos (panel, vista, logo y cifras grandes). */
+		--mono: 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		--sans: 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		--nx-display: 'Orbitron', 'Share Tech Mono', ui-monospace, sans-serif;
+		--font-ui: var(--mono);
+		--title-font: var(--nx-display);
+		--title-color: var(--nx-cyan);
+		--fs-title: var(--fs-xs);
+		--title-case: uppercase;
+		--title-track: 0.16em;
+		--fs-xxs: 10.5px;
+		--fs-xs: 11.5px;
+		--fs-s: 12.5px;
+		--fs-m: 13.5px;
+		--fs-l: 15px;
+		--fs-xl: 21px;
+		--fs-xxl: 30px;
+		--track-code: 0.08em;
+		--track-caps: 0.12em;
+		--track-label: 0.16em;
+		--track-brand: 0.2em;
+
+		/* Forma: tarjetas con filo cian muy fino, esquinas casi rectas y un halo magenta suave. */
+		--radius: 3px;
+		--radius-s: 2px;
+		--border: var(--hair) solid var(--line);
+		--panel-edge: var(--hair) solid var(--nx-edge);
+		--shadow: 0 0 0 var(--hair) rgba(0, 0, 0, 0.5);
+		--shadow-pop: 0 0 0 var(--hair) var(--amber-edge), 0 12px 40px rgba(0, 0, 0, 0.6);
+		--grid-gap: var(--sp-10);
+		--grid-fill: transparent;
+		--grid-edge: 0;
+		--grid-join: var(--sp-10);
+		--col-fill: transparent;
+		--stack-gap: var(--sp-10);
+		--stack-edge: 0;
+		--dur-ui: 180ms;
+		--ease: cubic-bezier(0.25, 0.8, 0.25, 1);
+
+		/* Fondo: cielo morado, sol tras el horizonte y la rejilla en perspectiva (meridianos desde el punto de fuga
+		   y paralelos cada vez más juntos hacia él). Fija y tapada por los paneles: solo asoma en los huecos. */
+		--bg-image:
+			radial-gradient(ellipse 60% 26% at 50% 62%, var(--nx-sun), transparent 70%),
+			radial-gradient(ellipse 34% 14% at 50% 60%, var(--nx-sun-2), transparent 70%),
+			linear-gradient(
+				to bottom,
+				transparent calc(62% - 1px),
+				var(--nx-hz) calc(62% - 1px) 62%,
+				transparent 62%
+			),
+			linear-gradient(to bottom, var(--nx-sky-1) 0%, var(--nx-sky-2) 60%, var(--nx-sky-fade) 92%),
+			linear-gradient(
+				to bottom,
+				transparent 64%,
+				var(--nx-lat) 64% calc(64% + 1px),
+				transparent 0 67%,
+				var(--nx-lat) 67% calc(67% + 1px),
+				transparent 0 71%,
+				var(--nx-lat) 71% calc(71% + 1px),
+				transparent 0 76.5%,
+				var(--nx-lat) 76.5% calc(76.5% + 1px),
+				transparent 0 83.5%,
+				var(--nx-lat) 83.5% calc(83.5% + 1px),
+				transparent 0 92%,
+				var(--nx-lat) 92% calc(92% + 1px),
+				transparent 0
+			),
+			repeating-conic-gradient(from 90deg at 50% 62%, var(--nx-ray) 0deg 0.3deg, transparent 0.3deg 7.5deg);
+	}
+	:root[data-theme='light'][data-style='neon'],
+	:root[data-theme='light'] [data-style='neon'] {
+		color-scheme: light;
+		--bg: #f4eefc;
+		--panel: #fdfbff;
+		--raise: #efe6fa;
+		--line: #e0d3f2;
+		--fg: #1c1230;
+		--muted: #594a78;
+		--faint: #64568a;
+		--amber: #b0108c;
+		--amber-dim: #8e2a78;
+		--amber-soft: rgba(176, 16, 140, 0.09);
+		--amber-edge: rgba(176, 16, 140, 0.4);
+		--on-amber: #ffffff;
+		--up: #0b7347;
+		--down: #c2302a;
+		--neutral: #cdbde6;
+		--series-2: #00788f;
+		--series-3: #9a5a00;
+		--sq-light: #f3ecfc;
+		--sq-dark: #d9c8f0;
+		--piece-b-edge: #23272d;
+		--scrim: rgba(28, 18, 48, 0.4);
+		--shadow: 0 1px 2px rgba(80, 30, 120, 0.08);
+		--shadow-pop: 0 0 0 var(--hair) var(--amber-edge), 0 14px 36px rgba(80, 30, 120, 0.2);
+
+		--nx-cyan: #006f86;
+		--nx-edge: rgba(0, 111, 134, 0.22);
+		--nx-corner: rgba(176, 16, 140, 0.7);
+		--nx-glow-m: rgba(176, 16, 140, 0.2);
+		--nx-glow-c: rgba(0, 111, 134, 0.18);
+		--nx-halo: rgba(176, 16, 140, 0.1);
+		--nx-head: rgba(176, 16, 140, 0.06);
+		--nx-sky-1: #f7f1fd;
+		--nx-sky-2: #f6e6f6;
+		--nx-sky-fade: rgba(246, 230, 246, 0);
+		--nx-sun: rgba(255, 120, 200, 0.22);
+		--nx-sun-2: rgba(255, 190, 120, 0.18);
+		--nx-hz: rgba(176, 16, 140, 0.35);
+		--nx-lat: rgba(176, 16, 140, 0.14);
+		--nx-ray: rgba(0, 111, 134, 0.11);
+	}
+
+	/* ── Piezas ─────────────────────────────────────────────────────────────────────────────────── */
+
+	/* Título de la vista en Orbitron; el código, en magenta. */
+	[data-style='neon'] .vh h1 {
+		--sans: var(--nx-display);
+		letter-spacing: 0.04em;
+	}
+
+	/* Logo en Orbitron, espaciado ancho. */
+	[data-style='neon'] .brand {
+		font-family: var(--nx-display);
+	}
+	/* En el móvil, Orbitron es ancha: menos interletraje para que logo, sitio y tema quepan en una línea. */
+	@media (max-width: 720px) {
+		[data-style='neon'] .brand {
+			--track-brand: 0.06em;
+		}
+	}
+
+	/* Esquinas de visor: dos escuadras cian en las esquinas de cada panel. */
+	[data-style='neon'] .panel {
+		position: relative;
+	}
+	[data-style='neon'] .panel::before,
+	[data-style='neon'] .panel::after {
+		content: '';
+		position: absolute;
+		width: var(--sp-10);
+		height: var(--sp-10);
+		pointer-events: none;
+	}
+	[data-style='neon'] .panel::before {
+		top: calc(-1 * var(--hair));
+		left: calc(-1 * var(--hair));
+		border-top: var(--hair) solid var(--nx-corner);
+		border-left: var(--hair) solid var(--nx-corner);
+		border-top-left-radius: var(--radius);
+	}
+	[data-style='neon'] .panel::after {
+		right: calc(-1 * var(--hair));
+		bottom: calc(-1 * var(--hair));
+		border-right: var(--hair) solid var(--nx-corner);
+		border-bottom: var(--hair) solid var(--nx-corner);
+		border-bottom-right-radius: var(--radius);
+	}
+
+	/* Cabecera del panel: un velo magenta que se apaga hacia la derecha y una línea magenta debajo. */
+	[data-style='neon'] .panel .ph {
+		--border: var(--hair) solid var(--amber-edge);
+		background-image: linear-gradient(90deg, var(--nx-head), transparent 65%);
+	}
+
+	/* Cifras grandes en Orbitron. */
+	[data-style='neon'] .tile b {
+		font-family: var(--nx-display);
+		letter-spacing: 0.02em;
+	}
+
+	/* Tablas: cabeceras en cian y la fila bajo el ratón con un velo. */
+	[data-style='neon'] .t thead {
+		--faint: var(--nx-cyan);
+	}
+	[data-style='neon'] .t tbody tr {
+		transition: background-color var(--dur-ui) var(--ease);
+	}
+	[data-style='neon'] .t tbody tr:hover {
+		background-color: var(--amber-soft);
+	}
+
+	/* Barra de comandos: el «›» en cian. */
+	[data-style='neon'] .cmd .prompt {
+		--amber: var(--nx-cyan);
+	}
+
+	/* ── Brillos (solo si el sistema no pide menos movimiento; fuera con «reducir transparencia») ── */
+	@media (prefers-reduced-motion: no-preference) {
+		:root[data-style='neon'],
+		[data-style='neon'] {
+			--shadow: 0 0 0 var(--hair) rgba(0, 0, 0, 0.4), 0 0 24px -8px var(--nx-halo);
+		}
+		[data-style='neon'] .panel h2,
+		.card[data-style='neon'] .mh {
+			text-shadow: 0 0 8px var(--nx-glow-c);
+		}
+		[data-style='neon'] .vh .code,
+		[data-style='neon'] .brand {
+			text-shadow: 0 0 10px var(--nx-glow-m);
+		}
+		[data-style='neon'] .mark {
+			filter: drop-shadow(0 0 3px var(--nx-glow-m));
+		}
+		[data-style='neon'] .key[aria-current='page'],
+		[data-style='neon'] .seg button[aria-checked='true'],
+		[data-style='neon'] .go {
+			box-shadow: 0 0 14px -2px var(--nx-glow-m);
+		}
+		[data-style='neon'] .cmd {
+			transition:
+				border-color var(--dur-ui) var(--ease),
+				box-shadow var(--dur-ui) var(--ease);
+		}
+		[data-style='neon'] .cmd:focus-within {
+			box-shadow:
+				0 0 0 var(--hair) var(--amber-edge),
+				0 0 18px -4px var(--nx-glow-m);
+		}
+		[data-style='neon'] .key {
+			transition:
+				border-color var(--dur-ui) var(--ease),
+				box-shadow var(--dur-ui) var(--ease);
+		}
+		[data-style='neon'] .key:hover {
+			box-shadow: 0 0 10px -3px var(--nx-glow-m);
+		}
+	}
+	/* Las líneas de los gráficos brillan solo en escritorio (en el móvil, el filtro sale caro). */
+	@media (prefers-reduced-motion: no-preference) and (min-width: 721px) {
+		[data-style='neon'] .chart path {
+			filter: drop-shadow(0 0 2px var(--nx-glow-m));
+		}
+	}
+	@media (prefers-reduced-transparency: reduce) {
+		:root[data-style='neon'],
+		[data-style='neon'] {
+			--shadow: 0 0 0 var(--hair) rgba(0, 0, 0, 0.4);
+			--bg-image: none;
+		}
+		[data-style='neon'] .panel h2,
+		.card[data-style='neon'] .mh,
+		[data-style='neon'] .vh .code,
+		[data-style='neon'] .brand {
+			text-shadow: none;
+		}
+		[data-style='neon'] .mark,
+		[data-style='neon'] .chart path {
+			filter: none;
+		}
+		[data-style='neon'] .key[aria-current='page'],
+		[data-style='neon'] .key:hover,
+		[data-style='neon'] .seg button[aria-checked='true'],
+		[data-style='neon'] .go,
+		[data-style='neon'] .cmd:focus-within {
+			box-shadow: none;
+		}
+	}
+}
