@@ -5,10 +5,10 @@
 export type Level = 1 | 2 | 3 | 4;
 
 /** Tope total de avisos al día (día de Madrid). Solo es una protección contra bucles. */
-export const DAILY_TOTAL = 50;
+export const DAILY_TOTAL = 100;
 
 /** Cupo diario de cada nivel. Si se llega al tope total, gana el nivel más alto (P1 antes que P2…). */
-export const QUOTAS: Record<Level, number> = { 1: Infinity, 2: 25, 3: 15, 4: 3 };
+export const QUOTAS: Record<Level, number> = { 1: Infinity, 2: 50, 3: 40, 4: 12 };
 
 /** Priority de ntfy para cada nivel (5 = máxima, suena aunque el móvil esté en silencio si se configura). */
 export const NTFY_PRIORITY: Record<Level, number> = { 1: 5, 2: 4, 3: 3, 4: 2 };
@@ -20,7 +20,7 @@ export const KEEP_DAYS = 7;
 
 export const QUAKE = {
 	/** Magnitud mínima. */
-	mag: 7,
+	mag: 6.5,
 	/** Con aviso de tsunami basta con esta. */
 	magTsunami: 6,
 	/** Un terremoto deja de ser motivo de aviso a las 24 h. */
@@ -36,7 +36,7 @@ export const RATES = [
 ] as const;
 
 /** IMP: un tema que dan al menos tantos medios en al menos tantas secciones. */
-export const IMP_BIG = { media: 8, sections: 3 };
+export const IMP_BIG = { media: 6, sections: 3 };
 
 /** Estrechos clave (nombres de PortWatch) y caída de tránsitos frente a la media de 7 días de la semana anterior. */
 export const STRAITS = { names: ['Ormuz', 'Canal de Suez', 'Bab el-Mandeb', 'Canal de Panamá'], drop: 0.5 };
@@ -91,37 +91,37 @@ export interface Asset {
  * el activo simplemente no aplica.
  */
 export const ASSETS: Asset[] = [
-	{ name: 'BTC', source: { kind: 'coin', id: 'bitcoin' }, unit: '%', threshold: 3.5 },
-	{ name: 'ETH', source: { kind: 'coin', id: 'ethereum' }, unit: '%', threshold: 3.5 },
-	{ name: 'EUR/USD', source: { kind: 'series', file: 'ecb', id: 'eurusd' }, unit: '%', threshold: 0.6 },
-	{ name: 'US10Y', source: { kind: 'curve', tenor: '10A' }, unit: 'pb', threshold: 7.5 },
+	{ name: 'BTC', source: { kind: 'coin', id: 'bitcoin' }, unit: '%', threshold: 2.5 },
+	{ name: 'ETH', source: { kind: 'coin', id: 'ethereum' }, unit: '%', threshold: 2.5 },
+	{ name: 'EUR/USD', source: { kind: 'series', file: 'ecb', id: 'eurusd' }, unit: '%', threshold: 0.4 },
+	{ name: 'US10Y', source: { kind: 'curve', tenor: '10A' }, unit: 'pb', threshold: 5 },
 	{
 		name: 'Prima ES',
 		source: { kind: 'spread', id: 'bond10-es', base: 'bond10-de' },
 		unit: 'pb',
-		threshold: 10,
+		threshold: 6,
 		upOnly: true
 	},
 	{
 		name: 'Prima IT',
 		source: { kind: 'spread', id: 'bond10-it', base: 'bond10-de' },
 		unit: 'pb',
-		threshold: 10,
+		threshold: 6,
 		upOnly: true
 	},
 	{
 		name: 'Prima FR',
 		source: { kind: 'spread', id: 'bond10-fr', base: 'bond10-de' },
 		unit: 'pb',
-		threshold: 10,
+		threshold: 6,
 		upOnly: true
 	},
-	{ name: 'S&P 500', source: { kind: 'quote', symbol: 'SPY' }, unit: '%', threshold: 1.25 },
-	{ name: 'Nasdaq', source: { kind: 'quote', symbol: 'QQQ' }, unit: '%', threshold: 1.25 },
-	{ name: 'DAX', source: { kind: 'quote', symbol: 'DAX' }, unit: '%', threshold: 1.25 },
-	{ name: 'IBEX', source: { kind: 'quote', symbol: 'IBEX' }, unit: '%', threshold: 1.25 },
-	{ name: 'Petróleo WTI', source: { kind: 'series', file: 'fred', id: 'wti' }, unit: '%', threshold: 2 },
-	{ name: 'Oro', source: { kind: 'series', file: 'fred', id: 'gold' }, unit: '%', threshold: 2 }
+	{ name: 'S&P 500', source: { kind: 'quote', symbol: 'SPY' }, unit: '%', threshold: 0.75 },
+	{ name: 'Nasdaq', source: { kind: 'quote', symbol: 'QQQ' }, unit: '%', threshold: 0.75 },
+	{ name: 'DAX', source: { kind: 'quote', symbol: 'DAX' }, unit: '%', threshold: 0.75 },
+	{ name: 'IBEX', source: { kind: 'quote', symbol: 'IBEX' }, unit: '%', threshold: 0.75 },
+	{ name: 'Petróleo WTI', source: { kind: 'series', file: 'fred', id: 'wti' }, unit: '%', threshold: 1.5 },
+	{ name: 'Oro', source: { kind: 'series', file: 'fred', id: 'gold' }, unit: '%', threshold: 1.5 }
 ];
 
 /**
@@ -144,8 +144,8 @@ export const FEDREG = /\b(tariffs?|duties|sanctions?|export controls?|embargo|re
 export const CONFLICT = {
 	words:
 		/\b(ataque|bombardeo|invasi[óo]n|misil(es)?|ofensiva|alto el fuego|tregua|movilizaci[óo]n|art[íi]culo 5|OTAN|NATO|nuclear|escalada|guerra|attack|strike|invasion|missiles?|ceasefire|war)\b/i,
-	media: 5,
-	waitHours: 12
+	media: 4,
+	waitHours: 6
 };
 
 /**
@@ -167,11 +167,11 @@ export const ELECTIONS = {
 
 /** IA (news-ai.json y news-tech.json): grupo de titulares de `media` medios o más que nombra a un laboratorio y un lanzamiento. */
 export const AI_NEWS = {
-	media: 3,
+	media: 2,
 	labs: /\b(OpenAI|GPT|Google|Gemini|DeepMind|Anthropic|Claude|Meta|Llama|xAI|Grok|Mistral|DeepSeek|Qwen)/i,
 	launch: /\b(lanza|presenta|anuncia|nuevo modelo|launch(es)?|releases?|unveils?|introduc(es|ing))\b/i,
 	/** Como mucho tantos al día. */
-	perDay: 3
+	perDay: 6
 };
 
 /**
@@ -181,7 +181,7 @@ export const AI_NEWS = {
  * (ALERT_TICKERS de scripts/sources/alert-quotes.ts).
  */
 export const STOCKS = {
-	threshold: 3,
+	threshold: 2,
 	group: 3,
 	names: {
 		// ADR de los europeos (D25, solo avisos).
@@ -192,6 +192,8 @@ export const STOCKS = {
 		THLLY: 'Thales (ADR)',
 		SAABY: 'Saab (ADR)',
 		ISMAY: 'Indra (ADR)',
+		IBDRY: 'Iberdrola (ADR)',
+		IDEXY: 'Inditex (ADR)',
 		LMT: 'Lockheed Martin',
 		RTX: 'RTX',
 		NOC: 'Northrop Grumman',
@@ -207,7 +209,41 @@ export const STOCKS = {
 		'SAAB-B.ST': 'Saab',
 		'IDR.MC': 'Indra',
 		NVDA: 'NVIDIA',
-		AAPL: 'Apple'
+		AAPL: 'Apple',
+		MSFT: 'Microsoft',
+		GOOGL: 'Alphabet',
+		AMZN: 'Amazon',
+		META: 'Meta',
+		TSLA: 'Tesla',
+		AVGO: 'Broadcom',
+		TSM: 'TSMC',
+		AMD: 'AMD',
+		ASML: 'ASML',
+		NFLX: 'Netflix',
+		ORCL: 'Oracle',
+		CRM: 'Salesforce',
+		INTC: 'Intel',
+		QCOM: 'Qualcomm',
+		MU: 'Micron',
+		ARM: 'Arm',
+		COIN: 'Coinbase',
+		MSTR: 'Strategy',
+		JPM: 'JPMorgan',
+		GS: 'Goldman Sachs',
+		V: 'Visa',
+		MA: 'Mastercard',
+		XOM: 'ExxonMobil',
+		CVX: 'Chevron',
+		LLY: 'Eli Lilly',
+		NVO: 'Novo Nordisk',
+		UNH: 'UnitedHealth',
+		'BRK.B': 'Berkshire Hathaway',
+		SAP: 'SAP',
+		SAN: 'Santander',
+		BBVA: 'BBVA',
+		TEF: 'Telefónica',
+		SONY: 'Sony',
+		TM: 'Toyota'
 	} as Record<string, string>
 };
 
@@ -232,7 +268,7 @@ export const DIESEL = {
 // ---------- P3 ----------
 
 /** Polymarket: volumen mínimo en 24 h ($) y cambio mínimo de probabilidad (0–1) en 24 h. */
-export const POLYMARKET = { minVolume: 1_000_000, change: 0.15, maxTracked: 60 };
+export const POLYMARKET = { minVolume: 500_000, change: 0.1, maxTracked: 60 };
 
 /**
  * Resultados: las 10 más grandes y la lista MIS de Sergi. MIS se guarda en su navegador, así que la Action
@@ -240,8 +276,12 @@ export const POLYMARKET = { minVolume: 1_000_000, change: 0.15, maxTracked: 60 }
  */
 export const EARNINGS_WATCH = {
 	top10: ['NVDA', 'MSFT', 'AAPL', 'GOOGL', 'AMZN', 'META', 'AVGO', 'TSLA', 'BRK.B', 'TSM'],
-	/** Valores seguidos de EE. UU. (los de STOCKS; NVDA y AAPL ya están arriba). */
-	seguidos: ['LMT', 'RTX', 'NOC', 'GD', 'LHX', 'BA', 'PLTR'],
+	/** Valores seguidos de EE. UU. (los de STOCKS que no están arriba). */
+	seguidos: [
+		'LMT', 'RTX', 'NOC', 'GD', 'LHX', 'BA', 'PLTR',
+		'AMD', 'ASML', 'NFLX', 'ORCL', 'CRM', 'INTC', 'QCOM', 'MU', 'ARM', 'COIN', 'MSTR',
+		'JPM', 'GS', 'V', 'MA', 'XOM', 'CVX', 'LLY', 'NVO', 'UNH', 'SAP', 'SAN', 'BBVA', 'TEF', 'SONY', 'TM'
+	],
 	mis: [] as string[]
 };
 
@@ -253,7 +293,7 @@ export const DOWN = { days: 3 };
  * anteriores. El historial de power.json lo acumula la web: mientras tenga menos de `days` días se usa lo
  * que haya, con un mínimo de `minDays`.
  */
-export const LUZ = { change: 30, days: 30, minDays: 3 };
+export const LUZ = { change: 20, days: 30, minDays: 3 };
 
 /** «Mañana es festivo / no abre la bolsa»: hora de Madrid desde la que sale la víspera. */
 export const TOMORROW = { from: '19:00', until: '23:59' };
