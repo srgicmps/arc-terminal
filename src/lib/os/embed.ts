@@ -60,7 +60,7 @@ export function initEmbed() {
 	watch.observe(host.head, { childList: true, subtree: true, attributes: true, attributeFilter: ['href'] });
 	const onDown = () => send({ type: 'arcos:focus' });
 	const onKey = (e: KeyboardEvent) => {
-		if (!e.altKey) return;
+		if (!e.altKey && !(e.metaKey && e.key.startsWith('Arrow'))) return;
 		send({ type: 'arcos:key', key: e.key, code: e.code, alt: e.altKey, shift: e.shiftKey, ctrl: e.ctrlKey, meta: e.metaKey });
 	};
 	window.addEventListener('pointerdown', onDown, true);

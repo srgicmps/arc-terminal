@@ -26,6 +26,8 @@ export interface Win extends Rect {
 	/** Encajada a una mitad, un cuarto o maximizada; `restore` es dónde estaba antes. */
 	snap?: Snap;
 	restore?: Rect;
+	/** Siempre encima: por delante de las demás aunque otra tenga el foco. */
+	top?: boolean;
 }
 
 export interface Desk {
@@ -51,6 +53,11 @@ export const MIN_H = 160;
 /** Lo que se queda siempre a la vista de una ventana arrastrada fuera (para poder recuperarla). */
 export const KEEP = 48;
 
+/** Capa de las ventanas «siempre encima» (se suma a z al pintar). */
+export const TOP_LAYER = 1000;
+/** El z-index con que se pinta una ventana. */
+export const stackZ = (w: Pick<Win, 'z' | 'top'>) => w.z + (w.top ? TOP_LAYER : 0);
+
 export const snapTo = (n: number, grid = GRID) => Math.round(n / grid) * grid;
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
@@ -63,7 +70,7 @@ export const findWin = (s: OsState, uid: string): Win | undefined => s.desks.fla
 const deskOf = (s: OsState, uid: string) => s.desks.find((d) => d.wins.some((w) => w.uid === uid));
 const topZ = (d: Desk) => d.wins.reduce((z, w) => Math.max(z, w.z), 0);
 
-/** La ventana que tiene el foco: la de delante que no está minimizada. */
+/** La ventana que tiene el foco: la última usada que no está minimizada («siempre encima» solo cambia cómo se pinta). */
 export function focused(d: Desk): Win | undefined {
 	return d.wins.filter((w) => !w.min).sort((a, b) => b.z - a.z)[0];
 }
@@ -105,13 +112,13 @@ export function cascade(d: Desk, size: { w: number; h: number }, area: { w: numb
 export type OpenResult = { win: Win; created: boolean } | { win: null; reason: 'tope' };
 
 /**
- * Abre una app en el escritorio activo. Si es de una sola ventana y ya está abierta, la trae al frente.
- * Con MAX_WINS ventanas en el escritorio, no abre nada (reason «tope»).
+ * Abre una app en el escritorio activo. Si es de una sola ventana y ya está abierta, la trae al frente, salvo
+ * con `fresh` («Nueva ventana»: otra instancia de la misma app). Con MAX_WINS ventanas, no abre nada (reason «tope»).
  */
-export function openWin(s: OsState, app: { id: string; size: { w: number; h: number }; single?: boolean }, area: { w: number; h: number }, path?: string): OpenResult {
+export function openWin(s: OsState, app: { id: string; size: { w: number; h: number }; single?: boolean }, area: { w: number; h: number }, path?: string, fresh = false): OpenResult {
 	const d = activeDesk(s);
 	const open = d.wins.find((w) => w.app === app.id);
-	if (open && app.single !== false) {
+	if (open && app.single !== false && !fresh) {
 		if (path) open.path = path;
 		focusWin(s, open.uid);
 		return { win: open, created: false };
@@ -137,6 +144,14 @@ export function focusWin(s: OsState, uid: string): void {
 	const others = d.wins.filter((x) => x !== w).sort((a, b) => a.z - b.z);
 	others.forEach((x, i) => (x.z = i + 1));
 	w.z = others.length + 1;
+}
+
+/** Siempre encima o no. */
+export function toggleTop(s: OsState, uid: string): void {
+	const w = findWin(s, uid);
+	if (!w) return;
+	if (w.top) delete w.top;
+	else w.top = true;
 }
 
 export function minimizeWin(s: OsState, uid: string): void {
@@ -286,6 +301,7 @@ export function reconcileOs(saved: unknown, known: (id: string) => boolean): OsS
 			const win: Win = { uid: w.uid, app: w.app, x: num(w.x, 24), y: num(w.y, 16), w: Math.max(MIN_W, num(w.w, 880)), h: Math.max(MIN_H, num(w.h, 600)), z: num(w.z, 1) };
 			if (typeof w.path === 'string' && w.path.startsWith('/') && w.path.length < 300) win.path = w.path;
 			if (w.min === true) win.min = true;
+			if (w.top === true) win.top = true;
 			if (typeof w.snap === 'string' && SNAPS.includes(w.snap)) {
 				win.snap = w.snap;
 				const r = w.restore as Partial<Rect> | undefined;
