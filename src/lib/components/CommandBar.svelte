@@ -61,6 +61,15 @@
 	]);
 
 	let value = $state('');
+	/** Móvil táctil: la barra se presenta como un buscador (lupa, otro texto de ayuda, tecla «Buscar»). */
+	let phone = $state(false);
+	$effect(() => {
+		const mq = matchMedia('(max-width: 720px) and (pointer: coarse)');
+		phone = mq.matches;
+		const on = () => (phone = mq.matches);
+		mq.addEventListener('change', on);
+		return () => mq.removeEventListener('change', on);
+	});
 	let selected = $state(-1);
 	let open = $state(false);
 	// Si Sergi se ha movido con ↑ ↓, Intro abre la sugerencia marcada; si no, se decide con lo escrito.
@@ -345,7 +354,12 @@
 <svelte:window onkeydown={onWindowKeydown} />
 
 <form class="cmd" class:sheet={ui.sheet} role="search" autocomplete="off" {onsubmit}>
-	<label class="prompt" for="cmd">&gt;<span class="sr">Comando</span></label>
+	<label class="prompt" for="cmd">
+		<span class="caret" aria-hidden="true">&gt;</span>
+		<!-- En el móvil, una lupa: la barra se usa como un buscador normal. -->
+		<svg class="lens" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5 14 14" /></svg>
+		<span class="sr">Comando o búsqueda</span>
+	</label>
 	<input
 		id="cmd"
 		bind:this={input}
@@ -377,11 +391,13 @@
 		type="text"
 		spellcheck="false"
 		autocapitalize="characters"
-		enterkeyhint="go"
+		enterkeyhint={phone ? 'search' : 'go'}
 		placeholder={notice ||
 			(queue.length
 				? `${queueTotal - queue.length}/${queueTotal} · Alt+→ siguiente: ${queue[0]}`
-				: 'Escribe un comando o un valor: NVDA, ECO, BOE…')}
+				: phone
+					? 'Busca un valor o una vista'
+					: 'Escribe un comando o un valor: NVDA, ECO, BOE…')}
 		role="combobox"
 		aria-autocomplete="list"
 		aria-expanded={open && options.length > 0}
@@ -456,13 +472,41 @@
 		font-weight: var(--fw-bold);
 	}
 
+	.lens {
+		display: none;
+		width: var(--sp-16);
+		height: var(--sp-16);
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.6;
+		stroke-linecap: round;
+	}
+
+	@media (max-width: 720px) and (pointer: coarse) {
+		.caret {
+			display: none;
+		}
+
+		.lens {
+			display: block;
+		}
+
+		.prompt {
+			color: var(--muted);
+		}
+
+		.cmd {
+			height: var(--touch);
+		}
+	}
+
 	input {
 		flex: 1;
 		min-width: 0;
 		background: transparent;
 		border: 0;
 		outline: none;
-		font-size: var(--fs-m);
+		font-size: var(--fs-field);
 		text-transform: uppercase;
 		letter-spacing: var(--track-tight);
 	}

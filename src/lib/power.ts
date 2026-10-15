@@ -146,3 +146,43 @@ export function cheapestNow(
 	const window = day ? cheapestWindow(prices, day, hours) : null;
 	return day && window ? { ...window, day, tomorrow } : null;
 }
+
+/**
+ * Las `count` mejores franjas de `length` horas seguidas de un día, sin tocarse (entre dos hay al menos una hora), de la más barata a la más cara
+ * (horas baratas para la lavadora o el coche). Con `from` (la hora actual de Madrid) solo cuentan las que empiezan
+ * en la hora en curso o después. Sirve también para los avisos de casa (F16): `cheapWindows(hourly(pvpc), mañana, 2)`.
+ */
+export function cheapWindows(
+	prices: HourPrice[],
+	day: string,
+	length = 2,
+	count = 3,
+	from?: { day: string; hour: number; repeat: boolean } | null
+): CheapWindow[] {
+	const hours = prices.filter((p) => p.day === day);
+	// Primera posición válida: la hora actual en adelante si es hoy (la segunda 02:00 cuenta como posterior).
+	let start = 0;
+	if (from && from.day === day) {
+		start = hours.findIndex((p) => p.hour > from.hour || (p.hour === from.hour && (p.repeat || !from.repeat)));
+		if (start < 0) return [];
+	} else if (from && from.day > day) return [];
+	const all: { i: number; w: CheapWindow }[] = [];
+	for (let i = start; i + length <= hours.length; i++) {
+		const run = hours.slice(i, i + length);
+		const next = hours[i + length];
+		all.push({
+			i,
+			w: {
+				first: run[0],
+				after: next ? { hour: next.hour, repeat: next.repeat } : { hour: (run.at(-1)!.hour + 1) % 24, repeat: false },
+				avg: run.reduce((a, p) => a + p.kwh, 0) / length
+			}
+		});
+	}
+	const picked: typeof all = [];
+	for (const c of all.sort((a, b) => a.w.avg - b.w.avg || a.i - b.i)) {
+		if (picked.length >= count) break;
+		if (picked.every((p) => c.i + length < p.i || p.i + length < c.i)) picked.push(c);
+	}
+	return picked.map((p) => p.w);
+}
