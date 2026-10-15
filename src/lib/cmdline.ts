@@ -4,6 +4,9 @@
 import { COMMANDS, type Command } from './commands.ts';
 import { FUNCTIONS, findFunction } from './functions.ts';
 import { panelHash } from './panelhash.ts';
+import { parseDay } from './cmddate.ts';
+import { longDay, weekday } from './format.ts';
+import { madridDate } from './meetings.ts';
 import { TICKERS } from './tickers.ts';
 
 /** Una sugerencia de la barra. */
@@ -64,6 +67,9 @@ export function suggest(raw: string, all: Option[], limit = 8): Option[] {
 	// «ECO ?»: la ayuda del comando.
 	const help = commandHelp(raw);
 	if (help) return [helpOption(help, 'Ayuda')];
+	// «LUZ mañana»: el comando en ese día.
+	const dated = commandDay(raw);
+	if (dated) return [dayOption(dated, 'Fecha')];
 	// «ECO TIP»: los paneles del comando que coinciden; «NEWS inflación»: ejecutar el comando con ese texto
 	// (y, detrás, los paneles que coincidan).
 	const panels = panelOptions(raw);
@@ -101,7 +107,7 @@ export function suggest(raw: string, all: Option[], limit = 8): Option[] {
  * («gp» en «NVDA GP», ver src/lib/functions.ts).
  */
 export type Target =
-	| { kind: 'command'; command: Command; arg?: string; panel?: string }
+	| { kind: 'command'; command: Command; arg?: string; panel?: string; day?: string }
 	| { kind: 'help'; command: Command }
 	| { kind: 'symbol'; sym: string; fn?: string };
 
@@ -196,6 +202,22 @@ function panelOption(command: Command, name: string, kind: string): Option {
 	return { code: `${command.code} ${name}`, desc: what ? `Panel · ${what}` : 'Panel', kind, run: `${command.code} ${name}` };
 }
 
+/**
+ * «LUZ mañana», «CAL viernes»: un comando que acepta días (`date`) y el día («AAAA-MM-DD»). `arg` es lo
+ * escrito, que es lo que se guarda en el historial: «LUZ mañana» sigue siendo mañana otro día.
+ */
+export function commandDay(raw: string, now = Date.now()): { command: Command; arg: string; day: string } | null {
+	const { head, arg } = splitInput(raw);
+	const command = findCommand(head);
+	const day = command?.date && arg ? parseDay(arg, madridDate(now)) : null;
+	return command && day ? { command, arg, day } : null;
+}
+
+function dayOption(target: { command: Command; arg: string; day: string }, kind: string): Option {
+	const { command, arg, day } = target;
+	return { code: `${command.code} ${arg}`, desc: `${command.key} · ${weekday(day)}`, kind, run: `${command.code} ${arg}` };
+}
+
 /** «ECO ?»: la ayuda de un comando (su ficha del MANUAL). */
 export function commandHelp(raw: string): Command | null {
 	const { head, arg } = splitInput(raw);
@@ -225,6 +247,8 @@ export function resolveInput(raw: string, suggestions: Option[]): Target | null 
 	if (bloomberg) return { kind: 'command', ...bloomberg };
 	const help = commandHelp(raw);
 	if (help) return { kind: 'help', command: help };
+	const dated = commandDay(raw);
+	if (dated) return { kind: 'command', ...dated };
 	const panel = commandPanel(raw);
 	if (panel) return { kind: 'command', ...panel };
 	const withArg = commandWithArg(raw);
@@ -258,8 +282,12 @@ export function targetPath(target: Target): { route: Command['route'] | '/s' | '
 		return { route: '/s', search: `?sym=${encodeURIComponent(target.sym)}${fn}` };
 	}
 	if (target.kind === 'help') return { route: '/manual', search: `#cmd-${target.command.code}` };
-	const { command, arg, panel } = target;
+	const { command, arg, panel, day } = target;
 	if (panel) return { route: command.route, search: panelHash(panel) };
+	if (day) {
+		const search = command.date === 'panel' ? panelHash(longDay(`${day}T12:00:00Z`)) : `?dia=${day}`;
+		return { route: command.route, search };
+	}
 	const search = arg && command.arg ? `?${command.arg.param}=${encodeURIComponent(arg)}` : '';
 	return { route: command.route, search };
 }
@@ -311,6 +339,8 @@ export function historyOptions(list: string[]): Option[] {
 	return list.map((entry) => {
 		const help = commandHelp(entry);
 		if (help) return helpOption(help, 'Reciente');
+		const dated = commandDay(entry);
+		if (dated) return dayOption(dated, 'Reciente');
 		const panel = commandPanel(entry);
 		if (panel) return panelOption(panel.command, panel.panel, 'Reciente');
 		const withArg = commandWithArg(entry);
