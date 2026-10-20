@@ -27,6 +27,9 @@ export const TABLES = {
 		'CREATE TABLE IF NOT EXISTS errors (sig TEXT PRIMARY KEY, msg TEXT NOT NULL, stack TEXT NOT NULL, path TEXT NOT NULL, ver TEXT NOT NULL, ua TEXT NOT NULL, style TEXT NOT NULL, modo TEXT NOT NULL, embed INTEGER NOT NULL, first INTEGER NOT NULL, last INTEGER NOT NULL, n INTEGER NOT NULL)',
 	/** Mis RSS: una fila por persona con su lista en JSON. */
 	rss: 'CREATE TABLE IF NOT EXISTS rss (user TEXT PRIMARY KEY, feeds TEXT NOT NULL, updated INTEGER NOT NULL)',
+	/** PREGUNTA (IA): cuántas lleva cada persona cada día, para el tope; nunca la pregunta ni la respuesta. */
+	ask_count:
+		'CREATE TABLE IF NOT EXISTS ask_count (user TEXT NOT NULL, day TEXT NOT NULL, n INTEGER NOT NULL, rejected INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (user, day))',
 	/** Juego de predicciones: jugadores y apuestas. */
 	forecast_players:
 		'CREATE TABLE IF NOT EXISTS forecast_players (user TEXT PRIMARY KEY, uid TEXT NOT NULL UNIQUE, alias TEXT)',

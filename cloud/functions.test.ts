@@ -5,6 +5,7 @@
 // Así, un envoltorio mal conectado o que deje escapar un error (un 500) se ve aquí y no en producción.
 import { readFileSync } from 'node:fs';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { withoutAi } from '../scripts/cf-config.ts';
 import { clearKeyCache } from './access.ts';
 import { sqliteD1 } from './d1sqlite.ts';
 import type { D1Database } from './prefs.ts';
@@ -36,6 +37,7 @@ interface Call {
 const OK: Record<string, Call> = {
 	admin: {},
 	alerts: {},
+	ask: {},
 	brief: {
 		method: 'POST',
 		body: { mails: [{ uid: 'a'.repeat(16), subject: 'Tu mañana', text: 'Hola' }] },
@@ -59,10 +61,12 @@ beforeEach(() => {
 	vi.stubGlobal('fetch', vi.fn(k.certs));
 });
 
-/** El env de Pages, completo: Access, la base y los Secrets que miran admin, feedback y brief. */
+/** El env de Pages, completo: Access, la base, Workers AI y los archivos de la web (ask) y los Secrets que miran admin, feedback y brief. */
 const fullEnv = (db: D1Database) => ({
 	...ENV,
 	DB: db,
+	AI: { run: async () => ({ response: 'No lo sé con los datos de hoy.' }) },
+	ASSETS: { fetch: async () => new Response('', { status: 404 }) },
 	ADMIN_EMAIL: ADMIN,
 	BREVO_API_KEY: 'clave-de-prueba',
 	BREVO_SENDER: 'arc@x.es'
@@ -196,5 +200,13 @@ describe('wrangler.toml', () => {
 		expect(toml).toMatch(/^binding = "DB"$/m);
 		expect(toml).toMatch(/^ACCESS_TEAM_DOMAIN = /m);
 		expect(toml).toMatch(/^ACCESS_AUD = /m);
+	});
+
+	it('Workers AI se llama AI (env.AI) y cf-config.ts sabe quitarlo sin tocar lo demás', () => {
+		expect(toml).toMatch(/^\[ai\]\nbinding = "AI"$/m);
+		const off = withoutAi(toml);
+		expect(off).not.toMatch(/^\[ai\]/m);
+		expect(off).toMatch(/^binding = "DB"$/m);
+		expect(off).toMatch(/^ACCESS_AUD = /m);
 	});
 });
