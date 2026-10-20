@@ -129,6 +129,8 @@ self.addEventListener('fetch', (event) => {
 	}
 
 	// El resto de archivos propios: si está en la precaché, al instante; si no, a la red.
+	// Sin el #fragmento: <use href="…/land.svg#land"> (el contorno de los mapas) lo lleva en la URL de la petición.
+	target.hash = '';
 	if (PRECACHE.includes(target.href)) {
 		event.respondWith(cacheFirst(request, CACHE));
 	}
