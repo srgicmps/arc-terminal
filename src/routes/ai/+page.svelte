@@ -104,7 +104,7 @@
 			{@const fr = data.frontier.data}
 			<Panel title="Modelos frontera" meta="Cómputo de entrenamiento estimado, en FLOP · Epoch AI">
 				<Table>
-					<thead><tr><th>Modelo</th><th>Fecha</th><th>Cómputo</th><th class="spark"></th></tr></thead>
+					<thead><tr><th>Modelo</th><th>Fecha</th><th>Cómputo</th><th class="spark"><span class="sr">Frente al récord</span></th></tr></thead>
 					<tbody>
 						{#each fr.models as m (m.name + m.date)}
 							<tr>

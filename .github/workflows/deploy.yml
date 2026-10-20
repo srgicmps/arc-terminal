@@ -273,8 +273,9 @@ jobs:
       # Arc OS: cada vista como app (embebida a 390 px) y el escritorio con ventanas, sin datos (scripts/smoke-vistas-os.ts).
       - run: node scripts/smoke-vistas-os.ts
 
-  # PR: datos reales y prueba de humo. Abre todas las vistas a 390 y 1280 px con el Chrome del runner y
-  # falla si alguna da errores en la consola, tiene scroll horizontal en el móvil o se queda sin datos.
+  # PR: datos reales y prueba de humo. Abre todas las vistas a 390 y 1280 px con el Chrome del runner, tres a la vez
+  # (SMOKE_CONCURRENCY), y falla si alguna da errores en la consola, tiene scroll horizontal en el móvil, fallos de
+  # accesibilidad de estructura (axe-core) o se queda sin datos.
   smoke:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -311,19 +312,24 @@ jobs:
       - run: pnpm build --logLevel warn
       - run: pnpm smoke
       # Lo mismo en WebKit (motor de Safari) a 390 px con la estética del iPhone de Sergi: lo que Chromium no ve
-      # (scroll horizontal, campos que amplían…). De momento solo avisa.
-      - run: pnpm exec playwright-core install --with-deps webkit
+      # (scroll horizontal, campos que amplían…). Si falla, el PR sale en rojo; si lo que falla es instalar WebKit
+      # (red, apt), tras tres intentos se salta, sin poner nada en rojo.
+      - id: webkit
+        run: for i in 1 2 3; do pnpm exec playwright-core install --with-deps webkit && exit 0; sleep 10; done; exit 1
         continue-on-error: true
-      - run: pnpm smoke
-        continue-on-error: true
+      - if: steps.webkit.outcome == 'success'
+        run: pnpm smoke
         env:
+          # WebKit va más justo en el runner: dos vistas a la vez en vez de tres.
+          SMOKE_CONCURRENCY: '2'
           SMOKE_BROWSER: webkit
           SMOKE_WIDTHS: '390'
           SMOKE_MODES: terminal
           SMOKE_STYLE: cupertino
 
-  # PR: recorridos de punta a punta de Arc OS en el escritorio (scripts/e2e-os.ts), sin datos ni red. Chromium manda;
-  # Firefox y WebKit (los de Playwright) de momento solo avisan, hasta que se vea que van estables.
+  # PR: recorridos de punta a punta de Arc OS en el escritorio (scripts/e2e-os.ts), sin datos ni red. Chromium y
+  # WebKit (Safari, el del iPhone de Sergi) mandan; Firefox de momento solo avisa. Si lo que falla es instalar el
+  # navegador (red, apt), tras tres intentos se salta, sin poner nada en rojo; si fallan las pruebas, sí.
   e2e-os:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -332,7 +338,7 @@ jobs:
       fail-fast: false
       matrix:
         browser: [chromium, firefox, webkit]
-    continue-on-error: ${{ matrix.browser != 'chromium' }}
+    continue-on-error: ${{ matrix.browser == 'firefox' }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
@@ -341,10 +347,14 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - if: matrix.browser != 'chromium'
-        run: pnpm exec playwright-core install --with-deps ${{ matrix.browser }}
-      - run: pnpm build --logLevel warn
-      - run: pnpm e2e:os
+      - id: navegador
+        if: matrix.browser != 'chromium'
+        run: for i in 1 2 3; do pnpm exec playwright-core install --with-deps ${{ matrix.browser }} && exit 0; sleep 10; done; exit 1
+        continue-on-error: true
+      - if: matrix.browser == 'chromium' || steps.navegador.outcome == 'success'
+        run: pnpm build --logLevel warn
+      - if: matrix.browser == 'chromium' || steps.navegador.outcome == 'success'
+        run: pnpm e2e:os
         env:
           E2E_BROWSER: ${{ matrix.browser }}
 
