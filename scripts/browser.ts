@@ -3,6 +3,7 @@
 // `vite preview` con la web ya construida y abrir Chromium.
 import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { chromium, webkit, type Browser } from 'playwright-core';
 
 /** Chromium de la imagen de desarrollo; en el runner de GitHub, el Chrome que trae instalado. */
@@ -21,7 +22,10 @@ export function launch(): Promise<Browser> {
  */
 export async function preview(port: number, cwd?: string): Promise<{ server: ChildProcess; root: string }> {
 	const root = `http://localhost:${port}`;
-	const server = spawn('pnpm', ['exec', 'vite', 'preview', '--port', String(port), '--strictPort'], {
+	// vite directamente, sin `pnpm exec`: con pnpm por medio, server.kill() solo mataba a pnpm y vite seguía vivo,
+	// sin padre y ocupando el puerto (la siguiente pasada medía la web de antes).
+	const vite = resolve(cwd ?? '.', 'node_modules/vite/bin/vite.js');
+	const server = spawn(process.execPath, [vite, 'preview', '--port', String(port), '--strictPort'], {
 		stdio: 'ignore',
 		cwd
 	});
