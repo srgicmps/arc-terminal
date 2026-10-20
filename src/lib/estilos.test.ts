@@ -185,11 +185,20 @@ describe('estéticas', () => {
 	});
 });
 
-// Lo que Chromium no reproduce de un iPhone (zonas seguras), comprobado en el código para que no vuelva.
-describe('iPhone: zonas seguras', () => {
+// Lo que Chromium no reproduce de un iPhone (zonas seguras, barra de estado), comprobado en el código para que no vuelva.
+describe('iPhone: zonas seguras y color de la barra', () => {
 	it('toda la web lleva viewport-fit=cover (sin él, Safari deja a 0 los env(safe-area-inset-*))', () => {
 		const meta = /<meta name="viewport" content="([^"]+)"/.exec(readFileSync('src/app.html', 'utf8'));
 		expect(meta?.[1].split(',').map((p) => p.trim())).toContain('viewport-fit=cover');
+	});
+
+	it('al cambiar de estética, theme-color se pone otra vez cuando carga su hoja (y en el acto, para Terminal)', () => {
+		const theme = readFileSync('src/lib/theme.svelte.ts', 'utf8');
+		expect(theme).toMatch(/export function syncThemeColor\(\)/);
+		expect(theme).toMatch(/function apply\(\) {[^}]*syncThemeColor\(\);/);
+		const setStyle = /export function setStyle\([^)]*\) {([\s\S]*?)\n}/.exec(readFileSync('src/lib/taste.svelte.ts', 'utf8'))?.[1] ?? '';
+		expect(setStyle).toMatch(/getElementById\('style-sheet'\)\?\.addEventListener\('load', syncThemeColor/);
+		expect(setStyle).toMatch(/\n\tsyncThemeColor\(\);$/);
 	});
 
 	it('el panel ampliado y lo fijo a los bordes se apartan de la muesca y de la barra de inicio', () => {
