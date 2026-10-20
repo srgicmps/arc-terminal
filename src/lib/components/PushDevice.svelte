@@ -98,7 +98,7 @@
 
 {#if phase !== 'loading' && phase !== 'hidden'}
 	<div class="device">
-		<span class="label">En este dispositivo <span class="sub">· sin instalar nada</span></span>
+		<span class="label">En este dispositivo</span>
 		<span class="state" class:on={phase === 'on'}>{STATE[phase]}</span>
 	</div>
 	{#if phase === 'install'}
@@ -118,26 +118,27 @@
 		</ButtonRow>
 	{/if}
 	{#if msg}<p class="hint" role="status">{msg}</p>{/if}
-	<p class="hint or">O con la app ntfy, en cualquier móvil:</p>
+	<p class="hint or">
+		{phase === 'install' || phase === 'no' ? '' : 'Llegan a este navegador sin instalar nada, aunque tengas la web cerrada. '}O
+		con la app ntfy, en cualquier móvil:
+	</p>
 {/if}
 
 <style>
 	.device {
 		display: flex;
-		flex-wrap: wrap;
 		gap: var(--sp-8);
 		align-items: baseline;
 		justify-content: space-between;
 		padding: var(--row-y) var(--pad-x);
 	}
 	.label {
+		min-width: 0;
 		font-size: var(--fs-s);
 		color: var(--fg);
 	}
-	.sub {
-		color: var(--faint);
-	}
 	.state {
+		flex: none;
 		font-family: var(--mono);
 		font-size: var(--fs-xs);
 		color: var(--muted);
