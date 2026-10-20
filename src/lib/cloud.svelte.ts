@@ -6,6 +6,8 @@ import { collect } from './transfer.ts';
 import { PREFS } from './prefs.ts';
 import { LOGOUT } from './account.ts';
 import {
+	HOLD,
+	holdActive,
 	isEmpty,
 	MEMORY,
 	mergeFitting,
@@ -44,6 +46,23 @@ let busy = false;
 let stale = false;
 /** «Borrar mi cuenta» en marcha en esta pestaña (hold): no sube ni baja nada, que lo recrearía. */
 let held = false;
+
+/** La pausa, para las demás pestañas: la hora de ahora en HOLD (cloud.ts). La pestaña que borra la renueva cada 5 s. */
+function markHold() {
+	try {
+		localStorage.setItem(HOLD, String(Date.now()));
+	} catch {}
+}
+
+/** ¿Quieto? Esta pestaña está borrando la cuenta (held) u otra lo está (HOLD de hace menos de 30 s). */
+function paused(): boolean {
+	if (held) return true;
+	try {
+		return holdActive(localStorage.getItem(HOLD), Date.now());
+	} catch {
+		return false;
+	}
+}
 
 const url = () => asset('api/prefs' as Parameters<typeof asset>[0]);
 
@@ -138,13 +157,14 @@ let lastPull = 0;
 
 /** Trae lo del servidor, junta y sube. Si ha cambiado algo de aquí, recarga para que las vistas lo lean. */
 async function pull() {
-	if (busy || stale || held) return;
+	if (busy || stale || paused()) return;
 	busy = true;
 	lastPull = Date.now();
 	try {
 		if (cloud.state !== 'ok') cloud.state = 'sync';
 		const remote = await getRemote();
-		if (!remote || !refreshMemory()) return;
+		// Mientras llegaba la respuesta, otra pestaña puede haber empezado a borrar la cuenta: no se sube nada.
+		if (!remote || !refreshMemory() || paused()) return;
 		const local = collect(localStorage);
 		const switching = !!memory && memory.user !== remote.user;
 		const plan = startPlan(local, remote.prefs, memory, remote.user);
@@ -181,7 +201,7 @@ async function pull() {
  * con la memoria de nadie (NOBODY, tras «Borrar mi cuenta») subiría todo lo de aquí a quien entrase.
  */
 async function flush(keepalive = false) {
-	if (busy || stale || held || !memory?.user || memory.user !== cloud.user || cloud.state === 'auth') return;
+	if (busy || stale || paused() || !memory?.user || memory.user !== cloud.user || cloud.state === 'auth') return;
 	if (!refreshMemory()) return;
 	const plan = mergeFitting(collect(localStorage), memory.base, memory.base);
 	setFrozen(plan.frozen);
@@ -219,7 +239,9 @@ export function initCloud() {
 	// Cada poco se sube lo de aquí. Si se dejó para luego, se vuelve a pedir lo de fuera al dejar de escribir; si
 	// falló (sin conexión, error), como mucho una vez por minuto. Sin cuenta configurada (503) ni se insiste.
 	const id = setInterval(() => {
-		if (postponed && !typing()) void pull();
+		// Borrando la cuenta aquí: se renueva la pausa de las demás pestañas (también con la duda, unsure).
+		if (held) markHold();
+		else if (postponed && !typing()) void pull();
 		else if (cloud.state === 'error' || cloud.state === 'offline') {
 			if (Date.now() - lastPull > RETRY) void pull();
 		} else if (memory) void flush();
@@ -258,14 +280,21 @@ export function initCloud() {
 export const flushNow = () => void flush(true);
 
 /**
- * «Borrar mi cuenta» (account.svelte.ts, solo en HELP): esta pestaña deja de sincronizar (subir ahora recrearía la
- * cuenta) y espera a que acabe lo que estuviera en marcha, como mucho 5 s. Devuelve cómo seguir si al final no se
- * borra, o null si sigue en marcha (entonces no se puede borrar todavía).
+ * «Borrar mi cuenta» (account.svelte.ts, solo en HELP): ninguna pestaña de este navegador sincroniza (subir ahora
+ * recrearía la cuenta): esta, por held; las demás, por la marca HOLD. Espera a que acabe lo que esta tuviera en
+ * marcha, como mucho 5 s. Devuelve cómo seguir si al final no se borra (quita la marca), o null si sigue en marcha
+ * (entonces no se puede borrar todavía). Si se borra, la marca se queda hasta endSync.
  */
 export async function hold(): Promise<(() => void) | null> {
 	held = true;
+	markHold();
 	for (let i = 0; busy && i < 50; i++) await new Promise((r) => setTimeout(r, 100));
-	const resume = () => void (held = false);
+	const resume = () => {
+		held = false;
+		try {
+			localStorage.removeItem(HOLD);
+		} catch {}
+	};
 	if (!busy) return resume;
 	resume();
 	return null;
@@ -273,12 +302,14 @@ export async function hold(): Promise<(() => void) | null> {
 
 /**
  * Tras «Borrar mi cuenta»: la memoria pasa a ser de nadie (NOBODY en cloud.ts) y esta pestaña no sincroniza más. Va
- * lo primero, antes de borrar nada: las demás pestañas lo ven (storage) y salen antes de poder subir lo de aquí.
+ * lo primero, antes de borrar nada: las demás pestañas lo ven (storage) y salen antes de poder subir lo de aquí. Con
+ * la memoria de nadie ya no hace falta la pausa (HOLD): se quita después, nunca antes.
  */
 export function endSync() {
 	stale = true;
 	memory = null;
 	try {
 		localStorage.setItem(MEMORY, JSON.stringify(NOBODY));
+		localStorage.removeItem(HOLD);
 	} catch {}
 }

@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { diff, LIMITS, merge, mergeFitting, NOBODY, oversized, readMemory, replaced, startPlan } from './cloud.ts';
+import {
+	diff,
+	HOLD,
+	HOLD_MS,
+	holdActive,
+	LIMITS,
+	merge,
+	mergeFitting,
+	NOBODY,
+	oversized,
+	readMemory,
+	replaced,
+	startPlan
+} from './cloud.ts';
+import { portable } from './transfer.ts';
 
 describe('merge', () => {
 	it('primera vez con el servidor vacío: sube todo lo de aquí (migración)', () => {
@@ -112,5 +126,32 @@ describe('claves que no caben en la cuenta', () => {
 	it('al cambiar de usuario no se congela nada: se cambia todo por lo de su cuenta', () => {
 		const plan = startPlan({ a: big }, { b: '1' }, { user: 'ana@x', base: {} }, 'bea@x');
 		expect(plan.apply).toEqual({ set: { b: '1' }, del: ['a'] });
+	});
+});
+
+describe('holdActive (la pausa de «Borrar mi cuenta» en todas las pestañas)', () => {
+	const now = 1_800_000_000_000;
+
+	it('recién puesta o renovada (cada 5 s), las demás pestañas no sincronizan', () => {
+		expect(holdActive(String(now), now)).toBe(true);
+		expect(holdActive(String(now - 5_000), now)).toBe(true);
+		expect(holdActive(String(now - HOLD_MS + 1), now)).toBe(true);
+	});
+
+	it('si la pestaña que borra se ha cerrado (sin renovar en 30 s), las demás siguen', () => {
+		expect(holdActive(String(now - HOLD_MS), now)).toBe(false);
+		expect(holdActive(String(now - 3_600_000), now)).toBe(false);
+	});
+
+	it('sin marca (resume y endSync la quitan) o con una rara, no hay pausa', () => {
+		expect(holdActive(null, now)).toBe(false);
+		expect(holdActive('', now)).toBe(false);
+		expect(holdActive('ayer', now)).toBe(false);
+		// Una hora muy adelantada (el reloj ha cambiado) no deja la sincronización parada para siempre.
+		expect(holdActive(String(now + 3_600_000), now)).toBe(false);
+	});
+
+	it('la marca no es tuya: no se sube a la cuenta ni se lleva a otro dispositivo', () => {
+		expect(portable(HOLD)).toBe(false);
 	});
 });

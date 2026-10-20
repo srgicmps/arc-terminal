@@ -126,6 +126,22 @@ export const MEMORY = 'arc-sync';
  */
 export const NOBODY: SyncMemory = { user: '', base: {} };
 
+/**
+ * La pausa de «Borrar mi cuenta» (hold en cloud.svelte.ts) vale para todas las pestañas de este navegador: la que
+ * borra guarda aquí la hora (localStorage) y la renueva mientras sigue parada; las demás no suben ni bajan nada.
+ */
+export const HOLD = 'arc-sync-hold';
+
+/** Lo que dura la pausa sin renovarse: si la pestaña que borra se cierra a medias, las demás siguen al rato. */
+export const HOLD_MS = 30_000;
+
+/** ¿Sigue en pie la pausa guardada (stamp: la hora en ms, como texto)? Sin hora, con una rara o vieja, no. */
+export function holdActive(stamp: string | null, now: number): boolean {
+	if (!stamp) return false;
+	const t = Number(stamp);
+	return Number.isFinite(t) && Math.abs(now - t) < HOLD_MS;
+}
+
 /** Qué cambiar en `from` para que quede como `to`. */
 export function diff(from: Prefs, to: Prefs): Patch {
 	const set: Prefs = {};
