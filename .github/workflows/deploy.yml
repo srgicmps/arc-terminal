@@ -1,8 +1,8 @@
 # Descarga los datos, construye la web y la publica en Cloudflare Pages (web privada tras Cloudflare Access).
 # - push a main, cron y lanzamiento a mano sin «fuentes»: pasada completa y publicación (job build).
 # - PR: comprobaciones en jobs separados que corren a la vez, para que el verde o el rojo llegue antes:
-#   checks (check, test, build, sin datos) · smoke (datos + prueba de humo) · probe (solo si el PR toca
-#   scripts/). Menos jobs a la vez = menos cola en los runners, que comparten todas las sesiones.
+#   checks (check, test con cobertura, build, sin datos) · smoke (datos + prueba de humo) · probe (solo si
+#   el PR toca scripts/). Menos jobs a la vez = menos cola en los runners, que comparten todas las sesiones.
 # - A mano con «herramienta» (compare o tv-shots), sobre la rama que se elija: esa revisión, sin publicar.
 # - A mano con «fuentes»: solo `pnpm data <fuentes>` y el sondeo, para probar una fuente sin la pasada completa.
 name: Publicar en Pages
@@ -214,7 +214,26 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - run: pnpm test
+      # Tests con cobertura: falla si una carpeta baja de su suelo (vitest.config.ts, coverage.thresholds).
+      - run: pnpm test:cov
+      # Tabla de cobertura por carpeta en el resumen de la Action, también si no llega al suelo.
+      - if: ${{ !cancelled() && hashFiles('coverage/coverage-summary.json') != '' }}
+        run: |
+          node --input-type=module >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          import { readFileSync } from 'node:fs';
+          import { resolve } from 'node:path';
+          import { pathToFileURL } from 'node:url';
+          const floors = (await import(pathToFileURL(resolve('vitest.config.ts')).href)).default.test.coverage.thresholds;
+          const files = Object.entries(JSON.parse(readFileSync('coverage/coverage-summary.json', 'utf8')));
+          const keys = ['lines', 'statements', 'branches', 'functions'];
+          const pct = (c, t) => (t ? ((100 * c) / t).toFixed(2).replace('.', ',') : '—');
+          const rows = Object.entries(floors).map(([glob, floor]) => {
+            const mine = files.filter(([f]) => f.startsWith(resolve(glob.replace('/**', '')) + '/')).map(([, v]) => v);
+            const cols = keys.map((k) => pct(mine.reduce((a, v) => a + v[k].covered, 0), mine.reduce((a, v) => a + v[k].total, 0)));
+            return `| ${glob} | ${cols.join(' | ')} | ${floor.lines} |`;
+          });
+          console.log(['### Cobertura de los tests (%)', '', '| Carpeta | Líneas | Sentencias | Ramas | Funciones | Suelo (líneas) |', '|---|--:|--:|--:|--:|--:|', ...rows].join('\n'));
+          EOF
       - run: pnpm build --logLevel warn
       # Presupuesto de peso por vista (JS, CSS y HTML propios, gzip, sin datos): falla si alguna pasa del tope.
       - run: node scripts/weight.ts
