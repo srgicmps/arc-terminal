@@ -75,7 +75,9 @@ export function toSurprises(body: RawEarnings): EarningsSurprise[] {
 			estimate: num(e.estimate),
 			surprisePct: num(e.surprisePercent)
 		}))
-		.sort((a, b) => b.period.localeCompare(a.period))
+		// Finnhub puede dar dos veces el mismo trimestre: se queda uno (el que ya tiene el dato real, si lo hay).
+		.sort((a, b) => b.period.localeCompare(a.period) || Number(a.actual === null) - Number(b.actual === null))
+		.filter((e, i, all) => i === 0 || all[i - 1].period !== e.period)
 		.slice(0, 4);
 }
 
