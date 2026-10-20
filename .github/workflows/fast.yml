@@ -2,7 +2,8 @@
 # vuelve a publicar la web. La vía normal (deploy.yml, cada 15 min y en cada push a main) sigue igual.
 # - Las demás fuentes no se descargan: `pnpm data` reutiliza su copia publicada mientras no pase su
 #   maxAgeMinutes, así que no se gastan los límites de Finnhub, SEC, etc.
-# - Con check y test, como el push a main en deploy.yml: si main está en rojo, esta vía no publica.
+# - Con check y test, como deploy.yml, una vez por commit (marca «verificado-<SHA>» en la caché de
+#   Actions): si main está en rojo, esta vía no publica.
 # - Comparte el grupo de concurrencia con deploy.yml: nunca publican a la vez y, si llega otra pasada
 #   mientras hay una en marcha, espera (y una pendiente más nueva sustituye a la anterior, no se acumulan).
 name: Vía rápida
@@ -122,8 +123,28 @@ jobs:
           key: thumbs-solo-restaurar
           restore-keys: thumbs-
 
-      - run: pnpm check
-      - run: pnpm test
+      # check y test, una vez por commit, con la misma marca «verificado-<SHA>» que deploy.yml: si este SHA
+      # ya los pasó (aquí o en deploy.yml), no se repiten; si no, se corren y, si fallan, no se publica.
+      - id: verificado
+        if: github.event_name != 'pull_request'
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        continue-on-error: true
+        with:
+          path: .verificado
+          key: verificado-${{ github.sha }}
+          lookup-only: true
+      - if: steps.verificado.outputs.cache-hit != 'true'
+        run: pnpm check
+      - if: steps.verificado.outputs.cache-hit != 'true'
+        run: pnpm test
+      - if: github.event_name != 'pull_request' && steps.verificado.outputs.cache-hit != 'true'
+        run: echo "${{ github.sha }}" > .verificado
+      - if: github.event_name != 'pull_request' && steps.verificado.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        continue-on-error: true
+        with:
+          path: .verificado
+          key: verificado-${{ github.sha }}
       - run: pnpm build --logLevel warn
 
       # Publica en Cloudflare Pages (web privada, Cloudflare Access delante), como deploy.yml.

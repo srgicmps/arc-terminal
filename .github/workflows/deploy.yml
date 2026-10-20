@@ -160,12 +160,30 @@ jobs:
           path: .notify-cache
           key: notify-log-${{ github.run_id }}-${{ github.run_attempt }}
 
-      # En el cron no: el push a main ya los pasó sobre este mismo SHA. Así un test que falle por la fecha no
-      # frena la publicación de datos, y el turno que comparte con fast.yml queda libre antes.
-      - if: github.event_name != 'schedule'
+      # check y test, una vez por commit. Al pasarlos se deja en la caché de Actions la marca
+      # «verificado-<SHA>» (también fast.yml), y la pasada siguiente sobre ese mismo SHA se los salta: el
+      # turno que comparte con fast.yml queda libre antes y un test que falle por la fecha no frena la
+      # publicación de datos. Sin marca (el push falló, o su pasada se canceló porque otra la sustituyó en el
+      # grupo de concurrencia) o si la caché falla, se corren: nunca se publica un commit sin comprobar.
+      - id: verificado
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        continue-on-error: true
+        with:
+          path: .verificado
+          key: verificado-${{ github.sha }}
+          lookup-only: true
+      - if: steps.verificado.outputs.cache-hit != 'true'
         run: pnpm check
-      - if: github.event_name != 'schedule'
+      - if: steps.verificado.outputs.cache-hit != 'true'
         run: pnpm test
+      - if: steps.verificado.outputs.cache-hit != 'true'
+        run: echo "${{ github.sha }}" > .verificado
+      - if: steps.verificado.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        continue-on-error: true
+        with:
+          path: .verificado
+          key: verificado-${{ github.sha }}
 
       # Miniaturas de las vistas para el MANUAL (scripts/thumbs.ts), una vez al día: se capturan de la web ya
       # publicada y se guardan en la caché de Actions con la fecha (UTC). Si la caché de hoy ya está, no se
