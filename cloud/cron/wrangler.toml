@@ -15,6 +15,6 @@ preview_urls = false
 [triggers]
 crons = ["*/5 * * * *", "7,22,37,52 * * * *"]
 
-# Registro de cada ejecución en el panel de Cloudflare: Workers y Pages → arc-terminal-cron → Registros.
+# Registro de cada ejecución en el panel de Cloudflare: el Worker «arc-terminal-cron» → Logs.
 [observability]
 enabled = true
