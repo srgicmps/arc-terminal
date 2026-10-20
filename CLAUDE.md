@@ -73,7 +73,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - **Dos velocidades**: `deploy.yml` (cada 15 min y en cada push a main) refresca todo lo caducado según el
   `maxAgeMinutes` de cada fuente; `fast.yml` (cada 5 min) fuerza solo las urgentes (lista `URGENT`: terremotos,
   avisos, titulares, IMP…) y publica. Comparten grupo de concurrencia, así que nunca publican a la vez.
-  Una pestaña abierta pregunta cada minuto a `/code.json` (`src/lib/fresh.ts`): datos nuevos → la vista se refresca en su sitio (refreshAll; sola si está arriba, si no «Actualizar»); código nuevo (`GITHUB_SHA`) → «Recargar».
+  Una pestaña abierta pregunta cada minuto a `/code.json` (`src/lib/fresh.ts`): datos nuevos → la vista se refresca en su sitio (refreshAll; sola si está arriba, si no «Actualizar»); código nuevo (`GITHUB_SHA`) → «Recargar». Por eso un `$effect` que aplica algo de la URL no lee `page.url` a pelo (cambia con cada refresco): lee un `$derived` con el texto y `navKey()` de `urlstate.svelte.ts`, que cambia al navegar (también a la misma URL) y no al refrescar.
 - Las claves de las APIs van en **GitHub Secrets** y solo las usa el script de Actions. Nunca en el código
   que llega al navegador.
 - Cotizaciones y gráficos en directo: widgets de TradingView (sin clave).
