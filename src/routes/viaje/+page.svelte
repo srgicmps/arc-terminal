@@ -3,7 +3,6 @@
 	// Junta datos que ya hay: Open-Meteo (desde el navegador, como Tu sitio), BCE, Departamento de Estado de EE. UU.
 	// y Nager.Date (holidays-world). La ciudad va en la URL (?ciudad=Tokio): «VIAJE Tokio» en la barra.
 	import { asset } from '$app/paths';
-	import { page } from '$app/state';
 	import { untrack } from 'svelte';
 	import Panel from '#lib/components/Panel.svelte';
 	import Updated from '#lib/components/Updated.svelte';
@@ -20,7 +19,7 @@
 	import { searchPlaces, type Place } from '#lib/place.ts';
 	import { phrases } from '#lib/plain.ts';
 	import type { WorldHolidaysData } from '#lib/puentes.ts';
-	import { writeParams } from '#lib/urlstate.svelte.ts';
+	import { navKey, shownUrl, writeParams } from '#lib/urlstate.svelte.ts';
 	import { dayIn, dayNote, offsetFromMadrid, offsetLabel, tripHolidays } from '#lib/viaje.ts';
 	import { sky } from '#lib/weather.ts';
 	import type { PageProps } from './$types';
@@ -42,9 +41,12 @@
 
 	// La ciudad de la URL: la busca en Open-Meteo y pide su tiempo. Sin ?ciudad (VIAJE a secas), se vacía.
 	// Buscar y los atajos la escriben con una navegación «shallow» (writeParams): en SvelteKit 3 eso no cambia
-	// page.url, sino page.shallow.url, así que se mira primero esa.
+	// page.url, sino page.shallow.url, así que se mira primero esa (shownUrl). Como texto, y con navKey: «VIAJE Tokio»
+	// repetido la vuelve a buscar, pero un refresco de datos (fresh.ts) no la vuelve a pedir ni pisa lo que escribes.
+	const ciudad = $derived(shownUrl().searchParams.get('ciudad'));
 	$effect(() => {
-		const q = (page.shallow?.url ?? page.url).searchParams.get('ciudad');
+		void navKey();
+		const q = ciudad;
 		untrack(() => (q ? open(q) : clear()));
 	});
 
@@ -114,7 +116,7 @@
 
 	/** Abre una ciudad. Si ya es la de la URL (otra vez Buscar tras un fallo), la URL no cambia: se busca de nuevo. */
 	function go(q: string) {
-		if ((page.shallow?.url ?? page.url).searchParams.get('ciudad') === q) open(q);
+		if (ciudad === q) open(q);
 		else writeParams({ ciudad: q });
 	}
 
