@@ -5,10 +5,10 @@
 	import { routeHref } from '#lib/routes.ts';
 	import '../app.css';
 	import '../styles/ajustes.css';
-	import { afterNavigate, goto, onNavigate } from '$app/navigation';
+	import { afterNavigate, goto, onNavigate, preloadData } from '$app/navigation';
 	import { fade, viewEnv, wants } from '#lib/viewtransition.ts';
 	import { MediaQuery } from 'svelte/reactivity';
-	import { isOnRoute, neighbour, nudge, SWIPE, swipeDirection } from '#lib/swipe.ts';
+	import { isOnRoute, neighbour, nudge, preloadDirection, SWIPE, swipeDirection } from '#lib/swipe.ts';
 	import { asset, resolve } from '$app/paths';
 	import { navigating, page, updated } from '$app/state';
 	import { startClock } from '#lib/clock.svelte.ts';
@@ -141,7 +141,8 @@
 	// Deslizar entre vistas en el móvil (lote 22): a izquierda o derecha, a la vista de al lado de la fila de
 	// arriba. No cuenta si el dedo empieza en algo que ya se desliza en horizontal (tablas anchas, mapas,
 	// gráficos, widgets, campos) ni junto al borde, que en iOS es «atrás».
-	let swipe: { x: number; y: number; t: number } | null = null;
+	// `preloaded`: ya se ha pedido la vista de al lado en este gesto (una sola vez).
+	let swipe: { x: number; y: number; t: number; preloaded?: boolean } | null = null;
 	let shift = $state(0);
 	const NO_SWIPE = 'input, textarea, select, iframe, canvas, svg, .map, .chart, .tv, .board, [data-noswipe]';
 
@@ -170,7 +171,16 @@
 		if (Math.abs(dy) > Math.abs(dx)) {
 			swipe = null;
 			shift = 0;
-		} else shift = nudge(dx);
+			return;
+		}
+		shift = nudge(dx);
+		// En cuanto se sabe a qué lado va, se piden ya los datos y el código de esa vista (solo esa, una vez por
+		// gesto): al soltar, la vista nueva ya está en camino. Si falla, la navegación normal lo vuelve a pedir.
+		const dir = swipe.preloaded ? 0 : preloadDirection(dx, dy);
+		if (!dir) return;
+		swipe.preloaded = true;
+		const next = neighbour(keys, keys.findIndex((k) => isOn(k.route)), dir);
+		if (next) preloadData(routeHref(next.route)).catch(() => {});
 	}
 
 	function onSwipeEnd(e: TouchEvent) {
