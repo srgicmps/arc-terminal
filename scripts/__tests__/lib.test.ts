@@ -1,6 +1,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { parseCsv } from '../csv.ts';
-import { appendDaily, getJson, list, madridDate, madridDay, num, plain, request, settle, tidy } from '../lib.ts';
+import {
+	appendDaily,
+	blockedMessage,
+	getJson,
+	list,
+	madridDate,
+	madridDay,
+	num,
+	plain,
+	previousState,
+	readPublished,
+	request,
+	settle,
+	tidy
+} from '../lib.ts';
 import { mockFetch } from './mock.ts';
 
 afterEach(() => {
@@ -269,5 +283,106 @@ describe('settle', () => {
 		expect(out).toEqual([10]);
 		expect(log).toHaveBeenCalledWith('  test · n2: falla');
 		expect(log).toHaveBeenCalledWith('  test · n3: sin datos');
+	});
+});
+
+describe('previousState', () => {
+	it('distingue el 404 (no existe) de lo que no se puede leer', () => {
+		expect(previousState(new Response('{}', { status: 200 }))).toBe('ok');
+		expect(previousState(new Response('no', { status: 404 }))).toBe('missing');
+		// Login de Access (sin token o caducado), sin permiso, 5xx de Cloudflare o sin respuesta.
+		for (const status of [302, 401, 403, 500, 503]) {
+			expect(previousState(new Response(null, { status }))).toBe('unreadable');
+		}
+		expect(previousState(null)).toBe('unreadable');
+	});
+});
+
+describe('readPublished', () => {
+	/** Un fetchPublished de mentira que responde, por orden, con estos códigos (0 = sin respuesta). */
+	const fetcher = (...codes: number[]) =>
+		vi.fn(async (_path: string, _ms?: number) => {
+			const status = codes.shift() ?? 404;
+			return status ? new Response(status === 200 ? '{"data":1}' : null, { status }) : null;
+		});
+
+	it('si sigue sin poderse leer tras reintentar, la apunta y devuelve null', async () => {
+		const into = new Set<string>();
+		const read = fetcher(302, 302);
+		expect(await readPublished('imp.json', 1000, { fetcher: read, retryMs: 0, into })).toBeNull();
+		expect(read).toHaveBeenCalledTimes(2);
+		expect(read).toHaveBeenCalledWith('imp.json', 1000);
+		expect([...into]).toEqual(['imp']);
+	});
+
+	it('un fallo pasajero se arregla con el reintento', async () => {
+		const into = new Set<string>();
+		const body = await readPublished('fuel.json', undefined, { fetcher: fetcher(503, 200), retryMs: 0, into });
+		expect(body).toEqual({ data: 1 });
+		expect(into.size).toBe(0);
+	});
+
+	/** Responde 200 con estos cuerpos, por orden; un Error corta la conexión a media descarga. */
+	const bodies = (...items: (string | Error)[]) =>
+		vi.fn(async (_path: string, _ms?: number) => {
+			const item = items.shift() ?? '{"data":1}';
+			if (typeof item === 'string') return new Response(item, { status: 200 });
+			const cut = new ReadableStream({
+				start(controller) {
+					controller.enqueue(new TextEncoder().encode('{"fetchedAt":"2026-10-20","da'));
+					controller.error(item);
+				}
+			});
+			return new Response(cut, { status: 200 });
+		});
+
+	it('un 200 cuyo cuerpo se corta o llega a medias también bloquea', async () => {
+		const into = new Set<string>();
+		const read = bodies(new TypeError('terminated'), '{"da');
+		expect(await readPublished('imp.json', 20_000, { fetcher: read, retryMs: 0, into })).toBeNull();
+		expect(read).toHaveBeenCalledTimes(2);
+		expect([...into]).toEqual(['imp']);
+	});
+
+	it('si el cuerpo se corta una vez, el reintento lo lee entero', async () => {
+		const into = new Set<string>();
+		const read = bodies(new DOMException('tiempo agotado', 'TimeoutError'), '{"data":2}');
+		expect(await readPublished('status-history.json', 20_000, { fetcher: read, retryMs: 0, into })).toEqual({ data: 2 });
+		expect(into.size).toBe(0);
+	});
+
+	it('sin respuesta también bloquea', async () => {
+		const into = new Set<string>();
+		await readPublished('news-archive/2026-10.json', undefined, { fetcher: fetcher(0, 0), retryMs: 0, into });
+		expect([...into]).toEqual(['news-archive/2026-10']);
+	});
+
+	it('un 404 es una fuente nueva: null, sin reintento ni bloqueo', async () => {
+		const into = new Set<string>();
+		const read = fetcher(404);
+		expect(await readPublished('nueva.json', undefined, { fetcher: read, retryMs: 0, into })).toBeNull();
+		expect(read).toHaveBeenCalledTimes(1);
+		expect(into.size).toBe(0);
+	});
+
+	it('si la pasada ya está bloqueada, no reintenta', async () => {
+		const into = new Set(['imp']);
+		const read = fetcher(302, 200);
+		expect(await readPublished('forecasts.json', undefined, { fetcher: read, retryMs: 0, into })).toBeNull();
+		expect(read).toHaveBeenCalledTimes(1);
+		expect([...into].sort()).toEqual(['forecasts', 'imp']);
+	});
+});
+
+describe('blockedMessage', () => {
+	it('null si no hay nada bloqueado', () => {
+		expect(blockedMessage([])).toBeNull();
+	});
+
+	it('cuenta los archivos y nombra los primeros, en orden', () => {
+		expect(blockedMessage(['imp'])).toMatch(/^No se pudo leer la copia publicada de 1 archivo \(imp\)\. /);
+		const many = blockedMessage(['wx', 'imp', 'fuel', 'forecasts', 'eurlex', 'finra', 'afiliacion']);
+		expect(many).toContain('de 7 archivos (afiliacion, eurlex, finra, forecasts, fuel…)');
+		expect(many).toContain('CF_ACCESS_CLIENT_*');
 	});
 });
