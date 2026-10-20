@@ -21,7 +21,8 @@
 // CSS los esconde antes de arrancar, y las dos cosas tienen que decir lo mismo.
 // Las peticiones a otras webs (TradingView, fuentes…) se contestan vacías: así la prueba no depende de la red.
 // Abre SMOKE_CONCURRENCY vistas a la vez (3 por defecto; con 1, de una en una), cada una en su propio contexto: así
-// tarda ~3 min, no ~7. Lo demás, de Arc OS a la bienvenida, va después y en serie.
+// se solapan las esperas de cada vista (red quieta y 300 ms). Lo demás, de Arc OS a la bienvenida, va después y en
+// serie. SMOKE_PORT cambia el puerto (4317), por si hay otra prueba a la vez en la misma máquina.
 import { createRequire } from 'node:module';
 import { gzipSync } from 'node:zlib';
 import type { Browser, BrowserContext, Page } from 'playwright-core';
