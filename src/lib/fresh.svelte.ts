@@ -31,17 +31,20 @@ export function startFresh() {
 				mine: { v: version },
 				read: () => m.readBuild(fetch, resolve('/code.json')),
 				// refreshAll vuelve a pedir el __data.json de la vista (el service worker lo trae de la red primero) y,
-				// a diferencia de invalidateAll, conserva page.state. Si acaba en la página de error, falla (loadOrFail).
-				refresh: () =>
-					m.keepPlace(window, () =>
+				// a diferencia de invalidateAll, conserva page.state. Si acaba en la página de error o una navegación
+				// lo cancela (page.data no cambia: applied), falla (loadOrFail) y se reintenta.
+				refresh: () => {
+					const before = page.data;
+					return m.keepPlace(window, () =>
 						m.loadOrFail(
 							async () => {
 								await refreshAll();
 								await tick();
 							},
-							() => !!page.error
+							() => !!page.error || !m.applied(before, page.data)
 						)
-					),
+					);
+				},
 				auto: () => tv.on || page.route.id === '/',
 				tv: () => tv.on,
 				typing: () => m.holdsFocus(document.activeElement),

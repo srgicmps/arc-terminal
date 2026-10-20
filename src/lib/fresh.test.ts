@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+	applied,
 	decide,
 	FIRST_MS,
 	GESTURE_MS,
@@ -162,6 +163,23 @@ describe('loadOrFail', () => {
 				() => error
 			)
 		).rejects.toThrow();
+	});
+});
+
+describe('applied', () => {
+	it('aplicado: SvelteKit ha puesto otro page.data', () => {
+		const before = { eco: 1 };
+		expect(applied(before, { eco: 1 })).toBe(true);
+	});
+
+	it('cancelado (una navegación shallow a medias): el mismo page.data, no vale', () => {
+		const before = { imp: 1 };
+		expect(applied(before, before)).toBe(false);
+	});
+
+	it('una vista sin datos no tiene nada que refrescar: vale', () => {
+		const before = {};
+		expect(applied(before, before)).toBe(true);
 	});
 });
 
@@ -515,6 +533,33 @@ describe('watch', () => {
 		// Ya vista: la misma publicación no vuelve a refrescar.
 		await vi.advanceTimersByTimeAsync(POLL_MS * 2);
 		expect(t.refresh).toHaveBeenCalledTimes(3);
+		t.w.stop();
+	});
+
+	it('si una navegación (una pestaña, writeParams) cancela el refresco a medias, no da los datos por vistos: lo reintenta', async () => {
+		const t = setup();
+		// Como en fresh.svelte.ts: refreshAll resuelve sin error, pero SvelteKit no ha aplicado nada (page.data igual).
+		let data: object = { imp: 'viejo' };
+		let cancel = true;
+		t.refresh.mockImplementation(() => {
+			const before = data;
+			return loadOrFail(
+				async () => {
+					if (!cancel) data = { imp: 'nuevo' };
+					cancel = false;
+				},
+				() => !applied(before, data)
+			);
+		});
+		await vi.advanceTimersByTimeAsync(FIRST_MS);
+		expect(t.refresh).toHaveBeenCalledOnce();
+		expect(data).toEqual({ imp: 'viejo' });
+		await vi.advanceTimersByTimeAsync(RETRY_MS);
+		expect(t.refresh).toHaveBeenCalledTimes(2);
+		expect(data).toEqual({ imp: 'nuevo' });
+		// Ya vista: no otra vez.
+		await vi.advanceTimersByTimeAsync(POLL_MS);
+		expect(t.refresh).toHaveBeenCalledTimes(2);
 		t.w.stop();
 	});
 

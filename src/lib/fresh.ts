@@ -137,13 +137,24 @@ export async function keepPlace(win: Window, run: () => Promise<unknown>): Promi
 }
 
 /**
- * Refresca con `run` (refreshAll) y falla si la vista ha acabado en la página de error: refreshAll no rechaza
- * cuando el __data.json no llega (un 503 del borde, sin red), SvelteKit pinta +error.svelte. Así `watch` no da los
- * datos por vistos y lo vuelve a intentar pronto (a los RETRY_MS, cada vez más espaciado), que devuelve la vista.
+ * Refresca con `run` (refreshAll) y falla si la vista ha acabado en la página de error o si no se ha aplicado
+ * (applied): refreshAll no rechaza cuando el __data.json no llega (un 503 del borde, sin red), SvelteKit pinta
+ * +error.svelte; ni cuando una navegación lo cancela. Así `watch` no da los datos por vistos y lo vuelve a intentar
+ * pronto (a los RETRY_MS, cada vez más espaciado).
  */
 export async function loadOrFail(run: () => Promise<unknown>, failed: () => boolean): Promise<void> {
 	await run();
 	if (failed()) throw new Error('No se han podido cargar los datos nuevos');
+}
+
+/**
+ * ¿Se ha aplicado el refresco? SvelteKit crea otro objeto page.data cada vez que aplica uno (vuelve a leer el
+ * __data.json). Si sigue el mismo, una navegación a medias lo ha cancelado sin error (también una «shallow»: una
+ * pestaña o un selector que escribe en la URL con writeParams), y hay que volver a intentarlo. Una vista sin datos
+ * (page.data vacío: MODO, ESTILO…) no tiene nada que refrescar, y vale.
+ */
+export function applied(before: object, after: object): boolean {
+	return after !== before || Object.keys(before).length === 0;
 }
 
 /** Lo que el bucle enseña: el aviso de datos nuevos (si estás más abajo o escribiendo) y el de versión nueva. */
