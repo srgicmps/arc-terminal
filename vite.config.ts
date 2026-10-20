@@ -1,6 +1,7 @@
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
+import { precachePlugin } from './scripts/precache.ts';
 
 // `pnpm dev` arranca en modo 'serve'; `pnpm build` y `pnpm preview`, como la web publicada.
 export default defineConfig(() => ({
@@ -19,6 +20,8 @@ export default defineConfig(() => ({
 				// Los enlaces que vienen de fuentes externas no deben tumbar la publicación.
 				handleHttpError: 'warn'
 			},
-		})
+		}),
+		// Tras el adaptador: lo que precachea el service worker (build/_app/precache.json, scripts/precache.ts).
+		precachePlugin()
 	]
 }));

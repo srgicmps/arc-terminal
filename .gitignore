@@ -22,6 +22,9 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# Informe de cobertura de los tests (pnpm test:cov)
+/coverage
+
 # Datos descargados por scripts/update.ts (se generan en cada build)
 /static/data
 shots/

@@ -2,7 +2,8 @@
 # vuelve a publicar la web. La vía normal (deploy.yml, cada 15 min y en cada push a main) sigue igual.
 # - Las demás fuentes no se descargan: `pnpm data` reutiliza su copia publicada mientras no pase su
 #   maxAgeMinutes, así que no se gastan los límites de Finnhub, SEC, etc.
-# - Con check y test, como deploy.yml: si main está en rojo, no se publica.
+# - Con check y test, como deploy.yml, una vez por commit (marca «verificado-<SHA>» en la caché de
+#   Actions): si main está en rojo, esta vía no publica.
 # - Comparte el grupo de concurrencia con deploy.yml: nunca publican a la vez y, si llega otra pasada
 #   mientras hay una en marcha, espera (y una pendiente más nueva sustituye a la anterior, no se acumulan).
 name: Vía rápida
@@ -18,12 +19,9 @@ on:
   pull_request:
     paths: ['.github/workflows/fast.yml']
 
+# Permisos mínimos por defecto; el job pide lo que usa en su propio bloque `permissions`.
 permissions:
   contents: read
-  # NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
-  pull-requests: read
-  # Órdenes de la barra (scripts/requests.ts): leer y cerrar los issues [alerta]/[mis]/[vigila].
-  issues: write
 
 concurrency:
   group: ${{ github.event_name == 'pull_request' && format('fast-{0}', github.ref) || 'pages-refs/heads/main' }}
@@ -42,10 +40,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 8
+    permissions:
+      contents: read
+      # NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+      pull-requests: read
+      # Órdenes de la barra (scripts/requests.ts): leer y cerrar los issues [alerta]/[mis]/[vigila].
+      issues: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -80,7 +84,7 @@ jobs:
       # rama, así que las dos vías comparten la de main y ninguna repite un aviso de la otra). Si falla, no
       # frena la publicación.
       - if: github.event_name != 'pull_request'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         continue-on-error: true
         with:
           path: .notify-cache
@@ -104,7 +108,7 @@ jobs:
           # las alertas que avisan.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - if: github.event_name != 'pull_request' && hashFiles('.notify-cache/notify-log.json') != ''
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         continue-on-error: true
         with:
           path: .notify-cache
@@ -112,15 +116,35 @@ jobs:
 
       # Miniaturas del MANUAL: las últimas que guardó deploy.yml (aquí no se capturan). Sin ellas, esta
       # publicación quitaría las imágenes del manual hasta la siguiente pasada normal.
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         continue-on-error: true
         with:
           path: static/manual
           key: thumbs-solo-restaurar
           restore-keys: thumbs-
 
-      - run: pnpm check
-      - run: pnpm test
+      # check y test, una vez por commit, con la misma marca «verificado-<SHA>» que deploy.yml: si este SHA
+      # ya los pasó (aquí o en deploy.yml), no se repiten; si no, se corren y, si fallan, no se publica.
+      - id: verificado
+        if: github.event_name != 'pull_request'
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        continue-on-error: true
+        with:
+          path: .verificado
+          key: verificado-${{ github.sha }}
+          lookup-only: true
+      - if: steps.verificado.outputs.cache-hit != 'true'
+        run: pnpm check
+      - if: steps.verificado.outputs.cache-hit != 'true'
+        run: pnpm test
+      - if: github.event_name != 'pull_request' && steps.verificado.outputs.cache-hit != 'true'
+        run: echo "${{ github.sha }}" > .verificado
+      - if: github.event_name != 'pull_request' && steps.verificado.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        continue-on-error: true
+        with:
+          path: .verificado
+          key: verificado-${{ github.sha }}
       - run: pnpm build --logLevel warn
 
       # Publica en Cloudflare Pages (web privada, Cloudflare Access delante), como deploy.yml.

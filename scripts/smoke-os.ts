@@ -32,8 +32,11 @@ export async function osChecks(browser: Browser, root: string): Promise<string[]
 	const page = await context.newPage();
 	page.on('pageerror', (e) => failures.push(`/os con 12 ventanas: excepción: ${e.message}`));
 	try {
-		await page.goto(root + '/os', { waitUntil: 'networkidle' });
-		await page.waitForSelector('[data-os-layer] iframe', { timeout: 10000 });
+		// Con 12 ventanas cargando sus vistas, la red puede no quedarse quieta 500 ms seguidos en un runner cargado:
+		// se espera a la página y a las ventanas, y lo de «sin red» es solo un margen con tope, no una condición.
+		await page.goto(root + '/os', { waitUntil: 'load' });
+		await page.waitForSelector('[data-os-layer] iframe', { timeout: 20000 });
+		await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
 
 		const overlap = await page.evaluate(() => {
 			const tabs = [...document.querySelectorAll('.tabs li')].map((b) => b.getBoundingClientRect());
@@ -46,6 +49,7 @@ export async function osChecks(browser: Browser, root: string): Promise<string[]
 
 		const frame = page.frames().find((f) => f.url().includes('embed=1'));
 		if (!frame) throw new Error('/os: la ventana de ECO no tiene su vista');
+		await frame.waitForLoadState('load');
 		/** Fotogramas que pinta la vista en 1 s, y la marca que se le deja (si se recarga, se pierde). */
 		const paint = () =>
 			frame.evaluate(

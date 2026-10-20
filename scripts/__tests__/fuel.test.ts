@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { writeExtra } from '../lib.ts';
+import { checkData, checkShrink, writeExtra } from '../lib.ts';
 import { fuel, fuelSpain } from '../sources/fuel.ts';
 import { mockFetch } from './mock.ts';
 
@@ -143,5 +143,46 @@ describe('fuel', () => {
 	it('fuelSpain falla si faltan provincias', async () => {
 		mockFetch(() => ({ Fecha: 'x', ListaEESSPrecio: [station({ IDProvincia: '07', Provincia: 'BALEARS (ILLES)' })] }));
 		await expect(fuelSpain.fetch(undefined)).rejects.toThrow('solo 1 provincias');
+	});
+});
+
+describe('validate de fuel y fuel-es', () => {
+	const prices = (g95: number | null, diesel: number | null = g95) => ({ g95, diesel, g98: null, glp: null });
+
+	it('da por buenas las gasolineras con precios en €/L', async () => {
+		mockFetch(() => body);
+		const data = await fuel.fetch(undefined);
+		expect(checkData(data, fuel)).toBeNull();
+	});
+
+	it('caza que la API renombre el campo del precio: siguen las estaciones, todas a null', async () => {
+		// «Precio Gasolina 95 E5» → «Precio Gasolina 95 E5 (€/l)», y así con todos.
+		const renamed = body.ListaEESSPrecio.map((raw) =>
+			Object.fromEntries(Object.entries(raw).map(([k, v]) => [k.startsWith('Precio ') ? `${k} (€/l)` : k, v]))
+		);
+		mockFetch(() => ({ ...body, ListaEESSPrecio: renamed }));
+		const data = await fuel.fetch(undefined);
+		expect(data.stations).toHaveLength(2);
+		// checkShrink no lo ve (hay el mismo número de estaciones); validate, sí.
+		expect(checkShrink(data, { stations: [{}, {}] }, fuel)).toBeNull();
+		expect(checkData(data, fuel)).toBe('datos raros: solo el 0 % de las gasolineras tiene algún precio entre 0,5 y 4 €/L');
+	});
+
+	it('caza precios en céntimos y tolera algunas estaciones sin precio', () => {
+		const station = (p: ReturnType<typeof prices>) => ({ id: '', name: '', address: '', town: '', schedule: '', lat: 0, lon: 0, prices: p });
+		const cents = { sourceDate: '', stations: [station(prices(159.9)), station(prices(149.9))] };
+		expect(checkData(cents, fuel)).toMatch(/0 % de las gasolineras/);
+		const some = { sourceDate: '', stations: [station(prices(1.6)), station(prices(null))] };
+		expect(checkData(some, fuel)).toBeNull();
+	});
+
+	it('fuel-es: provincias y media de España con precio, o datos raros', () => {
+		const province = (avg: ReturnType<typeof prices>) => ({ id: '07', name: 'Illes Balears', count: 1, lat: 0, lon: 0, avg, min: avg });
+		const good = { sourceDate: '', provinces: [province(prices(1.6)), province(prices(1.7))], avg: prices(1.65) };
+		expect(checkData(good, fuelSpain)).toBeNull();
+		const allNull = { sourceDate: '', provinces: [province(prices(null)), province(prices(null))], avg: prices(null) };
+		expect(checkShrink(allNull, good, fuelSpain)).toBeNull();
+		expect(checkData(allNull, fuelSpain)).toMatch(/0 % de las provincias/);
+		expect(checkData({ ...good, avg: prices(null) }, fuelSpain)).toMatch(/media de España/);
 	});
 });

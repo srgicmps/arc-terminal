@@ -3,6 +3,7 @@
 	de Madrid. Carga él solo sus datos (static/data/launches.json), así la vista solo tiene que ponerlo.
 -->
 <script lang="ts">
+	import { asset } from '$app/paths';
 	import type { Dataset } from '#lib/data.ts';
 	import { dm, hm } from '#lib/format.ts';
 	import { countdown, inProgress, nextLaunch, pending, type Launch, type LaunchesData } from '#lib/launches.ts';
@@ -15,15 +16,14 @@
 	// Hora actual, al segundo. 0 al construir: en el HTML estático no hay cuenta atrás.
 	let now = $state(0);
 
-	// Su propio import.meta.glob, y no dataset() de data.ts: importar dataset() en un componente del
-	// navegador metería todos los JSON de static/data en la build (y en la precaché del service worker).
-	const loaders = import.meta.glob('/static/data/launches.json', { import: 'default' });
-
-	// $effect solo corre en el navegador (como onMounted en Vue).
+	// $effect solo corre en el navegador (como onMounted en Vue). Se pide a /data/launches.json, sin
+	// dataset() de data.ts ni import.meta.glob: un JSON dentro del código cambiaría el nombre de los
+	// archivos de la build en cada pasada de datos (y el service worker los volvería a bajar).
 	$effect(() => {
-		const load = loaders['/static/data/launches.json'];
-		if (!load) ds = null;
-		else load().then((d) => (ds = d as Dataset<LaunchesData>));
+		fetch(asset('data/launches.json' as Parameters<typeof asset>[0]))
+			.then((res) => (res.ok ? (res.json() as Promise<Dataset<LaunchesData>>) : null))
+			.then((d) => (ds = d))
+			.catch(() => (ds = null));
 	});
 
 	// El reloj de la cuenta atrás. La función que devuelve el $effect se ejecuta al desmontar el

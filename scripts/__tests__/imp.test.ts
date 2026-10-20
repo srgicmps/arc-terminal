@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { level, makeContext, phases, waves } from '../lib.ts';
+import { checkData, checkShrink, level, makeContext, phases, waves } from '../lib.ts';
 import { confirms, imp, keywords, mergeDay, mergeSections, normUrl, scoreGroups, track, type Tracked } from '../sources/imp.ts';
 import type { ImpData, ImpSeen, NewsItem } from '../../src/lib/types.ts';
 import { mockFetch } from './mock.ts';
@@ -266,5 +266,23 @@ describe('fuente imp', () => {
 
 	it('falla si no hay titulares recientes', async () => {
 		await expect(imp.fetch(undefined, makeContext(new Map()))).rejects.toThrow();
+	});
+});
+
+describe('imp.validate', () => {
+	const topic = (title: string, url: string) => ({ k: title, title, url, sources: ['El País'], score: 1, sections: ['es'], first: iso(1), time: iso(1) });
+	const top = (n: number) => Array.from({ length: n }, (_, i) => topic(`Tema ${i}`, `https://a.example/${i}`));
+	const data = (current: ReturnType<typeof topic>[]): ImpData => ({ date: '2026-10-14', current, days: [], seen: [] });
+
+	it('da por bueno un top con titulares y enlaces http(s)', () => {
+		expect(checkData(data(top(10)), imp)).toBeNull();
+		// Uno raro de cada diez se tolera.
+		expect(checkData(data([...top(9), topic('', '')]), imp)).toBeNull();
+	});
+
+	it('caza titulares vacíos o enlaces sin http(s), aunque el número de temas sea el de siempre', () => {
+		const broken = data(top(10).map((t, i) => (i < 5 ? { ...t, title: ' ' } : { ...t, url: 'javascript:alert(1)' })));
+		expect(checkShrink(broken, data(top(10)), imp)).toBeNull();
+		expect(checkData(broken, imp)).toBe('datos raros: solo el 0 % del top trae titular y enlace http(s)');
 	});
 });

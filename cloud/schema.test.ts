@@ -20,7 +20,7 @@ function spied() {
 }
 
 describe('ensure', () => {
-	it('crea las 10 tablas, cada una una sola vez', async () => {
+	it('crea todas las tablas, cada una una sola vez', async () => {
 		const { db, sql, spy } = spied();
 		await ensure(spy, ...NAMES);
 		await ensure(spy, ...NAMES);
