@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkShrink, countItems } from '../lib.ts';
+import { checkData, checkShrink, countItems, inRange, pct, share } from '../lib.ts';
 import { loadSources } from '../registry.ts';
 
 const sources = await loadSources();
@@ -104,5 +104,49 @@ describe('fuentes', () => {
 		const byName = (name: string) => sources.find((s) => s.name === name)!;
 		expect(checkShrink({ zone: 'Menorca', alerts: [] }, { zone: 'Menorca', alerts: items(3) }, byName('alerts'))).toBeNull();
 		expect(checkShrink({ storms: [], events: [] }, { storms: items(2), events: items(40) }, byName('hazards'))).toBeNull();
+	});
+});
+
+describe('checkData (validate de cada fuente)', () => {
+	const prices = { validate: (d: { p: (number | null)[] }) => (share(d.p, (v) => inRange(v, 0.5, 4)) < 0.5 ? 'sin precios' : null) };
+
+	it('sin validate, todo vale', () => {
+		expect(checkData({ p: [] }, {})).toBeNull();
+	});
+
+	it('da el motivo con el prefijo «datos raros:» y deja pasar lo bueno', () => {
+		expect(checkData({ p: [1.5, 1.6] }, prices)).toBeNull();
+		expect(checkData({ p: [null, null] }, prices)).toBe('datos raros: sin precios');
+	});
+
+	it('los mismos datos raros pasan checkShrink: hay elementos, pero no valen', () => {
+		const broken = { p: [null, null, null] };
+		expect(checkShrink(broken, { p: [1.5, 1.6, 1.7] }, {})).toBeNull();
+		expect(checkData(broken, prices)).toMatch(/^datos raros/);
+	});
+
+	it('si validate lanza (falta la lista que mira), también son datos raros, no un fallo de update.ts', () => {
+		const strict = { validate: (d: { p: number[] }) => (d.p.length ? null : 'vacío') };
+		expect(checkData({} as { p: number[] }, strict)).toMatch(/^datos raros: .+/);
+	});
+});
+
+describe('ayudas de validate', () => {
+	it('share da la fracción que cumple, y 0 si no hay nada', () => {
+		expect(share([1, 2, 3, 4], (v) => v > 2)).toBe(0.5);
+		expect(share([], () => true)).toBe(0);
+		expect(share(undefined, () => true)).toBe(0);
+	});
+
+	it('inRange solo acepta números de verdad dentro del rango, extremos incluidos', () => {
+		expect(inRange(0.5, 0.5, 4)).toBe(true);
+		expect(inRange(4, 0.5, 4)).toBe(true);
+		expect(inRange(4.01, 0.5, 4)).toBe(false);
+		for (const bad of ['1.5', null, undefined, NaN, Infinity]) expect(inRange(bad, -Infinity, Infinity)).toBe(false);
+	});
+
+	it('pct redondea la fracción a un porcentaje', () => {
+		expect(pct(0.374)).toBe('37 %');
+		expect(pct(0)).toBe('0 %');
 	});
 });

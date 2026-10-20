@@ -12,7 +12,7 @@ import { OFFICIAL } from './news.ts';
 import type { BoeData, FedRegData, ImpCurrent, ImpLink, ImpData, ImpEntry, ImpSeen, NewsData, NewsItem, WikiData } from '../../src/lib/types.ts';
 import { NEWS_SECTIONS } from '../../src/lib/news.ts';
 import { jaccard, normalize } from '../cluster.ts';
-import { appendDaily, getJson, list, madridDay, NO_CONTEXT, plain, type Source } from '../lib.ts';
+import { appendDaily, getJson, list, madridDay, NO_CONTEXT, pct, plain, share, type Source } from '../lib.ts';
 
 const HOUR = 3_600_000;
 /** Titulares más antiguos que esto no cuentan: IMP habla de lo que pasa ahora. */
@@ -305,11 +305,18 @@ async function inTheNews(day: string, wiki: WikiData | undefined): Promise<strin
 	}
 }
 
+/** Para validate: al menos 8 de cada 10 temas del top de ahora con titular y enlace http(s). */
+export function checkImp({ current }: ImpData): string | null {
+	const ok = share(current, (c) => typeof c.title === 'string' && c.title.trim() !== '' && /^https?:\/\//i.test(String(c.url)));
+	return ok < 0.8 ? `solo el ${pct(ok)} del top trae titular y enlace http(s)` : null;
+}
+
 export const imp: Source<ImpData> = {
 	name: 'imp',
 	label: 'Lo más importante · puntuación propia sobre todos los titulares, BOE, Federal Register y Wikipedia',
 	maxAgeMinutes: 12,
 	after: true,
+	validate: checkImp,
 	async fetch(previous, ctx = NO_CONTEXT) {
 		const now = Date.now();
 		const date = madridDay();

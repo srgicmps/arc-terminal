@@ -2,7 +2,7 @@
 // Reutilización libre citando la fuente.
 import type { Series, SeriesData, YieldCurveData } from '../../src/lib/types.ts';
 import { parseCsv } from '../csv.ts';
-import { getText, num, settle, type Source } from '../lib.ts';
+import { getText, inRange, num, settle, type Source } from '../lib.ts';
 
 const API = 'https://data-api.ecb.europa.eu/service/data';
 
@@ -96,10 +96,30 @@ async function series(w: Wanted): Promise<Series | null> {
 	};
 }
 
+/**
+ * ¿El último valor de la serie es creíble para su unidad? Tipos y previsiones en %, entre -5 y 50 (el bono
+ * griego llegó a pasar del 30 % en 2012); el CISS, entre 0 y 1; divisas y balance, positivos.
+ */
+export function credibleLast(s: Series): boolean {
+	const v = s.points?.at(-1)?.v;
+	if (s.unit === '%') return inRange(v, -5, 50);
+	if (s.unit === 'índice') return inRange(v, 0, 1);
+	return inRange(v, Number.MIN_VALUE, Infinity);
+}
+
+/** Para validate: datos raros si más de una serie de cada diez acaba en un valor imposible para su unidad. */
+export function checkSeries(data: SeriesData): string | null {
+	const bad = data.series.filter((s) => !credibleLast(s));
+	if (bad.length <= data.series.length * 0.1) return null;
+	const some = bad.slice(0, 3).map((s) => s.id).join(', ') + (bad.length > 3 ? '…' : '');
+	return `${bad.length} de ${data.series.length} series acaban en un valor fuera de rango (${some})`;
+}
+
 export const ecb: Source<SeriesData> = {
 	name: 'ecb',
 	label: 'Tipos, euríbor, bonos y divisas · Banco Central Europeo',
 	maxAgeMinutes: 175,
+	validate: checkSeries,
 	// Si se añaden series a WANTED, la copia publicada no las tiene: se descarga de nuevo sin esperar.
 	isStale: (previous) => WANTED.some((w) => !previous.series?.some((s) => s.id === w.id)),
 	async fetch() {
