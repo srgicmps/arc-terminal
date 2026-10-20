@@ -123,10 +123,12 @@ try {
 			});
 			page.on('pageerror', (e) => failures.push(`${where}: excepción: ${e.message}`));
 			// Peso de la vista: cada respuesta de la propia web, comprimida (también las que el navegador ya tenía
-			// en caché de una vista anterior, para medir la vista como si se abriera en frío).
+			// en caché de una vista anterior, para medir la vista como si se abriera en frío). Sin las letras (.woff2):
+			// antes venían de Google y no contaban, y el tope de scripts/weight.ts tampoco las suma.
 			const sizes: Promise<number>[] = [];
 			page.on('response', (res) => {
-				if (new URL(res.url()).hostname !== 'localhost') return;
+				const { hostname, pathname } = new URL(res.url());
+				if (hostname !== 'localhost' || pathname.endsWith('.woff2')) return;
 				sizes.push(res.body().then((b) => gzipSync(b).length, () => 0));
 			});
 			const res = await page.goto(ROOT + path, { waitUntil: 'networkidle' });
@@ -221,7 +223,7 @@ try {
 			}
 			const weight = (await Promise.all(sizes)).reduce((a, b) => a + b, 0);
 			if (width < 600 && first && weight > WEIGHT_LIMIT && !NO_WEIGHT_LIMIT.has(path)) {
-				warnings.push(`${path} pesa ${Math.round(weight / 1024)} KB (gzip, sin terceros); el límite es ${WEIGHT_LIMIT / 1024} KB`);
+				warnings.push(`${path} pesa ${Math.round(weight / 1024)} KB (gzip, sin terceros ni letras); el límite es ${WEIGHT_LIMIT / 1024} KB`);
 			}
 			await page.close();
 		}

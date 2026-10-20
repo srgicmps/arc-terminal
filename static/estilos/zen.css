@@ -2,7 +2,8 @@
  * <html data-style="zen">: la calma de la experiencia /x/zen llevada a toda la web. Tinta suave y papel de arroz,
  * IBM Plex Sans y Mono, títulos de panel como la etiqueta ámbar de Zen, tarjetas con mucho aire, cabecera de vista
  * centrada y en grande, y la misma entrada suave (0,35 s, sube 8 px). Nada se quita: solo se reparte con aire. */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+/* IBM Plex Mono viene con la web (src/styles/fonts.css). */
 @layer tokens, estilos, ajustes;
 @layer estilos {
 	:root[data-style='zen'],
