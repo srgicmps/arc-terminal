@@ -69,9 +69,12 @@ describe('vitals', () => {
 		const lines = table.split('\n');
 		expect(lines[0]).toBe('### Core Web Vitals en el móvil (laboratorio)');
 		expect(table).toContain('mediana de 3 cargas en frío');
-		expect(lines).toContain('| Vista | Perfil | LCP | CLS | TBT aprox. | KB propios | Presupuesto (LCP · CLS) |');
-		expect(lines).toContain('| TOP | Terminal | 1,8 s | 0,059 | 1,2 s | 297 | 2,5 s · 0,1 |');
-		expect(lines).toContain('| WS | Sencillo | 2,8 s ⚠ ¹ | 0,000 | 1,2 s | 297 | 2,5 s · 0,1 |');
+		// Sin presupuestos propios, seis columnas cortas: se lee a 390 px.
+		expect(lines).toContain('| Vista | Perfil | LCP | CLS | TBT | KB |');
+		expect(lines).toContain('| TOP | Terminal | 1,8 s | 0,059 | 1,2 s | 297 |');
+		expect(lines).toContain('| WS | Sencillo | 2,8 s ⚠ ¹ | 0,000 | 1,2 s | 297 |');
+		expect(table).toContain('TBT (aproximado)');
+		expect(table).toContain('KB: lo que descarga de la propia web');
 		expect(table).toContain('¹ Google Fonts no cargó');
 		// Las filas de datos tienen tantas columnas como la cabecera.
 		const cols = (l: string) => l.split('|').length;
@@ -79,13 +82,15 @@ describe('vitals', () => {
 		expect(summaryTable([], 1)).toContain('mediana de 1 carga en frío');
 		expect(summaryTable([row('/', 'Terminal', 1800, 0.059)])).not.toContain('¹ Google Fonts');
 		expect(table).not.toContain('+15 %');
+		expect(table).not.toContain('Presupuesto');
 	});
 
-	it('una vista con presupuesto propio (trinquete) lo enseña y la leyenda lo explica', () => {
+	it('una vista con presupuesto propio (trinquete) lo enseña en una nota, una vez, y la tabla no crece', () => {
 		const geo = { ...row('/geo', 'Terminal', 3200, 0.02), budget: { lcp: 3500, cls: 0.1 } };
-		const table = summaryTable([geo]);
-		expect(table).toContain('| GEO | Terminal | 3,2 s | 0,020 | 1,2 s | 297 | 3,5 s · 0,1 |');
-		expect(table).toContain('medida de partida +15 %');
+		const table = summaryTable([geo, { ...geo, profile: 'Sencillo' }, row('/', 'Terminal', 1800, 0.059)]);
+		expect(table).toContain('| Vista | Perfil | LCP | CLS | TBT | KB |');
+		expect(table).toContain('| GEO | Terminal | 3,2 s | 0,020 | 1,2 s | 297 |');
+		expect(table).toContain('medida de partida +15 % (BUDGETS en scripts/vitals.ts): GEO, 3,5 s · 0,1.');
 		expect(warnings([geo])).toEqual([]);
 		expect(warnings([{ ...geo, vitals: { ...geo.vitals, lcp: 3600 } }])[0]).toMatch(/^GEO \(Terminal\): LCP 3,6 s \(presupuesto 3,5 s\)/);
 	});

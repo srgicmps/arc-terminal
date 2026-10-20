@@ -111,17 +111,24 @@ export const shift = (cls: number) => cls.toFixed(3).replace('.', ',');
 const plain = (n: number) => String(n).replace('.', ',');
 /** Un presupuesto: «2,5 s · 0,1». */
 const limit = (b: Budget) => `${plain(b.lcp / 1000)} s · ${plain(b.cls)}`;
+/** ¿Usa la vista el presupuesto «bueno» de siempre (no tiene uno propio en BUDGETS)? */
+const isGood = (b: Budget) => b.lcp === GOOD.lcp && b.cls === GOOD.cls;
 /** Nombre de la vista como en la barra de comandos: «/» es TOP. */
 export const viewName = (path: string) => (path === '/' ? 'TOP' : path.replace(/^\//, '').toUpperCase());
 
-/** Tabla en Markdown para el resumen de la Action (se lee bien desde el móvil). */
+/**
+ * Tabla en Markdown para el resumen de la Action. Seis columnas cortas para que se lea a 390 px: los presupuestos propios
+ * (BUDGETS), si hay alguno, van en una nota debajo y no en una columna más.
+ */
 export function summaryTable(rows: Row[], runs = 3): string {
 	const mark = (over: boolean) => (over ? ' ⚠' : '');
 	const lines = rows.map(({ path, profile, vitals: v, budget: b }) => {
 		const over = overBudget(v, b);
 		const lcp = `${seconds(v.lcp)}${mark(over.includes('LCP'))}${v.fonts ? '' : ' ¹'}`;
-		return `| ${viewName(path)} | ${profile} | ${lcp} | ${shift(v.cls)}${mark(over.includes('CLS'))} | ${seconds(v.tbt)} | ${v.selfKB} | ${limit(b)} |`;
+		return `| ${viewName(path)} | ${profile} | ${lcp} | ${shift(v.cls)}${mark(over.includes('CLS'))} | ${seconds(v.tbt)} | ${v.selfKB} |`;
 	});
+	// Una vez por vista, aunque salga en los dos perfiles.
+	const own = [...new Map(rows.filter((r) => !isGood(r.budget)).map((r) => [r.path, `${viewName(r.path)}, ${limit(r.budget)}`])).values()];
 	const fonts = rows.some((r) => !r.vitals.fonts) ? ['', '¹ Google Fonts no cargó en alguna carga: el LCP puede salir más alto.'] : [];
 	return [
 		'### Core Web Vitals en el móvil (laboratorio)',
@@ -129,12 +136,14 @@ export function summaryTable(rows: Row[], runs = 3): string {
 		`390×844, CPU 4x y 4G lenta (150 ms, 1,6 Mbps), sin service worker ni TradingView; mediana de ${runs} ${runs === 1 ? 'carga' : 'cargas'} en frío.`,
 		'Terminal: modo y estética Terminal. Sencillo: modo Sencillo con Grafito, lo que ve quien llega nuevo.',
 		'',
-		'| Vista | Perfil | LCP | CLS | TBT aprox. | KB propios | Presupuesto (LCP · CLS) |',
-		'|---|---|--:|--:|--:|--:|--:|',
+		'| Vista | Perfil | LCP | CLS | TBT | KB |',
+		'|---|---|--:|--:|--:|--:|',
 		...lines,
 		'',
-		`⚠ pasa del presupuesto (solo avisa). Bueno, según web.dev: LCP hasta ${plain(GOOD.lcp / 1000)} s y CLS hasta ${plain(GOOD.cls)}${rows.some((r) => limit(r.budget) !== limit(GOOD)) ? '; una vista que ya pasaba tiene de presupuesto su medida de partida +15 % (BUDGETS en scripts/vitals.ts)' : ''}.`,
-		'TBT aprox.: lo que pasan de 50 ms las tareas largas hasta 4 s después de cargar; sin nadie tocando la pantalla, es lo que más se parece al INP.',
+		`⚠ pasa del presupuesto (solo avisa). Bueno, según web.dev: LCP hasta ${plain(GOOD.lcp / 1000)} s y CLS hasta ${plain(GOOD.cls)}.`,
+		...(own.length ? [`Presupuesto propio (LCP · CLS), su medida de partida +15 % (BUDGETS en scripts/vitals.ts): ${own.join('; ')}.`] : []),
+		'TBT (aproximado): lo que pasan de 50 ms las tareas largas hasta 4 s después de cargar; sin nadie tocando la pantalla, es lo que más se parece al INP.',
+		'KB: lo que descarga de la propia web, comprimido como llega por la red.',
 		...fonts
 	].join('\n');
 }
