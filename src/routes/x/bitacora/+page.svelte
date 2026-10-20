@@ -14,7 +14,7 @@
 	import { clock } from '#lib/clock.svelte.ts';
 	import { madridDate } from '#lib/meetings.ts';
 	import { queryWords } from '#lib/search.ts';
-	import { dueReminders, filterEntries, ideaMove, MAX_TEXT, topics, type Entry, type Kind } from '#lib/exp/bitacora.ts';
+	import { dueReminders, filterEntries, ideaMove, MAX_TEXT, topics, type Kind } from '#lib/exp/bitacora.ts';
 	import { addToJournal, deleteFromJournal, initJournal, journal, toggleJournalDone } from '#lib/exp/bitacora.svelte.ts';
 	import { priceOf, type Price } from '#lib/exp/prices.ts';
 
