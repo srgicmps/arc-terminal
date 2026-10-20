@@ -17,6 +17,7 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"smoke": "node scripts/smoke.ts",
+		"vitals": "node scripts/vitals.ts",
 		"e2e:os": "node scripts/e2e-os.ts"
 	},
 	"devDependencies": {
