@@ -84,6 +84,28 @@ function openOsDirectly(style: string) {
 	meta.content = BG.mando;
 }
 
+/** En la web, con la hoja de la estética ya cargada y la barra con su fondo. Devuelve el <link>. */
+function onTheWeb(style: keyof typeof BG) {
+	store.set('arc-style', style);
+	root.dataset.style = style;
+	const link = new FakeLink();
+	link.id = 'style-sheet';
+	link.href = `/estilos/${style}.css`;
+	link.loaded = true;
+	els.set(link.id, link);
+	meta.content = BG[style];
+	return link;
+}
+
+describe('al entrar en Arc OS desde la web, theme-color pasa al fondo del aspecto (look.ts)', () => {
+	it('sin esperar a ninguna hoja: Mando está en tokens.css', async () => {
+		onTheWeb('grafito');
+		const { osLook } = await import('./look.ts');
+		osLook(() => 'mando');
+		await vi.waitFor(() => expect(meta.content).toBe(BG.mando));
+	});
+});
+
 describe('al salir de Arc OS, theme-color vuelve al fondo de la estética (look.ts)', () => {
 	it('entrando directo en /os: se aparta del aspecto en el acto y queda con el de la estética al cargar su hoja', async () => {
 		openOsDirectly('grafito');

@@ -27,6 +27,9 @@ export function osLook(skin: () => string | null) {
 	root.dataset.osLook = '1';
 	const apply = () => strip(root, skin());
 	apply();
+	// Al entrar desde la web (navegación en el cliente), la barra del móvil aún lleva el fondo de la estética: ahora va
+	// el del aspecto, que está en tokens.css (no hay hoja que esperar). Con import(), por lo mismo que barColor.
+	void import('../theme.svelte.ts').then((m) => m.syncThemeColor());
 	const watch = new MutationObserver(apply);
 	watch.observe(root, { attributes: true, attributeFilter: WEB_LOOK.map((k) => `data-${k}`) });
 	watch.observe(document.head, { childList: true });
