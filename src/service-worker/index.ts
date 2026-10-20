@@ -12,7 +12,9 @@
 //   páginas. Esa caché tiene nombre fijo (sobrevive a las publicaciones) y un límite de entradas.
 // - Sin conexión: la vista abierta antes sale de esa caché; una que nunca se abrió cae en TOP. Lo que solo
 //   se carga con import() y nunca se usó con conexión (otra estética, una ventana de Arc OS) no está.
-// - Fuentes de Google: primero la caché (no cambian nunca).
+// - Letras: Plex e Inter vienen con la web (src/styles/fonts.css, en _app/immutable). No van en la precaché: se
+//   guardan en arc-chunks al pedirlas, solo las de la estética que se usa. Las de Google (las demás estéticas),
+//   primero la caché (no cambian nunca).
 // - Motor de ajedrez (static/engine/, unos 7 MB): no entra en la precaché, para no descargarlo a quien no
 //   juega. Se guarda la primera vez que se usa, en una caché propia que sobrevive a las publicaciones.
 // - Todo lo demás (widgets de TradingView incluidos) pasa directo a la red, sin guardar nada.
@@ -140,7 +142,7 @@ self.addEventListener('fetch', (event) => {
 	if (request.method !== 'GET') return;
 	const target = new URL(request.url);
 
-	// Fuentes de Google: cache-first.
+	// Fuentes de Google (las demás letras de las estéticas): cache-first.
 	if (target.hostname === 'fonts.googleapis.com' || target.hostname === 'fonts.gstatic.com') {
 		event.respondWith(cacheFirst(request));
 		return;

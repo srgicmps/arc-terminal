@@ -139,4 +139,13 @@ describe('bootFiles (service worker)', () => {
 		expect(bootFiles({ version: 'v1', files: 'no' }, 'v1', immutable, url)).toEqual(immutable);
 		expect(bootFiles({ version: 'v1', files: ['_app/immutable/otro.js'] }, 'v1', immutable, url)).toEqual(immutable);
 	});
+
+	it('las letras (.woff2) nunca: el service worker guarda al pedirlas solo las de la estética que se usa', () => {
+		const fonts = ['plex-mono-400-latin.a1.woff2', 'inter-latin.b2.woff2'].map((f) => url(`_app/immutable/assets/${f}`));
+		const withFonts = [...immutable, ...fonts];
+		expect(bootFiles(null, 'v1', withFonts, url)).toEqual(immutable);
+		expect(bootFiles(list, 'v2', withFonts, url)).toEqual(immutable);
+		const listed = { version: 'v1', files: ['_app/immutable/entry/start.js', '_app/immutable/assets/inter-latin.b2.woff2'] };
+		expect(bootFiles(listed, 'v1', withFonts, url)).toEqual([url('_app/immutable/entry/start.js')]);
+	});
 });
