@@ -1,5 +1,6 @@
 Letras que sirve Arc Terminal desde la propia web (src/styles/fonts/, @font-face en src/styles/fonts.css).
-Son los archivos woff2 tal como los sirve Google Fonts (subconjuntos latin y latin-ext), sin ningún cambio:
+Son los archivos woff2 tal como Google Fonts los sirve a iPhone, Android y Mac (subconjuntos latin y latin-ext,
+sin hinting), sin ningún cambio:
 - IBM Plex Mono e IBM Plex Sans Condensed (IBM): https://github.com/IBM/plex
 - Inter, variable (The Inter Project Authors): https://github.com/rsms/inter
 Las tres llevan la SIL Open Font License 1.1, copiada abajo.

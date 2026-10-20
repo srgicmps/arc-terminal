@@ -3,8 +3,9 @@
  * Papel, Fósforo y Zen usan Plex Mono) e Inter (Grafito, Cristal y Cupertino). Licencia OFL: fonts/OFL.txt.
  * Antes venían de Google Fonts: eran dos orígenes de terceros y, en Grafito, una cadena antes de pintar (HTML →
  * estilos/grafito.css → CSS de Google → woff2). Ahora Vite les pone un hash (_app/immutable/assets) y salen con el
- * resto de la web. Los archivos son los de Google, sin cambios, y cada cara lleva su unicode-range copiado de su CSS:
- * el navegador solo baja «latin-ext» si la página tiene algún carácter de ese grupo (ő, ł, ş…).
+ * resto de la web. Los archivos son los que Google sirve a iPhone, Android y Mac (sin «hinting»: Plex pesa un tercio
+ * menos), sin cambios, y cada cara lleva su unicode-range copiado de su CSS: el navegador solo baja «latin-ext» si la
+ * página tiene algún carácter de ese grupo (ő, ł, ş…).
  * Un @font-face no descarga nada hasta que algo usa la familia: Inter no cuesta nada en Terminal ni Plex en Grafito.
  * Las demás estéticas siguen con el @import de Google de su hoja (docs/estilos.md).
  * Este archivo solo declara letras: los tokens (--mono, --sans) eligen cuál se usa en cada estética.

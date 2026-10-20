@@ -8,7 +8,7 @@ export interface PrecacheList {
 }
 
 /**
- * Letras (src/styles/fonts.css, unos 330 KB entre todas): nunca en la precaché. Cada estética usa unas pocas y
+ * Letras (src/styles/fonts.css, unos 260 KB entre todas): nunca en la precaché. Cada estética usa unas pocas y
  * el navegador solo pide esas; el service worker las guarda al pedirlas (arc-chunks), como lo que va con import().
  */
 const FONT = /\.woff2$/;
