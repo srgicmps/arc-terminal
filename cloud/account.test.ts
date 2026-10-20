@@ -7,6 +7,7 @@ import { handleAccount } from './account.ts';
 import { clearKeyCache } from './access.ts';
 import { d1AdminStore, touchSeen, USER_TABLES } from './admin.ts';
 import { d1AlertStore } from './alerts.ts';
+import { d1AskStore } from './ask.ts';
 import { sqliteD1 } from './d1sqlite.ts';
 import { d1FamilyStore } from './family.ts';
 import { d1FeedbackStore } from './feedback.ts';
@@ -49,6 +50,7 @@ async function seed(db: ReturnType<typeof sqliteD1>) {
 		await d1ForecastStore(db).setPlayer(user, { uid: user[0].repeat(16), alias: null });
 		await d1ForecastStore(db).setBet(user, { round: 'us10@2026-10-30T08:00Z', value: 4.1 });
 		await d1FeedbackStore(db).add({ user, view: '/eco', text: 'Una idea', at: Date.now() });
+		await d1AskStore(db).take(user, new Date().toISOString().slice(0, 10), 20);
 	}
 }
 
