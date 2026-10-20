@@ -4,6 +4,13 @@
 // cuerpo. No la saca de la política de Access (eso es cosa del admin): si vuelve a entrar, empieza de cero.
 // Para que no se borre nada sin querer, el cuerpo tiene que traer { confirm: '<su email>' }, el que ve en HELP.
 // El admin también puede borrarse, con la misma confirmación.
+// Lo que NO hace (a propósito, de momento): cerrar sus sesiones de Access en otros dispositivos. Esta pestaña sale por
+// /cdn-cgi/access/logout, pero en los demás la cookie de Access sigue valiendo hasta que caduca (la duración de sesión
+// de la app). Allí la web sigue abierta: el próximo /api/prefs vuelve a apuntar su último acceso (tabla seen) y quita
+// de ese navegador lo sincronizado que no haya tocado (el servidor ya no tiene nada, startPlan), pero lo que cambie o
+// guarde allí (un ajuste, sus avisos) empieza una cuenta nueva desde cero. Por eso HELP le pide que cierre también la sesión en sus otros
+// dispositivos. Cerrarlas desde aquí sería el revoke() de «Quitar» (admin.ts), que necesita CF_ACCESS_ADMIN_TOKEN en
+// esta Function; «Quitar» de /admin sí lo hace, y además lo saca de la política.
 import { person } from './access.ts';
 import type { AdminStore } from './admin.ts';
 import { readJson } from './feedback.ts';

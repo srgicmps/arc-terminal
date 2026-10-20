@@ -7,6 +7,7 @@
 	BORRAR. Igual para todos, también para el admin. La lógica, en src/lib/account.svelte.ts.
 -->
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { LOGOUT } from '#lib/account.ts';
 	import { deleteAccount } from '#lib/account.svelte.ts';
 	import { cloud, flushNow } from '#lib/cloud.svelte.ts';
@@ -34,15 +35,20 @@
 		if (!ready || busy) return;
 		busy = true;
 		msg = '';
-		// Si sale bien, la página se va a la salida de Access: no hay nada más que hacer aquí.
+		// Si sale bien, la página se va a la salida de Access: no hay nada más que hacer aquí. Si no, el cursor vuelve
+		// al campo para volver a probar (si se pulsó el botón, que se desactiva mientras, el foco se había perdido).
 		msg = (await deleteAccount()) ?? '';
-		if (msg) busy = false;
+		if (!msg) return;
+		busy = false;
+		await tick();
+		input?.focus();
 	}
 </script>
 
 <div class="row">
 	<span class="acts">
 		<a
+			class="link"
 			href={LOGOUT}
 			data-sveltekit-reload
 			aria-disabled={busy}
@@ -72,16 +78,18 @@
 			void remove();
 		}}
 	>
-		<p>
+		<p id="account-what">
 			Se borra todo lo tuyo de la cuenta (ajustes, avisos, familia, Mis RSS, predicciones y sugerencias) y de este
-			dispositivo, y se cierra la sesión. No se puede deshacer: podrás volver a entrar, pero desde cero.
+			dispositivo, y se cierra la sesión aquí. No se puede deshacer: podrás volver a entrar, pero desde cero. Cierra
+			también la sesión en tus otros dispositivos: lo que guardes allí empezaría una cuenta nueva.
 		</p>
 		<label for="account-word">Escribe {WORD}</label>
 		<input
 			id="account-word"
 			bind:this={input}
 			bind:value={typed}
-			disabled={busy}
+			readonly={busy}
+			aria-describedby="account-what"
 			autocomplete="off"
 			autocapitalize="characters"
 			spellcheck="false"
@@ -116,6 +124,7 @@
 		min-width: 0;
 	}
 
+	/* «Cerrar sesión» (enlace) y «Borrar mi cuenta» (botón), iguales, como «Ver el recorrido» de HELP. */
 	.link {
 		padding: 0;
 		font: inherit;
@@ -127,10 +136,24 @@
 		text-underline-offset: var(--sp-2);
 	}
 
+	.link:hover {
+		color: var(--amber);
+	}
+
 	.link:disabled,
-	a[aria-disabled='true'] {
+	.link[aria-disabled='true'] {
 		color: var(--faint);
 		cursor: default;
+	}
+
+	/* Pantallas táctiles: 44 px de alto pulsable y un poco de aire a los lados, para no dar en el de al lado. */
+	@media (pointer: coarse) {
+		.link {
+			display: inline-flex;
+			align-items: center;
+			min-height: var(--touch);
+			padding-inline: var(--sp-4);
+		}
 	}
 
 	.confirm {
@@ -159,6 +182,11 @@
 		font: inherit;
 		font-family: var(--mono);
 		letter-spacing: var(--track-code);
+	}
+
+	/* Mientras se borra no se puede escribir, pero el foco se queda (con disabled se perdería). */
+	input[readonly] {
+		color: var(--muted);
 	}
 
 	.go {
