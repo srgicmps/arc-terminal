@@ -12,4 +12,11 @@ describe('panelhash', () => {
 	it('compara sin tildes ni mayúsculas', () => {
 		expect(samePanel('inflacion del g20', 'Inflación del G20')).toBe(true);
 	});
+
+	it('vale el principio del título, hasta « · » (los que llevan el sitio o el plazo detrás)', () => {
+		expect(samePanel('Mar', 'Mar · Menorca')).toBe(true);
+		expect(samePanel('cuadro de amortizacion', 'Cuadro de amortización · por años')).toBe(true);
+		expect(samePanel('Mar', 'Mareas')).toBe(false);
+		expect(samePanel('Mar · Menorca', 'Mar')).toBe(false);
+	});
 });
