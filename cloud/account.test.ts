@@ -29,7 +29,11 @@ const BOB = 'bob@x.es';
 async function seed(db: ReturnType<typeof sqliteD1>) {
 	for (const user of [ANA, BOB]) {
 		await d1Store(db).patch(user, { 'arc-mortgage': '{"capital":150000}' }, []);
-		await d1AlertStore(db).put(user, { uid: user[0].repeat(16), topic: `arc-${user[0]}`, config: parseConfig({ on: true }) });
+		await d1AlertStore(db).put(user, {
+			uid: user[0].repeat(16),
+			topic: `arc-${user[0]}`,
+			config: parseConfig({ on: true })
+		});
 		await touchSeen(db, user);
 		await d1FamilyStore(db).put(user, { id: user[0].repeat(16), name: user, accept: true });
 		await d1FamilyStore(db).logSent(user, Date.now());
@@ -53,7 +57,10 @@ interface Opts {
 	type?: string;
 }
 
-async function call(db: ReturnType<typeof sqliteD1>, { method = 'DELETE', body, email = ANA, service, origin, type }: Opts = {}) {
+async function call(
+	db: ReturnType<typeof sqliteD1>,
+	{ method = 'DELETE', body, email = ANA, service, origin, type }: Opts = {}
+) {
 	const headers: Record<string, string> = {};
 	if (service) headers['cf-access-jwt-assertion'] = await k.sign({ common_name: 'svc.access' });
 	else if (email) headers['cf-access-jwt-assertion'] = await k.sign({ email });
@@ -139,7 +146,9 @@ describe('DELETE /api/account', () => {
 	it('solo DELETE: GET, POST o PUT, 405', async () => {
 		const db = sqliteD1();
 		for (const method of ['GET', 'POST', 'PUT'])
-			expect((await call(db, { method, body: method === 'GET' ? undefined : { confirm: ANA } })).status, method).toBe(405);
+			expect((await call(db, { method, body: method === 'GET' ? undefined : { confirm: ANA } })).status, method).toBe(
+				405
+			);
 	});
 
 	it('sin base: 503 «sin configurar»', async () => {
