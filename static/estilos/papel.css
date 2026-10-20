@@ -2,7 +2,8 @@
  * <html data-style="papel">: plana como una hoja impresa. Sin sombras: cada panel es una tarjeta con un filete de
  * 1 px (un anillo sin desenfoque), esquinas de 8 px y mucho aire. IBM Plex Sans para leer y Plex Mono para las
  * cifras. Blanco roto de día, gris tinta cálido de noche; el acento es tinta azul. No toca la densidad. */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+/* IBM Plex Mono viene con la web (src/styles/fonts.css). */
 @layer tokens, estilos, ajustes;
 @layer estilos {
 	:root[data-style='papel'],

@@ -7,6 +7,8 @@
    línea, venga primero la hoja que venga; cada archivo de estética la repite. */
 @layer tokens, estilos, ajustes;
 @import './styles/tokens.css' layer(tokens);
+/* Las letras de Terminal y Grafito (Plex e Inter), servidas desde la propia web. */
+@import './styles/fonts.css';
 
 *,
 *::before,
@@ -41,6 +43,11 @@ body {
 @media (max-width: 720px) {
 	body {
 		--gutter: var(--gutter-touch);
+	}
+	/* Lo que se trae a la vista con el teclado o VoiceOver (foco, filas, anclas) no se queda bajo la barra inferior
+	   fija (.thumb de +layout.svelte), que en el iPhone suma la zona segura de la barra de inicio. */
+	html:not([data-tv], [data-embed], [data-os-look]) {
+		scroll-padding-bottom: calc(var(--tabbar-h) + var(--hair) + env(safe-area-inset-bottom, 0px));
 	}
 }
 

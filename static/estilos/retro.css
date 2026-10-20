@@ -3,7 +3,8 @@
  * títulos y cifras grandes, IBM Plex Mono en el resto, cajas de línea doble, cursor que parpadea en la barra y
  * líneas de escaneo muy suaves. Aquí el verde NO es «sube»: subidas y bajadas se distinguen por el brillo y por
  * ▲/▼. De día, la pantalla invertida: tinta verde muy oscura sobre verde pálido. */
-@import url('https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+/* IBM Plex Mono viene con la web (src/styles/fonts.css). */
 @layer tokens, estilos, ajustes;
 @layer estilos {
 	:root[data-style='retro'],
@@ -506,6 +507,13 @@
 	--r-fc: var(--amber-edge);
 	--r-top: var(--bg);
 	border: 0;
+}
+/* El relleno de los paneles de arriba (fuera de capa y más específico) pisa el de .max de Panel.svelte: en el
+   móvil, el panel ampliado vuelve a sumar la zona segura de la barra de inicio del iPhone. */
+@media (max-width: 720px) {
+	[data-style='retro'][data-style] [data-ui='panel'].max {
+		padding-bottom: calc(var(--r-pad) + env(safe-area-inset-bottom, 0px));
+	}
 }
 [data-style='retro'][data-style][data-fit] [data-ui='panel'] {
 	--r-top: var(--bg);

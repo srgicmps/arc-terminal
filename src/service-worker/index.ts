@@ -12,7 +12,9 @@
 //   páginas. Esa caché tiene nombre fijo (sobrevive a las publicaciones) y un límite de entradas.
 // - Sin conexión: la vista abierta antes sale de esa caché; una que nunca se abrió cae en TOP. Lo que solo
 //   se carga con import() y nunca se usó con conexión (otra estética, una ventana de Arc OS) no está.
-// - Fuentes de Google: primero la caché (no cambian nunca).
+// - Letras: Plex e Inter vienen con la web (src/styles/fonts.css, en _app/immutable). No van en la precaché: se
+//   guardan en arc-chunks al pedirlas, solo las de la estética que se usa. Las de Google (las demás estéticas),
+//   primero la caché (no cambian nunca); al activarse, se borran de ahí las de Google que ya sirve la web.
 // - Motor de ajedrez (static/engine/, unos 7 MB): no entra en la precaché, para no descargarlo a quien no
 //   juega. Se guarda la primera vez que se usa, en una caché propia que sobrevive a las publicaciones.
 // - Todo lo demás (widgets de TradingView incluidos) pasa directo a la red, sin guardar nada.
@@ -23,15 +25,16 @@
 import { self } from '$app/service-worker';
 import { immutable, assets, prerendered } from '$app/manifest';
 import { version } from '$app/env';
-import { bootFiles } from './precache.ts';
+import { bootFiles, precacheable, servedByWeb } from './precache.ts';
+import { clickUrl, notice, openNotice } from './push.ts';
 
 // Archivos de la build: una caché por publicación; al publicar, `version` cambia y la anterior se borra.
 const CACHE = `arc-${version}`;
 // Vistas abiertas y sus datos: nombre fijo, nunca se borra al publicar.
 const PAGES = 'arc-pages';
 const PAGES_MAX = 40;
-// Archivos de la build que no van en la precaché (Arc OS, import()): se guardan al pedirlos. Nombre fijo; al
-// publicar solo se quitan los que ya no están en la build. Hoy son unos 80: el límite es un seguro.
+// Archivos de la build que no van en la precaché (Arc OS, import(), letras): se guardan al pedirlos. Nombre fijo;
+// al publicar solo se quitan los que ya no están en la build. Hoy son unos 100: el límite es un seguro.
 const CHUNKS = 'arc-chunks';
 const CHUNKS_MAX = 150;
 const FONTS = 'arc-fonts';
@@ -69,13 +72,13 @@ const TOP = [scope.href, ...(prerendered.some((f) => url(f.path) === TOP_DATA) ?
 /** Lo que nunca sale de la caché de páginas: TOP, el índice de la barra y el estado de las fuentes (los usan todas las vistas). */
 const KEEP = [...TOP, url('data/search.json'), url('data/status.json')];
 
-/** Lo que arranca las vistas, según la lista de la build; sin lista (o si falla), todo _app/immutable. */
+/** Lo que arranca las vistas, según la lista de la build; sin lista (o si falla), todo _app/immutable menos las letras. */
 async function bootList(): Promise<string[]> {
 	try {
 		const response = await fetch(LIST, { cache: 'no-cache' });
 		return bootFiles(response.ok && !response.redirected ? await response.json() : null, version, IMMUTABLE, url);
 	} catch {
-		return IMMUTABLE;
+		return precacheable(IMMUTABLE);
 	}
 }
 
@@ -118,6 +121,8 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+	// Aparte y sin fallar: si la limpieza de letras va mal, el service worker se activa igual.
+	event.waitUntil(dropServedFonts().catch(() => undefined));
 	event.waitUntil(
 		(async () => {
 			// Se borran las cachés de publicaciones viejas, pero nunca la de páginas, la de trozos, la de fuentes ni la del motor.
@@ -135,12 +140,22 @@ self.addEventListener('activate', (event) => {
 	);
 });
 
+/**
+ * De la caché de letras de Google (arc-fonts), fuera las que ya sirve la web (Plex Mono, Plex Sans Condensed e
+ * Inter): nadie las volverá a pedir. Las de las demás estéticas se quedan.
+ */
+async function dropServedFonts() {
+	if (!(await caches.has(FONTS))) return;
+	const fonts = await caches.open(FONTS);
+	for (const request of await fonts.keys()) if (servedByWeb(request.url)) await fonts.delete(request);
+}
+
 self.addEventListener('fetch', (event) => {
 	const { request } = event;
 	if (request.method !== 'GET') return;
 	const target = new URL(request.url);
 
-	// Fuentes de Google: cache-first.
+	// Fuentes de Google (las demás letras de las estéticas): cache-first.
 	if (target.hostname === 'fonts.googleapis.com' || target.hostname === 'fonts.gstatic.com') {
 		event.respondWith(cacheFirst(request));
 		return;
@@ -294,3 +309,25 @@ async function cacheFirst(request: Request, name = FONTS): Promise<Response> {
 	if (response.ok || response.type === 'opaque') await cache.put(request, response.clone());
 	return response;
 }
+
+// ---------- Avisos en el navegador (Web Push, cloud/push.ts y src/service-worker/push.ts) ----------
+
+// Llega un aviso: se enseña siempre (si no, el navegador acaba quitando el permiso).
+self.addEventListener('push', (event) => {
+	const { title, options } = notice(event.data?.text(), scope.href);
+	event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Al tocarlo: la ventana de la web que ya esté abierta va a la vista del aviso; si no, se abre otra (openNotice,
+// en push.ts). Solo las ventanas que controla este service worker: navigate() no puede mover las demás.
+// Con la sesión de Access caducada, sale antes el login.
+self.addEventListener('notificationclick', (event) => {
+	event.notification.close();
+	const target = clickUrl(event.notification.data, scope.href);
+	event.waitUntil(
+		(async () => {
+			const tabs = await self.clients.matchAll({ type: 'window' });
+			await openNotice(target, scope.href, tabs, (url) => self.clients.openWindow(url));
+		})()
+	);
+});

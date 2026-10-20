@@ -29,9 +29,11 @@
 			{#if s.top.length}
 				<ol class="mini">
 					{#each s.top as t (t.k)}
+						<!-- El original en inglés, con su voz en el lector de pantalla; la línea de abajo sigue en español. -->
+						{@const en = t.titleEs ? undefined : t.lang}
 						<li>
-							<a class="l" href={t.url} target="_blank" rel="noopener"
-								>{t.titleEs ?? t.title}<small
+							<a class="l" href={t.url} target="_blank" rel="noopener" lang={en}
+								>{t.titleEs ?? t.title}<small lang={en ? 'es' : undefined}
 									>{t.days} {t.days === 1 ? 'día' : 'días'} · {t.sources.length} {t.sources.length === 1 ? 'medio' : 'medios'}</small
 								></a
 							>

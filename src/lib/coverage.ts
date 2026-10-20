@@ -46,6 +46,8 @@ export interface Outlet {
 
 export interface Story {
 	title: string;
+	/** «en» si el título es el original en inglés (para el `lang` del enlace: el lector de pantalla cambia de voz). */
+	lang?: 'en';
 	url: string;
 	time: string | null;
 	outlets: Outlet[];
@@ -99,8 +101,11 @@ export function stories(items: NewsItem[], { min = 2, limit = 25 }: { min?: numb
 			// Titular en español si lo hay: el de un medio español, o la traducción.
 			const es = outlets.find((o) => o.region === 'es');
 			const esItem = es && sorted.find((i) => i.url === es.url);
+			// Idioma del titular elegido: solo el original sin traducir puede quedarse en inglés.
+			const lang = esItem ? esItem.lang : g.head.titleEs ? undefined : g.head.lang;
 			return {
 				title: esItem?.title ?? g.head.titleEs ?? g.head.title,
+				...(lang ? { lang } : {}),
 				url: esItem?.url ?? g.head.url,
 				time: g.head.time,
 				outlets,

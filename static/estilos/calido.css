@@ -332,9 +332,9 @@
 	border-color: var(--line);
 }
 /* Hoja del móvil: pegada a la barra de pestañas (sin línea, quedaba 1 px por el que asomaba la página). Sus
-   sugerencias se abren hacia arriba. */
+   sugerencias se abren hacia arriba. Con el teclado en pantalla, encima de él (--kb-bottom). */
 [data-style='calido'][data-style] [data-ui='cmd'].cmd.sheet {
-	bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+	bottom: max(calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)), var(--kb-bottom, 0px));
 }
 [data-style='calido'][data-style] [data-ui='cmd'].cmd.sheet .suggest {
 	top: auto;

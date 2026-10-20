@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { decideStyle, ESTILOS, parseStyle } from './estilos.ts';
 
@@ -90,12 +90,16 @@ describe('estéticas', () => {
 			const id = f.replace(/\.css$/, '');
 			expect(ESTILOS.some((e) => e.id === id && id !== 'terminal'), f).toBe(true);
 			const text = css(id);
-			expect(text, f).toMatch(/^(?:\/\*[\s\S]*?\*\/\s*)?(?:@import url\('[^']+'\);\n)*@layer tokens, estilos, ajustes;\n@layer estilos \{/);
+			expect(text, f).toMatch(/^(?:\/\*[\s\S]*?\*\/\s*)?(?:(?:@import url\('[^']+'\);|\/\*[^*\n]*\*\/)\n)*@layer tokens, estilos, ajustes;\n@layer estilos \{/);
 			expect(text, f).toMatch(new RegExp(`:root\\[data-style='${id}'\\],\\s*\\[data-style='${id}'\\]`));
 			expect(text, f).toContain(`:root[data-theme='light'] [data-style='${id}']`);
 			expect(text, f).not.toContain('!important');
-			// Letras: solo de Google Fonts (libres), con @import al principio.
-			for (const m of text.matchAll(/@import\s+url\('([^']+)'\)/g)) expect(m[1], f).toMatch(/^https:\/\/fonts\.googleapis\.com\/css2\?/);
+			// Letras: solo de Google Fonts (libres), con @import al principio. Plex Mono, Plex Sans Condensed e Inter, no:
+			// vienen con la web (src/styles/fonts.css) y saldrían dos veces (Inter Tight, de Suizo, es otra letra).
+			for (const m of text.matchAll(/@import\s+url\('([^']+)'\)/g)) {
+				expect(m[1], f).toMatch(/^https:\/\/fonts\.googleapis\.com\/css2\?/);
+				expect(m[1], f).not.toMatch(/[?&]family=(?:IBM\+Plex\+Mono|IBM\+Plex\+Sans\+Condensed|Inter)(?=[:&]|$)/);
+			}
 			expect(text.replace(/@import[^;]+;/g, ''), f).not.toMatch(/url\(\s*['"]?https?:/);
 		}
 	});
@@ -182,5 +186,108 @@ describe('estéticas', () => {
 		const blocks = [...css.matchAll(/:root(?:\[data-theme='light'\])?\[data-accent='\w+'\]:not\(([^)]*)\)/g)];
 		expect(blocks.length).toBe(6);
 		for (const b of blocks) expect([...b[1].matchAll(/data-style='(\w+)'/g)].map((m) => m[1]).sort()).toEqual(fixed);
+	});
+});
+
+// Lo que Chromium no reproduce de un iPhone (zonas seguras, barra de estado), comprobado en el código para que no vuelva.
+describe('iPhone: zonas seguras y color de la barra', () => {
+	it('toda la web lleva viewport-fit=cover (sin él, Safari deja a 0 los env(safe-area-inset-*))', () => {
+		const meta = /<meta name="viewport" content="([^"]+)"/.exec(readFileSync('src/app.html', 'utf8'));
+		expect(meta?.[1].split(',').map((p) => p.trim())).toContain('viewport-fit=cover');
+	});
+
+	it('al cambiar de estética, theme-color se pone otra vez cuando carga su hoja (y en el acto, para Terminal), salvo en Arc OS', () => {
+		const theme = readFileSync('src/lib/theme.svelte.ts', 'utf8');
+		expect(theme).toMatch(/export function syncThemeColor\(\)/);
+		expect(theme).toMatch(/function apply\(\) {[^}]*syncThemeColor\(\);/);
+		const setStyle = /export function setStyle\([^)]*\) {([\s\S]*?)\n}/.exec(readFileSync('src/lib/taste.svelte.ts', 'utf8'))?.[1] ?? '';
+		const code = setStyle.replace(/\/\/.*$/gm, '');
+		expect(code).toMatch(/getElementById\('style-sheet'\)\?\.addEventListener\('load', syncThemeColor/);
+		expect(code).toMatch(/\n\tsyncThemeColor\(\);/);
+		// En Arc OS, src/lib/os/look.ts quita data-style justo después: leer --bg aquí daría el de la estética, no el
+		// del aspecto del escritorio. La guarda va antes de tocar theme-color.
+		const guard = code.indexOf("if ('osLook' in document.documentElement.dataset) return;");
+		expect(guard).toBeGreaterThan(-1);
+		expect(guard).toBeLessThan(code.indexOf('syncThemeColor'));
+	});
+
+	it('el panel ampliado y lo fijo a los bordes se apartan de la muesca y de la barra de inicio', () => {
+		const panel = readFileSync('src/lib/components/Panel.svelte', 'utf8');
+		const max = /\.max {([^}]*)}/.exec(panel)?.[1] ?? '';
+		for (const side of ['top', 'right', 'bottom', 'left']) expect(max).toContain(`env(safe-area-inset-${side}`);
+		// En el móvil va a pantalla completa: lo último del panel, por encima de la barra de inicio.
+		expect(/max-width: 720px\) {\s*\.max {([^}]*)}/.exec(panel)?.[1]).toContain('padding-bottom: env(safe-area-inset-bottom');
+		const layout = readFileSync('src/routes/+layout.svelte', 'utf8');
+		expect(/\.fresh {([^}]*)}/.exec(layout)?.[1]).toMatch(/right: max\([^;]*safe-area-inset-right[\s\S]*bottom: max\([^;]*safe-area-inset-bottom/);
+		expect(/\.thumb {\s*position: fixed;([^}]*)}/.exec(layout)?.[1]).toContain('padding-bottom: env(safe-area-inset-bottom');
+	});
+
+	it('las hojas pegadas a un borde y el aviso del Muro también se apartan', () => {
+		/** Algún bloque `selector {…}` del archivo usa la zona segura de cada lado. */
+		const uses = (file: string, selector: string, sides: string[]) => {
+			const text = readFileSync(file, 'utf8');
+			const at = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			const blocks = [...text.matchAll(new RegExp(`${at} {([^}]*)}`, 'g'))].map((m) => m[1]);
+			for (const side of sides) expect(blocks.some((b) => b.includes(`env(safe-area-inset-${side}`)), `${file} ${selector} ${side}`).toBe(true);
+		};
+		// Apariencia: a la derecha en escritorio (y en el iPhone en horizontal) y desde abajo en el móvil.
+		uses('src/lib/components/Appearance.svelte', '.in', ['right', 'bottom', 'left']);
+		uses('src/lib/components/ExpLauncher.svelte', '.foot', ['bottom']);
+		uses('src/routes/x/muro/+page.svelte', '.alert', ['top', 'right', 'bottom', 'left']);
+		// Retro pisa el relleno de los paneles con una regla más específica: tiene que volver a sumar la barra de inicio.
+		uses(`${DIR}/retro.css`, "[data-style='retro'][data-style] [data-ui='panel'].max", ['bottom']);
+	});
+});
+
+describe('letras de la propia web (src/styles/fonts.css)', () => {
+	const DIR_FONTS = 'src/styles/fonts';
+	const text = readFileSync('src/styles/fonts.css', 'utf8');
+	const faces = [...text.matchAll(/@font-face\s*\{([^}]*)\}/g)].map((m) => m[1]);
+	const prop = (face: string, name: string) => new RegExp(`(?:^|;)\\s*${name}\\s*:\\s*([^;]+);`).exec(face)?.[1].trim() ?? '';
+	const file = (face: string) => /^url\('\.\/fonts\/([\w-]+\.woff2)'\) format\('woff2'\)$/.exec(prop(face, 'src'))?.[1] ?? '';
+	/** «latin» (U+0000-00FF: lo básico, € y ñ incluidos) o «latin-ext» (U+0100-…: ő, ł, ş…), según su unicode-range. */
+	const subset = (face: string) => (prop(face, 'unicode-range').startsWith('U+0000-00FF') ? 'latin' : 'latin-ext');
+
+	it('app.html ya no pide nada a Google Fonts y app.css trae las letras', () => {
+		expect(readFileSync('src/app.html', 'utf8')).not.toMatch(/fonts\.(?:googleapis|gstatic)\.com/);
+		expect(readFileSync('src/app.css', 'utf8')).toContain("@import './styles/fonts.css';");
+		for (const id of ['grafito', 'cristal', 'cupertino']) expect(css(id), id).not.toMatch(/^@import/m);
+	});
+
+	it('solo declara letras: cada cara con su woff2, font-display: swap y el unicode-range de su archivo', () => {
+		// Fuera de los @font-face, solo comentarios (por eso tokens-guard.test.ts no lo mira).
+		expect(text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@font-face\s*\{[^}]*\}/g, '').trim()).toBe('');
+		expect(faces.length).toBe(14);
+		for (const face of faces) {
+			expect(file(face), face).not.toBe('');
+			expect(existsSync(`${DIR_FONTS}/${file(face)}`), file(face)).toBe(true);
+			expect(prop(face, 'font-display'), face).toBe('swap');
+			expect(prop(face, 'font-style'), face).toBe('normal');
+			expect(prop(face, 'unicode-range'), face).toMatch(/^U\+[0-9A-F]{4}/);
+			// El nombre del archivo dice su grupo: si no casa con el unicode-range, faltarían letras (o sobrarían bajadas).
+			expect(file(face).endsWith('-latin-ext.woff2') ? 'latin-ext' : 'latin', face).toBe(subset(face));
+		}
+	});
+
+	it('cada peso de --fw-* de Plex, en latin y latin-ext, e Inter variable (si falta una, negrita falsa o letra de reserva)', () => {
+		const have = new Set(faces.map((f) => `${prop(f, 'font-family')} ${prop(f, 'font-weight')} ${subset(f)}`));
+		const weights = ['--fw-regular', '--fw-medium', '--fw-bold'].map((t) => baseDark[t]);
+		expect(weights).toEqual(['400', '500', '600']);
+		for (const family of ["'IBM Plex Mono'", "'IBM Plex Sans Condensed'"])
+			for (const w of weights) for (const s of ['latin', 'latin-ext']) expect(have, `${family} ${w} ${s}`).toContain(`${family} ${w} ${s}`);
+		for (const s of ['latin', 'latin-ext']) expect(have, `Inter ${s}`).toContain(`'Inter' 100 900 ${s}`);
+		// Las letras de la base (Terminal y el aspecto «Mando» de Arc OS) son estas.
+		expect(baseDark['--mono']).toMatch(/^'IBM Plex Mono',/);
+		expect(baseDark['--sans']).toMatch(/^'IBM Plex Sans Condensed',/);
+	});
+
+	it('cada woff2 de la carpeta se usa, es un woff2 de verdad y va con su licencia (OFL.txt)', () => {
+		const files = readdirSync(DIR_FONTS).filter((f) => f.endsWith('.woff2'));
+		expect(files.sort()).toEqual([...new Set(faces.map(file))].sort());
+		for (const f of files) expect(readFileSync(`${DIR_FONTS}/${f}`).subarray(0, 4).toString('latin1'), f).toBe('wOF2');
+		const ofl = readFileSync(`${DIR_FONTS}/OFL.txt`, 'utf8');
+		expect(ofl).toContain('SIL OPEN FONT LICENSE Version 1.1');
+		expect(ofl).toContain('IBM Corp.');
+		expect(ofl).toContain('The Inter Project Authors');
 	});
 });

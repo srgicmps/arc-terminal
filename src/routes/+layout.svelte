@@ -301,11 +301,14 @@
 
 	<nav class="keys" data-ui="keys" aria-label="Secciones" use:edgeFade>
 		{#each visibleKeys as key (key.code)}
+			<!-- El lector de pantalla oye «WS Wall Street» en todos los anchos y navegadores, también en el móvil, donde
+			     el nombre no se ve. Empieza por lo que se ve («WS»), como pide WCAG 2.5.3 para el control por voz. -->
 			<a
 				class="key"
 				data-ui="key"
 				data-code={key.code}
 				href={routeHref(key.route)}
+				aria-label="{key.code} {key.key}"
 				aria-current={isOn(key.route) ? 'page' : undefined}
 			>
 				{key.code}<span>{key.key}</span>
@@ -359,7 +362,9 @@
 
 	<nav class="thumb" data-ui="tabs" aria-label="Accesos rápidos">
 		{#each thumb as c (c.code)}
-			<a href={routeHref(c.route)} data-code={c.code} aria-current={isOn(c.route) ? 'page' : undefined}>{c.code}</a>
+			<!-- Se ve el código; el lector de pantalla oye también el nombre: «WS Wall Street». El espacio va como
+			     expresión porque Svelte quita los que quedan al principio de una etiqueta. -->
+			<a href={routeHref(c.route)} data-code={c.code} aria-current={isOn(c.route) ? 'page' : undefined}>{c.code}<span class="sr">{' '}{c.key}</span></a>
 		{/each}
 		<ExpLauncher variant="thumb" />
 		<button type="button" aria-label="Buscar o escribir un comando" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>
@@ -602,10 +607,11 @@
 		transition: none;
 	}
 
+	/* En el iPhone en horizontal (con viewport-fit=cover), fuera de la muesca y de la barra de inicio. */
 	.fresh {
 		position: fixed;
-		right: var(--sp-16);
-		bottom: var(--sp-16);
+		right: max(var(--sp-16), env(safe-area-inset-right, 0px));
+		bottom: max(var(--sp-16), env(safe-area-inset-bottom, 0px));
 		z-index: 30;
 		background: var(--raise);
 		border: var(--hair) solid var(--amber-edge);
@@ -678,8 +684,8 @@
 
 	.tv-chip {
 		position: fixed;
-		right: var(--gutter);
-		bottom: var(--sp-16);
+		right: max(var(--gutter), env(safe-area-inset-right, 0px));
+		bottom: max(var(--sp-16), env(safe-area-inset-bottom, 0px));
 		z-index: 40;
 		display: flex;
 		align-items: center;
@@ -789,6 +795,8 @@
 			bottom: calc(var(--tabbar-h) + var(--sp-12) + env(safe-area-inset-bottom, 0px));
 		}
 
+		/* Solo el código. El lector de pantalla sigue oyendo el nombre por el aria-label del enlace. Una caja oculta
+		   en posición absoluta (como .sr) se salía de la fila deslizable y ensanchaba la página con ratón. */
 		.keys :global(.key span:not([aria-hidden])) {
 			display: none;
 		}

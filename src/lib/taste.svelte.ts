@@ -4,6 +4,7 @@
 // tokens.css redefine --amber y compañía: ningún componente sabe de qué color es el acento.
 import { ACCENTS, cleanCodes, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, THUMB_MAX, VISIBLE_KEYS, type Accent, type Density } from './taste.ts';
 import { useSheet } from './estilos-css.ts';
+import { syncThemeColor } from './theme.svelte.ts';
 
 export { ACCENTS, DEFAULT_THUMB, DEFAULT_TOP, DENSITIES, THUMB_MAX, VISIBLE_KEYS, type Accent, type Density };
 
@@ -71,8 +72,15 @@ export function setStyle(style: string) {
 	document.documentElement.dataset.style = style;
 	write(KEYS.style, style);
 	useSheet(style, 'style-sheet');
+	// La barra del navegador del móvil, con el fondo de la estética nueva. useSheet solo cambia el href: la hoja llega
+	// después y hasta su «load» --bg sigue siendo el de la anterior. Terminal no tiene hoja (y si es la misma, ya
+	// está): por eso también se pone en el acto. addEventListener no repite la misma función si ya estaba.
+	// En Arc OS no: la barra lleva el fondo de su aspecto, y src/lib/os/look.ts quita data-style justo después (aquí
+	// aún está puesto, así que se leería el --bg de la estética).
+	if ('osLook' in document.documentElement.dataset) return;
+	document.getElementById('style-sheet')?.addEventListener('load', syncThemeColor, { once: true });
+	syncThemeColor();
 }
-
 
 export function setAccent(accent: Accent) {
 	taste.accent = accent;

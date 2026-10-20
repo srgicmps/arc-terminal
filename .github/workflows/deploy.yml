@@ -5,6 +5,7 @@
 #   Vitals en el móvil, solo avisa) · probe (solo si el PR toca scripts/). Menos jobs a la vez = menos cola en
 #   los runners, que comparten todas las sesiones.
 # - A mano con «herramienta» (compare, tv-shots o vitals), sobre la rama que se elija: esa revisión, sin publicar.
+#   «despertador» (solo desde main) publica el Worker de cloud/cron/, que lanza esta pasada y la de fast.yml a su hora.
 # - A mano con «fuentes»: solo `pnpm data <fuentes>` y el sondeo, para probar una fuente sin la pasada completa.
 # - Cada `uses:` va fijado al SHA de un commit (un tag se puede mover; un SHA, no), con su tag en el comentario.
 #   Para subir una acción: `git ls-remote https://github.com/<dueño>/<acción> 'refs/tags/<tag>*'` (si sale
@@ -17,7 +18,8 @@ on:
   pull_request:
   # Cada 15 minutos, para refrescar los datos. Minutos 7, 22, 37 y 52 para evitar las horas en
   # punto, cuando GitHub va más cargado. Ojo: GitHub desactiva los cron de un repo público tras
-  # 60 días sin actividad.
+  # 60 días sin actividad. GitHub se salta casi todas (unas 7 al día de 96 en octubre de 2026): a su hora
+  # la lanza el despertador (cloud/cron/despertador.ts, con workflow_dispatch) y este cron queda de respaldo.
   schedule:
     - cron: '7,22,37,52 * * * *'
   # Permite lanzarla a mano desde la pestaña Actions.
@@ -28,9 +30,9 @@ on:
         required: false
         default: ''
       herramienta:
-        description: 'Herramienta de revisión sobre esta rama, sin publicar: compare (vistas frente a main), tv-shots (capturas de TradingView) o vitals (Core Web Vitals en el móvil).'
+        description: 'Herramienta sobre esta rama, sin publicar la web: compare (vistas frente a main), tv-shots (capturas de TradingView), vitals (Core Web Vitals en el móvil) o despertador (publica el Worker que lanza las pasadas; solo desde main).'
         type: choice
-        options: [ninguna, compare, tv-shots, vitals]
+        options: [ninguna, compare, tv-shots, vitals, despertador]
         default: ninguna
 
 # Permisos mínimos: por defecto, solo leer el código (la publicación en Cloudflare usa sus propios Secrets).
@@ -102,7 +104,7 @@ jobs:
           # MyMemory (titulares en inglés → español, scripts/translate.ts). Este job no corre en los PR.
           MYMEMORY_EMAIL: ${{ secrets.MYMEMORY_EMAIL }}
 
-      # Abre un issue si una fuente lleva 3 pasadas sin datos y lo cierra cuando vuelve.
+      # Abre un issue si una fuente lleva 45 min sin datos y lo cierra cuando vuelve.
       # Si falla, no frena la publicación. Las claves van para taparlas si salen en un error.
       - run: node scripts/issues.ts
         continue-on-error: true
@@ -512,6 +514,54 @@ jobs:
           name: vistas
           path: shots/vistas/
           if-no-files-found: ignore
+
+  # A mano (herramienta «despertador», solo desde main): publica en Cloudflare el Worker de cloud/cron/, que con
+  # sus Cron Triggers lanza fast.yml cada 5 min y esta pasada cada 15 (GitHub se salta casi todos los `schedule`),
+  # y le pasa el token de GitHub como secret. Usa dos Secrets propios, que solo ve este job:
+  # - DESPERTADOR_GH_TOKEN: token fine-grained de GitHub solo de este repo, con Actions: lectura y escritura y
+  #   caducidad de 1 año (GitHub propone 30 días). Al caducar, el Worker recibe 401, lo registra como error y no
+  #   lanza nada: se vuelve a los `schedule` de GitHub hasta que se guarda otro aquí y se relanza esta herramienta.
+  # - DESPERTADOR_CF_TOKEN: token de Cloudflare solo con Account · Workers Scripts · Edit en la cuenta. Va aparte
+  #   del CLOUDFLARE_API_TOKEN de siempre (mínimo privilegio): aquel corre en cientos de pasadas al día y no tiene
+  #   por qué poder tocar Workers. CLOUDFLARE_ACCOUNT_ID sí es el de siempre.
+  # Si falta algo, lo dice en el resumen de la Action y no publica nada.
+  despertador:
+    if: github.event_name == 'workflow_dispatch' && inputs.herramienta == 'despertador'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      # Solo Node (el de .nvmrc) para wrangler: el Worker no importa nada, no hace falta instalar dependencias.
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+      # El token de GitHub va al Worker por la entrada estándar: nunca en la línea de órdenes ni en el registro.
+      - run: |
+          falta() {
+            echo "::error title=Despertador::$1"
+            printf '### Despertador: no publicado\n\n%s\n' "$1" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+          [ "$GITHUB_REF" = refs/heads/main ] || falta "Lánzalo desde main («Use workflow from: main»): se publica el Worker de esa rama."
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || falta "Falta el Secret CLOUDFLARE_ACCOUNT_ID (el de siempre)."
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || falta "Falta el Secret DESPERTADOR_CF_TOKEN: un token de Cloudflare (My Profile → API Tokens → Create Token → Create Custom Token) solo con el permiso Account · Workers Scripts · Edit en tu cuenta. Es aparte: el CLOUDFLARE_API_TOKEN de siempre no se toca."
+          [ -n "$GH_DISPATCH_TOKEN" ] || falta "Falta el Secret DESPERTADOR_GH_TOKEN (Settings → Secrets and variables → Actions): un token fine-grained de GitHub solo de este repo, con Actions: lectura y escritura y caducidad de 1 año (GitHub propone 30 días). Cuando caduque, el Worker no lanza nada y quedan solo los cron de GitHub hasta que guardes otro aquí y relances esta herramienta."
+          npx --yes wrangler@4.145.0 deploy -c cloud/cron/wrangler.toml ||
+            falta "Wrangler no ha podido publicar el Worker. Si el registro dice «Authentication error [code: 10000]», al token DESPERTADOR_CF_TOKEN le falta el permiso Account · Workers Scripts · Edit, o es de otra cuenta."
+          printf '%s' "$GH_DISPATCH_TOKEN" | npx --yes wrangler@4.145.0 secret put GH_DISPATCH_TOKEN -c cloud/cron/wrangler.toml ||
+            falta "El Worker está publicado, pero no se ha podido guardar el token (secret GH_DISPATCH_TOKEN). Vuelve a lanzar la herramienta."
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ### Despertador publicado
+          - Worker «arc-terminal-cron» en Cloudflare, sin URL. Lanza fast.yml cada 5 min y deploy.yml en los minutos 7, 22, 37 y 52 (UTC).
+          - Para comprobarlo: en Actions, filtra con «event:workflow_dispatch». En 10-15 min tienen que salir pasadas de «Vía rápida» y «Publicar en Pages».
+          - Su registro: en el panel de Cloudflare, el Worker «arc-terminal-cron» → Logs.
+          - El token de GitHub caduca (1 año). Entonces el Worker deja de lanzar pasadas y apunta «HTTP 401» como error en su registro; quedan solo los cron de GitHub. Crea otro, guárdalo en DESPERTADOR_GH_TOKEN y vuelve a lanzar esta herramienta.
+          EOF
+        env:
+          # Wrangler lee el token de CLOUDFLARE_API_TOKEN: aquí es el propio del despertador, no el de siempre.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.DESPERTADOR_CF_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_DISPATCH_TOKEN: ${{ secrets.DESPERTADOR_GH_TOKEN }}
 
   # A mano con «fuentes»: descarga solo esas fuentes (sin usar la copia guardada) y lanza el sondeo.
   # No construye ni publica.

@@ -3,7 +3,9 @@ import { clearKeyCache } from './access.ts';
 import { memoryAlertStore } from './alerts.ts';
 import { cleanName, FAMILY_LIMITS, handleFamily, memoryFamilyStore } from './family.ts';
 import { parseConfig } from '../src/lib/alertconfig.ts';
+import { memoryPushStore } from './push.ts';
 import { ENV, testKeys } from './testkeys.ts';
+import { generateVapid } from './webpush.ts';
 
 let k: Awaited<ReturnType<typeof testKeys>>;
 beforeAll(async () => void (k = await testKeys()));
@@ -85,6 +87,43 @@ describe('/api/family', () => {
 		for (let i = 0; i < FAMILY_LIMITS.perDay; i++) expect((await call('luis@x.es', 'POST', ok)).status).toBe(200);
 		expect((await call('luis@x.es', 'POST', ok)).status).toBe(429);
 		expect(sent).toHaveLength(FAMILY_LIMITS.perDay);
+	});
+
+	it('si el otro tiene avisos en el navegador, también le llega ahí; basta con que llegue por uno de los dos', async () => {
+		const store = memoryFamilyStore();
+		const alerts = memoryAlertStore();
+		const pushes = memoryPushStore();
+		const keys = { p256dh: 'BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4', auth: 'BTBZMqHH6r4Tts7J_aSIgg' };
+		const browser = 'https://fcm.googleapis.com/fcm/send/ana';
+		await pushes.put('ana@x.es', { endpoint: browser, ...keys }, 1, 5);
+		await alerts.put('ana@x.es', { uid: 'ana', topic: 'arc-tema-ana', config: parseConfig({ on: true }) });
+		await store.put('ana@x.es', { id: 'ana1', name: 'Ana', accept: true });
+		await store.put('luis@x.es', { id: 'luis1', name: 'Luis', accept: false });
+		const env = { ...ENV, VAPID_PRIVATE_KEY: JSON.stringify((await generateVapid()).jwk) };
+		let ntfyUp = true;
+		const sent: string[] = [];
+		const push = async (url: string) => (sent.push(url), new Response(null, { status: url.includes('ntfy') && !ntfyUp ? 500 : 201 }));
+		const send = async () =>
+			handleFamily(
+				new Request('https://arcterminal.dev/api/family', {
+					method: 'POST',
+					headers: { 'cf-access-jwt-assertion': await k.sign({ email: 'luis@x.es' }), 'content-type': 'application/json' },
+					body: JSON.stringify({ to: 'ana1', title: 'La Fed baja tipos', url: 'https://bbc.com/a' })
+				}),
+				env,
+				store,
+				alerts,
+				k.certs,
+				push,
+				Date.now(),
+				pushes
+			);
+		expect((await send()).status).toBe(200);
+		expect(sent.sort()).toEqual([browser, 'https://ntfy.sh/arc-tema-ana']);
+		ntfyUp = false;
+		expect((await send()).status).toBe(200);
+		await pushes.drop(browser);
+		expect((await send()).status).toBe(502);
 	});
 
 	it('el nombre va limpio y con tope', () => {
