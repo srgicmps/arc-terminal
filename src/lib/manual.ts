@@ -73,7 +73,7 @@ export const PLACE: GuideSection = {
 	title: 'Tu sitio',
 	paras: [
 		'El chip de la cabecera con un pin («Madrid · cambiar») elige tu sitio: busca una ciudad, usa tu ubicación o toca uno de tus favoritos (hasta 5).',
-		'Tu sitio lo usan WX (tiempo, aire, mar, sol y luna), la portada y el reloj. Se guarda solo en este navegador.',
+		'Tu sitio lo usan WX (tiempo, aire, mar, sol y luna), la portada y el reloj. Se guarda en este navegador y, si tienes cuenta, también en ella.',
 		'Desde la barra: «LUGAR Tokio» busca la ciudad y la deja como tu sitio.'
 	]
 };
@@ -221,7 +221,7 @@ export const FAQ: Faq[] = [
 	},
 	{
 		q: '¿Qué se guarda de mí?',
-		a: 'Nada en ningún servidor. Tus ajustes, tu lista de valores, tu sitio o la partida de ajedrez se guardan solo en este navegador (lo tienes todo en «Lo que se guarda en tu navegador»). Si borras los datos del sitio, vuelves a empezar.'
+		a: 'Tus ajustes, tu lista de valores, tu sitio o la partida de ajedrez se guardan en este navegador y, si tienes cuenta, también en ella, para tenerlos en tus otros dispositivos (lo tienes todo en «Lo que se guarda en tu navegador»). En HELP, «Tu cuenta», puedes cerrar sesión o borrar tu cuenta y todo lo que hay en ella.'
 	},
 	{
 		q: '¿Cómo la instalo en el móvil?',
