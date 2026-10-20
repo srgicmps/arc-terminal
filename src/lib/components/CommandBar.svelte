@@ -7,6 +7,7 @@
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import { toggleFullscreen } from '#lib/fit.svelte.ts';
+	import { keyboardInset } from '#lib/keyboard.ts';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { isEmbedded } from '#lib/os/embed.ts';
@@ -72,6 +73,29 @@
 		const on = () => (phone = mq.matches);
 		mq.addEventListener('change', on);
 		return () => mq.removeEventListener('change', on);
+	});
+	// Teclado en pantalla: con la hoja abierta, la barra se sube encima del teclado y las sugerencias caben en lo que
+	// queda a la vista (--kb-bottom y --kb-h en el formulario, que lee el CSS). Solo mientras la hoja está abierta: al
+	// cerrarla se dejan de escuchar los eventos y se quitan las variables.
+	let kb = $state<{ bottom: number; h: number } | null>(null);
+	$effect(() => {
+		const vv = window.visualViewport;
+		if (!ui.sheet || !vv) return;
+		// Mientras sale el teclado llegan muchos eventos: solo se toca la página si cambia algo.
+		let last = '';
+		const fit = () => {
+			const next = keyboardInset(vv, innerHeight);
+			const key = next ? `${next.bottom} ${next.h}` : '';
+			if (key !== last) ((last = key), (kb = next));
+		};
+		fit();
+		vv.addEventListener('resize', fit);
+		vv.addEventListener('scroll', fit);
+		return () => {
+			vv.removeEventListener('resize', fit);
+			vv.removeEventListener('scroll', fit);
+			kb = null;
+		};
 	});
 	let selected = $state(-1);
 	let open = $state(false);
@@ -372,7 +396,16 @@
 
 <svelte:window onkeydown={onWindowKeydown} />
 
-<form class="cmd" data-ui="cmd" class:sheet={ui.sheet} role="search" autocomplete="off" {onsubmit}>
+<form
+	class="cmd"
+	data-ui="cmd"
+	class:sheet={ui.sheet}
+	style:--kb-bottom={kb ? `${kb.bottom}px` : undefined}
+	style:--kb-h={kb ? `${kb.h}px` : undefined}
+	role="search"
+	autocomplete="off"
+	{onsubmit}
+>
 	<label class="prompt" for="cmd">
 		<span class="caret" aria-hidden="true">&gt;</span>
 		<!-- En el móvil, una lupa: la barra se usa como un buscador normal. -->
@@ -568,12 +601,12 @@
 	}
 
 	/* Hoja desde abajo (móvil): la barra se pega encima de la barra inferior y las sugerencias se
-	   abren hacia arriba, cerca del pulgar. */
+	   abren hacia arriba, cerca del pulgar. Con el teclado en pantalla (--kb-bottom), justo encima de él. */
 	.cmd.sheet {
 		position: fixed;
 		left: 0;
 		right: 0;
-		bottom: calc(var(--tabbar-h) + var(--hair) + env(safe-area-inset-bottom, 0px));
+		bottom: max(calc(var(--tabbar-h) + var(--hair) + env(safe-area-inset-bottom, 0px)), var(--kb-bottom, 0px));
 		z-index: 40;
 		height: var(--touch);
 		border-width: var(--hair) 0 0;
@@ -585,7 +618,9 @@
 		bottom: 100%;
 		border-top-color: var(--amber);
 		border-bottom-color: var(--line);
-		max-height: 50vh;
+		/* Con el teclado, caben en lo que queda a la vista sobre el campo (--kb-h), con aire para el margen que les
+		   dan algunas estéticas. Sin teclado, la mitad de la pantalla, como siempre. */
+		max-height: min(50vh, calc(var(--kb-h, 100vh) - var(--touch) - var(--sp-24)));
 	}
 
 	li,
