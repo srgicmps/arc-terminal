@@ -1,7 +1,7 @@
 import type { Command } from '../commands.ts';
 
 export default {
-	order: 220, code: 'CAL', route: '/cal', key: 'Agenda', desc: 'Agenda económica de la semana', sources: 'TradingView', aliases: ['puentes', 'puente', 'festivos'],
+	order: 220, code: 'CAL', route: '/cal', key: 'Agenda', desc: 'Agenda económica de la semana, resultados, festivos y puentes', sources: 'TradingView, Finnhub, Nager.Date', aliases: ['puentes', 'puente', 'festivos'],
 	date: 'param',
 	bloomberg: [{ code: 'ECOW' }, { code: 'EVTS' }],
 	manual: {
