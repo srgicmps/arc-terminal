@@ -36,6 +36,7 @@ interface Call {
  * salvo brief, que es solo de la Action. Una Function nueva tiene que añadir aquí su caso.
  */
 const OK: Record<string, Call> = {
+	account: { method: 'DELETE', body: { confirm: ADMIN } },
 	admin: {},
 	alerts: {},
 	ask: {},

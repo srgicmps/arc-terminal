@@ -4,9 +4,22 @@
 import { asset } from '$app/paths';
 import { collect } from './transfer.ts';
 import { PREFS } from './prefs.ts';
-import { isEmpty, mergeFitting, readMemory, startPlan, type Patch, type Prefs, type SyncMemory } from './cloud.ts';
+import { LOGOUT, wipe } from './account.ts';
+import {
+	HOLD,
+	holdActive,
+	isEmpty,
+	MEMORY,
+	mergeFitting,
+	NOBODY,
+	readMemory,
+	replaced,
+	startPlan,
+	type Patch,
+	type Prefs,
+	type SyncMemory
+} from './cloud.ts';
 
-const MEMORY = 'arc-sync';
 const RELOADED = 'arc-sync-reload';
 const EVERY = 5000;
 const RETRY = 60_000;
@@ -29,6 +42,27 @@ const IDB = PREFS.filter((p) => p.storage === 'idb').map((p) => p.key);
 
 let memory: SyncMemory | null = null;
 let busy = false;
+/** Esta pestaña se ha quedado con la cuenta anterior (otra ha entrado con otra): no sincroniza más y se recarga. */
+let stale = false;
+/** «Borrar mi cuenta» en marcha en esta pestaña (hold): no sube ni baja nada, que lo recrearía. */
+let held = false;
+
+/** La pausa, para las demás pestañas: la hora de ahora en HOLD (cloud.ts). La pestaña que borra la renueva cada 5 s. */
+function markHold() {
+	try {
+		localStorage.setItem(HOLD, String(Date.now()));
+	} catch {}
+}
+
+/** ¿Quieto? Esta pestaña está borrando la cuenta (held) u otra lo está (HOLD de hace menos de 30 s). */
+function paused(): boolean {
+	if (held) return true;
+	try {
+		return holdActive(localStorage.getItem(HOLD), Date.now());
+	} catch {
+		return false;
+	}
+}
 
 const url = () => asset('api/prefs' as Parameters<typeof asset>[0]);
 
@@ -85,12 +119,24 @@ function forgetPrevious() {
 	}
 }
 
-/** Otra pestaña puede haber sincronizado: la memoria buena es la guardada, no la de esta pestaña. */
-function refreshMemory() {
+/** Lo que enseña esta pestaña y lo que tiene en memoria es de la cuenta anterior: se recarga (una vez) con la nueva. */
+function reloadStale() {
+	if (stale) return;
+	stale = true;
+	location.reload();
+}
+
+/**
+ * Otra pestaña puede haber sincronizado: la memoria buena es la guardada, no la de esta pestaña. Si la guardada es de
+ * otra cuenta (tras «Cerrar sesión» ha entrado otra persona), esta pestaña se recarga y no sube ni baja nada: false.
+ */
+function refreshMemory(): boolean {
 	try {
 		const saved = readMemory(localStorage.getItem(MEMORY));
-		if (saved && (!memory || saved.user === memory.user)) memory = saved;
+		if (replaced(memory, saved)) reloadStale();
+		else if (saved) memory = saved;
 	} catch {}
+	return !stale;
 }
 
 function applyLocal(patch: Patch) {
@@ -99,24 +145,35 @@ function applyLocal(patch: Patch) {
 }
 
 function remember(user: string, base: Prefs) {
-	memory = { user, base };
-	localStorage.setItem(MEMORY, JSON.stringify(memory));
+	const next = { user, base };
+	// Primero se guarda: si no cabe, la pestaña sigue con la memoria de antes, igual que las demás (refreshMemory).
+	localStorage.setItem(MEMORY, JSON.stringify(next));
+	memory = next;
 }
 
 /** Cambios de fuera que esperan a que dejes de escribir. */
 let postponed = false;
+/**
+ * Un pull que no se ha hecho por la pausa de «Borrar mi cuenta» (paused): se repite cuando acabe. Sin él, una pestaña
+ * que arranca con la pausa puesta no tiene cuenta (cloud.user) y flush no sube nada nunca.
+ */
+let missed = false;
 let lastPull = 0;
 
 /** Trae lo del servidor, junta y sube. Si ha cambiado algo de aquí, recarga para que las vistas lo lean. */
 async function pull() {
-	if (busy) return;
+	if (busy || stale) return;
+	missed = paused();
+	if (missed) return;
 	busy = true;
 	lastPull = Date.now();
 	try {
 		if (cloud.state !== 'ok') cloud.state = 'sync';
 		const remote = await getRemote();
-		if (!remote) return;
-		refreshMemory();
+		// Mientras llegaba la respuesta, otra pestaña puede haber empezado a borrar la cuenta: no se sube nada.
+		if (!remote || !refreshMemory()) return;
+		missed = paused();
+		if (missed) return;
 		const local = collect(localStorage);
 		const switching = !!memory && memory.user !== remote.user;
 		const plan = startPlan(local, remote.prefs, memory, remote.user);
@@ -146,10 +203,15 @@ async function pull() {
 	}
 }
 
-/** Sube lo que haya cambiado aquí desde la última vez. */
+/**
+ * Sube lo que haya cambiado aquí desde la última vez. Con la sesión cerrada o caducada (auth) no: la próxima cookie
+ * puede ser de otra persona, y esto iría a su cuenta. Lo de aquí sigue guardado y sube en el próximo pull, que mira
+ * antes de quién es la cuenta (startPlan). Tampoco sin una cuenta confirmada por un pull en esta pestaña (cloud.user):
+ * con la memoria de nadie (NOBODY, tras «Borrar mi cuenta») subiría todo lo de aquí a quien entrase.
+ */
 async function flush(keepalive = false) {
-	if (busy || !memory) return;
-	refreshMemory();
+	if (busy || stale || paused() || !memory?.user || memory.user !== cloud.user || cloud.state === 'auth') return;
+	if (!refreshMemory()) return;
 	const plan = mergeFitting(collect(localStorage), memory.base, memory.base);
 	setFrozen(plan.frozen);
 	if (isEmpty(plan.push)) return;
@@ -183,16 +245,33 @@ export function initCloud() {
 	}
 	cloud.state = 'sync';
 	void pull();
-	// Cada poco se sube lo de aquí. Si se dejó para luego, se vuelve a pedir lo de fuera al dejar de escribir; si
-	// falló (sin conexión, error), como mucho una vez por minuto. Sin cuenta configurada (503) ni se insiste.
+	// Cada poco se sube lo de aquí. Si se dejó para luego, se vuelve a pedir lo de fuera al dejar de escribir o al
+	// acabar la pausa de «Borrar mi cuenta» (missed); si falló (sin conexión, error), como mucho una vez por minuto. Sin
+	// cuenta configurada (503) ni se insiste.
 	const id = setInterval(() => {
-		if (postponed && !typing()) void pull();
+		// Borrando la cuenta aquí: se renueva la pausa de las demás pestañas (también con la duda, unsure).
+		if (held) markHold();
+		else if (postponed && !typing()) void pull();
+		else if (missed && !paused()) void pull();
 		else if (cloud.state === 'error' || cloud.state === 'offline') {
 			if (Date.now() - lastPull > RETRY) void pull();
 		} else if (memory) void flush();
 	}, EVERY);
 	const onOnline = () => void pull();
 	addEventListener('online', onOnline);
+	// Otra pestaña ha entrado con otra cuenta: esta enseña lo de la anterior y no puede seguir así ni un momento. Si
+	// la otra ha borrado la cuenta (memoria de nadie), esta borra lo suyo (wipeHere) y sale también, sin recargar:
+	// recargar antes de que se cierre la sesión volvería a pedir /api/prefs con la cuenta borrada.
+	const onStorage = (e: StorageEvent) => {
+		if (e.key !== MEMORY) return;
+		const saved = readMemory(e.newValue);
+		if (memory && saved?.user === NOBODY.user) {
+			stale = true;
+			wipeHere();
+			location.assign(LOGOUT);
+		} else if (replaced(memory, saved)) reloadStale();
+	};
+	addEventListener('storage', onStorage);
 	const onVisibility = () => {
 		if (document.visibilityState === 'hidden') void flush(true);
 		else void pull();
@@ -202,5 +281,66 @@ export function initCloud() {
 		clearInterval(id);
 		document.removeEventListener('visibilitychange', onVisibility);
 		removeEventListener('online', onOnline);
+		removeEventListener('storage', onStorage);
 	};
+}
+
+/**
+ * «Cerrar sesión» (HELP): sube ya lo que quede. La respuesta de la salida de Access borra la cookie antes de que se
+ * cierre esta página, así que el flush de visibilitychange llegaría sin sesión. keepalive deja acabar el envío.
+ */
+export const flushNow = () => void flush(true);
+
+/**
+ * «Borrar mi cuenta» (account.svelte.ts, solo en HELP): ninguna pestaña de este navegador sincroniza (subir ahora
+ * recrearía la cuenta): esta, por held; las demás, por la marca HOLD. Espera a que acabe lo que esta tuviera en
+ * marcha, como mucho 5 s. Devuelve cómo seguir si al final no se borra (quita la marca), o null si sigue en marcha
+ * (entonces no se puede borrar todavía). Si se borra, la marca se queda hasta endSync.
+ */
+export async function hold(): Promise<(() => void) | null> {
+	held = true;
+	markHold();
+	for (let i = 0; busy && i < 50; i++) await new Promise((r) => setTimeout(r, 100));
+	const resume = () => {
+		held = false;
+		try {
+			localStorage.removeItem(HOLD);
+		} catch {}
+	};
+	if (!busy) return resume;
+	resume();
+	return null;
+}
+
+/**
+ * Tras «Borrar mi cuenta» (en esta pestaña o en otra): fuera de este navegador lo de la cuenta y lo de esta pestaña
+ * (wipe en account.ts). Al irse, la página aún escribe: visit.svelte.ts apunta la hora de tu última visita en pagehide
+ * y en visibilitychange. Esta limpieza escucha los mismos eventos y va detrás (en el orden en que se apuntan), así que
+ * lo vuelve a borrar.
+ */
+export function wipeHere() {
+	const clean = () => {
+		try {
+			wipe(localStorage, sessionStorage);
+		} catch {}
+	};
+	clean();
+	addEventListener('pagehide', clean);
+	document.addEventListener('visibilitychange', clean);
+}
+
+/**
+ * Tras «Borrar mi cuenta»: la memoria pasa a ser de nadie (NOBODY en cloud.ts) y esta pestaña no sincroniza más. Va
+ * lo primero, antes de borrar nada: las demás pestañas lo ven (storage) y salen antes de poder subir lo de aquí. Con
+ * la memoria de nadie ya no hace falta la pausa (HOLD): se quita después, nunca antes.
+ */
+export function endSync() {
+	stale = true;
+	memory = null;
+	// Sin held, el intervalo deja de renovar la marca: si no, volvería mientras llega la salida de Access.
+	held = false;
+	try {
+		localStorage.setItem(MEMORY, JSON.stringify(NOBODY));
+		localStorage.removeItem(HOLD);
+	} catch {}
 }

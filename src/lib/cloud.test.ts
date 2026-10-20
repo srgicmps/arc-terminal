@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { diff, LIMITS, merge, mergeFitting, oversized, readMemory, startPlan } from './cloud.ts';
+import {
+	diff,
+	HOLD,
+	HOLD_MS,
+	holdActive,
+	LIMITS,
+	merge,
+	mergeFitting,
+	NOBODY,
+	oversized,
+	readMemory,
+	replaced,
+	startPlan
+} from './cloud.ts';
+import { portable } from './transfer.ts';
 
 describe('merge', () => {
 	it('primera vez con el servidor vacío: sube todo lo de aquí (migración)', () => {
@@ -41,6 +55,43 @@ describe('startPlan', () => {
 	});
 });
 
+describe('«Cerrar sesión» y entra otra persona', () => {
+	const ana = { user: 'ana@x.es', base: { 'arc-portfolio': 'de Ana' } };
+	const luis = { user: 'luis@x.es', base: { 'arc-mortgage': 'de Luis' } };
+
+	it('al entrar Luis, lo que Ana dejó aquí (aunque una pestaña vieja lo haya vuelto a escribir) no sube a su cuenta', () => {
+		const left = { 'arc-portfolio': 'de Ana, con una posición más', 'arc-journal': 'de Ana' };
+		const plan = startPlan(left, luis.base, ana, luis.user);
+		expect(plan.push).toEqual({ set: {}, del: [] });
+		expect(plan.apply).toEqual({ set: { 'arc-mortgage': 'de Luis' }, del: ['arc-portfolio', 'arc-journal'] });
+	});
+
+	it('una pestaña que se queda con la cuenta de Ana cuando otra ya ha entrado con la de Luis: replaced', () => {
+		expect(replaced(ana, luis)).toBe(true);
+	});
+
+	it('tras «Borrar mi cuenta» (memoria de nadie): las otras pestañas lo ven y nada de aquí sube a quien entre', () => {
+		expect(readMemory(JSON.stringify(NOBODY))).toEqual(NOBODY);
+		expect(replaced(ana, NOBODY)).toBe(true);
+		const left = { 'arc-portfolio': 'de Ana, escrito por una pestaña vieja' };
+		for (const [who, remote] of [
+			[luis.user, luis.base],
+			[ana.user, {}]
+		] as const) {
+			const plan = startPlan(left, remote, NOBODY, who);
+			expect(plan.push, who).toEqual({ set: {}, del: [] });
+			expect(plan.result, who).toEqual(remote);
+		}
+	});
+
+	it('la misma cuenta, sin memoria guardada (borrada o sin sincronizar aún) o pestaña sin memoria: sigue', () => {
+		expect(replaced(ana, { user: ana.user, base: {} })).toBe(false);
+		expect(replaced(ana, null)).toBe(false);
+		expect(replaced(null, luis)).toBe(false);
+		expect(replaced(null, null)).toBe(false);
+	});
+});
+
 it('diff y readMemory', () => {
 	expect(diff({ a: '1', b: '2' }, { a: '1', c: '3' })).toEqual({ set: { c: '3' }, del: ['b'] });
 	expect(readMemory('no')).toBeNull();
@@ -75,5 +126,32 @@ describe('claves que no caben en la cuenta', () => {
 	it('al cambiar de usuario no se congela nada: se cambia todo por lo de su cuenta', () => {
 		const plan = startPlan({ a: big }, { b: '1' }, { user: 'ana@x', base: {} }, 'bea@x');
 		expect(plan.apply).toEqual({ set: { b: '1' }, del: ['a'] });
+	});
+});
+
+describe('holdActive (la pausa de «Borrar mi cuenta» en todas las pestañas)', () => {
+	const now = 1_800_000_000_000;
+
+	it('recién puesta o renovada (cada 5 s), las demás pestañas no sincronizan', () => {
+		expect(holdActive(String(now), now)).toBe(true);
+		expect(holdActive(String(now - 5_000), now)).toBe(true);
+		expect(holdActive(String(now - HOLD_MS + 1), now)).toBe(true);
+	});
+
+	it('si la pestaña que borra se ha cerrado (sin renovar en 30 s), las demás siguen', () => {
+		expect(holdActive(String(now - HOLD_MS), now)).toBe(false);
+		expect(holdActive(String(now - 3_600_000), now)).toBe(false);
+	});
+
+	it('sin marca (resume y endSync la quitan) o con una rara, no hay pausa', () => {
+		expect(holdActive(null, now)).toBe(false);
+		expect(holdActive('', now)).toBe(false);
+		expect(holdActive('ayer', now)).toBe(false);
+		// Una hora muy adelantada (el reloj ha cambiado) no deja la sincronización parada para siempre.
+		expect(holdActive(String(now + 3_600_000), now)).toBe(false);
+	});
+
+	it('la marca no es tuya: no se sube a la cuenta ni se lleva a otro dispositivo', () => {
+		expect(portable(HOLD)).toBe(false);
 	});
 });
