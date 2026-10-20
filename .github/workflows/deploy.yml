@@ -160,8 +160,12 @@ jobs:
           path: .notify-cache
           key: notify-log-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - run: pnpm check
-      - run: pnpm test
+      # En el cron no: el push a main ya los pasó sobre este mismo SHA. Así un test que falle por la fecha no
+      # frena la publicación de datos, y el turno que comparte con fast.yml queda libre antes.
+      - if: github.event_name != 'schedule'
+        run: pnpm check
+      - if: github.event_name != 'schedule'
+        run: pnpm test
 
       # Miniaturas de las vistas para el MANUAL (scripts/thumbs.ts), una vez al día: se capturan de la web ya
       # publicada y se guardan en la caché de Actions con la fecha (UTC). Si la caché de hoy ya está, no se

@@ -2,7 +2,7 @@
 # vuelve a publicar la web. La vía normal (deploy.yml, cada 15 min y en cada push a main) sigue igual.
 # - Las demás fuentes no se descargan: `pnpm data` reutiliza su copia publicada mientras no pase su
 #   maxAgeMinutes, así que no se gastan los límites de Finnhub, SEC, etc.
-# - Con check y test, como deploy.yml: si main está en rojo, no se publica.
+# - Con check y test, como el push a main en deploy.yml: si main está en rojo, esta vía no publica.
 # - Comparte el grupo de concurrencia con deploy.yml: nunca publican a la vez y, si llega otra pasada
 #   mientras hay una en marcha, espera (y una pendiente más nueva sustituye a la anterior, no se acumulan).
 name: Vía rápida
