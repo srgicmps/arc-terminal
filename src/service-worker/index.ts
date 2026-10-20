@@ -14,7 +14,7 @@
 //   se carga con import() y nunca se usó con conexión (otra estética, una ventana de Arc OS) no está.
 // - Letras: Plex e Inter vienen con la web (src/styles/fonts.css, en _app/immutable). No van en la precaché: se
 //   guardan en arc-chunks al pedirlas, solo las de la estética que se usa. Las de Google (las demás estéticas),
-//   primero la caché (no cambian nunca).
+//   primero la caché (no cambian nunca); al activarse, se borran de ahí las de Google que ya sirve la web.
 // - Motor de ajedrez (static/engine/, unos 7 MB): no entra en la precaché, para no descargarlo a quien no
 //   juega. Se guarda la primera vez que se usa, en una caché propia que sobrevive a las publicaciones.
 // - Todo lo demás (widgets de TradingView incluidos) pasa directo a la red, sin guardar nada.
@@ -25,7 +25,7 @@
 import { self } from '$app/service-worker';
 import { immutable, assets, prerendered } from '$app/manifest';
 import { version } from '$app/env';
-import { bootFiles, precacheable } from './precache.ts';
+import { bootFiles, precacheable, servedByWeb } from './precache.ts';
 
 // Archivos de la build: una caché por publicación; al publicar, `version` cambia y la anterior se borra.
 const CACHE = `arc-${version}`;
@@ -120,6 +120,8 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+	// Aparte y sin fallar: si la limpieza de letras va mal, el service worker se activa igual.
+	event.waitUntil(dropServedFonts().catch(() => undefined));
 	event.waitUntil(
 		(async () => {
 			// Se borran las cachés de publicaciones viejas, pero nunca la de páginas, la de trozos, la de fuentes ni la del motor.
@@ -136,6 +138,16 @@ self.addEventListener('activate', (event) => {
 		})()
 	);
 });
+
+/**
+ * De la caché de letras de Google (arc-fonts), fuera las que ya sirve la web (Plex Mono, Plex Sans Condensed e
+ * Inter): nadie las volverá a pedir. Las de las demás estéticas se quedan.
+ */
+async function dropServedFonts() {
+	if (!(await caches.has(FONTS))) return;
+	const fonts = await caches.open(FONTS);
+	for (const request of await fonts.keys()) if (servedByWeb(request.url)) await fonts.delete(request);
+}
 
 self.addEventListener('fetch', (event) => {
 	const { request } = event;

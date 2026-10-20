@@ -1,10 +1,10 @@
 // Precaché del service worker: la lista que escribe la build y qué elige el service worker con ella.
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { bootFiles, precacheable } from '../../src/service-worker/precache.ts';
+import { bootFiles, precacheable, SERVED_FONTS, servedByWeb } from '../../src/service-worker/precache.ts';
 import { LIST_PATH, precacheList, unlisted, writePrecache } from '../precache.ts';
 
 let dir = '';
@@ -155,5 +155,38 @@ describe('bootFiles (service worker)', () => {
 		expect(precacheable(withFonts)).toEqual(immutable);
 		expect(precacheable(withFonts)).toEqual(bootFiles(null, 'v1', withFonts, url));
 		expect(precacheable(immutable)).toEqual(immutable);
+	});
+});
+
+describe('servedByWeb (letras de Google que sobran en arc-fonts)', () => {
+	it('las de Plex Mono, Plex Sans Condensed e Inter, en su CSS o su woff2; las demás, no', () => {
+		const gstatic = (dir: string) => `https://fonts.gstatic.com/s/${dir}/v19/abc123.woff2`;
+		for (const dir of ['ibmplexmono', 'ibmplexsanscondensed', 'inter']) expect(servedByWeb(gstatic(dir)), dir).toBe(true);
+		for (const dir of ['ibmplexsans', 'intertight', 'vt323']) expect(servedByWeb(gstatic(dir)), dir).toBe(false);
+		const css2 = 'https://fonts.googleapis.com/css2?';
+		// La de app.html y la de Papel de antes (Plex Sans con Plex Mono): ya no las pide nadie.
+		expect(servedByWeb(`${css2}family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap`)).toBe(true);
+		expect(servedByWeb(`${css2}family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap`)).toBe(true);
+		expect(servedByWeb(`${css2}family=Inter:wght@400;500;600;700&display=swap`)).toBe(true);
+		expect(servedByWeb('https://fonts.googleapis.com/css?family=Lato:400|Inter:400,600')).toBe(true);
+		expect(servedByWeb(`${css2}family=IBM+Plex+Sans:wght@300;400;500;600&display=swap`)).toBe(false);
+		expect(servedByWeb(`${css2}family=Inter+Tight:wght@400;500&display=swap`)).toBe(false);
+		// Las de la propia web no se tocan aquí (van en arc-chunks).
+		expect(servedByWeb('https://arc.test/_app/immutable/assets/inter-latin.b2.woff2')).toBe(false);
+	});
+
+	it('son las familias de src/styles/fonts.css', () => {
+		const css = readFileSync('src/styles/fonts.css', 'utf8');
+		const families = new Set([...css.matchAll(/font-family:\s*'([^']+)'/g)].map((m) => m[1]));
+		expect([...families].sort()).toEqual([...SERVED_FONTS].sort());
+	});
+
+	it('ninguna estética pide algo que se borraría (static/estilos/*.css)', () => {
+		const dir = 'static/estilos';
+		const urls = readdirSync(dir)
+			.filter((f) => f.endsWith('.css'))
+			.flatMap((f) => [...readFileSync(join(dir, f), 'utf8').matchAll(/@import\s+url\('([^']+)'\)/g)].map((m) => m[1]));
+		expect(urls.length).toBeGreaterThan(5);
+		for (const href of urls) expect(servedByWeb(href), href).toBe(false);
 	});
 });
