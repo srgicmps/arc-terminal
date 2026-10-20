@@ -106,6 +106,21 @@ describe('/api/push: una persona', () => {
 		expect(ids.sort()).toEqual(['2', '3', '4', '5', '6']);
 	});
 
+	it('un navegador compartido: el guardado automático (refresh) no se lleva la suscripción de otra cuenta', async () => {
+		const { call, store } = setup();
+		const put = async (who: string, body: unknown) => (await (await call(who, 'PUT', body)).json()) as { mine: boolean };
+		expect(await put('ana@x.es', sub('movil'))).toMatchObject({ mine: true });
+		// Luis entra en el móvil de Ana y abre AVISOS: sigue siendo de Ana, y a Luis le sale «Sin activar».
+		expect(await put('luis@x.es', { ...sub('movil'), refresh: true })).toMatchObject({ mine: false });
+		expect(await store.mine('ana@x.es')).toHaveLength(1);
+		expect(await store.mine('luis@x.es')).toEqual([]);
+		// El refresh sí guarda la suya y una que no está (por si se borró); solo «Activar» la pasa de cuenta.
+		expect(await put('ana@x.es', { ...sub('movil'), refresh: true })).toMatchObject({ mine: true });
+		expect(await put('eva@x.es', { ...sub('portatil'), refresh: true })).toMatchObject({ mine: true });
+		expect(await put('luis@x.es', sub('movil'))).toMatchObject({ mine: true });
+		expect(await store.mine('ana@x.es')).toEqual([]);
+	});
+
 	it('DELETE y la prueba solo valen con un navegador suyo', async () => {
 		const { call, store, sent } = setup();
 		await call('ana@x.es', 'PUT', sub('ana'));

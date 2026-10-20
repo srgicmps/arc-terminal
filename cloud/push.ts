@@ -1,7 +1,8 @@
 // Avisos en el navegador, sin instalar ntfy (Web Push): /api/push. Se SUMA a ntfy, no lo sustituye.
 // - Una persona (JWT de Access con email, desde esta misma web): GET la clave pública y cuántos dispositivos
-//   tiene; PUT { endpoint, keys } guarda la suscripción de este navegador; DELETE { endpoint } la quita;
-//   POST ?test=1 { endpoint } le manda un aviso de prueba (solo a uno suyo).
+//   tiene; PUT { endpoint, keys } guarda la suscripción de este navegador (con refresh: true, el guardado
+//   automático al abrir AVISOS, nunca se la quita a otra cuenta) y dice si es suya (mine); DELETE { endpoint }
+//   la quita; POST ?test=1 { endpoint } le manda un aviso de prueba (solo a uno suyo).
 // - La Action (token de servicio de Access): GET ?all=1, los uid que tienen algún navegador (sin endpoints);
 //   POST ?send=1 { uid, title, body, url, level }: el aviso a todos los navegadores de ese uid. Solo cuentas.
 // - Familia (cloud/family.ts) manda también por aquí, con deliver().
@@ -29,8 +30,11 @@ export interface PushStore {
 	mine(user: string): Promise<PushSub[]>;
 	/** Las de un uid de avisos (tabla alerts): lo que manda la Action. */
 	byUid(uid: string): Promise<PushSub[]>;
-	/** Guarda la suscripción (o la pasa a esta persona) y deja solo las `max` más nuevas. */
-	put(user: string, sub: PushSub, now: number, max: number): Promise<void>;
+	/**
+	 * Guarda la suscripción y deja solo las `max` más nuevas. Si ya es de otra persona, solo pasa a esta con
+	 * `claim` («Activar»): el guardado automático no la mueve (un navegador compartido).
+	 */
+	put(user: string, sub: PushSub, now: number, max: number, claim?: boolean): Promise<void>;
 	/** Quita una de esta persona. */
 	remove(user: string, endpoint: string): Promise<void>;
 	/** Quita una que el servicio de push da por muerta (404/410). */
@@ -205,8 +209,9 @@ export async function handlePush(
 	if (request.method === 'PUT') {
 		const sub = cleanSub(body);
 		if (typeof sub === 'string') return json(400, { error: sub });
-		await store.put(user, sub, now, PUSH_LIMITS.perUser);
-		return json(200, { ok: true, count: await count() });
+		await store.put(user, sub, now, PUSH_LIMITS.perUser, body.refresh !== true);
+		const list = await store.mine(user);
+		return json(200, { ok: true, mine: list.some((s) => s.endpoint === sub.endpoint), count: list.length });
 	}
 
 	// DELETE y la prueba: solo con un navegador suyo.
@@ -248,14 +253,14 @@ export function d1PushStore(db: D1Database): PushStore {
 				.all<PushSub>();
 			return results;
 		},
-		async put(user, sub, now, max) {
+		async put(user, sub, now, max, claim = true) {
 			await ready();
 			await db.batch([
 				db
 					.prepare(
-						'INSERT INTO push_subs (endpoint, user, p256dh, auth, created) VALUES (?, ?, ?, ?, ?) ON CONFLICT (endpoint) DO UPDATE SET user = excluded.user, p256dh = excluded.p256dh, auth = excluded.auth, created = excluded.created'
+						'INSERT INTO push_subs (endpoint, user, p256dh, auth, created) VALUES (?, ?, ?, ?, ?) ON CONFLICT (endpoint) DO UPDATE SET user = excluded.user, p256dh = excluded.p256dh, auth = excluded.auth, created = excluded.created WHERE ? OR push_subs.user = excluded.user'
 					)
-					.bind(sub.endpoint, user, sub.p256dh, sub.auth, now),
+					.bind(sub.endpoint, user, sub.p256dh, sub.auth, now, claim ? 1 : 0),
 				db
 					.prepare(
 						'DELETE FROM push_subs WHERE user = ? AND endpoint NOT IN (SELECT endpoint FROM push_subs WHERE user = ? ORDER BY created DESC, endpoint DESC LIMIT ?)'
@@ -290,7 +295,9 @@ export function memoryPushStore(uidOf: Record<string, string> = {}): PushStore &
 		rows,
 		mine: async (user) => of(user).map(plain),
 		byUid: async (uid) => [...rows.values()].filter((r) => uidOf[r.user] === uid).map(plain),
-		async put(user, sub, now, max) {
+		async put(user, sub, now, max, claim = true) {
+			const owner = rows.get(sub.endpoint)?.user;
+			if (!claim && owner !== undefined && owner !== user) return;
 			rows.set(sub.endpoint, { ...sub, user, created: now });
 			for (const old of of(user).slice(0, -max)) rows.delete(old.endpoint);
 		},

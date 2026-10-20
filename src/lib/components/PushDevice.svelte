@@ -44,9 +44,13 @@
 		const sub = await currentSub().catch(() => null);
 		if (sub && Notification.permission === 'granted' && sameKey(sub.options.applicationServerKey, key)) {
 			phase = 'on';
-			// Se vuelve a guardar en la cuenta (por si se borró, o la quitaste en otro sitio): no cuesta nada.
-			void pushApi(url, 'PUT', sub.toJSON())
-				.then((r) => r.status === 400 && (phase = 'no'))
+			// Se vuelve a guardar en la cuenta (por si se borró, o la quitaste en otro sitio): no cuesta nada. Con
+			// refresh, nunca se la quita a otra cuenta (un navegador compartido): si es de otra, aquí sale sin activar.
+			void pushApi(url, 'PUT', { ...sub.toJSON(), refresh: true })
+				.then((r) => {
+					if (r.status === 400) phase = 'no';
+					else if (r.status === 200 && r.body.mine === false) phase = 'off';
+				})
 				.catch(() => null);
 		} else phase = 'off';
 	}
