@@ -39,6 +39,7 @@
 	import { initEmbed, isEmbedded, reportPath, unembed } from '#lib/os/embed.ts';
 	import { listenServiceWorker } from '#lib/pwa.ts';
 	import { fresh, refreshNow, startFresh } from '#lib/fresh.svelte.ts';
+	import { navKey } from '#lib/urlstate.svelte.ts';
 	import PanelIndex from '#lib/components/PanelIndex.svelte';
 	import { setPanelIndex } from '#lib/panelindex.svelte.ts';
 	import { tvSymbol } from '#lib/tickers.ts';
@@ -60,10 +61,14 @@
 	setPanelIndex();
 	$effect(initTaste);
 	$effect(initPlace);
-	// «Tu sitio» por la URL al navegar: ?lugar=… o ?buscar=Tokio. Con el texto de la búsqueda: un refresco de datos
-	// (src/lib/fresh.ts) cambia page.url por otro objeto igual y no debe volver a poner el sitio del enlace.
+	// «Tu sitio» por la URL al navegar (también al repetir el enlace: navKey): ?lugar=… o ?buscar=Tokio. Con el texto
+	// de la búsqueda: un refresco de datos (src/lib/fresh.ts) cambia page.url por otro objeto igual y no debe volver
+	// a poner el sitio del enlace.
 	const search = $derived(page.url.search);
-	$effect(() => followPlaceUrl(new URLSearchParams(search)));
+	$effect(() => {
+		void navKey();
+		followPlaceUrl(new URLSearchParams(search));
+	});
 	$effect(initTheme);
 	$effect(initFit);
 	$effect(initTape);

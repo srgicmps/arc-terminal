@@ -13,7 +13,7 @@
 	import Search from '#lib/components/ui/Search.svelte';
 	import { dropSectionFilter, fold, foldedHasWordsAt, hasWordsAt, MIN_QUERY, parseNewsQuery, queryWords, withinHours } from '#lib/search.ts';
 	import type { ArchiveEntry, NewsItem } from '#lib/types.ts';
-	import { urlState, writeParams } from '#lib/urlstate.svelte.ts';
+	import { navKey, urlState, writeParams } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -24,9 +24,11 @@
 	// escribe con 300 ms de retraso, para no hacer una navegación por tecla ni perder letras o el foco.
 	let query = $state('');
 	let written = '';
-	// Con el texto del parámetro: un refresco de datos (fresh.ts) cambia page.url por otro objeto igual.
+	// Con el texto del parámetro: un refresco de datos (fresh.ts) cambia page.url por otro objeto igual. Con
+	// navKey, «NEWS lagarde» repetido vuelve a poner «lagarde» aunque hayas escrito otra cosa.
 	const fromUrl = $derived(page.url.searchParams.get('q') ?? '');
 	$effect(() => {
+		void navKey();
 		if (fromUrl !== written) query = written = fromUrl;
 	});
 	$effect(() => {

@@ -21,6 +21,7 @@
 	import type { ShareSource } from '#lib/share.ts';
 	import { hiddenPanels, isSimple, setAll, trimming } from '#lib/modo.svelte.ts';
 	import { isEssential, plainTitle } from '#lib/simple.ts';
+	import { navKey } from '#lib/urlstate.svelte.ts';
 	import Note from './ui/Note.svelte';
 	import Term from './ui/Term.svelte';
 	import Share from './ui/Share.svelte';
@@ -99,11 +100,13 @@
 		titleButton?.focus();
 	}
 
-	// M47: la barra pide este panel por el hash. Se mira al montarse y cada vez que cambia el hash (el texto: un
-	// refresco de datos cambia page.url por otro objeto igual y no debe volver a llevarte al panel).
+	// M47: la barra pide este panel por el hash. Se mira al montarse y con cada navegación, también si repites el
+	// mismo comando (navKey). No con un refresco de datos, que cambia page.url por otro objeto igual y no debe
+	// volver a llevarte al panel: por eso el hash va como texto.
 	let flash = $state(false);
 	const hash = $derived(page.url.hash);
 	$effect(() => {
+		void navKey();
 		const want = hashPanel(hash);
 		if (!want || !samePanel(want, title)) return;
 		// En el modo Sencillo un panel no esencial no se pinta: para ir a él, se enseñan todos («Ver todos»).

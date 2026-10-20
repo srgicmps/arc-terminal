@@ -1,7 +1,8 @@
 // Datos nuevos sin recargar (F04): el estado de los avisos y el bucle, conectado con SvelteKit. La lógica, en
 // fresh.ts. Lo arranca +layout.svelte con $effect(startFresh) (como un onMounted de Vue que devuelve su limpieza).
 // Ojo al refrescar: SvelteKit cambia page.url y page.route por objetos nuevos (con lo mismo dentro). Un $effect que
-// lea page.url se vuelve a ejecutar; por eso los que mueven algo leen un $derived con el texto (urlstate.svelte.ts).
+// lea page.url se vuelve a ejecutar; por eso los que mueven algo leen un $derived con el texto y, para repetirse
+// con cada navegación (el mismo comando otra vez), navKey (urlstate.svelte.ts), que no cambia al refrescar.
 import { tick } from 'svelte';
 import { dev, version } from '$app/env';
 import { refreshAll } from '$app/navigation';

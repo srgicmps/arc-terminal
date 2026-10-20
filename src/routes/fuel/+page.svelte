@@ -25,7 +25,7 @@
 	import { madridNow } from '#lib/power.ts';
 	import { sortBy } from '#lib/sort.ts';
 	import { Sorter } from '#lib/sorter.svelte.ts';
-	import { urlState, writeParams } from '#lib/urlstate.svelte.ts';
+	import { navKey, urlState, writeParams } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -149,11 +149,12 @@
 		});
 	});
 
-	// «FUEL Madrid» o «FUEL 28» en la barra abre /fuel?zona=…. Solo en el navegador (los efectos no
-	// se ejecutan al prerenderizar); untrack evita que se repita al cargar la provincia o al refrescar los datos
-	// (fresh.ts), que volvería a elegirla y quitaría el municipio.
+	// «FUEL Madrid» o «FUEL 28» en la barra abre /fuel?zona=…, también si lo repites tras elegir otra (navKey).
+	// Solo en el navegador (los efectos no se ejecutan al prerenderizar); untrack evita que se repita al cargar la
+	// provincia o al refrescar los datos (fresh.ts), que volvería a elegirla y quitaría el municipio.
 	const zonaParam = $derived(page.url.searchParams.get('zona'));
 	$effect(() => {
+		void navKey();
 		const param = zonaParam;
 		untrack(() => {
 			const id = findProvince(param, provinces);

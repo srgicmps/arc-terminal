@@ -5,10 +5,11 @@
 //
 // Uso:  const period = urlState('periodo', 'day', (v) => IMP_PERIODS.some((p) => p.key === v));
 //       period.value = 'month';  →  /imp?periodo=month
+import { untrack } from 'svelte';
 import { goto } from '$app/navigation';
-import { page } from '$app/state';
+import { navigating, page } from '$app/state';
 import { readSaved, save } from './persisted.svelte.ts';
-import { withParam } from './urlstate.ts';
+import { navCounter, withParam } from './urlstate.ts';
 
 export { withParam };
 
@@ -19,6 +20,16 @@ export { withParam };
  * page.url pasa a ser otro objeto igual, y un $effect que lo lea directamente se volvería a ejecutar.
  */
 export const shownUrl = () => page.shallow?.url ?? page.url;
+
+const countNav = navCounter();
+const navs = $derived(countNav(page.url, untrack(() => navigating.type) !== null));
+
+/**
+ * Cambia con cada navegación de verdad, también a la misma URL, y no con un refresco de datos (urlstate.ts,
+ * navCounter). Un $effect que aplica un parámetro o el hash lo lee junto al texto ($derived): así, repetir el
+ * comando de la barra («ECO TIPOS», «BOE vivienda») lo vuelve a aplicar, como antes de refrescar en su sitio.
+ */
+export const navKey = () => navs;
 
 /** Escribe uno o varios parámetros en la URL actual sin navegar. Solo en el navegador. */
 export function writeParams(values: Record<string, string | null>, fallbacks: Record<string, string> = {}) {
