@@ -1,9 +1,9 @@
 // SIPRI Military Expenditure Database: gasto militar por país, en dólares y en % del PIB. Sin clave.
 // https://www.sipri.org/databases/milex · El Excel se publica una vez al año (en abril) y alguna corrección
-// después («_v1.2»). Uso libre citando al SIPRI. Se lee con exceljs, solo aquí.
-import ExcelJS from 'exceljs';
-import { parseMilex, type MilexData, type Sheet } from '../../src/lib/milex.ts';
+// después («_v1.2»). Uso libre citando al SIPRI. Se lee con scripts/xlsx.ts.
+import { parseMilex, type MilexData } from '../../src/lib/milex.ts';
 import { getText, request, type Source } from '../lib.ts';
+import { readXlsx } from '../xlsx.ts';
 
 const PAGE = 'https://www.sipri.org/databases/milex';
 
@@ -13,11 +13,6 @@ export function milexLink(html: string): string | null {
 	// Si hay varios, el del último año.
 	const best = links.sort((a, b) => Number(b[1]) - Number(a[1]))[0]?.[0];
 	return best ? new URL(best, PAGE).href : null;
-}
-
-/** El valor de una celda de exceljs, sin envoltorios: fórmulas → su resultado. */
-function plainCell(v: ExcelJS.CellValue): unknown {
-	return v && typeof v === 'object' && !(v instanceof Date) && 'result' in v ? v.result : v;
 }
 
 export const sipri: Source<MilexData> = {
@@ -31,16 +26,10 @@ export const sipri: Source<MilexData> = {
 		const url =
 			milexLink(await getText(PAGE).catch(() => '')) ??
 			`https://www.sipri.org/sites/default/files/SIPRI-Milex-data-1949-${year - 1}.xlsx`;
-		const book = new ExcelJS.Workbook();
-		await book.xlsx.load(await (await request(url)).arrayBuffer());
-		const sheets: Sheet[] = book.worksheets
-			.filter((s) => /^(current|constant|share of gdp)/i.test(s.name))
-			.map((sheet) => {
-				const cells: unknown[][] = [];
-				sheet.eachRow((row) => cells.push((row.values as ExcelJS.CellValue[]).slice(1).map(plainCell)));
-				return { name: sheet.name, cells };
-			});
-		const data = parseMilex(sheets);
+		const sheets = readXlsx(await (await request(url)).arrayBuffer(), (name) =>
+			/^(current|constant|share of gdp)/i.test(name)
+		);
+		const data = parseMilex(sheets.map(({ name, rows }) => ({ name, cells: rows })));
 		if (!data) throw new Error(`el Excel del SIPRI no trae la hoja en dólares corrientes (${url})`);
 		return data;
 	}
