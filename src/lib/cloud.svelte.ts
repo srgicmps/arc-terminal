@@ -234,7 +234,7 @@ export function initCloud() {
 }
 
 /**
- * Para «Cerrar sesión» y «Borrar mi cuenta» (signout.ts, que solo carga HELP). Espera a que acabe lo que se esté
+ * Para «Cerrar sesión» y «Borrar mi cuenta» (signout.svelte.ts, solo en HELP). Espera a que acabe lo que se esté
  * subiendo o bajando (como mucho 5 s) y, con upload, sube lo que quede. Dice si queda aquí algo que no está en la
  * cuenta: cambios sin subir o claves que no caben (cloud.frozen).
  */
