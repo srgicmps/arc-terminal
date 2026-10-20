@@ -37,6 +37,38 @@ const CATALOG: CatalogEntry[] = [
 	{ id: 'ecb-dfr', ds: 'ecb', label: 'Facilidad de depósito', unit: '%', geo: 'EA', from: '1999-01', n: 3 },
 	{ id: 'ipc-es', ds: 'ine', label: 'IPC de España', unit: '%', from: '2020-01', n: 3 }
 ];
+/** 41 provincias por orden alfabético: Madrid, la última; la del diésel más barato, la 27 (ninguna de las dos entre las 12 primeras). */
+const PROVINCES = [
+	...Array.from({ length: 40 }, (_, i) => ({ id: String(i), name: `Provincia ${i}`, count: 100, lat: 40, lon: -3, avg: { g95: 1.5, diesel: 1.4 }, min: { g95: 1.4, diesel: i === 27 ? 1.199 : 1.3 } })),
+	{ id: '28', name: 'Madrid', count: 800, lat: 40.4, lon: -3.7, avg: { g95: 1.533, diesel: 1.452 }, min: { g95: 1.399, diesel: 1.319 } }
+];
+const hm = (h: number, m = 0) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+/**
+ * Como power.json de REE: el PVPC de hoy por horas (24) y el mayorista cada 15 minutos de hoy y mañana (192), en hora
+ * de Madrid. Lo más barato del PVPC, a las 3:00. Lo más barato de mañana, a las 15:30 (0,3 €/MWh); lo más caro, a las 21:00; el último punto (23:45), 125.
+ */
+const POWER = {
+	pvpc: Array.from({ length: 24 }, (_, h) => ({ t: `2026-10-20T${hm(h)}:00.000+02:00`, v: h === 3 ? 48.29 : h === 19 ? 372.29 : 150 + h })),
+	spot: ['2026-10-20', '2026-10-21'].flatMap((day) =>
+		Array.from({ length: 96 }, (_, i) => ({ t: `${day}T${hm(Math.floor(i / 4), (i % 4) * 15)}:00.000+02:00`, v: 120 + (i % 9) }))
+	),
+	history: [{ date: '2026-10-20', avg: 0.2208, min: 0.0483, max: 0.3723 }]
+};
+POWER.spot[96 + 62].v = 0.3;
+POWER.spot[96 + 84].v = 299;
+POWER.spot[191].v = 125;
+/** Como quakes.json del USGS: 80 sismos, del más nuevo al más viejo. El más fuerte (6,9) es de hace 4 días, el 77.º. */
+const QUAKES = Array.from({ length: 80 }, (_, i) => ({
+	id: `us${i}`,
+	mag: i === 76 ? 6.9 : i === 7 ? 6.3 : 4.5 + (i % 5) / 10,
+	place: i === 76 ? '76 km al NE de Ozernovskiy, Russia' : i === 7 ? '197 km al NO de Port-Olry, Vanuatu' : `Lugar ${i}`,
+	time: new Date(Date.parse('2026-10-20T10:40:00Z') - i * 75 * 60_000).toISOString(),
+	url: `https://earthquake.usgs.gov/earthquakes/eventpage/us${i}`,
+	tsunami: false,
+	lon: 150,
+	lat: -15,
+	depth: 10
+}));
 const FILES: Record<string, unknown> = {
 	'/data/g/series.json': { name: 'g/series', fetchedAt: AT, data: CATALOG },
 	'/data/status.json': {
@@ -73,13 +105,18 @@ const FILES: Record<string, unknown> = {
 		data: {
 			sourceDate: '20/10/2026 10:00:00',
 			avg: { g95: 1.521, diesel: 1.437 },
-			provinces: [
-				...Array.from({ length: 40 }, (_, i) => ({ id: String(i), name: `Provincia ${i}`, count: 100, lat: 40, lon: -3, avg: { g95: 1.5, diesel: 1.4 }, min: { g95: 1.4, diesel: 1.3 } })),
-				{ id: '28', name: 'Madrid', count: 800, lat: 40.4, lon: -3.7, avg: { g95: 1.533, diesel: 1.452 }, min: { g95: 1.399, diesel: 1.319 } }
-			]
+			provinces: PROVINCES,
+			// Como lo guarda scripts/sources/fuel.ts: medio año, y cada día con la media de cada provincia por su id.
+			history: Array.from({ length: 180 }, (_, d) => ({
+				date: new Date(NOW - (179 - d) * 86_400_000).toISOString().slice(0, 10),
+				avg: { g95: 1.5, diesel: d === 100 ? 1.611 : 1.437 },
+				provinces: Object.fromEntries(PROVINCES.map((p) => [p.id, p.avg]))
+			}))
 		}
 	},
-	'/data/oilbulletin.json': { name: 'oilbulletin', fetchedAt: AT, data: { date: '2026-10-12', rows: [{ code: 'ES', name: 'España', diesel: { tax: 1.389, net: 0.882 } }] } }
+	'/data/oilbulletin.json': { name: 'oilbulletin', fetchedAt: AT, data: { date: '2026-10-12', rows: [{ code: 'ES', name: 'España', diesel: { tax: 1.389, net: 0.882 } }] } },
+	'/data/power.json': { name: 'power', fetchedAt: AT, data: POWER },
+	'/data/quakes.json': { name: 'quakes', fetchedAt: AT, data: QUAKES }
 };
 
 /** Un Workers AI de mentira: apunta lo que recibe y contesta lo que se le diga. */
@@ -211,6 +248,52 @@ describe('/api/ask: respuestas', () => {
 		expect(res.body.answer).toContain('1,452');
 	});
 
+	it('«dónde está más barato el diésel»: la lista dice que va recortada y trae el extremo, calculado con todas', async () => {
+		const ai = fakeAi();
+		await ask(env(ai), memoryAskStore(), '¿Dónde está más barato el diésel?');
+		const { system } = ai.calls[0];
+		expect(system).toContain('"recorte":"se ven 12 de 41"');
+		expect(system).toContain('"min.diesel":{"menor":{"v":1.199,"de":"Provincia 27"}');
+		// El historial también: su día más caro, aunque no esté entre los últimos.
+		expect(system).toMatch(/"recorte":"se ven \d+ de 180","extremos":\{"avg\.diesel":\{"menor":\{"v":1\.437,"de":"[\d-]+"\},"mayor":\{"v":1\.611/);
+		// Las provincias de cada día del historial van por id, sin nombre: fuera (no dejaban sitio a las de hoy).
+		expect(system).not.toContain('"provinces":{');
+	});
+
+	it('«a qué hora será más barata la luz mañana»: la luz alrededor de ahora y lo más barato y lo más caro de cada día', async () => {
+		const store = memoryAskStore();
+		const ai = fakeAi(() => ({ response: 'Mañana, 21 de octubre, lo más barato será a las 15:30, a 0,3 €/MWh.' }));
+		const res = await ask(env(ai), store, '¿A qué hora será más barata la luz mañana?');
+		expect(res.body.answer).toBe('Mañana, 21 de octubre, lo más barato será a las 15:30, a 0,3 €/MWh.');
+		const { system } = ai.calls[0];
+		// Ahora son las 17:00 en Madrid: entran los cuartos de hora de alrededor, no los últimos de mañana.
+		expect(system).toContain('AHORA: martes, 20 de octubre de 2026, 17:00, hora de Madrid (2026-10-20T15:00 UTC).');
+		expect(system).toContain('{"t":"2026-10-20T17:00:00.000+02:00","v":125}');
+		expect(system).not.toContain('2026-10-21T23:45');
+		expect(system).toContain('"recorte":"se ven 12 de 192","por_dia":[{"dia":"2026-10-20"');
+		expect(system).toContain('{"dia":"2026-10-21","puntos":96,"media":');
+		expect(system).toContain('"min":{"t":"2026-10-21T15:30:00.000+02:00","v":0.3},"max":{"t":"2026-10-21T21:00:00.000+02:00","v":299}');
+		// Del PVPC (solo hoy), lo más barato del día, aunque sea de madrugada y no entre en la lista.
+		expect(system).toContain('"min":{"t":"2026-10-20T03:00:00.000+02:00","v":48.29}');
+		expect(system).not.toContain('{"t":"2026-10-20T03:00:00.000+02:00","v":48.29},{');
+		// «A las 23:45, 125,5 €/MWh» (el último punto, que no entra): se descarta.
+		const wrong = fakeAi(() => ({ response: 'Mañana lo más barato será a las 23:45, a 125,5 €/MWh.' }));
+		expect((await ask(env(wrong), store, '¿A qué hora será más barata la luz mañana?')).body).toMatchObject({ answer: NO_SE, rejected: true });
+	});
+
+	it('«el terremoto más fuerte de la semana»: el de 6,9 de hace 4 días sale en los extremos, aunque no entre en la lista', async () => {
+		const ai = fakeAi(() => ({ response: 'El más fuerte fue uno de 6,9 a 76 km al NE de Ozernovskiy (Rusia), el 16 de octubre.' }));
+		const res = await ask(env(ai), memoryAskStore(), '¿Cuál ha sido el terremoto más fuerte esta semana?');
+		expect(res.body.answer).toContain('6,9');
+		const { system } = ai.calls[0];
+		expect(system).toContain('"recorte":"se ven 12 de 80"');
+		expect(system).toContain('"mag":{"menor":{"v":4.5,');
+		expect(system).toContain('"mayor":{"v":6.9,"de":"76 km al NE de Ozernovskiy, Russia · 2026-10-16T');
+		// Las reglas: qué quiere decir el recorte y que, sin extremos, «el mayor» no se sabe.
+		expect(system).toContain('solo enseña 12 de sus 80 elementos');
+		expect(system).toContain(`salvo con sus «extremos» o su «por_dia», que se calculan con todos los elementos. Si no salen ahí, contesta exactamente: «${NO_SE}»`);
+	});
+
 	it('si ningún dato de hoy trata de eso: «No lo sé», sin llamar a la IA ni contar', async () => {
 		const store = memoryAskStore();
 		const ai = fakeAi();
@@ -277,15 +360,25 @@ describe('elegir los datos', () => {
 		expect(pickData('luz, diésel, bitcoin, terremotos y euríbor', CATALOG).ds).toHaveLength(ASK_LIMITS.datasets);
 	});
 
-	it('compact: cabe en el presupuesto, las series por el final y lo que nombra la pregunta delante', () => {
-		const points = Array.from({ length: 300 }, (_, i) => ({ t: `2026-01-${String((i % 28) + 1).padStart(2, '0')}T${i}`, v: i + 0.123456 }));
-		points.sort((a, b) => (a.t < b.t ? -1 : 1));
-		const text = compact({ points, url: 'https://x' }, 400);
+	it('compact: cabe en el presupuesto, una serie pasada por el final y con sus extremos, y lo que nombra la pregunta delante', () => {
+		// 300 meses desde 2001: el máximo, en julio de 2008; el último, en diciembre de 2025.
+		const points = Array.from({ length: 300 }, (_, i) => ({ t: `${2001 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, '0')}`, v: i === 90 ? 5.393 : 2 + i / 1000 + 0.000123 }));
+		const text = compact({ points, url: 'https://x' }, 400, '', NOW);
 		expect(text.length).toBeLessThanOrEqual(400);
 		expect(text).not.toContain('https://x');
-		expect(text).toContain(String(points.at(-1)!.v.toFixed(4)).replace(/0+$/, ''));
+		expect(text).toContain('{"t":"2025-12","v":2.2991}');
+		expect(text).toContain('"recorte":"se ven 8 de 300","extremos":{"v":{"menor":{"v":2.0001,"de":"2001-01"},"mayor":{"v":5.393,"de":"2008-07"}}}');
 		const list = Array.from({ length: 50 }, (_, i) => ({ name: i === 42 ? 'Madrid' : `P${i}`, v: i }));
 		expect(compact(list, 200, 'gasolina en Madrid')).toContain('Madrid');
+		// Lo que cabe entero no lleva recorte.
+		expect(compact(list.slice(0, 3), 200)).toBe('[{"name":"P0","v":0},{"name":"P1","v":1},{"name":"P2","v":2}]');
+	});
+
+	it('compact: una previsión (de hoy en adelante) empieza por hoy, y un campo igual en todos no sale en los extremos', () => {
+		const days = Array.from({ length: 30 }, (_, i) => ({ date: new Date(NOW + i * 86_400_000).toISOString().slice(0, 10), max: 20 + (i % 3), code: 1 }));
+		const text = compact(days, 2_000, '', NOW);
+		expect(text.startsWith('[{"date":"2026-10-20","max":20,"code":1}')).toBe(true);
+		expect(text).toContain('"recorte":"se ven 12 de 30","extremos":{"max":{"menor":{"v":20,"de":"2026-10-20"},"mayor":{"v":22,"de":"2026-10-22"}}}');
 	});
 });
 

@@ -3,7 +3,8 @@
 // - Solo personas con cuenta: person() de access.ts (misma web y JWT de Access verificado).
 // - GET: cuántas lleva hoy y el tope. POST { q }: { answer, sources: [{ name, label, fetchedAt }] }.
 // - Contexto: de 1 a 4 JSON de hoy (static/data), elegidos por palabras clave con los atajos de G (gseries.ts) y
-//   los alias de los comandos, leídos con env.ASSETS y recortados a unos 8 KB. Nada de la web de fuera.
+//   los alias de los comandos, leídos con env.ASSETS y recortados a unos 8 KB. Nada de la web de fuera. Cada lista
+//   recortada lo dice, con sus extremos (o su resumen por día) calculados con todo, y el prompt lleva la hora de ahora.
 // - Workers AI con el binding AI de wrangler.toml (lo deja o lo quita scripts/cf-config.ts). Modelo y coste: MODEL.
 // - Comprobación determinista al final: cada cifra de la respuesta tiene que estar en el contexto (o en la propia
 //   pregunta). Si no, la respuesta se descarta y sale «No lo sé con los datos de hoy».
@@ -266,20 +267,64 @@ interface Shrink {
 	level: Level;
 	/** Palabras de la pregunta (con un espacio a cada lado), para poner delante lo que las nombra. */
 	words: string[];
-	/** El orden de cada lista, calculado una sola vez para todos los niveles (el tiempo de CPU cuenta). */
-	order: WeakMap<unknown[], unknown[]>;
+	/** Ahora, en ms: una serie que llega al futuro (la luz de mañana, una previsión) se recorta alrededor de ahora. */
+	now: number;
+	/** Lo de cada lista que no cambia de un nivel a otro (orden, extremos, resumen por día): se calcula una sola vez, porque el tiempo de CPU cuenta. */
+	memo: WeakMap<unknown[], Memo>;
 }
 
-/** Una lista en el orden en que se recorta: series (con fecha y de vieja a nueva) por el final; el resto, lo que nombra la pregunta primero. */
-function ordered(v: unknown[], s: Shrink): unknown[] {
-	const hit = s.order.get(v);
-	if (hit) return hit;
+interface Memo {
+	order?: unknown[];
+	/** En una serie, el primer punto de ahora en adelante (−1 si ya ha pasado entera). */
+	at?: number;
+	best?: Map<string, Extreme>;
+	days?: Day[] | null;
+}
+
+/** El valor más bajo y el más alto de un campo numérico de una lista, con el elemento que lo tiene. */
+interface Extreme {
+	lo: number;
+	loAt: unknown;
+	hi: number;
+	hiAt: unknown;
+}
+
+/** Un día de una serie de varios puntos al día (la luz cada 15 minutos): el más bajo, el más alto y la media. */
+interface Day {
+	dia: string;
+	puntos: number;
+	min: { t: string; v: number };
+	max: { t: string; v: number };
+	media: number;
+	/** La hora del último punto, en ms (no se manda): para saber si el día ya ha acabado. */
+	end: number;
+}
+
+const round = (v: number) => (Number.isInteger(v) ? v : Math.round(v * 1e4) / 1e4);
+
+const memoOf = (v: unknown[], s: Shrink) => s.memo.get(v) ?? s.memo.set(v, {}).get(v)!;
+
+/** Una serie: lista con fecha (t, date o time) y de vieja a nueva. */
+const isSeries = (v: unknown[]) => {
 	const first = dateOf(v[0]);
 	const last = dateOf(v.at(-1));
-	let list: unknown[];
-	if (first && last && first < last) list = [...v].reverse();
-	else if (!s.words.length) list = v;
-	else {
+	return !!first && !!last && first < last;
+};
+
+/** De una serie, los `n` puntos alrededor de ahora: los últimos si ya ha pasado entera; los primeros si es toda futura. */
+function around(v: unknown[], s: Shrink, n: number): unknown[] {
+	const memo = memoOf(v, s);
+	const at = (memo.at ??= v.findIndex((x) => Date.parse(dateOf(x) ?? '') >= s.now));
+	const start = at < 0 ? v.length - n : Math.max(0, Math.min(at - Math.floor(n / 2), v.length - n));
+	return v.slice(start, start + n);
+}
+
+/** Una lista que no es una serie, con lo que nombra la pregunta primero. */
+function ordered(v: unknown[], s: Shrink): unknown[] {
+	const memo = memoOf(v, s);
+	if (memo.order) return memo.order;
+	let list = v;
+	if (s.words.length) {
 		// Las palabras que distinguen (las que salen en menos de la mitad: «madrid» sí, «diesel» no) suben lo que las nombra.
 		// Sin la expresión regular de plain(): aquí se recorre todo el archivo y el tiempo de CPU cuenta.
 		const texts = v.map((x) => fold(JSON.stringify(x) ?? ''));
@@ -290,20 +335,106 @@ function ordered(v: unknown[], s: Shrink): unknown[] {
 		const hits = texts.map((t) => useful.filter((w) => t.includes(w)).length);
 		list = v.map((x, i) => ({ x, i })).sort((a, b) => hits[b.i] - hits[a.i] || a.i - b.i).map(({ x }) => x);
 	}
-	s.order.set(v, list);
-	return list;
+	return (memo.order = list);
+}
+
+/** Por días, si la serie tiene varios puntos al día con un valor `v` (la luz, una previsión por horas); si no, null. */
+function perDay(v: unknown[]): Day[] | null {
+	const byDay = new Map<string, { t: string; v: number }[]>();
+	for (const x of v) {
+		const t = dateOf(x);
+		const value = (x as { v?: unknown }).v;
+		if (!t || t.length <= 10 || typeof value !== 'number') return null;
+		const day = t.slice(0, 10);
+		(byDay.get(day) ?? byDay.set(day, []).get(day)!).push({ t, v: value });
+	}
+	if (byDay.size === v.length) return null;
+	return [...byDay].map(([dia, points]) => ({
+		dia,
+		puntos: points.length,
+		min: points.reduce((a, b) => (b.v < a.v ? b : a)),
+		max: points.reduce((a, b) => (b.v > a.v ? b : a)),
+		media: round(points.reduce((a, b) => a + b.v, 0) / points.length),
+		end: Date.parse(points.at(-1)!.t)
+	}));
+}
+
+/** Cada campo numérico de una lista de objetos (hasta un nivel dentro: «avg.diesel»), con su elemento más bajo y su más alto. */
+function extremes(v: unknown[]): Map<string, Extreme> {
+	const best = new Map<string, Extreme>();
+	const visit = (item: unknown, o: object, path: string, depth: number) => {
+		for (const [k, x] of Object.entries(o)) {
+			if (DROP.has(k)) continue;
+			const p = path ? `${path}.${k}` : k;
+			if (typeof x === 'number' && Number.isFinite(x)) {
+				const b = best.get(p);
+				if (!b) best.set(p, { lo: x, loAt: item, hi: x, hiAt: item });
+				else if (x < b.lo) Object.assign(b, { lo: x, loAt: item });
+				else if (x > b.hi) Object.assign(b, { hi: x, hiAt: item });
+			} else if (!depth && x && typeof x === 'object' && !Array.isArray(x)) visit(item, x, p, 1);
+		}
+	};
+	for (const item of v) if (item && typeof item === 'object' && !Array.isArray(item)) visit(item, item, '', 0);
+	// Un campo que vale lo mismo en todos no dice nada.
+	for (const [p, b] of best) if (b.lo === b.hi) best.delete(p);
+	return best;
+}
+
+const NAME_KEYS = ['name', 'label', 'title', 'place', 'serie', 'country', 'code'];
+
+/** Cómo se nombra un elemento en «extremos»: su nombre y su fecha («Madrid», «Kuril Islands · 2026-10-19T21:43»). */
+function nameOf(item: unknown, s: Shrink): string {
+	const o = item as Record<string, unknown>;
+	const name = NAME_KEYS.map((k) => o[k]).find((x) => typeof x === 'string');
+	return shrink([name, dateOf(o)].filter(Boolean).join(' · ') || '?', s, 0) as string;
+}
+
+/**
+ * Lo que va al final de una lista recortada: cuántos elementos se ven de cuántos y, calculado con TODOS, el resumen
+ * por día de una serie de varios puntos al día o los extremos de cada campo numérico. Así el modelo sabe que no lo ve
+ * todo y aún puede responder «el mayor», «el más barato» o «a qué hora».
+ */
+function cutNote(v: unknown[], shown: number, s: Shrink): Record<string, unknown> {
+	const note: Record<string, unknown> = { recorte: `se ven ${shown} de ${v.length}` };
+	const memo = memoOf(v, s);
+	if (memo.days === undefined) memo.days = isSeries(v) ? perDay(v) : null;
+	if (memo.days) {
+		// Los días que aún no han acabado (hoy, mañana…) o, si ya pasaron todos, los últimos.
+		const n = Math.ceil(s.level.items / 4);
+		const open = memo.days.findIndex((d) => d.end >= s.now);
+		const start = open < 0 ? Math.max(0, memo.days.length - n) : open;
+		note.por_dia = memo.days.slice(start, start + n).map(({ end: _, min, max, ...d }) => ({
+			...d,
+			min: { t: min.t, v: round(min.v) },
+			max: { t: max.t, v: round(max.v) }
+		}));
+		return note;
+	}
+	memo.best ??= extremes(v);
+	if (!memo.best.size) return note;
+	// Primero los campos que nombra la pregunta («diésel» → avg.diesel); como mucho, tantos como elementos se ven.
+	const named = (p: string) => (s.words.some((w) => p.toLowerCase().includes(w)) ? 1 : 0);
+	const paths = [...memo.best.keys()].sort((a, b) => named(b) - named(a)).slice(0, s.level.items);
+	note.extremos = Object.fromEntries(
+		paths.map((p) => {
+			const b = memo.best!.get(p)!;
+			return [p, { menor: { v: round(b.lo), de: nameOf(b.loAt, s) }, mayor: { v: round(b.hi), de: nameOf(b.hiAt, s) } }];
+		})
+	);
+	return note;
 }
 
 function shrink(v: unknown, s: Shrink, depth: number): unknown {
-	if (typeof v === 'number') return Number.isInteger(v) ? v : Math.round(v * 1e4) / 1e4;
+	if (typeof v === 'number') return round(v);
 	if (typeof v === 'string') return v.length > s.level.text ? `${v.slice(0, s.level.text)}…` : v;
 	if (v === null || typeof v !== 'object') return v;
 	if (depth > 6) return undefined;
 	if (Array.isArray(v)) {
-		const list = ordered(v, s).slice(0, s.level.items);
-		// Las series vuelven a su orden (de vieja a nueva), como en los datos.
-		if (list.length > 1 && dateOf(v[0]) && dateOf(v[0])! < (dateOf(v.at(-1)) ?? '')) list.reverse();
-		return list.map((x) => shrink(x, s, depth + 1));
+		const n = s.level.items;
+		if (v.length <= n) return v.map((x) => shrink(x, s, depth + 1));
+		// Las series, alrededor de ahora (y en su orden); el resto, lo que nombra la pregunta primero.
+		const kept = isSeries(v) ? around(v, s, n) : ordered(v, s).slice(0, n);
+		return [...kept.map((x) => shrink(x, s, depth + 1)), cutNote(v, kept.length, s)];
 	}
 	const out: Record<string, unknown> = {};
 	for (const [k, x] of Object.entries(v)) {
@@ -314,16 +445,19 @@ function shrink(v: unknown, s: Shrink, depth: number): unknown {
 	return out;
 }
 
-/** El JSON de `data` en `budget` caracteres como mucho: menos elementos y textos más cortos hasta que quepa. */
-export function compact(data: unknown, budget: number, question = ''): string {
+/**
+ * El JSON de `data` en `budget` caracteres como mucho: menos elementos y textos más cortos hasta que quepa. Una lista
+ * recortada acaba en { recorte: «se ven 12 de 80», extremos | por_dia } (ver cutNote).
+ */
+export function compact(data: unknown, budget: number, question = '', now = Date.now()): string {
 	const words = plain(question)
 		.trim()
 		.split(' ')
 		.filter((w) => w.length >= 4 && !STOP.has(w));
-	const order = new WeakMap<unknown[], unknown[]>();
+	const memo = new WeakMap<unknown[], Memo>();
 	let text = '';
 	for (const level of LEVELS) {
-		text = JSON.stringify(shrink(data, { level, words, order }, 0)) ?? '';
+		text = JSON.stringify(shrink(data, { level, words, now, memo }, 0)) ?? '';
 		if (text.length <= budget) return text;
 	}
 	// Ni así: se corta en la última coma que cabe (sin partir una cifra por la mitad).
@@ -402,14 +536,23 @@ export function answerOf(out: unknown): string {
 
 // ---------- La Function ----------
 
-/** Lo que se le dice al modelo antes de la pregunta: las reglas y los datos de hoy. */
-export function systemPrompt(context: string): string {
+/** La fecha y la hora de ahora en Madrid, con la UTC al lado: así «hoy», «mañana» o «a qué hora» tienen referencia. */
+export function nowLine(now: number): string {
+	const madrid = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', dateStyle: 'full', timeStyle: 'short' }).format(now);
+	return `AHORA: ${madrid}, hora de Madrid (${new Date(now).toISOString().slice(0, 16)} UTC).`;
+}
+
+/** Lo que se le dice al modelo antes de la pregunta: la hora, las reglas y los datos de hoy. */
+export function systemPrompt(context: string, now = Date.now()): string {
 	return [
 		'Eres «Pregunta a Arc», el asistente de Arc Terminal. Respondes en español, en una a cuatro frases claras.',
+		nowLine(now),
 		'Reglas:',
 		'- Usa SOLO los DATOS DE HOY de abajo. No uses lo que sepas por tu cuenta y no inventes nada.',
 		'- Copia las cifras tal como salen en los datos (puedes redondearlas), con su unidad y su fecha si la tienen.',
 		`- Si los datos no bastan para responder, contesta exactamente: «${NO_SE}»`,
+		'- Los datos van recortados. Una lista que acaba en {"recorte":"se ven 12 de 80",…} solo enseña 12 de sus 80 elementos, y un bloque que acaba en «…» está cortado.',
+		`- De una lista recortada no digas cuál es el mayor, el menor, el más caro, el más barato, el primero ni el último, salvo con sus «extremos» o su «por_dia», que se calculan con todos los elementos. Si no salen ahí, contesta exactamente: «${NO_SE}»`,
 		'- No des consejos de inversión ni recomiendes comprar o vender.',
 		'- Texto normal: sin Markdown y sin listas.',
 		'DATOS DE HOY (JSON recortado; cada bloque dice de qué fuente es y cuándo se descargó):',
@@ -439,11 +582,25 @@ interface DataFile {
 	data?: unknown;
 }
 
+/**
+ * Lo que sobra de algunos archivos antes de recortarlos. fuel-es: en su historial, cada día lleva las 52 provincias
+ * por id (sin nombre: el id no se manda), unos 4 KB por día que no dejaban sitio a las provincias de hoy. La media de
+ * España de cada día sí se queda.
+ */
+const PREPARE: Record<string, (data: unknown) => unknown> = {
+	'fuel-es': (data) => {
+		const d = data as { history?: unknown };
+		if (!d || typeof d !== 'object' || !Array.isArray(d.history)) return data;
+		return { ...d, history: d.history.map((day: unknown) => (day && typeof day === 'object' ? { ...day, provinces: undefined } : day)) };
+	}
+};
+
 /** El contexto de una pregunta y sus fuentes: un bloque por archivo, con su hora, en ~8 KB entre todos. */
 export async function buildContext(
 	question: string,
 	pick: DataPick,
-	load: (path: string) => Promise<unknown>
+	load: (path: string) => Promise<unknown>,
+	now = Date.now()
 ): Promise<{ context: string; sources: Source[] }> {
 	const status = (await load('/data/status.json')) as { data?: { name: string; label?: string }[] } | null;
 	const labels = new Map((Array.isArray(status?.data) ? status.data : []).map((s) => [s.name, s.label ?? s.name]));
@@ -457,11 +614,12 @@ export async function buildContext(
 	for (const { name, data, fetchedAt } of ready) {
 		const label = labels.get(name) ?? name;
 		const series = pick.series.filter((c) => c.ds === name);
-		// Si la pregunta nombra series concretas, van esas (con sus últimos puntos) en vez del archivo entero.
+		// Si la pregunta nombra series concretas, van esas en vez del archivo entero (compact las recorta alrededor de
+		// ahora y deja sus extremos, calculados con todos los puntos).
 		const content = series.length
-			? series.map((c) => ({ serie: c.label, unidad: c.unit, zona: c.geo, ultimos: extract(data, c).slice(-8) }))
-			: data;
-		blocks.push(`[${label} · datos del ${fetchedAt}]\n${compact(content, budget, question)}`);
+			? series.map((c) => ({ serie: c.label, unidad: c.unit, zona: c.geo, puntos: extract(data, c) }))
+			: (PREPARE[name]?.(data) ?? data);
+		blocks.push(`[${label} · datos del ${fetchedAt}]\n${compact(content, budget, question, now)}`);
 		sources.push({ name, label, fetchedAt });
 	}
 	return { context: blocks.join('\n\n'), sources };
@@ -513,7 +671,7 @@ export async function handleAsk(
 	const load = (path: string) => readData(assets, origin, path);
 	const catalog = (await load('/data/g/series.json')) as { data?: unknown } | null;
 	const pick = pickData(question, Array.isArray(catalog?.data) ? (catalog.data as CatalogEntry[]) : []);
-	const { context, sources } = await buildContext(question, pick, load);
+	const { context, sources } = await buildContext(question, pick, load, now);
 	// Ningún dato de hoy trata de eso: ni se gasta IA ni cuenta para el tope.
 	if (!sources.length) return json(200, { answer: NO_SE, sources: [], used: await store.used(user, day), limit });
 
@@ -523,7 +681,7 @@ export async function handleAsk(
 		answer = answerOf(
 			await model.run(MODEL, {
 				messages: [
-					{ role: 'system', content: systemPrompt(context) },
+					{ role: 'system', content: systemPrompt(context, now) },
 					{ role: 'user', content: question }
 				],
 				max_completion_tokens: ASK_LIMITS.tokens,
@@ -537,7 +695,8 @@ export async function handleAsk(
 		await store.settle(user, day, 'failed');
 		return json(503, { error: 'la IA no responde' });
 	}
-	const bad = answer ? unsupported(answer, context, question) : [];
+	// La fecha y la hora de ahora también valen («hoy, 20 de octubre, a las 17:00»).
+	const bad = answer ? unsupported(answer, `${nowLine(now)}\n${context}`, question) : [];
 	if (bad.length) await store.settle(user, day, 'rejected');
 	const used = await store.used(user, day);
 	if (!answer || bad.length || plain(answer).includes(' no lo se '))
