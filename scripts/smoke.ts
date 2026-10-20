@@ -279,22 +279,37 @@ async function checkPage(context: BrowserContext, path: string, mode: string, wi
 		if (width < 600 && check.cls > CLS_LIMIT) shifts.push(`${path} a 390 px (${mode}): CLS ${check.cls.toFixed(2).replace('.', ',')} (más de ${String(CLS_LIMIT).replace('.', ',')})`);
 		if (width < 600 && first) {
 			await page.addScriptTag({ path: AXE });
-			// Antes, que acabe de colocarse lo que depende de medir (Table solo se hace enfocable si mide que se desplaza):
-			// la letra cargada y dos fotogramas, o 1 s como mucho. Con la CPU muy cargada, axe llegaba a veces antes.
-			await page.evaluate(() =>
-				Promise.race([
-					document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))),
-					new Promise((r) => setTimeout(r, 1000))
-				])
-			);
-			const found = await page.evaluate(async (rules) => {
-				type Result = { violations: { id: string; nodes: { target: unknown[] }[] }[] };
-				const r = await (window as unknown as { axe: { run: (c: Document, o: object) => Promise<Result> } }).axe.run(document, {
-					runOnly: { type: 'rule', values: rules }
-				});
-				// El selector del primer elemento con el fallo (target: uno por nivel de shadow DOM o de iframe).
-				return r.violations.map((v) => ({ id: v.id, text: `${v.id} (${v.nodes.length}) en ${v.nodes[0]?.target.flat().join(' ') ?? '?'}` }));
-			}, AXE_RULES);
+			// Antes, que acabe de colocarse lo que depende de medir: la letra cargada (o 1 s como mucho) y que cada Table
+			// que se desplaza ya sea enfocable (su ResizeObserver le pone tabindex al medirlo), 3 s como mucho. Con la CPU
+			// muy cargada, axe llegaba a veces antes.
+			await page.evaluate(() => Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1000))]));
+			await page
+				.waitForFunction(
+					() =>
+						[...document.querySelectorAll('[data-ui="table"] > .scroll')].every(
+							(s) => s.hasAttribute('tabindex') || (s.scrollWidth <= s.clientWidth + 1 && s.scrollHeight <= s.clientHeight + 1)
+						),
+					null,
+					{ timeout: 3000 }
+				)
+				.catch(() => {});
+			const axe = (rules: string[]) =>
+				page.evaluate(async (rules) => {
+					type Result = { violations: { id: string; nodes: { target: unknown[] }[] }[] };
+					const r = await (window as unknown as { axe: { run: (c: Document, o: object) => Promise<Result> } }).axe.run(document, {
+						runOnly: { type: 'rule', values: rules }
+					});
+					// El selector del primer elemento con el fallo (target: uno por nivel de shadow DOM o de iframe).
+					return r.violations.map((v) => ({ id: v.id, text: `${v.id} (${v.nodes.length}) en ${v.nodes[0]?.target.flat().join(' ') ?? '?'}` }));
+				}, rules);
+			let found = await axe(AXE_RULES);
+			// Lo que se desplaza sin poder enfocarse puede ser aún un tabindex por llegar: se mira otra vez, solo esa
+			// regla, 1 s después. Si sigue, es de verdad.
+			if (found.some((v) => v.id === 'scrollable-region-focusable')) {
+				await page.waitForTimeout(1000);
+				const again = await axe(['scrollable-region-focusable']);
+				found = [...found.filter((v) => v.id !== 'scrollable-region-focusable'), ...again];
+			}
 			const soft = found.filter((v) => AXE_WARN.includes(v.id) || AXE_KNOWN.has(`${path} ${v.id}`));
 			if (soft.length) a11y.push(`${path}: ${soft.map((v) => v.text).join(', ')}`);
 			for (const v of found) if (!soft.includes(v)) failures.push(`${where}: accesibilidad (axe-core): ${v.text}`);
