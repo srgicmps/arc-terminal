@@ -9,7 +9,9 @@
 // Además avisa (sin fallar) si una vista pesa más de WEIGHT_LIMIT: lo que descarga de la propia web
 // (HTML, JS, CSS y datos) comprimido con gzip, como lo sirve GitHub Pages; sin TradingView ni otras webs.
 // También avisa (sin fallar, de momento) de los fallos de accesibilidad de axe-core en contraste y nombres de
-// controles, enlaces e imágenes (AXE_RULES), a 390 px.
+// controles, enlaces e imágenes (AXE_RULES), a 390 px, y de las vistas que saltan al cargar (CLS de más de CLS_LIMIT).
+// En Sencillo falla si, ya arrancada la vista, queda algún panel sin data-essential: Panel los quita con `gone` y su
+// CSS los esconde antes de arrancar, y las dos cosas tienen que decir lo mismo.
 // Las peticiones a otras webs (TradingView, fuentes…) se contestan vacías: así la prueba no depende de la red.
 import { createRequire } from 'node:module';
 import { gzipSync } from 'node:zlib';
@@ -29,6 +31,8 @@ const STYLE = process.env.SMOKE_STYLE ?? '';
 
 /** Vistas de texto, sin paneles, y el Modo OS (/os: un escritorio con ventanas). Las experiencias (/x/<id>) tampoco usan Panel. */
 const NO_PANELS = new Set(['/help', '/doc', '/bienvenida', '/os']);
+/** Salto máximo razonable al cargar (CLS, a 390 px): de 0,1 para arriba, Google lo da por «mejorable». */
+const CLS_LIMIT = 0.1;
 /** Peso máximo razonable de una vista en el móvil (4G), en bytes gzip. */
 const WEIGHT_LIMIT = 300 * 1024;
 /** Sin aviso de peso: Arc OS no tiene tope (scripts/weight.ts → EXEMPT). */
@@ -55,6 +59,8 @@ const failures: string[] = [];
 const warnings: string[] = [];
 /** Fallos de accesibilidad por vista (axe-core): solo avisan. */
 const a11y: string[] = [];
+/** Vistas que saltan al cargar (CLS): solo avisan. */
+const shifts: string[] = [];
 
 try {
 	const browser = await launch();
@@ -64,6 +70,16 @@ try {
 		await context.addInitScript(
 			([m, style]) => {
 				localStorage.setItem('arc-modo', m);
+				// Saltos al cargar (CLS): se suman todos desde el primer pintado. Aquí nadie toca la pantalla antes de medir,
+				// pero con el móvil emulado Chromium marca como «con toque reciente» (hadRecentInput) lo que pasa en el
+				// primer medio segundo, que es justo el salto al arrancar: por eso no se descartan. WebKit no lo mide.
+				const w = window as unknown as { __cls: number };
+				w.__cls = 0;
+				if (PerformanceObserver.supportedEntryTypes?.includes('layout-shift')) {
+					new PerformanceObserver((list) => {
+						for (const e of list.getEntries() as (PerformanceEntry & { value: number })[]) w.__cls += e.value;
+					}).observe({ type: 'layout-shift', buffered: true });
+				}
 				if (!style) return;
 				localStorage.setItem('arc-style', style);
 				localStorage.setItem('arc-theme', 'light');
@@ -145,6 +161,11 @@ try {
 				// de app.css descolocaba la fila entera.
 				keys: [...new Set([...document.querySelectorAll('.keys .key')].map((e) => Math.round(e.getBoundingClientRect().height)))],
 				panels: document.querySelectorAll('section.panel').length,
+				cls: (window as unknown as { __cls?: number }).__cls ?? 0,
+				// Sencillo, sin «Ver todos» ni modo TV: los paneles que no son esenciales ya no están (`gone` en Panel).
+				stray: document.documentElement.matches("[data-modo='sencillo']:not([data-all], [data-tv])")
+					? [...document.querySelectorAll("[data-ui='panel']:not([data-essential])")].map((s) => s.querySelector('h2')?.textContent?.trim() || '?')
+					: [],
 				missing: [...document.querySelectorAll('.empty')]
 					.map((e) => e.textContent?.trim() ?? '')
 					.filter((t) => /todav[ií]a/i.test(t)),
@@ -166,6 +187,8 @@ try {
 			if (!NO_PANELS.has(path) && !path.startsWith('/x/') && !check.panels) failures.push(`${where}: sin paneles`);
 			for (const text of check.missing) failures.push(`${where}: panel sin datos («${text}»)`);
 			for (const text of check.glitches) failures.push(`${where}: «${text}» en la vista`);
+			for (const title of check.stray) failures.push(`${where}: el panel «${title}» no es esencial y sigue en Sencillo (el CSS de Panel lo esconde, pero \`gone\` no lo quita)`);
+			if (width < 600 && check.cls > CLS_LIMIT) shifts.push(`${path} (${mode}): ${check.cls.toFixed(2).replace('.', ',')}`);
 			if (width < 600 && first) {
 				await page.addScriptTag({ path: AXE });
 				const found = await page.evaluate(async (rules) => {
@@ -228,7 +251,8 @@ async function keyboard(browser: Awaited<ReturnType<typeof launch>>) {
 	await page.waitForTimeout(800);
 	const top = await page.evaluate(() => {
 		const panel = [...document.querySelectorAll('section.panel')].find((s) => /paro juvenil/i.test(s.querySelector('h2')?.textContent ?? ''));
-		return panel ? Math.round(panel.getBoundingClientRect().top) : null;
+		// Sin cajas: está, pero el CSS de Sencillo lo esconde (<html> sin data-all: «Ver todos» no ha pasado por setAll).
+		return panel?.getClientRects().length ? Math.round(panel.getBoundingClientRect().top) : null;
 	});
 	if (top === null || Math.abs(top) > 200) failures.push(`teclado: /eco#panel=Paro juvenil en Sencillo no enseña ni baja al panel (${top})`);
 	await context.close();
@@ -237,6 +261,7 @@ async function keyboard(browser: Awaited<ReturnType<typeof launch>>) {
 // ::warning:: hace que GitHub muestre el aviso en el resumen de la Action.
 for (const w of warnings) console.log(`::warning title=Peso de las vistas::${w}`);
 for (const w of a11y) console.log(`::warning title=Accesibilidad (axe-core)::${w}`);
+if (shifts.length) console.log(`::warning title=Saltos al cargar (CLS)::Más de ${String(CLS_LIMIT).replace('.', ',')} a 390 px: ${shifts.join(' · ')}`);
 if (!a11y.length) console.log(`axe-core: sin fallos de ${AXE_RULES.length} reglas en ${PATHS.length} vistas a 390 px`);
 
 if (failures.length) {
