@@ -11,8 +11,11 @@ import { page } from '$app/state';
 import type { FreshState } from './fresh.ts';
 import { tv } from './tv.svelte.ts';
 
-/** Lo que enseña el layout: «Hay datos nuevos · Actualizar» (aviso) o «Hay una versión nueva · Recargar» (codigo). */
-export const fresh: FreshState = $state({ aviso: false, codigo: false });
+/**
+ * Lo que enseña el layout: «Hay datos nuevos · Actualizar» (aviso; «Actualizando…» mientras busy) o «Hay una versión
+ * nueva · Recargar» (codigo).
+ */
+export const fresh: FreshState = $state({ aviso: false, codigo: false, busy: false });
 
 let apply: (() => Promise<void>) | null = null;
 

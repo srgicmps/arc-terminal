@@ -356,8 +356,8 @@
 			Hay una versión nueva · <b>Recargar</b>
 		</button>
 	{:else if fresh.aviso}
-		<button class="fresh" type="button" onclick={refreshNow}>
-			Hay datos nuevos · <b>Actualizar</b>
+		<button class="fresh" type="button" onclick={refreshNow} aria-disabled={fresh.busy || undefined}>
+			Hay datos nuevos · <b>{fresh.busy ? 'Actualizando…' : 'Actualizar'}</b>
 		</button>
 	{/if}
 
@@ -643,6 +643,10 @@
 	.fresh b {
 		color: var(--amber);
 		font-weight: var(--fw-medium);
+	}
+
+	.fresh[aria-disabled='true'] {
+		cursor: progress;
 	}
 
 	.status {

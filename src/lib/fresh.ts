@@ -157,10 +157,14 @@ export function applied(before: object, after: object): boolean {
 	return after !== before || Object.keys(before).length === 0;
 }
 
-/** Lo que el bucle enseña: el aviso de datos nuevos (si estás más abajo o escribiendo) y el de versión nueva. */
+/**
+ * Lo que el bucle enseña: el aviso de datos nuevos (si estás más abajo o escribiendo), el de versión nueva y, con
+ * `busy`, que se está refrescando (el botón dice «Actualizando…»).
+ */
 export interface FreshState {
 	aviso: boolean;
 	codigo: boolean;
+	busy?: boolean;
 }
 
 export interface FreshEnv {
@@ -197,7 +201,8 @@ export function watch(state: FreshState, env: FreshEnv) {
 	let latest: Build | null = null;
 	let lastGesture = -Infinity;
 	let fingers = 0;
-	let working = false;
+	/** La pregunta a /code.json o el refresco en marcha (uno cada vez). */
+	let working: Promise<unknown> | null = null;
 	let retry: ReturnType<typeof setTimeout> | undefined;
 	/** Refrescos fallidos seguidos, para espaciar los reintentos, y el reintento programado. */
 	let failures = 0;
@@ -219,26 +224,37 @@ export function watch(state: FreshState, env: FreshEnv) {
 		return false;
 	}
 
+	/**
+	 * Refresca ya (también el botón «Actualizar»). Si se está preguntando a /code.json o refrescando, espera a que
+	 * acabe: un toque en ese momento no se pierde. Si ya no hay nada nuevo (lo ha refrescado eso), no hace nada.
+	 */
 	async function apply() {
-		if (!latest || working || state.codigo) return;
-		const target = latest.v;
-		working = true;
+		state.busy = true;
 		try {
-			await env.refresh();
-			seen = target;
-			failures = 0;
-			state.aviso = false;
-		} catch {
-			// No ha llegado (un 503 puntual del borde deja la vista en la página de error) o no se ha aplicado. Se
-			// vuelve a preguntar pronto, cada vez más espaciado (RETRY_MS, el doble… hasta POLL_MS), no al minuto.
-			// Hasta entonces, sin aviso: su botón no haría nada (y en la página de error ya está «Reintentar»).
-			latest = null;
-			state.aviso = false;
-			failures++;
-			clearTimeout(again);
-			again = setTimeout(() => void poll(), Math.min(RETRY_MS * 2 ** (failures - 1), POLL_MS));
+			while (working) await working.catch(() => {});
+			if (!latest || latest.v === seen || state.codigo) return;
+			const target = latest.v;
+			const run = env.refresh();
+			working = run;
+			try {
+				await run;
+				seen = target;
+				failures = 0;
+				state.aviso = false;
+			} catch {
+				// No ha llegado (un 503 puntual del borde deja la vista en la página de error) o no se ha aplicado. Se
+				// vuelve a preguntar pronto, cada vez más espaciado (RETRY_MS, el doble… hasta POLL_MS), no al minuto.
+				// Hasta entonces, sin aviso: su botón no haría nada (y en la página de error ya está «Reintentar»).
+				latest = null;
+				state.aviso = false;
+				failures++;
+				clearTimeout(again);
+				again = setTimeout(() => void poll(), Math.min(RETRY_MS * 2 ** (failures - 1), POLL_MS));
+			} finally {
+				working = null;
+			}
 		} finally {
-			working = false;
+			state.busy = false;
 		}
 	}
 
@@ -268,14 +284,15 @@ export function watch(state: FreshState, env: FreshEnv) {
 	/** `always`: también con la pestaña oculta (la primera, para aprender el commit aunque se abra en segundo plano). */
 	async function poll(resumed = false, always = false) {
 		if ((!always && !visible()) || state.codigo || working) return;
-		working = true;
+		const reading = env.read();
+		working = reading;
 		try {
-			const got = await env.read();
+			const got = await reading;
 			// La primera respuesta con la versión de esta pestaña dice su commit.
 			if (got && mine.code === null && got.v === mine.v) mine.code = got.code;
 			latest = got ?? latest;
 		} finally {
-			working = false;
+			working = null;
 		}
 		await step(resumed);
 	}

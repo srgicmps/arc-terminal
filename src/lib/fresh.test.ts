@@ -280,7 +280,7 @@ describe('watch', () => {
 	function setup(first: Build | null = { v: '200', code: 'abc' }, code: string | null = 'abc') {
 		const doc = Object.assign(new EventTarget(), { visibilityState: 'visible' as DocumentVisibilityState });
 		const win = Object.assign(new EventTarget(), { scrollY: 0 });
-		const state = { aviso: false, codigo: false };
+		const state = { aviso: false, codigo: false, busy: false };
 		const env = { latest: first, auto: false, tv: false, typing: false };
 		const read = vi.fn(async () => env.latest);
 		const refresh = vi.fn(async () => {});
@@ -308,7 +308,7 @@ describe('watch', () => {
 		await vi.advanceTimersByTimeAsync(POLL_MS * 3);
 		expect(t.read).toHaveBeenCalledTimes(4);
 		expect(t.refresh).toHaveBeenCalledOnce();
-		expect(t.state).toEqual({ aviso: false, codigo: false });
+		expect(t.state).toEqual({ aviso: false, codigo: false, busy: false });
 		// Otra pasada de datos: otro refresco.
 		t.env.latest = { v: '300', code: 'abc' };
 		await vi.advanceTimersByTimeAsync(POLL_MS);
@@ -414,6 +414,30 @@ describe('watch', () => {
 		t.w.stop();
 	});
 
+	it('«Actualizar» pulsado mientras se pregunta a /code.json no se pierde: dice «Actualizando…» y refresca al acabar', async () => {
+		const t = setup();
+		t.win.scrollY = 1200;
+		await vi.advanceTimersByTimeAsync(FIRST_MS);
+		expect(t.state.aviso).toBe(true);
+		// La pregunta de cada minuto tarda (red lenta, el paso por Access).
+		let answer!: (b: Build) => void;
+		t.read.mockImplementationOnce(() => new Promise<Build | null>((ok) => (answer = ok)));
+		await vi.advanceTimersByTimeAsync(POLL_MS - FIRST_MS);
+		expect(t.read).toHaveBeenCalledTimes(2);
+		const tap = t.w.apply();
+		const again = t.w.apply();
+		await vi.advanceTimersByTimeAsync(0);
+		expect(t.state.busy).toBe(true);
+		expect(t.refresh).not.toHaveBeenCalled();
+		answer({ v: '200', code: 'abc' });
+		await tap;
+		await again;
+		// Una sola vez, aunque se haya pulsado dos veces.
+		expect(t.refresh).toHaveBeenCalledOnce();
+		expect(t.state).toEqual({ aviso: false, codigo: false, busy: false });
+		t.w.stop();
+	});
+
 	it('también en TOP; con «Actualizar» refresca ya, en su sitio', async () => {
 		const t = setup();
 		t.env.auto = true;
@@ -496,7 +520,7 @@ describe('watch', () => {
 		await vi.advanceTimersByTimeAsync(POLL_MS * 2);
 		expect(t.read).toHaveBeenCalledTimes(3);
 		expect(t.refresh).not.toHaveBeenCalled();
-		expect(t.state).toEqual({ aviso: false, codigo: false });
+		expect(t.state).toEqual({ aviso: false, codigo: false, busy: false });
 		t.w.stop();
 	});
 
