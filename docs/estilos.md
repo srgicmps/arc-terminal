@@ -3,6 +3,7 @@
 Arc Terminal tiene varias estéticas (comando `ESTILO`, HELP «A tu gusto»). Cada una es **un archivo**:
 `static/estilos/<id>.css`. El registro (nombre y descripción) está en `src/lib/estilos.ts`; una estética
 sale en el selector en cuanto existe su archivo. Solo se descarga la hoja de la estética elegida.
+Al añadir una, pon también su id en la lista `estilos` de `src/app.html` (lo vigila `src/lib/apphtml.test.ts`).
 
 ## Reglas
 - Solo tocas tu archivo. Si necesitas un token o una letra nueva en el registro, pídelo a la sesión «Producto F
