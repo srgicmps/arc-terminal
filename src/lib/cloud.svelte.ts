@@ -29,10 +29,6 @@ const IDB = PREFS.filter((p) => p.storage === 'idb').map((p) => p.key);
 
 let memory: SyncMemory | null = null;
 let busy = false;
-/** Esta pestaña ha llegado a tener la memoria guardada en localStorage (la ha leído o escrito). */
-let stored = false;
-/** Esta pestaña ya no sincroniza: se cierra la sesión o se borra la cuenta, aquí o en otra pestaña. */
-let stopped = false;
 
 const url = () => asset('api/prefs' as Parameters<typeof asset>[0]);
 
@@ -89,30 +85,10 @@ function forgetPrevious() {
 	}
 }
 
-/**
- * ¿Ha desaparecido la memoria que esta pestaña tenía guardada? Otra pestaña ha cerrado la sesión o borrado la cuenta
- * (o se han borrado los datos de la web). Subir ahora lo de aquí, ya vacío, borraría la cuenta, y escribir la memoria
- * la resucitaría: esta pestaña deja de sincronizar hasta que se recargue.
- */
-function vanished(): boolean {
-	if (stopped) return true;
-	try {
-		if (!stored || localStorage.getItem(MEMORY) !== null) return false;
-	} catch {
-		return false;
-	}
-	stopped = true;
-	memory = null;
-	cloud.state = 'auth';
-	return true;
-}
-
 /** Otra pestaña puede haber sincronizado: la memoria buena es la guardada, no la de esta pestaña. */
 function refreshMemory() {
-	if (vanished()) return;
 	try {
 		const saved = readMemory(localStorage.getItem(MEMORY));
-		if (saved) stored = true;
 		if (saved && (!memory || saved.user === memory.user)) memory = saved;
 	} catch {}
 }
@@ -125,7 +101,6 @@ function applyLocal(patch: Patch) {
 function remember(user: string, base: Prefs) {
 	memory = { user, base };
 	localStorage.setItem(MEMORY, JSON.stringify(memory));
-	stored = true;
 }
 
 /** Cambios de fuera que esperan a que dejes de escribir. */
@@ -134,7 +109,7 @@ let lastPull = 0;
 
 /** Trae lo del servidor, junta y sube. Si ha cambiado algo de aquí, recarga para que las vistas lo lean. */
 async function pull() {
-	if (busy || stopped) return;
+	if (busy) return;
 	busy = true;
 	lastPull = Date.now();
 	try {
@@ -142,7 +117,6 @@ async function pull() {
 		const remote = await getRemote();
 		if (!remote) return;
 		refreshMemory();
-		if (stopped) return;
 		const local = collect(localStorage);
 		const switching = !!memory && memory.user !== remote.user;
 		const plan = startPlan(local, remote.prefs, memory, remote.user);
@@ -150,7 +124,7 @@ async function pull() {
 		// viejo, y su próximo guardado pisaría lo que llega de fuera. Se deja para cuando acabe.
 		postponed = !isEmpty(plan.apply) && typing() && !switching;
 		if (postponed) return;
-		if (!(await push(plan.push)) || vanished()) return;
+		if (!(await push(plan.push))) return;
 		if (switching) forgetPrevious();
 		applyLocal(plan.apply);
 		remember(remote.user, plan.result);
@@ -174,15 +148,14 @@ async function pull() {
 
 /** Sube lo que haya cambiado aquí desde la última vez. */
 async function flush(keepalive = false) {
-	if (busy || stopped || !memory) return;
+	if (busy || !memory) return;
 	refreshMemory();
-	if (!memory) return;
 	const plan = mergeFitting(collect(localStorage), memory.base, memory.base);
 	setFrozen(plan.frozen);
 	if (isEmpty(plan.push)) return;
 	busy = true;
 	try {
-		if ((await push(plan.push, keepalive)) && !vanished() && memory) {
+		if (await push(plan.push, keepalive)) {
 			remember(memory.user, plan.result);
 			cloud.state = 'ok';
 		}
@@ -205,7 +178,6 @@ export function initCloud() {
 	if (new URL(url(), location.href).pathname !== '/api/prefs') return;
 	try {
 		memory = readMemory(localStorage.getItem(MEMORY));
-		stored = !!memory;
 	} catch {
 		return;
 	}
@@ -231,35 +203,4 @@ export function initCloud() {
 		document.removeEventListener('visibilitychange', onVisibility);
 		removeEventListener('online', onOnline);
 	};
-}
-
-/**
- * Para «Cerrar sesión» y «Borrar mi cuenta» (signout.svelte.ts, solo en HELP). Espera a que acabe lo que se esté
- * subiendo o bajando (como mucho 5 s) y, con upload, sube lo que quede. Dice si queda aquí algo que no está en la
- * cuenta: cambios sin subir o claves que no caben (cloud.frozen).
- */
-export async function settle(upload: boolean): Promise<boolean> {
-	for (let i = 0; busy && i < 50; i++) await new Promise((r) => setTimeout(r, 100));
-	if (upload) await flush();
-	if (cloud.frozen.length) return true;
-	return !!memory && !isEmpty(mergeFitting(collect(localStorage), memory.base, memory.base).push);
-}
-
-/** Esta pestaña deja de sincronizar (mientras se borra la cuenta, para no recrearla). Devuelve cómo volver. */
-export function hold(): () => void {
-	const was = stopped;
-	stopped = true;
-	return () => (stopped = was);
-}
-
-/**
- * Se sale de la cuenta: no se sincroniza más y se olvida la memoria. Va la primera, antes de borrar nada más: así las
- * demás pestañas abiertas paran antes de ver lo de aquí vacío (vanished).
- */
-export function endSync() {
-	stopped = true;
-	memory = null;
-	try {
-		localStorage.removeItem(MEMORY);
-	} catch {}
 }

@@ -21,7 +21,6 @@
 	import Share from '#lib/components/ui/Share.svelte';
 	import { collect, decode, encode, HASH } from '#lib/transfer.ts';
 	import { cloud } from '#lib/cloud.svelte.ts';
-	import AccountPanel from '#lib/components/AccountPanel.svelte';
 	import StylePicker from '#lib/components/StylePicker.svelte';
 	import { takesAccent } from '#lib/estilos.ts';
 	import Tour from '#lib/onboarding/Tour.svelte';
@@ -143,6 +142,10 @@
 				</dd>
 				<dt>Primeros pasos</dt>
 				<dd class="send"><a href={resolve('/bienvenida')}>Repetir la bienvenida</a> · <button class="tourbtn" type="button" onclick={() => startTour()}>Ver el recorrido</button></dd>
+				{#if cloud.user}
+					<dt>Tu cuenta</dt>
+					<dd>Todo esto se guarda en tu cuenta ({cloud.user}) y llega solo a tus otros dispositivos.</dd>
+				{/if}
 				<dt>Otro dispositivo</dt>
 				<dd class="send"><Share source={transferLink} /> Enlace con todo lo tuyo: estos ajustes, MIS, palabras vigiladas, tu sitio…</dd>
 			</dl>
@@ -152,7 +155,6 @@
 				{#if custom}<button class="reset" type="button" onclick={resetTaste}>Volver a lo de siempre</button>{/if}
 			{/snippet}
 		</Panel>
-		<AccountPanel />
 		<Panel title="Con texto detrás" meta="Comando, espacio y lo que buscas">
 			<ul class="mini">
 				{#each COMMANDS.filter((c) => c.arg) as c (c.code)}
