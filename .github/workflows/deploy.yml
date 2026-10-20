@@ -323,12 +323,18 @@ jobs:
           SMOKE_MODES: terminal
           SMOKE_STYLE: cupertino
 
-  # PR (y a mano, herramienta «vitals»): Core Web Vitals de laboratorio en el móvil (scripts/vitals.ts). LCP, CLS y TBT
-  # de TOP, GEO, WS y FUEL a 390 px con la CPU 4x y 4G lenta, en Terminal y en Sencillo: mediana de 3 cargas. Va aparte
-  # de smoke porque tarda unos 3 min y así no alarga el PR (corre a la vez) ni comparte CPU con la prueba de humo. Solo
-  # avisa: tabla en el resumen de la Action y ::warning si una vista pasa de su presupuesto. Nunca pone el PR en rojo.
+  # PR que cambia la web (y a mano, herramienta «vitals»): Core Web Vitals de laboratorio en el móvil (scripts/vitals.ts).
+  # LCP, CLS y TBT de TOP, GEO, WS y FUEL a 390 px con la CPU 4x y 4G lenta, en Terminal y en Sencillo: mediana de 3
+  # cargas. Va aparte de smoke porque tarda unos 3 min y así no alarga el PR (corre a la vez) ni comparte CPU con la
+  # prueba de humo. Solo avisa: tabla en el resumen de la Action y ::warning si una vista pasa de su presupuesto. Nunca
+  # pone el PR en rojo. Un PR que no toca la web (solo cloud/, docs/, otros scripts…) no lo lanza: changes → web.
+  # `!cancelled()`: a mano, changes no corre (es solo de los PR) y, sin él, vitals se saltaría también.
   vitals:
-    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.herramienta == 'vitals')
+    needs: changes
+    if: >-
+      !cancelled() &&
+      ((github.event_name == 'pull_request' && needs.changes.outputs.web == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.herramienta == 'vitals'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     continue-on-error: true
@@ -390,12 +396,14 @@ jobs:
         env:
           E2E_BROWSER: ${{ matrix.browser }}
 
-  # PR: si toca scripts/, para lanzar el sondeo solo cuando hace falta.
+  # PR: qué toca, para lanzar solo lo que hace falta. scripts → el sondeo (probe); web → vitals (lo que cambia lo que se
+  # sirve o cómo se mide: src/, static/, las fuentes, las dependencias, la configuración de la build y el propio vitals).
   changes:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     outputs:
       scripts: ${{ steps.diff.outputs.scripts }}
+      web: ${{ steps.diff.outputs.web }}
     steps:
       # La Action de un PR trabaja sobre el commit de merge: su primer padre es la base del PR.
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -406,6 +414,8 @@ jobs:
           files=$(git diff --name-only HEAD^1 HEAD)
           echo "$files"
           echo "scripts=$(grep -q '^scripts/' <<< "$files" && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          web='^(src/|static/|scripts/sources/|scripts/(update|browser|vitals)\.ts$|package\.json$|pnpm-lock\.yaml$|svelte\.config\.js$|vite\.config\.ts$)'
+          echo "web=$(grep -qE "$web" <<< "$files" && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
   # PR que toca scripts/: explora las URL de scripts/probe.txt (herramienta de desarrollo).
   probe:
