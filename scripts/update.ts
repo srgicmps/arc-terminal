@@ -16,6 +16,7 @@ import { withHistory } from './history.ts';
 import {
 	blocked,
 	blockedMessage,
+	checkData,
 	checkShrink,
 	deadlineFor,
 	makeContext,
@@ -110,8 +111,9 @@ async function run(source: Source, ctx: SourceContext = NO_CONTEXT): Promise<Sou
 			deadline,
 			`tiempo agotado (${deadline / 1000} s)`
 		);
-		// Vacío o encogido de golpe: se trata como un fallo (camino «stale», con la copia anterior).
-		const suspicious = checkShrink(data, previous?.data, source);
+		// Vacío o encogido de golpe, o datos que no tienen sentido (su validate): se trata como un fallo
+		// (camino «stale», con la copia anterior y el motivo en STATUS).
+		const suspicious = checkShrink(data, previous?.data, source) ?? checkData(data, source);
 		if (suspicious) throw new Error(suspicious);
 		const dataset = { name: source.name, fetchedAt: new Date().toISOString(), data };
 		await save(dataset);
