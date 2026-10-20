@@ -5,7 +5,10 @@ export default {
 	manual: {
 		section: 'Sistema',
 		what: 'La chuleta rápida: todos los comandos, los atajos de teclado, los comandos con texto detrás y los valores conocidos.',
-		tips: ['Para el detalle de cada vista y sus paneles, abre el MANUAL.'],
+		tips: [
+			'Para el detalle de cada vista y sus paneles, abre el MANUAL.',
+			'Con cuenta, en «A tu gusto», «Tu cuenta»: «Cerrar sesión» en este dispositivo o «Borrar mi cuenta» (hay que escribir BORRAR).'
+		],
 		panels: [
 			{ name: 'Comandos', what: 'Lista completa con sus fuentes.' },
 			{ name: 'Atajos de teclado', what: 'Los de la barra, los paneles y la pantalla.' },

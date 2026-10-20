@@ -63,6 +63,10 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   del equipo; el token necesita D1 · Edit y Access: Apps and Policies y Organizations · Read y, para PREGUNTA, Workers AI · Read). Las Variables
   `D1_DATABASE_ID`, `ACCESS_TEAM_DOMAIN` y `ACCESS_AUD` son opcionales y mandan. Sin nada, /api/* responde 503 y la web
   va igual, solo en local.
+- **Tu cuenta** (fila de «A tu gusto» en HELP, `AccountRow.svelte`): «Cerrar sesión» va a `/cdn-cgi/access/logout` sin borrar nada
+  de aquí; «Borrar mi cuenta» (escribir BORRAR) → DELETE `/api/account` (`cloud/account.ts`, el `forget()` de «Quitar»),
+  luego borra lo de este navegador y sale (`src/lib/account.svelte.ts`). La memoria `arc-sync` no se borra: pasa a ser
+  de nadie (`NOBODY` en `cloud.ts`), para que nada de lo que quede aquí suba a quien entre después.
 - **Cabeceras** (`static/_headers`, solo lo estático): un año de caché (`private, immutable`) SOLO para lo que lleva hash en el nombre (`/_app/immutable/*`, el motor de ajedrez); en todo, `nosniff` y `frame-ancestors 'self'` (nunca `'none'`: Arc OS abre vistas en iframes).
 - La web es estática, así que **GitHub Actions hace de servidor**: cada 5–15 min un script de Node
   descarga los datos, los guarda como JSON y vuelve a publicar la web. Así tampoco hay problemas de CORS. GitHub se salta casi todos sus cron: las lanza a su hora el **despertador** (`cloud/cron/`, un Worker de Cloudflare solo con Cron Triggers; se publica con la herramienta «despertador» de `deploy.yml`, con sus propios Secrets `DESPERTADOR_GH_TOKEN` y `DESPERTADOR_CF_TOKEN`, este solo con Workers Scripts · Edit: el `CLOUDFLARE_API_TOKEN` de siempre no toca Workers) y los `schedule` quedan de respaldo.
