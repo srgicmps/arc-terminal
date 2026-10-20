@@ -30,7 +30,7 @@ La maqueta de diseño está en [`docs/maqueta.html`](docs/maqueta.html) (datos d
 | `ES` | España: titulares, BOE del día y comunicados del Gobierno y de Europa |
 | `WS` | Wall Street: mapa de calor, curva de tipos de EE. UU., divisas y cripto |
 | `NVDA`, `SAN`… | Ficha de un valor (TradingView y documentos de la SEC) |
-| `MIS` | Tu lista de valores, guardada en tu cuenta |
+| `MIS` | Tu lista de valores, guardada en el navegador y sincronizada con tu cuenta |
 | `TECH` / `AI` | Tecnología, Hacker News e inteligencia artificial |
 | `BOE` | Sumario del Boletín Oficial del Estado, con buscador |
 | `USGOV` | Federal Register: decretos presidenciales y normas de EE. UU. |

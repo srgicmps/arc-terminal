@@ -231,7 +231,7 @@ vista `HELP`. Una fila por comando (lo comprueba `src/lib/docs.test.ts`):
 | `CMP` | Varios valores en un gráfico en base 100 (`CMP NVDA AMD AVGO`) | TradingView |
 | `RV` | Un valor frente a sus competidores: PER, márgenes, crecimiento (unos 60 de EE. UU.) | Finnhub* |
 | `SIG` | Señales técnicas: máximos y mínimos de 52 semanas, medias y RSI | Finnhub*, TradingView |
-| `MIS` | Tu lista de valores (en el navegador) | TradingView |
+| `MIS` | Tu lista de valores (en el navegador y en tu cuenta): cotizaciones, titulares, próximos resultados y volumen en corto | TradingView, Finnhub*, FINRA, titulares |
 | `TECH` / `AI` | Tecnología e IA | Hacker News, Hugging Face, OpenRouter, Epoch AI (CC BY 4.0), Cloudflare Radar*, RSS |
 | `BOE` / `USGOV` | Boletines oficiales | BOE, Federal Register |
 | `LIDER` | Qué hacen ahora Sánchez, Trump, Lagarde, Warsh y von der Leyen: agenda de hoy y lo último (`LIDER Lagarde`) | La Moncloa, Roll Call Factba.se, Casa Blanca, Federal Register, BCE, Fed, Comisión Europea |
