@@ -3,7 +3,7 @@
  * tarjetas de 12 px sin bordes, separadores finos, segmentados en píldora (la opción activa es una tarjeta), azul
  * de sistema como acento, materiales translúcidos muy sutiles en lo que se queda fijo y movimiento suave de muelle.
  * Tokens propios (--cu-*): solo se usan en este archivo. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* Inter viene con la web (src/styles/fonts.css): sin @import de Google. */
 @layer tokens, estilos, ajustes;
 @layer estilos {
 	:root[data-style='cupertino'],

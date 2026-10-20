@@ -3,7 +3,7 @@
  * auroras muy suaves, esquinas de 14 px, filos de luz de 1 px e Inter. No toca el acento: combina con el ámbar,
  * el cian o el azul de «A tu gusto». Sin desenfoque (navegador sin backdrop-filter, «reducir transparencia» o
  * móvil) los paneles pasan a opacos, con el mismo color que se veía a través del vidrio. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* Inter viene con la web (src/styles/fonts.css): sin @import de Google. */
 @layer tokens, estilos, ajustes;
 @layer estilos {
 	:root[data-style='cristal'],
