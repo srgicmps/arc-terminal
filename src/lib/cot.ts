@@ -36,7 +36,6 @@ export const COT_MARKETS: { code: string; name: string }[] = [
 ];
 
 export const COT_URL = 'https://publicreporting.cftc.gov/resource/6dca-aqww.json';
-export const COT_PAGE = 'https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm';
 
 /** Una fila de la API (todo llega como texto). */
 export interface CotRow {

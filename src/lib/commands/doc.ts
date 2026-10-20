@@ -6,7 +6,7 @@ export default {
 		section: 'Sistema',
 		what: 'Cómo está hecho Arc Terminal: arquitectura, el viaje de los datos de la fuente a la pantalla, las fuentes y Svelte frente a Vue.',
 		panels: [
-			{ name: '1 · Arquitectura', what: 'GitHub Pages y GitHub Actions como servidor.' },
+			{ name: '1 · Arquitectura', what: 'Cloudflare Pages con Access delante y GitHub Actions como servidor.' },
 			{ name: '2 · Cómo viajan los datos', what: 'Ejemplo: FUEL, de la API al panel.' },
 			{ name: '3 · Fuentes', what: 'Todas las fuentes y cada cuánto se actualizan.' },
 			{ name: '4 · Svelte 5 frente a Vue 3', what: 'Las mismas ideas en los dos.' },
