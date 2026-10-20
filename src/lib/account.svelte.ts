@@ -2,7 +2,7 @@
 // todas las vistas, para que solo lo descargue quien abre HELP; de allí usa hold y endSync. Lo puro, en account.ts;
 // el servidor, en cloud/account.ts.
 import { asset } from '$app/paths';
-import { accountKeys, LOGOUT, PAGES } from './account.ts';
+import { accountKeys, deleteOutcome, KEPT, LOGOUT, offlineMsg, PAGES } from './account.ts';
 import { cloud, endSync, hold } from './cloud.svelte.ts';
 import { PREFS } from './prefs.ts';
 
@@ -29,34 +29,53 @@ async function leave() {
 	location.assign(LOGOUT);
 }
 
-const KEPT = 'No se ha borrado nada.';
+/** El último DELETE se quedó sin respuesta: no se sabe si se ha borrado y la pestaña sigue sin sincronizar (hold). */
+let unsure = false;
 
-/**
- * Borra en el servidor todo lo tuyo (DELETE /api/account), luego lo de este navegador, y cierra la sesión. Mientras,
- * esta pestaña no sincroniza. Si no se puede, devuelve el porqué y todo sigue igual; si sale bien, la página se va.
- */
-export async function deleteAccount(): Promise<string | null> {
-	if (!cloud.user) return `No hay cuenta. ${KEPT}`;
-	if (navigator.onLine === false) return `Sin conexión. ${KEPT}`;
-	const resume = await hold();
-	if (!resume) return `Se están guardando tus cambios: vuelve a probar en un momento. ${KEPT}`;
-	let res: Response | null = null;
+/** Lo que dice el navegador ahora (puede cambiar mientras se espera la respuesta). */
+const online = () => navigator.onLine !== false;
+
+/** El DELETE, con la confirmación (el email que ves en HELP). null si no llega la respuesta. */
+async function send(user: string): Promise<Response | null> {
 	try {
-		res = await fetch(asset('api/account' as Parameters<typeof asset>[0]), {
+		return await fetch(asset('api/account' as Parameters<typeof asset>[0]), {
 			method: 'DELETE',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ confirm: cloud.user }),
+			body: JSON.stringify({ confirm: user }),
 			credentials: 'same-origin',
 			redirect: 'manual'
 		});
-	} catch {}
-	if (!res?.ok) {
-		resume();
-		if (!res) return `Sin conexión. ${KEPT}`;
-		if (res.type === 'opaqueredirect' || res.status === 401)
-			return `Tu sesión ha caducado: recarga la página y vuelve a probar. ${KEPT}`;
-		return `No se ha podido borrar: vuelve a probar en un rato. ${KEPT}`;
+	} catch {
+		return null;
 	}
-	await leave();
-	return null;
+}
+
+/**
+ * Borra en el servidor todo lo tuyo (DELETE /api/account), luego lo de este navegador, y cierra la sesión. Mientras,
+ * esta pestaña no sincroniza. Si sale bien, la página se va (null). Si no, devuelve el porqué: con un error del
+ * servidor todo sigue igual; sin respuesta (tras un reintento) no se sabe si se ha borrado, así que la pestaña sigue
+ * sin sincronizar hasta que se vuelva a pulsar o se recargue (deleteOutcome en account.ts).
+ */
+export async function deleteAccount(): Promise<string | null> {
+	const user = cloud.user;
+	if (!user) return `No hay cuenta. ${KEPT}`;
+	if (!online()) return offlineMsg(unsure);
+	// Con la duda de antes, la pestaña ya está parada: no hay que esperar a nada.
+	const resume = unsure ? null : await hold();
+	if (!unsure && !resume) return `Se están guardando tus cambios: vuelve a probar en un momento. ${KEPT}`;
+	let res = await send(user);
+	// Un corte suelto (el móvil pasa de wifi a datos): un reintento a los 2 s antes de dejar la duda.
+	if (!res && online()) {
+		await new Promise((r) => setTimeout(r, 2000));
+		res = await send(user);
+	}
+	const out = deleteOutcome(res, unsure);
+	if (out.done) {
+		unsure = false;
+		await leave();
+		return null;
+	}
+	unsure = out.held;
+	if (!out.held) resume?.();
+	return out.msg;
 }

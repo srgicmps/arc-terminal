@@ -21,3 +21,49 @@ export const accountKeys = (keys: Iterable<string>): string[] =>
 			k !== MEMORY &&
 			PREFS.some((p) => p.storage === 'local' && (p.key === k || (p.prefix !== undefined && k.startsWith(p.prefix))))
 	);
+
+/** El final de los avisos de «Borrar mi cuenta» cuando seguro que no se ha borrado nada. */
+export const KEPT = 'No se ha borrado nada.';
+
+const AGAIN = 'Vuelve a pulsar «Borrar para siempre»: si ya estaba borrada, no pasa nada.';
+
+/** Lo que importa de la respuesta del DELETE. null: no ha llegado (fetch ha fallado: sin red, el móvil se ha dormido…). */
+export type Reply = Pick<Response, 'ok' | 'status' | 'type'> | null;
+
+/** Qué hacer tras «Borrar mi cuenta»: salir, o un aviso y si la pestaña sigue sin sincronizar (held). */
+export type Outcome = { done: true } | { done: false; held: boolean; msg: string };
+
+/**
+ * El resultado del DELETE /api/account. Si ha ido bien, se sale. Si no ha llegado la respuesta, no se sabe si el
+ * servidor lo ha borrado: la pestaña sigue sin sincronizar (subir ahora recrearía la cuenta) y se pide volver a
+ * pulsar, porque repetir el DELETE no hace daño (si ya no hay nada, responde bien igual). Mientras quede esa duda
+ * (unsure: un intento anterior sin respuesta), ningún aviso dice «No se ha borrado nada»: solo cuando el servidor
+ * responde con un error al primer intento.
+ */
+export function deleteOutcome(res: Reply, unsure: boolean): Outcome {
+	if (res?.ok) return { done: true };
+	if (!res)
+		return { done: false, held: true, msg: `No ha llegado la respuesta y no se sabe si se ha borrado. ${AGAIN}` };
+	const expired = res.type === 'opaqueredirect' || res.status === 401;
+	if (unsure)
+		return {
+			done: false,
+			held: true,
+			msg: expired
+				? 'Tu sesión ha caducado y no se sabe si se ha borrado: recarga la página y vuelve a borrarla.'
+				: `No se ha podido comprobar si se ha borrado. ${AGAIN}`
+		};
+	return {
+		done: false,
+		held: false,
+		msg: expired
+			? `Tu sesión ha caducado: recarga la página y vuelve a probar. ${KEPT}`
+			: `No se ha podido borrar: vuelve a probar en un rato. ${KEPT}`
+	};
+}
+
+/** Sin conexión antes de enviar: no sale nada, pero si un intento anterior se quedó sin respuesta, la duda sigue. */
+export const offlineMsg = (unsure: boolean): string =>
+	unsure
+		? 'Sin conexión, y aún no se sabe si se ha borrado: vuelve a pulsar «Borrar para siempre» cuando vuelva.'
+		: `Sin conexión. ${KEPT}`;
