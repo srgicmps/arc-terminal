@@ -94,18 +94,22 @@ function decls(text: string, pick: (selector: string) => boolean): Palette {
 }
 
 /**
- * Lo que cambia una estética en la barra de comandos: en el formulario (`.cmd`), en la lista de sugerencias
- * (`.suggest`) y en la fila elegida. Cupertino pone la lista en --cu-menu; lujo, en --bg; cristal, opaca; suizo, el
- * código en --fg y la fila elegida invertida; Fósforo, sus colores de consola. Solo cuentan los bloques que acaban en
- * esa pieza (no los de sus hijos), y los de día solo en el tema de día.
+ * Lo que cambia una estética en la barra de comandos y en lo que la rodea, de fuera adentro: la raíz de la app
+ * (`[data-ui='app']`), la cabecera (`[data-ui='top']`), el formulario (`.cmd`), la lista de sugerencias (`.suggest`) y
+ * la fila elegida. Cupertino pone la lista en --cu-menu; lujo, en --bg; cristal, opaca; suizo, el código en --fg y la
+ * fila elegida invertida; Fósforo guarda sus colores en --k-* en la raíz de la app, la cabecera los invierte y la
+ * barra los recupera. Solo cuentan los bloques que acaban en esa pieza (no los de sus hijos), y los de día solo en el
+ * tema de día.
  */
 function bar(id: string, theme: string) {
-	if (id === 'terminal') return { cmd: {}, list: {}, row: {} };
+	if (id === 'terminal') return { app: {}, top: {}, cmd: {}, list: {}, row: {} };
 	const text = readFileSync(`${DIR}/${id}.css`, 'utf8');
 	const ends = (re: RegExp) => (sel: string) =>
 		(theme === 'light' || !sel.includes("data-theme='light'")) &&
 		sel.split(',').every((p) => p.includes(`data-style='${id}'`) && re.test(p.trim()));
 	return {
+		app: decls(text, ends(/\[data-ui='app'\]$/)),
+		top: decls(text, ends(/\[data-ui='top'\]$/)),
 		cmd: decls(text, ends(/(?:\.cmd|\[data-ui='cmd'\])$/)),
 		list: decls(text, ends(/(?:\.suggest|\[role='listbox'\])$/)),
 		row: decls(text, ends(/(?:li|\[role='option'\])\[aria-selected='true'\]$/))
@@ -114,6 +118,22 @@ function bar(id: string, theme: string) {
 
 const own = (d: Palette) => Object.fromEntries(Object.entries(d).filter(([k]) => k.startsWith('--')));
 
+/** Sigue var(--x) dentro de `p` hasta llegar a un valor; si no lo encuentra, lo deja como está. */
+function follow(value: string, p: Palette, depth = 0): string {
+	const ref = /^var\((--[\w-]+)\)$/.exec(value);
+	return ref && p[ref[1]] !== undefined && depth < 8 ? follow(p[ref[1]], p, depth + 1) : value;
+}
+
+/**
+ * Las variables de un bloque sobre lo que hereda de fuera. Como en el navegador, cada var() se resuelve donde se
+ * declara: así «--k-fg: var(--fg)» en la app y «--fg: var(--k-fg)» en la barra dan el color de la paleta y no un
+ * círculo.
+ */
+function scope(outer: Palette, block: Palette): Palette {
+	const here = { ...outer, ...own(block) };
+	return { ...here, ...Object.fromEntries(Object.keys(own(block)).map((k) => [k, follow(here[k], here)])) };
+}
+
 // Las sugerencias de la barra van sobre --raise, igual que tarjetas, plegables y campos de las vistas. El texto, el
 // secundario y el acento tienen que leerse ahí, y también el texto de la fila elegida, que lleva encima el acento suave.
 describe('texto sobre --raise y en las sugerencias de la barra de comandos', () => {
@@ -121,6 +141,14 @@ describe('texto sobre --raise y en las sugerencias de la barra de comandos', () 
 		expect(bar('cupertino', 'dark').list['--raise']).toBe('var(--cu-menu)');
 		expect(bar('suizo', 'light').row['background-color']).toBe('var(--fg)');
 		expect(bar('retro', 'dark').cmd['--fg']).toBe('var(--k-fg)');
+		expect(bar('retro', 'light').app['--k-fg']).toBe('var(--fg)');
+		// Y lo resuelve como el navegador: la barra de Fósforo recupera el --fg de la paleta (de noche y de día).
+		for (const [theme, p] of Object.entries(palettes('retro'))) {
+			const b = bar('retro', theme);
+			const lp = [b.app, b.top, b.cmd, b.list].reduce(scope, scope({}, p));
+			expect(lp['--fg']).toBe(p['--fg']);
+			expect(lp['--amber']).toBe(p['--amber']);
+		}
 	});
 
 	it('la barra pinta las filas como mide este test: tipo en --muted y la fila elegida, del color de su texto', () => {
@@ -134,30 +162,35 @@ describe('texto sobre --raise y en las sugerencias de la barra de comandos', () 
 		for (const id of ids) {
 			const min = id === 'contraste' ? 7 : 4.5;
 			for (const [theme, p] of Object.entries(palettes(id))) {
+				// Un color que no se puede leer es un fallo: si no, esa estética se saltaría sin que nadie se enterase.
 				const check = (what: string, fg: number[] | null, bg: number[] | null) => {
-					if (!fg || !bg) return;
+					if (!fg || !bg) return void bad.push(`${id} (${theme}) ${what}: no se puede medir`);
 					const r = ratio(fg, bg);
 					if (r < min) bad.push(`${id} (${theme}) ${what}: ${r.toFixed(2)}`);
 				};
-				// Vistas: texto, secundario y acento sobre --raise (si es opaco; con transparencia no se puede medir aquí).
+				// Vistas: texto, secundario y acento sobre --raise (si es opaco: con transparencia depende de lo que haya
+				// debajo y no se mide aquí; la lista de sugerencias sí tiene que ser opaca, abajo).
 				const raise = color(p['--raise'], p);
-				if (raise && raise[3] === 1)
+				if (!raise || raise[3] === 1)
 					for (const fg of ['--fg', '--muted', '--amber']) check(`${fg} sobre --raise`, color(p[fg], p), raise);
 
 				// Sugerencias: código (--amber), descripción (el color del texto) y tipo (--muted) sobre la lista.
 				const b = bar(id, theme);
-				const lp = { ...p, ...own(b.cmd), ...own(b.list) };
+				const lp = [b.app, b.top, b.cmd, b.list].reduce(scope, scope({}, p));
 				const listBg = color(b.list.background ?? b.list['background-color'] ?? 'var(--raise)', lp);
-				if (!listBg || listBg[3] < 1) continue;
+				if (!listBg || listBg[3] < 1) {
+					bad.push(`${id} (${theme}) lista de sugerencias: fondo que no se puede medir`);
+					continue;
+				}
 				const text = b.list.color ?? b.cmd.color ?? 'var(--fg)';
 				check('código en la lista', color('var(--amber)', lp), listBg);
 				check('descripción en la lista', color(text, lp), listBg);
 				check('tipo en la lista', color('var(--muted)', lp), listBg);
 
 				// Fila elegida: todo del color del texto de la fila, sobre el acento suave (o el fondo que le dé la estética).
-				const rp = { ...lp, ...own(b.row) };
+				const rp = scope(lp, b.row);
 				const top = color(b.row['background-color'] ?? b.row.background ?? 'var(--amber-soft)', rp);
-				if (top) check('fila elegida', color(b.row.color ?? text, rp), over(top, listBg));
+				check('fila elegida', color(b.row.color ?? text, rp), top && over(top, listBg));
 			}
 		}
 		expect(bad).toEqual([]);
