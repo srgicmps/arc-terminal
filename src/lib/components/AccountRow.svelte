@@ -155,13 +155,22 @@
 		cursor: default;
 	}
 
-	/* Pantallas táctiles: 44 px de alto pulsable y un poco de aire a los lados, para no dar en el de al lado. */
+	/* Pantallas táctiles: 44 px de alto pulsable y un poco de aire entre los dos, para no dar en el de al lado. Solo
+	   por dentro: por fuera, el borde queda alineado con «Tu cuenta» y las demás filas. */
 	@media (pointer: coarse) {
 		.link {
 			display: inline-flex;
 			align-items: center;
 			min-height: var(--touch);
 			padding-inline: var(--sp-4);
+		}
+
+		.acts > :first-child {
+			padding-inline-start: 0;
+		}
+
+		.acts > :last-child {
+			padding-inline-end: 0;
 		}
 	}
 
