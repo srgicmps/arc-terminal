@@ -6,25 +6,25 @@
 // página web, solo los trozos de texto que encajan o, si no hay ninguno, los del HTML sin quitar etiquetas).
 // Si es un .xlsx, enseña las primeras filas de cada hoja (con patrón, solo las filas que lo contienen).
 import { readFile } from 'node:fs/promises';
-import ExcelJS from 'exceljs';
+import { readXlsx } from './xlsx.ts';
 
-/** Las primeras filas de cada hoja de un .xlsx, como texto: «[Hoja] fila 3: a | b | c». */
-async function sheets(data: ArrayBuffer, pattern?: string): Promise<string> {
-	const book = new ExcelJS.Workbook();
-	await book.xlsx.load(data);
+/** Una celda como texto: las fechas, «2026-10-12». */
+const cellText = (v: unknown) => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v ?? ''));
+
+/**
+ * Las primeras filas de cada hoja de un .xlsx, como texto: «[Hoja] 40 filas con datos» y «rows[3]: a | b | c».
+ * El número es la posición en las filas que da readXlsx (scripts/xlsx.ts), la que verá el parser.
+ */
+function sheets(data: ArrayBuffer, pattern?: string): string {
 	const re = pattern ? new RegExp(pattern, 'i') : null;
 	const out: string[] = [];
-	for (const sheet of book.worksheets) {
-		out.push(`[${sheet.name}] ${sheet.rowCount} filas`);
+	for (const sheet of readXlsx(data)) {
+		out.push(`[${sheet.name}] ${sheet.rows.length} filas con datos`);
 		let shown = 0;
-		sheet.eachRow((row, n) => {
-			const text = (row.values as ExcelJS.CellValue[])
-				.slice(1)
-				.map((v) => (v && typeof v === 'object' && !(v instanceof Date) && 'result' in v ? v.result : v))
-				.map((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v ?? '')))
-				.join(' | ');
+		sheet.rows.forEach((row, n) => {
+			const text = Array.from(row, cellText).join(' | ');
 			if (shown < 15 && (!re || re.test(text))) {
-				out.push(`fila ${n}: ${text.slice(0, 600)}`);
+				out.push(`rows[${n}]: ${text.slice(0, 600)}`);
 				shown++;
 			}
 		});
@@ -56,7 +56,7 @@ for (const line of lines) {
 			signal: AbortSignal.timeout(30_000)
 		});
 		if (/\.xlsx($|\?|&)/i.test(url) || (res.headers.get('content-type') ?? '').includes('spreadsheet')) {
-			console.log(`\nPROBE ${res.status} ${line}\n${(await sheets(await res.arrayBuffer(), pattern)).slice(0, 20000)}`);
+			console.log(`\nPROBE ${res.status} ${line}\n${sheets(await res.arrayBuffer(), pattern).slice(0, 20000)}`);
 			continue;
 		}
 		let body = (await res.text()).replace(/\s+/g, ' ');
