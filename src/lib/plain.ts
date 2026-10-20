@@ -142,15 +142,16 @@ const MONEY = {
 /**
  * BTMM: ¿hay tensión en el dinero a un día? «En EE. UU., prestarse dinero a un día entre bancos (SOFR) cuesta 0,05 puntos
  * más de lo que paga la Fed por las reservas (IORB): hay tensión…». `gap`: el tipo a un día menos lo que paga el banco
- * central, en pb (SOFR − IORB o €STR − facilidad de depósito). Por encima, falta dinero; por debajo, sobra.
+ * central, en pb (SOFR − IORB o €STR − facilidad de depósito). Por encima, falta dinero; por debajo, sobra. A menos de
+ * 5 pb en un sentido u otro, es el ruido de cada día (fin de mes, sobre todo): la frase no cambia de opinión por eso.
  */
 export function moneyPhrase(area: keyof typeof MONEY, gap: number | null | undefined): string | null {
 	if (gap == null) return null;
 	const { where, rate, paid } = MONEY[area];
 	const head = `En ${where}, prestarse dinero a un día entre bancos (${rate}) cuesta`;
+	if (Math.abs(gap) < 5) return `${head} casi lo mismo que lo que ${paid}: sin tensión.`;
 	if (gap > 0) return `${head} ${points(gap)} puntos más de lo que ${paid}: hay tensión, falta dinero a corto plazo.`;
-	if (gap < 0) return `${head} ${points(gap)} puntos menos de lo que ${paid}: sin tensión, hay dinero de sobra.`;
-	return `${head} lo mismo que ${paid}: sin tensión, pero al límite.`;
+	return `${head} ${points(gap)} puntos menos de lo que ${paid}: sin tensión, hay dinero de sobra.`;
 }
 
 /**

@@ -87,8 +87,13 @@ describe('moneyPhrase (BTMM)', () => {
 			'En EE. UU., prestarse dinero a un día entre bancos (SOFR) cuesta 0,05 puntos más de lo que paga la Fed por las reservas (IORB): hay tensión, falta dinero a corto plazo.'
 		);
 	});
-	it('igual: sin tensión, pero al límite; sin dato (FRED sin clave), no sale', () => {
-		expect(moneyPhrase('us', 0)).toMatch(/cuesta lo mismo que paga la Fed por las reservas \(IORB\): sin tensión, pero al límite\.$/);
+	it('a menos de 5 pb, en un sentido u otro, es ruido: sin tensión; sin dato (FRED sin clave), no sale', () => {
+		expect(moneyPhrase('us', 0)).toBe(
+			'En EE. UU., prestarse dinero a un día entre bancos (SOFR) cuesta casi lo mismo que lo que paga la Fed por las reservas (IORB): sin tensión.'
+		);
+		// −2 un día y +1 al siguiente: la misma frase, no dos opuestas.
+		for (const gap of [-4, -2, 1, 4]) expect(moneyPhrase('us', gap)).toMatch(/cuesta casi lo mismo .*: sin tensión\.$/);
+		expect(moneyPhrase('ea', -5)).toMatch(/0,05 puntos menos .*: sin tensión, hay dinero de sobra\.$/);
 		expect(moneyPhrase('us', null)).toBeNull();
 	});
 });
