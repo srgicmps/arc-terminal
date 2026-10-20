@@ -2,12 +2,16 @@
 // con la última copia descargada. SvelteKit lo construye y lo registra solo.
 //
 // Estrategias:
-// - Al instalar (precaché) solo lo imprescindible: los archivos de la build (_app/immutable), el manifest,
-//   los iconos y la portada TOP (la raíz y su __data.json). Así una publicación nueva no vuelve a bajar
-//   todas las vistas con sus datos: en el móvil eran ~0,5 MB cada 15 min.
+// - Al instalar (precaché): el código que arranca las vistas (la lista que deja la build en
+//   _app/precache.json, scripts/precache.ts), el manifest, los iconos y la portada TOP (la raíz y su
+//   __data.json). Arc OS y lo que solo se carga con import() (estéticas, ventanas de Arc OS, globo…) no:
+//   se guardan la primera vez que se piden, en una caché de nombre fijo con límite (arc-chunks). Si la
+//   lista falta o es de otra publicación, se precachea todo _app/immutable, como antes.
+// - Lo que ya estaba guardado con el mismo nombre (llevan un hash) no se vuelve a bajar al publicar.
 // - Las demás vistas se guardan al abrirlas: primero la red y, si responde bien, una copia en la caché de
 //   páginas. Esa caché tiene nombre fijo (sobrevive a las publicaciones) y un límite de entradas.
-// - Sin conexión: la vista abierta antes sale de esa caché; una que nunca se abrió cae en TOP.
+// - Sin conexión: la vista abierta antes sale de esa caché; una que nunca se abrió cae en TOP. Lo que solo
+//   se carga con import() y nunca se usó con conexión (otra estética, una ventana de Arc OS) no está.
 // - Fuentes de Google: primero la caché (no cambian nunca).
 // - Motor de ajedrez (static/engine/, unos 7 MB): no entra en la precaché, para no descargarlo a quien no
 //   juega. Se guarda la primera vez que se usa, en una caché propia que sobrevive a las publicaciones.
@@ -19,12 +23,17 @@
 import { self } from '$app/service-worker';
 import { immutable, assets, prerendered } from '$app/manifest';
 import { version } from '$app/env';
+import { bootFiles } from './precache.ts';
 
 // Archivos de la build: una caché por publicación; al publicar, `version` cambia y la anterior se borra.
 const CACHE = `arc-${version}`;
 // Vistas abiertas y sus datos: nombre fijo, nunca se borra al publicar.
 const PAGES = 'arc-pages';
 const PAGES_MAX = 40;
+// Archivos de la build que no van en la precaché (Arc OS, import()): se guardan al pedirlos. Nombre fijo; al
+// publicar solo se quitan los que ya no están en la build. Hoy son unos 90: el límite es un seguro.
+const CHUNKS = 'arc-chunks';
+const CHUNKS_MAX = 150;
 const FONTS = 'arc-fonts';
 const ENGINE = 'arc-engine';
 
@@ -33,13 +42,21 @@ const scope = new URL(self.registration.scope);
 const url = (path: string) => new URL(path.replace(/^\//, ''), scope).href;
 
 const IMMUTABLE = immutable.map((f) => url(f.path));
+const BUILD = new Set(IMMUTABLE);
+/**
+ * Al buscar un archivo de la build en la caché, sin mirar `Vary`: el servidor responde `Vary: Origin` y los
+ * import de módulos llevan Origin y la precaché no, así que no casaban y se volvían a descargar. Con el hash en
+ * el nombre, el contenido es siempre el mismo.
+ */
+const SAME_FILE = { ignoreVary: true };
+/** La lista de la precaché que deja la build (scripts/precache.ts). */
+const LIST = url('_app/precache.json');
 /** JSON de datos: data/fuel.json, data/fuel/07.json, eco/__data.json… */
 const DATA = /(\/data\/.+|__data)\.json$/;
 /** De static/ solo el manifest, los iconos y el favicon (no los JSON de data/ ni las pantallas de arranque de iOS, que solo pide el iPhone al instalar). */
 const STATIC = assets
 	.map((f) => url(f.path))
 	.filter((href) => /\.(webmanifest|png|svg|ico)$/.test(href) && !DATA.test(new URL(href).pathname) && !/\/splash-[^/]*$/.test(href));
-const PRECACHE = [...IMMUTABLE, ...STATIC];
 /** Archivos del motor de ajedrez de esta publicación (static/engine/): lo demás de su caché sobra. */
 const ENGINE_FILES = assets
 	.map((f) => url(f.path))
@@ -48,15 +65,25 @@ const ENGINE_FILES = assets
 const TOP_DATA = url('__data.json');
 const TOP = [scope.href, ...(prerendered.some((f) => url(f.path) === TOP_DATA) ? [TOP_DATA] : [])];
 
+/** Lo que arranca las vistas, según la lista de la build; sin lista (o si falla), todo _app/immutable. */
+async function bootList(): Promise<string[]> {
+	try {
+		const response = await fetch(LIST, { cache: 'no-cache' });
+		return bootFiles(response.ok && !response.redirected ? await response.json() : null, version, IMMUTABLE, url);
+	} catch {
+		return IMMUTABLE;
+	}
+}
+
 self.addEventListener('install', (event) => {
 	event.waitUntil(
 		(async () => {
 			const cache = await caches.open(CACHE);
 			// Los archivos de _app/immutable llevan un hash en el nombre: si ya están en una caché
-			// anterior, se reutilizan en lugar de volver a descargarlos (ahorra datos en el móvil).
+			// anterior (o en arc-chunks), se reutilizan en lugar de volver a descargarlos (ahorra datos en el móvil).
 			const missing: string[] = [];
-			for (const href of PRECACHE) {
-				const old = IMMUTABLE.includes(href) ? await caches.match(href) : undefined;
+			for (const href of [...(await bootList()), ...STATIC]) {
+				const old = BUILD.has(href) ? await caches.match(href, SAME_FILE) : undefined;
 				if (old) await cache.put(href, old);
 				else missing.push(href);
 			}
@@ -78,13 +105,16 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
 	event.waitUntil(
 		(async () => {
-			// Se borran las cachés de publicaciones viejas, pero nunca la de páginas, la de fuentes ni la del motor.
+			// Se borran las cachés de publicaciones viejas, pero nunca la de páginas, la de trozos, la de fuentes ni la del motor.
 			for (const key of await caches.keys()) {
-				if (key !== CACHE && key !== PAGES && key !== FONTS && key !== ENGINE) await caches.delete(key);
+				if (![CACHE, PAGES, CHUNKS, FONTS, ENGINE].includes(key)) await caches.delete(key);
 			}
 			// Del motor, solo los archivos de esta publicación: si cambia de versión, el viejo (7 MB) se borra.
 			const engine = await caches.open(ENGINE);
 			for (const request of await engine.keys()) if (!ENGINE_FILES.includes(request.url)) await engine.delete(request);
+			// De los trozos, igual: lo que ya no está en la build no se volverá a pedir.
+			const chunks = await caches.open(CHUNKS);
+			for (const request of await chunks.keys()) if (!BUILD.has(request.url)) await chunks.delete(request);
 			await self.clients.claim();
 		})()
 	);
@@ -128,8 +158,14 @@ self.addEventListener('fetch', (event) => {
 		return;
 	}
 
-	// El resto de archivos propios: si está en la precaché, al instante; si no, a la red.
-	if (PRECACHE.includes(target.href)) {
+	// Archivos de la build (llevan un hash en el nombre): de la precaché o de arc-chunks; si no, de la red y se guardan.
+	if (BUILD.has(target.href)) {
+		event.respondWith(chunk(request));
+		return;
+	}
+
+	// Manifest, iconos y favicon: de la precaché. El resto de archivos propios, a la red.
+	if (STATIC.includes(target.href)) {
 		event.respondWith(cacheFirst(request, CACHE));
 	}
 });
@@ -148,7 +184,7 @@ async function networkFirst(request: Request): Promise<Response> {
 		const response = await fetch(request);
 		if (response.ok && !response.redirected) {
 			await cache.put(key(request), response.clone());
-			await prune(cache);
+			await prune(cache, PAGES_MAX, TOP);
 		}
 		return response;
 	} catch (error) {
@@ -179,12 +215,35 @@ async function expired(): Promise<Response> {
 }
 
 /**
- * Deja la caché de páginas en PAGES_MAX entradas, borrando las más antiguas. `put` vuelve a poner al
- * final lo que ya estaba, así que el orden de `keys()` es el de la última visita. TOP no se borra nunca.
+ * Deja una caché en `max` entradas, borrando las más antiguas. `put` vuelve a poner al final lo que ya
+ * estaba, así que en la de páginas el orden de `keys()` es el de la última visita. Lo de `keep` (TOP) no se
+ * borra nunca.
  */
-async function prune(cache: Cache) {
-	const keys = (await cache.keys()).filter((r) => !TOP.includes(r.url));
-	for (const old of keys.slice(0, Math.max(0, keys.length - (PAGES_MAX - TOP.length)))) await cache.delete(old);
+async function prune(cache: Cache, max: number, keep: string[] = []) {
+	const keys = (await cache.keys()).filter((r) => !keep.includes(r.url));
+	for (const old of keys.slice(0, Math.max(0, keys.length - (max - keep.length)))) await cache.delete(old);
+}
+
+/**
+ * Archivos de la build: de la precaché o de arc-chunks; si no están (Arc OS, import()), de la red, y se
+ * guardan en arc-chunks para la próxima vez y para usarlos sin conexión. Si falla porque la sesión de Access
+ * ha caducado, se avisa a la página, como en networkFirst.
+ */
+async function chunk(request: Request): Promise<Response> {
+	const cached = (await caches.match(request, { ...SAME_FILE, cacheName: CACHE })) ?? (await caches.match(request, { ...SAME_FILE, cacheName: CHUNKS }));
+	if (cached) return cached;
+	try {
+		const response = await fetch(request);
+		if (response.ok && !response.redirected) {
+			const cache = await caches.open(CHUNKS);
+			await cache.put(request, response.clone());
+			await prune(cache, CHUNKS_MAX);
+		}
+		return response;
+	} catch (error) {
+		if (await loginNeeded()) return expired();
+		throw error;
+	}
 }
 
 /** Páginas: red primero; sin red, la página guardada o, si nunca se abrió, la portada. */
