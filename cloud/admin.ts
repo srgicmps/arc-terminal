@@ -6,7 +6,7 @@
 // - POST { action: 'invite' | 'remove', email }: añade o quita el email de la política de Access (por defecto,
 //   la que se llama «Sergi»; Variable ACCESS_POLICY) con la API de Cloudflare. Al quitar, se cierran sus
 //   sesiones y se borran sus datos de D1: todas las tablas de USER_TABLES (ajustes, avisos, último acceso,
-//   familia, navegadores con avisos, Mis RSS, predicciones y sugerencias).
+//   familia, navegadores con avisos, Mis RSS, predicciones, sugerencias y el contador de PREGUNTA).
 //   Al admin no se le puede quitar.
 // Necesita los Secrets de Pages CF_ACCESS_ADMIN_TOKEN (Access: Apps and Policies · Edit) y CF_ACCOUNT_ID; sin
 // ellos, la lista sale igual (solo con lo de D1) y no se puede invitar ni quitar.
@@ -220,7 +220,8 @@ export const USER_TABLES = [
 	'rss',
 	'forecast_bets',
 	'forecast_players',
-	'feedback'
+	'feedback',
+	'ask_count'
 ] as const satisfies readonly Table[];
 
 /** Las que usa el panel. Las de los demás módulos pueden no existir todavía: se crean igual que allí. */
