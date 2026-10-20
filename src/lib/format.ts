@@ -2,13 +2,21 @@
 
 const TZ = 'Europe/Madrid';
 
+/**
+ * Un formateador por número de decimales, creado la primera vez. `toLocaleString` con opciones crea uno
+ * nuevo en cada llamada (unas 50 veces más lento) y una vista como WS escribe cientos de cifras al cargar.
+ */
+const NF = new Map<number, Intl.NumberFormat>();
+
 /** 1234.5 → «1.234,50» */
 export function nf(n: number | null | undefined, decimals = 2): string {
 	if (n === null || n === undefined || !Number.isFinite(n)) return '—';
-	const s = n.toLocaleString('es-ES', {
-		minimumFractionDigits: decimals,
-		maximumFractionDigits: decimals
-	});
+	let f = NF.get(decimals);
+	if (!f) {
+		f = new Intl.NumberFormat('es-ES', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+		NF.set(decimals, f);
+	}
+	const s = f.format(n);
 	// Un negativo que se redondea a cero (o el -0 de sumar decimales en un eje) no lleva signo: «0,00», no «-0,00».
 	return /^-0(,0+)?$/.test(s) ? s.slice(1) : s;
 }
