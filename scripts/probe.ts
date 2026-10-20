@@ -24,11 +24,14 @@ const rowsOf = (sheet, plain = true) => {
 const FILES = {
 	sipri: async () => {
 		const page = 'https://www.sipri.org/databases/milex';
-		const year = new Date().getUTCFullYear();
-		return (
-			milexLink(await getText(page).catch(() => '')) ??
-			`https://www.sipri.org/sites/default/files/SIPRI-Milex-data-1949-${year - 1}.xlsx`
-		);
+		const direct = milexLink(await getText(page).catch(() => ''));
+		// Si la web del SIPRI está caída, sus copias del Internet Archive (cualquier Excel real del SIPRI vale).
+		const files = ['SIPRI-Milex-data-1949-2025_v1.2.xlsx', 'SIPRI-Milex-data-1949-2025_v1.1.xlsx', 'SIPRI-Milex-data-1949-2025.xlsx', 'SIPRI-Milex-data-1949-2024.xlsx'];
+		return [
+			...(direct ? [direct] : []),
+			...files.map((f) => `https://web.archive.org/web/2026id_/https://www.sipri.org/sites/default/files/${f}`),
+			...files.map((f) => `https://web.archive.org/web/2025id_/https://www.sipri.org/sites/default/files/${f}`)
+		];
 	},
 	pinksheet: async () => pinkLink(await getText('https://www.worldbank.org/en/research/commodity-markets')),
 	uncertainty: async () => `${EPU_URL}media/Global_Policy_Uncertainty_Data.xlsx`,
@@ -76,8 +79,24 @@ const same = (a, b) => {
 
 for (const [name, link] of Object.entries(FILES)) {
 	try {
-		const url = await link();
-		const bytes = new Uint8Array(await (await request(url)).arrayBuffer());
+		let url = '';
+		let bytes = null;
+		for (const candidate of [await link()].flat()) {
+			try {
+				const res = await request(candidate, {}, 1);
+				const buf = new Uint8Array(await res.arrayBuffer());
+				// Un .xlsx empieza por «PK» (es un ZIP).
+				if (buf[0] === 0x50 && buf[1] === 0x4b) {
+					url = candidate;
+					bytes = buf;
+					break;
+				}
+				console.log(`COMPARA ${name}: ${candidate} no es un .xlsx`);
+			} catch (error) {
+				console.log(`COMPARA ${name}: ${candidate} falla: ${error?.message ?? error}`);
+			}
+		}
+		if (!bytes) throw new Error('ninguna URL dio el .xlsx');
 		console.log(`\nCOMPARA ${name}: ${(bytes.length / 1e6).toFixed(2)} MB · ${url}`);
 		let t = performance.now();
 		const book = new ExcelJS.Workbook();
