@@ -4,6 +4,8 @@
 // webLook las mantiene al día. Fuera de /os todo sigue igual: al salir se vuelve a lo guardado.
 // src/app.html hace lo mismo antes de pintar (data-os-look), para que no parpadee.
 
+import { decideStyle } from '../estilos.ts';
+
 /** Atributos de <html> que pone la web y que en Arc OS no se usan. */
 export const WEB_LOOK = ['style', 'accent', 'density'] as const;
 
@@ -27,6 +29,9 @@ export function osLook(skin: () => string | null) {
 	root.dataset.osLook = '1';
 	const apply = () => strip(root, skin());
 	apply();
+	// Al entrar desde la web (navegación en el cliente), la barra del móvil aún lleva el fondo de la estética: ahora va
+	// el del aspecto, que está en tokens.css (no hay hoja que esperar). Con import(), por lo mismo que barColor.
+	void import('../theme.svelte.ts').then((m) => m.syncThemeColor());
 	const watch = new MutationObserver(apply);
 	watch.observe(root, { attributes: true, attributeFilter: WEB_LOOK.map((k) => `data-${k}`) });
 	watch.observe(document.head, { childList: true });
@@ -37,13 +42,40 @@ export function osLook(skin: () => string | null) {
 			watch.disconnect();
 			delete root.dataset.osLook;
 			delete root.dataset.osSkin;
-			webLook(root);
+			void webLook(root).then(barColor);
 		}
 	};
 }
 
-/** Pone en `root` la estética, el acento y la densidad guardados (lo mismo que src/app.html al cargar). */
-export function webLook(root: HTMLElement) {
+/**
+ * La barra del navegador del móvil (meta theme-color) vuelve al fondo de la estética: dentro de /os se queda con el
+ * del aspecto. Como setStyle (src/lib/taste.svelte.ts): en el acto (Terminal no tiene hoja) y otra vez al cargar la
+ * hoja. Ese «load» llega siempre que hay hoja: al entrar directo en /os no la había, y si se entró desde la web,
+ * Chromium la soltó al desactivarla en strip() (link.sheet pasa a null) y al reactivarla la vuelve a pedir. El
+ * escuchador se pone en la misma tarea que la lectura en el acto: si «load» llegó antes, esa lectura ya lo ve.
+ * Con import(): theme.svelte.ts usa runas, y look.ts también llega a los tests por embed.ts.
+ */
+async function barColor() {
+	const { syncThemeColor } = await import('../theme.svelte.ts');
+	sheet()?.addEventListener('load', syncThemeColor, { once: true });
+	syncThemeColor();
+}
+
+/** Las claves guardadas en localStorage (decideStyle mira si ya se usaba la web). */
+function storedKeys(): string[] {
+	try {
+		return Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i) ?? '');
+	} catch {
+		return [];
+	}
+}
+
+/**
+ * Pone en `root` la estética, el acento y la densidad guardados. La estética, con decideStyle, como src/app.html al
+ * cargar: solo un id de ESTILOS (otro pediría una hoja que no existe) y, si no, la que tocaría a quien no ha elegido.
+ * La promesa se cumple cuando el <link> de la hoja ya apunta a la estética (no cuando ha cargado).
+ */
+export function webLook(root: HTMLElement): Promise<void> {
 	const get = (k: string) => {
 		try {
 			return localStorage.getItem(k);
@@ -51,12 +83,10 @@ export function webLook(root: HTMLElement) {
 			return null;
 		}
 	};
-	const st = get('arc-style');
-	if (st && /^[a-z]+$/.test(st)) {
-		if (root.dataset.style !== st) root.dataset.style = st;
-		// Con import(): apps.ts (y sus tests) llega aquí por embed.ts, y estilos-css necesita $app/paths.
-		void import('../estilos-css.ts').then((m) => m.useSheet(st, 'style-sheet'));
-	}
+	const st = decideStyle(get('arc-style'), storedKeys());
+	if (root.dataset.style !== st) root.dataset.style = st;
+	// Con import(): apps.ts (y sus tests) llega aquí por embed.ts, y estilos-css necesita $app/paths.
+	const ready = import('../estilos-css.ts').then((m) => m.useSheet(st, 'style-sheet'));
 	const a = get('arc-accent');
 	if (a === 'amber' || a === 'cyan' || a === 'blue') root.dataset.accent = a;
 	else delete root.dataset.accent;
@@ -65,4 +95,5 @@ export function webLook(root: HTMLElement) {
 	else delete root.dataset.density;
 	const link = sheet();
 	if (link) link.disabled = false;
+	return ready;
 }
