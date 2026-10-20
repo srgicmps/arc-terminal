@@ -73,15 +73,13 @@
 			document.documentElement.dataset.modo = m;
 			// Arc OS: una vista dentro de una ventana (?embed=1) va sin la cabecera de la web (src/lib/os/embed.ts).
 			if (embed) document.documentElement.dataset.embed = '1';
-			// Estética: como decideStyle (src/lib/estilos.ts). Solo vale un id de ESTILOS (esta lista; src/lib/apphtml.test.ts
-			// comprueba que es la misma): con otro se pediría una hoja que no existe, un 404 que bloquea el pintado.
+			// Estética: como decideStyle (src/lib/estilos.ts), con los ids de ESTILOS (lo vigila src/lib/apphtml.test.ts):
+			// otro pediría una hoja que no existe (404). «modern» es la antigua Grafito.
 			var estilos = ['terminal', 'grafito', 'cristal', 'papel', 'calido', 'cupertino', 'retro', 'neon', 'brutal', 'bauhaus', 'suizo', 'cuaderno', 'nordico', 'lujo', 'oceano', 'plano', 'contraste', 'zen'];
 			var st;
 			try {
 				st = localStorage.getItem('arc-style');
 				if (estilos.indexOf(st) < 0) {
-					// «modern» es la antigua Grafito. Sin nada (o con una que ya no existe), quien ya usaba la web sigue en
-					// Terminal y quien llega nuevo empieza en Grafito.
 					var old = st === 'modern';
 					st = 'grafito';
 					for (var j = 0; !old && j < localStorage.length; j++) {

@@ -108,7 +108,7 @@ describe('src/app.html decide antes de pintar lo mismo que decideModo y decideSt
 	});
 
 	it('su lista de estéticas es la de ESTILOS (si falta una, quien la elija vuelve a Grafito o Terminal al cargar)', () => {
-		const list = /var estilos = \[([^\]]*)\];/.exec(code)?.[1] ?? '';
+		const list = /var estilos\s*=\s*\[([^\]]*)\]/.exec(code)?.[1] ?? '';
 		expect([...list.matchAll(/'([a-z]+)'/g)].map((m) => m[1]).sort()).toEqual(ESTILOS.map((e) => e.id).sort());
 	});
 
