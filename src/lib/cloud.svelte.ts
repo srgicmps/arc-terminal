@@ -4,7 +4,16 @@
 import { asset } from '$app/paths';
 import { collect } from './transfer.ts';
 import { PREFS } from './prefs.ts';
-import { isEmpty, mergeFitting, readMemory, startPlan, type Patch, type Prefs, type SyncMemory } from './cloud.ts';
+import {
+	isEmpty,
+	mergeFitting,
+	readMemory,
+	signOutKeys,
+	startPlan,
+	type Patch,
+	type Prefs,
+	type SyncMemory
+} from './cloud.ts';
 
 const MEMORY = 'arc-sync';
 const RELOADED = 'arc-sync-reload';
@@ -29,6 +38,10 @@ const IDB = PREFS.filter((p) => p.storage === 'idb').map((p) => p.key);
 
 let memory: SyncMemory | null = null;
 let busy = false;
+/** Esta pestaña ha llegado a tener la memoria guardada en localStorage (la ha leído o escrito). */
+let stored = false;
+/** Esta pestaña ya no sincroniza: se cierra la sesión o se borra la cuenta, aquí o en otra pestaña. */
+let stopped = false;
 
 const url = () => asset('api/prefs' as Parameters<typeof asset>[0]);
 
@@ -85,10 +98,30 @@ function forgetPrevious() {
 	}
 }
 
+/**
+ * ¿Ha desaparecido la memoria que esta pestaña tenía guardada? Otra pestaña ha cerrado la sesión o borrado la cuenta
+ * (o se han borrado los datos de la web). Subir ahora lo de aquí, ya vacío, borraría la cuenta, y escribir la memoria
+ * la resucitaría: esta pestaña deja de sincronizar hasta que se recargue.
+ */
+function vanished(): boolean {
+	if (stopped) return true;
+	try {
+		if (!stored || localStorage.getItem(MEMORY) !== null) return false;
+	} catch {
+		return false;
+	}
+	stopped = true;
+	memory = null;
+	cloud.state = 'auth';
+	return true;
+}
+
 /** Otra pestaña puede haber sincronizado: la memoria buena es la guardada, no la de esta pestaña. */
 function refreshMemory() {
+	if (vanished()) return;
 	try {
 		const saved = readMemory(localStorage.getItem(MEMORY));
+		if (saved) stored = true;
 		if (saved && (!memory || saved.user === memory.user)) memory = saved;
 	} catch {}
 }
@@ -101,6 +134,7 @@ function applyLocal(patch: Patch) {
 function remember(user: string, base: Prefs) {
 	memory = { user, base };
 	localStorage.setItem(MEMORY, JSON.stringify(memory));
+	stored = true;
 }
 
 /** Cambios de fuera que esperan a que dejes de escribir. */
@@ -109,7 +143,7 @@ let lastPull = 0;
 
 /** Trae lo del servidor, junta y sube. Si ha cambiado algo de aquí, recarga para que las vistas lo lean. */
 async function pull() {
-	if (busy) return;
+	if (busy || stopped) return;
 	busy = true;
 	lastPull = Date.now();
 	try {
@@ -117,6 +151,7 @@ async function pull() {
 		const remote = await getRemote();
 		if (!remote) return;
 		refreshMemory();
+		if (stopped) return;
 		const local = collect(localStorage);
 		const switching = !!memory && memory.user !== remote.user;
 		const plan = startPlan(local, remote.prefs, memory, remote.user);
@@ -124,7 +159,7 @@ async function pull() {
 		// viejo, y su próximo guardado pisaría lo que llega de fuera. Se deja para cuando acabe.
 		postponed = !isEmpty(plan.apply) && typing() && !switching;
 		if (postponed) return;
-		if (!(await push(plan.push))) return;
+		if (!(await push(plan.push)) || vanished()) return;
 		if (switching) forgetPrevious();
 		applyLocal(plan.apply);
 		remember(remote.user, plan.result);
@@ -148,14 +183,15 @@ async function pull() {
 
 /** Sube lo que haya cambiado aquí desde la última vez. */
 async function flush(keepalive = false) {
-	if (busy || !memory) return;
+	if (busy || stopped || !memory) return;
 	refreshMemory();
+	if (!memory) return;
 	const plan = mergeFitting(collect(localStorage), memory.base, memory.base);
 	setFrozen(plan.frozen);
 	if (isEmpty(plan.push)) return;
 	busy = true;
 	try {
-		if (await push(plan.push, keepalive)) {
+		if ((await push(plan.push, keepalive)) && !vanished() && memory) {
 			remember(memory.user, plan.result);
 			cloud.state = 'ok';
 		}
@@ -178,6 +214,7 @@ export function initCloud() {
 	if (new URL(url(), location.href).pathname !== '/api/prefs') return;
 	try {
 		memory = readMemory(localStorage.getItem(MEMORY));
+		stored = !!memory;
 	} catch {
 		return;
 	}
@@ -203,4 +240,89 @@ export function initCloud() {
 		document.removeEventListener('visibilitychange', onVisibility);
 		removeEventListener('online', onOnline);
 	};
+}
+
+/** La salida de Cloudflare Access: borra su cookie y cierra la sesión en todas sus aplicaciones. */
+const LOGOUT = '/cdn-cgi/access/logout';
+/** La caché del service worker con las vistas que has abierto (PAGES en src/service-worker/index.ts). */
+const PAGES = 'arc-pages';
+
+/** Espera a que acabe la subida o la bajada en curso (como mucho 5 s). */
+async function idle() {
+	for (let i = 0; busy && i < 50; i++) await new Promise((r) => setTimeout(r, 100));
+}
+
+/**
+ * Deja de sincronizar, borra de este navegador lo que es de la cuenta (signOutKeys en cloud.ts, lo de esta pestaña,
+ * las bases de IndexedDB y las vistas guardadas) y va a la salida de Access. Al volver a entrar, todo baja de la cuenta.
+ */
+async function leave() {
+	stopped = true;
+	memory = null;
+	try {
+		// La memoria, la primera: otra pestaña abierta deja de sincronizar antes de ver lo demás vacío (vanished).
+		localStorage.removeItem(MEMORY);
+		const keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i) ?? '');
+		for (const k of signOutKeys(keys)) localStorage.removeItem(k);
+		sessionStorage.clear();
+	} catch {}
+	forgetPrevious();
+	if ('caches' in globalThis) await caches.delete(PAGES).catch(() => false);
+	location.assign(LOGOUT);
+}
+
+/** Por qué no se ha podido salir. force: se puede salir igual, perdiendo lo que no ha llegado a la cuenta. */
+export interface Blocked {
+	text: string;
+	force?: boolean;
+}
+
+/** ¿Queda aquí algo que no está en la cuenta? Cambios sin subir o claves que no caben (cloud.frozen). */
+function unsynced(): boolean {
+	if (cloud.frozen.length) return true;
+	return !!memory && !isEmpty(mergeFitting(collect(localStorage), memory.base, memory.base).push);
+}
+
+/**
+ * «Cerrar sesión» (HELP): sube lo que quede por subir y sale. Sin conexión no se puede cerrar la sesión de Access, y
+ * si algo no ha llegado a la cuenta se avisa antes (con force, se sale igual). En esos casos no se borra nada.
+ */
+export async function signOut(force = false): Promise<Blocked | null> {
+	if (navigator.onLine === false) return { text: 'Sin conexión: vuelve a probar cuando tengas red.' };
+	await idle();
+	await flush();
+	if (!force && unsynced())
+		return { text: 'Hay cosas de este dispositivo que no están en tu cuenta: si sales, se pierden.', force: true };
+	await leave();
+	return null;
+}
+
+/**
+ * «Borrar mi cuenta» (HELP): borra en el servidor todo lo tuyo (DELETE /api/account, cloud/account.ts) y sale como
+ * «Cerrar sesión». Mientras, no se sube nada (lo recrearía). Si no se puede, devuelve el porqué y sigue todo igual.
+ */
+export async function deleteAccount(): Promise<Blocked | null> {
+	if (!cloud.user) return { text: 'No hay cuenta.' };
+	const was = stopped;
+	stopped = true;
+	await idle();
+	let res: Response | null = null;
+	try {
+		res = await fetch(asset('api/account' as Parameters<typeof asset>[0]), {
+			method: 'DELETE',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ confirm: cloud.user }),
+			credentials: 'same-origin',
+			redirect: 'manual'
+		});
+	} catch {}
+	if (!res?.ok) {
+		stopped = was;
+		if (!res) return { text: 'Sin conexión: no se ha borrado nada.' };
+		if (res.type === 'opaqueredirect' || res.status === 401)
+			return { text: 'Tu sesión ha caducado: recarga la página y vuelve a probar. No se ha borrado nada.' };
+		return { text: 'No se ha podido borrar: vuelve a probar en un rato. No se ha borrado nada.' };
+	}
+	await leave();
+	return null;
 }
