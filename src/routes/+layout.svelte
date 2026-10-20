@@ -5,15 +5,17 @@
 	import { routeHref } from '#lib/routes.ts';
 	import '../app.css';
 	import '../styles/ajustes.css';
-	import { afterNavigate, goto } from '$app/navigation';
+	import { afterNavigate, goto, onNavigate, preloadData } from '$app/navigation';
+	import { fade, viewEnv, wants } from '#lib/viewtransition.ts';
 	import { MediaQuery } from 'svelte/reactivity';
-	import { isOnRoute, neighbour, nudge, SWIPE, swipeDirection } from '#lib/swipe.ts';
+	import { isOnRoute, neighbour, nudge, preloadDirection, SWIPE, swipeDirection } from '#lib/swipe.ts';
 	import { asset, resolve } from '$app/paths';
-	import { page, updated } from '$app/state';
+	import { navigating, page, updated } from '$app/state';
 	import { startClock } from '#lib/clock.svelte.ts';
 	import { COMMANDS } from '#lib/commands.ts';
 	import Clocks from '#lib/components/Clocks.svelte';
 	import Logo from '#lib/components/Logo.svelte';
+	import NavProgress from '#lib/components/NavProgress.svelte';
 	import Menu from '#lib/components/ui/Menu.svelte';
 	import CommandBar from '#lib/components/CommandBar.svelte';
 	import ExpLauncher from '#lib/components/ExpLauncher.svelte';
@@ -42,7 +44,7 @@
 	import { initTaste, taste, VISIBLE_KEYS } from '#lib/taste.svelte.ts';
 	import { startTv, stopTv, tickTv, togglePause, tv } from '#lib/tv.svelte.ts';
 	import { crossedNow, initThresholds } from '#lib/thresholds.svelte.ts';
-	import { parseTv, routeOf } from '#lib/tv.ts';
+	import { parseTv, routeOf, tvDelta } from '#lib/tv.ts';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
@@ -69,6 +71,8 @@
 	$effect(() => (isEmbedded() ? undefined : initCloud()));
 	$effect(initEmbed);
 	afterNavigate(({ to }) => to && reportPath(unembed(to.url.pathname + to.url.search + to.url.hash)));
+	// Fundido corto al cambiar de vista, solo en las estéticas que lo piden (--dur-view; src/lib/viewtransition.ts).
+	onNavigate((nav) => (wants(nav, viewEnv()) ? fade(nav.complete) : undefined));
 	// Sesión de Cloudflare Access caducada: el service worker avisa y se recarga para ir al login.
 	$effect(listenServiceWorker);
 
@@ -82,13 +86,23 @@
 	});
 
 	// El reloj del modo TV: cada cuarto de segundo avanza la barra de progreso y, al llegar, cambia de vista.
+	// Cuenta tiempo real (tvDelta): no se retrasa con la CPU cargada y con la pestaña oculta no avanza. Al volver a
+	// la pestaña se toma la hora de nuevo, para que el rato oculto no cuente de golpe.
 	$effect(() => {
 		if (!tv.on) return;
+		let last = performance.now();
 		const id = setInterval(() => {
-			const next = tickTv(0.25);
+			const now = performance.now();
+			const next = tickTv(tvDelta(last, now, document.hidden));
+			last = now;
 			if (next) goto(routeHref(routeOf(next)));
 		}, 250);
-		return () => clearInterval(id);
+		const onVisible = () => (last = performance.now());
+		document.addEventListener('visibilitychange', onVisible);
+		return () => {
+			clearInterval(id);
+			document.removeEventListener('visibilitychange', onVisible);
+		};
 	});
 
 	/** j/k, ↓/↑ y «o» con el foco en una fila (rownav.ts): antes que la barra de comandos, que se quedaría la letra. */
@@ -127,7 +141,8 @@
 	// Deslizar entre vistas en el móvil (lote 22): a izquierda o derecha, a la vista de al lado de la fila de
 	// arriba. No cuenta si el dedo empieza en algo que ya se desliza en horizontal (tablas anchas, mapas,
 	// gráficos, widgets, campos) ni junto al borde, que en iOS es «atrás».
-	let swipe: { x: number; y: number; t: number } | null = null;
+	// `preloaded`: ya se ha pedido la vista de al lado en este gesto (una sola vez).
+	let swipe: { x: number; y: number; t: number; preloaded?: boolean } | null = null;
 	let shift = $state(0);
 	const NO_SWIPE = 'input, textarea, select, iframe, canvas, svg, .map, .chart, .tv, .board, [data-noswipe]';
 
@@ -156,7 +171,18 @@
 		if (Math.abs(dy) > Math.abs(dx)) {
 			swipe = null;
 			shift = 0;
-		} else shift = nudge(dx);
+			return;
+		}
+		shift = nudge(dx);
+		// En cuanto se sabe a qué lado va, se piden ya los datos y el código de esa vista (solo esa, una vez por
+		// gesto): al soltar, la vista nueva ya está en camino. Si falla, la navegación normal lo vuelve a pedir.
+		// Con el «Ahorro de datos» del navegador, nada (como la precarga de SvelteKit): el gesto puede quedarse corto.
+		const dir = swipe.preloaded ? 0 : preloadDirection(dx, dy);
+		if (!dir) return;
+		swipe.preloaded = true;
+		const next = neighbour(keys, keys.findIndex((k) => isOn(k.route)), dir);
+		const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+		if (next && !saveData) preloadData(routeHref(next.route)).catch(() => {});
 	}
 
 	function onSwipeEnd(e: TouchEvent) {
@@ -226,6 +252,8 @@
 <div class="app" data-ui="app">
 	<!-- Para el teclado y los lectores de pantalla: sin pasar por la cabecera y las pestañas. Solo se ve con el foco. -->
 	<a class="skip" href="#contenido">Saltar al contenido</a>
+	<!-- Línea de carga arriba mientras se abre otra vista (solo si tarda). -->
+	<NavProgress />
 	<header class="top" data-ui="top">
 		<a class="brand" data-ui="brand" href={resolve('/')}>
 			<Logo />
@@ -318,6 +346,7 @@
 		id="contenido"
 		tabindex="-1"
 		data-ui="main"
+		aria-busy={navigating.to ? 'true' : undefined}
 		class:nudged={shift !== 0}
 		style:translate={shift ? `${shift}px 0` : undefined}
 		ontouchstart={onSwipeStart}
@@ -339,8 +368,9 @@
 	</nav>
 
 	{#if tv.on}
-		<!-- Progreso hasta la vista siguiente: una línea de 1 px abajo del todo. -->
-		<div class="tv-progress" class:paused={tv.paused} style:width="{Math.min(100, (tv.elapsed / tv.seconds) * 100)}%" aria-hidden="true"></div>
+		<!-- Progreso hasta la vista siguiente: una línea de 1 px abajo del todo. Crece con scaleX, no con el ancho:
+		     así la anima la tarjeta gráfica y la página no se vuelve a maquetar cuatro veces por segundo. -->
+		<div class="tv-progress" class:paused={tv.paused} style:transform="scaleX({Math.min(1, tv.elapsed / tv.seconds)})" aria-hidden="true"></div>
 		{#if tv.paused}
 			<div class="tv-chip" role="status">
 				<span>TV en pausa · {tv.codes[tv.index]}</span>
@@ -633,12 +663,13 @@
 
 	.tv-progress {
 		position: fixed;
-		left: 0;
+		inset-inline: 0;
 		bottom: 0;
 		z-index: 40;
 		height: var(--hair);
 		background: var(--amber);
-		transition: width 0.25s linear;
+		transform-origin: left;
+		transition: transform 0.25s linear;
 	}
 
 	.tv-progress.paused {
