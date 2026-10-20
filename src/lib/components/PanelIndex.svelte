@@ -1,7 +1,9 @@
 <!--
 	Índice de paneles en el móvil (≤ 720 px), solo en vistas de más de 6 paneles: una fila fina de chips con
-	los títulos, fija arriba al hacer scroll, que lleva a cada panel. Se desliza en horizontal y no cuenta
-	para «deslizar entre vistas» (data-noswipe).
+	los títulos que lleva a cada panel. Se desliza en horizontal y no cuenta para «deslizar entre vistas» (data-noswipe).
+	Va fijo arriba y no ocupa sitio en la página: sale con un fundido cuando la cabecera de la vista sube fuera de
+	la pantalla y se esconde al volver arriba. Los paneles se apuntan al índice al hidratar, así que si ocupara
+	sitio empujaría la vista hacia abajo justo después del primer pintado (salto de unos 45 px en TOP y WS).
 -->
 <script lang="ts">
 	import { edgeFade } from '#lib/edgefade.ts';
@@ -10,15 +12,42 @@
 	const MIN = 7;
 	const index = getPanelIndex();
 	const items = $derived(index?.ordered ?? []);
+	let shown = $state(false);
 
 	function go(el: HTMLElement) {
 		const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
 		el.scrollIntoView({ block: 'start', behavior: smooth ? 'smooth' : 'auto' });
 	}
+
+	/**
+	 * Centinela de alto 0 justo encima de la vista (como un useIntersectionObserver de VueUse): el índice se ve
+	 * cuando el centinela ha salido de la pantalla por arriba, no cuando aún no ha llegado (top < 0).
+	 * Por encima de 720 px el centinela no se pinta; al girar el móvil se vuelve a observar para saber dónde está.
+	 */
+	function watchTop(node: HTMLElement) {
+		if (typeof IntersectionObserver === 'undefined') {
+			shown = true;
+			return;
+		}
+		const io = new IntersectionObserver(([e]) => (shown = !e.isIntersecting && e.boundingClientRect.top < 0));
+		io.observe(node);
+		const narrow = matchMedia('(max-width: 720px)');
+		const again = () => {
+			io.unobserve(node);
+			io.observe(node);
+		};
+		narrow.addEventListener('change', again);
+		return () => {
+			io.disconnect();
+			narrow.removeEventListener('change', again);
+			shown = false;
+		};
+	}
 </script>
 
 {#if items.length >= MIN}
-	<nav class="pidx" data-ui="panel-index" aria-label="Paneles de esta vista" data-noswipe use:edgeFade>
+	<div class="pidx-top" aria-hidden="true" {@attach watchTop}></div>
+	<nav class="pidx" class:on={shown} data-ui="panel-index" aria-label="Paneles de esta vista" data-noswipe use:edgeFade>
 		{#each items as item (item.id)}
 			<button type="button" onclick={() => go(item.el)}><span>{item.title}</span></button>
 		{/each}
@@ -26,22 +55,42 @@
 {/if}
 
 <style>
-	.pidx {
+	.pidx,
+	.pidx-top {
 		display: none;
 	}
 
 	@media (max-width: 720px) {
+		.pidx-top {
+			display: block;
+		}
+
+		/* Fijo arriba, de lado a lado (como la barra inferior), con el mismo margen que la página. Escondido con
+		   visibility, además de transparente: así no se puede pulsar ni enfocar, y los lectores de pantalla lo saltan. */
 		.pidx {
-			position: sticky;
+			position: fixed;
 			top: 0;
+			left: 0;
+			right: 0;
 			z-index: var(--z-bar);
 			display: flex;
 			gap: var(--sp-6);
 			overflow-x: auto;
 			scrollbar-width: none;
-			margin-bottom: var(--sp-8);
+			padding-inline: max(var(--gutter), env(safe-area-inset-left, 0px))
+				max(var(--gutter), env(safe-area-inset-right, 0px));
 			background: var(--bg);
 			border-bottom: var(--border);
+			opacity: 0;
+			visibility: hidden;
+			transition:
+				opacity var(--dur-fast) ease-out,
+				visibility var(--dur-fast);
+		}
+
+		.pidx.on {
+			opacity: 1;
+			visibility: visible;
 		}
 
 		.pidx::-webkit-scrollbar {
