@@ -31,7 +31,7 @@ const CACHE = `arc-${version}`;
 const PAGES = 'arc-pages';
 const PAGES_MAX = 40;
 // Archivos de la build que no van en la precaché (Arc OS, import()): se guardan al pedirlos. Nombre fijo; al
-// publicar solo se quitan los que ya no están en la build. Hoy son unos 90: el límite es un seguro.
+// publicar solo se quitan los que ya no están en la build. Hoy son unos 80: el límite es un seguro.
 const CHUNKS = 'arc-chunks';
 const CHUNKS_MAX = 150;
 const FONTS = 'arc-fonts';
@@ -43,6 +43,8 @@ const url = (path: string) => new URL(path.replace(/^\//, ''), scope).href;
 
 const IMMUTABLE = immutable.map((f) => url(f.path));
 const BUILD = new Set(IMMUTABLE);
+/** Carpeta de los archivos con hash: también los de una publicación más nueva que este service worker. */
+const IMMUTABLE_DIR = `${scope.pathname}_app/immutable/`;
 /**
  * Al buscar un archivo de la build en la caché, sin mirar `Vary`: el servidor responde `Vary: Origin` y los
  * import de módulos llevan Origin y la precaché no, así que no casaban y se volvían a descargar. Con el hash en
@@ -64,6 +66,8 @@ const ENGINE_FILES = assets
 /** La portada TOP y sus datos (si la build los genera): siempre disponibles sin conexión. */
 const TOP_DATA = url('__data.json');
 const TOP = [scope.href, ...(prerendered.some((f) => url(f.path) === TOP_DATA) ? [TOP_DATA] : [])];
+/** Lo que nunca sale de la caché de páginas: TOP, el índice de la barra y el estado de las fuentes (los usan todas las vistas). */
+const KEEP = [...TOP, url('data/search.json'), url('data/status.json')];
 
 /** Lo que arranca las vistas, según la lista de la build; sin lista (o si falla), todo _app/immutable. */
 async function bootList(): Promise<string[]> {
@@ -81,13 +85,24 @@ self.addEventListener('install', (event) => {
 			const cache = await caches.open(CACHE);
 			// Los archivos de _app/immutable llevan un hash en el nombre: si ya están en una caché
 			// anterior (o en arc-chunks), se reutilizan en lugar de volver a descargarlos (ahorra datos en el móvil).
+			const boot = await bootList();
 			const missing: string[] = [];
-			for (const href of [...(await bootList()), ...STATIC]) {
+			for (const href of [...boot, ...STATIC]) {
 				const old = BUILD.has(href) ? await caches.match(href, SAME_FILE) : undefined;
 				if (old) await cache.put(href, old);
 				else missing.push(href);
 			}
 			await cache.addAll(missing);
+			// Lo que no va en la precaché (Arc OS, import()) pero ya estaba guardado en la caché de la publicación
+			// anterior pasa a arc-chunks: al activarse, esa caché se borra y se perdería.
+			const chunks = await caches.open(CHUNKS);
+			const listed = new Set(boot);
+			for (const href of IMMUTABLE) {
+				if (listed.has(href) || (await chunks.match(href, SAME_FILE))) continue;
+				const old = await caches.match(href, SAME_FILE);
+				if (old) await chunks.put(href, old);
+			}
+			await prune(chunks, CHUNKS_MAX);
 			// TOP siempre fresca: se salta la caché HTTP del navegador.
 			const pages = await caches.open(PAGES);
 			await Promise.all(
@@ -159,7 +174,9 @@ self.addEventListener('fetch', (event) => {
 	}
 
 	// Archivos de la build (llevan un hash en el nombre): de la precaché o de arc-chunks; si no, de la red y se guardan.
-	if (BUILD.has(target.href)) {
+	// También los de una publicación más nueva que este service worker (la página ya es la nueva y el suyo aún
+	// se instala): así no se pierde lo que solo se carga con import() en esa primera visita.
+	if (target.pathname.startsWith(IMMUTABLE_DIR)) {
 		event.respondWith(chunk(request));
 		return;
 	}
@@ -184,7 +201,7 @@ async function networkFirst(request: Request): Promise<Response> {
 		const response = await fetch(request);
 		if (response.ok && !response.redirected) {
 			await cache.put(key(request), response.clone());
-			await prune(cache, PAGES_MAX, TOP);
+			await prune(cache, PAGES_MAX, KEEP);
 		}
 		return response;
 	} catch (error) {
@@ -216,7 +233,7 @@ async function expired(): Promise<Response> {
 
 /**
  * Deja una caché en `max` entradas, borrando las más antiguas. `put` vuelve a poner al final lo que ya
- * estaba, así que en la de páginas el orden de `keys()` es el de la última visita. Lo de `keep` (TOP) no se
+ * estaba, así que en la de páginas el orden de `keys()` es el de la última visita. Lo de `keep` (KEEP) no se
  * borra nunca.
  */
 async function prune(cache: Cache, max: number, keep: string[] = []) {
