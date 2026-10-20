@@ -133,18 +133,33 @@ export function lprDates(year: number): string[] {
 	});
 }
 
+/**
+ * Un formateador por zona horaria. CB_MEETINGS llama a zonedInstant más de cien veces al importarse, y este
+ * archivo lo carga la barra de comandos en todas las vistas: así son 8 formateadores en vez de 115.
+ */
+const ZONE_FMT = new Map<string, Intl.DateTimeFormat>();
+
+function zoneFmt(tz: string): Intl.DateTimeFormat {
+	let f = ZONE_FMT.get(tz);
+	if (!f) {
+		f = new Intl.DateTimeFormat('en-GB', {
+			timeZone: tz,
+			hourCycle: 'h23',
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+		ZONE_FMT.set(tz, f);
+	}
+	return f;
+}
+
 /** Instante UTC de las `time` («HH:MM») del día `date` en la zona `tz`. */
 export function zonedInstant(date: string, time: string, tz: string): Date {
 	const guess = new Date(`${date}T${time}:00Z`);
-	const parts = new Intl.DateTimeFormat('en-GB', {
-		timeZone: tz,
-		hourCycle: 'h23',
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit',
-		hour: '2-digit',
-		minute: '2-digit'
-	}).formatToParts(guess);
+	const parts = zoneFmt(tz).formatToParts(guess);
 	const p = (t: string) => Number(parts.find((x) => x.type === t)?.value);
 	const local = Date.UTC(p('year'), p('month') - 1, p('day'), p('hour'), p('minute'));
 	return new Date(guess.getTime() - (local - guess.getTime()));
