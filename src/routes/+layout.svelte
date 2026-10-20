@@ -5,7 +5,8 @@
 	import { routeHref } from '#lib/routes.ts';
 	import '../app.css';
 	import '../styles/ajustes.css';
-	import { afterNavigate, goto } from '$app/navigation';
+	import { afterNavigate, goto, onNavigate } from '$app/navigation';
+	import { fade, viewEnv, wants } from '#lib/viewtransition.ts';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { isOnRoute, neighbour, nudge, SWIPE, swipeDirection } from '#lib/swipe.ts';
 	import { asset, resolve } from '$app/paths';
@@ -70,6 +71,8 @@
 	$effect(() => (isEmbedded() ? undefined : initCloud()));
 	$effect(initEmbed);
 	afterNavigate(({ to }) => to && reportPath(unembed(to.url.pathname + to.url.search + to.url.hash)));
+	// Fundido corto al cambiar de vista, solo en las estéticas que lo piden (--dur-view; src/lib/viewtransition.ts).
+	onNavigate((nav) => (wants(nav, viewEnv()) ? fade(nav.complete) : undefined));
 	// Sesión de Cloudflare Access caducada: el service worker avisa y se recarga para ir al login.
 	$effect(listenServiceWorker);
 

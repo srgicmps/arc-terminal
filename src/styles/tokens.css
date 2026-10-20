@@ -232,6 +232,7 @@
 	--scroll-thumb: var(--neutral); /* la parte que se arrastra */
 	--scroll-track: transparent; /* el carril: transparente, así no asoma ninguna esquina cuadrada */
 	--dur-ui: 0ms; /* transición de botones y filas al pasar el ratón */
+	--dur-view: 0ms; /* fundido al cambiar de vista (0: sin fundido; lo activa la estética que lo quiera) */
 	--ease: cubic-bezier(0.2, 0, 0, 1);
 
 	/*
