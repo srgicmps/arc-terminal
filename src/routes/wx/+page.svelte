@@ -142,7 +142,8 @@
 <div class="grid grid-2e">
 	<div class="col">
 		{#if menorca}
-		<Panel title="Avisos · Menorca" meta="AEMET vía MeteoAlarm">
+		<!-- id «avisos»: el modo Sencillo (simple.ts) enseña los avisos de tu sitio. En Menorca, estos; fuera, los de Europa. -->
+		<Panel id="avisos" title="Avisos · Menorca" meta="AEMET vía MeteoAlarm">
 			{#if alerts === null}
 				<p class="empty">Sin datos de avisos todavía.</p>
 			{:else if !alerts.length}
@@ -164,7 +165,7 @@
 		{/if}
 
 		{#if euRows.length}
-		<Panel title="Avisos en Europa" meta="En vigor y próximos · por país">
+		<Panel id={menorca ? undefined : 'avisos'} title="Avisos en Europa" meta="En vigor y próximos · por país">
 			<Table>
 				<thead><tr><th class="l">País</th><th>Rojos</th><th>Naranjas</th><th>Amarillos</th></tr></thead>
 				<tbody>
@@ -396,7 +397,9 @@
 	{#each places as p (p.name)}
 		{@const now = sky(p.current.code)}
 		<div class="col">
-			<Panel title={p.name} meta={p === main ? `Tu sitio · ${now.label}` : now.label}>
+			<!-- En Sencillo (simple.ts, «id:tiempo»), solo la ficha de tu sitio. Si no llega, ninguna: no se hace pasar
+				otra ciudad por la tuya (ya sale el aviso de que no se pudo pedir). -->
+			<Panel id={p === main ? 'tiempo' : undefined} title={p.name} meta={p === main ? `Tu sitio · ${now.label}` : now.label}>
 				<div class="now">
 					<span class="icon" aria-hidden="true">{now.icon}</span>
 					<b>{nf(p.current.temp, 0)}°</b>
@@ -436,6 +439,13 @@
 </p>
 
 <style>
+	/* Modo Sencillo (simple.ts): una columna que se queda sin paneles (las otras ciudades; sin avisos, la de mar y
+	   sol) no se pinta. Si no, deja una línea de más o, en pantalla ancha, un hueco al lado. Con «Ver todos»
+	   (data-all) o en el modo TV se ve como siempre. */
+	:global(html[data-modo='sencillo']:not([data-all], [data-tv])) .col:not(:has(:global(.panel[data-essential]))) {
+		display: none;
+	}
+
 	.now {
 		display: flex;
 		align-items: center;

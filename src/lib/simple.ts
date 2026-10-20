@@ -14,7 +14,12 @@ export const ESSENTIAL: Record<string, string[]> = {
 	'/ai': ['Titulares', 'Tecnológicas en bolsa', 'Modelos nuevos del mes', 'Modelos frontera'],
 	'/s': ['Gráfico', 'Cotización', 'Por qué se mueve', 'Perfil de la empresa', 'Datos fundamentales', 'Analistas y resultados', 'En las noticias'],
 	'/cal': ['Calendario', 'Próximos datos', 'Resultados', 'Festivos', 'Puentes'],
-	'/semana': ['Lo más importante', 'Mercados', 'Agenda']
+	'/semana': ['Lo más importante', 'Mercados', 'Agenda'],
+	// WX: la ficha de tu sitio (la de las demás ciudades, no), tus avisos (en Menorca, los de la isla; fuera, los de
+	// Europa, con las zonas de tu país), aire y UV. Fuera: mar, sol y luna, clima, asteroides…
+	'/wx': ['id:tiempo', 'id:avisos', 'Aire', 'UV y polen'],
+	// LUZ: el precio de hoy y de mañana (su título es la fecha), las horas baratas y de dónde sale la luz.
+	'/luz': ['id:precio', 'Horas baratas', 'De dónde sale la luz']
 };
 
 /**
@@ -47,7 +52,9 @@ export const PLAIN_TITLES: Record<string, string> = {
 	'Diferenciales de crédito': 'Lo que pagan de más las empresas por su deuda',
 	'Inflación esperada y tipos reales': 'Inflación que se espera',
 	'Mercado monetario': 'Tipos de interés a muy corto plazo',
-	'Precios de los alimentos': 'Precio de los alimentos en el mundo'
+	'Precios de los alimentos': 'Precio de los alimentos en el mundo',
+	Aire: 'Calidad del aire',
+	'UV y polen': 'Sol (índice UV) y polen'
 };
 
 /** Sin tildes, en minúscula y con los espacios normalizados (como glossary.ts). */

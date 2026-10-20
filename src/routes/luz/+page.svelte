@@ -177,7 +177,8 @@
 <div class="grid" class:grid-2e={blocks.length > 1}>
 	{#each blocks as b (b.day)}
 		<div class="col">
-			<Panel title={longDay(`${b.day}T12:00:00Z`)} meta="{b.kind} · €/kWh" share={share(b)}>
+			<!-- id: el título es la fecha; con él, el modo Sencillo (simple.ts, «id:precio») sabe que es el precio del día. -->
+			<Panel id="precio" title={longDay(`${b.day}T12:00:00Z`)} meta="{b.kind} · €/kWh" share={share(b)}>
 				{#if b.stats.min && b.stats.max}
 					<Tiles>
 						<Tile label="Media" value={nf(b.stats.avg, 3)} />
@@ -279,6 +280,14 @@
 </div>
 
 <style>
+	/* Modo Sencillo (simple.ts): una rejilla que se queda sin paneles (demanda, Europa, evolución) no se pinta;
+	   si no, su borde deja una línea de más. Con «Ver todos» (data-all) o en el modo TV se ve como siempre.
+	   Al encajar en pantalla (+layout.svelte), la rejilla que llena el alto es la última del todo (:last-child), y
+	   aquí es la de la evolución, oculta: en Sencillo, las de arriba van con su alto y abajo queda aire. */
+	:global(html[data-modo='sencillo']:not([data-all], [data-tv])) .grid:not(:has(:global(.panel[data-essential]))) {
+		display: none;
+	}
+
 	.pick {
 		padding: var(--sp-8) var(--pad-x);
 	}
