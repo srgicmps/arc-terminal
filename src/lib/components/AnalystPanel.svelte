@@ -93,7 +93,7 @@
 			<tr><th>Trimestre</th><th>BPA esperado</th><th>BPA real</th><th>Sorpresa</th></tr>
 		</thead>
 		<tbody>
-			{#each a.surprises as s (s.period)}
+			{#each a.surprises as s, i (i)}
 				<tr>
 					<td>{quarter(s.period)}</td>
 					<td class="mut">{usd(s.estimate)}</td>
