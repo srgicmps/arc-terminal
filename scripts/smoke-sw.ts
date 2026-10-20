@@ -7,6 +7,7 @@
 // sugiera algo al escribir: sin su JavaScript no lo hace. Si falla, dice qué archivos de _app/immutable no cargan.
 // Usa su propio `vite preview` y lo apaga para cortar la red: setOffline de Playwright no corta los fetch del
 // service worker.
+// Desde que preview() lanza vite con node, server.kill() lo apaga de verdad: «sin conexión» corta la red de verdad.
 import type { ChildProcess } from 'node:child_process';
 import type { Browser, Page } from 'playwright-core';
 import { preview } from './browser.ts';
