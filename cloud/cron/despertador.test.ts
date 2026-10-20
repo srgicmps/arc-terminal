@@ -14,11 +14,18 @@ interface Llamada {
 	body?: unknown;
 }
 
+/** Una pasada de main que espera turno: de qué workflow es y en qué estado (queued o pending). */
+interface Espera {
+	workflow: string;
+	status: (typeof ESPERANDO)[number];
+}
+
 /**
- * GitHub de mentira: `cola` dice cuántas pasadas esperan con cada estado (queued, pending) y `falla`, qué
- * responder en vez de lo normal a las peticiones cuya ruta empieza por esa clave.
+ * GitHub de mentira: `esperan` son las pasadas de main que esperan turno y `falla`, qué responder en vez de lo
+ * normal a las peticiones cuya ruta empieza por esa clave. Como el GitHub de verdad, /actions/runs cuenta las
+ * de todos los workflows y /actions/workflows/<archivo>/runs, solo las de ese archivo.
  */
-function github({ cola = {}, falla = {} }: { cola?: Record<string, number>; falla?: Record<string, number> } = {}) {
+function github({ esperan = [], falla = {} }: { esperan?: Espera[]; falla?: Record<string, number> } = {}) {
 	const llamadas: Llamada[] = [];
 	const fn = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
 		const url = new URL(String(input));
@@ -32,7 +39,11 @@ function github({ cola = {}, falla = {} }: { cola?: Record<string, number>; fall
 		for (const [prefijo, status] of Object.entries(falla))
 			if (url.pathname.startsWith(prefijo)) return new Response('{}', { status });
 		if (url.pathname.endsWith('/dispatches')) return new Response(null, { status: 204 });
-		return Response.json({ total_count: cola[url.searchParams.get('status') ?? ''] ?? 0, workflow_runs: [] });
+		const suyas = url.pathname.match(/\/actions\/workflows\/([^/]+)\/runs$/)?.[1];
+		const total_count = esperan.filter(
+			(e) => e.status === url.searchParams.get('status') && (!suyas || e.workflow === suyas)
+		).length;
+		return Response.json({ total_count, workflow_runs: [] });
 	});
 	vi.stubGlobal('fetch', fn);
 	return { llamadas, fn };
@@ -77,8 +88,8 @@ describe('despertar', () => {
 		expect(llamadas[2].body).toEqual({ ref: 'main' });
 	});
 
-	it.each(ESPERANDO)('si ya hay una pasada «%s», no lanza nada', async (estado) => {
-		const { llamadas } = github({ cola: { [estado]: 1 } });
+	it.each(ESPERANDO)('si ya espera una normal («%s»), no lanza ni la rápida ni otra normal', async (status) => {
+		const { llamadas } = github({ esperan: [{ workflow: 'deploy.yml', status }] });
 		const { lineas, log } = registro();
 		expect(await despertar(FAST, { GH_DISPATCH_TOKEN: TOKEN }, log)).toEqual({ estado: 'esperando', workflow: 'fast.yml' });
 		expect(llamadas.some((l) => l.method === 'POST')).toBe(false);
@@ -88,6 +99,25 @@ describe('despertar', () => {
 			workflow: 'deploy.yml'
 		});
 		expect(llamadas.some((l) => l.method === 'POST')).toBe(false);
+	});
+
+	it.each(ESPERANDO)('si solo espera una rápida («%s»), la normal SÍ se lanza (la sustituye)', async (status) => {
+		const { llamadas } = github({ esperan: [{ workflow: 'fast.yml', status }] });
+		expect(await despertar(DEPLOY, { GH_DISPATCH_TOKEN: TOKEN }, () => {})).toEqual({
+			estado: 'lanzada',
+			workflow: 'deploy.yml'
+		});
+		expect(llamadas.at(-1)?.path).toBe(`/repos/${REPO}/actions/workflows/deploy.yml/dispatches`);
+	});
+
+	it.each(ESPERANDO)('si espera una normal («%s»), la rápida NO se lanza (no le quita el turno)', async (status) => {
+		const { llamadas } = github({ esperan: [{ workflow: 'deploy.yml', status }] });
+		expect(await despertar(FAST, { GH_DISPATCH_TOKEN: TOKEN }, () => {})).toEqual({
+			estado: 'esperando',
+			workflow: 'fast.yml'
+		});
+		// Lo ha visto en la cola de todo main, no en la de fast.yml (que está vacía).
+		expect(llamadas.every((l) => l.path.startsWith(`/repos/${REPO}/actions/runs?`))).toBe(true);
 	});
 
 	it('sin token no llama a GitHub y lo dice claro', async () => {
