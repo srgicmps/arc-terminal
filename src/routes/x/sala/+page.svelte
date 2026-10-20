@@ -14,10 +14,10 @@
 	import { EXPERIENCES } from '#lib/experiences.ts';
 	import { newByRegion, SALA_LAYERS, type SalaPoint } from '#lib/exp/sala.ts';
 	import { hm, when } from '#lib/format.ts';
+	import { LAND_HREF } from '#lib/geo/land.ts';
 	import type { RegionId } from '#lib/regions.ts';
 	import { shown } from '#lib/titles.svelte.ts';
 	import { initVisit, isNew, visit } from '#lib/visit.svelte.ts';
-	import { LAND } from '#lib/world.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -110,7 +110,7 @@
 				<Globe {points} legend={SALA_LAYERS} flash={flashSet} />
 			{:else}
 			<svg viewBox={VIEWS[region]} role="group" aria-label="Mapa con {points.length} sucesos">
-				<path class="land" d={LAND} />
+				<use class="land" href={LAND_HREF} />
 				{#each points as p (p.id)}
 					{@const cx = x(p.lon)}
 					{@const cy = y(p.lat)}

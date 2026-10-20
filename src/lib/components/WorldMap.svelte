@@ -6,8 +6,8 @@
 -->
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { LAND_HREF } from '#lib/geo/land.ts';
 	import type { LayerId, MapPoint } from '#lib/geo/layers.ts';
-	import { LAND } from '#lib/world.ts';
 
 	interface Props {
 		points: MapPoint[];
@@ -37,7 +37,8 @@
 
 <div class="map">
 	<svg viewBox="0 8 360 150" role="img" aria-label="Mapa del mundo con {points.length} puntos">
-		<path class="land" d={LAND} />
+		<!-- El contorno, desde land.svg (un archivo en caché, compartido entre vistas): fuera del HTML y del JS. -->
+		<use class="land" href={LAND_HREF} />
 		{#each points as p (p.id)}
 			{@const cx = x(p.lon)}
 			{@const cy = y(p.lat)}
