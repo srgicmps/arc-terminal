@@ -29,13 +29,10 @@ on:
         options: [ninguna, compare, tv-shots]
         default: ninguna
 
-# Permisos mínimos (la publicación en Cloudflare usa sus propios Secrets).
+# Permisos mínimos: por defecto, solo leer el código (la publicación en Cloudflare usa sus propios Secrets).
+# El job que necesita más lo pide en su propio bloque `permissions`, que sustituye a este.
 permissions:
   contents: read
-  # Para abrir y cerrar los issues «Fuente caída» (scripts/issues.ts).
-  issues: write
-  # NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
-  pull-requests: read
 
 # Un solo despliegue a la vez: si llega otro, espera a que acabe el que está en marcha. En un PR, un push
 # nuevo cancela la pasada anterior, que ya no sirve. La prueba de fuentes va en su propio grupo para no
@@ -55,6 +52,13 @@ jobs:
     runs-on: ubuntu-latest
     # Red de seguridad: si algo se cuelga, la Action no se queda horas esperando.
     timeout-minutes: 15
+    permissions:
+      contents: read
+      # Abrir y cerrar los issues «Fuente caída» (scripts/issues.ts) y las órdenes de la barra (notify.ts →
+      # requests.ts). Es el único job de este archivo que escribe en issues.
+      issues: write
+      # NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+      pull-requests: read
     steps:
       - uses: actions/checkout@v5
 
@@ -246,6 +250,10 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    # `pnpm data`: NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -355,6 +363,10 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.herramienta == 'tv-shots'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # `pnpm data`: NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -395,6 +407,10 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.herramienta == 'compare'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # `pnpm data`: NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -434,6 +450,10 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.fuentes
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # `pnpm data`: NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4

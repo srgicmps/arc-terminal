@@ -18,12 +18,9 @@ on:
   pull_request:
     paths: ['.github/workflows/fast.yml']
 
+# Permisos mínimos por defecto; el job pide lo que usa en su propio bloque `permissions`.
 permissions:
   contents: read
-  # NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
-  pull-requests: read
-  # Órdenes de la barra (scripts/requests.ts): leer y cerrar los issues [alerta]/[mis]/[vigila].
-  issues: write
 
 concurrency:
   group: ${{ github.event_name == 'pull_request' && format('fast-{0}', github.ref) || 'pages-refs/heads/main' }}
@@ -42,6 +39,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 8
+    permissions:
+      contents: read
+      # NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+      pull-requests: read
+      # Órdenes de la barra (scripts/requests.ts): leer y cerrar los issues [alerta]/[mis]/[vigila].
+      issues: write
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
