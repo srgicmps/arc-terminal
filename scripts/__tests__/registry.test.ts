@@ -18,6 +18,15 @@ describe('registro de fuentes', () => {
 		expect(sourcesIn({ a: fake('a'), list: [fake('b'), fake('c')], helper: () => 1, PORTS: [{ id: 'x' }] }).map((s) => s.name)).toEqual(['a', 'b', 'c']);
 	});
 
+	// Las críticas comprueban que sus datos tienen sentido (validate), no solo que hay elementos: una API que
+	// cambia un campo no deja FUEL, ECO, WS, LUZ, WX, GEO ni IMP con datos vacíos o imposibles.
+	it('las fuentes críticas tienen validate', async () => {
+		const CRITICAL = ['fuel', 'fuel-es', 'ecb', 'uscurve', 'power', 'weather', 'quakes', 'imp'];
+		const sources = await loadSources();
+		const missing = CRITICAL.filter((name) => typeof sources.find((s) => s.name === name)?.validate !== 'function');
+		expect(missing).toEqual([]);
+	});
+
 	it('si una fuente aparece dos veces, cuenta la primera', () => {
 		const first = fake('a');
 		expect(dedupe([[first], [fake('a'), fake('b')]])).toEqual([first, expect.objectContaining({ name: 'b' })]);

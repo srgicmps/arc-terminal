@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { checkData, checkShrink } from '../lib.ts';
 import { eacurve, ecb, spfWanted } from '../sources/ecb.ts';
 import { mockFetch } from './mock.ts';
 
@@ -95,5 +96,32 @@ describe('spfWanted', () => {
 		expect(w[0]).toMatchObject({ key: 'SPF.Q.U2.HICP.POINT.2026.Q.AVG', id: 'spf-hicp-y0', label: 'Inflación 2026' });
 		expect(w[2]).toMatchObject({ key: 'SPF.Q.U2.HICP.POINT.LT.Q.AVG', id: 'spf-hicp-lt', label: 'Inflación a largo plazo' });
 		expect(w[4].key).toBe('SPF.Q.U2.RGDP.POINT.2027.Q.AVG');
+	});
+});
+
+describe('ecb.validate', () => {
+	const serie = (id: string, unit: string, v: unknown) => ({ id, label: id, unit, points: [{ t: '2026-09', v: v as number }], source: 'BCE' });
+	const good = () => [
+		serie('ecb-dfr', '%', 2.5),
+		serie('bond10-gr', '%', 4.2),
+		serie('ciss-ea', 'índice', 0.01),
+		serie('eurjpy', '¥', 177.6),
+		serie('ecb-balance', 'M€', 5_943_911)
+	];
+
+	it('da por buenos los últimos valores creíbles de cada unidad', () => {
+		expect(checkData({ series: good() }, ecb)).toBeNull();
+	});
+
+	it('caza valores convertidos en texto, tipos en puntos básicos y un CISS imposible', () => {
+		const broken = { series: [serie('ecb-dfr', '%', '2.5'), serie('bond10-gr', '%', 420), serie('ciss-ea', 'índice', 3), ...good().slice(3)] };
+		expect(checkShrink(broken, { series: good() }, ecb)).toBeNull();
+		expect(checkData(broken, ecb)).toBe('datos raros: 3 de 5 series acaban en un valor fuera de rango (ecb-dfr, bond10-gr, ciss-ea)');
+	});
+
+	it('tolera una serie rara de cada diez', () => {
+		const many = Array.from({ length: 10 }, (_, i) => serie(`s${i}`, '%', 2));
+		expect(checkData({ series: [...many.slice(1), serie('eurusd', '$', 0)] }, ecb)).toBeNull();
+		expect(checkData({ series: [...many.slice(2), serie('eurusd', '$', 0), serie('eurgbp', '£', -1)] }, ecb)).toMatch(/2 de 10/);
 	});
 });

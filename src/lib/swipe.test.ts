@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isOnRoute, neighbour, nudge, swipeDirection } from './swipe.ts';
+import { isOnRoute, neighbour, nudge, preloadDirection, swipeDirection } from './swipe.ts';
 
 describe('deslizar entre vistas', () => {
 	it('cuenta solo los gestos horizontales, largos y rápidos', () => {
@@ -17,6 +17,15 @@ describe('deslizar entre vistas', () => {
 	it('el desplazamiento de pista no pasa de 24 px', () => {
 		expect(nudge(-400)).toBe(-24);
 		expect(nudge(40)).toBe(6);
+	});
+	it('precarga la vista del lado al que va el dedo en cuanto se sabe, antes de soltar', () => {
+		expect(preloadDirection(-40, 5)).toBe(1);
+		expect(preloadDirection(40, 5)).toBe(-1);
+		// Justo por debajo de la mitad del mínimo, aún no.
+		expect(preloadDirection(-39, 0)).toBe(0);
+		// Un gesto casi vertical es scroll: nada.
+		expect(preloadDirection(-60, 40)).toBe(0);
+		expect(preloadDirection(0, 0)).toBe(0);
 	});
 });
 

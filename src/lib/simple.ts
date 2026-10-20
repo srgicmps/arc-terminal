@@ -70,6 +70,9 @@ export function isEssential(route: string | null | undefined, title: string, id?
 	return list.some((i) => !i.startsWith('id:') && (t === i || t.startsWith(i + ' · ')));
 }
 
+/** ¿Esconde Sencillo algo en esta vista? Solo en las que tienen lista: las demás se ven enteras. */
+export const hasTrim = (route: string | null | undefined): boolean => !!route && Object.hasOwn(LISTS, route);
+
 /** El título en español claro, si lo tiene; si no, el mismo. Lo que va tras « · » se conserva. */
 export function plainTitle(title: string): string {
 	if (PLAIN_TITLES[title]) return PLAIN_TITLES[title];

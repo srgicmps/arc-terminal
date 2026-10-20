@@ -37,6 +37,8 @@
 		--title-font: var(--sans);
 		--title-color: var(--fg);
 		--dur-ui: 150ms;
+		/* Fundido corto al cambiar de vista (src/lib/viewtransition.ts). */
+		--dur-view: 140ms;
 		/* Barras de desplazamiento: grafito suave, sin carril. */
 		--scroll-thumb: #343a45;
 		--scroll-track: transparent;
