@@ -5,7 +5,7 @@
 	import { OS_KEY } from '#lib/os/mode.ts';
 	import { needsWelcome } from '#lib/onboarding/plan.ts';
 	import { routeHref } from '#lib/routes.ts';
-	import { latestWatched } from '#lib/boe.ts';
+	import { latestWatched, type BoeToday } from '#lib/boe.ts';
 	import { clock } from '#lib/clock.svelte.ts';
 	import NewsList from '#lib/components/NewsList.svelte';
 	import Panel from '#lib/components/Panel.svelte';
@@ -28,7 +28,7 @@
 	import { initRefCountry, REF_COUNTRIES, refCountry, refName, setRefCountry } from '#lib/refcountry.svelte.ts';
 	import { mode, ViewLayout } from '#lib/layout.svelte.ts';
 	import { TOP_MODULES } from '#lib/topmodules.ts';
-	import type { BoeWeek } from '#lib/types.ts';
+	import type { Dataset } from '#lib/data.ts';
 	import { initWatchwords, matches, watchwords } from '#lib/watchwords.svelte.ts';
 	import { zoneFor } from '#lib/fuel.ts';
 	import { inMenorca, inSpain, place } from '#lib/place.svelte.ts';
@@ -127,17 +127,18 @@
 	const boeTotal = $derived((data.boe?.data.sections ?? []).reduce((n, s) => n + s.total, 0));
 
 	// Palabras vigiladas (las de la vista BOE, guardadas en este navegador): cuántas disposiciones del último
-	// sumario las nombran. boe-week.json se pide en el navegador y solo si hay alguna palabra.
-	let boeWeek = $state.raw<BoeWeek | null>(null);
+	// sumario las nombran. Se pide en el navegador, y solo si hay alguna palabra, el recorte de ese sumario
+	// (data/boe-hoy.json: fecha y textos, ~8 KB gzip), no la semana entera del BOE.
+	let boeHoy = $state.raw<BoeToday | null>(null);
 	$effect(() => initWatchwords());
 	$effect(() => {
-		if (!watchwords.ready || !watchwords.words.length || boeWeek) return;
-		fetch(asset('data/boe-week.json' as Parameters<typeof asset>[0]))
-			.then((res) => (res.ok ? (res.json() as Promise<BoeWeek>) : null))
-			.then((w) => (boeWeek = w))
+		if (!watchwords.ready || !watchwords.words.length || boeHoy) return;
+		fetch(asset('data/boe-hoy.json' as Parameters<typeof asset>[0]))
+			.then((res) => (res.ok ? (res.json() as Promise<Dataset<BoeToday | null>>) : null))
+			.then((d) => (boeHoy = d?.data ?? null))
 			.catch(() => {});
 	});
-	const boeWatch = $derived(latestWatched(boeWeek, watchwords.words));
+	const boeWatch = $derived(latestWatched(boeHoy, watchwords.words));
 
 	// Línea de arriba: titulares nuevos desde la última visita y la franja de luz más barata.
 	const fresh = $derived(clock.now && visit.ready ? newSinceText(newCount(data.headlines, visit.last), visit.last, clock.now) : '');

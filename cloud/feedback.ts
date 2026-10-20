@@ -3,8 +3,9 @@
 //   fecha) y, si la web tiene el Secret NTFY_TOPIC, se avisa a Sergi por su ntfy (solo el nombre antes de la @).
 // - GET: la lista, solo para el administrador (Secret ADMIN_EMAIL de Cloudflare Pages; nunca en el repo).
 //   Cualquier otro, 403. Los tokens de servicio (las Actions), tampoco.
-import { tokenOf, verifyIdentity, type AccessConfig } from './access.ts';
+import { person } from './access.ts';
 import { json, type D1Database, type Env } from './prefs.ts';
+import { ensure } from './schema.ts';
 
 export interface AdminEnv extends Env {
 	/** Email del administrador (Sergi). Secret de Pages: sin él, nadie es administrador. */
@@ -37,26 +38,6 @@ type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
 /** ¿Es el administrador? Compara en minúsculas; sin ADMIN_EMAIL, nadie. */
 export const isAdmin = (email: string | undefined, env: AdminEnv) =>
 	!!email && !!env.ADMIN_EMAIL?.trim() && email.toLowerCase() === env.ADMIN_EMAIL.trim().toLowerCase();
-
-/**
- * Quién llama, con el JWT de Access verificado: { email } de una persona, o una Response (401/403/503) para
- * devolver tal cual. Comprueba también el origen (contra CSRF).
- */
-export async function person(
-	request: Request,
-	env: Env,
-	fetcher?: (url: string) => Promise<Response>
-): Promise<{ email: string } | Response> {
-	if (!env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) return json(503, { error: 'sin configurar' });
-	const origin = request.headers.get('origin');
-	if (origin && origin !== new URL(request.url).origin) return json(403, { error: 'origen' });
-	const token = tokenOf(request);
-	const config: AccessConfig = { teamDomain: env.ACCESS_TEAM_DOMAIN, aud: env.ACCESS_AUD };
-	const who = token ? await verifyIdentity(token, config, fetcher).catch(() => null) : null;
-	if (!who) return json(401, { error: 'sin identificar' });
-	if (!who.email) return json(403, { error: 'solo personas' });
-	return { email: who.email };
-}
 
 /** Lee un cuerpo JSON pequeño; una Response de error si no vale. */
 export async function readJson(request: Request, max: number): Promise<Record<string, unknown> | Response> {
@@ -133,17 +114,9 @@ export async function handleFeedback(
 	return json(405, { error: 'método' });
 }
 
-let tableReady = false;
-
-/** D1: tabla feedback. Se crea sola la primera vez. */
+/** D1: tabla feedback. Se crea sola la primera vez (cloud/schema.ts). */
 export function d1FeedbackStore(db: D1Database): FeedbackStore {
-	const ready = async () => {
-		if (tableReady) return;
-		await db.exec(
-			'CREATE TABLE IF NOT EXISTS feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT NOT NULL, view TEXT NOT NULL, text TEXT NOT NULL, at INTEGER NOT NULL)'
-		);
-		tableReady = true;
-	};
+	const ready = () => ensure(db, 'feedback');
 	return {
 		async add(f) {
 			await ready();

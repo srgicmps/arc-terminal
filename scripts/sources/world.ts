@@ -155,9 +155,6 @@ const COASTS = [
 	{ name: 'Costa sur', spot: 'Son Bou', lat: 39.87, lon: 4.07 }
 ];
 
-/** URL de ejemplo (solo las dos costas) para scripts/probe.txt. */
-export const COASTS_URL = `${MARINE_URL}?${marineParams(COASTS, 'Europe/Madrid')}`;
-
 /** Respuestas del modelo marino para las dos costas, en el orden de COASTS. Open-Meteo mueve cada punto a
  *  la celda de mar más cercana (Fornells cae unos 13 km al norte); si alguna vez no hay oleaje, no se enseña. */
 export function parseCoasts(raw: Raw[]): SeaState[] {

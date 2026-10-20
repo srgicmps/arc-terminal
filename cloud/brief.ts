@@ -8,6 +8,7 @@ import { tokenOf, verifyIdentity, type AccessConfig } from './access.ts';
 import type { AlertRow } from './alerts.ts';
 import { readJson } from './feedback.ts';
 import { json, type D1Database, type Env } from './prefs.ts';
+import { ensure } from './schema.ts';
 
 export interface BriefEnv extends Env {
 	BREVO_API_KEY?: string;
@@ -73,17 +74,9 @@ export async function handleBrief(
 	return json(200, { sent });
 }
 
-let tableReady = false;
-
+/** D1: brief_mail (un envío al día por uid) y alerts, de donde sale el email. Se crean solas (cloud/schema.ts). */
 export function d1BriefStore(db: D1Database): BriefStore {
-	const ready = async () => {
-		if (tableReady) return;
-		await db.exec('CREATE TABLE IF NOT EXISTS brief_mail (uid TEXT NOT NULL, day TEXT NOT NULL, PRIMARY KEY (uid, day))');
-		await db.exec(
-			'CREATE TABLE IF NOT EXISTS alerts (user TEXT PRIMARY KEY, uid TEXT NOT NULL, topic TEXT, config TEXT NOT NULL, updated INTEGER NOT NULL)'
-		);
-		tableReady = true;
-	};
+	const ready = () => ensure(db, 'brief_mail', 'alerts');
 	return {
 		async byUid(uid) {
 			await ready();

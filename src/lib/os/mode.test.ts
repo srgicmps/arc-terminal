@@ -14,4 +14,8 @@ describe('modo de Arc OS', () => {
 		expect(shouldInvite(null, '1', ['arc-theme'])).toBe(false);
 		expect(shouldInvite(null, null, ['arc-os-invite'])).toBe(false);
 	});
+	it('no invita a quien llega nuevo: arc-modo y arc-style los pone app.html solos', () => {
+		expect(shouldInvite(null, null, ['arc-modo', 'arc-style'])).toBe(false);
+		expect(shouldInvite(null, null, ['arc-modo', 'arc-style', 'arc-theme'])).toBe(true);
+	});
 });

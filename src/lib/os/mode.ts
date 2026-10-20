@@ -16,12 +16,15 @@ export const OS_MODES: readonly { value: OsMode; label: string; desc: string }[]
 export const isOsMode = (v: unknown): v is OsMode => v === 'os' || v === 'clasico';
 export const osLabel = (m: OsMode) => OS_MODES.find((x) => x.value === m)!.label;
 
+/** Claves que no cuentan como «ya usaba la terminal»: las del aviso y las que src/app.html pone solas en la primera visita. */
+const IGNORED = new Set([OS_KEY, OS_INVITE_KEY, 'arc-modo', 'arc-style']);
+
 /**
  * ¿Se enseña el aviso de novedad? Solo a quien ya usaba la terminal (tiene claves «arc-…»), no ha elegido modo
- * y no lo ha visto. A quien llega nuevo se lo ofrece la Bienvenida.
+ * y no lo ha visto. A quien llega nuevo se lo ofrece la Bienvenida (como en needsWelcome de onboarding/plan.ts).
  */
 export function shouldInvite(stored: string | null, seen: string | null, keys: Iterable<string>): boolean {
 	if (isOsMode(stored) || seen) return false;
-	for (const k of keys) if (k.startsWith('arc-') && k !== OS_KEY && k !== OS_INVITE_KEY) return true;
+	for (const k of keys) if (k.startsWith('arc-') && !IGNORED.has(k)) return true;
 	return false;
 }

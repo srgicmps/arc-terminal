@@ -9,9 +9,10 @@
 //   issues de GitHub pasan a la cuenta del administrador (una vez; luego los issues se cierran).
 // El tema es la única protección del canal: solo sale de aquí hacia su dueño y hacia la Action.
 import { parseConfig, parsePrices, parseWordList, type AlertConfig } from '../src/lib/alertconfig.ts';
-import { tokenOf, verifyIdentity, type AccessConfig } from './access.ts';
+import { identity } from './access.ts';
 import type { AdminEnv } from './feedback.ts';
 import { json, type D1Database } from './prefs.ts';
+import { ensure } from './schema.ts';
 
 export interface AlertRow {
 	/** Id aleatorio: con él la Action guarda el historial de cada uno sin saber quién es. */
@@ -43,14 +44,10 @@ export async function handleAlerts(
 	store: AlertStore | null,
 	fetcher?: (url: string) => Promise<Response>
 ): Promise<Response> {
-	if (!store || !env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) return json(503, { error: 'sin configurar' });
-	const origin = request.headers.get('origin');
-	if (origin && origin !== new URL(request.url).origin) return json(403, { error: 'origen' });
-
-	const token = tokenOf(request);
-	const config: AccessConfig = { teamDomain: env.ACCESS_TEAM_DOMAIN, aud: env.ACCESS_AUD };
-	const who = token ? await verifyIdentity(token, config, fetcher).catch(() => null) : null;
-	if (!who) return json(401, { error: 'sin identificar' });
+	if (!store) return json(503, { error: 'sin configurar' });
+	// Sin configurar, desde otra web o sin identificar: fuera (access.ts). Aquí valen también los tokens de servicio.
+	const who = await identity(request, env, fetcher);
+	if (who instanceof Response) return who;
 	const all = new URL(request.url).searchParams.get('all') === '1';
 
 	// La Action: leer la lista, borrar alertas que ya han avisado y la migración de los issues. Nada más.
@@ -134,17 +131,9 @@ async function readBody(request: Request): Promise<Record<string, unknown> | Res
 	return json(400, { error: 'JSON no válido' });
 }
 
-let tableReady = false;
-
-/** D1: tabla alerts, una fila por persona. Se crea sola la primera vez. */
+/** D1: tabla alerts, una fila por persona. Se crea sola la primera vez (cloud/schema.ts). */
 export function d1AlertStore(db: D1Database): AlertStore {
-	const ready = async () => {
-		if (tableReady) return;
-		await db.exec(
-			'CREATE TABLE IF NOT EXISTS alerts (user TEXT PRIMARY KEY, uid TEXT NOT NULL, topic TEXT, config TEXT NOT NULL, updated INTEGER NOT NULL)'
-		);
-		tableReady = true;
-	};
+	const ready = () => ensure(db, 'alerts');
 	type Raw = { uid: string; topic: string | null; config: string };
 	const row = (r: Raw): AlertRow => ({ uid: r.uid, topic: r.topic, config: parseConfig(JSON.parse(r.config)) });
 	return {

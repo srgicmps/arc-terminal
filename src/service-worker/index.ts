@@ -176,6 +176,9 @@ self.addEventListener('fetch', (event) => {
 	// Archivos de la build (llevan un hash en el nombre): de la precaché o de arc-chunks; si no, de la red y se guardan.
 	// También los de una publicación más nueva que este service worker (la página ya es la nueva y el suyo aún
 	// se instala): así no se pierde lo que solo se carga con import() en esa primera visita.
+	// Sin el #fragmento: <use href="…/land.svg#land"> (el contorno de los mapas) lo lleva en la URL de la petición.
+	// La Cache API ya lo ignora al buscar, pero las listas (STATIC) comparan la URL entera.
+	target.hash = '';
 	if (target.pathname.startsWith(IMMUTABLE_DIR)) {
 		event.respondWith(chunk(request));
 		return;
