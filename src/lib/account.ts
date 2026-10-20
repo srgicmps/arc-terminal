@@ -22,6 +22,13 @@ export const accountKeys = (keys: Iterable<string>): string[] =>
 			PREFS.some((p) => p.storage === 'local' && (p.key === k || (p.prefix !== undefined && k.startsWith(p.prefix))))
 	);
 
+/** Lo de la cuenta borrada, fuera de este navegador (accountKeys) y de esta pestaña (sessionStorage, entero). */
+export function wipe(local: Pick<Storage, 'length' | 'key' | 'removeItem'>, session: Pick<Storage, 'clear'>) {
+	const keys = Array.from({ length: local.length }, (_, i) => local.key(i) ?? '');
+	for (const k of accountKeys(keys)) local.removeItem(k);
+	session.clear();
+}
+
 /** El final de los avisos de «Borrar mi cuenta» cuando seguro que no se ha borrado nada. */
 export const KEPT = 'No se ha borrado nada.';
 

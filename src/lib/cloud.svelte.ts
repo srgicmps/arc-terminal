@@ -4,7 +4,7 @@
 import { asset } from '$app/paths';
 import { collect } from './transfer.ts';
 import { PREFS } from './prefs.ts';
-import { LOGOUT } from './account.ts';
+import { LOGOUT, wipe } from './account.ts';
 import {
 	HOLD,
 	holdActive,
@@ -260,13 +260,14 @@ export function initCloud() {
 	const onOnline = () => void pull();
 	addEventListener('online', onOnline);
 	// Otra pestaña ha entrado con otra cuenta: esta enseña lo de la anterior y no puede seguir así ni un momento. Si
-	// la otra ha borrado la cuenta (memoria de nadie), esta sale también, sin recargar: recargar antes de que se cierre
-	// la sesión volvería a pedir /api/prefs con la cuenta borrada.
+	// la otra ha borrado la cuenta (memoria de nadie), esta borra lo suyo (wipeHere) y sale también, sin recargar:
+	// recargar antes de que se cierre la sesión volvería a pedir /api/prefs con la cuenta borrada.
 	const onStorage = (e: StorageEvent) => {
 		if (e.key !== MEMORY) return;
 		const saved = readMemory(e.newValue);
 		if (memory && saved?.user === NOBODY.user) {
 			stale = true;
+			wipeHere();
 			location.assign(LOGOUT);
 		} else if (replaced(memory, saved)) reloadStale();
 	};
@@ -309,6 +310,23 @@ export async function hold(): Promise<(() => void) | null> {
 	if (!busy) return resume;
 	resume();
 	return null;
+}
+
+/**
+ * Tras «Borrar mi cuenta» (en esta pestaña o en otra): fuera de este navegador lo de la cuenta y lo de esta pestaña
+ * (wipe en account.ts). Al irse, la página aún escribe: visit.svelte.ts apunta la hora de tu última visita en pagehide
+ * y en visibilitychange. Esta limpieza escucha los mismos eventos y va detrás (en el orden en que se apuntan), así que
+ * lo vuelve a borrar.
+ */
+export function wipeHere() {
+	const clean = () => {
+		try {
+			wipe(localStorage, sessionStorage);
+		} catch {}
+	};
+	clean();
+	addEventListener('pagehide', clean);
+	document.addEventListener('visibilitychange', clean);
 }
 
 /**

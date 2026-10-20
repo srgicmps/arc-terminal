@@ -1,24 +1,20 @@
 // «Borrar mi cuenta», de la fila «Tu cuenta» de HELP (AccountRow.svelte). Va aparte de cloud.svelte.ts, que carga en
-// todas las vistas, para que solo lo descargue quien abre HELP; de allí usa hold y endSync. Lo puro, en account.ts;
-// el servidor, en cloud/account.ts.
+// todas las vistas, para que solo lo descargue quien abre HELP; de allí usa hold, endSync y wipeHere. Lo puro, en
+// account.ts; el servidor, en cloud/account.ts.
 import { asset } from '$app/paths';
-import { accountKeys, deleteOutcome, KEPT, LOGOUT, offlineMsg, PAGES } from './account.ts';
-import { cloud, endSync, hold } from './cloud.svelte.ts';
+import { deleteOutcome, KEPT, LOGOUT, offlineMsg, PAGES } from './account.ts';
+import { cloud, endSync, hold, wipeHere } from './cloud.svelte.ts';
 import { PREFS } from './prefs.ts';
 
 /**
  * Lo de este navegador, fuera, y a la salida de Access. Primero la memoria de la sincronización (endSync): así las
  * demás pestañas salen antes de ver nada a medio borrar, y quien entre después no recibe nada de lo que quede aquí.
- * Luego lo de localStorage (accountKeys), lo de esta pestaña, las bases de IndexedDB de prefs.ts (las imágenes de
- * fondo de Arc OS) y las vistas guardadas sin conexión.
+ * Luego lo de localStorage y lo de esta pestaña (wipeHere, también lo que se escriba al salir), las bases de IndexedDB
+ * de prefs.ts (las imágenes de fondo de Arc OS) y las vistas guardadas sin conexión.
  */
 async function leave() {
 	endSync();
-	try {
-		const keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i) ?? '');
-		for (const k of accountKeys(keys)) localStorage.removeItem(k);
-		sessionStorage.clear();
-	} catch {}
+	wipeHere();
 	for (const p of PREFS) {
 		if (p.storage !== 'idb') continue;
 		try {

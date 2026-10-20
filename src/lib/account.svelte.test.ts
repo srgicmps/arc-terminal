@@ -182,4 +182,40 @@ describe('deleteAccount (account.svelte.ts)', () => {
 		expect(Number(local.getItem(HOLD))).toBeGreaterThan(Date.now() - HOLD_MS);
 		expect(requests.filter((r) => r.endsWith('/api/prefs'))).toEqual(['GET /api/prefs']);
 	});
+
+	it('si sale bien: borra lo de aquí, también lo que la página escribe al irse, y va a la salida de Access', async () => {
+		await boot();
+		local.setItem('arc-mortgage', '{"capital":150000}');
+		local.setItem('arc-last-visit', '2026-10-20T08:00:00.000Z');
+		local.setItem('tradingview.chart', 'no es de Arc');
+		session.setItem('arc-os-locked', '1');
+		// Como visit.svelte.ts: al irse la página apunta la hora de tu última visita (se apuntó antes, al montar TOP).
+		const stamp = () => localStorage.setItem('arc-last-visit', new Date().toISOString());
+		win.addEventListener('pagehide', stamp);
+		doc.addEventListener('visibilitychange', stamp);
+		const { deleteAccount } = await import('./account.svelte.ts');
+		expect(await deleteAccount()).toBeNull();
+		expect(assign).toHaveBeenCalledWith(LOGOUT);
+		expect(local.getItem(MEMORY)).toBe(JSON.stringify(NOBODY));
+		expect(local.getItem(HOLD)).toBeNull();
+		expect(local.getItem('arc-mortgage')).toBeNull();
+		expect(local.getItem('tradingview.chart')).toBe('no es de Arc');
+		expect(session.length).toBe(0);
+		doc.visibilityState = 'hidden';
+		doc.dispatchEvent(new Event('visibilitychange'));
+		win.dispatchEvent(new Event('pagehide'));
+		expect(local.getItem('arc-last-visit')).toBeNull();
+	});
+
+	it('otra pestaña de la cuenta borrada: borra lo suyo (también al irse) y sale', async () => {
+		await boot();
+		session.setItem('arc-os-phone-session', '["eco"]');
+		const stamp = () => localStorage.setItem('arc-last-visit', new Date().toISOString());
+		win.addEventListener('pagehide', stamp);
+		win.dispatchEvent(Object.assign(new Event('storage'), { key: MEMORY, newValue: JSON.stringify(NOBODY) }));
+		expect(assign).toHaveBeenCalledWith(LOGOUT);
+		expect(session.length).toBe(0);
+		win.dispatchEvent(new Event('pagehide'));
+		expect(local.getItem('arc-last-visit')).toBeNull();
+	});
 });
