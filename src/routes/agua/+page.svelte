@@ -8,7 +8,7 @@
 	import Tile from '#lib/components/ui/Tile.svelte';
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import { dm, nf, signed } from '#lib/format.ts';
-	import { LAND } from '#lib/world.ts';
+	import { LAND_HREF } from '#lib/geo/land.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -70,7 +70,7 @@
 		<Panel title="Sequía en Europa" meta="Indicador combinado (CDI) · cada 10 días">
 			<figure class="map">
 				<svg viewBox={view} role="img" aria-label="Mapa de sequía de Europa">
-					<path class="land" d={LAND} />
+					<use class="land" href={LAND_HREF} />
 					<image href={cdi} x={BBOX.west + 180} y={90 - BBOX.north} width={BBOX.east - BBOX.west} height={BBOX.north - BBOX.south} preserveAspectRatio="none" />
 				</svg>
 				{#if legendOk}

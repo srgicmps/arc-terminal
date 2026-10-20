@@ -216,6 +216,7 @@ try {
 	if (!WEBKIT) failures.push(...(await osChecks(browser, ROOT)));
 	// La pasada acotada de WebKit solo mira el móvil.
 	if (!WEBKIT) await keyboard(browser);
+	if (!WEBKIT) await bienvenida(browser);
 	await browser.close();
 } catch (error) {
 	failures.push(String(error));
@@ -260,6 +261,57 @@ async function keyboard(browser: Awaited<ReturnType<typeof launch>>) {
 		return panel?.getClientRects().length ? Math.round(panel.getBoundingClientRect().top) : null;
 	});
 	if (top === null || Math.abs(top) > 200) failures.push(`teclado: /eco#panel=Paro juvenil en Sencillo no enseña ni baja al panel (${top})`);
+	await context.close();
+}
+
+/**
+ * BIENVENIDA la primera vez en el móvil (390×844, táctil, sin nada guardado): la primera pregunta se ve sin bajar (por
+ * encima de la barra inferior), al abrir no se roba el foco ni se mueve la vista, el indicador de pasos es una sola
+ * línea y, al pulsar «Siguiente» desde abajo, el foco va al título del paso nuevo y este se ve.
+ */
+async function bienvenida(browser: Awaited<ReturnType<typeof launch>>) {
+	const where = '/bienvenida?primera=1 a 390×844';
+	// Sin animación: el desplazamiento suave acabaría después de la comprobación.
+	const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' });
+	await context.route('**/*', (route) => {
+		const url = new URL(route.request().url());
+		return url.hostname === 'localhost' && !url.pathname.startsWith('/api/') ? route.continue() : route.fulfill({ status: 200, body: '' });
+	});
+	const page = await context.newPage();
+	page.on('pageerror', (e) => failures.push(`${where}: excepción: ${e.message}`));
+	await page.goto(ROOT + '/bienvenida?primera=1', { waitUntil: 'networkidle' });
+	await page.waitForTimeout(300);
+	// `fold`: dónde acaba lo visible, el borde de arriba de la barra inferior (o la pantalla, si no está).
+	const open = await page.evaluate(() => {
+		const fold = document.querySelector('nav.thumb')?.getBoundingClientRect().top || innerHeight;
+		const q1 = document.getElementById('q1')?.getBoundingClientRect();
+		const steps = [...document.querySelectorAll('.steps li')].filter((li) => li.getBoundingClientRect().width > 1);
+		return {
+			q1: q1 ? Math.round(q1.bottom) : null,
+			fold: Math.round(fold),
+			focus: document.activeElement === document.body ? '' : document.activeElement?.id || document.activeElement?.tagName,
+			scroll: Math.round(scrollY),
+			steps: steps.map((li) => li.getAttribute('aria-current') ?? '-').join(',')
+		};
+	});
+	if (open.q1 === null || open.q1 > open.fold) failures.push(`${where}: «¿Qué te interesa?» acaba en y=${open.q1}, por debajo de la barra inferior (${open.fold})`);
+	if (open.focus) failures.push(`${where}: al abrir, el foco ya está en «${open.focus}» (no se roba)`);
+	if (open.scroll) failures.push(`${where}: al abrir, la vista ya ha bajado ${open.scroll} px`);
+	if (open.steps !== 'step') failures.push(`${where}: el indicador de pasos enseña algo más que el paso actual (${open.steps})`);
+	// Desde el final de la página, como quien ha bajado por los temas.
+	await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+	await page.click('.actions .go');
+	const moved = await page.waitForFunction(() => document.activeElement?.id === 'q2', null, { timeout: 2000 }).then(
+		() => true,
+		() => false
+	);
+	if (!moved) failures.push(`${where}: tras «Siguiente», el foco está en «${await page.evaluate(() => document.activeElement?.id || document.activeElement?.tagName)}», no en el título del paso 2`);
+	const q2 = await page.evaluate(() => {
+		const fold = document.querySelector('nav.thumb')?.getBoundingClientRect().top || innerHeight;
+		const top = document.getElementById('q2')?.getBoundingClientRect().top;
+		return { top: top === undefined ? null : Math.round(top), fold: Math.round(fold) };
+	});
+	if (q2.top === null || q2.top < 0 || q2.top >= q2.fold) failures.push(`${where}: tras «Siguiente», «¿Dónde estás?» queda fuera de la pantalla (top ${q2.top}, barra en ${q2.fold})`);
 	await context.close();
 }
 
