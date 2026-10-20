@@ -32,8 +32,8 @@ const CACHE = `arc-${version}`;
 // Vistas abiertas y sus datos: nombre fijo, nunca se borra al publicar.
 const PAGES = 'arc-pages';
 const PAGES_MAX = 40;
-// Archivos de la build que no van en la precaché (Arc OS, import()): se guardan al pedirlos. Nombre fijo; al
-// publicar solo se quitan los que ya no están en la build. Hoy son unos 80: el límite es un seguro.
+// Archivos de la build que no van en la precaché (Arc OS, import(), letras): se guardan al pedirlos. Nombre fijo;
+// al publicar solo se quitan los que ya no están en la build. Hoy son unos 100: el límite es un seguro.
 const CHUNKS = 'arc-chunks';
 const CHUNKS_MAX = 150;
 const FONTS = 'arc-fonts';
