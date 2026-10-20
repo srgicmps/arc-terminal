@@ -60,7 +60,7 @@ export async function currentSub(): Promise<PushSubscription | null> {
  * Activa los avisos aquí: pide el permiso (tiene que ser lo primero, justo tras el toque: si no, Safari no lo
  * enseña), se suscribe con la clave y lo guarda en la cuenta.
  */
-export async function enablePush(url: string, key: string): Promise<'ok' | 'denied' | 'error'> {
+export async function enablePush(url: string, key: string): Promise<'ok' | 'denied' | 'unsupported' | 'error'> {
 	const permission = await Notification.requestPermission();
 	if (permission !== 'granted') return 'denied';
 	try {
@@ -71,7 +71,14 @@ export async function enablePush(url: string, key: string): Promise<'ok' | 'deni
 			sub = null;
 		}
 		sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) });
-		return (await pushApi(url, 'PUT', sub.toJSON())).status === 200 ? 'ok' : 'error';
+		const { status } = await pushApi(url, 'PUT', sub.toJSON());
+		if (status === 200) return 'ok';
+		// 400: la cuenta no la acepta (un servicio de push que no conocemos). No sirve de nada tenerla aquí.
+		if (status === 400) {
+			await sub.unsubscribe().catch(() => false);
+			return 'unsupported';
+		}
+		return 'error';
 	} catch {
 		return 'error';
 	}

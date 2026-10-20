@@ -45,7 +45,9 @@
 		if (sub && Notification.permission === 'granted' && sameKey(sub.options.applicationServerKey, key)) {
 			phase = 'on';
 			// Se vuelve a guardar en la cuenta (por si se borró, o la quitaste en otro sitio): no cuesta nada.
-			void pushApi(url, 'PUT', sub.toJSON()).catch(() => null);
+			void pushApi(url, 'PUT', sub.toJSON())
+				.then((r) => r.status === 400 && (phase = 'no'))
+				.catch(() => null);
 		} else phase = 'off';
 	}
 
@@ -67,7 +69,8 @@
 			if (r === 'ok') {
 				phase = 'on';
 				msg = 'Activados. Pulsa «Probar» para ver uno.';
-			} else if (r === 'denied') {
+			} else if (r === 'unsupported') phase = 'no';
+			else if (r === 'denied') {
 				phase = Notification.permission === 'denied' ? 'denied' : 'off';
 				msg = phase === 'off' ? 'Sin permiso no te pueden llegar.' : '';
 			} else msg = 'No se han podido activar. Prueba otra vez.';
