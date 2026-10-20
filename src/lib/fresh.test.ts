@@ -482,11 +482,11 @@ describe('watch', () => {
 		t.w.stop();
 	});
 
-	it('si el refresco acaba en la página de error, no da los datos por vistos: lo reintenta en la pregunta siguiente', async () => {
+	it('si el refresco acaba en la página de error, no da los datos por vistos: lo reintenta pronto, cada vez más espaciado', async () => {
 		const t = setup();
 		// Como en fresh.svelte.ts: refreshAll no rechaza con un 503 en el __data.json, deja page.error puesto.
 		let pageError = false;
-		let fails = 1;
+		let fails = 2;
 		t.refresh.mockImplementation(() =>
 			loadOrFail(
 				async () => {
@@ -495,21 +495,48 @@ describe('watch', () => {
 				() => pageError
 			)
 		);
-		await vi.advanceTimersByTimeAsync(FIRST_MS + RETRY_MS * 5);
+		await vi.advanceTimersByTimeAsync(FIRST_MS);
 		expect(t.refresh).toHaveBeenCalledOnce();
 		expect(pageError).toBe(true);
 		expect(t.state.aviso).toBe(false);
-		// No cada pocos segundos: en la pregunta siguiente, que devuelve la vista.
-		await vi.advanceTimersByTimeAsync(POLL_MS - FIRST_MS - RETRY_MS * 5);
+		// No al minuto: a los RETRY_MS vuelve a preguntar y a refrescar (y falla otra vez)…
+		await vi.advanceTimersByTimeAsync(RETRY_MS - 1);
+		expect(t.refresh).toHaveBeenCalledOnce();
+		await vi.advanceTimersByTimeAsync(1);
+		expect(t.read).toHaveBeenCalledTimes(2);
 		expect(t.refresh).toHaveBeenCalledTimes(2);
+		expect(pageError).toBe(true);
+		// …y luego al doble, que devuelve la vista.
+		await vi.advanceTimersByTimeAsync(RETRY_MS * 2 - 1);
+		expect(t.refresh).toHaveBeenCalledTimes(2);
+		await vi.advanceTimersByTimeAsync(1);
+		expect(t.refresh).toHaveBeenCalledTimes(3);
 		expect(pageError).toBe(false);
 		// Ya vista: la misma publicación no vuelve a refrescar.
 		await vi.advanceTimersByTimeAsync(POLL_MS * 2);
-		expect(t.refresh).toHaveBeenCalledTimes(2);
+		expect(t.refresh).toHaveBeenCalledTimes(3);
 		t.w.stop();
 	});
 
-	it('si el refresco falla al pulsar «Actualizar», quita el aviso hasta la pregunta siguiente (su botón no haría nada)', async () => {
+	it('si sigue fallando, los reintentos se espacian: 3 s, 6 s, 12 s, 24 s… y luego como mucho uno por minuto', async () => {
+		const t = setup();
+		t.refresh.mockRejectedValue(new Error('503'));
+		await vi.advanceTimersByTimeAsync(FIRST_MS);
+		expect(t.refresh).toHaveBeenCalledTimes(1);
+		let calls = 1;
+		for (const wait of [RETRY_MS, RETRY_MS * 2, RETRY_MS * 4, RETRY_MS * 8]) {
+			await vi.advanceTimersByTimeAsync(wait - 1);
+			expect(t.refresh).toHaveBeenCalledTimes(calls);
+			await vi.advanceTimersByTimeAsync(1);
+			expect(t.refresh).toHaveBeenCalledTimes(++calls);
+		}
+		// Con la pregunta de cada minuto, no más de una vez por minuto.
+		await vi.advanceTimersByTimeAsync(POLL_MS * 3);
+		expect(t.refresh.mock.calls.length - calls).toBeLessThanOrEqual(3);
+		t.w.stop();
+	});
+
+	it('si el refresco falla al pulsar «Actualizar», quita el aviso hasta el reintento (su botón no haría nada)', async () => {
 		const t = setup();
 		t.env.typing = true;
 		await vi.advanceTimersByTimeAsync(FIRST_MS);
@@ -517,7 +544,7 @@ describe('watch', () => {
 		t.refresh.mockRejectedValueOnce(new Error('sin red'));
 		await t.w.apply();
 		expect(t.state.aviso).toBe(false);
-		await vi.advanceTimersByTimeAsync(POLL_MS);
+		await vi.advanceTimersByTimeAsync(RETRY_MS);
 		expect(t.state.aviso).toBe(true);
 		t.w.stop();
 	});

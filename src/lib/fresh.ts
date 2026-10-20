@@ -139,7 +139,7 @@ export async function keepPlace(win: Window, run: () => Promise<unknown>): Promi
 /**
  * Refresca con `run` (refreshAll) y falla si la vista ha acabado en la página de error: refreshAll no rechaza
  * cuando el __data.json no llega (un 503 del borde, sin red), SvelteKit pinta +error.svelte. Así `watch` no da los
- * datos por vistos y lo vuelve a intentar en la pregunta siguiente, que devuelve la vista.
+ * datos por vistos y lo vuelve a intentar pronto (a los RETRY_MS, cada vez más espaciado), que devuelve la vista.
  */
 export async function loadOrFail(run: () => Promise<unknown>, failed: () => boolean): Promise<void> {
 	await run();
@@ -188,6 +188,9 @@ export function watch(state: FreshState, env: FreshEnv) {
 	let fingers = 0;
 	let working = false;
 	let retry: ReturnType<typeof setTimeout> | undefined;
+	/** Refrescos fallidos seguidos, para espaciar los reintentos, y el reintento programado. */
+	let failures = 0;
+	let again: ReturnType<typeof setTimeout> | undefined;
 	/** Lo que has desplazado por dentro (una lista de un panel, la vista al encajar en pantalla). */
 	const scrollers = new Set<Element>();
 
@@ -212,12 +215,17 @@ export function watch(state: FreshState, env: FreshEnv) {
 		try {
 			await env.refresh();
 			seen = target;
+			failures = 0;
 			state.aviso = false;
 		} catch {
-			// Se vuelve a intentar en la próxima pregunta a /code.json, no cada RETRY_MS. Hasta entonces, sin aviso:
-			// su botón no haría nada (y en la página de error ya está «Reintentar»).
+			// No ha llegado (un 503 puntual del borde deja la vista en la página de error) o no se ha aplicado. Se
+			// vuelve a preguntar pronto, cada vez más espaciado (RETRY_MS, el doble… hasta POLL_MS), no al minuto.
+			// Hasta entonces, sin aviso: su botón no haría nada (y en la página de error ya está «Reintentar»).
 			latest = null;
 			state.aviso = false;
+			failures++;
+			clearTimeout(again);
+			again = setTimeout(() => void poll(), Math.min(RETRY_MS * 2 ** (failures - 1), POLL_MS));
 		} finally {
 			working = false;
 		}
@@ -292,6 +300,7 @@ export function watch(state: FreshState, env: FreshEnv) {
 			clearTimeout(first);
 			clearInterval(timer);
 			clearTimeout(retry);
+			clearTimeout(again);
 			scrollers.clear();
 			env.doc.removeEventListener('visibilitychange', onVisible);
 			for (const type of GESTURES) env.win.removeEventListener(type, onGesture, PASSIVE);
