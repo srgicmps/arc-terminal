@@ -6,18 +6,21 @@
 //
 // Para no castigar las APIs ni depender de que todas respondan:
 // - si la copia publicada de una fuente es reciente (maxAgeMinutes), se reutiliza sin descargar;
-// - si una descarga falla, se reutiliza la copia publicada, aunque sea antigua, y se avisa.
+// - si una descarga falla, se reutiliza la copia publicada, aunque sea antigua, y se avisa;
+// - si la copia publicada no se puede leer (ni 200 ni 404), se deja `.publish-blocked` y la Action no publica.
 import { readFileSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, writeFile } from 'node:fs/promises';
 import type { Dataset, SourceHistory, SourceStatus } from '../src/lib/data.ts';
 import { withHistory } from './history.ts';
 import {
+	blocked,
+	blockedMessage,
 	checkShrink,
 	deadlineFor,
 	makeContext,
 	NO_CONTEXT,
 	level,
-	fetchPublished,
+	readPublished,
 	waves,
 	withDeadline,
 	writeExtra,
@@ -28,13 +31,17 @@ import { buildNewsIndex } from './news-index.ts';
 import { loadSources } from './registry.ts';
 
 const OUT_DIR = 'static/data';
+// Si existe, deploy.yml y fast.yml no publican. Fuera de static/ (no llega a la web) y en .gitignore. Se
+// añade, no se pisa: fast.yml llama dos veces a `pnpm data`. Cada pasada de Actions parte de cero.
+const BLOCKED_FILE = '.publish-blocked';
 // En los PR, una muestra de cada fuente al final del registro, para revisar la forma real de los datos.
 const samples: string[] = [];
 
 async function published(name: string): Promise<Dataset<unknown> | null> {
 	try {
-		const res = await fetchPublished(`${name}.json`, 20_000);
-		if (!res?.ok) return null;
+		// null si no existe (fuente nueva) o si no se puede leer; en ese caso queda apuntada en `blocked`.
+		const res = await readPublished(`${name}.json`, 20_000);
+		if (!res) return null;
 		const body = (await res.json()) as Dataset<unknown>;
 		return body && body.fetchedAt && 'data' in body ? body : null;
 	} catch {
@@ -56,8 +63,9 @@ async function copyExtra(source: Source, dataset: Dataset<unknown>) {
 	const paths = source.files?.(dataset.data) ?? [];
 	await Promise.all(
 		paths.map(async (path) => {
-			const res = await fetchPublished(path);
-			if (res?.ok) await writeExtra(path, await res.json());
+			// Sin él, la web publicada lo perdería (p. ej. un mes del archivo de titulares).
+			const res = await readPublished(path);
+			if (res) await writeExtra(path, await res.json());
 		})
 	);
 }
@@ -157,6 +165,13 @@ if (selected.some((s) => s.name.startsWith('news-'))) {
 	await save(index);
 	await save(countries);
 	console.log(`✓ news-index: ${Object.keys(index.data).length} valores y ${Object.keys(countries.data).length} países con titulares`);
+}
+
+// Copia anterior ilegible: las fuentes han funcionado (y los avisos saldrán), pero esta pasada no publica.
+const block = blockedMessage(blocked);
+if (block) {
+	console.log(`::error title=Copia anterior::${block}`);
+	await appendFile(BLOCKED_FILE, block + '\n');
 }
 
 const failed = statuses.filter((s) => s.state === 'error' || s.state === 'stale');

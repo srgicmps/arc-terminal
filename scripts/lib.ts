@@ -193,6 +193,58 @@ function report(line: string) {
 	console.log(line);
 }
 
+/**
+ * Qué dice una respuesta de fetchPublished sobre la copia anterior: «ok» (se puede leer), «missing» (no
+ * existe: solo con un 404, p. ej. una fuente nueva) o «unreadable» (existe o no, no se sabe: el login de
+ * Access porque falta o ha caducado el service token, un 5xx de Cloudflare o sin respuesta).
+ */
+export type PreviousState = 'ok' | 'missing' | 'unreadable';
+
+export function previousState(res: Pick<Response, 'ok' | 'status'> | null | undefined): PreviousState {
+	if (res?.ok) return 'ok';
+	if (res?.status === 404) return 'missing';
+	return 'unreadable';
+}
+
+/**
+ * Archivos de la copia anterior que no se han podido leer en esta pasada (ruta sin «.json»). Si hay alguno,
+ * update.ts deja `.publish-blocked` y la Action no publica: las fuentes que acumulan historial (IMP del año,
+ * FUEL, predicciones…) habrían empezado de cero, y publicarlas lo borraría para siempre.
+ */
+export const blocked = new Set<string>();
+
+/**
+ * Lee un archivo de la copia publicada como fetchPublished, con un reintento a los `retryMs` si no se puede
+ * leer. Devuelve la respuesta si es buena y null si no: un 404 es normal; si sigue sin poderse leer, apunta
+ * el archivo en `into`. Si la pasada ya está bloqueada, no reintenta: no se va a publicar y así no se alarga
+ * (con la web caída, cada intento puede tardar hasta el tiempo límite en los dos dominios).
+ */
+export async function readPublished(
+	path: string,
+	ms?: number,
+	{ fetcher = fetchPublished, retryMs = 3_000, into = blocked } = {}
+): Promise<Response | null> {
+	let res = await fetcher(path, ms);
+	if (previousState(res) === 'unreadable' && !into.size) {
+		await wait(retryMs);
+		res = await fetcher(path, ms);
+	}
+	const state = previousState(res);
+	if (state === 'unreadable') into.add(path.replace(/\.json$/, ''));
+	return state === 'ok' ? res : null;
+}
+
+/** El aviso de una pasada bloqueada (o null si no lo está), con los primeros archivos que no se leyeron. */
+export function blockedMessage(paths: Iterable<string>, shown = 5): string | null {
+	const all = [...paths].sort();
+	if (!all.length) return null;
+	const some = all.slice(0, shown).join(', ') + (all.length > shown ? '…' : '');
+	return (
+		`No se pudo leer la copia publicada de ${all.length} ${all.length === 1 ? 'archivo' : 'archivos'} (${some}). ` +
+		'¿Ha caducado el service token de Access (CF_ACCESS_CLIENT_*)? No se publica para no perder historiales.'
+	);
+}
+
 /** Escribe un archivo extra de una fuente en static/data/<path>. */
 export async function writeExtra(path: string, content: unknown) {
 	const { mkdir, writeFile } = await import('node:fs/promises');

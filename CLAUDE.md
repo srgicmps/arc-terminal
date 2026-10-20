@@ -51,7 +51,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   y se cambia sin tocar código con la Variable de GitHub `SITE_URL`. GitHub Pages está apagado.
   Las Actions publican con `wrangler` (Secrets `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`) y leen la copia
   anterior con el service token de Access (`CF_ACCESS_CLIENT_ID`/`CF_ACCESS_CLIENT_SECRET`, `fetchPublished` en
-  `scripts/lib.ts`).
+  `scripts/lib.ts`). Si no se puede leer la copia anterior (ni 200 ni 404), la pasada no publica (`.publish-blocked`).
 - **Usuarios** (Sergi, familia y amigos; los añade él a mano en la política de Access): cada uno tiene sus ajustes
   en su cuenta, sincronizados entre sus dispositivos. Pages Function `functions/api/prefs.ts` (GET/PUT) → lógica en
   `cloud/prefs.ts` + base **D1** (`arc-terminal-users`, tabla `prefs` que se crea sola). El usuario sale del JWT de

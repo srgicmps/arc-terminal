@@ -184,7 +184,9 @@ jobs:
 
       # Publica en Cloudflare Pages (web privada, Cloudflare Access delante). Si el proyecto «arc-terminal»
       # ya existe, el error de «project create» se ignora.
+      # Si update.ts no pudo leer la copia anterior (.publish-blocked), no se publica: se perderían historiales.
       - run: |
+          if [ -f .publish-blocked ]; then echo "::error::$(cat .publish-blocked)"; exit 1; fi
           node scripts/cf-config.ts
           npx --yes wrangler@4.145.0 pages project create arc-terminal --production-branch=main || true
           npx --yes wrangler@4.145.0 pages deploy build --project-name=arc-terminal --branch=main --commit-dirty=true
