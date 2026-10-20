@@ -379,7 +379,7 @@
 	[data-style='zen'][data-style] [data-ui='cmd'].sheet {
 		left: var(--sp-12);
 		right: var(--sp-12);
-		bottom: calc(var(--tabbar-h) + var(--sp-20) + env(safe-area-inset-bottom, 0px));
+		bottom: max(calc(var(--tabbar-h) + var(--sp-20) + env(safe-area-inset-bottom, 0px)), calc(var(--kb-bottom, 0px) + var(--sp-12)));
 		border: var(--hair) solid var(--amber-edge);
 		border-radius: var(--touch);
 		box-shadow: var(--shadow-pop);
