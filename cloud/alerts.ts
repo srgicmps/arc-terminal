@@ -9,7 +9,7 @@
 //   issues de GitHub pasan a la cuenta del administrador (una vez; luego los issues se cierran).
 // El tema es la única protección del canal: solo sale de aquí hacia su dueño y hacia la Action.
 import { parseConfig, parsePrices, parseWordList, type AlertConfig } from '../src/lib/alertconfig.ts';
-import { tokenOf, verifyIdentity, type AccessConfig } from './access.ts';
+import { identity } from './access.ts';
 import type { AdminEnv } from './feedback.ts';
 import { json, type D1Database } from './prefs.ts';
 import { ensure } from './schema.ts';
@@ -44,14 +44,10 @@ export async function handleAlerts(
 	store: AlertStore | null,
 	fetcher?: (url: string) => Promise<Response>
 ): Promise<Response> {
-	if (!store || !env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) return json(503, { error: 'sin configurar' });
-	const origin = request.headers.get('origin');
-	if (origin && origin !== new URL(request.url).origin) return json(403, { error: 'origen' });
-
-	const token = tokenOf(request);
-	const config: AccessConfig = { teamDomain: env.ACCESS_TEAM_DOMAIN, aud: env.ACCESS_AUD };
-	const who = token ? await verifyIdentity(token, config, fetcher).catch(() => null) : null;
-	if (!who) return json(401, { error: 'sin identificar' });
+	if (!store) return json(503, { error: 'sin configurar' });
+	// Sin configurar, desde otra web o sin identificar: fuera (access.ts). Aquí valen también los tokens de servicio.
+	const who = await identity(request, env, fetcher);
+	if (who instanceof Response) return who;
 	const all = new URL(request.url).searchParams.get('all') === '1';
 
 	// La Action: leer la lista, borrar alertas que ya han avisado y la migración de los issues. Nada más.

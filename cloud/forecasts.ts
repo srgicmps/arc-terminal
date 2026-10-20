@@ -6,7 +6,7 @@
 // - GET: { me: { uid, alias }, bets: [{ uid, alias, round, value }] }
 // - PUT { alias } · PUT { round, value } · DELETE ?round=<id>
 import { closesOf } from '../src/lib/exp/forecasts.ts';
-import { tokenOf, verifyIdentity, type AccessConfig } from './access.ts';
+import { person } from './access.ts';
 import { json, type D1Database, type Env } from './prefs.ts';
 import { ensure } from './schema.ts';
 
@@ -45,15 +45,10 @@ export async function handleForecasts(
 	fetcher?: (url: string) => Promise<Response>,
 	now = Date.now()
 ): Promise<Response> {
-	if (!store || !env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) return json(503, { error: 'sin configurar' });
-	const origin = request.headers.get('origin');
-	if (origin && origin !== new URL(request.url).origin) return json(403, { error: 'origen' });
-
-	const token = tokenOf(request);
-	const config: AccessConfig = { teamDomain: env.ACCESS_TEAM_DOMAIN, aud: env.ACCESS_AUD };
-	const who = token ? await verifyIdentity(token, config, fetcher).catch(() => null) : null;
-	if (!who) return json(401, { error: 'sin identificar' });
-	if (who.service !== undefined) return json(403, { error: 'solo personas' });
+	if (!store) return json(503, { error: 'sin configurar' });
+	// Sin configurar, desde otra web, sin identificar o un token de servicio: fuera (access.ts).
+	const who = await person(request, env, fetcher);
+	if (who instanceof Response) return who;
 	const user = who.email;
 
 	const me = async () => {

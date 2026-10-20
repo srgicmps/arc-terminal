@@ -1,5 +1,5 @@
 // Panel del administrador: /api/admin. Lo usa la vista /admin (src/routes/admin). Solo para Sergi: el email
-// sale del JWT de Access verificado (feedback.ts → person) y tiene que ser el del Secret de Pages ADMIN_EMAIL.
+// sale del JWT de Access verificado (access.ts → person) y tiene que ser el del Secret de Pages ADMIN_EMAIL.
 // Cualquier otro, y los tokens de servicio, 403, sin un solo dato.
 // - GET: los usuarios (los de la política de Access y los que tienen algo en D1), con su último acceso y si
 //   tienen los avisos activados.
@@ -9,7 +9,8 @@
 //   Al admin no se le puede quitar.
 // Necesita los Secrets de Pages CF_ACCESS_ADMIN_TOKEN (Access: Apps and Policies · Edit) y CF_ACCOUNT_ID; sin
 // ellos, la lista sale igual (solo con lo de D1) y no se puede invitar ni quitar.
-import { isAdmin, person, readJson, type AdminEnv } from './feedback.ts';
+import { person } from './access.ts';
+import { isAdmin, readJson, type AdminEnv } from './feedback.ts';
 import { json, type D1Database } from './prefs.ts';
 import { ensure } from './schema.ts';
 
