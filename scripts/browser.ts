@@ -3,6 +3,8 @@
 // `vite preview` con la web ya construida y abrir Chromium.
 import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join, resolve } from 'node:path';
 import { chromium, webkit, type Browser } from 'playwright-core';
 
 /** Chromium de la imagen de desarrollo; en el runner de GitHub, el Chrome que trae instalado. */
@@ -21,7 +23,12 @@ export function launch(): Promise<Browser> {
  */
 export async function preview(port: number, cwd?: string): Promise<{ server: ChildProcess; root: string }> {
 	const root = `http://localhost:${port}`;
-	const server = spawn('pnpm', ['exec', 'vite', 'preview', '--port', String(port), '--strictPort'], {
+	// Si ya contesta otro servidor en ese puerto (otra prueba a la vez, uno que se quedó suelto), se probaría su web,
+	// quizá de otro build: mejor parar y decirlo.
+	if (await fetch(`${root}/`).then(() => true, () => false)) throw new Error(`el puerto ${port} ya está ocupado (¿otro vite preview?)`);
+	// vite con node, sin `pnpm exec`: al matar a pnpm, vite seguía vivo y ocupando el puerto.
+	const vite = join(dirname(createRequire(resolve(cwd ?? '.', 'package.json')).resolve('vite/package.json')), 'bin/vite.js');
+	const server = spawn(process.execPath, [vite, 'preview', '--port', String(port), '--strictPort'], {
 		stdio: 'ignore',
 		cwd
 	});
