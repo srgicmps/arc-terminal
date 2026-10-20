@@ -182,13 +182,15 @@ Un cambio de estética se hace en un solo sitio.
 ## Comandos y fuentes
 Un archivo por comando en `src/lib/commands/` (`eco.ts`, `geo.ts`…); `src/lib/commands.ts` los junta solos y `order`
 decide su sitio. Un comando nuevo es un archivo nuevo. Los valores, en `src/lib/tickers.ts`, y todo junto, en la
-vista `HELP`. Resumen:
+vista `HELP`. Una fila por comando (lo comprueba `src/lib/docs.test.ts`):
 | Comando | Qué abre | Fuentes |
 |---|---|---|
 | `TOP` | Portada | Resumen de todas |
 | `IMP` | Lo más importante de hoy, la semana, el mes y el año (puntuación propia, sin IA) | Todos los titulares, BOE, Federal Register, Wikipedia |
 | `SEMANA` | Resumen de la semana: top de IMP en 7 días, mercados, datos publicados y agenda | IMP, FRED*, BCE, Tesoro de EE. UU., CoinGecko, calendarios de publicaciones |
-| `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FAO, FRED*, RSS |
+| `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FAO, FRED*, GIE*, RSS |
+| `ECST` | Las grandes economías (G20 y España) en una tabla ordenable: crecimiento, inflación, paro, tipos, bono, deuda y saldo | FMI, BIS, BCE, Tesoro de EE. UU., MOF de Japón |
+| `PAIS` | Ficha de un país (`PAIS Alemania`): PIB, IPC, paro, deuda, tipos, bono, moneda, previsiones del FMI y titulares | Eurostat, BLS, FRED*, BCE, BIS, Tesoro de EE. UU., FMI, RSS |
 | `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5), Wikidata, SIPRI, EASA (CZIB), NGA (avisos a navegantes), Cloudflare Radar* |
 | `GLOBO` | Globo 3D que gira con las capas de GEO y la Sala de control; Canvas 2D propio (`src/lib/geo/globe.ts` + `globe-render.ts`, cargado con import()), también «Ver en 3D» en GEO y «Globo 3D» en la Sala | Las de GEO y la Sala |
 | `ES` | España en cifras, paro registrado por comunidad, tráfico por provincia, BOE, luz | INE, SEPE, Seguridad Social, DGT (DATEX II), BOE, REE, RSS |
@@ -201,26 +203,29 @@ vista `HELP`. Resumen:
 | `EQS` | Buscador de acciones: bolsa, punto de partida y filtros de sector, PER, dividendo… | TradingView |
 | `IMAP` | Mapas de calor de más índices y países, sectores de EE. UU. y bolsas del mundo | TradingView |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |
+| `CMP` | Varios valores en un gráfico en base 100 (`CMP NVDA AMD AVGO`) | TradingView |
 | `RV` | Un valor frente a sus competidores: PER, márgenes, crecimiento (unos 60 de EE. UU.) | Finnhub* |
 | `SIG` | Señales técnicas: máximos y mínimos de 52 semanas, medias y RSI | Finnhub*, TradingView |
 | `MIS` | Tu lista de valores (en el navegador) | TradingView |
 | `TECH` / `AI` | Tecnología e IA | Hacker News, Hugging Face, OpenRouter, Epoch AI (CC BY 4.0), Cloudflare Radar*, RSS |
 | `BOE` / `USGOV` | Boletines oficiales | BOE, Federal Register |
+| `LIDER` | Qué hacen ahora Sánchez, Trump, Lagarde, Warsh y von der Leyen: agenda de hoy y lo último (`LIDER Lagarde`) | La Moncloa, Roll Call Factba.se, Casa Blanca, Federal Register, BCE, Fed, Comisión Europea |
 | `LUZ` | Precio de la luz y mix de generación | REE |
+| `AGUA` | Embalses de España por cuencas y sequía en Europa | MITECO, Copernicus (European Drought Observatory) |
 | `WX` | Tiempo, mar, aire, avisos, sol y luna | Open-Meteo, MeteoAlarm, Copernicus (ERA5), NOAA (CO₂) |
 | `VIAJE` | Antes de un viaje: tiempo a 7 días, hora, moneda, aviso de viaje y festivos de cualquier ciudad | Open-Meteo, BCE, Departamento de Estado de EE. UU., Nager.Date |
+| `PORT` | Barcos en puertos y estrechos (Gibraltar, Róterdam, Singapur, Maó…) con AIS en directo | aisstream.io* |
 | `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica, Comisión Europea (Weekly Oil Bulletin) |
 | `HIPOTECA` | Tu hipoteca: cuota, cuadro de amortización y próxima revisión (datos solo tuyos, en tus ajustes) | BCE (euríbor a 12 meses) |
 | `CARTERA` | Tu cartera: posiciones, ganancia o pérdida y reparto (datos solo tuyos, en tus ajustes) | Finnhub* (EE. UU.), precio a mano, BCE |
 | `AHORRO` | Dónde rinde el dinero, interés compuesto, lo que vale hoy el de otro año y tu inflación (MI IPC) | BCE, Banco de España, Eurostat (IPCA del INE) |
-| `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
-| `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
 | `TEST` | Test de la semana: cinco preguntas con titulares y datos de la semana, sin IA; puntuación en la cuenta de cada uno | IMP, FRED*, BCE, CoinGecko, USGS |
 | `CAL` | Agenda económica, resultados, festivos y puentes (`PUENTES`) | TradingView, Finnhub*, Nager.Date |
 | `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista, análisis y problema del día | Stockfish, chess.js, Lichess |
 | `MODO` | Modo Sencillo (lo esencial, letra mayor, explicaciones; por defecto para usuarios nuevos) o Terminal (todo) | — |
 | `TV` | Modo TV: las vistas rotan solas, encajadas y a pantalla completa | — |
 | `EXP` | Experiencias: otras formas de usar Arc con los mismos datos (periódico, sala de control, feed…) | Todas |
+| `OS` | Arc OS: escritorio con ventanas, varias vistas a la vez (ver «Arquitectura») | Todas |
 | `FONDOS` | Carteras 13F de grandes fondos: mayores posiciones, compras y ventas | SEC* |
 | `HDS` | Qué fondos de FONDOS tienen un valor (13F al revés, con 45 días de retraso) | SEC* |
 | `RSS` | Mis RSS (como Feedly): tus feeds en tu cuenta, leídos por `/api/rss` (`cloud/rss.ts`, caché de 15 min y topes; solo con cuenta) | Tus feeds |
@@ -229,9 +234,14 @@ vista `HELP`. Resumen:
 | `AVISOS` | Tus avisos al móvil: temas, nivel, tope, valores y silencio (solo con cuenta, en arcterminal.dev) | ntfy |
 | `QUIEN` | Quién lo cuenta: el mismo hecho en varios medios, cobertura por región y ángulos muertos (sin IA) | Todos los titulares |
 | `BIENVENIDA` | La primera vez (y desde HELP): intereses o perfil, ciudad y modo → portada, inicio, MIS de ejemplo y propuesta de avisos; recorrido de 6 pasos (el último, las experiencias), solo en BIENVENIDA y HELP (`src/lib/onboarding/`) | — |
+| `NOVEDADES` | Lo que ha cambiado en Arc Terminal esta semana, día a día | GitHub (PR fusionados) |
+| `DOC` | Cómo está hecho Arc: arquitectura, el viaje de los datos, las fuentes y Svelte frente a Vue | El propio código |
+| `MANUAL` | Manual completo: vistas y paneles, comandos con ejemplos, atajos, ajustes y avisos; sale de los registros (`manual.test.ts` avisa si falta algo) | — |
+| `ADMIN` | Solo Sergi: usuarios, invitaciones, sugerencias y errores del navegador (ver «Arquitectura») | Cloudflare Access, D1 |
 | `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
 
-\* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`, `CLOUDFLARE_RADAR_TOKEN`, `EIA_API_KEY`):
+\* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`, `CLOUDFLARE_RADAR_TOKEN`, `EIA_API_KEY`,
+`GIE_API_KEY`, `AISSTREAM_API_KEY`):
 sin ella el panel no sale y no se rompe nada. `MYMEMORY_EMAIL` (también opcional) traduce al español los
 titulares en inglés (`scripts/translate.ts`); sin él, siguen en inglés.
 
