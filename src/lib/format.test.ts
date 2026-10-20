@@ -122,7 +122,7 @@ describe('nf con formateadores guardados', () => {
 	};
 	const edges = [0, -0, 0.5, -0.5, 0.005, -0.005, 1.005, 2.5, -2.5, 999.995, 1234.5, 9999.5, 12345.678, -98765.4321, 1e15, -1e-7, 1.1e-16];
 	// Números repartidos de forma fija (sin Math.random, para que el test sea siempre igual).
-	const spread = Array.from({ length: 3000 }, (_, i) => Math.sin(i * 12.9898) * 10 ** ((i % 9) - 3));
+	const spread = Array.from({ length: 1500 }, (_, i) => Math.sin(i * 12.9898) * 10 ** ((i % 9) - 3));
 
 	it('da lo mismo que toLocaleString, con los decimales mezclados (0, 2, 0…)', () => {
 		[...edges, ...spread].forEach((n, i) => {

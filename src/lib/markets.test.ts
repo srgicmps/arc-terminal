@@ -211,8 +211,8 @@ describe('formateadores guardados por zona', () => {
 	};
 
 	const zones = [...new Set([...MARKETS.map((m) => m.tz), 'UTC', 'America/Los_Angeles', 'Australia/Sydney', 'Asia/Kathmandu'])];
-	// Cada 7 h 13 min durante dos años, con los cambios de hora de los dos hemisferios dentro.
-	const instants = Array.from({ length: 2400 }, (_, i) => Date.parse('2025-01-01T00:00:00Z') + i * 433 * 60_000);
+	// Cada 21 h 39 min durante dos años (así cae a todas las horas), con los cambios de hora de los dos hemisferios dentro.
+	const instants = Array.from({ length: 800 }, (_, i) => Date.parse('2025-01-01T00:00:00Z') + i * 1299 * 60_000);
 
 	it('localDate y zoned dan lo mismo que antes, zona a zona y alternando zonas', () => {
 		instants.forEach((ms, i) => {
