@@ -1,16 +1,19 @@
 // Panel del administrador: /api/admin. Lo usa la vista /admin (src/routes/admin). Solo para Sergi: el email
-// sale del JWT de Access verificado (feedback.ts → person) y tiene que ser el del Secret de Pages ADMIN_EMAIL.
+// sale del JWT de Access verificado (access.ts → person) y tiene que ser el del Secret de Pages ADMIN_EMAIL.
 // Cualquier otro, y los tokens de servicio, 403, sin un solo dato.
 // - GET: los usuarios (los de la política de Access y los que tienen algo en D1), con su último acceso y si
 //   tienen los avisos activados.
 // - POST { action: 'invite' | 'remove', email }: añade o quita el email de la política de Access (por defecto,
 //   la que se llama «Sergi»; Variable ACCESS_POLICY) con la API de Cloudflare. Al quitar, se cierran sus
-//   sesiones y se borran sus datos de D1 (ajustes, avisos, último acceso, familia, Mis RSS y predicciones).
+//   sesiones y se borran sus datos de D1: todas las tablas de USER_TABLES (ajustes, avisos, último acceso,
+//   familia, Mis RSS, predicciones y sugerencias).
 //   Al admin no se le puede quitar.
 // Necesita los Secrets de Pages CF_ACCESS_ADMIN_TOKEN (Access: Apps and Policies · Edit) y CF_ACCOUNT_ID; sin
 // ellos, la lista sale igual (solo con lo de D1) y no se puede invitar ni quitar.
-import { isAdmin, person, readJson, type AdminEnv } from './feedback.ts';
+import { person } from './access.ts';
+import { isAdmin, readJson, type AdminEnv } from './feedback.ts';
 import { json, type D1Database } from './prefs.ts';
+import { ensure, type Table } from './schema.ts';
 
 export interface AdminFullEnv extends AdminEnv {
 	CF_ACCESS_ADMIN_TOKEN?: string;
@@ -32,7 +35,7 @@ export interface UserInfo {
 export interface AdminStore {
 	/** Emails con algo guardado: último acceso y avisos. */
 	users(): Promise<{ email: string; seen: number | null; alerts: boolean }[]>;
-	/** Borra todo lo de un usuario (ajustes, avisos, último acceso). */
+	/** Borra todo lo de un usuario: sus filas de cada tabla de USER_TABLES. */
 	forget(email: string): Promise<void>;
 }
 
@@ -188,18 +191,12 @@ export async function handleAdmin(
 	return json(405, { error: 'método' });
 }
 
-let tableReady = false;
-
-/** Tabla seen (último acceso). La escribe /api/prefs al cargar la web (d1Store, cloud/prefs.ts). */
-export async function seenTable(db: D1Database) {
-	if (tableReady) return;
-	await db.exec('CREATE TABLE IF NOT EXISTS seen (user TEXT PRIMARY KEY, at INTEGER NOT NULL)');
-	tableReady = true;
-}
-
-/** Apunta el último acceso, como mucho una vez cada 10 minutos por usuario. */
+/**
+ * Apunta el último acceso (tabla seen), como mucho una vez cada 10 minutos por usuario. Lo llama /api/prefs al
+ * cargar la web (functions/api/prefs.ts).
+ */
 export async function touchSeen(db: D1Database, user: string, now = Date.now()) {
-	await seenTable(db);
+	await ensure(db, 'seen');
 	await db
 		.prepare(
 			'INSERT INTO seen (user, at) VALUES (?, ?) ON CONFLICT (user) DO UPDATE SET at = excluded.at WHERE excluded.at - seen.at > 600000'
@@ -208,17 +205,28 @@ export async function touchSeen(db: D1Database, user: string, now = Date.now()) 
 		.run();
 }
 
+/**
+ * Las tablas con datos de una persona (columna user, su email): «Quitar» las borra todas. Una tabla nueva con
+ * columna user tiene que estar aquí; si no, falla schema.test.ts. brief_mail no está: va por uid aleatorio, sin
+ * email, y al borrar su fila de alerts ya no se puede relacionar con nadie.
+ */
+export const USER_TABLES = [
+	'prefs',
+	'alerts',
+	'seen',
+	'family',
+	'family_sent',
+	'rss',
+	'forecast_bets',
+	'forecast_players',
+	'feedback'
+] as const satisfies readonly Table[];
+
+/** Las que usa el panel. Las de los demás módulos pueden no existir todavía: se crean igual que allí. */
+const OWN: Table[] = ['seen', 'prefs', 'alerts'];
+
 export function d1AdminStore(db: D1Database): AdminStore {
-	// Las tablas de los demás módulos pueden no existir todavía: se crean igual que allí.
-	const ready = async () => {
-		await seenTable(db);
-		await db.exec(
-			'CREATE TABLE IF NOT EXISTS prefs (user TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, updated INTEGER NOT NULL, PRIMARY KEY (user, key))'
-		);
-		await db.exec(
-			'CREATE TABLE IF NOT EXISTS alerts (user TEXT PRIMARY KEY, uid TEXT NOT NULL, topic TEXT, config TEXT NOT NULL, updated INTEGER NOT NULL)'
-		);
-	};
+	const ready = () => ensure(db, ...OWN);
 	return {
 		async users() {
 			await ready();
@@ -237,13 +245,11 @@ export function d1AdminStore(db: D1Database): AdminStore {
 		},
 		async forget(email) {
 			await ready();
-			await db.batch(
-				['prefs', 'alerts', 'seen'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email))
-			);
+			await db.batch(OWN.map((t) => db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email)));
 			// Las de los demás módulos solo existen si alguien los ha usado: una a una, para que la que falte no
-			// impida borrar las otras. Familia (cloud/family.ts), Mis RSS (cloud/rss.ts) y predicciones
-			// (cloud/forecasts.ts).
-			for (const t of ['family', 'family_sent', 'rss', 'forecast_bets', 'forecast_players'])
+			// impida borrar las otras. Familia (cloud/family.ts), Mis RSS (cloud/rss.ts), predicciones
+			// (cloud/forecasts.ts) y sugerencias (cloud/feedback.ts).
+			for (const t of USER_TABLES.filter((t) => !OWN.includes(t)))
 				await db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email).run().catch(() => {});
 		}
 	};

@@ -3,6 +3,9 @@
 // CF_Authorization). Aquí se VERIFICA ese JWT con las claves públicas del equipo de Access: firma RS256,
 // audiencia (el AUD de la aplicación), emisor y caducidad. Nunca nos fiamos de una cabecera de email suelta.
 // Sin dependencias: WebCrypto, que tienen igual Cloudflare y Node (los tests).
+// Aquí están también las comprobaciones que hacen las Functions antes de nada (identity y person), para que
+// todas sigan el mismo orden: 503 sin configurar, 403 si viene de otra web, 401 sin identificar.
+import { json, type Env } from './prefs.ts';
 
 export interface AccessConfig {
 	/** «https://<equipo>.cloudflareaccess.com» (o solo «<equipo>.cloudflareaccess.com»). */
@@ -116,6 +119,30 @@ export async function verifyIdentity(
 		return email ? { email } : { service: service! };
 	}
 	return null;
+}
+
+/**
+ * Quién llama a una Function, con las comprobaciones en este orden: 503 si Access no está configurado, 403 si
+ * la petición viene de otra web (contra CSRF) y 401 si no trae un JWT de Access válido. Devuelve la identidad
+ * (una persona o un token de servicio, el de las Actions) o la Response de error, para devolverla tal cual.
+ */
+export async function identity(request: Request, env: Env, fetcher?: Fetch): Promise<Identity | Response> {
+	if (!env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) return json(503, { error: 'sin configurar' });
+	// Contra CSRF: si el navegador dice de dónde viene, tiene que ser de esta misma web.
+	const origin = request.headers.get('origin');
+	if (origin && origin !== new URL(request.url).origin) return json(403, { error: 'origen' });
+	const token = tokenOf(request);
+	const config: AccessConfig = { teamDomain: env.ACCESS_TEAM_DOMAIN, aud: env.ACCESS_AUD };
+	const who = token ? await verifyIdentity(token, config, fetcher).catch(() => null) : null;
+	return who ?? json(401, { error: 'sin identificar' });
+}
+
+/** Como identity(), pero solo para personas (JWT con email): a un token de servicio, 403. */
+export async function person(request: Request, env: Env, fetcher?: Fetch): Promise<{ email: string } | Response> {
+	const who = await identity(request, env, fetcher);
+	if (who instanceof Response) return who;
+	if (!who.email) return json(403, { error: 'solo personas' });
+	return { email: who.email };
 }
 
 /** Para los tests: olvida las claves guardadas. */

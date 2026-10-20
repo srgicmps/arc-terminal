@@ -45,14 +45,16 @@ async function call(
 	who: Record<string, unknown> | null,
 	method = 'GET',
 	body?: unknown,
-	query = ''
+	query = '',
+	headers: Record<string, string> = {}
 ) {
 	return handleAdmin(
 		new Request(`https://arcterminal.dev/api/admin${query}`, {
 			method,
 			headers: {
 				...(who ? { 'cf-access-jwt-assertion': await k.sign(who) } : {}),
-				...(body ? { 'content-type': 'application/json' } : {})
+				...(body ? { 'content-type': 'application/json' } : {}),
+				...headers
 			},
 			body: body ? JSON.stringify(body) : undefined
 		}),
@@ -77,6 +79,23 @@ describe('/api/admin', () => {
 		// Sin ADMIN_EMAIL, ni Sergi.
 		const { ADMIN_EMAIL: _, ...noAdmin } = FULL;
 		expect((await call(noAdmin, store, cf.fetcher, { email: 'jefe@x.es' })).status).toBe(403);
+	});
+
+	it('desde otra web, ni el admin: 403 sin tocar Cloudflare ni D1', async () => {
+		const cf = cloudflare();
+		const store = memoryAdminStore([{ email: 'ana@x.es', seen: 5, alerts: true }]);
+		const jefe = { email: 'jefe@x.es' };
+		const malo = { origin: 'https://malo.example' };
+		const remove = { action: 'remove', email: 'ana@x.es' };
+		const post = await call(FULL, store, cf.fetcher, jefe, 'POST', remove, '', malo);
+		expect(post.status).toBe(403);
+		expect(await post.json()).toEqual({ error: 'origen' });
+		expect((await call(FULL, store, cf.fetcher, jefe, 'GET', undefined, '', malo)).status).toBe(403);
+		expect(cf.calls).toHaveLength(0);
+		expect(store.rows).toHaveLength(1);
+		// Desde la misma web, sí.
+		const same = await call(FULL, store, cf.fetcher, jefe, 'GET', undefined, '', { origin: 'https://arcterminal.dev' });
+		expect(same.status).toBe(200);
 	});
 
 	it('nunca por una cabecera suelta ni por un JWT sin firma, de otra app, de otra clave o caducado', async () => {
