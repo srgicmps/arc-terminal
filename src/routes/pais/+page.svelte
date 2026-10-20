@@ -158,7 +158,7 @@
 			{#if rates.length}
 				<Panel title="Tipos y deuda">
 					<Table>
-						<thead><tr><th></th><th>Último</th><th>Var.</th><th>Fecha</th></tr></thead>
+						<thead><tr><th><span class="sr">Indicador</span></th><th>Último</th><th>Var.</th><th>Fecha</th></tr></thead>
 						<tbody>
 							{#each rates as r (r.label)}
 								<tr>
@@ -212,7 +212,7 @@
 				<Panel title="Previsiones del FMI" meta={profile.imf.edition ?? undefined}>
 					<Table>
 						<thead>
-							<tr><th></th><th>PIB {profile.imf.years[0]}</th><th>PIB {profile.imf.years[1]}</th><th>IPC {profile.imf.years[0]}</th><th>IPC {profile.imf.years[1]}</th></tr>
+							<tr><th><span class="sr">País</span></th><th>PIB {profile.imf.years[0]}</th><th>PIB {profile.imf.years[1]}</th><th>IPC {profile.imf.years[0]}</th><th>IPC {profile.imf.years[1]}</th></tr>
 						</thead>
 						<tbody>
 							{#each profile.imf.rows as r, i (r.code)}
