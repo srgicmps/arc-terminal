@@ -261,3 +261,5 @@ Cuando termine una fase, actualiza esta lista.
 - «Próximo dato» de Eurostat (M10): el .ics `cache/RELEASE_CALENDAR/calendar_EN.ics` da 404 y no se ha encontrado el nuevo. El de INE y EE. UU. (fechas de FRED; el .ics del BLS prohíbe robots) sí funcionan.
 - Oro de los bancos centrales en toneladas (lote 24.5): la API nueva del FMI (2025) tiene el flujo IRFCL, pero su lista de
   indicadores no incluye el oro (seis sondeos en el #282). El World Gold Council pide registro.
+- Barra ordenada por uso (F13): `arc-cmd-history` se sincroniza con la cuenta y solo guarda lo reciente, sin recuentos, y
+  reordenar cambiaría lo que abre Intro con «M» o «W». Lo decide Sergi; la tolerancia a erratas (`didYouMean`) ya está.
