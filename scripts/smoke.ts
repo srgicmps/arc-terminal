@@ -5,7 +5,10 @@
 // - a 390 px la página es más ancha que la pantalla (scroll horizontal);
 // - sale «NaN», «undefined», «Infinity» o «[object Object]» en el texto de la vista;
 // - la vista no tiene paneles o alguno dice «… todavía» (le faltan sus datos). Una fuente que ha respondido
-//   sin nada que contar (hoy no hay terremotos ni avisos) tiene que decirlo con otro aviso, sin «todavía».
+//   sin nada que contar (hoy no hay terremotos ni avisos) tiene que decirlo con otro aviso, sin «todavía»;
+// - a 390 px el índice de paneles ocupa sitio en la página, o <main> no está a la misma altura antes y después de
+//   hidratar en TOP y WS (el índice empujaría la vista al cargar: mobileLayout).
+// Y avisa (sin fallar) si TOP, WS o ECO saltan al cargar (CLS > 0,1) en el móvil con la CPU 4 veces más lenta.
 // Además avisa (sin fallar) si una vista pesa más de WEIGHT_LIMIT: lo que descarga de la propia web
 // (HTML, JS, CSS y datos) comprimido con gzip, como lo sirve GitHub Pages; sin TradingView ni otras webs.
 // También avisa (sin fallar, de momento) de los fallos de accesibilidad de axe-core en contraste y nombres de
@@ -13,8 +16,10 @@
 // Las peticiones a otras webs (TradingView, fuentes…) se contestan vacías: así la prueba no depende de la red.
 import { createRequire } from 'node:module';
 import { gzipSync } from 'node:zlib';
+import type { Page } from 'playwright-core';
 import { launch, preview, viewPaths } from './browser.ts';
 import { osChecks } from './smoke-os.ts';
+import { swChecks } from './smoke-sw.ts';
 
 /** En WebKit (SMOKE_BROWSER) solo se mira la web clásica en el móvil: lo que cambia con Safari es el diseño. */
 const WEBKIT = !!process.env.SMOKE_BROWSER;
@@ -55,6 +60,8 @@ const failures: string[] = [];
 const warnings: string[] = [];
 /** Fallos de accesibilidad por vista (axe-core): solo avisan. */
 const a11y: string[] = [];
+/** Saltos al cargar en el móvil (CLS): solo avisan. */
+const shifts: string[] = [];
 
 try {
 	const browser = await launch();
@@ -144,6 +151,12 @@ try {
 				// Pestañas de arriba (TOP, ECO… y «Más»): todas del mismo alto. Un botón estirado por el mínimo táctil
 				// de app.css descolocaba la fila entera.
 				keys: [...new Set([...document.querySelectorAll('.keys .key')].map((e) => Math.round(e.getBoundingClientRect().height)))],
+				// El índice de paneles (PanelIndex) se pinta al hidratar: si ocupara sitio, empujaría la vista. También mira
+				// que ninguna estética le cambie la posición.
+				index: (() => {
+					const i = document.querySelector('[data-ui="panel-index"]');
+					return i ? getComputedStyle(i).position : '';
+				})(),
 				panels: document.querySelectorAll('section.panel').length,
 				missing: [...document.querySelectorAll('.empty')]
 					.map((e) => e.textContent?.trim() ?? '')
@@ -163,6 +176,7 @@ try {
 			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px (${check.culprit})`);
 			if (width < 600) for (const f of new Set(check.zoom)) failures.push(`${where}: el campo «${f}» tiene letra de menos de 16 px (el iPhone amplía al tocarlo)`);
 			if (check.keys.length > 1) failures.push(`${where}: pestañas de arriba de alturas distintas (${check.keys.join(', ')} px)`);
+			if (width < 600 && check.index && check.index !== 'fixed') failures.push(`${where}: el índice de paneles ocupa sitio en el móvil (position: ${check.index}): empuja la vista al hidratar`);
 			if (!NO_PANELS.has(path) && !path.startsWith('/x/') && !check.panels) failures.push(`${where}: sin paneles`);
 			for (const text of check.missing) failures.push(`${where}: panel sin datos («${text}»)`);
 			for (const text of check.glitches) failures.push(`${where}: «${text}» en la vista`);
@@ -186,8 +200,12 @@ try {
 	}
 	// Arc OS en el escritorio, con 12 ventanas (scripts/smoke-os.ts).
 	if (!WEBKIT) failures.push(...(await osChecks(browser, ROOT)));
+	// Sin conexión, con lo que guarda el service worker, TOP y ECO arrancan (scripts/smoke-sw.ts).
+	if (!WEBKIT) failures.push(...(await swChecks(browser)));
 	// La pasada acotada de WebKit solo mira el móvil.
 	if (!WEBKIT) await keyboard(browser);
+	// Con Chromium (DevTools Protocol para frenar la CPU).
+	if (!WEBKIT) await mobileLayout(browser);
 	if (!WEBKIT) await bienvenida(browser);
 	await browser.close();
 } catch (error) {
@@ -233,6 +251,85 @@ async function keyboard(browser: Awaited<ReturnType<typeof launch>>) {
 	});
 	if (top === null || Math.abs(top) > 200) failures.push(`teclado: /eco#panel=Paro juvenil en Sencillo no enseña ni baja al panel (${top})`);
 	await context.close();
+}
+
+/**
+ * Saltos al cargar en el móvil (390 px). Sin frenar la CPU, Chromium hidrata antes del primer pintado y no se ve ningún
+ * salto, así que:
+ * - Índice de paneles (TOP y WS en Terminal, con más de 6 paneles): <main> tiene que estar a la misma altura en el HTML
+ *   prerenderizado (sin el JS de la app) que después de hidratar; arriba, el índice está escondido, y sale al bajar.
+ *   Falla si no: no depende de lo rápida que sea la CPU.
+ * - CLS de TOP, WS y ECO en los dos modos con la CPU 4 veces más lenta (como un móvil normal): avisa si pasa de 0,1.
+ */
+async function mobileLayout(browser: Awaited<ReturnType<typeof launch>>) {
+	for (const mode of MODES) {
+		const context = await browser.newContext({ viewport: { width: 390, height: 900 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
+		await context.addInitScript((m) => {
+			localStorage.setItem('arc-modo', m);
+			localStorage.setItem('arc-welcome', JSON.stringify({ v: 1, profile: null, interests: [], alerts: { groups: [], level: 2, daily: 10, mis: [] }, at: '' }));
+			// Suma de los desplazamientos que no vienen de tocar la página, con el elemento que se ha movido.
+			const w = window as unknown as { cls: { value: number; from: string[] } };
+			w.cls = { value: 0, from: [] };
+			new PerformanceObserver((list) => {
+				for (const e of list.getEntries() as unknown as { value: number; hadRecentInput: boolean; sources?: { node?: Node | null }[] }[]) {
+					if (e.hadRecentInput) continue;
+					w.cls.value += e.value;
+					for (const s of e.sources ?? []) {
+						const el = s.node instanceof Element ? s.node : null;
+						if (el) w.cls.from.push(el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + [...el.classList].filter((c) => !c.startsWith('svelte-')).slice(0, 2).map((c) => '.' + c).join(''));
+					}
+				}
+			}).observe({ type: 'layout-shift', buffered: true });
+		}, mode);
+		let hydrate = true;
+		await context.route('**/*', (route) => {
+			const url = new URL(route.request().url());
+			if (url.hostname !== 'localhost' || url.pathname.startsWith('/api/')) return route.fulfill({ status: 200, body: '' });
+			// Sin el JS de la app la vista se queda como sale del prerender (el script de app.html sí corre: modo y estética).
+			if (!hydrate && url.pathname.startsWith('/_app/') && url.pathname.endsWith('.js')) return route.abort();
+			return route.continue();
+		});
+		const mainTop = (p: Page) => p.evaluate(() => Math.round((document.getElementById('contenido')?.getBoundingClientRect().top ?? NaN) + scrollY));
+		for (const path of ['/', '/ws', '/eco']) {
+			const where = `${path} a 390 px (${mode})`;
+			const page = await context.newPage();
+			page.on('pageerror', (e) => failures.push(`${where}: excepción: ${e.message}`));
+			const cdp = await context.newCDPSession(page);
+			await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+			await page.goto(ROOT + path, { waitUntil: 'networkidle' });
+			await page.waitForTimeout(1000);
+			const cls = await page.evaluate(() => (window as unknown as { cls: { value: number; from: string[] } }).cls);
+			if (cls.value > 0.1) shifts.push(`${where}: CLS ${cls.value.toFixed(3)} con la CPU 4x (se mueve: ${[...new Set(cls.from)].slice(0, 3).join(', ')})`);
+			await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+			if (mode !== 'terminal' || path === '/eco') {
+				await page.close();
+				continue;
+			}
+			const hydrated = await mainTop(page);
+			// El índice: escondido arriba, a la vista al bajar y otra vez escondido al volver.
+			const seen = async (y: number) => {
+				await page.evaluate((top) => scrollTo({ top, behavior: 'instant' }), y);
+				await page.waitForTimeout(400);
+				return page.evaluate(() => {
+					const i = document.querySelector('[data-ui="panel-index"]');
+					if (!i) return null;
+					return i.getBoundingClientRect().bottom > 0.5 && getComputedStyle(i).opacity !== '0';
+				});
+			};
+			const steps = [await seen(0), await seen(800), await seen(0)];
+			await page.close();
+			if (steps[0] === null) failures.push(`${where}: no sale el índice de paneles (hacen falta 7 paneles o más)`);
+			else if (steps.join() !== 'false,true,false') failures.push(`${where}: el índice de paneles no está escondido arriba y a la vista al bajar (arriba, abajo, arriba: ${steps.join(', ')})`);
+			hydrate = false;
+			const pre = await context.newPage();
+			await pre.goto(ROOT + path, { waitUntil: 'networkidle' });
+			const prerendered = await mainTop(pre);
+			await pre.close();
+			hydrate = true;
+			if (prerendered !== hydrated) failures.push(`${where}: <main> pasa de y=${prerendered} (sin hidratar) a y=${hydrated} al hidratar: algo se mete encima de la vista (¿el índice de paneles?)`);
+		}
+		await context.close();
+	}
 }
 
 /**
@@ -289,6 +386,7 @@ async function bienvenida(browser: Awaited<ReturnType<typeof launch>>) {
 // ::warning:: hace que GitHub muestre el aviso en el resumen de la Action.
 for (const w of warnings) console.log(`::warning title=Peso de las vistas::${w}`);
 for (const w of a11y) console.log(`::warning title=Accesibilidad (axe-core)::${w}`);
+for (const w of shifts) console.log(`::warning title=Saltos al cargar (CLS)::${w}`);
 if (!a11y.length) console.log(`axe-core: sin fallos de ${AXE_RULES.length} reglas en ${PATHS.length} vistas a 390 px`);
 
 if (failures.length) {

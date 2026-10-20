@@ -10,7 +10,7 @@
 	import { afterNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { isEmbedded } from '#lib/os/embed.ts';
-	import { resolve } from '$app/paths';
+	import { asset, resolve } from '$app/paths';
 	import { COMMANDS } from '#lib/commands.ts';
 	import { TICKERS } from '#lib/tickers.ts';
 	import {
@@ -108,22 +108,18 @@
 	});
 
 	// Índice de búsqueda (static/data/search.json). null hasta que se enfoca la barra la primera vez: se
-	// pide en ese momento (Vite lo deja en un trozo aparte), no al cargar la página. Va con su propio
-	// import.meta.glob, como <Updated>, y no con dataset() de data.ts: importar dataset() aquí metería
-	// todos los JSON de static/data en la build del navegador.
-	const searchLoader = import.meta.glob('/static/data/search.json', { import: 'default' })['/static/data/search.json'];
+	// pide en ese momento a /data/search.json, no al cargar la página. No va dentro del código (ni con
+	// import.meta.glob ni con dataset() de data.ts): cambia con cada pasada de datos y arrastraría el
+	// nombre de la barra y de todas las vistas en cada publicación.
 	let index = $state.raw<Indexed[] | null>(null);
 	let indexRequested = false;
 	function loadIndex() {
 		if (indexRequested) return;
 		indexRequested = true;
-		if (!searchLoader) {
-			index = [];
-			return;
-		}
-		searchLoader()
+		fetch(asset('data/search.json' as Parameters<typeof asset>[0]))
+			.then((res) => (res.ok ? (res.json() as Promise<Dataset<SearchEntry[]>>) : null))
 			.then((d) => {
-				const data = (d as Dataset<SearchEntry[]> | null)?.data;
+				const data = d?.data;
 				index = prepare(Array.isArray(data) ? data : []);
 			})
 			.catch(() => (index = []));
