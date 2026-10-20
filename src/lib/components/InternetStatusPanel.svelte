@@ -4,6 +4,7 @@
 	(static/data/statuspage.json), como LaunchesPanel.
 -->
 <script lang="ts">
+	import { asset } from '$app/paths';
 	import type { Dataset } from '#lib/data.ts';
 	import { when } from '#lib/format.ts';
 	import { activeIncident, label, sortServices, tone, type ServiceStatus } from '#lib/statuspage.ts';
@@ -16,15 +17,14 @@
 	// 0 al construir: así el HTML estático y el del navegador coinciden («hace 5 min» solo en el navegador).
 	let now = $state(0);
 
-	// Su propio import.meta.glob, y no dataset() de data.ts: así solo entra este JSON en la build.
-	const loaders = import.meta.glob('/static/data/statuspage.json', { import: 'default' });
-
-	// $effect solo corre en el navegador (como onMounted en Vue).
+	// $effect solo corre en el navegador (como onMounted en Vue). Se pide a /data/statuspage.json y no va
+	// dentro del código: así un cambio de datos no cambia el nombre de los archivos de la build.
 	$effect(() => {
 		now = Date.now();
-		const load = loaders['/static/data/statuspage.json'];
-		if (!load) ds = null;
-		else load().then((d) => (ds = d as Dataset<ServiceStatus[]>));
+		fetch(asset('data/statuspage.json' as Parameters<typeof asset>[0]))
+			.then((res) => (res.ok ? (res.json() as Promise<Dataset<ServiceStatus[]>>) : null))
+			.then((d) => (ds = d))
+			.catch(() => (ds = null));
 	});
 
 	const services = $derived(sortServices(ds?.data ?? []));
