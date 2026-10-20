@@ -5,7 +5,8 @@
 // - a 390 px la página es más ancha que la pantalla (scroll horizontal);
 // - sale «NaN», «undefined», «Infinity» o «[object Object]» en el texto de la vista;
 // - la vista no tiene paneles o alguno dice «… todavía» (le faltan sus datos). Una fuente que ha respondido
-//   sin nada que contar (hoy no hay terremotos ni avisos) tiene que decirlo con otro aviso, sin «todavía».
+//   sin nada que contar (hoy no hay terremotos ni avisos) tiene que decirlo con otro aviso, sin «todavía»;
+// - en el móvil, un acceso de la navegación no dice al lector el código y el nombre («WS Wall Street»).
 // Además avisa (sin fallar) si una vista pesa más de WEIGHT_LIMIT: lo que descarga de la propia web
 // (HTML, JS, CSS y datos) comprimido con gzip, como lo sirve GitHub Pages; sin TradingView ni otras webs.
 // También avisa (sin fallar, de momento) de los fallos de accesibilidad de axe-core en contraste y nombres de
@@ -189,6 +190,8 @@ try {
 	// La pasada acotada de WebKit solo mira el móvil.
 	if (!WEBKIT) await keyboard(browser);
 	if (!WEBKIT) await bienvenida(browser);
+	// También en WebKit: así se ve si Safari (VoiceOver) dice el nombre de cada acceso.
+	await navegacion(browser);
 	await browser.close();
 } catch (error) {
 	failures.push(String(error));
@@ -284,6 +287,48 @@ async function bienvenida(browser: Awaited<ReturnType<typeof launch>>) {
 	});
 	if (q2.top === null || q2.top < 0 || q2.top >= q2.fold) failures.push(`${where}: tras «Siguiente», «¿Dónde estás?» queda fuera de la pantalla (top ${q2.top}, barra en ${q2.fold})`);
 	await context.close();
+}
+
+/**
+ * Navegación del móvil (390 px, táctil y con ratón): cada acceso de la barra inferior y de la fila de arriba dice al
+ * lector de pantalla el código y el nombre («WS Wall Street»), no solo «WS». Con ratón, además, una fila propia de
+ * códigos largos no ensancha la página: el nombre oculto de una pestaña no puede salirse de la fila deslizable. La
+ * pasada principal no lo ve, porque por debajo de 600 px abre el navegador como táctil.
+ */
+async function navegacion(browser: Awaited<ReturnType<typeof launch>>) {
+	// Código, un espacio y el nombre.
+	const named = /^[A-Z0-9]+ \S/;
+	const long = ['HIPOTECA', 'CARTERA', 'AHORRO', 'SEMANA', 'FONDOS', 'BIENVENIDA'];
+	for (const touch of [true, false]) {
+		const where = `navegación de /ws a 390 px (${touch ? 'táctil' : 'con ratón'})`;
+		const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: touch, hasTouch: touch });
+		await context.addInitScript(
+			([keys]) => {
+				localStorage.setItem('arc-welcome', JSON.stringify({ v: 1, profile: null, interests: [], alerts: { groups: [], level: 2, daily: 10, mis: [] }, at: '' }));
+				if (keys) localStorage.setItem('arc-keys', keys);
+			},
+			[touch ? '' : JSON.stringify(long)]
+		);
+		await context.route('**/*', (route) => {
+			const url = new URL(route.request().url());
+			return url.hostname === 'localhost' && !url.pathname.startsWith('/api/') ? route.continue() : route.fulfill({ status: 200, body: '' });
+		});
+		const page = await context.newPage();
+		page.on('pageerror', (e) => failures.push(`${where}: excepción: ${e.message}`));
+		await page.goto(ROOT + '/ws', { waitUntil: 'networkidle' });
+		// La fila propia se pinta al arrancar (src/lib/taste.svelte.ts).
+		if (!touch) await page.locator(`nav.keys > a.key[data-code="${long[0]}"]`).waitFor({ timeout: 5000 }).catch(() => failures.push(`${where}: la fila de arriba no usa la de arc-keys`));
+		// Hijos directos: el diálogo de Experiencias, con sus enlaces, también cuelga de las dos barras.
+		for (const sel of ['nav.thumb > a', 'nav.keys > a.key']) {
+			const links = page.locator(sel);
+			const total = await links.count();
+			const ok = await page.getByRole('link', { name: named }).and(links).count();
+			if (!total || ok < total) failures.push(`${where}: ${ok} de ${total} enlaces de «${sel}» dicen al lector el código y el nombre («WS Wall Street»)`);
+		}
+		const scroll = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+		if (scroll > 0) failures.push(`${where}: scroll horizontal de ${scroll} px`);
+		await context.close();
+	}
 }
 
 // ::warning:: hace que GitHub muestre el aviso en el resumen de la Action.
