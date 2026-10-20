@@ -329,7 +329,9 @@
 		display: grid;
 		align-content: center;
 		gap: var(--sp-16);
-		padding: var(--wall-pad);
+		/* Ocupa también el relleno de .wall (zonas seguras): el texto, fuera de la muesca y de la barra de inicio. */
+		padding: max(var(--wall-pad), env(safe-area-inset-top, 0px)) max(var(--wall-pad), env(safe-area-inset-right, 0px))
+			max(var(--wall-pad), env(safe-area-inset-bottom, 0px)) max(var(--wall-pad), env(safe-area-inset-left, 0px));
 		background: var(--bg);
 		border: calc(var(--hair) * 2) solid var(--amber);
 		animation: in 0.4s ease-out;

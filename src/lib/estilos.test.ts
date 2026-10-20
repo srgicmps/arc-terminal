@@ -218,4 +218,19 @@ describe('iPhone: zonas seguras y color de la barra', () => {
 		expect(/\.thumb {\s*position: fixed;([^}]*)}/.exec(layout)?.[1]).toContain('padding-bottom: env(safe-area-inset-bottom');
 	});
 
+	it('las hojas pegadas a un borde y el aviso del Muro también se apartan', () => {
+		/** Algún bloque `selector {…}` del archivo usa la zona segura de cada lado. */
+		const uses = (file: string, selector: string, sides: string[]) => {
+			const text = readFileSync(file, 'utf8');
+			const at = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			const blocks = [...text.matchAll(new RegExp(`${at} {([^}]*)}`, 'g'))].map((m) => m[1]);
+			for (const side of sides) expect(blocks.some((b) => b.includes(`env(safe-area-inset-${side}`)), `${file} ${selector} ${side}`).toBe(true);
+		};
+		// Apariencia: a la derecha en escritorio (y en el iPhone en horizontal) y desde abajo en el móvil.
+		uses('src/lib/components/Appearance.svelte', '.in', ['right', 'bottom', 'left']);
+		uses('src/lib/components/ExpLauncher.svelte', '.foot', ['bottom']);
+		uses('src/routes/x/muro/+page.svelte', '.alert', ['top', 'right', 'bottom', 'left']);
+		// Retro pisa el relleno de los paneles con una regla más específica: tiene que volver a sumar la barra de inicio.
+		uses(`${DIR}/retro.css`, "[data-style='retro'][data-style] [data-ui='panel'].max", ['bottom']);
+	});
 });

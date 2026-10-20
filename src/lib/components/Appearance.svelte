@@ -143,8 +143,11 @@
 		}
 	}
 
+	/* Con viewport-fit=cover (src/app.html), lo de dentro se aparta de la muesca en horizontal y de la barra de
+	   inicio abajo; fuera del iPhone, env() vale 0 y queda igual. */
 	.in {
-		padding: var(--sp-12) var(--sp-16) var(--sp-24);
+		padding: var(--sp-12) max(var(--sp-16), env(safe-area-inset-right, 0px))
+			calc(var(--sp-24) + env(safe-area-inset-bottom, 0px)) max(var(--sp-16), env(safe-area-inset-left, 0px));
 		font-family: var(--font-ui);
 	}
 

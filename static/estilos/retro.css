@@ -507,6 +507,13 @@
 	--r-top: var(--bg);
 	border: 0;
 }
+/* El relleno de los paneles de arriba (fuera de capa y más específico) pisa el de .max de Panel.svelte: en el
+   móvil, el panel ampliado vuelve a sumar la zona segura de la barra de inicio del iPhone. */
+@media (max-width: 720px) {
+	[data-style='retro'][data-style] [data-ui='panel'].max {
+		padding-bottom: calc(var(--r-pad) + env(safe-area-inset-bottom, 0px));
+	}
+}
 [data-style='retro'][data-style][data-fit] [data-ui='panel'] {
 	--r-top: var(--bg);
 }
