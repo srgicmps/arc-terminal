@@ -9,11 +9,13 @@ import { decideStyle, ESTILOS, isStyle } from './estilos.ts';
 import { decideModo, isModo } from './modo.ts';
 
 const html = readFileSync('src/app.html', 'utf8');
-/** Los <script> en línea de app.html, con la ruta de los recursos vacía (en la web la pone SvelteKit). */
+/** La ruta de los recursos: en la web la pone SvelteKit; aquí, una marca, para ver que la hoja la lleva. */
+const ASSETS = '@A';
+/** Los <script> en línea de app.html. */
 const code = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)]
 	.map((m) => m[1])
 	.join('\n')
-	.replaceAll('%sveltekit.assets%', '');
+	.replaceAll('%sveltekit.assets%', ASSETS);
 
 interface Caso {
 	/** Lo que hay en localStorage al entrar. */
@@ -58,7 +60,7 @@ function boot({ stored, path = '/', search = '', framed = false }: Caso, blocked
 }
 
 /** El <link> de la hoja de una estética, tal como lo escribe app.html (Terminal no lleva: es tokens.css). */
-const sheet = (id: string) => (id === 'terminal' ? [] : [`<link id="style-sheet" rel="stylesheet" href="/estilos/${id}.css">`]);
+const sheet = (id: string) => (id === 'terminal' ? [] : [`<link id="style-sheet" rel="stylesheet" href="${ASSETS}/estilos/${id}.css">`]);
 
 const casos: [string, Caso][] = [
 	['navegador nuevo', { stored: {} }],
@@ -90,7 +92,9 @@ describe('src/app.html decide antes de pintar lo mismo que decideModo y decideSt
 		const { dataset, written, store } = boot(caso);
 
 		expect(dataset.modo, 'modo').toBe(modo);
-		// La decisión se guarda: la siguiente carga (y taste.svelte.ts) ya la leen.
+		// La decisión se guarda: la siguiente carga (y taste.svelte.ts) ya la leen. También con una estética que esta
+		// página no conoce (retirada, o nueva frente a una copia vieja de la página sin red): así no cambia de una carga
+		// a otra, aunque esa elección se pierda (arc-style viaja con la cuenta).
 		expect(store.get('arc-modo'), 'modo guardado').toBe(modo);
 		expect(store.get('arc-style'), 'estética guardada').toBe(style);
 		expect(dataset.theme).toBe(caso.stored['arc-theme'] === 'light' ? 'light' : 'dark');
@@ -106,7 +110,7 @@ describe('src/app.html decide antes de pintar lo mismo que decideModo y decideSt
 			expect(written, 'hoja de la estética').toEqual(sheet(style));
 		}
 		// Una hoja que no existe sería un 404 que bloquea el pintado en cada carga.
-		for (const link of written) expect(existsSync(`static${/href="([^"]+)"/.exec(link)?.[1]}`), link).toBe(true);
+		for (const link of written) expect(existsSync(`static${/href="([^"]+)"/.exec(link)?.[1].replace(ASSETS, '')}`), link).toBe(true);
 	});
 
 	it('su lista de estéticas es la de ESTILOS (si falta una, quien la elija vuelve a Grafito o Terminal al cargar)', () => {
