@@ -1,9 +1,9 @@
 // Estéticas de Arc Terminal (lógica pura; el estado del navegador está en taste.svelte.ts).
 // Cada una va en <html data-style="…"> y tiene su archivo en static/estilos/<id>.css, que solo redefine
-// tokens (y, si un token no basta, reglas propias colgadas de [data-style='<id>']) y trae sus letras con un
-// @import de Google Fonts (solo libres, OFL, o las del sistema). Terminal es lo de tokens.css, sin archivo. Una
-// estética sale en el selector cuando existe su archivo (READY). Este registro solo lo cargan
-// ESTILO y HELP: no pesa en las demás vistas.
+// tokens (y, si un token no basta, reglas propias colgadas de [data-style='<id>']). Plex e Inter ya vienen con la
+// web (src/styles/fonts.css); otra letra, con @import de Google Fonts (solo libres, OFL) o del sistema.
+// Terminal es lo de tokens.css, sin archivo. Una estética sale en el selector cuando existe su archivo (READY).
+// Este registro solo lo cargan ESTILO y HELP: no pesa en las demás vistas.
 
 export interface Estilo {
 	id: string;
