@@ -317,8 +317,37 @@ describe('readPublished', () => {
 
 	it('un fallo pasajero se arregla con el reintento', async () => {
 		const into = new Set<string>();
-		const res = await readPublished('fuel.json', undefined, { fetcher: fetcher(503, 200), retryMs: 0, into });
-		expect(await res?.json()).toEqual({ data: 1 });
+		const body = await readPublished('fuel.json', undefined, { fetcher: fetcher(503, 200), retryMs: 0, into });
+		expect(body).toEqual({ data: 1 });
+		expect(into.size).toBe(0);
+	});
+
+	/** Responde 200 con estos cuerpos, por orden; un Error corta la conexión a media descarga. */
+	const bodies = (...items: (string | Error)[]) =>
+		vi.fn(async (_path: string, _ms?: number) => {
+			const item = items.shift() ?? '{"data":1}';
+			if (typeof item === 'string') return new Response(item, { status: 200 });
+			const cut = new ReadableStream({
+				start(controller) {
+					controller.enqueue(new TextEncoder().encode('{"fetchedAt":"2026-10-20","da'));
+					controller.error(item);
+				}
+			});
+			return new Response(cut, { status: 200 });
+		});
+
+	it('un 200 cuyo cuerpo se corta o llega a medias también bloquea', async () => {
+		const into = new Set<string>();
+		const read = bodies(new TypeError('terminated'), '{"da');
+		expect(await readPublished('imp.json', 20_000, { fetcher: read, retryMs: 0, into })).toBeNull();
+		expect(read).toHaveBeenCalledTimes(2);
+		expect([...into]).toEqual(['imp']);
+	});
+
+	it('si el cuerpo se corta una vez, el reintento lo lee entero', async () => {
+		const into = new Set<string>();
+		const read = bodies(new DOMException('tiempo agotado', 'TimeoutError'), '{"data":2}');
+		expect(await readPublished('status-history.json', 20_000, { fetcher: read, retryMs: 0, into })).toEqual({ data: 2 });
 		expect(into.size).toBe(0);
 	});
 

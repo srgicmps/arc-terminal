@@ -7,7 +7,8 @@
 // Para no castigar las APIs ni depender de que todas respondan:
 // - si la copia publicada de una fuente es reciente (maxAgeMinutes), se reutiliza sin descargar;
 // - si una descarga falla, se reutiliza la copia publicada, aunque sea antigua, y se avisa;
-// - si la copia publicada no se puede leer (ni 200 ni 404), se deja `.publish-blocked` y la Action no publica.
+// - si la copia publicada no se puede leer (ni 404 ni un 200 con su JSON entero), se deja `.publish-blocked`
+//   y la Action no publica.
 import { readFileSync } from 'node:fs';
 import { appendFile, mkdir, writeFile } from 'node:fs/promises';
 import type { Dataset, SourceHistory, SourceStatus } from '../src/lib/data.ts';
@@ -40,11 +41,11 @@ const samples: string[] = [];
 async function published(name: string): Promise<Dataset<unknown> | null> {
 	try {
 		// null si no existe (fuente nueva) o si no se puede leer; en ese caso queda apuntada en `blocked`.
-		const res = await readPublished(`${name}.json`, 20_000);
-		if (!res) return null;
-		const body = (await res.json()) as Dataset<unknown>;
+		const body = (await readPublished(`${name}.json`, 20_000)) as Dataset<unknown> | null;
 		return body && body.fetchedAt && 'data' in body ? body : null;
 	} catch {
+		// Cualquier otro fallo al leerla también bloquea: la fuente empezaría de cero.
+		blocked.add(name);
 		return null;
 	}
 }
@@ -64,8 +65,8 @@ async function copyExtra(source: Source, dataset: Dataset<unknown>) {
 	await Promise.all(
 		paths.map(async (path) => {
 			// Sin él, la web publicada lo perdería (p. ej. un mes del archivo de titulares).
-			const res = await readPublished(path);
-			if (res) await writeExtra(path, await res.json());
+			const body = await readPublished(path);
+			if (body !== null) await writeExtra(path, body);
 		})
 	);
 }

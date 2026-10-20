@@ -214,24 +214,41 @@ export function previousState(res: Pick<Response, 'ok' | 'status'> | null | unde
 export const blocked = new Set<string>();
 
 /**
- * Lee un archivo de la copia publicada como fetchPublished, con un reintento a los `retryMs` si no se puede
- * leer. Devuelve la respuesta si es buena y null si no: un 404 es normal; si sigue sin poderse leer, apunta
- * el archivo en `into`. Si la pasada ya está bloqueada, no reintenta: no se va a publicar y así no se alarga
- * (con la web caída, cada intento puede tardar hasta el tiempo límite en los dos dominios).
+ * Lee el JSON de un archivo de la copia publicada (con fetchPublished), con un reintento a los `retryMs` si no
+ * se puede leer. Devuelve el JSON y null si no lo hay: un 404 es normal; si sigue sin poderse leer, apunta el
+ * archivo en `into`. Un 200 cuyo cuerpo no llega entero tampoco se puede leer: la red se corta a media
+ * descarga o se agota el tiempo límite, que también cubre el cuerpo. Si la pasada ya está bloqueada, no
+ * reintenta: no se va a publicar y así no se alarga (con la web caída, cada intento puede tardar hasta el
+ * tiempo límite en los dos dominios).
  */
 export async function readPublished(
 	path: string,
 	ms?: number,
 	{ fetcher = fetchPublished, retryMs = 3_000, into = blocked } = {}
-): Promise<Response | null> {
-	let res = await fetcher(path, ms);
-	if (previousState(res) === 'unreadable' && !into.size) {
+): Promise<unknown> {
+	let read = await readOnce(fetcher, path, ms);
+	if (read.state === 'unreadable' && !into.size) {
 		await wait(retryMs);
-		res = await fetcher(path, ms);
+		read = await readOnce(fetcher, path, ms);
 	}
+	if (read.state === 'unreadable') into.add(path.replace(/\.json$/, ''));
+	return read.state === 'ok' ? read.body : null;
+}
+
+/** Un intento de readPublished: el estado de la respuesta y, si es buena, su JSON ya leído. */
+async function readOnce(
+	fetcher: typeof fetchPublished,
+	path: string,
+	ms?: number
+): Promise<{ state: PreviousState; body?: unknown }> {
+	const res = await fetcher(path, ms);
 	const state = previousState(res);
-	if (state === 'unreadable') into.add(path.replace(/\.json$/, ''));
-	return state === 'ok' ? res : null;
+	if (state !== 'ok' || !res) return { state };
+	try {
+		return { state, body: await res.json() };
+	} catch {
+		return { state: 'unreadable' };
+	}
 }
 
 /** El aviso de una pasada bloqueada (o null si no lo está), con los primeros archivos que no se leyeron. */
