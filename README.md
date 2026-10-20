@@ -8,13 +8,17 @@ La maqueta de diseño está en [`docs/maqueta.html`](docs/maqueta.html) (datos d
 
 ## Cómo funciona
 
-- **Web estática** en GitHub Pages, hecha con SvelteKit y TypeScript.
+- **Web estática** en Cloudflare Pages, privada tras Cloudflare Access, hecha con SvelteKit y TypeScript.
 - **GitHub Actions hace de servidor**: cada 15 minutos `pnpm data` descarga todas las fuentes, las guarda como
-  JSON en `static/data/` y vuelve a publicar la web. Si una fuente falla, se reutiliza su última copia
-  publicada. Las fuentes que cambian poco se reutilizan durante horas para no castigar sus APIs.
+  JSON en `static/data/` y vuelve a publicar la web (las urgentes, como terremotos y titulares, cada 5). Si una
+  fuente falla o trae datos que no tienen sentido, se reutiliza su última copia publicada. Las fuentes que cambian
+  poco se reutilizan durante horas para no castigar sus APIs.
 - **Cotizaciones y gráficos en directo** con los widgets de TradingView, sin clave.
 - Casi todas las fuentes son abiertas y **sin clave**. Unas pocas admiten una clave **opcional** en GitHub
-  Secrets (FRED, Finnhub, SEC, Hugging Face): solo la usa la Action y, sin ella, ese panel no sale.
+  Secrets (FRED, Finnhub, SEC, Hugging Face, Cloudflare Radar, EIA, GIE, aisstream.io): solo la usa la Action y,
+  sin ella, ese panel no sale.
+- **Cuentas**: cada usuario guarda sus ajustes y sus avisos en su cuenta (Pages Functions y una base D1 de
+  Cloudflare), sincronizados entre sus dispositivos.
 
 ## Comandos
 
@@ -26,19 +30,22 @@ La maqueta de diseño está en [`docs/maqueta.html`](docs/maqueta.html) (datos d
 | `ES` | España: titulares, BOE del día y comunicados del Gobierno y de Europa |
 | `WS` | Wall Street: mapa de calor, curva de tipos de EE. UU., divisas y cripto |
 | `NVDA`, `SAN`… | Ficha de un valor (TradingView y documentos de la SEC) |
-| `MIS` | Tu lista de valores, guardada en el navegador |
+| `MIS` | Tu lista de valores, guardada en el navegador y sincronizada con tu cuenta |
 | `TECH` / `AI` | Tecnología, Hacker News e inteligencia artificial |
 | `BOE` | Sumario del Boletín Oficial del Estado, con buscador |
 | `USGOV` | Federal Register: decretos presidenciales y normas de EE. UU. |
 | `LUZ` | Precio de la luz hora a hora, hoy y mañana, su evolución y el mix de generación |
-| `FUEL` | Gasolineras más baratas de Menorca o de cualquier provincia, «cerca de mí» |
+| `FUEL` | Gasolineras más baratas de cualquier provincia, «cerca de mí» |
 | `WX` | El tiempo, el mar, la calidad del aire, avisos, sol y luna |
 | `NEWS` | Buscador en todos los titulares |
 | `WIKI` | Lo más leído en Wikipedia y efemérides |
-| `CAL` | Agenda económica de la semana y resultados de empresas |
+| `CAL` | Agenda económica de la semana, resultados de empresas, festivos y puentes |
 | `CHESS` | Ajedrez contra Stockfish en 5 niveles, con pista, evaluación, análisis de la partida y problema del día de Lichess |
 | `STATUS` | Estado de todas las fuentes |
 | `HELP` | Comandos y atajos |
+
+Hay muchos más. La lista completa, con sus fuentes, está en `HELP` y `MANUAL` (dentro de la web) y en
+[`CLAUDE.md`](CLAUDE.md).
 
 ## Fuentes
 
@@ -69,9 +76,11 @@ pnpm install
 pnpm data      # descarga todas las fuentes en static/data/ (o: pnpm data boe fuel)
 pnpm dev       # http://localhost:5173/
 pnpm check     # comprueba tipos y componentes
+pnpm test      # tests (Vitest)
 pnpm build     # genera la web estática en build/
-pnpm preview   # sirve build/ en http://localhost:4173/arc-terminal/
+pnpm preview   # sirve build/ en http://localhost:4173/
 ```
 
 Cada push a `main`, y cada 15 minutos, GitHub Actions descarga los datos, construye la web y la publica en
-GitHub Pages (`.github/workflows/deploy.yml`). En los PR solo la construye, como prueba.
+Cloudflare Pages (`.github/workflows/deploy.yml`; las fuentes urgentes, cada 5 minutos con `fast.yml`). En los PR
+no publica: comprueba tipos, tests, build, el peso de cada vista y una prueba de humo con datos reales.

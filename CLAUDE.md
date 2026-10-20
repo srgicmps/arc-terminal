@@ -32,9 +32,35 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - `scripts/update.ts` (`pnpm data`) ejecuta las fuentes de `scripts/sources/` y guarda cada una en
   `static/data/<nombre>.json` como `{ name, fetchedAt, data }`. Las fuentes reciben la copia anterior para
   acumular historial (gasolina, luz). Los tipos compartidos están en `src/lib/types.ts` y `src/lib/fuel.ts`.
-- Cada vista lee sus datos en `+page.ts` con `dataset('nombre')` (`src/lib/data.ts`).
-- Componentes comunes en `src/lib/components/` (Panel, NewsList, SeriesTable, LineChart, TvWidget…).
+  Si una descarga llega vacía, encoge de golpe o no tiene sentido (el `validate` opcional de cada fuente, en
+  `scripts/lib.ts`), cuenta como fallo: se queda la copia anterior y el motivo sale en STATUS. Al guardar se
+  limpian los textos de las claves de enlace (`LINK_KEYS` de `scripts/links.ts`: solo http(s) y rutas propias); un
+  campo de enlace nuevo usa una de esas claves o se añade a la lista. Los Excel, con `scripts/xlsx.ts`.
+- Cada vista lee sus datos en `+page.server.ts` con `dataset('nombre')` (`src/lib/data.ts`): solo corre al construir
+  y al navegador llega lo que devuelve su `load`. Nunca `dataset()` ni un JSON de `static/data` en un `+page.ts` ni
+  en un componente: metería los JSON en el código del navegador (lo vigila `src/lib/bundle-data.test.ts`). Si un
+  componente necesita datos en el navegador, los pide con `fetch(asset('data/<nombre>.json'))` (como `Updated.svelte`),
+  pero solo lo que sale en todas las vistas (`status`, que lee `Updated`) o se pide al usarlo (el índice de búsqueda,
+  al enfocar la barra); lo demás va recortado en el `load` del `+page.server.ts`. Lo que se pide así no cuenta en el
+  tope de peso de `scripts/weight.ts`.
+- Componentes comunes en `src/lib/components/` (Panel, NewsList, SeriesTable, LineChart, TvWidget…). Un titular
+  suelto que enseña `shown()` lleva `lang={langOf(…)}` (`src/lib/titles.svelte.ts`; NewsList ya lo hace) para que el
+  original en inglés se lea con su voz.
 - Atajos de teclado: registro único en `src/lib/shortcuts.ts` (`SHORTCUTS` + `isShortcut`). De ahí salen HELP, el MANUAL y las teclas que escuchan la barra, los paneles y el modo TV.
+- Barra de comandos: la lógica, sin Svelte, en `src/lib/cmdline.ts` (también las erratas: «GOE» → GEO con
+  `didYouMean`). Página de error propia en `src/routes/+error.svelte`: 404 con «¿Querías decir…?», 401 de Access y,
+  si no carga, «Reintentar» (y, sin conexión, las vistas guardadas en el dispositivo).
+- **Service worker** (`src/service-worker/`): al instalarse guarda solo lo que arranca las vistas
+  (`_app/precache.json`, que escribe `scripts/precache.ts` al construir) y la portada; lo que va con `import()`
+  (estéticas, globo, Arc OS) y las letras, en `arc-chunks` la primera vez que se piden; las vistas abiertas, en
+  `arc-pages`. Los trozos de código salen de la caché ya leídos (`buffered`, `respond.ts`): en streaming, Chrome a veces
+  los cortaba.
+- **Tests que vigilan reglas** (fallan con el archivo y el motivo): `tokens-guard` (colores y fuentes escritos a mano),
+  `paneltitles` (nombres de panel escritos a mano), `dataset-names` (nombres de datos), `bundle-data` (ningún JSON
+  en el código del navegador), `manual` (la ficha de cada comando), `docs` (su fila en «Comandos y fuentes»),
+  `estilos` (la plantilla de cada estética, contraste AA, AAA en «Alto contraste», de día y de noche, las letras y las
+  zonas seguras del iPhone) y `contraste-suave` (texto sobre `--amber-soft` y en la barra de comandos, AA en cada
+  estética).
 - `scripts/probe.ts` + `scripts/probe.txt`: en los PR que tocan `scripts/`, la Action consulta esas URL y deja la
   respuesta en el registro. Sirve para explorar APIs nuevas cuando el entorno de desarrollo no tiene red.
 - **Probar una fuente sin la pasada completa**: Actions → «Publicar en Pages» → Run workflow, con «fuentes»
@@ -63,6 +89,10 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   del equipo; el token necesita D1 · Edit y Access: Apps and Policies y Organizations · Read y, para PREGUNTA, Workers AI · Read). Las Variables
   `D1_DATABASE_ID`, `ACCESS_TEAM_DOMAIN` y `ACCESS_AUD` son opcionales y mandan. Sin nada, /api/* responde 503 y la web
   va igual, solo en local.
+  **Esquema de D1 en un solo sitio**, `cloud/schema.ts` (cada tabla se crea sola con `ensure`; nadie más escribe un
+  `CREATE TABLE`). Una tabla con datos de una persona (columna `user`) va también en `USER_TABLES` de `cloud/admin.ts`,
+  para que «Quitar» y «Borrar mi cuenta» la borren: lo vigila `cloud/schema.test.ts`. Una Function nueva empieza con
+  `identity()` o `person()` de `cloud/access.ts` (503 sin configurar, 403 si viene de otra web, 401 sin identificar).
 - **Tu cuenta** (fila de «A tu gusto» en HELP, `AccountRow.svelte`): «Cerrar sesión» va a `/cdn-cgi/access/logout` sin borrar nada
   de aquí; «Borrar mi cuenta» (escribir BORRAR) → DELETE `/api/account` (`cloud/account.ts`, el `forget()` de «Quitar»),
   luego borra lo de este navegador y sale (`src/lib/account.svelte.ts`). La memoria `arc-sync` no se borra: pasa a ser
@@ -98,6 +128,9 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - **Sugerencias** (pie de cada vista, `Feedback.svelte`): `/api/feedback` (`cloud/feedback.ts`) las guarda en D1
   (tabla `feedback`) y avisa a Sergi por ntfy si Pages tiene el Secret `NTFY_TOPIC`. Leerlas, solo el admin
   (Secret de Pages `ADMIN_EMAIL`, nunca en el repo).
+- **PREGUNTA** (`/api/ask`, `cloud/ask.ts`): la ÚNICA pieza con IA, aparte, etiquetada y opcional; lo demás sigue sin
+  IA. Workers AI con el binding `AI` que pone `cf-config.ts`. Contesta solo con 1–4 JSON de hoy y descarta la respuesta
+  si cita una cifra que no está en ellos; 20 al día por persona (tabla `ask_count`: cuántas, nunca qué).
 - **Errores del navegador** (F29): `src/hooks.client.ts` manda los fallos de la web publicada a `/api/errors` (`cloud/errors.ts`, tabla `errors`, agrupados por firma), limpios y sin quién (`src/lib/errreport.ts`). Se ven en ADMIN.
 - **ADMIN** (`/admin`, `cloud/admin.ts`, `/api/admin`): solo para `ADMIN_EMAIL`. Usuarios (último acceso, tabla
   `seen` que apunta `/api/prefs`; avisos), invitar o quitar emails de la política de Access «Sergi» (Variable
@@ -127,10 +160,13 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   `src/styles/tokens.css` (ver «Sistema de diseño»).
 - Estética de terminal: fondo casi negro, ámbar como acento, verde y rojo solo para subidas y bajadas,
   separaciones de 1 px, mucha densidad de información.
-- Tipografías: IBM Plex Mono (datos y comandos) e IBM Plex Sans Condensed (titulares y textos).
+- Tipografías: IBM Plex Mono (datos y comandos) e IBM Plex Sans Condensed (titulares y textos). Las sirve la propia
+  web, sin Google (`src/styles/fonts.css`, con Inter); cómo usar otra, en `docs/estilos.md`.
 - Sergi quiere detalles **sutiles y elegantes**, nada grueso ni llamativo. Un mismo elemento mide lo mismo
   en todas las vistas.
 - Tiene que funcionar bien en el móvil (Sergi lo mirará mucho desde ahí).
+  Lo fijo a un borde suma `env(safe-area-inset-*)` (la web lleva `viewport-fit=cover`, así que en el iPhone llega
+  hasta la muesca); una estética que pisa el relleno de un panel lo vuelve a sumar (lo vigila `estilos.test.ts`).
 
 ## Sistema de diseño
 Un cambio de estética se hace en un solo sitio.
@@ -143,7 +179,8 @@ Un cambio de estética se hace en un solo sitio.
   columna, el alto de un gráfico). Si falta un valor, se añade un token.
 - **Componentes base** en `src/lib/components/ui/`:
   `Seg` (botones de opción), `Select` (desplegable con etiqueta), `Tiles` + `Tile` (cifras grandes), `Table`
-  (tabla densa: celdas `.l`, `.name`, `.sub`, `.mut`, `.per`, `.spark`), `Bar` (barra de comparación), `Change` (variación
+  (tabla densa: celdas `.l`, `.name`, `.sub`, `.mut`, `.per`, `.spark`), `SortTh` (cabecera ordenable de `Table`, con
+  `aria-sort`; con un `Sorter` de `src/lib/sorter.svelte.ts` y `sortBy` de `src/lib/sort.ts`), `Bar` (barra de comparación), `Change` (variación
   verde/roja con signo), `Note` (nota al pie), `ButtonRow` (fila de botones iguales), `Search` (buscador con ✕; filtra con `queryWords` + `hasWords` de `src/lib/search.ts`), `ChipInput` (campo + «Añadir» + chips «X ×»), `Disclosure` (plegable con ▸/▾), `Menu` (botón con lista desplegable: «⋯» de la cabecera, «Más» de las pestañas, relojes), `Listen` («Escuchar» con la voz del navegador) y `Share` (botón «Compartir»; se usa con la prop `share` de `Panel`,
   y su lógica está en `src/lib/share.ts`). Además, `Panel` y `ViewHeader` para paneles y cabeceras de vista.
   Antes de escribir CSS para algo que ya existe, se usa el componente.
@@ -182,13 +219,15 @@ Un cambio de estética se hace en un solo sitio.
 ## Comandos y fuentes
 Un archivo por comando en `src/lib/commands/` (`eco.ts`, `geo.ts`…); `src/lib/commands.ts` los junta solos y `order`
 decide su sitio. Un comando nuevo es un archivo nuevo. Los valores, en `src/lib/tickers.ts`, y todo junto, en la
-vista `HELP`. Resumen:
+vista `HELP`. Una fila por comando (lo comprueba `src/lib/docs.test.ts`):
 | Comando | Qué abre | Fuentes |
 |---|---|---|
 | `TOP` | Portada | Resumen de todas |
 | `IMP` | Lo más importante de hoy, la semana, el mes y el año (puntuación propia, sin IA) | Todos los titulares, BOE, Federal Register, Wikipedia |
 | `SEMANA` | Resumen de la semana: top de IMP en 7 días, mercados, datos publicados y agenda | IMP, FRED*, BCE, Tesoro de EE. UU., CoinGecko, calendarios de publicaciones |
-| `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FAO, FRED*, RSS |
+| `ECO` | Economía y macro, tipos de los bancos centrales | Eurostat, BCE, BLS, Tesoro de EE. UU., INE, BIS, FAO, FRED*, GIE*, RSS |
+| `ECST` | Las grandes economías (G20 y España) en una tabla ordenable: crecimiento, inflación, paro, tipos, bono, deuda y saldo | FMI, BIS, BCE, Tesoro de EE. UU., MOF de Japón |
+| `PAIS` | Ficha de un país (`PAIS Alemania`): PIB, IPC, paro, deuda, tipos, bono, moneda, previsiones del FMI y titulares | Eurostat, BLS, FRED*, BCE, BIS, Tesoro de EE. UU., FMI, RSS |
 | `GEO` | Geopolítica, mapa, terremotos, huracanes, incendios, elecciones | RSS (BBC, Al Jazeera, DW…), USGS, IGN, NOAA, NASA, Polymarket, Copernicus (ERA5), Wikidata, SIPRI, EASA (CZIB), NGA (avisos a navegantes), Cloudflare Radar* |
 | `GLOBO` | Globo 3D que gira con las capas de GEO y la Sala de control; Canvas 2D propio (`src/lib/geo/globe.ts` + `globe-render.ts`, cargado con import()), también «Ver en 3D» en GEO y «Globo 3D» en la Sala | Las de GEO y la Sala |
 | `ES` | España en cifras, paro registrado por comunidad, tráfico por provincia, BOE, luz | INE, SEPE, Seguridad Social, DGT (DATEX II), BOE, REE, RSS |
@@ -201,37 +240,45 @@ vista `HELP`. Resumen:
 | `EQS` | Buscador de acciones: bolsa, punto de partida y filtros de sector, PER, dividendo… | TradingView |
 | `IMAP` | Mapas de calor de más índices y países, sectores de EE. UU. y bolsas del mundo | TradingView |
 | `NVDA`… | Ficha de un valor | TradingView, SEC* |
+| `CMP` | Varios valores en un gráfico en base 100 (`CMP NVDA AMD AVGO`) | TradingView |
 | `RV` | Un valor frente a sus competidores: PER, márgenes, crecimiento (unos 60 de EE. UU.) | Finnhub* |
 | `SIG` | Señales técnicas: máximos y mínimos de 52 semanas, medias y RSI | Finnhub*, TradingView |
-| `MIS` | Tu lista de valores (en el navegador) | TradingView |
+| `MIS` | Tu lista de valores (en el navegador y en tu cuenta): cotizaciones, titulares, próximos resultados y volumen en corto | TradingView, Finnhub*, FINRA, titulares |
 | `TECH` / `AI` | Tecnología e IA | Hacker News, Hugging Face, OpenRouter, Epoch AI (CC BY 4.0), Cloudflare Radar*, RSS |
 | `BOE` / `USGOV` | Boletines oficiales | BOE, Federal Register |
+| `LIDER` | Qué hacen ahora Sánchez, Trump, Lagarde, Warsh y von der Leyen: agenda de hoy y lo último (`LIDER Lagarde`) | La Moncloa, Roll Call Factba.se, Casa Blanca, Federal Register, BCE, Fed, Comisión Europea |
 | `LUZ` | Precio de la luz y mix de generación | REE |
+| `AGUA` | Embalses de España por cuencas y sequía en Europa | MITECO, Copernicus (European Drought Observatory) |
 | `WX` | Tiempo, mar, aire, avisos, sol y luna | Open-Meteo, MeteoAlarm, Copernicus (ERA5), NOAA (CO₂) |
 | `VIAJE` | Antes de un viaje: tiempo a 7 días, hora, moneda, aviso de viaje y festivos de cualquier ciudad | Open-Meteo, BCE, Departamento de Estado de EE. UU., Nager.Date |
+| `PORT` | Barcos en puertos y estrechos (Gibraltar, Róterdam, Singapur, Maó…) con AIS en directo | aisstream.io* |
 | `FUEL` | Gasolineras por provincia, «cerca de mí» | Ministerio para la Transición Ecológica, Comisión Europea (Weekly Oil Bulletin) |
 | `HIPOTECA` | Tu hipoteca: cuota, cuadro de amortización y próxima revisión (datos solo tuyos, en tus ajustes) | BCE (euríbor a 12 meses) |
 | `CARTERA` | Tu cartera: posiciones, ganancia o pérdida y reparto (datos solo tuyos, en tus ajustes) | Finnhub* (EE. UU.), precio a mano, BCE |
 | `AHORRO` | Dónde rinde el dinero, interés compuesto, lo que vale hoy el de otro año y tu inflación (MI IPC) | BCE, Banco de España, Eurostat (IPCA del INE) |
-| `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
-| `CAL` | Agenda económica y resultados | TradingView, Finnhub* |
 | `TEST` | Test de la semana: cinco preguntas con titulares y datos de la semana, sin IA; puntuación en la cuenta de cada uno | IMP, FRED*, BCE, CoinGecko, USGS |
 | `CAL` | Agenda económica, resultados, festivos y puentes (`PUENTES`) | TradingView, Finnhub*, Nager.Date |
 | `CHESS` | Ajedrez contra Stockfish (WebAssembly, en el navegador), pista, análisis y problema del día | Stockfish, chess.js, Lichess |
 | `MODO` | Modo Sencillo (lo esencial, letra mayor, explicaciones; por defecto para usuarios nuevos) o Terminal (todo) | — |
 | `TV` | Modo TV: las vistas rotan solas, encajadas y a pantalla completa | — |
 | `EXP` | Experiencias: otras formas de usar Arc con los mismos datos (periódico, sala de control, feed…) | Todas |
+| `OS` | Arc OS: escritorio con ventanas, varias vistas a la vez (ver «Arquitectura») | Todas |
 | `FONDOS` | Carteras 13F de grandes fondos: mayores posiciones, compras y ventas | SEC* |
 | `HDS` | Qué fondos de FONDOS tienen un valor (13F al revés, con 45 días de retraso) | SEC* |
 | `RSS` | Mis RSS (como Feedly): tus feeds en tu cuenta, leídos por `/api/rss` (`cloud/rss.ts`, caché de 15 min y topes; solo con cuenta) | Tus feeds |
-| `PREGUNTA` | Pregunta a Arc: la ÚNICA pieza con IA, aparte y etiquetada (`/api/ask`, `cloud/ask.ts`, binding `AI` que pone `cf-config.ts`): contesta solo con 1–4 JSON de hoy y descarta la respuesta si cita una cifra que no está en ellos; 20 al día por persona. Lo demás sigue sin IA | Workers AI (Cloudflare) sobre static/data |
+| `PREGUNTA` | Pregunta a Arc, con IA, sobre los datos de hoy (la única pieza con IA: ver «Arquitectura») | Workers AI (Cloudflare) sobre static/data |
 | `ESTILO` | Estética: Terminal, Grafito, Cristal, Fósforo… (17), con vista previa | — |
 | `AVISOS` | Tus avisos al móvil: temas, nivel, tope, valores y silencio (solo con cuenta, en arcterminal.dev) | ntfy |
 | `QUIEN` | Quién lo cuenta: el mismo hecho en varios medios, cobertura por región y ángulos muertos (sin IA) | Todos los titulares |
 | `BIENVENIDA` | La primera vez (y desde HELP): intereses o perfil, ciudad y modo → portada, inicio, MIS de ejemplo y propuesta de avisos; recorrido de 6 pasos (el último, las experiencias), solo en BIENVENIDA y HELP (`src/lib/onboarding/`) | — |
+| `NOVEDADES` | Lo que ha cambiado en Arc Terminal esta semana, día a día | GitHub (PR fusionados) |
+| `DOC` | Cómo está hecho Arc: arquitectura, el viaje de los datos, las fuentes y Svelte frente a Vue | El propio código |
+| `MANUAL` | Manual completo: vistas y paneles, comandos con ejemplos, atajos, ajustes y avisos; sale de los registros (`manual.test.ts` avisa si falta algo) | — |
+| `ADMIN` | Solo Sergi: usuarios, invitaciones, sugerencias y errores del navegador (ver «Arquitectura») | Cloudflare Access, D1 |
 | `NEWS` / `WIKI` / `STATUS` / `HELP` | Buscador, Wikipedia, estado de fuentes, ayuda | — |
 
-\* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`, `CLOUDFLARE_RADAR_TOKEN`, `EIA_API_KEY`):
+\* Fuente con clave **opcional** en GitHub Secrets (`FRED_API_KEY`, `FINNHUB_API_KEY`, `SEC_USER_AGENT`, `HF_TOKEN`, `CLOUDFLARE_RADAR_TOKEN`, `EIA_API_KEY`,
+`GIE_API_KEY`, `AISSTREAM_API_KEY`):
 sin ella el panel no sale y no se rompe nada. `MYMEMORY_EMAIL` (también opcional) traduce al español los
 titulares en inglés (`scripts/translate.ts`); sin él, siguen en inglés.
 
