@@ -715,11 +715,12 @@
 	margin-inline: var(--sp-6);
 	border-radius: var(--radius-s);
 }
-/* Hoja de búsqueda (la lupa de las pestañas). En el móvil, un campo flotante sobre las pestañas. */
+/* Hoja de búsqueda (la lupa de las pestañas). En el móvil, un campo flotante sobre las pestañas
+   (o sobre el teclado en pantalla: --kb-bottom lo pone la barra). */
 [data-style='cupertino'][data-style] [data-ui='app'] [data-ui='cmd'].sheet {
 	left: var(--gutter);
 	right: var(--gutter);
-	bottom: calc(var(--tabbar-h) + var(--sp-10) + env(safe-area-inset-bottom, 0px));
+	bottom: max(calc(var(--tabbar-h) + var(--sp-10) + env(safe-area-inset-bottom, 0px)), calc(var(--kb-bottom, 0px) + var(--sp-10)));
 	border-radius: var(--radius);
 	background: var(--cu-field);
 	box-shadow:

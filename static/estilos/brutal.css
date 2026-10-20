@@ -269,7 +269,7 @@
 		--fg: #000000;
 		--muted: #383838;
 		--faint: #545454;
-		--amber: #c93600;
+		--amber: #c43400; /* 4,5:1 también sobre --raise (sugerencias de la barra, tarjetas) */
 		--amber-dim: #a33000;
 		--amber-soft: rgba(229, 255, 0, 0.55);
 		--amber-edge: #c93600;
