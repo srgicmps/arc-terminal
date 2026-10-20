@@ -206,9 +206,9 @@ export async function touchSeen(db: D1Database, user: string, now = Date.now()) 
 }
 
 /**
- * Las tablas con datos de una persona (columna user, su email): «Quitar» las borra todas. Una tabla nueva con
- * columna user tiene que estar aquí; si no, falla schema.test.ts. brief_mail no está: va por uid aleatorio, sin
- * email, y al borrar su fila de alerts ya no se puede relacionar con nadie.
+ * Las tablas con datos de una persona (columna user, su email): «Quitar» y «Borrar mi cuenta» (cloud/account.ts)
+ * las borran todas. Una tabla nueva con columna user tiene que estar aquí; si no, falla schema.test.ts. brief_mail
+ * no está: va por uid aleatorio, sin email, y al borrar su fila de alerts ya no se puede relacionar con nadie.
  */
 export const USER_TABLES = [
 	'prefs',
