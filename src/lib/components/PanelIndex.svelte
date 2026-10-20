@@ -29,7 +29,11 @@
 			shown = true;
 			return;
 		}
-		const io = new IntersectionObserver(([e]) => (shown = !e.isIntersecting && e.boundingClientRect.top < 0));
+		// La última entrada: si llegan varias juntas (un scroll rápido en un móvil lento), van de la más antigua a la más nueva.
+		const io = new IntersectionObserver((es) => {
+			const e = es[es.length - 1];
+			shown = !e.isIntersecting && e.boundingClientRect.top < 0;
+		});
 		io.observe(node);
 		const narrow = matchMedia('(max-width: 720px)');
 		const again = () => {
@@ -65,8 +69,10 @@
 			display: block;
 		}
 
-		/* Fijo arriba, de lado a lado (como la barra inferior), con el mismo margen que la página. Escondido con
-		   visibility, además de transparente: así no se puede pulsar ni enfocar, y los lectores de pantalla lo saltan. */
+		/* Fijo arriba, de lado a lado (como la barra inferior), con el mismo margen que la página. Escondido como
+		   «Saltar al contenido»: transparente y por encima de la pantalla, así no tapa la cabecera ni recibe toques,
+		   pero sigue en el Tab y en los lectores de pantalla, y se enseña al llegar a él con el teclado.
+		   Al esconderse, primero se funde y luego sube (translate espera a la opacidad); al aparecer, baja de golpe y se funde. */
 		.pidx {
 			position: fixed;
 			top: 0;
@@ -82,15 +88,24 @@
 			background: var(--bg);
 			border-bottom: var(--border);
 			opacity: 0;
-			visibility: hidden;
+			translate: 0 -100%;
 			transition:
 				opacity var(--dur-fast) ease-out,
-				visibility var(--dur-fast);
+				translate 0s var(--dur-fast);
 		}
 
 		.pidx.on {
 			opacity: 1;
-			visibility: visible;
+			translate: none;
+			transition: opacity var(--dur-fast) ease-out;
+		}
+
+		/* Regla aparte: un navegador sin :has() descarta la regla entera y se llevaría .on con ella. Con
+		   :focus-visible y no :focus-within, para que un chip tocado con el dedo no lo deje fijo al volver arriba. */
+		.pidx:has(:focus-visible) {
+			opacity: 1;
+			translate: none;
+			transition: opacity var(--dur-fast) ease-out;
 		}
 
 		.pidx::-webkit-scrollbar {
