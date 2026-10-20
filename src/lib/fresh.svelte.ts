@@ -34,17 +34,22 @@ export function startFresh() {
 				mine: { v: version },
 				read: () => m.readBuild(fetch, resolve('/code.json')),
 				// refreshAll vuelve a pedir el __data.json de la vista (el service worker lo trae de la red primero) y,
-				// a diferencia de invalidateAll, conserva page.state. Si acaba en la página de error o una navegación
-				// lo cancela (page.data no cambia: applied), falla (loadOrFail) y se reintenta.
+				// a diferencia de invalidateAll, conserva page.state. Si no le llega, SvelteKit pinta la página de
+				// error en lugar de la vista: por eso antes se mira que llegue (reachable; sin red o con un 503, la
+				// vista se queda como está). Si aun así acaba en la página de error o una navegación lo cancela
+				// (page.data no cambia: applied), falla (loadOrFail) y se reintenta.
 				refresh: () => {
 					const before = page.data;
+					// Una vista sin datos (MODO, ESTILO…) no tiene __data.json: no hay nada que mirar.
+					const data = Object.keys(before).length > 0 ? m.dataUrl(page.url) : null;
 					return m.keepPlace(window, () =>
 						m.loadOrFail(
 							async () => {
 								await refreshAll();
 								await tick();
 							},
-							() => !!page.error || !m.applied(before, page.data)
+							() => !!page.error || !m.applied(before, page.data),
+							async () => !data || (await m.reachable(fetch, data))
 						)
 					);
 				},

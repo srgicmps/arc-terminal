@@ -141,10 +141,35 @@ export async function keepPlace(win: Window, run: () => Promise<unknown>): Promi
  * (applied): refreshAll no rechaza cuando el __data.json no llega (un 503 del borde, sin red), SvelteKit pinta
  * +error.svelte; ni cuando una navegación lo cancela. Así `watch` no da los datos por vistos y lo vuelve a intentar
  * pronto (a los RETRY_MS, cada vez más espaciado).
+ * Antes, `ready` (reachable): si los datos no llegan, falla sin llamar a `run`, y la vista se queda como estaba.
  */
-export async function loadOrFail(run: () => Promise<unknown>, failed: () => boolean): Promise<void> {
+export async function loadOrFail(
+	run: () => Promise<unknown>,
+	failed: () => boolean,
+	ready: () => Promise<boolean> = async () => true
+): Promise<void> {
+	if (!(await ready())) throw new Error('Los datos nuevos no llegan');
 	await run();
 	if (failed()) throw new Error('No se han podido cargar los datos nuevos');
+}
+
+/** El __data.json de la vista, el que vuelve a pedir refreshAll: /eco → /eco/__data.json; la portada, /__data.json. */
+export function dataUrl(url: { readonly href: string; readonly pathname: string }): string {
+	return new URL(`${url.pathname.replace(/\/$/, '')}/__data.json`, url.href).href;
+}
+
+/**
+ * ¿Llega el __data.json de la vista? Se mira antes de refrescar, porque si a refreshAll no le llega (sin red, un 503
+ * del borde, la sesión de Access caducada) SvelteKit cambia la vista que lees por la página de error. Solo las
+ * cabeceras (HEAD: unos cientos de bytes), sin caché y sin seguir redirecciones; el service worker solo atiende GET,
+ * así que no responde con su copia. Con un error o sin red, false.
+ */
+export async function reachable(get: typeof fetch, url: string): Promise<boolean> {
+	try {
+		return (await get(url, { method: 'HEAD', cache: 'no-store', redirect: 'manual' })).ok;
+	} catch {
+		return false;
+	}
 }
 
 /**
@@ -242,9 +267,9 @@ export function watch(state: FreshState, env: FreshEnv) {
 				failures = 0;
 				state.aviso = false;
 			} catch {
-				// No ha llegado (un 503 puntual del borde deja la vista en la página de error) o no se ha aplicado. Se
-				// vuelve a preguntar pronto, cada vez más espaciado (RETRY_MS, el doble… hasta POLL_MS), no al minuto.
-				// Hasta entonces, sin aviso: su botón no haría nada (y en la página de error ya está «Reintentar»).
+				// No ha llegado (sin red, un 503 puntual del borde: la vista se queda como estaba) o no se ha aplicado.
+				// Se vuelve a preguntar pronto, cada vez más espaciado (RETRY_MS, el doble… hasta POLL_MS), no al
+				// minuto. Hasta entonces, sin aviso: su botón no haría nada.
 				latest = null;
 				state.aviso = false;
 				failures++;

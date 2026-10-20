@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	applied,
+	dataUrl,
 	decide,
 	FIRST_MS,
 	GESTURE_MS,
@@ -10,6 +11,7 @@ import {
 	loadOrFail,
 	LOCAL,
 	POLL_MS,
+	reachable,
 	readBuild,
 	RETRY_MS,
 	watch,
@@ -163,6 +165,40 @@ describe('loadOrFail', () => {
 				() => error
 			)
 		).rejects.toThrow();
+	});
+
+	it('si los datos no llegan (sin red, un 503), falla sin refrescar: la vista se queda como estaba', async () => {
+		const run = vi.fn(async () => {});
+		await expect(loadOrFail(run, () => false, async () => false)).rejects.toThrow();
+		expect(run).not.toHaveBeenCalled();
+		await expect(loadOrFail(run, () => false, async () => true)).resolves.toBeUndefined();
+		expect(run).toHaveBeenCalledOnce();
+	});
+});
+
+describe('dataUrl', () => {
+	it('el __data.json de la vista, sin parámetros ni #hash (como lo pide SvelteKit)', () => {
+		expect(dataUrl(new URL('https://arcterminal.dev/eco?embed=1#panel=Tipos'))).toBe('https://arcterminal.dev/eco/__data.json');
+		expect(dataUrl(new URL('https://arcterminal.dev/'))).toBe('https://arcterminal.dev/__data.json');
+		expect(dataUrl(new URL('https://arcterminal.dev/x/zen/'))).toBe('https://arcterminal.dev/x/zen/__data.json');
+	});
+});
+
+describe('reachable', () => {
+	it('pide solo las cabeceras, sin caché y sin seguir redirecciones', async () => {
+		const get = vi.fn(async () => new Response(null, { status: 200 }));
+		expect(await reachable(get, '/eco/__data.json')).toBe(true);
+		expect(get).toHaveBeenCalledWith('/eco/__data.json', { method: 'HEAD', cache: 'no-store', redirect: 'manual' });
+	});
+
+	it('sin red, un 503 del borde o la sesión caducada (redirección al login): no', async () => {
+		expect(
+			await reachable(async () => {
+				throw new TypeError('Failed to fetch');
+			}, '/eco/__data.json')
+		).toBe(false);
+		expect(await reachable(async () => new Response(null, { status: 503 }), '/eco/__data.json')).toBe(false);
+		expect(await reachable(async () => new Response(null, { status: 302 }), '/eco/__data.json')).toBe(false);
 	});
 });
 
