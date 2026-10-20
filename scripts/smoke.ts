@@ -19,6 +19,7 @@ import { gzipSync } from 'node:zlib';
 import type { Page } from 'playwright-core';
 import { launch, preview, viewPaths } from './browser.ts';
 import { osChecks } from './smoke-os.ts';
+import { swChecks } from './smoke-sw.ts';
 
 /** En WebKit (SMOKE_BROWSER) solo se mira la web clásica en el móvil: lo que cambia con Safari es el diseño. */
 const WEBKIT = !!process.env.SMOKE_BROWSER;
@@ -199,6 +200,8 @@ try {
 	}
 	// Arc OS en el escritorio, con 12 ventanas (scripts/smoke-os.ts).
 	if (!WEBKIT) failures.push(...(await osChecks(browser, ROOT)));
+	// Sin conexión, con lo que guarda el service worker, TOP y ECO arrancan (scripts/smoke-sw.ts).
+	if (!WEBKIT) failures.push(...(await swChecks(browser)));
 	// La pasada acotada de WebKit solo mira el móvil.
 	if (!WEBKIT) await keyboard(browser);
 	// Con Chromium (DevTools Protocol para frenar la CPU).
