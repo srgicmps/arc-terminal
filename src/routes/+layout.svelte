@@ -10,7 +10,7 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import { isOnRoute, neighbour, nudge, preloadDirection, SWIPE, swipeDirection } from '#lib/swipe.ts';
 	import { asset, resolve } from '$app/paths';
-	import { navigating, page, updated } from '$app/state';
+	import { navigating, page } from '$app/state';
 	import { startClock } from '#lib/clock.svelte.ts';
 	import { COMMANDS } from '#lib/commands.ts';
 	import Clocks from '#lib/components/Clocks.svelte';
@@ -38,6 +38,7 @@
 	import { initCloud } from '#lib/cloud.svelte.ts';
 	import { initEmbed, isEmbedded, reportPath, unembed } from '#lib/os/embed.ts';
 	import { listenServiceWorker } from '#lib/pwa.ts';
+	import { fresh, refreshNow, startFresh } from '#lib/fresh.svelte.ts';
 	import PanelIndex from '#lib/components/PanelIndex.svelte';
 	import { setPanelIndex } from '#lib/panelindex.svelte.ts';
 	import { tvSymbol } from '#lib/tickers.ts';
@@ -75,6 +76,8 @@
 	onNavigate((nav) => (wants(nav, viewEnv()) ? fade(nav.complete) : undefined));
 	// Sesión de Cloudflare Access caducada: el service worker avisa y se recarga para ir al login.
 	$effect(listenServiceWorker);
+	// Publicación nueva: si solo son datos, la vista se refresca sola en su sitio; si es código, «Recargar».
+	$effect(startFresh);
 
 	// Modo TV: cualquier URL con ?tv=TOP,WS…&s=30 lo arranca y salta a la primera vista.
 	$effect(() => {
@@ -336,10 +339,15 @@
 		</div>
 	{/if}
 
-	<!-- Aviso discreto cuando la Action ha publicado una versión nueva (datos o mejoras). -->
-	{#if updated.current}
+	<!-- Datos nuevos: la vista se refresca sola en su sitio (src/lib/fresh.ts). Este aviso discreto solo sale si
+	     estás escribiendo en un campo (se refresca al pulsar o al salir de él) o si se ha publicado código nuevo. -->
+	{#if fresh.codigo}
 		<button class="fresh" type="button" onclick={() => location.reload()}>
-			Hay datos nuevos · <b>Recargar</b>
+			Hay una versión nueva · <b>Recargar</b>
+		</button>
+	{:else if fresh.aviso}
+		<button class="fresh" type="button" onclick={refreshNow}>
+			Hay datos nuevos · <b>Actualizar</b>
 		</button>
 	{/if}
 
