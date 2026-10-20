@@ -32,9 +32,26 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - `scripts/update.ts` (`pnpm data`) ejecuta las fuentes de `scripts/sources/` y guarda cada una en
   `static/data/<nombre>.json` como `{ name, fetchedAt, data }`. Las fuentes reciben la copia anterior para
   acumular historial (gasolina, luz). Los tipos compartidos están en `src/lib/types.ts` y `src/lib/fuel.ts`.
-- Cada vista lee sus datos en `+page.ts` con `dataset('nombre')` (`src/lib/data.ts`).
+  Si una descarga llega vacía, encoge de golpe o no tiene sentido (el `validate` opcional de cada fuente, en
+  `scripts/lib.ts`), cuenta como fallo: se queda la copia anterior y el motivo sale en STATUS. Los enlaces se
+  limpian al guardar (`scripts/links.ts`: solo http(s) y rutas propias). Los Excel, con `scripts/xlsx.ts`.
+- Cada vista lee sus datos en `+page.server.ts` con `dataset('nombre')` (`src/lib/data.ts`): solo corre al construir
+  y al navegador llega lo que devuelve su `load`. Nunca `dataset()` ni un JSON de `static/data` en un `+page.ts` ni
+  en un componente: metería los JSON en el código del navegador (lo vigila `src/lib/bundle-data.test.ts`). Si un
+  componente necesita datos en el navegador, los pide a `/data/<nombre>.json` (como `Updated.svelte`).
 - Componentes comunes en `src/lib/components/` (Panel, NewsList, SeriesTable, LineChart, TvWidget…).
 - Atajos de teclado: registro único en `src/lib/shortcuts.ts` (`SHORTCUTS` + `isShortcut`). De ahí salen HELP, el MANUAL y las teclas que escuchan la barra, los paneles y el modo TV.
+- Barra de comandos: la lógica, sin Svelte, en `src/lib/cmdline.ts` (también las erratas: «GOE» → GEO con
+  `didYouMean`). Página de error propia en `src/routes/+error.svelte`: 404 con «¿Querías decir…?», 401 de Access y,
+  si no carga, «Reintentar» (y, sin conexión, las vistas guardadas en el dispositivo).
+- **Service worker** (`src/service-worker/`): al instalarse guarda solo lo que arranca las vistas
+  (`_app/precache.json`, que escribe `scripts/precache.ts` al construir) y la portada; lo que va con `import()`
+  (estéticas, globo, Arc OS) y las letras, en `arc-chunks` la primera vez que se piden; las vistas abiertas, en
+  `arc-pages`. Los trozos de código salen de la caché ya leídos (`buffered`, `respond.ts`): en streaming, Chrome a veces
+  los cortaba.
+- **Tests que vigilan reglas** (fallan con el archivo y el motivo): `tokens-guard` (colores y fuentes escritos a mano),
+  `paneltitles` (nombres de panel escritos a mano), `dataset-names` (nombres de datos), `bundle-data` (ningún JSON
+  en el código del navegador), `manual` (la ficha de cada comando) y `docs` (su fila en «Comandos y fuentes»).
 - `scripts/probe.ts` + `scripts/probe.txt`: en los PR que tocan `scripts/`, la Action consulta esas URL y deja la
   respuesta en el registro. Sirve para explorar APIs nuevas cuando el entorno de desarrollo no tiene red.
 - **Probar una fuente sin la pasada completa**: Actions → «Publicar en Pages» → Run workflow, con «fuentes»
@@ -63,6 +80,10 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   del equipo; el token necesita D1 · Edit y Access: Apps and Policies y Organizations · Read y, para PREGUNTA, Workers AI · Read). Las Variables
   `D1_DATABASE_ID`, `ACCESS_TEAM_DOMAIN` y `ACCESS_AUD` son opcionales y mandan. Sin nada, /api/* responde 503 y la web
   va igual, solo en local.
+  **Esquema de D1 en un solo sitio**, `cloud/schema.ts` (cada tabla se crea sola con `ensure`; nadie más escribe un
+  `CREATE TABLE`). Una tabla con datos de una persona (columna `user`) va también en `USER_TABLES` de `cloud/admin.ts`,
+  para que «Quitar» y «Borrar mi cuenta» la borren: lo vigila `cloud/schema.test.ts`. Una Function nueva empieza con
+  `identity()` o `person()` de `cloud/access.ts` (503 sin configurar, 403 si viene de otra web, 401 sin identificar).
 - **Tu cuenta** (fila de «A tu gusto» en HELP, `AccountRow.svelte`): «Cerrar sesión» va a `/cdn-cgi/access/logout` sin borrar nada
   de aquí; «Borrar mi cuenta» (escribir BORRAR) → DELETE `/api/account` (`cloud/account.ts`, el `forget()` de «Quitar»),
   luego borra lo de este navegador y sale (`src/lib/account.svelte.ts`). La memoria `arc-sync` no se borra: pasa a ser
@@ -98,6 +119,9 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - **Sugerencias** (pie de cada vista, `Feedback.svelte`): `/api/feedback` (`cloud/feedback.ts`) las guarda en D1
   (tabla `feedback`) y avisa a Sergi por ntfy si Pages tiene el Secret `NTFY_TOPIC`. Leerlas, solo el admin
   (Secret de Pages `ADMIN_EMAIL`, nunca en el repo).
+- **PREGUNTA** (`/api/ask`, `cloud/ask.ts`): la ÚNICA pieza con IA, aparte, etiquetada y opcional; lo demás sigue sin
+  IA. Workers AI con el binding `AI` que pone `cf-config.ts`. Contesta solo con 1–4 JSON de hoy y descarta la respuesta
+  si cita una cifra que no está en ellos; 20 al día por persona (tabla `ask_count`: cuántas, nunca qué).
 - **Errores del navegador** (F29): `src/hooks.client.ts` manda los fallos de la web publicada a `/api/errors` (`cloud/errors.ts`, tabla `errors`, agrupados por firma), limpios y sin quién (`src/lib/errreport.ts`). Se ven en ADMIN.
 - **ADMIN** (`/admin`, `cloud/admin.ts`, `/api/admin`): solo para `ADMIN_EMAIL`. Usuarios (último acceso, tabla
   `seen` que apunta `/api/prefs`; avisos), invitar o quitar emails de la política de Access «Sergi» (Variable
@@ -127,7 +151,8 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   `src/styles/tokens.css` (ver «Sistema de diseño»).
 - Estética de terminal: fondo casi negro, ámbar como acento, verde y rojo solo para subidas y bajadas,
   separaciones de 1 px, mucha densidad de información.
-- Tipografías: IBM Plex Mono (datos y comandos) e IBM Plex Sans Condensed (titulares y textos).
+- Tipografías: IBM Plex Mono (datos y comandos) e IBM Plex Sans Condensed (titulares y textos). Las sirve la propia
+  web, sin Google (`src/styles/fonts.css`, con Inter); cómo usar otra, en `docs/estilos.md`.
 - Sergi quiere detalles **sutiles y elegantes**, nada grueso ni llamativo. Un mismo elemento mide lo mismo
   en todas las vistas.
 - Tiene que funcionar bien en el móvil (Sergi lo mirará mucho desde ahí).
@@ -229,7 +254,7 @@ vista `HELP`. Una fila por comando (lo comprueba `src/lib/docs.test.ts`):
 | `FONDOS` | Carteras 13F de grandes fondos: mayores posiciones, compras y ventas | SEC* |
 | `HDS` | Qué fondos de FONDOS tienen un valor (13F al revés, con 45 días de retraso) | SEC* |
 | `RSS` | Mis RSS (como Feedly): tus feeds en tu cuenta, leídos por `/api/rss` (`cloud/rss.ts`, caché de 15 min y topes; solo con cuenta) | Tus feeds |
-| `PREGUNTA` | Pregunta a Arc: la ÚNICA pieza con IA, aparte y etiquetada (`/api/ask`, `cloud/ask.ts`, binding `AI` que pone `cf-config.ts`): contesta solo con 1–4 JSON de hoy y descarta la respuesta si cita una cifra que no está en ellos; 20 al día por persona. Lo demás sigue sin IA | Workers AI (Cloudflare) sobre static/data |
+| `PREGUNTA` | Pregunta a Arc, con IA, sobre los datos de hoy (la única pieza con IA: ver «Arquitectura») | Workers AI (Cloudflare) sobre static/data |
 | `ESTILO` | Estética: Terminal, Grafito, Cristal, Fósforo… (17), con vista previa | — |
 | `AVISOS` | Tus avisos al móvil: temas, nivel, tope, valores y silencio (solo con cuenta, en arcterminal.dev) | ntfy |
 | `QUIEN` | Quién lo cuenta: el mismo hecho en varios medios, cobertura por región y ángulos muertos (sin IA) | Todos los titulares |
