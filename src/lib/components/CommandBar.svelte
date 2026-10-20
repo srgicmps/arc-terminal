@@ -303,8 +303,9 @@
 			selected = (selected - 1 + n) % n;
 		} else if (isShortcut(e, 'complete') && !e.shiftKey && n && value.trim()) {
 			// Tab completa la barra con la sugerencia marcada (o la primera) sin abrirla. Si es un comando
-			// que acepta texto, deja un espacio: así salen sus opciones («LID» → «LIDER »).
-			const o = options[selected >= 0 ? selected : 0];
+			// que acepta texto, deja un espacio: así salen sus opciones («LID» → «LIDER »). Con una pista («TECK»)
+			// y sin moverse con ↑ ↓, la pista, aunque lo marcado sea lo que abre Intro.
+			const o = !moved && hints.length ? hints[0] : options[selected >= 0 ? selected : 0];
 			if (o.url) return;
 			e.preventDefault();
 			const text = pick(o);
@@ -396,9 +397,9 @@
 			histIdx = -1;
 			open = true;
 			moved = false;
-			// Se marca lo que abre Intro. Una pista dudosa («TECK» → TECH) no lo es: sale la primera, pero sin marcar
-			// (Tab la completa; Intro sigue abriendo la ficha o la búsqueda, como antes).
-			selected = options.length && !(hints.length && !hints[0].sure) ? 0 : -1;
+			// Se marca lo que abre Intro. Con una pista dudosa («TECK» → TECH), Intro sigue abriendo el primer resultado
+			// (la ficha o la búsqueda, como antes): se marca ese, y la pista sale arriba sin marcar (Tab la completa).
+			selected = hints.length && !hints[0].sure ? (results.length ? firstHit : -1) : options.length ? 0 : -1;
 		}}
 		{onkeydown}
 		onfocus={() => {

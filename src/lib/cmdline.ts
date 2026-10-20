@@ -205,40 +205,43 @@ export interface Hint extends Option {
  * cortos. Nunca propone algo que no esté en `all`, así que nunca un valor inventado.
  *
  * `sure`: Intro abre la pista directamente. Solo con dos letras cambiadas de sitio o una repetida, desde 4 letras,
- * si es la única pista de ese tipo y lo escrito no es un valor de TICKERS. Una letra cambiada no basta: TECK es
- * un valor de verdad y no debe abrir TECH. Va aparte de suggest() a propósito: la usa solo la barra, y la Terminal
- * y el Spotlight de Arc OS siguen igual.
+ * si es la única pista de ese tipo, lo escrito no es un valor de TICKERS y lo que encaja es el código de un comando
+ * o de Bloomberg (ECOO → ECO, WIRPP → WIRP). Un valor, un alias, un líder o un país dan la pista, pero Intro no la
+ * abre: STLA (Stellantis) no es TSLA, ESRT no es el alias ESTR de BTMM y «truco» no es «turco». Una letra cambiada
+ * tampoco basta: TECK es un valor de verdad y no debe abrir TECH. Va aparte de suggest() a propósito: la usa solo
+ * la barra, y la Terminal y el Spotlight de Arc OS siguen igual.
  */
 export function didYouMean(raw: string, all: Option[], limit = 3): Hint[] {
 	const q = norm(raw);
 	if (!TYPO.test(q)) return [];
-	const found: { o: Option; edit: Edit }[] = [];
+	// `onCode`: lo que encaja es el código de la opción, no uno de sus alias.
+	const found: { o: Option; edit: Edit; onCode: boolean }[] = [];
 	for (const o of [...all, ...BLOOMBERG]) {
 		const run = o.run ?? o.code;
 		if (found.some((f) => (f.o.run ?? f.o.code) === run)) continue;
-		let best: Edit | null = null;
-		for (const w of [o.code, ...(o.aliases ?? [])].map(norm)) {
+		let best: { edit: Edit; onCode: boolean } | null = null;
+		for (const [i, w] of [o.code, ...(o.aliases ?? [])].map(norm).entries()) {
 			if (!WORD.test(w)) continue;
 			const edit = oneEdit(q, w);
 			if (!edit || (q.length === 3 && edit !== 'swap')) continue;
 			if (edit !== 'other') {
-				best = edit;
+				best = { edit, onCode: i === 0 };
 				break;
 			}
-			best ??= edit;
+			best ??= { edit, onCode: i === 0 };
 		}
-		if (best) found.push({ o, edit: best });
+		if (best) found.push({ o, ...best });
 	}
 	// Primero las erratas más claras (letras cambiadas de sitio o repetidas); dentro, el orden de `all`.
 	const clear = (e: Edit) => (e === 'other' ? 1 : 0);
 	found.sort((a, b) => clear(a.edit) - clear(b.edit));
 	const sure = q.length >= 4 && found.filter((f) => f.edit !== 'other').length === 1 && !TICKERS.some((t) => t.code === q);
-	return found.slice(0, limit).map(({ o, edit }, i) => ({
+	return found.slice(0, limit).map(({ o, edit, onCode }, i) => ({
 		code: o.code,
 		desc: o.desc,
 		kind: 'Quizá',
 		run: o.run ?? o.code,
-		sure: sure && i === 0 && edit !== 'other'
+		sure: sure && i === 0 && edit !== 'other' && onCode && (o.kind === 'Función' || o.kind === 'Bloomberg')
 	}));
 }
 

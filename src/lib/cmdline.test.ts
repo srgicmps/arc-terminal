@@ -503,7 +503,19 @@ describe('erratas: «¿Querías decir?» (F13)', () => {
 		expect(hint('CARETRA')).toMatchObject({ code: 'CARTERA', sure: true });
 		expect(hint('HIPOTCA')).toMatchObject({ code: 'HIPOTECA', sure: false });
 		expect(hint('NVDIA')).toMatchObject({ code: 'NVDA', sure: false });
-		expect(hint('NVDAA')).toMatchObject({ code: 'NVDA', sure: true });
+		// Un valor sale como pista, pero Intro no lo abre solo (ver abajo).
+		expect(hint('NVDAA')).toMatchObject({ code: 'NVDA', sure: false });
+	});
+
+	it('Intro abre por su cuenta solo el código de un comando o de Bloomberg: un valor, un alias o un país son pistas', () => {
+		// Valores reales que no están en TICKERS (STLA, ESRT, AIRR) y palabras corrientes («truco», «bruma»): la pista
+		// sale igual, pero Intro sigue abriendo la ficha o la búsqueda, como antes.
+		const want: Record<string, string> = {
+			STLA: 'TSLA', TLSA: 'TSLA', NVDAA: 'NVDA', AIRR: 'AIR', ESRT: 'BTMM', TRUCO: 'PAIS TR', BRUMA: 'PAIS MM', BOLAS: 'WS', PERES: 'RV'
+		};
+		for (const [typo, run] of Object.entries(want)) expect(hint(typo), typo).toMatchObject({ run, sure: false });
+		// El código de un comando o de Bloomberg, sí.
+		for (const typo of ['ECOO', 'FEUL', 'IMPP', 'GEOO', 'MOSTT', 'CARETRA', 'ESTILOO', 'WIRPP']) expect(hint(typo)?.sure, typo).toBe(true);
 	});
 
 	it('las 16 erratas medidas sin ninguna sugerencia: 13 tienen pista; LUX, FUL y WSS no (3 letras y no es un cambio de sitio)', () => {
