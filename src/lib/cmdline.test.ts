@@ -4,6 +4,7 @@ import {
 	calcInput,
 	canonical,
 	commandDay,
+	didYouMean,
 	exampleTarget,
 	findCommand,
 	HISTORY_KEY,
@@ -480,5 +481,95 @@ describe('comparar y rangos fuera de la barra (Terminal y Spotlight de Arc OS)',
 	it('la Terminal de Arc OS también abre CMP', () => {
 		const r = execLine('NVDA vs AMD', { answers: { get: () => undefined, now: Date.UTC(2026, 9, 15, 10) }, all: ALL, history: [] });
 		expect(r.open).toMatchObject({ route: '/cmp', search: '?s=NVDA%20AMD' });
+	});
+});
+
+describe('erratas: «¿Querías decir?» (F13)', () => {
+	// Lo mismo que busca la barra (CommandBar.svelte): comandos, líderes, países y valores.
+	const bar: Option[] = [...ALL, ...leaderEntries(), ...countryEntries()];
+	const hint = (raw: string) => didYouMean(raw, bar)[0];
+	/** Lo que ve la barra arriba del todo: las sugerencias de siempre o, si no hay ninguna, las pistas. */
+	const shown = (raw: string) => {
+		const list = suggest(raw, bar);
+		return (list.length ? list : didYouMean(raw, bar)).map((o) => o.run ?? o.code);
+	};
+
+	it('corrige letras cambiadas de sitio, repetidas, que faltan o que sobran', () => {
+		expect(hint('GOE')?.code).toBe('GEO');
+		expect(hint('lzu')?.code).toBe('LUZ');
+		expect(hint('ECOO')).toMatchObject({ code: 'ECO', kind: 'Quizá', run: 'ECO', sure: true });
+		expect(hint('FEUL')).toMatchObject({ code: 'FUEL', sure: true });
+		expect(hint('MOSTT')).toMatchObject({ code: 'MOST', sure: true });
+		expect(hint('CARETRA')).toMatchObject({ code: 'CARTERA', sure: true });
+		expect(hint('HIPOTCA')).toMatchObject({ code: 'HIPOTECA', sure: false });
+		expect(hint('NVDIA')).toMatchObject({ code: 'NVDA', sure: false });
+		expect(hint('NVDAA')).toMatchObject({ code: 'NVDA', sure: true });
+	});
+
+	it('las 16 erratas medidas sin ninguna sugerencia: 13 tienen pista; LUX, FUL y WSS no (3 letras y no es un cambio de sitio)', () => {
+		const want: Record<string, string | undefined> = {
+			GOE: 'GEO', ECOO: 'ECO', EOC: 'ECO', FEUL: 'FUEL', FUL: undefined, LUX: undefined, TECG: 'TECH', AVIOS: 'AVISOS',
+			SEMNA: 'SEMANA', WSS: undefined, ESTILOO: 'ESTILO', CARETRA: 'CARTERA', GEOO: 'GEO', IMPP: 'IMP', HIPOTCA: 'HIPOTECA', NVDAA: 'NVDA'
+		};
+		for (const [typo, code] of Object.entries(want)) {
+			expect(suggest(typo, bar), typo).toEqual([]);
+			expect(hint(typo)?.code, typo).toBe(code);
+		}
+	});
+
+	it('de 30 erratas típicas, la barra propone el comando en 27 (antes, en ninguna)', () => {
+		const typos: [string, string][] = [
+			['GOE', 'GEO'], ['ECOO', 'ECO'], ['EOC', 'ECO'], ['FEUL', 'FUEL'], ['FUL', 'FUEL'], ['LUX', 'LUZ'], ['TECG', 'TECH'],
+			['AVIOS', 'AVISOS'], ['SEMNA', 'SEMANA'], ['WSS', 'WS'], ['ESTILOO', 'ESTILO'], ['CARETRA', 'CARTERA'], ['GEOO', 'GEO'],
+			['IMPP', 'IMP'], ['HIPOTCA', 'HIPOTECA'], ['NVDAA', 'NVDA'], ['LZU', 'LUZ'], ['MOSTT', 'MOST'], ['NVDIA', 'NVDA'],
+			['NWES', 'NEWS'], ['HLEP', 'HELP'], ['STAUTS', 'STATUS'], ['BEO', 'BOE'], ['TPO', 'TOP'], ['VAIJE', 'VIAJE'],
+			['AHOROR', 'AHORRO'], ['CEHSS', 'CHESS'], ['FONOS', 'FONDOS'], ['GLOOB', 'GLOBO'], ['USGVO', 'USGOV']
+		];
+		const before = typos.filter(([typo, code]) => suggest(typo, bar).some((o) => (o.run ?? o.code) === code));
+		const after = typos.filter(([typo, code]) => shown(typo).includes(code));
+		expect(before).toHaveLength(0);
+		expect(after.length).toBe(27);
+	});
+
+	it('no corrige lo que ya tiene sugerencias, lo corto, varias palabras ni palabras largas', () => {
+		for (const raw of ['GS', 'MS', 'KO', 'AMD', 'EC', 'gasolina madrid', 'GOE ECO', 'HIPOTECAA', '=12*3', '100', ''])
+			expect(didYouMean(raw, bar), raw).toEqual([]);
+		// «EC» tiene sugerencias normales: la barra ni siquiera pide pistas.
+		expect(suggest('EC', bar)[0].code).toBe('ECO');
+	});
+
+	it('una letra cambiada no es segura: TECK y MODA son pistas, pero Intro no las abre', () => {
+		expect(hint('TECK')).toMatchObject({ code: 'TECH', sure: false });
+		expect(hint('MODA')).toMatchObject({ code: 'MODO', sure: false });
+		// Con 3 letras, nunca segura: GOE → GEO es una pista, Intro sigue como antes.
+		expect(hint('GOE')?.sure).toBe(false);
+	});
+
+	it('un valor de verdad nunca se corrige solo: ningún código de TICKERS da una pista segura', () => {
+		for (const t of TICKERS) expect(didYouMean(t.code, bar).some((h) => h.sure), t.code).toBe(false);
+	});
+
+	it('15 valores reales que se parecen a comandos: Intro sigue abriendo lo mismo que antes', () => {
+		for (const sym of ['TECK', 'EGO', 'SEA', 'NWS', 'MOS', 'UBER', 'SNOW', 'ROKU', 'SHOP', 'COIN', 'GEOS', 'TOPS', 'ECOM', 'NET', 'LULU']) {
+			expect(didYouMean(sym, bar).some((h) => h.sure), sym).toBe(false);
+		}
+		expect(resolveInput('TECK', suggest('TECK', bar))).toMatchObject({ kind: 'symbol', sym: 'TECK' });
+		expect(resolveInput('GEOS', suggest('GEOS', bar))).toMatchObject({ kind: 'symbol', sym: 'GEOS' });
+	});
+
+	it('nunca propone algo que no esté en la lista: sin valores en `all`, NVDIA no da nada', () => {
+		const commands = ALL.filter((o) => o.kind === 'Función');
+		expect(didYouMean('NVDIA', commands)).toEqual([]);
+		const known = new Set([...bar.map((o) => o.run ?? o.code), ...COMMANDS.flatMap((c) => (c.bloomberg ?? []).map((b) => b.code))]);
+		for (const typo of ['IMPP', 'FEUL', 'MODA', 'FONOS', 'ECOO', 'NVDIA', 'ZZZZ']) for (const h of didYouMean(typo, bar)) expect(known.has(h.run!), h.code).toBe(true);
+	});
+
+	it('los códigos de Bloomberg también cuentan (WIRPP → WIRP)', () => {
+		expect(hint('WIRPP')).toMatchObject({ code: 'WIRP', sure: true });
+	});
+
+	it('suggest() no cambia: la Terminal y el Spotlight de Arc OS siguen igual', () => {
+		expect(suggest('GOE', bar)).toEqual([]);
+		expect(resolveInput('ECOO', suggest('ECOO', bar))).toMatchObject({ kind: 'symbol', sym: 'ECOO' });
 	});
 });

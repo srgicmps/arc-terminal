@@ -161,6 +161,87 @@ export function suggest(raw: string, all: Option[], limit = 8, fx?: FxState): Op
 	return list.slice(0, limit);
 }
 
+// ---- Erratas: «GOE» → GEO, «ECOO» → ECO (F13) ----
+
+/** Cómo se pasa de lo escrito a un código con un solo cambio: dos letras vecinas cambiadas de sitio, una letra repetida de más u otro (una letra cambiada, que falta o que sobra). */
+type Edit = 'swap' | 'double' | 'other';
+
+/**
+ * Si `typed` está a un solo cambio de `word` (distancia de Damerau-Levenshtein restringida, OSA, igual a 1), qué
+ * cambio es; null si son iguales o están más lejos. Con un cambio como mucho no hace falta la tabla entera:
+ * basta con comparar letra a letra.
+ */
+function oneEdit(typed: string, word: string): Edit | null {
+	if (typed === word) return null;
+	if (typed.length === word.length) {
+		const diff = [...typed].flatMap((ch, i) => (ch === word[i] ? [] : [i]));
+		if (diff.length === 1) return 'other';
+		const [i, j] = diff;
+		return diff.length === 2 && j === i + 1 && typed[i] === word[j] && typed[j] === word[i] ? 'swap' : null;
+	}
+	const [long, short] = typed.length > word.length ? [typed, word] : [word, typed];
+	if (long.length - short.length !== 1) return null;
+	let i = 0;
+	while (i < short.length && long[i] === short[i]) i++;
+	if (long.slice(i + 1) !== short.slice(i)) return null;
+	// La letra que sobra en lo escrito es igual que su vecina: «ECOO», «IMPP».
+	return long === typed && (long[i] === long[i - 1] || long[i] === long[i + 1]) ? 'double' : 'other';
+}
+
+/** Lo escrito que se intenta corregir: una sola palabra de 3 a 7 letras. */
+const TYPO = /^[A-Z]{3,7}$/;
+/** Con qué se compara: códigos y alias de una sola palabra, de 3 a 8 letras (los de 1 o 2, ES, WS, AI…, darían pistas al azar). */
+const WORD = /^[A-Z]{3,8}$/;
+
+/** Una pista «Quizá»: `sure` si Intro puede abrirla sin preguntar. */
+export interface Hint extends Option {
+	sure: boolean;
+}
+
+/**
+ * «¿Querías decir…?» para una errata que no da ninguna sugerencia («GOE», «ECOO», «HIPOTCA»): las opciones de
+ * `all` (y los códigos de Bloomberg) a un solo cambio de lo escrito. Con 3 letras, solo dos letras vecinas
+ * cambiadas de sitio (GOE → GEO, LZU → LUZ): cualquier otro cambio daría pistas sin sentido entre tantos códigos
+ * cortos. Nunca propone algo que no esté en `all`, así que nunca un valor inventado.
+ *
+ * `sure`: Intro abre la pista directamente. Solo con dos letras cambiadas de sitio o una repetida, desde 4 letras,
+ * si es la única pista de ese tipo y lo escrito no es un valor de TICKERS. Una letra cambiada no basta: TECK es
+ * un valor de verdad y no debe abrir TECH. Va aparte de suggest() a propósito: la usa solo la barra, y la Terminal
+ * y el Spotlight de Arc OS siguen igual.
+ */
+export function didYouMean(raw: string, all: Option[], limit = 3): Hint[] {
+	const q = norm(raw);
+	if (!TYPO.test(q)) return [];
+	const found: { o: Option; edit: Edit }[] = [];
+	for (const o of [...all, ...BLOOMBERG]) {
+		const run = o.run ?? o.code;
+		if (found.some((f) => (f.o.run ?? f.o.code) === run)) continue;
+		let best: Edit | null = null;
+		for (const w of [o.code, ...(o.aliases ?? [])].map(norm)) {
+			if (!WORD.test(w)) continue;
+			const edit = oneEdit(q, w);
+			if (!edit || (q.length === 3 && edit !== 'swap')) continue;
+			if (edit !== 'other') {
+				best = edit;
+				break;
+			}
+			best ??= edit;
+		}
+		if (best) found.push({ o, edit: best });
+	}
+	// Primero las erratas más claras (letras cambiadas de sitio o repetidas); dentro, el orden de `all`.
+	const clear = (e: Edit) => (e === 'other' ? 1 : 0);
+	found.sort((a, b) => clear(a.edit) - clear(b.edit));
+	const sure = q.length >= 4 && found.filter((f) => f.edit !== 'other').length === 1 && !TICKERS.some((t) => t.code === q);
+	return found.slice(0, limit).map(({ o, edit }, i) => ({
+		code: o.code,
+		desc: o.desc,
+		kind: 'Quizá',
+		run: o.run ?? o.code,
+		sure: sure && i === 0 && edit !== 'other'
+	}));
+}
+
 /**
  * Lo que abre la barra: una función o la ficha de un valor. `fn` es la función del valor en minúsculas
  * («gp» en «NVDA GP», ver src/lib/functions.ts).
