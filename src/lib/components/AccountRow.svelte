@@ -4,7 +4,8 @@
 	«Cerrar sesión» es la salida de Access (el service worker deja pasar /cdn-cgi/) y no borra nada de aquí: si entra
 	otra persona, la sincronización cambia lo de este navegador por lo de su cuenta (startPlan en cloud.ts).
 	«Borrar mi cuenta» va en dos pasos, sin ventana encima: el botón abre la confirmación debajo y hay que escribir
-	BORRAR. Igual para todos, también para el admin. La lógica, en src/lib/account.svelte.ts.
+	BORRAR. Igual para todos, también para el admin. Si no se puede, el aviso sale encima del campo (en el móvil, el
+	teclado tapa lo de debajo) y el campo lo lleva en su descripción. La lógica, en src/lib/account.svelte.ts.
 -->
 <script lang="ts">
 	import { tick } from 'svelte';
@@ -83,13 +84,14 @@
 			dispositivo, y se cierra la sesión aquí. No se puede deshacer: podrás volver a entrar, pero desde cero. Cierra
 			también la sesión en tus otros dispositivos: lo que guardes allí empezaría una cuenta nueva.
 		</p>
+		{#if msg}<p id="account-msg" class="msg" role="alert">{msg}</p>{/if}
 		<label for="account-word">Escribe {WORD}</label>
 		<input
 			id="account-word"
 			bind:this={input}
 			bind:value={typed}
 			readonly={busy}
-			aria-describedby="account-what"
+			aria-describedby={msg ? 'account-msg account-what' : 'account-what'}
 			autocomplete="off"
 			autocapitalize="characters"
 			spellcheck="false"
@@ -97,7 +99,6 @@
 		<button class="go" type="submit" disabled={!ready || busy}>{busy ? 'Borrando…' : 'Borrar para siempre'}</button>
 	</form>
 {/if}
-{#if msg}<p class="msg" role="alert">{msg}</p>{/if}
 
 <style>
 	/* Un email largo baja de línea en vez de salirse del panel; «Cerrar sesión» y «Borrar mi cuenta» no se parten. */
@@ -206,9 +207,7 @@
 		cursor: default;
 	}
 
-	.msg {
-		margin: var(--sp-8) 0 0;
-		font-size: var(--fs-s);
+	.confirm .msg {
 		color: var(--amber);
 	}
 </style>
