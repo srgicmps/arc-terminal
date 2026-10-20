@@ -25,10 +25,14 @@ export interface Env {
 	ACCESS_AUD?: string;
 }
 
+/**
+ * Todas las respuestas de /api salen de aquí: JSON, sin caché (son datos de cada uno) y con nosniff, para que el
+ * navegador nunca las interprete como otra cosa (static/_headers no se aplica a las Functions).
+ */
 export const json = (status: number, body: unknown) =>
 	new Response(JSON.stringify(body), {
 		status,
-		headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }
+		headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' }
 	});
 
 const size = (prefs: Record<string, string>) => Object.entries(prefs).reduce((n, [k, v]) => n + k.length + v.length, 0);

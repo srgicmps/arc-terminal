@@ -158,6 +158,23 @@ describe('functions/api', () => {
 		}
 	});
 
+	it('toda respuesta es JSON, sin caché y con nosniff: 503, 401, 403 y 200', async () => {
+		for (const name of NAMES) {
+			resetSchema();
+			const db = sqliteD1();
+			for (const res of [
+				await call(name, {}, OK[name]),
+				await call(name, fullEnv(db), OK[name], { token: null }),
+				await call(name, fullEnv(db), { ...OK[name], service: false }, { origin: 'https://malo.example' }),
+				await call(name, fullEnv(db), OK[name])
+			]) {
+				expect(res.headers.get('content-type'), name).toBe('application/json');
+				expect(res.headers.get('cache-control'), name).toBe('no-store');
+				expect(res.headers.get('x-content-type-options'), name).toBe('nosniff');
+			}
+		}
+	});
+
 	it('/api/prefs: guarda, devuelve solo lo de cada uno y apunta el último acceso', async () => {
 		const db = sqliteD1();
 		const env = fullEnv(db);
