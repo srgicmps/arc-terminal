@@ -1,6 +1,6 @@
 // Core Web Vitals de laboratorio (scripts/vitals.ts): mediana, presupuestos, avisos y la tabla del resumen.
 import { describe, expect, it } from 'vitest';
-import { budgetFor, GOOD, median, overBudget, sessionCls, summaryTable, warnings, type Row } from '../vitals.ts';
+import { BUDGETS, budgetFor, GOOD, median, overBudget, sessionCls, summaryTable, toTenth, warnings, type Row } from '../vitals.ts';
 
 const row = (path: string, profile: string, lcp: number, cls: number, extra: Partial<Row['vitals']> = {}): Row => ({
 	path,
@@ -90,8 +90,28 @@ describe('vitals', () => {
 		const table = summaryTable([geo, { ...geo, profile: 'Sencillo' }, row('/', 'Terminal', 1800, 0.059)]);
 		expect(table).toContain('| Vista | Perfil | LCP | CLS | TBT | KB |');
 		expect(table).toContain('| GEO | Terminal | 3,2 s | 0,020 | 1,2 s | 297 |');
-		expect(table).toContain('medida de partida +15 % (BUDGETS en scripts/vitals.ts): GEO, 3,5 s · 0,1.');
+		expect(table).toContain('medida de partida +15 % (BUDGETS en scripts/vitals.ts): GEO, 3,5 s · 0,100.');
 		expect(warnings([geo])).toEqual([]);
 		expect(warnings([{ ...geo, vitals: { ...geo.vitals, lcp: 3600 } }])[0]).toMatch(/^GEO \(Terminal\): LCP 3,6 s \(presupuesto 3,5 s\)/);
+	});
+
+	it('los presupuestos se redondean a lo que se enseña: la nota de la tabla y el aviso dicen lo mismo', () => {
+		expect(toTenth(2949)).toBe(2900);
+		expect(toTenth(2950)).toBe(3000);
+		// 2500 +15 % = 2875 ms y 0,069 +15 % = 0,07935: con decimales de más, la tabla y el aviso no cuadrarían.
+		BUDGETS['/prueba'] = { lcp: 2875, cls: 0.07935 };
+		try {
+			expect(budgetFor('/prueba')).toEqual({ lcp: 2900, cls: 0.079 });
+			const slow = row('/prueba', 'Terminal', 3000, 0.08);
+			expect(summaryTable([slow])).toContain('PRUEBA, 2,9 s · 0,079.');
+			expect(warnings([slow])).toEqual([
+				'PRUEBA (Terminal): LCP 3,0 s (presupuesto 2,9 s) y CLS 0,080 (presupuesto 0,079) en el móvil con la CPU 4x y 4G lenta'
+			]);
+			// Igual a lo que se enseña no avisa.
+			expect(warnings([row('/prueba', 'Terminal', 2900, 0.079)])).toEqual([]);
+		} finally {
+			delete BUDGETS['/prueba'];
+		}
+		expect(budgetFor('/prueba')).toEqual(GOOD);
 	});
 });

@@ -30,7 +30,18 @@ export const GOOD: Budget = { lcp: 2500, cls: 0.1 };
  * cortaba su script; y TOP y WS ya no saltan al cargar desde #619 y #621.
  */
 export const BUDGETS: Record<string, Budget> = {};
-export const budgetFor = (path: string): Budget => BUDGETS[path] ?? GOOD;
+
+/** El LCP a la décima de segundo (100 ms), la precisión con la que se enseña. */
+export const toTenth = (ms: number) => Math.round(ms / 100) * 100;
+
+/**
+ * Presupuesto de una vista, redondeado a lo que se enseña (LCP a 100 ms y CLS a la milésima, como las medidas): así la
+ * tabla y el aviso dicen lo mismo, y nunca sale «LCP 2,9 s (presupuesto 2,9 s)» con 2875 ms de presupuesto (2500 +15 %).
+ */
+export function budgetFor(path: string): Budget {
+	const b = BUDGETS[path] ?? GOOD;
+	return { lcp: toTenth(b.lcp), cls: Number(b.cls.toFixed(3)) };
+}
 
 /** Perfiles que se miden: modo y estética fijados para que la medida no cambie sola (app.html decide sin ellos). */
 export const PROFILES = [
@@ -107,10 +118,8 @@ export function overBudget(v: Pick<Vitals, 'lcp' | 'cls'>, b: Budget): ('LCP' | 
 /** «1,7 s», «0,129», con coma decimal. */
 export const seconds = (ms: number) => `${(ms / 1000).toFixed(1).replace('.', ',')} s`;
 export const shift = (cls: number) => cls.toFixed(3).replace('.', ',');
-/** Sin ceros de más: «2,5», «0,1». */
-const plain = (n: number) => String(n).replace('.', ',');
-/** Un presupuesto: «2,5 s · 0,1». */
-const limit = (b: Budget) => `${plain(b.lcp / 1000)} s · ${plain(b.cls)}`;
+/** Un presupuesto, con los mismos formatos que las medidas (en la tabla y en los avisos): «2,5 s · 0,100». */
+const limit = (b: Budget) => `${seconds(b.lcp)} · ${shift(b.cls)}`;
 /** ¿Usa la vista el presupuesto «bueno» de siempre (no tiene uno propio en BUDGETS)? */
 const isGood = (b: Budget) => b.lcp === GOOD.lcp && b.cls === GOOD.cls;
 /** Nombre de la vista como en la barra de comandos: «/» es TOP. */
@@ -140,7 +149,7 @@ export function summaryTable(rows: Row[], runs = 3): string {
 		'|---|---|--:|--:|--:|--:|',
 		...lines,
 		'',
-		`⚠ pasa del presupuesto (solo avisa). Bueno, según web.dev: LCP hasta ${plain(GOOD.lcp / 1000)} s y CLS hasta ${plain(GOOD.cls)}.`,
+		`⚠ pasa del presupuesto (solo avisa). Bueno, según web.dev: LCP hasta ${seconds(GOOD.lcp)} y CLS hasta ${shift(GOOD.cls)}.`,
 		...(own.length ? [`Presupuesto propio (LCP · CLS), su medida de partida +15 % (BUDGETS en scripts/vitals.ts): ${own.join('; ')}.`] : []),
 		'TBT (aproximado): lo que pasan de 50 ms las tareas largas hasta 4 s después de cargar; sin nadie tocando la pantalla, es lo que más se parece al INP.',
 		'KB: lo que descarga de la propia web, comprimido como llega por la red.',
@@ -279,7 +288,8 @@ async function main() {
 					const pick = (k: 'lcp' | 'cls' | 'tbt' | 'selfBytes') => median(runs.map((r) => r[k]));
 					const lcp = pick('lcp');
 					const vitals: Vitals = {
-						lcp: Math.round(lcp),
+						// A la décima, como se enseña y como el presupuesto (budgetFor): lo que se compara es lo que se ve.
+						lcp: toTenth(lcp),
 						cls: Number(pick('cls').toFixed(3)),
 						tbt: Math.round(pick('tbt')),
 						selfKB: Math.round(pick('selfBytes') / 1024),
