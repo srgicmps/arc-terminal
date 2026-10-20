@@ -162,6 +162,8 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - Sergi quiere detalles **sutiles y elegantes**, nada grueso ni llamativo. Un mismo elemento mide lo mismo
   en todas las vistas.
 - Tiene que funcionar bien en el móvil (Sergi lo mirará mucho desde ahí).
+  Lo fijo a un borde suma `env(safe-area-inset-*)` (la web lleva `viewport-fit=cover`, así que en el iPhone llega
+  hasta la muesca); una estética que pisa el relleno de un panel lo vuelve a sumar (lo vigila `estilos.test.ts`).
 
 ## Sistema de diseño
 Un cambio de estética se hace en un solo sitio.
