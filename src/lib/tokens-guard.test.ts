@@ -45,13 +45,28 @@ function declarations(css: string): { prop: string; value: string }[] {
 /** Colores escritos a mano: #hex o una función de color con un número delante (rgb(0 0 0), hsl(30 …)). */
 const COLOR = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\(\s*[\d.]/i;
 
-/** Colores con nombre («white»), solo en las propiedades de color: en una máscara, «black» es opacidad. */
-const NAMED = /\b(?:white|black|red|green|blue|gr[ae]y|orange|yellow|silver|navy|purple|pink|gold)\b/i;
-const COLOR_PROP = /^(?:color|background(?:-color)?|border(?:-[a-z]+)*|outline(?:-color)?|fill|stroke|box-shadow|text-shadow|caret-color|accent-color|text-decoration(?:-color)?|column-rule(?:-color)?|--[\w-]+)$/;
+/**
+ * Colores con nombre («white»), solo en las propiedades de color: en una máscara, «black» es opacidad. Se
+ * buscan sin los nombres de los tokens: var(--green) no es un color fijo.
+ */
+const NAMED =
+	/\b(?:white|black|red|green|blue|gr[ae]y|orange|yellow|silver|navy|purple|pink|gold|aqua|cyan|fuchsia|lime|magenta|maroon|olive|teal|brown)\b/i;
+const COLOR_PROP =
+	/^(?:color|background(?:-color|-image)?|border(?:-[a-z]+)*|outline(?:-color)?|fill|stroke|stop-color|flood-color|lighting-color|box-shadow|text-shadow|caret-color|accent-color|scrollbar-color|text-decoration(?:-color)?|column-rule(?:-color)?|--[\w-]+)$/;
+const TOKEN = /var\(--[\w-]+/g;
 
-/** font-family solo con var(--…) o inherit; en el atajo `font`, ni nombres de fuente ni familias genéricas. */
+/** font-family solo con var(--…) o inherit. */
 const FAMILY_OK = /^(?:var\(--[\w-]+\)|inherit)$/;
-const FAMILY_IN_FONT = /["']|\b(?:serif|sans-serif|monospace|system-ui|cursive|fantasy|ui-monospace|ui-sans-serif|ui-serif|ui-rounded)\b/;
+/**
+ * En el atajo `font`, cada palabra es var(--…), un número o una medida, o una palabra clave (inherit, bold,
+ * italic…). Cualquier otra es una fuente fija: «Helvetica», «monospace», «'IBM Plex Mono'».
+ */
+const FONT_WORD = /^(?:[\d.]+[a-z%]*|inherit|initial|unset|revert(?:-layer)?|normal|italic|oblique|bold(?:er)?|lighter|small-caps|(?:ultra-|extra-|semi-)?(?:condensed|expanded)|x{0,3}-?(?:small|large)|medium|smaller|larger)$/i;
+const fixedFont = (v: string) =>
+	v
+		.replace(/var\(--[\w-]+\)/g, ' ')
+		.split(/[\s,/]+/)
+		.some((w) => w && !FONT_WORD.test(w));
 
 /** Los valores fijos de un CSS, como «archivo: propiedad: valor». */
 function violations(file: string, text: string): string[] {
@@ -60,9 +75,9 @@ function violations(file: string, text: string): string[] {
 		const v = value.replace(/\s*!important$/, '').replace(/\s+/g, ' ');
 		const bad =
 			COLOR.test(v) ||
-			(COLOR_PROP.test(prop) && NAMED.test(v)) ||
+			(COLOR_PROP.test(prop) && NAMED.test(v.replace(TOKEN, 'var('))) ||
 			(prop === 'font-family' && !FAMILY_OK.test(v)) ||
-			(prop === 'font' && FAMILY_IN_FONT.test(v));
+			(prop === 'font' && fixedFont(v));
 		if (bad) out.push(`${file}: ${prop}: ${v}`);
 	}
 	return [...new Set(out)];
@@ -89,11 +104,15 @@ describe('nada de valores fijos (colores y fuentes)', () => {
 		expect(svelte('.a { border-color: white; }')).toEqual(['x.svelte: border-color: white']);
 		expect(svelte(".a { font-family: 'IBM Plex Mono', monospace; }")).toEqual(["x.svelte: font-family: 'IBM Plex Mono', monospace"]);
 		expect(svelte('.a { font: 12px/1 monospace; }')).toEqual(['x.svelte: font: 12px/1 monospace']);
+		expect(svelte('.a { font: 600 12px Helvetica; }')).toEqual(['x.svelte: font: 600 12px Helvetica']);
+		expect(svelte('.a { background-image: linear-gradient(white, transparent); }')).toEqual(['x.svelte: background-image: linear-gradient(white, transparent)']);
+		expect(svelte('.a { scrollbar-color: teal transparent; }')).toEqual(['x.svelte: scrollbar-color: teal transparent']);
 		const ok = [
 			'#add:hover, .b:not(#fade) { color: var(--amber); }',
 			'.a { background: color-mix(in srgb, var(--amber) 20%, transparent); }',
 			'.a { color: rgb(var(--amber-rgb) / 0.5); background: url("data:image/svg+xml;utf8,<svg fill=\'#fff\'/>"); }',
 			'.a { mask-image: linear-gradient(black 80%, transparent); font: inherit; font-family: var(--mono); }',
+			'.a { fill: var(--green); border-color: var(--os-close-red); font: italic 600 var(--fs-xs)/1.2 var(--mono); }',
 			'/* color: #fff */ .a { content: "#fff"; }'
 		];
 		for (const css of ok) expect(svelte(css), css).toEqual([]);
