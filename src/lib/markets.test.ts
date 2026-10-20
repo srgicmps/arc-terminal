@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { b3Holidays, bmeHolidays, CLOCK_MARKETS, clockState, easter, lseHolidays, madridDay, MARKETS, marketStatus, nyseHolidays, until, xetraHolidays, zoned } from './markets.ts';
+import { b3Holidays, bmeHolidays, CLOCK_MARKETS, clockState, easter, localDate, lseHolidays, madridDay, MARKETS, marketStatus, nyseHolidays, until, xetraHolidays, zoned } from './markets.ts';
 
 const dates = (list: { date: string }[]) => list.map((h) => h.date);
 
@@ -161,6 +161,74 @@ describe('sesiones de las bolsas', () => {
 		expect(until(45 * 60_000)).toBe('45 min');
 		expect(until(120 * 60_000)).toBe('2 h');
 		expect(until((2 * 1440 + 3 * 60 + 5) * 60_000)).toBe('2 d 3 h');
+	});
+});
+
+describe('formateadores guardados por zona', () => {
+	// Versión anterior, que creaba un Intl.DateTimeFormat en cada llamada: la de ahora tiene que dar lo mismo.
+	const beforeLocalDate = (tz: string, ms: number) =>
+		new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+	const beforeOffset = (tz: string, ms: number) => {
+		const parts = new Intl.DateTimeFormat('en-US', {
+			timeZone: tz,
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			hourCycle: 'h23'
+		}).formatToParts(new Date(ms));
+		const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+		const asUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+		return Math.round((asUtc - Math.floor(ms / 1000) * 1000) / 60_000);
+	};
+	const beforeZoned = (date: string, mins: number, tz: string) => {
+		const [y, m, d] = date.split('-').map(Number);
+		const guess = Date.UTC(y, m - 1, d, 0, mins);
+		return guess - beforeOffset(tz, guess - beforeOffset(tz, guess) * 60_000) * 60_000;
+	};
+	const beforeClock = (market: (typeof MARKETS)[number], now: number) => {
+		const parts = new Intl.DateTimeFormat('en-CA', {
+			timeZone: market.tz,
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			weekday: 'short',
+			hourCycle: 'h23'
+		}).formatToParts(new Date(now));
+		const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+		const [h, m] = [Number(get('hour')), Number(get('minute'))];
+		const date = `${get('year')}-${get('month')}-${get('day')}`;
+		const holiday = market.holidays?.(Number(get('year'))).find((x) => x.date === date)?.name ?? null;
+		const mins = h * 60 + m;
+		const weekend = get('weekday') === 'Sat' || get('weekday') === 'Sun';
+		let isOpen = !weekend && !holiday && mins >= market.open[0] && mins < market.open[1];
+		if (isOpen && market.lunch && mins >= market.lunch[0] && mins < market.lunch[1]) isOpen = false;
+		return { time: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`, isOpen, holiday };
+	};
+
+	const zones = [...new Set([...MARKETS.map((m) => m.tz), 'UTC', 'America/Los_Angeles', 'Australia/Sydney', 'Asia/Kathmandu'])];
+	// Cada 7 h 13 min durante dos años, con los cambios de hora de los dos hemisferios dentro.
+	const instants = Array.from({ length: 2400 }, (_, i) => Date.parse('2025-01-01T00:00:00Z') + i * 433 * 60_000);
+
+	it('localDate y zoned dan lo mismo que antes, zona a zona y alternando zonas', () => {
+		instants.forEach((ms, i) => {
+			const tz = zones[i % zones.length];
+			const date = localDate(tz, ms);
+			expect(date).toBe(beforeLocalDate(tz, ms));
+			const mins = (i * 37) % 1440;
+			expect(zoned(date, mins, tz), `${date} ${mins} ${tz}`).toBe(beforeZoned(date, mins, tz));
+		});
+	});
+
+	it('clockState da lo mismo que antes', () => {
+		instants.forEach((ms, i) => {
+			const mk = MARKETS[i % MARKETS.length];
+			expect(clockState(mk, ms), `${mk.code} ${new Date(ms).toISOString()}`).toEqual(beforeClock(mk, ms));
+		});
 	});
 });
 
