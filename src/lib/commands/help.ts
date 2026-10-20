@@ -9,6 +9,7 @@ export default {
 		panels: [
 			{ name: 'Comandos', what: 'Lista completa con sus fuentes.' },
 			{ name: 'Atajos de teclado', what: 'Los de la barra, los paneles y la pantalla.' },
+			{ name: 'Tu cuenta', what: 'Cerrar sesión en este dispositivo o borrar tu cuenta (solo en arcterminal.dev).' },
 			{ name: 'Con texto detrás', what: 'Ejemplos de comandos con argumento.' },
 			{ name: 'Valores', what: 'Códigos conocidos: abre su ficha.' }
 		]
