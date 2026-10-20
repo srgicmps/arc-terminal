@@ -141,10 +141,16 @@ try {
 /**
  * Un contexto (como una ventana de incógnito) a `width` px en `mode`, con las otras webs y /api/* contestadas vacías.
  * Con `state` (lo guardado en una visita anterior), además, como si ya se hubiera pasado por la bienvenida; sin él, la
- * portada lleva a ella.
+ * portada lleva a ella, y sin service worker: ese contexto solo mira la redirección y no hace falta que precargue la web.
  */
 async function newCtx(browser: Browser, mode: string, width: number, state?: Awaited<ReturnType<BrowserContext['storageState']>>) {
-	const context = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width < 600, hasTouch: width < 600, storageState: state });
+	const context = await browser.newContext({
+		viewport: { width, height: 900 },
+		isMobile: width < 600,
+		hasTouch: width < 600,
+		storageState: state,
+		serviceWorkers: state ? 'allow' : 'block'
+	});
 	await context.addInitScript(
 		([m, style]) => {
 			localStorage.setItem('arc-modo', m);
