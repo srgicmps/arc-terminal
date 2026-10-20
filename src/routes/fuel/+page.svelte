@@ -150,10 +150,15 @@
 	});
 
 	// «FUEL Madrid» o «FUEL 28» en la barra abre /fuel?zona=…. Solo en el navegador (los efectos no
-	// se ejecutan al prerenderizar); untrack evita que se repita al cargar la provincia.
+	// se ejecutan al prerenderizar); untrack evita que se repita al cargar la provincia o al refrescar los datos
+	// (fresh.ts), que volvería a elegirla y quitaría el municipio.
+	const zonaParam = $derived(page.url.searchParams.get('zona'));
 	$effect(() => {
-		const id = findProvince(page.url.searchParams.get('zona'), provinces);
-		if (id) untrack(() => choose(id));
+		const param = zonaParam;
+		untrack(() => {
+			const id = findProvince(param, provinces);
+			if (id) choose(id);
+		});
 	});
 
 	/** «Cerca de mí»: pide la ubicación al navegador y abre la provincia más cercana. */

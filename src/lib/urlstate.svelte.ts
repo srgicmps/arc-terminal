@@ -12,6 +12,14 @@ import { withParam } from './urlstate.ts';
 
 export { withParam };
 
+/**
+ * La URL que se ve en la barra del navegador. Tras escribir con writeParams (navegación «shallow»), SvelteKit deja
+ * la nueva en page.shallow.url, y page.url sigue con la de la última navegación de verdad.
+ * Para leer un parámetro en un $effect, mejor un $derived con el texto: con cada refresco de datos (fresh.ts)
+ * page.url pasa a ser otro objeto igual, y un $effect que lo lea directamente se volvería a ejecutar.
+ */
+export const shownUrl = () => page.shallow?.url ?? page.url;
+
 /** Escribe uno o varios parámetros en la URL actual sin navegar. Solo en el navegador. */
 export function writeParams(values: Record<string, string | null>, fallbacks: Record<string, string> = {}) {
 	if (typeof location === 'undefined') return;
@@ -29,10 +37,11 @@ export function writeParams(values: Record<string, string | null>, fallbacks: Re
  */
 export function urlState<T extends string>(name: string, fallback: T, isValid: (v: string) => boolean, remember?: string) {
 	let value = $state<T>(fallback);
-	// En el navegador (al prerenderizar no hay URL con parámetros), cada vez que cambia la URL: su valor si
+	// El parámetro como texto: un refresco de datos (que cambia page.url por otro objeto igual) no lo cambia.
+	const fromUrl = $derived(shownUrl().searchParams.get(name));
+	// En el navegador (al prerenderizar no hay URL con parámetros), cada vez que cambia el parámetro: su valor si
 	// vale; si falta o no vale, el de por defecto. Un valor que no vale (?periodo=xx) se quita de la URL.
 	$effect(() => {
-		const fromUrl = page.url.searchParams.get(name);
 		const ok = fromUrl !== null && isValid(fromUrl);
 		value = ok ? (fromUrl as T) : ((remember && readSaved<T>(remember, isValid)) || fallback);
 		if (fromUrl !== null && !ok) writeParams({ [name]: null });

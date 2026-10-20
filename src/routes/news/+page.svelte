@@ -24,8 +24,9 @@
 	// escribe con 300 ms de retraso, para no hacer una navegación por tecla ni perder letras o el foco.
 	let query = $state('');
 	let written = '';
+	// Con el texto del parámetro: un refresco de datos (fresh.ts) cambia page.url por otro objeto igual.
+	const fromUrl = $derived(page.url.searchParams.get('q') ?? '');
 	$effect(() => {
-		const fromUrl = page.url.searchParams.get('q') ?? '';
 		if (fromUrl !== written) query = written = fromUrl;
 	});
 	$effect(() => {

@@ -33,8 +33,10 @@
 	let { data }: PageProps = $props();
 
 	let query = $state('');
+	// Con el texto del parámetro: un refresco de datos (fresh.ts) no vacía el buscador.
+	const fromUrl = $derived(page.url.searchParams.get('c') ?? '');
 	$effect(() => {
-		query = page.url.searchParams.get('c') ?? '';
+		query = fromUrl;
 	});
 
 	const country = $derived(findCountry(query));

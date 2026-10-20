@@ -115,9 +115,11 @@
 
 	const isOpen = (id: string) => (searching ? !!has.get(id) : (toggled[id] ?? !mobile));
 
-	// «ECO ?» en la barra abre /manual#cmd-ECO: en el móvil, su sección se abre para que se vea la ficha.
+	// «ECO ?» en la barra abre /manual#cmd-ECO: en el móvil, su sección se abre para que se vea la ficha. Con el
+	// texto del hash: un refresco de datos (fresh.ts) no debe volver a llevarte a la ficha.
+	const hash = $derived(page.url.hash);
 	$effect(() => {
-		const code = page.url.hash.match(/^#cmd-(.+)$/)?.[1];
+		const code = hash.match(/^#cmd-(.+)$/)?.[1];
 		const section = COMMANDS.find((c) => c.code === code)?.manual?.section;
 		if (!section) return;
 		toggled[`sec-${slug(section)}`] = true;

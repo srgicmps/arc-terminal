@@ -60,8 +60,10 @@
 	setPanelIndex();
 	$effect(initTaste);
 	$effect(initPlace);
-	// «Tu sitio» por la URL al navegar: ?lugar=… o ?buscar=Tokio.
-	$effect(() => followPlaceUrl(page.url.searchParams));
+	// «Tu sitio» por la URL al navegar: ?lugar=… o ?buscar=Tokio. Con el texto de la búsqueda: un refresco de datos
+	// (src/lib/fresh.ts) cambia page.url por otro objeto igual y no debe volver a poner el sitio del enlace.
+	const search = $derived(page.url.search);
+	$effect(() => followPlaceUrl(new URLSearchParams(search)));
 	$effect(initTheme);
 	$effect(initFit);
 	$effect(initTape);
@@ -128,9 +130,11 @@
 		e.stopImmediatePropagation();
 	}
 
-	// En el móvil los accesos van en una fila con scroll: el de la vista actual, siempre a la vista.
+	// En el móvil los accesos van en una fila con scroll: el de la vista actual, siempre a la vista (al cambiar de
+	// vista; no al refrescar los datos, que cambia page.route por otro objeto igual).
+	const routeId = $derived(page.route.id);
 	$effect(() => {
-		void page.route.id;
+		void routeId;
 		if (!matchMedia('(max-width: 720px)').matches) return;
 		// Solo se mueve la fila: scrollIntoView movía también la página entera en Safari (logo y «⋯» cortados).
 		const row = document.querySelector<HTMLElement>('.keys');

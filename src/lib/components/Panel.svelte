@@ -99,10 +99,12 @@
 		titleButton?.focus();
 	}
 
-	// M47: la barra pide este panel por el hash. Se mira al montarse y cada vez que cambia el hash.
+	// M47: la barra pide este panel por el hash. Se mira al montarse y cada vez que cambia el hash (el texto: un
+	// refresco de datos cambia page.url por otro objeto igual y no debe volver a llevarte al panel).
 	let flash = $state(false);
+	const hash = $derived(page.url.hash);
 	$effect(() => {
-		const want = hashPanel(page.url.hash);
+		const want = hashPanel(hash);
 		if (!want || !samePanel(want, title)) return;
 		// En el modo Sencillo un panel no esencial no se pinta: para ir a él, se enseñan todos («Ver todos»).
 		if (gone) {

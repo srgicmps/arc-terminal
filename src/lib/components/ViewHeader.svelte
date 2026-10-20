@@ -21,9 +21,11 @@
 	let { code, title, sub, aside, summary, plain }: Props = $props();
 
 	// Modo Sencillo: «Ver todos» vuelve a enseñar los paneles que el modo oculta en esta vista. Al cambiar de
-	// vista, se vuelve a lo esencial.
+	// vista, se vuelve a lo esencial. Con el texto de la ruta: un refresco de datos (fresh.ts) cambia page.url por
+	// otro objeto igual, y no debe cerrar «Ver todos».
+	const path = $derived(page.url.pathname);
 	$effect(() => {
-		void page.url.pathname;
+		void path;
 		setAll(false);
 	});
 
