@@ -96,7 +96,6 @@ export function mergeSections(sections: Record<string, NewsItem[]>, now: number)
 	for (const { section, item } of all) {
 		const words = normalize(item.title);
 		const urls = [item.url, ...(item.also ?? []).map((a) => a.url)].map(normUrl);
-		const sources = [item.source, ...(item.also ?? []).map((a) => a.source)];
 		const links = [{ source: item.source, url: item.url }, ...(item.also ?? [])];
 		const time = Date.parse(item.time!);
 		const group = groups.find(

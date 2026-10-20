@@ -12,7 +12,6 @@
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import ButtonRow from '#lib/components/ui/ButtonRow.svelte';
 	import ChipInput from '#lib/components/ui/ChipInput.svelte';
-	import Note from '#lib/components/ui/Note.svelte';
 	import Seg from '#lib/components/ui/Seg.svelte';
 	import Select from '#lib/components/ui/Select.svelte';
 	import {

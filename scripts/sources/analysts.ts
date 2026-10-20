@@ -75,7 +75,9 @@ export function toSurprises(body: RawEarnings): EarningsSurprise[] {
 			estimate: num(e.estimate),
 			surprisePct: num(e.surprisePercent)
 		}))
-		.sort((a, b) => b.period.localeCompare(a.period))
+		// Finnhub puede dar dos veces el mismo trimestre: se queda uno (el que ya tiene el dato real, si lo hay).
+		.sort((a, b) => b.period.localeCompare(a.period) || Number(a.actual === null) - Number(b.actual === null))
+		.filter((e, i, all) => i === 0 || all[i - 1].period !== e.period)
 		.slice(0, 4);
 }
 
@@ -104,6 +106,9 @@ export function toInsiders(body: RawInsiders, now: number): InsiderTrade[] {
 			code: t.transactionCode as 'P' | 'S'
 		}))
 		.filter((t) => t.name && t.change)
+		// Finnhub a veces repite la misma operación (el formulario 4 y su corrección): fuera las filas idénticas.
+		// Dos ventas iguales el mismo día a precios distintos sí son dos operaciones y se quedan.
+		.filter((t, i, all) => all.findIndex((o) => o.date === t.date && o.name === t.name && o.change === t.change && o.price === t.price && o.code === t.code) === i)
 		.sort((a, b) => b.date.localeCompare(a.date))
 		.slice(0, MAX_INSIDERS);
 }

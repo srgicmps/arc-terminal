@@ -19,5 +19,11 @@ export function hashPanel(hash: string): string | null {
 
 const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase();
 
-/** ¿Es el mismo título? Sin tildes ni mayúsculas. */
-export const samePanel = (a: string, b: string) => fold(a) === fold(b);
+/**
+ * ¿Es el panel que se pide? Sin tildes ni mayúsculas, con el título entero o con su principio hasta « · »,
+ * como en el modo Sencillo (simple.ts): «WX Mar» pide «Mar» y el panel se llama «Mar · Menorca».
+ */
+export function samePanel(want: string, title: string): boolean {
+	const [w, t] = [fold(want), fold(title)];
+	return w === t || t.startsWith(`${w} · `);
+}

@@ -5,8 +5,9 @@
 //   PUT { name, accept }: guardar. DELETE: borrarlo. POST { to, title, url }: mandar, con tope diario.
 // - El tema de ntfy del otro nunca sale de aquí: la Function manda el aviso por él.
 import type { AlertStore } from './alerts.ts';
-import { tokenOf, verifyIdentity, type AccessConfig } from './access.ts';
+import { person } from './access.ts';
 import { json, type D1Database, type Env } from './prefs.ts';
+import { ensure } from './schema.ts';
 
 export const FAMILY_LIMITS = { name: 40, title: 300, url: 1000, body: 4000, perDay: 30 };
 
@@ -82,15 +83,10 @@ export async function handleFamily(
 	push: Fetch = (u, i) => fetch(u, i),
 	now = Date.now()
 ): Promise<Response> {
-	if (!store || !alerts || !env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) return json(503, { error: 'sin configurar' });
-	const origin = request.headers.get('origin');
-	if (origin && origin !== new URL(request.url).origin) return json(403, { error: 'origen' });
-
-	const token = tokenOf(request);
-	const config: AccessConfig = { teamDomain: env.ACCESS_TEAM_DOMAIN, aud: env.ACCESS_AUD };
-	const who = token ? await verifyIdentity(token, config, fetcher).catch(() => null) : null;
-	if (!who) return json(401, { error: 'sin identificar' });
-	if (who.service !== undefined) return json(403, { error: 'solo personas' });
+	if (!store || !alerts) return json(503, { error: 'sin configurar' });
+	// Sin configurar, desde otra web, sin identificar o un token de servicio: fuera (access.ts).
+	const who = await person(request, env, fetcher);
+	if (who instanceof Response) return who;
 	const user = who.email;
 
 	if (request.method === 'GET') {
@@ -157,18 +153,9 @@ export async function handleFamily(
 	return json(405, { error: 'método' });
 }
 
-let tableReady = false;
-
-/** D1: tabla family (una fila por persona) y family_sent (para el tope diario). Se crean solas. */
+/** D1: tabla family (una fila por persona) y family_sent (para el tope diario). Se crean solas (cloud/schema.ts). */
 export function d1FamilyStore(db: D1Database): FamilyStore {
-	const ready = async () => {
-		if (tableReady) return;
-		await db.exec(
-			'CREATE TABLE IF NOT EXISTS family (user TEXT PRIMARY KEY, id TEXT NOT NULL, name TEXT NOT NULL, accept INTEGER NOT NULL, updated INTEGER NOT NULL)'
-		);
-		await db.exec('CREATE TABLE IF NOT EXISTS family_sent (user TEXT NOT NULL, at INTEGER NOT NULL)');
-		tableReady = true;
-	};
+	const ready = () => ensure(db, 'family', 'family_sent');
 	type Raw = { user: string; id: string; name: string; accept: number };
 	const row = (r: Raw) => ({ user: r.user, id: r.id, name: r.name, accept: r.accept === 1 });
 	return {

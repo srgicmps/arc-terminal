@@ -299,6 +299,9 @@ describe('ir a un panel y ayuda (M47, M48)', () => {
 		expect(open('ECO TIPOS')).toBe('/eco#panel=Bancos%20centrales');
 		expect(open('ws curva')).toBe('/ws#panel=Curvas%20de%20tipos');
 		expect(open('ECO inflación g20')).toBe('/eco#panel=Inflaci%C3%B3n%20del%20G20');
+		// El nombre del manual es el título del panel (antes, «de EE. UU.» de más: llegaba a la vista y no bajaba).
+		expect(open('GEO sanciones')).toBe('/geo#panel=Sanciones%20y%20aranceles');
+		expect(open('GEO diplomacia')).toBe('/geo#panel=Diplomacia');
 	});
 
 	it('en un comando con texto, el panel tiene que ir entero', () => {

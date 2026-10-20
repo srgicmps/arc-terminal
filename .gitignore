@@ -29,5 +29,8 @@ shots/
 # Historial de avisos para la caché de Actions (scripts/notify.ts)
 /.notify-cache
 
+# Lo deja scripts/update.ts si no pudo leer la copia publicada: la Action no publica (deploy.yml, fast.yml)
+/.publish-blocked
+
 # Miniaturas de las vistas para el MANUAL (scripts/thumbs.ts): se generan en la Action, nunca se suben
 /static/manual/
