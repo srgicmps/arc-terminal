@@ -119,6 +119,7 @@
 	--z-sticky: 1; /* cabeceras fijas dentro de un panel con scroll */
 	--z-bar: 20; /* índice de paneles del móvil, fijo arriba al hacer scroll */
 	--z-modal: 100; /* panel maximizado, por encima de todo */
+	--z-progress: 110; /* línea de carga al cambiar de vista: también sobre el panel maximizado */
 	--scrim: rgba(8, 10, 13, 0.72); /* fondo atenuado detrás del panel maximizado */
 	--dur-fast: 120ms; /* aparición breve (se quita con prefers-reduced-motion) */
 
