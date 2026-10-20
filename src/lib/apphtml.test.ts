@@ -107,6 +107,11 @@ describe('src/app.html decide antes de pintar lo mismo que decideModo y decideSt
 		for (const link of written) expect(existsSync(`static${/href="([^"]+)"/.exec(link)?.[1]}`), link).toBe(true);
 	});
 
+	it('su lista de estéticas es la de ESTILOS (si falta una, quien la elija vuelve a Grafito o Terminal al cargar)', () => {
+		const list = /var estilos = \[([^\]]*)\];/.exec(code)?.[1] ?? '';
+		expect([...list.matchAll(/'([a-z]+)'/g)].map((m) => m[1]).sort()).toEqual(ESTILOS.map((e) => e.id).sort());
+	});
+
 	it('sin localStorage (bloqueado) arranca igual: modo y estética válidos, con su hoja', () => {
 		const { dataset, written } = boot({ stored: {} }, true);
 		expect(isModo(dataset.modo)).toBe(true);
