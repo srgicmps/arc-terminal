@@ -47,8 +47,10 @@ export function osLook(skin: () => string | null) {
 
 /**
  * La barra del navegador del móvil (meta theme-color) vuelve al fondo de la estética: dentro de /os se queda con el
- * del aspecto. Como setStyle (src/lib/taste.svelte.ts): en el acto (Terminal no tiene hoja, y una ya cargada vale
- * en cuanto se vuelve a activar) y otra vez al cargar la hoja (al entrar directo en /os no la había).
+ * del aspecto. Como setStyle (src/lib/taste.svelte.ts): en el acto (Terminal no tiene hoja) y otra vez al cargar la
+ * hoja. Ese «load» llega siempre que hay hoja: al entrar directo en /os no la había, y si se entró desde la web,
+ * Chromium la soltó al desactivarla en strip() (link.sheet pasa a null) y al reactivarla la vuelve a pedir. El
+ * escuchador se pone en la misma tarea que la lectura en el acto: si «load» llegó antes, esa lectura ya lo ve.
  * Con import(): theme.svelte.ts usa runas, y look.ts también llega a los tests por embed.ts.
  */
 async function barColor() {

@@ -9,13 +9,23 @@ vi.mock('$app/paths', () => ({ asset: (p: string) => p }));
 /** --bg de cada cosa (los de verdad: Mando, Terminal y Grafito de noche). */
 const BG = { mando: '#070c12', terminal: '#080a0d', grafito: '#0b0d10' };
 
-/** El <link id="style-sheet">: cambia de href como el de verdad y solo «carga» cuando el test llama a load(). */
+/**
+ * El <link id="style-sheet">: cambia de href como el de verdad y solo «carga» cuando el test llama a load(). Como en
+ * Chromium, al desactivarlo suelta la hoja: al reactivarlo hay que esperar a otro «load».
+ */
 class FakeLink extends EventTarget {
 	id = '';
 	rel = '';
-	disabled = false;
 	loaded = false;
 	#href = '';
+	#disabled = false;
+	get disabled() {
+		return this.#disabled;
+	}
+	set disabled(v: boolean) {
+		this.#disabled = v;
+		if (v) this.loaded = false;
+	}
 	get href() {
 		return this.#href;
 	}
@@ -126,23 +136,20 @@ describe('al salir de Arc OS, theme-color vuelve al fondo de la estética (look.
 		expect(els.has('style-sheet')).toBe(false);
 	});
 
-	it('entrando desde la web: la hoja ya cargada vale en cuanto se vuelve a activar, sin esperar a «load»', async () => {
-		store.set('arc-style', 'grafito');
-		root.dataset.style = 'grafito';
-		const link = new FakeLink();
-		link.id = 'style-sheet';
-		link.href = '/estilos/grafito.css';
-		link.loaded = true;
-		els.set(link.id, link);
+	it('entrando desde la web: la hoja se suelta al desactivarla y, al salir, el color bueno llega con su «load»', async () => {
+		const link = onTheWeb('grafito');
 		const { osLook } = await import('./look.ts');
 		const look = osLook(() => 'mando');
 		expect(link.disabled).toBe(true);
+		expect(link.loaded).toBe(false);
 		expect(root.dataset.style).toBeUndefined();
-		// Dentro de /os, la barra cogió el fondo del aspecto (p. ej., al cambiar el tema del sistema).
-		meta.content = BG.mando;
+		await vi.waitFor(() => expect(meta.content).toBe(BG.mando));
 		look.stop();
-		await vi.waitFor(() => expect(meta.content).toBe(BG.grafito));
+		await vi.waitFor(() => expect(meta.content).toBe(BG.terminal));
 		expect(link.disabled).toBe(false);
+		expect(root.dataset.style).toBe('grafito');
+		link.load();
+		expect(meta.content).toBe(BG.grafito);
 	});
 
 	it('webLook solo (vistas dentro de una ventana, embed.ts) no toca theme-color', async () => {
