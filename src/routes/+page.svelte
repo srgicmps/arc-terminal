@@ -401,7 +401,8 @@
 		<ul class="mini">
 			{#each (data.hn?.data ?? []).slice(0, 5) as item (item.id)}
 				<li>
-					<a class="l" href={item.url} target="_blank" rel="noopener">{item.title}<small>{item.domain}</small></a>
+					<!-- Hacker News no se traduce: siempre en inglés. -->
+					<a class="l" href={item.url} target="_blank" rel="noopener" lang="en">{item.title}<small>{item.domain}</small></a>
 					<b class="mut">{item.points}</b>
 				</li>
 			{/each}
