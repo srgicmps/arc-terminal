@@ -38,7 +38,10 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - Cada vista lee sus datos en `+page.server.ts` con `dataset('nombre')` (`src/lib/data.ts`): solo corre al construir
   y al navegador llega lo que devuelve su `load`. Nunca `dataset()` ni un JSON de `static/data` en un `+page.ts` ni
   en un componente: metería los JSON en el código del navegador (lo vigila `src/lib/bundle-data.test.ts`). Si un
-  componente necesita datos en el navegador, los pide a `/data/<nombre>.json` (como `Updated.svelte`).
+  componente necesita datos en el navegador, los pide con `fetch(asset('data/<nombre>.json'))` (como `Updated.svelte`),
+  pero solo lo que sale en todas las vistas (`status`, que lee `Updated`) o se pide al usarlo (el índice de búsqueda,
+  al enfocar la barra); lo demás va recortado en el `load` del `+page.server.ts`. Lo que se pide así no cuenta en el
+  tope de peso de `scripts/weight.ts`.
 - Componentes comunes en `src/lib/components/` (Panel, NewsList, SeriesTable, LineChart, TvWidget…).
 - Atajos de teclado: registro único en `src/lib/shortcuts.ts` (`SHORTCUTS` + `isShortcut`). De ahí salen HELP, el MANUAL y las teclas que escuchan la barra, los paneles y el modo TV.
 - Barra de comandos: la lógica, sin Svelte, en `src/lib/cmdline.ts` (también las erratas: «GOE» → GEO con
