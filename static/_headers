@@ -1,0 +1,32 @@
+# Cabeceras HTTP de Cloudflare Pages para los archivos estáticos. adapter-static copia este archivo a
+# build/ y Pages lo lee al publicar (no se sirve). No se aplica a las Functions (/api/*), que ponen las
+# suyas, ni a las respuestas de Cloudflare Access (login).
+# Sintaxis: una ruta por línea (* es el comodín) y debajo, con sangría, «Nombre: valor». Los comentarios
+# van en su propia línea: un # al final de una cabecera se tomaría como parte del valor. Si coinciden
+# varias reglas, se suman sus cabeceras.
+# Lo comprueba scripts/__tests__/headers.test.ts.
+
+# Seguridad, en todo lo estático.
+# - nosniff: el navegador no adivina el tipo de un archivo (un .json nunca se ejecuta como script).
+#   Pages ya la pone por defecto; aquí queda escrita para no depender de eso.
+# - frame-ancestors 'self': solo nuestra propia web puede meter estas páginas en un iframe. Nunca
+#   'none' ni X-Frame-Options: DENY: Arc OS (/os) abre las vistas en iframes del mismo origen.
+#   Es la única directiva de CSP a propósito: una CSP completa (scripts, estilos, conexiones) está
+#   aparcada, porque TradingView, Stockfish, open-meteo y los blob: de Arc OS la complican.
+/*
+  X-Content-Type-Options: nosniff
+  Content-Security-Policy: frame-ancestors 'self'
+
+# Caché de un año solo para lo que lleva un hash en el nombre: si el contenido cambia, cambia el nombre,
+# así que el navegador no necesita volver a preguntar. Sin esto, Pages pide revalidar cada archivo en
+# cada visita (pasando por Access) cuando el service worker no está activo.
+# «private» porque la web va detrás de Access: lo guarda el navegador, nunca una caché compartida.
+# Nada más va aquí: HTML, /data, __data.json, /estilos (sin hash), _app/version.json, service-worker.js e
+# iconos se quedan con la cabecera por defecto de Pages, que revalida siempre.
+/_app/immutable/*
+  Cache-Control: private, max-age=31536000, immutable
+
+# El motor de ajedrez lleva la versión y el commit en el nombre (stockfish-17.1-lite-single-03e3232.*).
+# Si se actualiza, el nombre tiene que cambiar (y ENGINE_FILE de src/lib/chess/engine.ts con él).
+/engine/stockfish-*
+  Cache-Control: private, max-age=31536000, immutable
