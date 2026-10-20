@@ -37,13 +37,28 @@ export function osLook(skin: () => string | null) {
 			watch.disconnect();
 			delete root.dataset.osLook;
 			delete root.dataset.osSkin;
-			webLook(root);
+			void webLook(root).then(barColor);
 		}
 	};
 }
 
-/** Pone en `root` la estética, el acento y la densidad guardados (lo mismo que src/app.html al cargar). */
-export function webLook(root: HTMLElement) {
+/**
+ * La barra del navegador del móvil (meta theme-color) vuelve al fondo de la estética: dentro de /os se queda con el
+ * del aspecto. Como setStyle (src/lib/taste.svelte.ts): en el acto (Terminal no tiene hoja, y una ya cargada vale
+ * en cuanto se vuelve a activar) y otra vez al cargar la hoja (al entrar directo en /os no la había).
+ * Con import(): theme.svelte.ts usa runas, y look.ts también llega a los tests por embed.ts.
+ */
+async function barColor() {
+	const { syncThemeColor } = await import('../theme.svelte.ts');
+	sheet()?.addEventListener('load', syncThemeColor, { once: true });
+	syncThemeColor();
+}
+
+/**
+ * Pone en `root` la estética, el acento y la densidad guardados (lo mismo que src/app.html al cargar). La promesa se
+ * cumple cuando el <link> de la hoja ya apunta a la estética (no cuando ha cargado).
+ */
+export function webLook(root: HTMLElement): Promise<void> {
 	const get = (k: string) => {
 		try {
 			return localStorage.getItem(k);
@@ -52,10 +67,11 @@ export function webLook(root: HTMLElement) {
 		}
 	};
 	const st = get('arc-style');
+	let ready = Promise.resolve();
 	if (st && /^[a-z]+$/.test(st)) {
 		if (root.dataset.style !== st) root.dataset.style = st;
 		// Con import(): apps.ts (y sus tests) llega aquí por embed.ts, y estilos-css necesita $app/paths.
-		void import('../estilos-css.ts').then((m) => m.useSheet(st, 'style-sheet'));
+		ready = import('../estilos-css.ts').then((m) => m.useSheet(st, 'style-sheet'));
 	}
 	const a = get('arc-accent');
 	if (a === 'amber' || a === 'cyan' || a === 'blue') root.dataset.accent = a;
@@ -65,4 +81,5 @@ export function webLook(root: HTMLElement) {
 	else delete root.dataset.density;
 	const link = sheet();
 	if (link) link.disabled = false;
+	return ready;
 }
