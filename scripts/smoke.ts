@@ -11,8 +11,8 @@
 // - al navegar tocando las pestañas (en el cliente), con una vista lenta no sale la línea de carga, quedan errores
 //   o el fundido no hace caso a la estética (navigation);
 // - en el móvil, un acceso de la navegación no dice al lector el código y el nombre («WS Wall Street»: navegacion);
-// - a 390 px, axe-core encuentra un fallo de estructura (AXE_FAIL: nombres de controles, enlaces e imágenes, ARIA,
-//   cabeceras de tabla…). Dice la regla y el selector del primer elemento, para encontrarlo.
+// - a 390 px en modo Terminal (con todos los paneles), axe-core encuentra un fallo de estructura (AXE_FAIL: nombres de
+//   controles, enlaces e imágenes, ARIA, cabeceras de tabla…). Dice la regla y el selector del primer elemento.
 // Y avisa (sin fallar) si TOP, WS o ECO saltan al cargar (CLS > 0,1) en el móvil con la CPU 4 veces más lenta.
 // Además avisa (sin fallar) si una vista pesa más de WEIGHT_LIMIT: lo que descarga de la propia web
 // (HTML, JS, CSS y datos) comprimido con gzip, como lo sirve GitHub Pages; sin TradingView ni otras webs.
@@ -73,6 +73,8 @@ const AXE_RULES = [...AXE_FAIL, ...AXE_WARN];
  * contar elementos (cambian con los datos). Se quitan a mano al arreglarlos.
  */
 const AXE_KNOWN = new Set<string>([]);
+/** axe mira el modo Terminal, que enseña todos los paneles (Sencillo esconde los que no son esenciales). */
+const AXE_MODE = MODES.includes('terminal') ? 'terminal' : MODES[0];
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 
 /** Puerto de `vite preview` (SMOKE_PORT); la prueba del service worker usa el de 4 más arriba. */
@@ -93,7 +95,7 @@ try {
 	const browser = await launch();
 	for (const mode of MODES)
 	for (const width of WIDTHS) {
-		// Peso y accesibilidad se miran una vez, en el primer modo.
+		// El peso se mira una vez, en el primer modo; la accesibilidad, en AXE_MODE.
 		const first = mode === MODES[0];
 		// La primera vez, la portada lleva a la bienvenida: se comprueba aquí y luego se da por vista.
 		const blank = await newCtx(browser, mode, width);
@@ -277,7 +279,7 @@ async function checkPage(context: BrowserContext, path: string, mode: string, wi
 			failures.push(`${where}: en Sencillo ${n === 1 ? 'sigue montado un panel no esencial' : `siguen montados ${n} paneles no esenciales`} (${names}): el CSS de Panel los esconde, pero \`gone\` no los quita`);
 		}
 		if (width < 600 && check.cls > CLS_LIMIT) shifts.push(`${path} a 390 px (${mode}): CLS ${check.cls.toFixed(2).replace('.', ',')} (más de ${String(CLS_LIMIT).replace('.', ',')})`);
-		if (width < 600 && first) {
+		if (width < 600 && mode === AXE_MODE) {
 			await page.addScriptTag({ path: AXE });
 			// Antes, que acabe de colocarse lo que depende de medir: la letra cargada (o 1 s como mucho) y que cada Table
 			// que se desplaza ya sea enfocable (su ResizeObserver le pone tabindex al medirlo), 3 s como mucho. Con la CPU
@@ -662,7 +664,7 @@ for (const list of [failures, warnings, a11y, shifts]) list.sort();
 for (const w of warnings) console.log(`::warning title=Peso de las vistas::${w}`);
 for (const w of a11y) console.log(`::warning title=Accesibilidad (axe-core)::${w}`);
 for (const w of shifts) console.log(`::warning title=Saltos al cargar (CLS)::${w}`);
-if (!a11y.length && !failures.some((f) => f.includes('(axe-core)'))) console.log(`axe-core: sin fallos de ${AXE_RULES.length} reglas en ${PATHS.length} vistas a 390 px`);
+if (!a11y.length && !failures.some((f) => f.includes('(axe-core)'))) console.log(`axe-core: sin fallos de ${AXE_RULES.length} reglas en ${PATHS.length} vistas a 390 px (${AXE_MODE})`);
 
 if (failures.length) {
 	console.log(`✗ Prueba de humo: ${failures.length} fallos\n${failures.map((f) => `  - ${f}`).join('\n')}`);
