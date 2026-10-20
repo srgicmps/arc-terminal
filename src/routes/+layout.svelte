@@ -572,10 +572,11 @@
 		transition: none;
 	}
 
+	/* En el iPhone en horizontal (con viewport-fit=cover), fuera de la muesca y de la barra de inicio. */
 	.fresh {
 		position: fixed;
-		right: var(--sp-16);
-		bottom: var(--sp-16);
+		right: max(var(--sp-16), env(safe-area-inset-right, 0px));
+		bottom: max(var(--sp-16), env(safe-area-inset-bottom, 0px));
 		z-index: 30;
 		background: var(--raise);
 		border: var(--hair) solid var(--amber-edge);
@@ -647,8 +648,8 @@
 
 	.tv-chip {
 		position: fixed;
-		right: var(--gutter);
-		bottom: var(--sp-16);
+		right: max(var(--gutter), env(safe-area-inset-right, 0px));
+		bottom: max(var(--sp-16), env(safe-area-inset-bottom, 0px));
 		z-index: 40;
 		display: flex;
 		align-items: center;

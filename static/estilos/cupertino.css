@@ -1021,7 +1021,8 @@
 @media (min-width: 721px) {
 	[data-style='cupertino'][data-style] [data-ui='panel'].max {
 		top: 5vh;
-		width: min(1120px, 100vw - 2 * var(--gutter));
+		/* En el iPhone en horizontal, la hoja no llega a la muesca (zonas seguras; en el resto valen 0). */
+		width: min(1120px, 100vw - 2 * max(var(--gutter), env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)));
 	}
 }
 [data-style='cupertino'][data-style] [data-ui='panel'].max > :not([data-ui='panel-head']) {

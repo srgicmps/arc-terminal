@@ -167,6 +167,9 @@
 		position: fixed;
 		inset: 0;
 		z-index: 1000;
+		/* El fondo llega a los bordes; lo de dentro, fuera de la muesca y de la barra de inicio del iPhone. */
+		padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
+			env(safe-area-inset-left, 0px);
 		display: grid;
 		grid-template-rows: auto 1fr auto auto;
 		background: var(--bg);

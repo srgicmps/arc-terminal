@@ -2,7 +2,9 @@
 <html lang="es">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!-- viewport-fit=cover: la web llega a los bordes del iPhone y los env(safe-area-inset-*) dejan de valer 0, así la
+		     barra inferior y los paneles ampliados se apartan de la barra de inicio y de la muesca -->
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<meta name="color-scheme" content="dark light" />
 		<meta name="theme-color" content="#080a0d" />
 		<!-- PWA: se puede instalar en la pantalla de inicio (rutas relativas a la base; use-credentials: con Cloudflare Access, el manifest también lleva la cookie del login) -->

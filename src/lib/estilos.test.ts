@@ -184,3 +184,22 @@ describe('estéticas', () => {
 		for (const b of blocks) expect([...b[1].matchAll(/data-style='(\w+)'/g)].map((m) => m[1]).sort()).toEqual(fixed);
 	});
 });
+
+// Lo que Chromium no reproduce de un iPhone (zonas seguras), comprobado en el código para que no vuelva.
+describe('iPhone: zonas seguras', () => {
+	it('toda la web lleva viewport-fit=cover (sin él, Safari deja a 0 los env(safe-area-inset-*))', () => {
+		const meta = /<meta name="viewport" content="([^"]+)"/.exec(readFileSync('src/app.html', 'utf8'));
+		expect(meta?.[1].split(',').map((p) => p.trim())).toContain('viewport-fit=cover');
+	});
+
+	it('el panel ampliado y lo fijo a los bordes se apartan de la muesca y de la barra de inicio', () => {
+		const panel = readFileSync('src/lib/components/Panel.svelte', 'utf8');
+		const max = /\.max {([^}]*)}/.exec(panel)?.[1] ?? '';
+		for (const side of ['top', 'right', 'bottom', 'left']) expect(max).toContain(`env(safe-area-inset-${side}`);
+		// En el móvil va a pantalla completa: lo último del panel, por encima de la barra de inicio.
+		expect(/max-width: 720px\) {\s*\.max {([^}]*)}/.exec(panel)?.[1]).toContain('padding-bottom: env(safe-area-inset-bottom');
+		const layout = readFileSync('src/routes/+layout.svelte', 'utf8');
+		expect(/\.fresh {([^}]*)}/.exec(layout)?.[1]).toMatch(/right: max\([^;]*safe-area-inset-right[\s\S]*bottom: max\([^;]*safe-area-inset-bottom/);
+		expect(/\.thumb {\s*position: fixed;([^}]*)}/.exec(layout)?.[1]).toContain('padding-bottom: env(safe-area-inset-bottom');
+	});
+});

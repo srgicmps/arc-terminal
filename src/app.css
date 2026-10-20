@@ -42,6 +42,11 @@ body {
 	body {
 		--gutter: var(--gutter-touch);
 	}
+	/* Lo que se trae a la vista con el teclado o VoiceOver (foco, filas, anclas) no se queda bajo la barra inferior
+	   fija (.thumb de +layout.svelte), que en el iPhone suma la zona segura de la barra de inicio. */
+	html:not([data-tv], [data-embed], [data-os-look]) {
+		scroll-padding-bottom: calc(var(--tabbar-h) + var(--hair) + env(safe-area-inset-bottom, 0px));
+	}
 }
 
 button,
