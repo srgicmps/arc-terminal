@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diff, LIMITS, merge, mergeFitting, oversized, readMemory, startPlan } from './cloud.ts';
+import { diff, LIMITS, merge, mergeFitting, oversized, readMemory, replaced, startPlan } from './cloud.ts';
 
 describe('merge', () => {
 	it('primera vez con el servidor vacío: sube todo lo de aquí (migración)', () => {
@@ -38,6 +38,29 @@ describe('startPlan', () => {
 	it('la misma persona: fusión normal', () => {
 		const plan = startPlan({ a: '2' }, { a: '1' }, { user: 'ana@x.es', base: { a: '1' } }, 'ana@x.es');
 		expect(plan.push.set).toEqual({ a: '2' });
+	});
+});
+
+describe('«Cerrar sesión» y entra otra persona', () => {
+	const ana = { user: 'ana@x.es', base: { 'arc-portfolio': 'de Ana' } };
+	const luis = { user: 'luis@x.es', base: { 'arc-mortgage': 'de Luis' } };
+
+	it('al entrar Luis, lo que Ana dejó aquí (aunque una pestaña vieja lo haya vuelto a escribir) no sube a su cuenta', () => {
+		const left = { 'arc-portfolio': 'de Ana, con una posición más', 'arc-journal': 'de Ana' };
+		const plan = startPlan(left, luis.base, ana, luis.user);
+		expect(plan.push).toEqual({ set: {}, del: [] });
+		expect(plan.apply).toEqual({ set: { 'arc-mortgage': 'de Luis' }, del: ['arc-portfolio', 'arc-journal'] });
+	});
+
+	it('una pestaña que se queda con la cuenta de Ana cuando otra ya ha entrado con la de Luis: replaced', () => {
+		expect(replaced(ana, luis)).toBe(true);
+	});
+
+	it('la misma cuenta, sin memoria guardada (borrada o sin sincronizar aún) o pestaña sin memoria: sigue', () => {
+		expect(replaced(ana, { user: ana.user, base: {} })).toBe(false);
+		expect(replaced(ana, null)).toBe(false);
+		expect(replaced(null, luis)).toBe(false);
+		expect(replaced(null, null)).toBe(false);
 	});
 });
 

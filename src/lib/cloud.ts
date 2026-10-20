@@ -108,6 +108,14 @@ export function startPlan(local: Prefs, remote: Prefs, memory: SyncMemory | null
 	return mergeFitting(local, remote, memory?.base ?? null);
 }
 
+/**
+ * ¿Ha entrado otra cuenta en este navegador desde otra pestaña? La memoria guardada (saved, arc-sync) es ya de otro
+ * usuario que la de esta pestaña (mine): lo que esta enseña y recuerda es del anterior, y lo que subiera iría a la cuenta
+ * nueva. Pasa tras «Cerrar sesión» (HELP) si entra otra persona con más pestañas abiertas.
+ */
+export const replaced = (mine: SyncMemory | null, saved: SyncMemory | null): boolean =>
+	!!mine && !!saved && saved.user !== mine.user;
+
 /** Qué cambiar en `from` para que quede como `to`. */
 export function diff(from: Prefs, to: Prefs): Patch {
 	const set: Prefs = {};

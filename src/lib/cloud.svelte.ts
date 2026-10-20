@@ -4,7 +4,7 @@
 import { asset } from '$app/paths';
 import { collect } from './transfer.ts';
 import { PREFS } from './prefs.ts';
-import { isEmpty, mergeFitting, readMemory, startPlan, type Patch, type Prefs, type SyncMemory } from './cloud.ts';
+import { isEmpty, mergeFitting, readMemory, replaced, startPlan, type Patch, type Prefs, type SyncMemory } from './cloud.ts';
 
 const MEMORY = 'arc-sync';
 const RELOADED = 'arc-sync-reload';
@@ -29,6 +29,8 @@ const IDB = PREFS.filter((p) => p.storage === 'idb').map((p) => p.key);
 
 let memory: SyncMemory | null = null;
 let busy = false;
+/** Esta pestaña se ha quedado con la cuenta anterior (otra ha entrado con otra): no sincroniza más y se recarga. */
+let stale = false;
 
 const url = () => asset('api/prefs' as Parameters<typeof asset>[0]);
 
@@ -85,12 +87,24 @@ function forgetPrevious() {
 	}
 }
 
-/** Otra pestaña puede haber sincronizado: la memoria buena es la guardada, no la de esta pestaña. */
-function refreshMemory() {
+/** Lo que enseña esta pestaña y lo que tiene en memoria es de la cuenta anterior: se recarga (una vez) con la nueva. */
+function reloadStale() {
+	if (stale) return;
+	stale = true;
+	location.reload();
+}
+
+/**
+ * Otra pestaña puede haber sincronizado: la memoria buena es la guardada, no la de esta pestaña. Si la guardada es de
+ * otra cuenta (tras «Cerrar sesión» ha entrado otra persona), esta pestaña se recarga y no sube ni baja nada: false.
+ */
+function refreshMemory(): boolean {
 	try {
 		const saved = readMemory(localStorage.getItem(MEMORY));
-		if (saved && (!memory || saved.user === memory.user)) memory = saved;
+		if (replaced(memory, saved)) reloadStale();
+		else if (saved) memory = saved;
 	} catch {}
+	return !stale;
 }
 
 function applyLocal(patch: Patch) {
@@ -99,8 +113,10 @@ function applyLocal(patch: Patch) {
 }
 
 function remember(user: string, base: Prefs) {
-	memory = { user, base };
-	localStorage.setItem(MEMORY, JSON.stringify(memory));
+	const next = { user, base };
+	// Primero se guarda: si no cabe, la pestaña sigue con la memoria de antes, igual que las demás (refreshMemory).
+	localStorage.setItem(MEMORY, JSON.stringify(next));
+	memory = next;
 }
 
 /** Cambios de fuera que esperan a que dejes de escribir. */
@@ -109,14 +125,13 @@ let lastPull = 0;
 
 /** Trae lo del servidor, junta y sube. Si ha cambiado algo de aquí, recarga para que las vistas lo lean. */
 async function pull() {
-	if (busy) return;
+	if (busy || stale) return;
 	busy = true;
 	lastPull = Date.now();
 	try {
 		if (cloud.state !== 'ok') cloud.state = 'sync';
 		const remote = await getRemote();
-		if (!remote) return;
-		refreshMemory();
+		if (!remote || !refreshMemory()) return;
 		const local = collect(localStorage);
 		const switching = !!memory && memory.user !== remote.user;
 		const plan = startPlan(local, remote.prefs, memory, remote.user);
@@ -146,10 +161,14 @@ async function pull() {
 	}
 }
 
-/** Sube lo que haya cambiado aquí desde la última vez. */
+/**
+ * Sube lo que haya cambiado aquí desde la última vez. Con la sesión cerrada o caducada (auth) no: la próxima cookie
+ * puede ser de otra persona, y esto iría a su cuenta. Lo de aquí sigue guardado y sube en el próximo pull, que mira
+ * antes de quién es la cuenta (startPlan).
+ */
 async function flush(keepalive = false) {
-	if (busy || !memory) return;
-	refreshMemory();
+	if (busy || stale || !memory || cloud.state === 'auth') return;
+	if (!refreshMemory()) return;
 	const plan = mergeFitting(collect(localStorage), memory.base, memory.base);
 	setFrozen(plan.frozen);
 	if (isEmpty(plan.push)) return;
@@ -193,6 +212,11 @@ export function initCloud() {
 	}, EVERY);
 	const onOnline = () => void pull();
 	addEventListener('online', onOnline);
+	// Otra pestaña ha entrado con otra cuenta: esta enseña lo de la anterior y no puede seguir así ni un momento.
+	const onStorage = (e: StorageEvent) => {
+		if (e.key === MEMORY && replaced(memory, readMemory(e.newValue))) reloadStale();
+	};
+	addEventListener('storage', onStorage);
 	const onVisibility = () => {
 		if (document.visibilityState === 'hidden') void flush(true);
 		else void pull();
@@ -202,5 +226,12 @@ export function initCloud() {
 		clearInterval(id);
 		document.removeEventListener('visibilitychange', onVisibility);
 		removeEventListener('online', onOnline);
+		removeEventListener('storage', onStorage);
 	};
 }
+
+/**
+ * «Cerrar sesión» (HELP): sube ya lo que quede. La respuesta de la salida de Access borra la cookie antes de que se
+ * cierre esta página, así que el flush de visibilitychange llegaría sin sesión. keepalive deja acabar el envío.
+ */
+export const flushNow = () => void flush(true);
