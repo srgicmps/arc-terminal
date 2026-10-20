@@ -360,6 +360,9 @@
 			Hay datos nuevos · <b>{fresh.busy ? 'Actualizando…' : 'Actualizar'}</b>
 		</button>
 	{/if}
+	<!-- El lector de pantalla anuncia el aviso: la región viva está siempre (una que aparece con su texto no se
+	     anuncia) y solo cambia lo de dentro. -->
+	<p class="sr" role="status">{fresh.codigo ? 'Hay una versión nueva de la web.' : fresh.aviso ? 'Hay datos nuevos.' : ''}</p>
 
 	{#if !tv.on}<PanelIndex /><InstallHint /><OsNotice />{/if}
 
