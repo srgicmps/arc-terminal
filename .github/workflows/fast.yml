@@ -46,9 +46,9 @@ jobs:
       # Órdenes de la barra (scripts/requests.ts): leer y cerrar los issues [alerta]/[mis]/[vigila].
       issues: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -83,7 +83,7 @@ jobs:
       # rama, así que las dos vías comparten la de main y ninguna repite un aviso de la otra). Si falla, no
       # frena la publicación.
       - if: github.event_name != 'pull_request'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         continue-on-error: true
         with:
           path: .notify-cache
@@ -107,7 +107,7 @@ jobs:
           # las alertas que avisan.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - if: github.event_name != 'pull_request' && hashFiles('.notify-cache/notify-log.json') != ''
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         continue-on-error: true
         with:
           path: .notify-cache
@@ -115,7 +115,7 @@ jobs:
 
       # Miniaturas del MANUAL: las últimas que guardó deploy.yml (aquí no se capturan). Sin ellas, esta
       # publicación quitaría las imágenes del manual hasta la siguiente pasada normal.
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         continue-on-error: true
         with:
           path: static/manual
