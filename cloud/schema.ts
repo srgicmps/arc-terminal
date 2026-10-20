@@ -25,7 +25,8 @@ export const TABLES = {
 	/** Mis RSS: una fila por persona con su lista en JSON. */
 	rss: 'CREATE TABLE IF NOT EXISTS rss (user TEXT PRIMARY KEY, feeds TEXT NOT NULL, updated INTEGER NOT NULL)',
 	/** Juego de predicciones: jugadores y apuestas. */
-	forecast_players: 'CREATE TABLE IF NOT EXISTS forecast_players (user TEXT PRIMARY KEY, uid TEXT NOT NULL UNIQUE, alias TEXT)',
+	forecast_players:
+		'CREATE TABLE IF NOT EXISTS forecast_players (user TEXT PRIMARY KEY, uid TEXT NOT NULL UNIQUE, alias TEXT)',
 	forecast_bets:
 		'CREATE TABLE IF NOT EXISTS forecast_bets (user TEXT NOT NULL, round TEXT NOT NULL, closes TEXT NOT NULL, value REAL NOT NULL, updated INTEGER NOT NULL, PRIMARY KEY (user, round))'
 } as const;

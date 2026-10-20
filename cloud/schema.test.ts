@@ -1,6 +1,8 @@
 // El esquema de D1 (cloud/schema.ts), con el SQLite de Node: cada CREATE es SQL válido, cada tabla se crea una
-// sola vez por isolate y ningún otro archivo de cloud/ ni de functions/ escribe su propio CREATE TABLE.
+// sola vez por isolate, ningún otro archivo de cloud/ ni de functions/ escribe su propio CREATE TABLE y «Quitar»
+// (USER_TABLES de admin.ts) no se deja ninguna tabla con datos de una persona.
 import { beforeEach, describe, expect, it } from 'vitest';
+import { USER_TABLES } from './admin.ts';
 import { sqliteD1 } from './d1sqlite.ts';
 import type { D1Database } from './prefs.ts';
 import { ensure, resetSchema, TABLES, type Table } from './schema.ts';
@@ -59,5 +61,12 @@ describe('un solo esquema', () => {
 	it('ningún otro archivo escribe su CREATE TABLE: todas las tablas salen de schema.ts', () => {
 		expect(code.length).toBeGreaterThan(10);
 		expect(code.filter(([, text]) => /CREATE\s+TABLE/i.test(text)).map(([path]) => path)).toEqual([]);
+	});
+
+	it('cada tabla con columna user (el email) está en USER_TABLES, y solo esas: «Quitar» las borra', () => {
+		const withUser = NAMES.filter((t) => /[(,]\s*user\s+TEXT\b/.test(TABLES[t]));
+		expect(withUser).toContain('feedback');
+		expect(withUser).not.toContain('brief_mail');
+		expect([...USER_TABLES].sort()).toEqual(withUser.sort());
 	});
 });
