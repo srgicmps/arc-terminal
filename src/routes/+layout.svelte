@@ -176,11 +176,13 @@
 		shift = nudge(dx);
 		// En cuanto se sabe a qué lado va, se piden ya los datos y el código de esa vista (solo esa, una vez por
 		// gesto): al soltar, la vista nueva ya está en camino. Si falla, la navegación normal lo vuelve a pedir.
+		// Con el «Ahorro de datos» del navegador, nada (como la precarga de SvelteKit): el gesto puede quedarse corto.
 		const dir = swipe.preloaded ? 0 : preloadDirection(dx, dy);
 		if (!dir) return;
 		swipe.preloaded = true;
 		const next = neighbour(keys, keys.findIndex((k) => isOn(k.route)), dir);
-		if (next) preloadData(routeHref(next.route)).catch(() => {});
+		const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+		if (next && !saveData) preloadData(routeHref(next.route)).catch(() => {});
 	}
 
 	function onSwipeEnd(e: TouchEvent) {
