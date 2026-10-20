@@ -326,7 +326,8 @@ jobs:
           SMOKE_STYLE: cupertino
 
   # PR: recorridos de punta a punta de Arc OS en el escritorio (scripts/e2e-os.ts), sin datos ni red. Chromium y
-  # WebKit (Safari, el del iPhone de Sergi) mandan; Firefox de momento solo avisa.
+  # WebKit (Safari, el del iPhone de Sergi) mandan; Firefox de momento solo avisa. Si lo que falla es instalar el
+  # navegador (red, apt), tras tres intentos se salta, sin poner nada en rojo; si fallan las pruebas, sí.
   e2e-os:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -344,10 +345,14 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - if: matrix.browser != 'chromium'
-        run: pnpm exec playwright-core install --with-deps ${{ matrix.browser }}
-      - run: pnpm build --logLevel warn
-      - run: pnpm e2e:os
+      - id: navegador
+        if: matrix.browser != 'chromium'
+        run: for i in 1 2 3; do pnpm exec playwright-core install --with-deps ${{ matrix.browser }} && exit 0; sleep 10; done; exit 1
+        continue-on-error: true
+      - if: matrix.browser == 'chromium' || steps.navegador.outcome == 'success'
+        run: pnpm build --logLevel warn
+      - if: matrix.browser == 'chromium' || steps.navegador.outcome == 'success'
+        run: pnpm e2e:os
         env:
           E2E_BROWSER: ${{ matrix.browser }}
 
