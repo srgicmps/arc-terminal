@@ -216,23 +216,46 @@ export const CLOCK_MARKETS: ClockMarket[] = ['NYC', 'LON', 'MAD', 'TYO'].map(mar
 
 // ---------- Sesiones: cuándo abre y cierra cada bolsa ----------
 
+/**
+ * Formateadores guardados por zona horaria: crear un Intl.DateTimeFormat es caro, y las sesiones de las 9 bolsas
+ * pedían casi 300 en cada vuelta del reloj. Con una zona fija se pueden reutilizar sin problema.
+ */
+function perZone(make: (tz: string) => Intl.DateTimeFormat): (tz: string) => Intl.DateTimeFormat {
+	const cache = new Map<string, Intl.DateTimeFormat>();
+	return (tz) => {
+		let f = cache.get(tz);
+		if (!f) {
+			f = make(tz);
+			cache.set(tz, f);
+		}
+		return f;
+	};
+}
+
+const dateFmt = perZone((tz) => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }));
+
 /** Fecha local («2026-10-14») de un instante en una zona horaria. */
 export function localDate(tz: string, ms: number): string {
-	return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+	return dateFmt(tz).format(new Date(ms));
 }
+
+const offsetFmt = perZone(
+	(tz) =>
+		new Intl.DateTimeFormat('en-US', {
+			timeZone: tz,
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			hourCycle: 'h23'
+		})
+);
 
 /** Diferencia de la zona con UTC en un instante, en minutos (Madrid en verano: 120). */
 function offset(tz: string, ms: number): number {
-	const parts = new Intl.DateTimeFormat('en-US', {
-		timeZone: tz,
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit',
-		hour: '2-digit',
-		minute: '2-digit',
-		second: '2-digit',
-		hourCycle: 'h23'
-	}).formatToParts(new Date(ms));
+	const parts = offsetFmt(tz).formatToParts(new Date(ms));
 	const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
 	const asUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
 	return Math.round((asUtc - Math.floor(ms / 1000) * 1000) / 60_000);
@@ -328,18 +351,23 @@ export interface ClockState {
 	holiday: string | null;
 }
 
+const clockFmt = perZone(
+	(tz) =>
+		new Intl.DateTimeFormat('en-CA', {
+			timeZone: tz,
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			weekday: 'short',
+			hourCycle: 'h23'
+		})
+);
+
 /** Hora local de una bolsa y si está abierta ahora: horario normal, fines de semana y festivos. */
 export function clockState(market: ClockMarket, now: number): ClockState {
-	const parts = new Intl.DateTimeFormat('en-CA', {
-		timeZone: market.tz,
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit',
-		hour: '2-digit',
-		minute: '2-digit',
-		weekday: 'short',
-		hourCycle: 'h23'
-	}).formatToParts(new Date(now));
+	const parts = clockFmt(market.tz).formatToParts(new Date(now));
 	const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
 	const [h, m] = [Number(get('hour')), Number(get('minute'))];
 	const date = `${get('year')}-${get('month')}-${get('day')}`;
