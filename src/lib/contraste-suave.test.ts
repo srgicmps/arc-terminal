@@ -82,3 +82,84 @@ describe('texto sobre el acento suave', () => {
 		expect(bad).toEqual([]);
 	});
 });
+
+/** Todas las declaraciones (tokens y propiedades: background, color…) de los bloques cuyo selector cumple `pick`. */
+function decls(text: string, pick: (selector: string) => boolean): Palette {
+	const out: Palette = {};
+	for (const m of strip(text).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+		if (!pick(m[1].trim())) continue;
+		for (const d of m[2].matchAll(/([\w-]+)\s*:\s*([^;]+);/g)) out[d[1]] = d[2].trim();
+	}
+	return out;
+}
+
+/**
+ * Lo que cambia una estética en la barra de comandos: en el formulario (`.cmd`), en la lista de sugerencias
+ * (`.suggest`) y en la fila elegida. Cupertino pone la lista en --cu-menu; lujo, en --bg; cristal, opaca; suizo, el
+ * código en --fg y la fila elegida invertida; Fósforo, sus colores de consola. Solo cuentan los bloques que acaban en
+ * esa pieza (no los de sus hijos), y los de día solo en el tema de día.
+ */
+function bar(id: string, theme: string) {
+	if (id === 'terminal') return { cmd: {}, list: {}, row: {} };
+	const text = readFileSync(`${DIR}/${id}.css`, 'utf8');
+	const ends = (re: RegExp) => (sel: string) =>
+		(theme === 'light' || !sel.includes("data-theme='light'")) &&
+		sel.split(',').every((p) => p.includes(`data-style='${id}'`) && re.test(p.trim()));
+	return {
+		cmd: decls(text, ends(/(?:\.cmd|\[data-ui='cmd'\])$/)),
+		list: decls(text, ends(/(?:\.suggest|\[role='listbox'\])$/)),
+		row: decls(text, ends(/(?:li|\[role='option'\])\[aria-selected='true'\]$/))
+	};
+}
+
+const own = (d: Palette) => Object.fromEntries(Object.entries(d).filter(([k]) => k.startsWith('--')));
+
+// Las sugerencias de la barra van sobre --raise, igual que tarjetas, plegables y campos de las vistas. El texto, el
+// secundario y el acento tienen que leerse ahí, y también el texto de la fila elegida, que lleva encima el acento suave.
+describe('texto sobre --raise y en las sugerencias de la barra de comandos', () => {
+	it('lee lo propio de la barra en cada estética (si no, mediría otra cosa)', () => {
+		expect(bar('cupertino', 'dark').list['--raise']).toBe('var(--cu-menu)');
+		expect(bar('suizo', 'light').row['background-color']).toBe('var(--fg)');
+		expect(bar('retro', 'dark').cmd['--fg']).toBe('var(--k-fg)');
+	});
+
+	it('la barra pinta las filas como mide este test: tipo en --muted y la fila elegida, del color de su texto', () => {
+		const css = readFileSync('src/lib/components/CommandBar.svelte', 'utf8').split('<style>')[1];
+		expect(css).toMatch(/\n\t\.kind \{\n\t\tcolor: var\(--muted\);/);
+		expect(css).toMatch(/li\[aria-selected='true'\] \.code,\n\tli\[aria-selected='true'\] \.kind \{\n\t\tcolor: inherit;/);
+	});
+
+	it('pasa de 4,5:1 (7:1 en «Alto contraste») en cada estética, de noche y de día', () => {
+		const bad: string[] = [];
+		for (const id of ids) {
+			const min = id === 'contraste' ? 7 : 4.5;
+			for (const [theme, p] of Object.entries(palettes(id))) {
+				const check = (what: string, fg: number[] | null, bg: number[] | null) => {
+					if (!fg || !bg) return;
+					const r = ratio(fg, bg);
+					if (r < min) bad.push(`${id} (${theme}) ${what}: ${r.toFixed(2)}`);
+				};
+				// Vistas: texto, secundario y acento sobre --raise (si es opaco; con transparencia no se puede medir aquí).
+				const raise = color(p['--raise'], p);
+				if (raise && raise[3] === 1)
+					for (const fg of ['--fg', '--muted', '--amber']) check(`${fg} sobre --raise`, color(p[fg], p), raise);
+
+				// Sugerencias: código (--amber), descripción (el color del texto) y tipo (--muted) sobre la lista.
+				const b = bar(id, theme);
+				const lp = { ...p, ...own(b.cmd), ...own(b.list) };
+				const listBg = color(b.list.background ?? b.list['background-color'] ?? 'var(--raise)', lp);
+				if (!listBg || listBg[3] < 1) continue;
+				const text = b.list.color ?? b.cmd.color ?? 'var(--fg)';
+				check('código en la lista', color('var(--amber)', lp), listBg);
+				check('descripción en la lista', color(text, lp), listBg);
+				check('tipo en la lista', color('var(--muted)', lp), listBg);
+
+				// Fila elegida: todo del color del texto de la fila, sobre el acento suave (o el fondo que le dé la estética).
+				const rp = { ...lp, ...own(b.row) };
+				const top = color(b.row['background-color'] ?? b.row.background ?? 'var(--amber-soft)', rp);
+				if (top) check('fila elegida', color(b.row.color ?? text, rp), over(top, listBg));
+			}
+		}
+		expect(bad).toEqual([]);
+	});
+});

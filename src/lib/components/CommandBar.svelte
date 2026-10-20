@@ -619,6 +619,13 @@
 		background: var(--amber-soft);
 	}
 
+	/* En la fila elegida, el código y el tipo van del color del texto: el ámbar y el gris claro no se leían bien sobre
+	   el fondo suave. Lo hereda de la fila, así también vale donde una estética la invierte (suizo). */
+	li[aria-selected='true'] .code,
+	li[aria-selected='true'] .kind {
+		color: inherit;
+	}
+
 	.code {
 		color: var(--amber);
 		font-weight: var(--fw-medium);
@@ -638,8 +645,9 @@
 		white-space: normal;
 	}
 
+	/* --muted y no --faint: con letra pequeña sobre --raise, --faint no llegaba a 4,5:1 en varias estéticas. */
 	.kind {
-		color: var(--faint);
+		color: var(--muted);
 		font-size: var(--fs-xs);
 	}
 </style>
