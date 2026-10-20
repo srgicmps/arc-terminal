@@ -65,6 +65,8 @@ const casos: [string, Caso][] = [
 	['solo el tema guardado', { stored: { 'arc-theme': 'light' } }],
 	['claves que no son de Arc', { stored: { 'otra-cosa': '1' } }],
 	['lo que deja una primera visita', { stored: { 'arc-modo': 'sencillo', 'arc-style': 'grafito' } }],
+	// La propia arc-modo no cuenta como «ya usaba la web»: con solo ella (y rara), Sencillo.
+	['solo un modo raro', { stored: { 'arc-modo': 'raro' } }],
 	['modo raro, con otras claves', { stored: { 'arc-modo': 'raro', 'arc-last-visit': 'x' } }],
 	['«modern» (la antigua Grafito)', { stored: { 'arc-style': 'modern' } }],
 	['«modern» con otras claves', { stored: { 'arc-style': 'modern', 'arc-theme': 'dark' } }],
