@@ -3,8 +3,10 @@
 // Bloomberg que llevan a un panel. Si un título cambia y su nombre no, no se ve ningún error: el panel
 // desaparece en Sencillo, no se traduce o «GEO SANC» abre la vista sin bajar al panel. Este test lo avisa.
 // Lee los .svelte como texto (sin Arc OS, que va aparte) y saca los títulos fijos de cada <Panel title=…>.
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+// Cada nombre se busca en SU vista: su +page.svelte y los .svelte que importa. Así, «Titulares» de GEO no
+// pasa porque ECO tenga un panel «Titulares».
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { COMMANDS } from './commands.ts';
 import { samePanel } from './panelhash.ts';
@@ -20,6 +22,7 @@ const SKIP = ['src/lib/os/', 'src/lib/components/os/'];
 const DINAMICOS: Record<string, string> = {
 	'TOP: Gasolina 95 · Menorca': 'el título lleva la provincia de cada uno; Menorca es la de por defecto',
 	'IMP: Hoy / Últimos N días': 'el título cambia con el plazo elegido',
+	'MOST: EE. UU.': 'título de la lista de bolsas de la vista ({b.title})',
 	'MOST: Alemania': 'título de la lista de bolsas de la vista ({b.title})',
 	'MOST: España': 'título de la lista de bolsas de la vista ({b.title})',
 	'BOE: Secciones del BOE': 'un panel por sección, con su nombre',
@@ -88,33 +91,71 @@ function titlesOf(tag: string): { full: string[]; heads: string[] } {
 	return out;
 }
 
-/** Títulos fijos (tal cual) y principios hasta « · » de todos los <Panel> de src, sin Arc OS. */
+/** Títulos fijos (tal cual) y principios hasta « · » de los <Panel> de cada .svelte de src, sin Arc OS. */
+const BY_FILE = new Map<string, string[]>();
 const FULL = new Set<string>();
 const HEADS = new Set<string>();
 for (const f of files) {
 	const src = readFileSync(f, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+	const titles: string[] = [];
 	for (const m of src.matchAll(/<Panel(?=[\s>/])/g)) {
 		const { full, heads } = titlesOf(scan(src, m.index));
 		for (const t of full) FULL.add(t);
 		for (const h of heads) HEADS.add(h);
+		titles.push(...full, ...heads);
 	}
+	BY_FILE.set(f, titles);
 }
-const TITLES = [...FULL, ...HEADS];
+
+/** Adónde lleva un import de .svelte: #lib/ y $lib/ son src/lib; los relativos, desde su archivo. Un paquete, a ninguno. */
+function resolve(from: string, spec: string): string | null {
+	if (/^[#$]lib\//.test(spec)) return `src/lib/${spec.slice(5)}`;
+	return spec.startsWith('.') ? join(dirname(from), spec).replaceAll('\\', '/') : null;
+}
+
+/** Los .svelte de una vista: su +page.svelte y lo que importa, también con import(), siguiendo los imports. */
+function viewFiles(route: string): string[] {
+	const start = `src/routes${route === '/' ? '' : route}/+page.svelte`;
+	if (!existsSync(start)) return [];
+	const seen = new Set([start]);
+	for (const f of seen) {
+		const src = readFileSync(f, 'utf8');
+		for (const m of src.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*)['"]([^'"]+\.svelte)['"]/g)) {
+			const to = resolve(f, m[1]);
+			if (to && BY_FILE.has(to)) seen.add(to);
+		}
+	}
+	return [...seen];
+}
+
+/** Los títulos de los <Panel> de una vista (o de todas, si no hay ruta). */
+const ALL = [...FULL, ...HEADS];
+const VIEW = new Map<string, string[]>();
+const titlesFor = (route?: string) => {
+	if (!route) return ALL;
+	if (!VIEW.has(route)) VIEW.set(route, [...new Set(viewFiles(route).flatMap((f) => BY_FILE.get(f) ?? []))]);
+	return VIEW.get(route) ?? [];
+};
 
 /** ¿Hay un panel con ese título, o que empiece por él y « · »? Como lo comparan el modo Sencillo y el salto. */
-const isTitle = (name: string, same = (a: string, b: string) => a === b) => TITLES.some((t) => same(name, t));
+const isTitle = (name: string, titles = ALL, same = (a: string, b: string) => a === b) => titles.some((t) => same(name, t));
 
 describe('títulos de panel', () => {
 	it('se leen bien del código (también los de varias líneas y los de una expresión)', () => {
 		expect(FULL.size).toBeGreaterThan(200);
 		for (const t of ['Titulares', 'Tráfico', 'Partida', 'Jugadas', 'Lo último']) expect(isTitle(t), t).toBe(true);
 		expect(HEADS).toContain('Mar');
+		// Por vista: sigue los imports (Tráfico está en Traffic.svelte; Puentes, en Puentes.svelte) y no mezcla vistas.
+		expect(titlesFor('/es')).toContain('Tráfico');
+		expect(titlesFor('/cal')).toContain('Puentes');
+		expect(titlesFor('/eco')).toContain('Inflación');
+		expect(titlesFor('/geo')).not.toContain('Inflación');
 		expect(titlesOf('<Panel\n\tid="x"\n\ttitle={a ? `Hoy · ${b}` : "Ayer"}\n\tmeta={c > 1 ? "d" : "e"}\n>')).toEqual({ full: ['Ayer'], heads: ['Hoy'] });
 	});
 
 	it('cada esencial del modo Sencillo es un panel (o su principio, antes de « · »)', () => {
 		const missing = Object.entries(ESSENTIAL).flatMap(([route, list]) =>
-			list.filter((e) => !e.startsWith('id:') && !isTitle(e, (a, b) => fold(a) === fold(b))).map((e) => `${route}: ${e}`)
+			list.filter((e) => !e.startsWith('id:') && !isTitle(e, titlesFor(route), (a, b) => fold(a) === fold(b))).map((e) => `${route}: ${e}`)
 		);
 		expect(missing).toEqual([]);
 	});
@@ -127,7 +168,12 @@ describe('títulos de panel', () => {
 		...(c.manual?.panels ?? []).map((p) => `${c.code}: ${p.name}`),
 		...(c.bloomberg ?? []).flatMap((b) => (b.panel ? [`${c.code}: ${b.panel}`] : []))
 	]);
-	const found = (key: string) => isTitle(key.slice(key.indexOf(': ') + 2), samePanel);
+	const routeOf = new Map(COMMANDS.map((c) => [c.code, c.route as string]));
+	/** El panel tiene que estar en la vista del comando: «GEO titulares» no vale porque ECO tenga «Titulares». */
+	const found = (key: string) => {
+		const at = key.indexOf(': ');
+		return isTitle(key.slice(at + 2), titlesFor(routeOf.get(key.slice(0, at))), samePanel);
+	};
 
 	it('cada panel del MANUAL y de un código de Bloomberg es un panel (la barra salta a él)', () => {
 		expect(names.length).toBeGreaterThan(150);
