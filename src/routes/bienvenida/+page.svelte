@@ -39,6 +39,24 @@
 	let simple = $state<'1' | '0'>('1');
 	let again = $state(false);
 
+	// Al cambiar de paso, el foco va al título del paso nuevo y la vista sube al indicador de pasos: el lector de
+	// pantalla anuncia «¿Dónde estás?» y en el móvil no te quedas a media página. Sin esto el foco caía en <body>,
+	// porque el botón pulsado desaparece con su paso. `heading` es el h2 del paso que se ve (bind:this en los cuatro):
+	// cuando cambia, es que hay paso nuevo. El primero no cuenta: al abrir la vista no se roba el foco ni se mueve.
+	let heading = $state<HTMLHeadingElement | null>(null);
+	let indicator = $state<HTMLOListElement>();
+	let opened = false;
+	$effect(() => {
+		if (!heading) return;
+		if (!opened) {
+			opened = true;
+			return;
+		}
+		heading.focus({ preventScroll: true });
+		const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+		indicator?.scrollIntoView({ block: 'start', behavior: smooth ? 'smooth' : 'auto' });
+	});
+
 	// Al abrir: lo que elegiste la otra vez. Si llegó sola (?primera=1) y tus ajustes ya la traían hecha (de tu
 	// cuenta, en otro dispositivo), a la portada.
 	$effect(() => {
@@ -142,7 +160,7 @@
 <ViewHeader code="BIENVENIDA" title={again ? 'Vuelve a ajustar Arc' : 'Bienvenido a Arc Terminal'} sub="Tres preguntas y Arc se ajusta a ti" />
 
 <div class="wrap">
-	<ol class="steps" aria-label="Pasos">
+	<ol class="steps" aria-label="Pasos" bind:this={indicator}>
 		{#each STEPS as s, i (s)}
 			<li class:on={i === step} class:done={i < step} aria-current={i === step ? 'step' : undefined}>
 				<button type="button" disabled={i > step} onclick={() => (step = i)}>{i + 1}. {s}</button>
@@ -153,7 +171,7 @@
 	{#if step === 0}
 		<OsInvite />
 		<section aria-labelledby="q1">
-			<h2 id="q1">¿Qué te interesa?</h2>
+			<h2 id="q1" tabindex="-1" bind:this={heading}>¿Qué te interesa?</h2>
 			<p class="lead">Elige un perfil ya hecho o marca los temas que quieras. Todo se puede cambiar después.</p>
 			<div class="cards" role="radiogroup" aria-label="Perfiles">
 				{#each PROFILES as p (p.id)}
@@ -179,7 +197,7 @@
 		</section>
 	{:else if step === 1}
 		<section aria-labelledby="q2">
-			<h2 id="q2">¿Dónde estás?</h2>
+			<h2 id="q2" tabindex="-1" bind:this={heading}>¿Dónde estás?</h2>
 			<p class="lead">Para el tiempo, la hora y lo más cerca de ti. Ahora: <strong>{place.current.name}</strong>{place.current.country ? `, ${place.current.country}` : ''}.</p>
 			<div class="search">
 				<input type="search" placeholder="Escribe tu ciudad" aria-label="Tu ciudad" bind:value={query} />
@@ -200,7 +218,7 @@
 		</section>
 	{:else if step === 2}
 		<section aria-labelledby="q3">
-			<h2 id="q3">¿Cómo lo quieres?</h2>
+			<h2 id="q3" tabindex="-1" bind:this={heading}>¿Cómo lo quieres?</h2>
 			<Seg
 				label="Modo"
 				options={[
@@ -221,7 +239,7 @@
 		</section>
 	{:else}
 		<section aria-labelledby="q4">
-			<h2 id="q4">Esto es lo que vamos a montar</h2>
+			<h2 id="q4" tabindex="-1" bind:this={heading}>Esto es lo que vamos a montar</h2>
 			<dl class="summary">
 				<dt>Al entrar</dt>
 				<dd>{homeCmd ? `${homeCmd.code} · ${homeCmd.key}` : 'TOP · Portada'}</dd>
@@ -262,6 +280,7 @@
 		list-style: none;
 		font: var(--fs-xs) var(--mono);
 		letter-spacing: var(--track-code);
+		scroll-margin-top: var(--sp-8);
 	}
 	.steps button {
 		padding: 0;
@@ -285,6 +304,11 @@
 		font-size: var(--fs-xl);
 		font-weight: var(--fw-bold);
 		color: var(--fg);
+	}
+	/* El título recibe el foco al cambiar de paso solo para que se anuncie (como <main> en el layout): no es un
+	   control, así que sin contorno. */
+	h2:focus {
+		outline: none;
 	}
 	h3 {
 		margin: var(--sp-18) 0 var(--sp-8);
