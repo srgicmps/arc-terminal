@@ -192,7 +192,9 @@
 				</div>
 			{/if}
 		</Panel>
-		<Panel title="Sugerencias" meta="Toca para añadir">
+		<!-- En Sencillo (simple.ts, «id:sugerencias»), solo con la lista vacía: es lo más fácil para empezar. En el HTML
+			prerenderizado (sin la lista aún), oculta: así «Ver todos» ya está y la cabecera no salta con una lista. -->
+		<Panel id={watchlist.ready && !watchlist.codes.length ? 'sugerencias' : undefined} title="Sugerencias" meta="Toca para añadir">
 			<ul class="chips">
 				{#each TICKERS.filter((t) => !watchlist.codes.includes(t.code)) as t (t.code)}
 					<li><button type="button" onclick={() => toggleWatch(t.code)}>☆ {t.code}</button></li>

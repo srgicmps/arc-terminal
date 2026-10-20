@@ -14,7 +14,15 @@ export const ESSENTIAL: Record<string, string[]> = {
 	'/ai': ['Titulares', 'Tecnológicas en bolsa', 'Modelos nuevos del mes', 'Modelos frontera'],
 	'/s': ['Gráfico', 'Cotización', 'Por qué se mueve', 'Perfil de la empresa', 'Datos fundamentales', 'Analistas y resultados', 'En las noticias'],
 	'/cal': ['Calendario', 'Próximos datos', 'Resultados', 'Festivos', 'Puentes'],
-	'/semana': ['Lo más importante', 'Mercados', 'Agenda']
+	'/semana': ['Lo más importante', 'Mercados', 'Agenda'],
+	// WX: la ficha de tu sitio (la de las demás ciudades, no), avisos, aire y UV. Fuera: mar, sol y luna, clima, asteroides…
+	'/wx': ['id:tiempo', 'Avisos', 'Aire', 'UV y polen'],
+	// LUZ: el precio de hoy y de mañana (su título es la fecha), las horas baratas y de dónde sale la luz.
+	'/luz': ['id:precio', 'Horas baratas', 'De dónde sale la luz'],
+	// MIS: fuera el volumen en corto; las sugerencias, solo con la lista vacía (las marca la vista con su id).
+	'/mis': ['Cotizaciones', 'En las noticias', 'Tus próximos resultados', 'Editar la lista', 'id:sugerencias'],
+	// CARTERA: fuera los repartos por sector y por divisa.
+	'/cartera': ['Resumen', 'Posiciones', 'Resultados de tus valores']
 };
 
 /**
@@ -47,7 +55,12 @@ export const PLAIN_TITLES: Record<string, string> = {
 	'Diferenciales de crédito': 'Lo que pagan de más las empresas por su deuda',
 	'Inflación esperada y tipos reales': 'Inflación que se espera',
 	'Mercado monetario': 'Tipos de interés a muy corto plazo',
-	'Precios de los alimentos': 'Precio de los alimentos en el mundo'
+	'Precios de los alimentos': 'Precio de los alimentos en el mundo',
+	Aire: 'Calidad del aire',
+	'UV y polen': 'Sol (índice UV) y polen',
+	Posiciones: 'Lo que tienes',
+	'Tus próximos resultados': 'Cuándo presentan cuentas tus valores',
+	'Resultados de tus valores': 'Cuándo presentan cuentas tus valores'
 };
 
 /** Sin tildes, en minúscula y con los espacios normalizados (como glossary.ts). */
