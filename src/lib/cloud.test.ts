@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diff, LIMITS, merge, mergeFitting, oversized, readMemory, signOutKeys, startPlan } from './cloud.ts';
-import { PREFS } from './prefs.ts';
-import { portable } from './transfer.ts';
+import { diff, LIMITS, merge, mergeFitting, oversized, readMemory, startPlan } from './cloud.ts';
 
 describe('merge', () => {
 	it('primera vez con el servidor vacío: sube todo lo de aquí (migración)', () => {
@@ -77,33 +75,5 @@ describe('claves que no caben en la cuenta', () => {
 	it('al cambiar de usuario no se congela nada: se cambia todo por lo de su cuenta', () => {
 		const plan = startPlan({ a: big }, { b: '1' }, { user: 'ana@x', base: {} }, 'bea@x');
 		expect(plan.apply).toEqual({ set: { b: '1' }, del: ['a'] });
-	});
-});
-
-describe('signOutKeys («Cerrar sesión» y «Borrar mi cuenta»)', () => {
-	it('borra lo tuyo, la memoria de la sincronización y el tiempo de tu sitio; no toca lo que no es de Arc', () => {
-		const keys = [
-			'arc-mortgage',
-			'arc-portfolio',
-			'arc-journal',
-			'arc-place',
-			'arc-fuel-fav',
-			'arc-sync',
-			'arc-localwx:39.89,4.26',
-			'arc-layout-eco',
-			'arc-os-note-1',
-			'tradingview.chart',
-			'otra'
-		];
-		expect(signOutKeys(keys)).toEqual(keys.slice(0, -2));
-	});
-	it('todas las claves que van a la cuenta están en la lista: al volver a entrar, bajan de ella', () => {
-		const keys = PREFS.filter((p) => p.storage === 'local').map((p) => (p.prefix ? `${p.prefix}x` : p.key));
-		for (const k of keys.filter(portable)) expect(signOutKeys([k]), k).toEqual([k]);
-	});
-	it('solo localStorage: las cachés del service worker, IndexedDB y sessionStorage van aparte', () => {
-		const others = PREFS.filter((p) => p.storage !== 'local').map((p) => p.key);
-		expect(others).toContain('arc-pages');
-		expect(signOutKeys(others)).toEqual([]);
 	});
 });

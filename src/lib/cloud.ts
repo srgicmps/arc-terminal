@@ -5,7 +5,6 @@
 //   base:   cómo estaban los dos la última vez que se pusieron de acuerdo (null: este navegador nunca ha sincronizado)
 // Lo que ha cambiado aquí se sube; lo que ha cambiado en otro dispositivo se baja. Si cambió en los dos
 // sitios a la vez, gana este navegador (es lo último que has tocado tú aquí).
-import { PREFS } from './prefs.ts';
 
 export type Prefs = Record<string, string>;
 export interface Patch {
@@ -124,14 +123,3 @@ export function readMemory(text: string | null): SyncMemory | null {
 		return null;
 	}
 }
-
-/**
- * «Cerrar sesión» y «Borrar mi cuenta» (HELP): las claves de este navegador que se borran. Todas las que prefs.ts
- * registra en localStorage: lo tuyo vuelve solo al entrar (está en la cuenta) y lo demás son cachés tuyas, como la
- * memoria de la sincronización (sin ella, al volver a entrar este navegador es como uno nuevo y manda la cuenta) o el
- * tiempo de tu sitio (dice dónde estás). Las que no son de Arc Terminal no se tocan.
- */
-export const signOutKeys = (keys: Iterable<string>): string[] =>
-	[...keys].filter((k) =>
-		PREFS.some((p) => p.storage === 'local' && (p.key === k || (p.prefix !== undefined && k.startsWith(p.prefix))))
-	);

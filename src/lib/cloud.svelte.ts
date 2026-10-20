@@ -4,16 +4,7 @@
 import { asset } from '$app/paths';
 import { collect } from './transfer.ts';
 import { PREFS } from './prefs.ts';
-import {
-	isEmpty,
-	mergeFitting,
-	readMemory,
-	signOutKeys,
-	startPlan,
-	type Patch,
-	type Prefs,
-	type SyncMemory
-} from './cloud.ts';
+import { isEmpty, mergeFitting, readMemory, startPlan, type Patch, type Prefs, type SyncMemory } from './cloud.ts';
 
 const MEMORY = 'arc-sync';
 const RELOADED = 'arc-sync-reload';
@@ -242,87 +233,33 @@ export function initCloud() {
 	};
 }
 
-/** La salida de Cloudflare Access: borra su cookie y cierra la sesión en todas sus aplicaciones. */
-const LOGOUT = '/cdn-cgi/access/logout';
-/** La caché del service worker con las vistas que has abierto (PAGES en src/service-worker/index.ts). */
-const PAGES = 'arc-pages';
-
-/** Espera a que acabe la subida o la bajada en curso (como mucho 5 s). */
-async function idle() {
-	for (let i = 0; busy && i < 50; i++) await new Promise((r) => setTimeout(r, 100));
-}
-
 /**
- * Deja de sincronizar, borra de este navegador lo que es de la cuenta (signOutKeys en cloud.ts, lo de esta pestaña,
- * las bases de IndexedDB y las vistas guardadas) y va a la salida de Access. Al volver a entrar, todo baja de la cuenta.
+ * Para «Cerrar sesión» y «Borrar mi cuenta» (signout.ts, que solo carga HELP). Espera a que acabe lo que se esté
+ * subiendo o bajando (como mucho 5 s) y, con upload, sube lo que quede. Dice si queda aquí algo que no está en la
+ * cuenta: cambios sin subir o claves que no caben (cloud.frozen).
  */
-async function leave() {
-	stopped = true;
-	memory = null;
-	try {
-		// La memoria, la primera: otra pestaña abierta deja de sincronizar antes de ver lo demás vacío (vanished).
-		localStorage.removeItem(MEMORY);
-		const keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i) ?? '');
-		for (const k of signOutKeys(keys)) localStorage.removeItem(k);
-		sessionStorage.clear();
-	} catch {}
-	forgetPrevious();
-	if ('caches' in globalThis) await caches.delete(PAGES).catch(() => false);
-	location.assign(LOGOUT);
-}
-
-/** Por qué no se ha podido salir. force: se puede salir igual, perdiendo lo que no ha llegado a la cuenta. */
-export interface Blocked {
-	text: string;
-	force?: boolean;
-}
-
-/** ¿Queda aquí algo que no está en la cuenta? Cambios sin subir o claves que no caben (cloud.frozen). */
-function unsynced(): boolean {
+export async function settle(upload: boolean): Promise<boolean> {
+	for (let i = 0; busy && i < 50; i++) await new Promise((r) => setTimeout(r, 100));
+	if (upload) await flush();
 	if (cloud.frozen.length) return true;
 	return !!memory && !isEmpty(mergeFitting(collect(localStorage), memory.base, memory.base).push);
 }
 
-/**
- * «Cerrar sesión» (HELP): sube lo que quede por subir y sale. Sin conexión no se puede cerrar la sesión de Access, y
- * si algo no ha llegado a la cuenta se avisa antes (con force, se sale igual). En esos casos no se borra nada.
- */
-export async function signOut(force = false): Promise<Blocked | null> {
-	if (navigator.onLine === false) return { text: 'Sin conexión: vuelve a probar cuando tengas red.' };
-	await idle();
-	await flush();
-	if (!force && unsynced())
-		return { text: 'Hay cosas de este dispositivo que no están en tu cuenta: si sales, se pierden.', force: true };
-	await leave();
-	return null;
+/** Esta pestaña deja de sincronizar (mientras se borra la cuenta, para no recrearla). Devuelve cómo volver. */
+export function hold(): () => void {
+	const was = stopped;
+	stopped = true;
+	return () => (stopped = was);
 }
 
 /**
- * «Borrar mi cuenta» (HELP): borra en el servidor todo lo tuyo (DELETE /api/account, cloud/account.ts) y sale como
- * «Cerrar sesión». Mientras, no se sube nada (lo recrearía). Si no se puede, devuelve el porqué y sigue todo igual.
+ * Se sale de la cuenta: no se sincroniza más y se olvida la memoria. Va la primera, antes de borrar nada más: así las
+ * demás pestañas abiertas paran antes de ver lo de aquí vacío (vanished).
  */
-export async function deleteAccount(): Promise<Blocked | null> {
-	if (!cloud.user) return { text: 'No hay cuenta.' };
-	const was = stopped;
+export function endSync() {
 	stopped = true;
-	await idle();
-	let res: Response | null = null;
+	memory = null;
 	try {
-		res = await fetch(asset('api/account' as Parameters<typeof asset>[0]), {
-			method: 'DELETE',
-			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ confirm: cloud.user }),
-			credentials: 'same-origin',
-			redirect: 'manual'
-		});
+		localStorage.removeItem(MEMORY);
 	} catch {}
-	if (!res?.ok) {
-		stopped = was;
-		if (!res) return { text: 'Sin conexión: no se ha borrado nada.' };
-		if (res.type === 'opaqueredirect' || res.status === 401)
-			return { text: 'Tu sesión ha caducado: recarga la página y vuelve a probar. No se ha borrado nada.' };
-		return { text: 'No se ha podido borrar: vuelve a probar en un rato. No se ha borrado nada.' };
-	}
-	await leave();
-	return null;
 }
