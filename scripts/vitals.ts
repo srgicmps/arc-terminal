@@ -11,7 +11,7 @@
 // laboratorio (vite preview, sin Access ni CDN, en un runner compartido) y no se compara una a una con la de los usuarios.
 // TradingView y las demás webs de fuera se contestan vacías (varían mucho y no dependen de nosotros), igual que /api/*
 // (Pages Functions, que en vite preview no existen). Google Fonts, no: el salto al cambiar de letra es real.
-// VITALS_VIEWS (por comas), VITALS_RUNS, VITALS_PROFILES (terminal,sencillo) y VITALS_PORT cambian la pasada.
+// VITALS_VIEWS (por comas), VITALS_RUNS, VITALS_PROFILES (terminal,sencillo) y VITALS_PORT (4322) cambian la pasada.
 import { appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -165,7 +165,8 @@ async function main() {
 	const { launch, preview } = await import('./browser.ts');
 	const VIEWS = (process.env.VITALS_VIEWS ?? '/,/geo,/ws,/fuel').split(',').map((v) => v.trim()).filter(Boolean);
 	const RUNS = Math.max(1, Number(process.env.VITALS_RUNS ?? 3) || 3);
-	const PORT = Number(process.env.VITALS_PORT ?? 4321);
+	// 4322, libre: del 4317 al 4321 son de smoke, e2e-os, tv-shots, compare, smoke-vistas-os y smoke-sw.
+	const PORT = Number(process.env.VITALS_PORT ?? 4322);
 	const wanted = process.env.VITALS_PROFILES?.split(',').map((p) => p.trim());
 	const profiles = PROFILES.filter((p) => !wanted || wanted.includes(p.id));
 	const started = Date.now();

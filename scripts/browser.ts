@@ -1,5 +1,5 @@
 /// <reference types="node" />
-// Ayudantes de las herramientas con navegador (scripts/smoke.ts, tv-shots.ts y compare-views.ts): arrancar
+// Ayudantes de las herramientas con navegador (scripts/smoke.ts, tv-shots.ts, compare-views.ts y vitals.ts): arrancar
 // `vite preview` con la web ya construida y abrir Chromium.
 import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
