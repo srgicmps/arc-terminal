@@ -265,6 +265,10 @@ export function watch(state: FreshState, env: FreshEnv) {
 				await run;
 				seen = target;
 				failures = 0;
+				// Si ha salido bien antes del reintento (con la pregunta de cada minuto, al volver a la pestaña), ya
+				// no hace falta.
+				clearTimeout(again);
+				again = undefined;
 				state.aviso = false;
 			} catch {
 				// No ha llegado (sin red, un 503 puntual del borde: la vista se queda como estaba) o no se ha aplicado.

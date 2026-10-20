@@ -641,6 +641,23 @@ describe('watch', () => {
 		t.w.stop();
 	});
 
+	it('si sale bien antes del reintento (al volver a la pestaña), el reintento ya no pregunta a /code.json', async () => {
+		const t = setup();
+		t.refresh.mockRejectedValueOnce(new Error('503'));
+		await vi.advanceTimersByTimeAsync(FIRST_MS);
+		expect(t.refresh).toHaveBeenCalledOnce();
+		// El reintento iría a los RETRY_MS; antes, al volver a la pestaña, pregunta y refresca bien.
+		await vi.advanceTimersByTimeAsync(RETRY_MS / 2);
+		t.doc.dispatchEvent(new Event('visibilitychange'));
+		await vi.advanceTimersByTimeAsync(0);
+		expect(t.read).toHaveBeenCalledTimes(2);
+		expect(t.refresh).toHaveBeenCalledTimes(2);
+		// Pasado el rato del reintento (y antes de la pregunta de cada minuto), ninguna pregunta más.
+		await vi.advanceTimersByTimeAsync(RETRY_MS * 4);
+		expect(t.read).toHaveBeenCalledTimes(2);
+		t.w.stop();
+	});
+
 	it('si el refresco falla al pulsar «Actualizar», quita el aviso hasta el reintento (su botón no haría nada)', async () => {
 		const t = setup();
 		t.env.typing = true;
