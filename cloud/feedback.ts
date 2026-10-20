@@ -5,6 +5,7 @@
 //   Cualquier otro, 403. Los tokens de servicio (las Actions), tampoco.
 import { tokenOf, verifyIdentity, type AccessConfig } from './access.ts';
 import { json, type D1Database, type Env } from './prefs.ts';
+import { ensure } from './schema.ts';
 
 export interface AdminEnv extends Env {
 	/** Email del administrador (Sergi). Secret de Pages: sin él, nadie es administrador. */
@@ -133,17 +134,9 @@ export async function handleFeedback(
 	return json(405, { error: 'método' });
 }
 
-let tableReady = false;
-
-/** D1: tabla feedback. Se crea sola la primera vez. */
+/** D1: tabla feedback. Se crea sola la primera vez (cloud/schema.ts). */
 export function d1FeedbackStore(db: D1Database): FeedbackStore {
-	const ready = async () => {
-		if (tableReady) return;
-		await db.exec(
-			'CREATE TABLE IF NOT EXISTS feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT NOT NULL, view TEXT NOT NULL, text TEXT NOT NULL, at INTEGER NOT NULL)'
-		);
-		tableReady = true;
-	};
+	const ready = () => ensure(db, 'feedback');
 	return {
 		async add(f) {
 			await ready();

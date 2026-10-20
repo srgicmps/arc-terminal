@@ -8,6 +8,7 @@
 import { closesOf } from '../src/lib/exp/forecasts.ts';
 import { tokenOf, verifyIdentity, type AccessConfig } from './access.ts';
 import { json, type D1Database, type Env } from './prefs.ts';
+import { ensure } from './schema.ts';
 
 export const MAX_BETS = 400;
 const ALIAS = /^[\p{L}\p{N}][\p{L}\p{N} ._-]{1,19}$/u;
@@ -111,18 +112,9 @@ export async function handleForecasts(
 	return json(405, { error: 'método' });
 }
 
-let tablesReady = false;
-
-/** D1: jugadores y apuestas. Las tablas se crean solas la primera vez. */
+/** D1: jugadores y apuestas. Las tablas se crean solas la primera vez (cloud/schema.ts). */
 export function d1ForecastStore(db: D1Database): ForecastStore {
-	const ready = async () => {
-		if (tablesReady) return;
-		await db.exec('CREATE TABLE IF NOT EXISTS forecast_players (user TEXT PRIMARY KEY, uid TEXT NOT NULL UNIQUE, alias TEXT)');
-		await db.exec(
-			'CREATE TABLE IF NOT EXISTS forecast_bets (user TEXT NOT NULL, round TEXT NOT NULL, closes TEXT NOT NULL, value REAL NOT NULL, updated INTEGER NOT NULL, PRIMARY KEY (user, round))'
-		);
-		tablesReady = true;
-	};
+	const ready = () => ensure(db, 'forecast_players', 'forecast_bets');
 	return {
 		async player(user) {
 			await ready();

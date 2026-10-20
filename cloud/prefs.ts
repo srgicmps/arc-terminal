@@ -5,6 +5,7 @@
 import { LIMITS } from '../src/lib/cloud.ts';
 import { portable } from '../src/lib/transfer.ts';
 import { tokenOf, verifyAccess, type AccessConfig } from './access.ts';
+import { ensure } from './schema.ts';
 
 /** Topes (en src/lib/cloud.ts, para que el navegador los respete antes de subir): de sobra para lo de hoy. */
 export { LIMITS };
@@ -105,17 +106,9 @@ export interface D1Statement {
 	run(): Promise<unknown>;
 }
 
-let tableReady = false;
-
-/** D1: una tabla, (email, clave) única. La tabla se crea sola la primera vez. */
+/** D1: una tabla, (email, clave) única. La tabla se crea sola la primera vez (cloud/schema.ts). */
 export function d1Store(db: D1Database): Store {
-	const ready = async () => {
-		if (tableReady) return;
-		await db.exec(
-			'CREATE TABLE IF NOT EXISTS prefs (user TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, updated INTEGER NOT NULL, PRIMARY KEY (user, key))'
-		);
-		tableReady = true;
-	};
+	const ready = () => ensure(db, 'prefs');
 	return {
 		async all(user) {
 			await ready();

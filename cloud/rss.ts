@@ -6,6 +6,7 @@
 // - Solo devuelve titulares, enlaces http(s) y fechas: nunca HTML del feed.
 import { tokenOf, verifyIdentity, type AccessConfig } from './access.ts';
 import { json, type D1Database, type Env } from './prefs.ts';
+import { ensure } from './schema.ts';
 
 export const RSS_LIMITS = {
 	feeds: 20,
@@ -262,15 +263,9 @@ export async function handleRss(
 	return json(405, { error: 'método' });
 }
 
-let tableReady = false;
-
-/** D1: tabla rss, una fila por persona con su lista en JSON. Se crea sola la primera vez. */
+/** D1: tabla rss, una fila por persona con su lista en JSON. Se crea sola la primera vez (cloud/schema.ts). */
 export function d1RssStore(db: D1Database): RssStore {
-	const ready = async () => {
-		if (tableReady) return;
-		await db.exec('CREATE TABLE IF NOT EXISTS rss (user TEXT PRIMARY KEY, feeds TEXT NOT NULL, updated INTEGER NOT NULL)');
-		tableReady = true;
-	};
+	const ready = () => ensure(db, 'rss');
 	return {
 		async get(user) {
 			await ready();

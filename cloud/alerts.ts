@@ -12,6 +12,7 @@ import { parseConfig, parsePrices, parseWordList, type AlertConfig } from '../sr
 import { tokenOf, verifyIdentity, type AccessConfig } from './access.ts';
 import type { AdminEnv } from './feedback.ts';
 import { json, type D1Database } from './prefs.ts';
+import { ensure } from './schema.ts';
 
 export interface AlertRow {
 	/** Id aleatorio: con él la Action guarda el historial de cada uno sin saber quién es. */
@@ -134,17 +135,9 @@ async function readBody(request: Request): Promise<Record<string, unknown> | Res
 	return json(400, { error: 'JSON no válido' });
 }
 
-let tableReady = false;
-
-/** D1: tabla alerts, una fila por persona. Se crea sola la primera vez. */
+/** D1: tabla alerts, una fila por persona. Se crea sola la primera vez (cloud/schema.ts). */
 export function d1AlertStore(db: D1Database): AlertStore {
-	const ready = async () => {
-		if (tableReady) return;
-		await db.exec(
-			'CREATE TABLE IF NOT EXISTS alerts (user TEXT PRIMARY KEY, uid TEXT NOT NULL, topic TEXT, config TEXT NOT NULL, updated INTEGER NOT NULL)'
-		);
-		tableReady = true;
-	};
+	const ready = () => ensure(db, 'alerts');
 	type Raw = { uid: string; topic: string | null; config: string };
 	const row = (r: Raw): AlertRow => ({ uid: r.uid, topic: r.topic, config: parseConfig(JSON.parse(r.config)) });
 	return {

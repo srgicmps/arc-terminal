@@ -11,6 +11,7 @@
 // ellos, la lista sale igual (solo con lo de D1) y no se puede invitar ni quitar.
 import { isAdmin, person, readJson, type AdminEnv } from './feedback.ts';
 import { json, type D1Database } from './prefs.ts';
+import { ensure } from './schema.ts';
 
 export interface AdminFullEnv extends AdminEnv {
 	CF_ACCESS_ADMIN_TOKEN?: string;
@@ -188,18 +189,12 @@ export async function handleAdmin(
 	return json(405, { error: 'método' });
 }
 
-let tableReady = false;
-
-/** Tabla seen (último acceso). La escribe /api/prefs al cargar la web (d1Store, cloud/prefs.ts). */
-export async function seenTable(db: D1Database) {
-	if (tableReady) return;
-	await db.exec('CREATE TABLE IF NOT EXISTS seen (user TEXT PRIMARY KEY, at INTEGER NOT NULL)');
-	tableReady = true;
-}
-
-/** Apunta el último acceso, como mucho una vez cada 10 minutos por usuario. */
+/**
+ * Apunta el último acceso (tabla seen), como mucho una vez cada 10 minutos por usuario. Lo llama /api/prefs al
+ * cargar la web (functions/api/prefs.ts).
+ */
 export async function touchSeen(db: D1Database, user: string, now = Date.now()) {
-	await seenTable(db);
+	await ensure(db, 'seen');
 	await db
 		.prepare(
 			'INSERT INTO seen (user, at) VALUES (?, ?) ON CONFLICT (user) DO UPDATE SET at = excluded.at WHERE excluded.at - seen.at > 600000'
@@ -209,16 +204,8 @@ export async function touchSeen(db: D1Database, user: string, now = Date.now()) 
 }
 
 export function d1AdminStore(db: D1Database): AdminStore {
-	// Las tablas de los demás módulos pueden no existir todavía: se crean igual que allí.
-	const ready = async () => {
-		await seenTable(db);
-		await db.exec(
-			'CREATE TABLE IF NOT EXISTS prefs (user TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, updated INTEGER NOT NULL, PRIMARY KEY (user, key))'
-		);
-		await db.exec(
-			'CREATE TABLE IF NOT EXISTS alerts (user TEXT PRIMARY KEY, uid TEXT NOT NULL, topic TEXT, config TEXT NOT NULL, updated INTEGER NOT NULL)'
-		);
-	};
+	// Las tablas de los demás módulos pueden no existir todavía: se crean igual que allí (cloud/schema.ts).
+	const ready = () => ensure(db, 'seen', 'prefs', 'alerts');
 	return {
 		async users() {
 			await ready();
