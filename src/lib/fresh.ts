@@ -273,11 +273,10 @@ export function watch(state: FreshState, env: FreshEnv) {
 		fingers = (e as TouchEvent).touches?.length ?? 0;
 		lastGesture = Date.now();
 	};
-	// Un trozo de la build que ya no existe (se publicó código nuevo y esta pestaña pide el viejo): hay que recargar.
-	const onPreloadError = () => {
-		state.codigo = true;
-		state.aviso = false;
-	};
+	// Un trozo de código que no llega. Puede ser que ya no exista (se publicó código nuevo y esta pestaña pide el
+	// viejo: hay que recargar) o solo falta de red: Vite lanza este evento con cualquier import() que falle, también
+	// al precargar una vista al pasar el ratón. Lo decide /code.json (otro commit: «Recargar»); sin red, nada.
+	const onPreloadError = () => void poll();
 
 	const first = setTimeout(() => void poll(false, true), FIRST_MS);
 	const timer = setInterval(() => void poll(), POLL_MS);

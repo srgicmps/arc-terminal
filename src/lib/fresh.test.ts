@@ -539,10 +539,35 @@ describe('watch', () => {
 		t.w.stop();
 	});
 
-	it('un trozo de la build que ya no existe: «Recargar»', () => {
-		const t = setup();
+	it('un trozo de la build que no llega: pregunta a /code.json; con otro commit, «Recargar»', async () => {
+		const t = setup({ v: '100', code: 'abc' });
+		await vi.advanceTimersByTimeAsync(FIRST_MS);
+		t.env.latest = { v: '200', code: 'def' };
 		t.win.dispatchEvent(new Event('vite:preloadError'));
+		await vi.advanceTimersByTimeAsync(0);
+		expect(t.read).toHaveBeenCalledTimes(2);
 		expect(t.state.codigo).toBe(true);
+		t.w.stop();
+	});
+
+	it('un trozo que no llega sin red (o con el mismo código) no es una versión nueva, y se sigue preguntando', async () => {
+		const t = setup({ v: '100', code: 'abc' });
+		await vi.advanceTimersByTimeAsync(FIRST_MS);
+		// Sin red: /code.json tampoco responde.
+		t.env.latest = null;
+		t.win.dispatchEvent(new Event('vite:preloadError'));
+		await vi.advanceTimersByTimeAsync(0);
+		expect(t.read).toHaveBeenCalledTimes(2);
+		expect(t.state.codigo).toBe(false);
+		// Con red otra vez y el mismo código: tampoco; y los datos nuevos siguen llegando.
+		t.env.latest = { v: '100', code: 'abc' };
+		t.win.dispatchEvent(new Event('vite:preloadError'));
+		await vi.advanceTimersByTimeAsync(0);
+		expect(t.state.codigo).toBe(false);
+		t.env.latest = { v: '200', code: 'abc' };
+		await vi.advanceTimersByTimeAsync(POLL_MS);
+		expect(t.refresh).toHaveBeenCalledOnce();
+		expect(t.state.codigo).toBe(false);
 		t.w.stop();
 	});
 
