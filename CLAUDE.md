@@ -42,7 +42,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - En los PR, la Action va en jobs a la vez: `checks` (check, `pnpm test:cov` con suelo por carpeta en `vitest.config.ts`, build y el tope de peso por vista de
   `scripts/weight.ts`: el verde o el rojo rápido; Arc OS, `/os`, no tiene tope por decisión de Sergi, y lo que solo
   carga dentro de `/os` tampoco), `smoke`
-  (datos reales y prueba de humo), `vitals` (Core Web Vitals de TOP, GEO, WS y FUEL a 390 px, `scripts/vitals.ts`, si el PR cambia la web; solo avisa; también a mano) y `probe` solo si el PR toca `scripts/`. `compare` (vistas del PR frente a
+  (datos reales y prueba de humo, 3 vistas a la vez con `SMOKE_CONCURRENCY`; fallan axe de estructura y WebKit, el contraste avisa), `vitals` (Core Web Vitals de TOP, GEO, WS y FUEL a 390 px, `scripts/vitals.ts`, si el PR cambia la web; solo avisa; también a mano) y `probe` solo si el PR toca `scripts/`. `compare` (vistas del PR frente a
   main) y `tv-shots` se lanzan a mano: Run workflow sobre la rama, con «herramienta». Cada `uses:` va fijado por SHA (cómo subirlo, en la cabecera de `deploy.yml`).
 
 ## Arquitectura

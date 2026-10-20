@@ -174,7 +174,7 @@
 			<Panel title="Usuarios" meta="{users.filter((u) => u.invited).length} con acceso">
 				<Table>
 					<thead>
-						<tr><th class="l">Email</th><th>Último acceso</th><th>Avisos</th><th></th></tr>
+						<tr><th class="l">Email</th><th>Último acceso</th><th>Avisos</th><th><span class="sr">Acciones</span></th></tr>
 					</thead>
 					<tbody>
 						{#each users as u (u.email)}
