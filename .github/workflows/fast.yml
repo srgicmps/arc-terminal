@@ -1,17 +1,21 @@
 # Vía rápida: cada 5 minutos refresca solo las fuentes urgentes (terremotos, avisos, titulares, IMP…) y
 # vuelve a publicar la web. La vía normal (deploy.yml, cada 15 min y en cada push a main) sigue igual.
+# - La lanza el despertador (cloud/cron/despertador.ts, un Worker de Cloudflare con Cron Triggers) con
+#   workflow_dispatch: GitHub se salta casi todos los `schedule`. El de abajo se queda de respaldo.
 # - Las demás fuentes no se descargan: `pnpm data` reutiliza su copia publicada mientras no pase su
 #   maxAgeMinutes, así que no se gastan los límites de Finnhub, SEC, etc.
 # - Con check y test, como deploy.yml, una vez por commit (marca «verificado-<SHA>» en la caché de
 #   Actions): si main está en rojo, esta vía no publica.
 # - Comparte el grupo de concurrencia con deploy.yml: nunca publican a la vez y, si llega otra pasada
 #   mientras hay una en marcha, espera (y una pendiente más nueva sustituye a la anterior, no se acumulan).
+#   Por eso el despertador no lanza esta si ya espera turno otra pasada de main.
 name: Vía rápida
 
 on:
   # Minutos 4, 9, 14… Nunca coinciden con los de deploy.yml (7, 22, 37, 52): si coincidieran, una pasada
   # rápida pendiente podría sustituir a una normal y esa vez no correrían issues.ts ni las miniaturas.
-  # GitHub puede retrasar el cron unos minutos cuando va cargado.
+  # GitHub se salta casi todas (unas 7 al día de 288 en octubre de 2026): es solo el respaldo del despertador,
+  # que la lanza en los minutos 0, 5, 10… (tampoco coinciden con los de deploy.yml).
   schedule:
     - cron: '4-59/5 * * * *'
   workflow_dispatch:
