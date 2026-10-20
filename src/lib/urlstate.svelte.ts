@@ -25,8 +25,8 @@ const countNav = navCounter();
 const navs = $derived(countNav(page.url, untrack(() => navigating.type) !== null));
 
 /**
- * Cambia con cada navegación de verdad, también a la misma URL, y no con un refresco de datos (urlstate.ts,
- * navCounter). Un $effect que aplica un parámetro o el hash lo lee junto al texto ($derived): así, repetir el
+ * Cambia con cada navegación de verdad, también a la misma URL, y no con un refresco de datos ni con un salto a
+ * otro #hash de la misma página (urlstate.ts, navCounter). Un $effect que aplica un parámetro o el hash lo lee junto al texto ($derived): así, repetir el
  * comando de la barra («ECO TIPOS», «BOE vivienda») lo vuelve a aplicar, como antes de refrescar en su sitio.
  */
 export const navKey = () => navs;

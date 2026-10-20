@@ -31,10 +31,13 @@ describe('navCounter', () => {
 		expect(count(at('/eco#panel=Tipos'), true)).toBe(3);
 	});
 
-	it('un enlace a otro #hash cambia la dirección sin navegar: también cuenta', () => {
+	it('un salto a otro #hash de la misma página sin navegar («Saltar al contenido», atrás entre dos #hash) no cuenta', () => {
 		const count = navCounter();
-		count(at('/eco'), false);
-		expect(count(at('/eco#panel=Tipos'), false)).toBe(2);
+		count(at('/boe?q=vivienda'), false);
+		expect(count(at('/boe?q=vivienda#contenido'), false)).toBe(1);
+		expect(count(at('/boe?q=vivienda'), false)).toBe(1);
+		// Otra dirección sin navegar (la primera tras escribir con writeParams y un enlace a #hash), sí.
+		expect(count(at('/boe?q=alquiler#contenido'), false)).toBe(2);
 	});
 
 	it('un refresco de datos (otro objeto, misma dirección, sin navegar) no cuenta', () => {
