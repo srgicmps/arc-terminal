@@ -91,20 +91,34 @@ function titlesOf(tag: string): { full: string[]; heads: string[] } {
 	return out;
 }
 
-/** Títulos fijos (tal cual) y principios hasta « · » de los <Panel> de cada .svelte de src, sin Arc OS. */
+/** Los `id` que puede llevar un <Panel>: el fijo (id="x") o los textos de su expresión (id={a ? 'x' : undefined}). */
+function idsOf(tag: string): string[] {
+	const at = /\sid=(["'{])/.exec(tag);
+	if (!at) return [];
+	const start = at.index + at[0].length - 1;
+	if (at[1] !== '{') return [tag.slice(start + 1, tag.indexOf(at[1], start + 1))];
+	return [...scan(tag, start).matchAll(/'([^']*)'|"([^"]*)"/g)].map((m) => m[1] ?? m[2]);
+}
+
+/** Títulos fijos (tal cual) y principios hasta « · » de los <Panel> de cada .svelte de src, sin Arc OS; y sus id. */
 const BY_FILE = new Map<string, string[]>();
+const IDS_BY_FILE = new Map<string, string[]>();
 const FULL = new Set<string>();
 const HEADS = new Set<string>();
 for (const f of files) {
 	const src = readFileSync(f, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
 	const titles: string[] = [];
+	const ids: string[] = [];
 	for (const m of src.matchAll(/<Panel(?=[\s>/])/g)) {
-		const { full, heads } = titlesOf(scan(src, m.index));
+		const tag = scan(src, m.index);
+		const { full, heads } = titlesOf(tag);
 		for (const t of full) FULL.add(t);
 		for (const h of heads) HEADS.add(h);
 		titles.push(...full, ...heads);
+		ids.push(...idsOf(tag));
 	}
 	BY_FILE.set(f, titles);
+	IDS_BY_FILE.set(f, ids);
 }
 
 /** Adónde lleva un import de .svelte: #lib/ y $lib/ son src/lib; los relativos, desde su archivo. Un paquete, a ninguno. */
@@ -157,6 +171,19 @@ describe('títulos de panel', () => {
 		const missing = Object.entries(ESSENTIAL).flatMap(([route, list]) =>
 			list.filter((e) => !e.startsWith('id:') && !isTitle(e, titlesFor(route), (a, b) => fold(a) === fold(b))).map((e) => `${route}: ${e}`)
 		);
+		expect(missing).toEqual([]);
+	});
+
+	it('cada «id:» del modo Sencillo es el id de un <Panel> de su vista', () => {
+		expect(idsOf('<Panel id={menorca ? undefined : \'avisos\'} title="Avisos">')).toEqual(['avisos']);
+		expect(idsOf('<Panel\n\tid="precio"\n\ttitle={dia}>')).toEqual(['precio']);
+		// TOP va aparte: sus paneles con id los pinta cada bloque de la portada, no un <Panel id=…> fijo.
+		const missing = Object.entries(ESSENTIAL)
+			.filter(([route]) => route !== '/')
+			.flatMap(([route, list]) => {
+				const ids = viewFiles(route).flatMap((f) => IDS_BY_FILE.get(f) ?? []);
+				return list.filter((e) => e.startsWith('id:') && !ids.includes(e.slice(3))).map((e) => `${route}: ${e}`);
+			});
 		expect(missing).toEqual([]);
 	});
 
