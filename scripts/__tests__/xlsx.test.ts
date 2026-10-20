@@ -120,7 +120,77 @@ describe('readXlsx', () => {
 		});
 		expect(readXlsx(book)[0].rows).toEqual([[new Date('2025-01-01T00:00:00Z')]]);
 	});
+
+	it('fechas en ISO (t="d"): sin zona, en UTC', () => {
+		const book = sheetBook(
+			'<sheetData><row r="1"><c r="A1" t="d"><v>2024-03-05T10:00:00</v></c><c r="B1" t="d"><v>2024-03-05T10:00:00+02:00</v></c><c r="C1" t="d"><v>2024-03-05</v></c></row></sheetData>'
+		);
+		expect(readXlsx(book)[0].rows).toEqual([
+			[new Date('2024-03-05T10:00:00Z'), new Date('2024-03-05T08:00:00Z'), new Date('2024-03-05T00:00:00Z')]
+		]);
+	});
+
+	it('libro, cadenas y estilos con prefijo de espacio de nombres (<x:workbook>, <x:sst>, <x:styleSheet>)', () => {
+		const X = `xmlns:x="${MAIN}" xmlns:r="${REL}"`;
+		const book = xlsx({
+			'xl/workbook.xml': `<x:workbook ${X}><x:sheets><x:sheet name="H" sheetId="1" r:id="rId1"/></x:sheets></x:workbook>`,
+			'xl/_rels/workbook.xml.rels': rels([
+				['rId1', 'worksheet', 'worksheets/sheet1.xml'],
+				['rId2', 'sharedStrings', 'sharedStrings.xml'],
+				['rId3', 'styles', 'styles.xml']
+			]),
+			'xl/sharedStrings.xml': `<x:sst ${X}><x:si><x:t>hola</x:t></x:si><x:si><x:r><x:t>a</x:t></x:r><x:r><x:t>b</x:t></x:r></x:si></x:sst>`,
+			'xl/styles.xml': `<x:styleSheet ${X}><x:cellXfs><x:xf numFmtId="0"/><x:xf numFmtId="14"/></x:cellXfs></x:styleSheet>`,
+			'xl/worksheets/sheet1.xml': `<x:worksheet ${X}><x:sheetData><x:row r="1"><x:c r="A1" t="s"><x:v>0</x:v></x:c><x:c r="B1" t="s"><x:v>1</x:v></x:c><x:c r="C1" s="1"><x:v>45658</x:v></x:c></x:row></x:sheetData></x:worksheet>`
+		});
+		expect(readXlsx(book)).toEqual([{ name: 'H', rows: [['hola', 'ab', new Date('2025-01-01T00:00:00Z')]] }]);
+	});
+
+	it('una hoja rota (un <row>, <c> o <v> sin cerrar) da error al momento, no recorre la hoja una vez por fila', () => {
+		// Sin la comprobación, cada <row> sin cerrar buscaría su </row> hasta el final: el coste crece con el cuadrado.
+		const open = Array.from({ length: 2000 }, (_, i) => `<row r="${i + 1}"><c r="A${i + 1}"><v>${i}</v></c>`);
+		for (const data of [
+			open.join(''),
+			`</row>${open.join('')}</row>`,
+			'<row r="1"><c r="A1"><v>1</v><c r="B1"><v>2</v></c></row>',
+			'<row r="1"><c r="A1"><v>1<v>2</v></c></row>'
+		]) {
+			expect(() => readXlsx(sheetBook(`<sheetData>${data}</sheetData>`)), data.slice(0, 40)).toThrow(/mal formada/);
+		}
+	});
+
+	it('una parte que pasa del tope al descomprimirse (bomba ZIP) no se descomprime: error solo si hay que leerla', () => {
+		const big = declare(BOOK, 'xl/worksheets/sheet2.xml', 100e6);
+		expect(() => readXlsx(big)).toThrow(/sheet2\.xml ocupa 100 MB.*tope/);
+		expect(readXlsx(big, (name) => /notas/i.test(name))).toEqual([{ name: 'Notas & fuentes', rows: notas.rows }]);
+	});
 });
+
+/** Un libro con una sola hoja «H», con este <sheetData>. */
+function sheetBook(sheetData: string): Uint8Array {
+	return xlsx({
+		'xl/workbook.xml': `<workbook ${NS}><sheets><sheet name="H" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+		'xl/_rels/workbook.xml.rels': rels([['rId1', 'worksheet', 'worksheets/sheet1.xml']]),
+		'xl/worksheets/sheet1.xml': `<worksheet ${NS}>${sheetData}</worksheet>`
+	});
+}
+
+/**
+ * El mismo ZIP, pero con la parte `name` declarando `size` bytes descomprimida en el directorio central (de ahí lo
+ * lee fflate). Así se prueba el tope sin montar un archivo de verdad de cientos de MB.
+ */
+function declare(zip: Uint8Array, name: string, size: number): Uint8Array {
+	const out = zip.slice();
+	const view = new DataView(out.buffer);
+	const target = strToU8(name);
+	for (let i = 0; i + 46 <= out.length; i++) {
+		// Cabecera del directorio central: firma 0x02014b50, tamaño descomprimido en +24, largo del nombre en +28,
+		// nombre en +46.
+		if (view.getUint32(i, true) !== 0x02014b50 || view.getUint16(i + 28, true) !== target.length) continue;
+		if (target.every((b, k) => out[i + 46 + k] === b)) view.setUint32(i + 24, size, true);
+	}
+	return out;
+}
 
 describe('isDateFormat', () => {
 	it('fechas y horas, fuera del texto literal', () => {

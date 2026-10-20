@@ -7,6 +7,7 @@
 // - Número → number; con formato de fecha u hora → Date en UTC. Texto (compartido, enriquecido o en línea) →
 //   string. Verdadero o falso → boolean. Error (#N/A…) → su texto. Fórmula → el último resultado que guardó Excel.
 // - Celdas combinadas: todas repiten el valor de la de arriba a la izquierda, como en exceljs.
+// - Hoja mal formada o parte enorme al descomprimirla: error al momento (ni se cuelga ni agota la memoria).
 // No lee el .xls antiguo (binario), ni comentarios, ni enlaces, ni colores.
 import { XMLParser } from 'fast-xml-parser';
 import { unzipSync } from 'fflate';
@@ -57,7 +58,10 @@ const CELL = new RegExp(`<${P}c\\b([^>]*?)(?:/>|>([\\s\\S]*?)</${P}c>)`, 'g');
 const VALUE = new RegExp(`<${P}v\\b[^>]*?(?:/>|>([\\s\\S]*?)</${P}v>)`);
 const FORMULA = new RegExp(`<${P}f\\b`);
 const INLINE = new RegExp(`<${P}is\\b[\\s\\S]*?</${P}is>`);
-const MERGE = new RegExp(`<${P}mergeCell\\b[^>]*?\\sref=(["'])(.*?)\\1`, 'g');
+// La referencia («A8:C9») sin comillas ni «<>»: así la búsqueda no sigue por la hoja si falta la comilla.
+const MERGE = new RegExp(`<${P}mergeCell\\b[^>]*?\\sref=(["'])([^"'<>]*)\\1`, 'g');
+// Las etiquetas que las expresiones de arriba buscan hasta su cierre.
+const TAG = new RegExp(`<(/?)${P}(row|c|v|is)\\b[^>]*?(/?)>`, 'g');
 const attr = (name: string) => new RegExp(`(?:^|\\s)${name}=(["'])(.*?)\\1`);
 const [REF, STYLE, TYPE] = [attr('r'), attr('s'), attr('t')];
 
@@ -174,6 +178,21 @@ function cellValue(attrs: string, body: string, book: Book): unknown {
 	}
 }
 
+/**
+ * Comprueba, en una sola pasada, que cada <row>, <c>, <v> e <is> se cierra antes de que se abra otro igual. Sin
+ * esto, una hoja rota (un <row> sin </row>) haría que las expresiones de arriba recorrieran el resto de la hoja una
+ * vez por fila: minutos con una hoja grande. readXlsx es síncrono, así que se pararía toda la pasada de
+ * `pnpm data` (el tope de tiempo de cada fuente no puede cortarlo). Así, error al momento, como con exceljs.
+ */
+function checkTags(data: string): void {
+	const open = new Set<string>();
+	for (const [, close, name, empty] of data.matchAll(TAG)) {
+		if (close ? !open.delete(name) : open.has(name)) throw new Error(`hoja mal formada: <${close}${name}> sin pareja`);
+		if (!close && !empty) open.add(name);
+	}
+	if (open.size) throw new Error(`hoja mal formada: <${[...open][0]}> sin cerrar`);
+}
+
 /** Las filas con datos de una hoja (el XML de <worksheet>), por número de fila. */
 function readSheet(xml: string, book: Book): unknown[][] {
 	const rows = new Map<number, unknown[]>();
@@ -182,8 +201,10 @@ function readSheet(xml: string, book: Book): unknown[][] {
 		if (!row) rows.set(n, (row = []));
 		return row;
 	};
+	const data = SHEET_DATA.exec(xml)?.[1] ?? '';
+	checkTags(data);
 	let r = 0;
-	for (const [, rowAttrs, cells = ''] of (SHEET_DATA.exec(xml)?.[1] ?? '').matchAll(ROW)) {
+	for (const [, rowAttrs, cells = ''] of data.matchAll(ROW)) {
 		r = Number(REF.exec(rowAttrs)?.[2]) || r + 1;
 		let col = -1;
 		for (const [, attrs, body = ''] of cells.matchAll(CELL)) {
@@ -206,6 +227,12 @@ function readSheet(xml: string, book: Book): unknown[][] {
 	return [...rows].sort((a, b) => a[0] - b[0]).map(([, cells]) => cells);
 }
 
+// Topes de lo descomprimido, por parte y por libro. Hoy la mayor es una hoja del Oil Bulletin, de 9 MB (el libro
+// entero, 25 MB). Un .xlsx roto o malicioso (una «bomba ZIP» de varios GB) no tumba así por falta de memoria la
+// pasada de `pnpm data`, con todas sus fuentes: fflate reserva de golpe el tamaño que declara cada parte.
+const MAX_PART = 64e6;
+const MAX_BOOK = 256e6;
+
 /**
  * Lee un .xlsx: sus hojas en el orden de las pestañas (sin las de solo gráfico). Con `pick`, solo las hojas que
  * elige por nombre o posición; las demás ni se leen (el histórico del Oil Bulletin trae hojas de varios MB).
@@ -214,11 +241,30 @@ export function readXlsx(
 	bytes: ArrayBuffer | Uint8Array,
 	pick?: (name: string, index: number) => boolean
 ): XlsxSheet[] {
-	// Solo los XML del libro: fuera imágenes, dibujos y ajustes de impresora.
+	// Solo los XML del libro: fuera imágenes, dibujos y ajustes de impresora. Y con tope (ver MAX_PART): lo que pasa
+	// de él no se descomprime, y da error solo si hace falta leerlo.
+	const big = new Map<string, number>();
+	let total = 0;
 	const zip = unzipSync(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes), {
-		filter: (f) => /^xl\/.+\.(xml|rels)$/.test(f.name)
+		filter: (f) => {
+			if (!/^xl\/.+\.(xml|rels)$/.test(f.name)) return false;
+			if (f.originalSize > MAX_PART || total + f.originalSize > MAX_BOOK) {
+				big.set(f.name, f.originalSize);
+				return false;
+			}
+			total += f.originalSize;
+			return true;
+		}
 	});
-	const source = (path: string) => (zip[path] ? new TextDecoder().decode(zip[path]) : '');
+	const source = (path: string) => {
+		const size = big.get(path);
+		if (size !== undefined) {
+			throw new Error(
+				`${path} ocupa ${Math.round(size / 1e6)} MB descomprimido: pasa del tope (${MAX_PART / 1e6} MB por parte, ${MAX_BOOK / 1e6} MB por libro)`
+			);
+		}
+		return zip[path] ? new TextDecoder().decode(zip[path]) : '';
+	};
 	const xml = (path: string): Node => node(parser.parse(source(path)));
 	const workbook = node(xml('xl/workbook.xml').workbook);
 	const rels = list(node(xml('xl/_rels/workbook.xml.rels').Relationships).Relationship).map(node);
@@ -241,7 +287,8 @@ export function readXlsx(
 		.map(node)
 		.flatMap((s) => {
 			const rel = rels.find((r) => r['@Id'] === s['@id']);
-			if (!rel || !String(rel['@Type']).endsWith('/worksheet') || !zip[target(rel)]) return [];
+			if (!rel || !String(rel['@Type']).endsWith('/worksheet')) return [];
+			if (!zip[target(rel)] && !big.has(target(rel))) return [];
 			return [{ name: String(s['@name'] ?? ''), path: target(rel) }];
 		});
 	return sheets
