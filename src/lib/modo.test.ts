@@ -13,12 +13,7 @@ describe('decideModo', () => {
 		expect(decideModo(null, ['otra-cosa', 'arc-modo'])).toBe('sencillo');
 		expect(decideModo('raro', ['arc-last-visit'])).toBe('terminal');
 	});
-	it('src/app.html aplica la misma regla antes de pintar', () => {
-		const html = readFileSync('src/app.html', 'utf8');
-		expect(html).toContain("localStorage.getItem('arc-modo')");
-		expect(html).toContain("k.indexOf('arc-') === 0 && k !== 'arc-modo'");
-		expect(html).toContain('document.documentElement.dataset.modo = m');
-	});
+	// Que src/app.html aplica la misma regla antes de pintar lo comprueba apphtml.test.ts, ejecutándolo.
 });
 
 describe('paneles del modo Sencillo', () => {
