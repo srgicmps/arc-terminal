@@ -15,3 +15,10 @@ database_id = "__D1_DATABASE_ID__"
 [vars]
 ACCESS_TEAM_DOMAIN = "__ACCESS_TEAM_DOMAIN__"
 ACCESS_AUD = "__ACCESS_AUD__"
+
+# PREGUNTA (functions/api/ask.ts → cloud/ask.ts), la única pieza con IA: Workers AI (env.AI). cf-config.ts quita
+# este bloque si el token no llega a Workers AI; sin él, /api/ask responde «sin configurar» y lo demás sigue igual.
+# <ai>
+[ai]
+binding = "AI"
+# </ai>

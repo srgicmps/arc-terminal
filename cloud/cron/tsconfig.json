@@ -1,0 +1,13 @@
+// Solo para `wrangler deploy` (esbuild): sin este archivo, al empaquetar el Worker buscaría el tsconfig de la
+// raíz, que hereda del de SvelteKit (no existe en el job «despertador», que no instala dependencias).
+// `pnpm check` sigue comprobando estos archivos con el tsconfig de la raíz (incluye cloud/).
+{
+	"compilerOptions": {
+		"target": "es2022",
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"strict": true,
+		"skipLibCheck": true
+	},
+	"include": ["worker.ts", "despertador.ts"]
+}

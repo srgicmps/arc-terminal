@@ -1,7 +1,7 @@
 /// <reference types="node" />
 // Avisos de fuentes caídas como issues de GitHub. Lo ejecuta la Action después de `pnpm data`
 // (solo en el cron y en los push a main, nunca en los PR):
-// - si el tramo actual de una fuente (status-history.json) es «error» y lleva 3 pasadas o más, abre
+// - si el tramo actual de una fuente (status-history.json) es «error» desde hace 45 min o más, abre
 //   un issue «Fuente caída: <nombre>», o actualiza el que ya está abierto (se edita el texto, sin
 //   comentar, para no llenar el correo);
 // - cuando la fuente vuelve (ok o cached), comenta y lo cierra.
@@ -13,8 +13,11 @@ import { fileURLToPath } from 'node:url';
 import { SITE } from './site.ts';
 import type { SourceHistory, SourceStatus, StateSpan } from '../src/lib/data.ts';
 
-/** Pasadas seguidas en «error» para abrir el issue (cada pasada son unos 15 minutos). */
-export const DOWN_AFTER = 3;
+/**
+ * Minutos seguidos en «error» para abrir el issue. Se mide en tiempo, no en pasadas: con el despertador
+ * (cloud/cron/) hay una cada 5 min, y 3 pasadas abrirían un issue por un fallo de 10 minutos.
+ */
+export const DOWN_AFTER_MIN = 45;
 export const LABEL = 'fuente-caida';
 const STATUS_URL = `${SITE}/status`;
 const API = 'https://api.github.com';
@@ -28,25 +31,34 @@ export type Action =
 	| { kind: 'close'; name: string; issue: number }
 	| { kind: 'none'; name: string };
 
-/** Tramo actual (el último) del historial de una fuente, si está en «error» y lleva al menos `n` pasadas. */
-export function downSpan(history: SourceHistory | undefined, n = DOWN_AFTER): StateSpan | null {
+/**
+ * Tramo actual (el último) del historial de una fuente, si está en «error» desde hace `minutes` o más:
+ * de su primera pasada (`t`) a `now`.
+ */
+export function downSpan(
+	history: SourceHistory | undefined,
+	now = Date.now(),
+	minutes = DOWN_AFTER_MIN
+): StateSpan | null {
 	const span = history?.history?.at(-1);
-	return span && span.state === 'error' && span.runs >= n ? span : null;
+	if (!span || span.state !== 'error') return null;
+	const since = Date.parse(span.t);
+	return Number.isFinite(since) && now - since >= minutes * 60_000 ? span : null;
 }
 
 /**
  * Decide qué hacer con una fuente, sabiendo su historial por tramos y si ya tiene un issue abierto
  * (su número) o no. Caída → abrir o actualizar. De vuelta (ok o cached) con issue abierto → cerrar.
- * Lo demás (copia anterior, sin clave, menos de 3 errores seguidos) → nada: el issue sigue como esté.
+ * Lo demás (copia anterior, sin clave, menos de 45 min en error) → nada: el issue sigue como esté.
  */
 export function decide(
 	status: SourceStatus,
 	history: SourceHistory | undefined,
 	openIssue: number | undefined,
-	n = DOWN_AFTER
+	now = Date.now()
 ): Action {
 	const name = status.name;
-	if (status.state === 'error' && downSpan(history, n)) {
+	if (status.state === 'error' && downSpan(history, now)) {
 		return openIssue ? { kind: 'update', name, issue: openIssue } : { kind: 'open', name };
 	}
 	if (openIssue && (status.state === 'ok' || status.state === 'cached')) return { kind: 'close', name, issue: openIssue };
@@ -144,7 +156,12 @@ export function github(token: string) {
 export async function sync(
 	statuses: SourceStatus[],
 	histories: SourceHistory[],
-	{ repo, token, secrets = [] }: { repo: string; token: string; secrets?: (string | undefined)[] }
+	{
+		repo,
+		token,
+		secrets = [],
+		now = Date.now()
+	}: { repo: string; token: string; secrets?: (string | undefined)[]; now?: number }
 ): Promise<Action[]> {
 	const api = github(token);
 	const open = await api<Issue[]>(`/repos/${repo}/issues?state=open&labels=${LABEL}&per_page=100`);
@@ -153,7 +170,7 @@ export async function sync(
 	const done: Action[] = [];
 	for (const status of statuses) {
 		const history = historyOf.get(status.name);
-		const action = decide(status, history, byTitle.get(title(status.name)));
+		const action = decide(status, history, byTitle.get(title(status.name)), now);
 		if (action.kind === 'none') continue;
 		if (action.kind === 'open') {
 			await api(`/repos/${repo}/issues`, 'POST', {

@@ -8,8 +8,11 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/** Lo que no se mira: las capas de tokens y Arc OS. */
-const SKIP = ['src/styles/tokens.css', 'src/styles/ajustes.css', 'src/lib/os/', 'src/lib/components/os/'];
+/**
+ * Lo que no se mira: las capas de tokens, Arc OS y fonts.css, que solo declara las letras (@font-face): su
+ * font-family es el nombre que define, no una fuente fija (estilos.test.ts comprueba que no lleva nada más).
+ */
+const SKIP = ['src/styles/tokens.css', 'src/styles/ajustes.css', 'src/styles/fonts.css', 'src/lib/os/', 'src/lib/components/os/'];
 
 /**
  * Valores fijos que se quedan, con su porqué. Solo puede bajar: si uno ya no está, el test pide quitarlo.
@@ -94,6 +97,7 @@ describe('nada de valores fijos (colores y fuentes)', () => {
 		expect(files.length).toBeGreaterThan(150);
 		expect(files).toContain('src/app.css');
 		expect(files).not.toContain('src/styles/tokens.css');
+		expect(files).not.toContain('src/styles/fonts.css');
 	});
 
 	it('distingue un valor fijo de un token (y no confunde selectores, url() ni máscaras)', () => {

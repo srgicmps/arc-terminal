@@ -3,11 +3,14 @@
 //   Solo salen en la lista quienes aceptan Y tienen los avisos activados (su tema de ntfy, cloud/alerts.ts).
 // - GET: su ajuste y la lista de a quién puede mandar (id aleatorio y nombre; nunca emails ni temas).
 //   PUT { name, accept }: guardar. DELETE: borrarlo. POST { to, title, url }: mandar, con tope diario.
-// - El tema de ntfy del otro nunca sale de aquí: la Function manda el aviso por él.
+// - El tema de ntfy del otro nunca sale de aquí: la Function manda el aviso por él. Si el otro tiene avisos en el
+//   navegador (Web Push, cloud/push.ts), también le llega ahí.
 import type { AlertStore } from './alerts.ts';
 import { person } from './access.ts';
-import { json, type D1Database, type Env } from './prefs.ts';
+import { json, type D1Database } from './prefs.ts';
+import { deliver, type PushEnv, type PushStore } from './push.ts';
 import { ensure } from './schema.ts';
+import { parseVapid } from './webpush.ts';
 
 export const FAMILY_LIMITS = { name: 40, title: 300, url: 1000, body: 4000, perDay: 30 };
 
@@ -76,12 +79,14 @@ async function readJson(request: Request): Promise<Record<string, unknown> | Res
 
 export async function handleFamily(
 	request: Request,
-	env: Env,
+	env: PushEnv,
 	store: FamilyStore | null,
 	alerts: AlertStore | null,
 	fetcher?: (url: string) => Promise<Response>,
 	push: Fetch = (u, i) => fetch(u, i),
-	now = Date.now()
+	now = Date.now(),
+	/** Los navegadores con avisos (Web Push). Sin ellos o sin la clave VAPID, solo ntfy. */
+	pushes: PushStore | null = null
 ): Promise<Response> {
 	if (!store || !alerts) return json(503, { error: 'sin configurar' });
 	// Sin configurar, desde otra web, sin identificar o un token de servicio: fuera (access.ts).
@@ -129,18 +134,35 @@ export async function handleFamily(
 		if (!to || !topic) return json(404, { error: 'no recibe' });
 		if ((await store.sentSince(user, now - 86_400_000)) >= FAMILY_LIMITS.perDay)
 			return json(429, { error: 'tope diario' });
-		const res = await push(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
-			method: 'POST',
-			headers: {
-				title: header(`${me.name} te manda`),
-				click: url,
-				tags: 'house',
-				'content-type': 'text/plain; charset=utf-8'
-			},
-			body: title,
-			signal: AbortSignal.timeout(5000)
-		}).catch(() => null);
-		if (!res?.ok) return json(502, { error: 'ntfy no responde' });
+		const vapid = pushes ? await parseVapid(env.VAPID_PRIVATE_KEY) : null;
+		const [res, web] = await Promise.all([
+			push(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
+				method: 'POST',
+				headers: {
+					title: header(`${me.name} te manda`),
+					click: url,
+					tags: 'house',
+					'content-type': 'text/plain; charset=utf-8'
+				},
+				body: title,
+				signal: AbortSignal.timeout(5000)
+			}).catch(() => null),
+			// Y a sus navegadores, si tiene (el aviso dura un día en el servicio de push).
+			vapid && pushes
+				? pushes
+						.mine(to.user)
+						.then((subs) =>
+							deliver(subs, { title: `${me.name} te manda`, body: title, url }, vapid, pushes, push, {
+								subject: new URL(request.url).origin,
+								ttl: 86_400,
+								urgency: 'normal',
+								now
+							})
+						)
+						.catch(() => null)
+				: null
+		]);
+		if (!res?.ok && !web?.sent) return json(502, { error: 'ntfy no responde' });
 		await store.logSent(user, now);
 		return json(200, { ok: true, to: to.name });
 	}

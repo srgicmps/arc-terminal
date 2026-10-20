@@ -7,8 +7,8 @@ export const TV_SECONDS = 30;
 export const TV_MIN = 10;
 export const TV_MAX = 600;
 
-/** Comandos que no tiene sentido poner en la tele (texto, ajustes o la propia TV). */
-const SKIP = new Set(['TV', 'HELP', 'MANUAL', 'DOC', 'MIS', 'NEWS', 'CHESS']);
+/** Comandos que no tiene sentido poner en la tele (texto, ajustes, la propia TV o PREGUNTA, que es con IA y a petición). */
+const SKIP = new Set(['TV', 'HELP', 'MANUAL', 'DOC', 'MIS', 'NEWS', 'CHESS', 'PREGUNTA']);
 
 export const tvCandidates = (): Command[] => COMMANDS.filter((c) => !SKIP.has(c.code));
 
@@ -41,3 +41,9 @@ export function tvQuery(codes: readonly string[], seconds: number): string {
 export function routeOf(code: string): Command['route'] {
 	return COMMANDS.find((c) => c.code === code)?.route ?? '/';
 }
+
+/**
+ * Segundos que han pasado entre dos marcas de performance.now(): tiempo real, no ticks, para que la rotación no
+ * se retrase con la CPU cargada. Con la pestaña oculta no cuenta (ni avanza la barra ni cambia de vista).
+ */
+export const tvDelta = (last: number, now: number, hidden: boolean): number => (hidden ? 0 : Math.max(0, now - last) / 1000);

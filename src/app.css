@@ -7,6 +7,8 @@
    línea, venga primero la hoja que venga; cada archivo de estética la repite. */
 @layer tokens, estilos, ajustes;
 @import './styles/tokens.css' layer(tokens);
+/* Las letras de Terminal y Grafito (Plex e Inter), servidas desde la propia web. */
+@import './styles/fonts.css';
 
 *,
 *::before,
@@ -295,7 +297,22 @@ kbd {
 	}
 }
 
-/* Quien pide menos movimiento en su sistema no ve animaciones ni transiciones. */
+/* Fundido al cambiar de vista (src/lib/viewtransition.ts): solo la página entera, con --dur-view (el grupo
+   también: si no, el navegador alarga la transición a sus 250 ms). Durante el fundido, los toques pasan a la
+   página: la barra de abajo no pierde ninguno. */
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation-duration: var(--dur-view);
+	animation-timing-function: var(--ease);
+}
+
+::view-transition {
+	pointer-events: none;
+}
+
+/* Quien pide menos movimiento en su sistema no ve animaciones ni transiciones. Los ::view-transition-* no son
+   hijos de ningún elemento, así que el * no los alcanza: van aparte (el layout tampoco los lanza). */
 @media (prefers-reduced-motion: reduce) {
 	*,
 	*::before,
@@ -304,5 +321,11 @@ kbd {
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.01ms !important;
 		scroll-behavior: auto !important;
+	}
+
+	::view-transition-group(*),
+	::view-transition-old(*),
+	::view-transition-new(*) {
+		animation: none !important;
 	}
 }

@@ -58,6 +58,14 @@ export function shown(item: Headline): { text: string; translated: boolean } {
 	return es ? { text: es, translated: true } : { text: item.title, translated: false };
 }
 
+/**
+ * El `lang` de lo que enseña shown(): «en» si se queda el original en inglés; si es una traducción, nada
+ * (hereda el español de la página). Así el lector de pantalla lo lee con la voz que toca.
+ */
+export function langOf(item: Headline): 'en' | undefined {
+	return shown(item).translated ? undefined : item.lang;
+}
+
 /** Texto al pasar el ratón por un titular traducido: el original y quién lo ha traducido. */
 export function original(item: Headline): string {
 	return `${item.title}\nTraducción automática · ${item.titleEs ? 'MyMemory' : 'Chrome'}`;

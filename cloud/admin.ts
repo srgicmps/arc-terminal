@@ -6,7 +6,7 @@
 // - POST { action: 'invite' | 'remove', email }: añade o quita el email de la política de Access (por defecto,
 //   la que se llama «Sergi»; Variable ACCESS_POLICY) con la API de Cloudflare. Al quitar, se cierran sus
 //   sesiones y se borran sus datos de D1: todas las tablas de USER_TABLES (ajustes, avisos, último acceso,
-//   familia, Mis RSS, predicciones y sugerencias).
+//   familia, navegadores con avisos, Mis RSS, predicciones, sugerencias y el contador de PREGUNTA).
 //   Al admin no se le puede quitar.
 // Necesita los Secrets de Pages CF_ACCESS_ADMIN_TOKEN (Access: Apps and Policies · Edit) y CF_ACCOUNT_ID; sin
 // ellos, la lista sale igual (solo con lo de D1) y no se puede invitar ni quitar.
@@ -216,10 +216,12 @@ export const USER_TABLES = [
 	'seen',
 	'family',
 	'family_sent',
+	'push_subs',
 	'rss',
 	'forecast_bets',
 	'forecast_players',
-	'feedback'
+	'feedback',
+	'ask_count'
 ] as const satisfies readonly Table[];
 
 /** Las que usa el panel. Las de los demás módulos pueden no existir todavía: se crean igual que allí. */
@@ -247,7 +249,7 @@ export function d1AdminStore(db: D1Database): AdminStore {
 			await ready();
 			await db.batch(OWN.map((t) => db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email)));
 			// Las de los demás módulos solo existen si alguien los ha usado: una a una, para que la que falte no
-			// impida borrar las otras. Familia (cloud/family.ts), Mis RSS (cloud/rss.ts), predicciones
+			// impida borrar las otras. Familia (cloud/family.ts), Web Push (cloud/push.ts), Mis RSS (cloud/rss.ts), predicciones
 			// (cloud/forecasts.ts) y sugerencias (cloud/feedback.ts).
 			for (const t of USER_TABLES.filter((t) => !OWN.includes(t)))
 				await db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email).run().catch(() => {});

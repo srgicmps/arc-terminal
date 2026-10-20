@@ -70,7 +70,7 @@
 	const when = $derived(review ? (review.months === 0 ? 'este mes' : review.months === 1 ? 'el mes que viene' : `en ${review.months} meses`) : '');
 </script>
 
-<ViewHeader code="HIPOTECA" title="Tu hipoteca" sub="Cuota, cuadro de amortización y tu próxima revisión con el euríbor de hoy" />
+<ViewHeader code="HIPOTECA" title="Tu hipoteca" sub="Cuota, cuadro de amortización y tu próxima revisión con el euríbor de hoy" plain={data.plain} />
 
 <div class="grid grid-2">
 	<Panel title="Tus datos">

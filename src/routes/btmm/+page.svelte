@@ -11,7 +11,7 @@
 	const pb = (v: number | null) => (v === null ? '—' : `${signed(v, 0)} pb`);
 </script>
 
-<ViewHeader code="BTMM" title="Mercado monetario" sub="Fed de Nueva York, FRED, Tesoro de EE. UU. y BCE" />
+<ViewHeader code="BTMM" title="Mercado monetario" sub="Fed de Nueva York, FRED, Tesoro de EE. UU. y BCE" plain={data.plain} />
 
 <div class="grid grid-2e">
 	<div class="col">

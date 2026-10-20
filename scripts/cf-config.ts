@@ -5,8 +5,11 @@
 // - Base D1 «arc-terminal-users»: la busca por nombre y, si no existe, la crea. Las tablas las crea el propio
 //   código la primera vez (cloud/prefs.ts, cloud/alerts.ts), así que no hay migraciones aparte.
 // - Cloudflare Access: el AUD de la aplicación que protege la web (SITE_URL) y el dominio del equipo.
+// - Workers AI (PREGUNTA, cloud/ask.ts): deja el bloque [ai] solo si el token llega a Workers AI; si no, lo quita
+//   y la web se publica igual, sin PREGUNTA. Así una publicación nunca falla por la IA.
 // Permisos que necesita el token, además de Pages: Account · D1 · Edit; Account · Access: Apps and Policies ·
-// Read; Account · Access: Organizations, Identity Providers, and Groups · Read.
+// Read; Account · Access: Organizations, Identity Providers, and Groups · Read. Para PREGUNTA (opcional):
+// Account · Workers AI · Read.
 // Las Variables de GitHub D1_DATABASE_ID, ACCESS_AUD y ACCESS_TEAM_DOMAIN, si están, mandan (por si la API no
 // deja). Si falta algo, se quita wrangler.toml: la web se publica igual y /api/* responde «sin configurar».
 // Nada de esto se escribe en el registro: los valores se ocultan (::add-mask::) y solo se dice si hay o no.
@@ -50,6 +53,9 @@ export function fill(toml: string, v: { db: string; team: string; aud: string })
 		.replace('__ACCESS_AUD__', v.aud);
 }
 
+/** wrangler.toml sin el bloque de Workers AI (entre «# <ai>» y «# </ai>»). */
+export const withoutAi = (toml: string) => toml.replace(/^# <ai>\n[\s\S]*?^# <\/ai>\n?/m, '');
+
 type Fetch = typeof fetch;
 
 async function api<T>(fetcher: Fetch, token: string, path: string, init?: RequestInit): Promise<T> {
@@ -92,6 +98,14 @@ export async function access(
 	return { team: org.auth_domain ? `https://${org.auth_domain}` : '', aud: pickAud(apps, host) };
 }
 
+/** ¿Llega el token a Workers AI? Con la lista de modelos (un solo resultado), que pide «Workers AI · Read». */
+export async function workersAi(fetcher: Fetch, token: string, account: string): Promise<boolean> {
+	return api(fetcher, token, `/accounts/${account}/ai/models/search?per_page=1`).then(
+		() => true,
+		() => false
+	);
+}
+
 export async function main(
 	env = process.env,
 	fetcher: Fetch = fetch,
@@ -103,7 +117,9 @@ export async function main(
 	let db = env.D1_DATABASE_ID ?? '';
 	let team = env.ACCESS_TEAM_DOMAIN ?? '';
 	let aud = env.ACCESS_AUD ?? '';
+	let ai = false;
 	if (token && account) {
+		ai = await workersAi(fetcher, token, account);
 		if (!db)
 			db = await d1Id(fetcher, token, account).catch((e: Error) => {
 				log(
@@ -127,8 +143,14 @@ export async function main(
 	// Que no salgan en el registro aunque algo (wrangler) los imprima.
 	for (const v of [db, team.replace(/^https:\/\//, ''), aud]) if (v) log(`::add-mask::${v}`);
 	if (db && team && aud) {
-		await writeFile(path, fill(await readFile(path, 'utf8'), { db, team, aud }));
+		const toml = fill(await readFile(path, 'utf8'), { db, team, aud });
+		await writeFile(path, ai ? toml : withoutAi(toml));
 		log('Usuarios: base D1 y Access listos');
+		log(
+			ai
+				? 'PREGUNTA: Workers AI listo'
+				: '::notice title=PREGUNTA::Sin Workers AI (¿tiene el token «Workers AI · Read»?): /api/ask responde «sin configurar»'
+		);
 		return true;
 	}
 	await rm(path, { force: true });
