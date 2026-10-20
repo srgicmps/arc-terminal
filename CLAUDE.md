@@ -93,6 +93,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - **Sugerencias** (pie de cada vista, `Feedback.svelte`): `/api/feedback` (`cloud/feedback.ts`) las guarda en D1
   (tabla `feedback`) y avisa a Sergi por ntfy si Pages tiene el Secret `NTFY_TOPIC`. Leerlas, solo el admin
   (Secret de Pages `ADMIN_EMAIL`, nunca en el repo).
+- **Errores del navegador** (F29): `src/hooks.client.ts` manda los fallos de la web publicada a `/api/errors` (`cloud/errors.ts`, tabla `errors`, agrupados por firma), limpios y sin quién (`src/lib/errreport.ts`). Se ven en ADMIN.
 - **ADMIN** (`/admin`, `cloud/admin.ts`, `/api/admin`): solo para `ADMIN_EMAIL`. Usuarios (último acceso, tabla
   `seen` que apunta `/api/prefs`; avisos), invitar o quitar emails de la política de Access «Sergi» (Variable
   `ACCESS_POLICY` si se llama distinto) con los Secrets de Pages `CF_ACCESS_ADMIN_TOKEN` (Access: Apps and Policies ·

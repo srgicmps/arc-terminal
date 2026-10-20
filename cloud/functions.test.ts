@@ -41,6 +41,7 @@ const OK: Record<string, Call> = {
 		body: { mails: [{ uid: 'a'.repeat(16), subject: 'Tu mañana', text: 'Hola' }] },
 		service: true
 	},
+	errors: {},
 	family: {},
 	feedback: {},
 	forecasts: {},
