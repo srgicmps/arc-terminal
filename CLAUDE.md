@@ -33,8 +33,9 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   `static/data/<nombre>.json` como `{ name, fetchedAt, data }`. Las fuentes reciben la copia anterior para
   acumular historial (gasolina, luz). Los tipos compartidos están en `src/lib/types.ts` y `src/lib/fuel.ts`.
   Si una descarga llega vacía, encoge de golpe o no tiene sentido (el `validate` opcional de cada fuente, en
-  `scripts/lib.ts`), cuenta como fallo: se queda la copia anterior y el motivo sale en STATUS. Los enlaces se
-  limpian al guardar (`scripts/links.ts`: solo http(s) y rutas propias). Los Excel, con `scripts/xlsx.ts`.
+  `scripts/lib.ts`), cuenta como fallo: se queda la copia anterior y el motivo sale en STATUS. Al guardar se
+  limpian los textos de las claves de enlace (`LINK_KEYS` de `scripts/links.ts`: solo http(s) y rutas propias); un
+  campo de enlace nuevo usa una de esas claves o se añade a la lista. Los Excel, con `scripts/xlsx.ts`.
 - Cada vista lee sus datos en `+page.server.ts` con `dataset('nombre')` (`src/lib/data.ts`): solo corre al construir
   y al navegador llega lo que devuelve su `load`. Nunca `dataset()` ni un JSON de `static/data` en un `+page.ts` ni
   en un componente: metería los JSON en el código del navegador (lo vigila `src/lib/bundle-data.test.ts`). Si un
