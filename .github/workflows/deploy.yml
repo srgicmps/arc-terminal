@@ -1,10 +1,13 @@
 # Descarga los datos, construye la web y la publica en Cloudflare Pages (web privada tras Cloudflare Access).
 # - push a main, cron y lanzamiento a mano sin «fuentes»: pasada completa y publicación (job build).
 # - PR: comprobaciones en jobs separados que corren a la vez, para que el verde o el rojo llegue antes:
-#   checks (check, test, build, sin datos) · smoke (datos + prueba de humo) · probe (solo si el PR toca
-#   scripts/). Menos jobs a la vez = menos cola en los runners, que comparten todas las sesiones.
+#   checks (check, test con cobertura, build, sin datos) · smoke (datos + prueba de humo) · probe (solo si
+#   el PR toca scripts/). Menos jobs a la vez = menos cola en los runners, que comparten todas las sesiones.
 # - A mano con «herramienta» (compare o tv-shots), sobre la rama que se elija: esa revisión, sin publicar.
 # - A mano con «fuentes»: solo `pnpm data <fuentes>` y el sondeo, para probar una fuente sin la pasada completa.
+# - Cada `uses:` va fijado al SHA de un commit (un tag se puede mover; un SHA, no), con su tag en el comentario.
+#   Para subir una acción: `git ls-remote https://github.com/<dueño>/<acción> 'refs/tags/<tag>*'` (si sale
+#   una línea con ^{}, el SHA bueno es el de esa) y se cambian SHA y comentario aquí y en fast.yml.
 name: Publicar en Pages
 
 on:
@@ -29,13 +32,10 @@ on:
         options: [ninguna, compare, tv-shots]
         default: ninguna
 
-# Permisos mínimos (la publicación en Cloudflare usa sus propios Secrets).
+# Permisos mínimos: por defecto, solo leer el código (la publicación en Cloudflare usa sus propios Secrets).
+# El job que necesita más lo pide en su propio bloque `permissions`, que sustituye a este.
 permissions:
   contents: read
-  # Para abrir y cerrar los issues «Fuente caída» (scripts/issues.ts).
-  issues: write
-  # NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
-  pull-requests: read
 
 # Un solo despliegue a la vez: si llega otro, espera a que acabe el que está en marcha. En un PR, un push
 # nuevo cancela la pasada anterior, que ya no sirve. La prueba de fuentes va en su propio grupo para no
@@ -55,14 +55,21 @@ jobs:
     runs-on: ubuntu-latest
     # Red de seguridad: si algo se cuelga, la Action no se queda horas esperando.
     timeout-minutes: 15
+    permissions:
+      contents: read
+      # Abrir y cerrar los issues «Fuente caída» (scripts/issues.ts) y las órdenes de la barra (notify.ts →
+      # requests.ts). Es el único job de este archivo que escribe en issues.
+      issues: write
+      # NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+      pull-requests: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
       # Instala pnpm (la versión sale de "packageManager" en package.json).
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
       # Instala Node (la versión sale de .nvmrc) y guarda en caché las dependencias.
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -123,7 +130,7 @@ jobs:
       # falla el check, los tests, el build o el deploy, la web no se publica, pero la pasada siguiente lee
       # la caché y no repite lo enviado. Una clave por pasada; restore-keys trae la más reciente. La caché
       # solo lleva el historial (ids, horas y valores), nunca el tema ni la zona del diésel.
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         continue-on-error: true
         with:
           path: .notify-cache
@@ -147,14 +154,36 @@ jobs:
           # las alertas que avisan.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - if: hashFiles('.notify-cache/notify-log.json') != ''
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         continue-on-error: true
         with:
           path: .notify-cache
           key: notify-log-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - run: pnpm check
-      - run: pnpm test
+      # check y test, una vez por commit. Al pasarlos se deja en la caché de Actions la marca
+      # «verificado-<SHA>» (también fast.yml), y la pasada siguiente sobre ese mismo SHA se los salta: el
+      # turno que comparte con fast.yml queda libre antes y un test que falle por la fecha no frena la
+      # publicación de datos. Sin marca (el push falló, o su pasada se canceló porque otra la sustituyó en el
+      # grupo de concurrencia) o si la caché falla, se corren: nunca se publica un commit sin comprobar.
+      - id: verificado
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        continue-on-error: true
+        with:
+          path: .verificado
+          key: verificado-${{ github.sha }}
+          lookup-only: true
+      - if: steps.verificado.outputs.cache-hit != 'true'
+        run: pnpm check
+      - if: steps.verificado.outputs.cache-hit != 'true'
+        run: pnpm test
+      - if: steps.verificado.outputs.cache-hit != 'true'
+        run: echo "${{ github.sha }}" > .verificado
+      - if: steps.verificado.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        continue-on-error: true
+        with:
+          path: .verificado
+          key: verificado-${{ github.sha }}
 
       # Miniaturas de las vistas para el MANUAL (scripts/thumbs.ts), una vez al día: se capturan de la web ya
       # publicada y se guardan en la caché de Actions con la fecha (UTC). Si la caché de hoy ya está, no se
@@ -163,7 +192,7 @@ jobs:
       - id: hoy
         run: echo "fecha=$(date -u +%F)" >> "$GITHUB_OUTPUT"
       - id: thumbs
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         continue-on-error: true
         with:
           path: static/manual
@@ -206,15 +235,36 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - run: pnpm test
+      # Tests con cobertura: falla si una carpeta baja de su suelo (vitest.config.ts, coverage.thresholds).
+      - run: pnpm test:cov
+      # Tabla de cobertura por carpeta en el resumen de la Action, también si no llega al suelo.
+      - if: ${{ !cancelled() && hashFiles('coverage/coverage-summary.json') != '' }}
+        run: |
+          node --input-type=module >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          import { readFileSync } from 'node:fs';
+          import { dirname, resolve } from 'node:path';
+          import { pathToFileURL } from 'node:url';
+          const floors = (await import(pathToFileURL(resolve('vitest.config.ts')).href)).default.test.coverage.thresholds;
+          const files = Object.entries(JSON.parse(readFileSync('coverage/coverage-summary.json', 'utf8')));
+          const keys = ['lines', 'statements', 'branches', 'functions'];
+          const pct = (c, t) => (t ? ((100 * c) / t).toFixed(2).replace('.', ',') : '—');
+          // Las carpetas con suelo («x/**») y la raíz de scripts/, que no tiene.
+          const rows = [...Object.keys(floors), 'scripts/*.ts'].map((glob) => {
+            const dir = resolve(glob.replace(/\/\*\*$|\/\*\.ts$/, ''));
+            const mine = files.filter(([f]) => (glob.endsWith('/**') ? f.startsWith(dir + '/') : dirname(f) === dir)).map(([, v]) => v);
+            const cols = keys.map((k) => pct(mine.reduce((a, v) => a + v[k].covered, 0), mine.reduce((a, v) => a + v[k].total, 0)));
+            return `| ${glob} | ${cols.join(' | ')} | ${floors[glob]?.lines ?? '—'} |`;
+          });
+          console.log(['### Cobertura de los tests (%)', '', '| Carpeta | Líneas | Sentencias | Ramas | Funciones | Suelo (líneas) |', '|---|--:|--:|--:|--:|--:|', ...rows].join('\n'));
+          EOF
       - run: pnpm build --logLevel warn
       # Presupuesto de peso por vista (JS, CSS y HTML propios, gzip, sin datos): falla si alguna pasa del tope.
       - run: node scripts/weight.ts
@@ -227,10 +277,14 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    # `pnpm data`: NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -278,9 +332,9 @@ jobs:
         browser: [chromium, firefox, webkit]
     continue-on-error: ${{ matrix.browser != 'chromium' }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -300,7 +354,7 @@ jobs:
       scripts: ${{ steps.diff.outputs.scripts }}
     steps:
       # La Action de un PR trabaja sobre el commit de merge: su primer padre es la base del PR.
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 2
       - id: diff
@@ -316,9 +370,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -336,10 +390,14 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.herramienta == 'tv-shots'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # `pnpm data`: NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -363,7 +421,7 @@ jobs:
       - run: pnpm build --logLevel warn
       - run: node scripts/tv-shots.ts
         continue-on-error: true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: tradingview
           path: shots/*.png
@@ -376,10 +434,14 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.herramienta == 'compare'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # `pnpm data`: NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -403,7 +465,7 @@ jobs:
       - run: pnpm build --logLevel warn
       - run: node scripts/compare-views.ts
         continue-on-error: true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: vistas
           path: shots/vistas/
@@ -415,10 +477,14 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.fuentes
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # `pnpm data`: NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm

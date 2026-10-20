@@ -39,11 +39,11 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   respuesta en el registro. Sirve para explorar APIs nuevas cuando el entorno de desarrollo no tiene red.
 - **Probar una fuente sin la pasada completa**: Actions → «Publicar en Pages» → Run workflow, con «fuentes»
   (p. ej. `fao climate`). Descarga solo esas fuentes, sin copia guardada, y lanza el sondeo, sin publicar.
-- En los PR, la Action va en jobs a la vez: `checks` (check, test, build y el tope de peso por vista de
+- En los PR, la Action va en jobs a la vez: `checks` (check, `pnpm test:cov` con suelo por carpeta en `vitest.config.ts`, build y el tope de peso por vista de
   `scripts/weight.ts`: el verde o el rojo rápido; Arc OS, `/os`, no tiene tope por decisión de Sergi, y lo que solo
   carga dentro de `/os` tampoco), `smoke`
   (datos reales y prueba de humo) y `probe` solo si el PR toca `scripts/`. `compare` (vistas del PR frente a
-  main) y `tv-shots` se lanzan a mano: Run workflow sobre la rama, con «herramienta».
+  main) y `tv-shots` se lanzan a mano: Run workflow sobre la rama, con «herramienta». Cada `uses:` va fijado por SHA (cómo subirlo, en la cabecera de `deploy.yml`).
 
 ## Arquitectura
 - **La web es privada**: **Cloudflare Pages** la sirve en https://arcterminal.dev (dominio propio; también en https://arc-terminal.pages.dev), en la raíz, con
