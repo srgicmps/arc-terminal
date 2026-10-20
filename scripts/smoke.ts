@@ -187,7 +187,12 @@ try {
 			if (!NO_PANELS.has(path) && !path.startsWith('/x/') && !check.panels) failures.push(`${where}: sin paneles`);
 			for (const text of check.missing) failures.push(`${where}: panel sin datos («${text}»)`);
 			for (const text of check.glitches) failures.push(`${where}: «${text}» en la vista`);
-			for (const title of check.stray) failures.push(`${where}: el panel «${title}» no es esencial y sigue en Sencillo (el CSS de Panel lo esconde, pero \`gone\` no lo quita)`);
+			// Una línea por vista: si la vista no ha llegado a arrancar, salen todos sus paneles no esenciales.
+			if (check.stray.length) {
+				const n = check.stray.length;
+				const names = `«${check.stray.slice(0, 3).join('», «')}»${n > 3 ? '…' : ''}`;
+				failures.push(`${where}: en Sencillo ${n === 1 ? 'sigue montado un panel no esencial' : `siguen montados ${n} paneles no esenciales`} (${names}): el CSS de Panel los esconde, pero \`gone\` no los quita`);
+			}
 			if (width < 600 && check.cls > CLS_LIMIT) shifts.push(`${path} (${mode}): ${check.cls.toFixed(2).replace('.', ',')}`);
 			if (width < 600 && first) {
 				await page.addScriptTag({ path: AXE });
