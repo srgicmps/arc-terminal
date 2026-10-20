@@ -1,5 +1,6 @@
-import { gap, moneyRow, tenorSeries, type MoneyRow } from '#lib/btmm.ts';
+import { gap, gapOn, moneyRow, tenorSeries, type MoneyRow } from '#lib/btmm.ts';
 import { dataset } from '#lib/data.ts';
+import { moneyPhrase, phrases } from '#lib/plain.ts';
 import { seriesMap } from '#lib/series.ts';
 import type { SeriesData, YieldCurveData } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
@@ -43,6 +44,14 @@ export const load: PageServerLoad = async () => {
 		eaRows,
 		sofrIorb: gap(sofr, iorb),
 		sofrEstr: gap(sofr, estr),
+		// Modo Sencillo: ¿hay tensión en el dinero a un día? En frases (plain.ts), escritas al construir. La de la zona
+		// euro (€STR frente a la facilidad de depósito) sale también sin la clave de FRED, que es la que trae IORB.
+		// Cada tipo, frente a lo que pagaba el banco central ESE día (gapOn): el día en que cambia el tipo, el último
+		// dato a un día es aún del de antes, y compararlo con el nuevo daría una conclusión falsa.
+		plain: phrases([
+			moneyPhrase('us', gapOn([get('nyfed-sofr'), get('sofr-us')].find((s) => s?.points.length), get('iorb-us'))),
+			moneyPhrase('ea', gapOn(get('estr'), get('ecb-dfr'), true))
+		]),
 		fetchedAt: { us: nyfed?.fetchedAt ?? us?.fetchedAt, ea: ecb?.fetchedAt }
 	};
 };

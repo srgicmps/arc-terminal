@@ -21,6 +21,7 @@
 	import { distanceKm, findProvince, FUELS, nearestZone, taxShare, zoneFor, type FuelKey, type FuelProvinceDay, type FuelStation } from '#lib/fuel.ts';
 	import { logPrices, MY_FUEL_KEY, parseMyStation, type MyStation } from '#lib/myfuel.ts';
 	import { place } from '#lib/place.svelte.ts';
+	import { cheapestPhrase, phrases } from '#lib/plain.ts';
 	import { madridNow } from '#lib/power.ts';
 	import { sortBy } from '#lib/sort.ts';
 	import { Sorter } from '#lib/sorter.svelte.ts';
@@ -206,6 +207,17 @@
 	const fuelLabel = $derived(FUELS.find((f) => f.key === fuel)?.label ?? '');
 	const nearest = $derived(here ? [...list].sort((a, b) => (a.km ?? 0) - (b.km ?? 0)).slice(0, 5) : []);
 
+	// Modo Sencillo: la más barata de la zona frente a su media, en una frase (src/lib/plain.ts). Mientras llegan las
+	// gasolineras de una provincia, sale de su resumen (el del ranking de provincias): así la frase no se va y vuelve.
+	const summary = $derived(zone === MENORCA ? undefined : provinces.find((p) => p.id === zone));
+	const plain = $derived(
+		phrases([
+			priced.length
+				? cheapestPhrase(zoneName, min, avg, fuelLabel)
+				: cheapestPhrase(zoneName, summary?.min[fuel], summary?.avg[fuel], fuelLabel)
+		])
+	);
+
 	const sourceDate = $derived.by(() => {
 		const raw = zone === MENORCA ? data.fuel?.data.sourceDate : data.spain?.data.sourceDate;
 		const [day, time = ''] = (raw ?? '').split(' ');
@@ -279,7 +291,7 @@
 	});
 </script>
 
-<ViewHeader code="FUEL" title="Gasolineras" sub="Las más baratas de tu provincia o de cualquier otra · API del Ministerio" />
+<ViewHeader code="FUEL" title="Gasolineras" sub="Las más baratas de tu provincia o de cualquier otra · API del Ministerio" {plain} />
 
 {#if mine}
 	<div class="grid">

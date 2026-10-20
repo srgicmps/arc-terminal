@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { cheapPhrase, euriborPhrase, gdpPhrase, inflationPhrase, movePhrase, phrases, policyPhrase, premiumPhrase, unemploymentPhrase } from './plain.ts';
+import {
+	cheapestPhrase,
+	cheapPhrase,
+	curvePhrase,
+	euriborPhrase,
+	gdpPhrase,
+	inflationPhrase,
+	moneyPhrase,
+	movePhrase,
+	phrases,
+	policyPhrase,
+	premiumPhrase,
+	unemploymentPhrase
+} from './plain.ts';
 
 const pts = (...vs: [string, number][]) => vs.map(([t, v]) => ({ t, v }));
 
@@ -39,5 +52,63 @@ describe('cheapPhrase (LUZ, F1)', () => {
 	it('la franja más barata de hoy y de mañana', () => {
 		expect(cheapPhrase('hoy', 2, '14:00', '16:00', 0.0523)).toBe('La franja de 2 horas más barata que queda hoy es de 14:00 a 16:00, a 0,052 € el kWh.');
 		expect(cheapPhrase('mañana', 1, '03:00', '04:00', 0.04)).toBe('La hora más barata de mañana es de 03:00 a 04:00, a 0,040 € el kWh.');
+	});
+});
+
+describe('curvePhrase (WB)', () => {
+	it('curva normal, con la pendiente en puntos', () => {
+		expect(curvePhrase('EE. UU.', 38)).toBe(
+			'En EE. UU., el bono a 10 años paga 0,38 puntos más que el de 2 años: lo normal, prestar a más plazo se cobra más.'
+		);
+		expect(curvePhrase('la zona euro', 10)).toMatch(/^En la zona euro, el bono a 10 años paga 0,10 puntos más/);
+	});
+	it('curva invertida y curva plana (menos de 10 pb en un sentido u otro)', () => {
+		expect(curvePhrase('EE. UU.', -45)).toBe(
+			'En EE. UU., el bono a 2 años paga 0,45 puntos más que el de 10 (curva invertida): el mercado espera bajadas de tipos, y a veces es aviso de recesión.'
+		);
+		expect(curvePhrase('Japón', 0)).toMatch(/casi lo mismo \(curva plana\)/);
+		expect(curvePhrase('Japón', -9)).toMatch(/curva plana/);
+		expect(curvePhrase('Japón', 9)).toMatch(/curva plana/);
+	});
+	it('sin dato, no sale', () => {
+		expect(curvePhrase('EE. UU.', null)).toBeNull();
+		expect(curvePhrase('EE. UU.', undefined)).toBeNull();
+	});
+});
+
+describe('moneyPhrase (BTMM)', () => {
+	it('sin tensión: el tipo a un día, por debajo de lo que paga el banco central', () => {
+		expect(moneyPhrase('ea', -6)).toBe(
+			'En la zona euro, prestarse dinero a un día entre bancos (€STR) cuesta 0,06 puntos menos de lo que paga el BCE por los depósitos (facilidad de depósito): sin tensión, hay dinero de sobra.'
+		);
+	});
+	it('con tensión: por encima', () => {
+		expect(moneyPhrase('us', 5)).toBe(
+			'En EE. UU., prestarse dinero a un día entre bancos (SOFR) cuesta 0,05 puntos más de lo que paga la Fed por las reservas (IORB): hay tensión, falta dinero a corto plazo.'
+		);
+	});
+	it('a menos de 5 pb, en un sentido u otro, es ruido: sin tensión; sin dato (FRED sin clave), no sale', () => {
+		expect(moneyPhrase('us', 0)).toBe(
+			'En EE. UU., prestarse dinero a un día entre bancos (SOFR) cuesta casi lo mismo que lo que paga la Fed por las reservas (IORB): sin tensión.'
+		);
+		// −2 un día y +1 al siguiente: la misma frase, no dos opuestas.
+		for (const gap of [-4, -2, 1, 4]) expect(moneyPhrase('us', gap)).toMatch(/cuesta casi lo mismo .*: sin tensión\.$/);
+		expect(moneyPhrase('ea', -5)).toMatch(/0,05 puntos menos .*: sin tensión, hay dinero de sobra\.$/);
+		expect(moneyPhrase('us', null)).toBeNull();
+	});
+});
+
+describe('cheapestPhrase (FUEL)', () => {
+	it('la más barata frente a la media, en céntimos', () => {
+		expect(cheapestPhrase('Menorca', 1.489, 1.5823)).toBe('La gasolinera más barata de Menorca vende gasolina 95 a 1,489 € el litro, 9 céntimos menos que la media.');
+		expect(cheapestPhrase('Madrid', 1.4, 1.41, 'Diésel')).toBe('La gasolinera más barata de Madrid vende diésel a 1,400 € el litro, 1 céntimo menos que la media.');
+		expect(cheapestPhrase('Madrid', 0.9, 0.902, 'GLP')).toBe('La gasolinera más barata de Madrid vende GLP a 0,900 € el litro, casi lo mismo que la media.');
+	});
+	it('sin media (o si no cuadra con la más barata), solo el precio; sin precio, no sale', () => {
+		expect(cheapestPhrase('Menorca', 1.489, null)).toBe('La gasolinera más barata de Menorca vende gasolina 95 a 1,489 € el litro.');
+		expect(cheapestPhrase('Menorca', 1.6, 1.5)).toBe('La gasolinera más barata de Menorca vende gasolina 95 a 1,600 € el litro.');
+		expect(cheapestPhrase('Menorca', null, 1.5)).toBeNull();
+		// Math.min() de una lista vacía (la provincia aún no ha cargado).
+		expect(cheapestPhrase('Menorca', Infinity, 1.5)).toBeNull();
 	});
 });

@@ -118,5 +118,58 @@ export function fuelPhrase(place: string, eurPerLitre: number | null | undefined
 	return eurPerLitre == null ? null : `${fuel} cuesta de media ${nf(eurPerLitre, 3)} € el litro en ${place}.`;
 }
 
+/** Puntos básicos (pb) como puntos: 38 → «0,38». Una frase dice «puntos», no «pb». */
+const points = (pb: number) => nf(Math.abs(pb) / 100, 2);
+
+/**
+ * WB: la pendiente 2–10 contada. «En EE. UU., el bono a 10 años paga 0,38 puntos más que el de 2 años: lo normal…»
+ * `pb`: 10 años − 2 años, en puntos básicos. Por debajo de 10 pb (0,10 puntos) en un sentido u otro, la curva es plana.
+ */
+export function curvePhrase(place: string, pb: number | null | undefined): string | null {
+	if (pb == null) return null;
+	if (Math.abs(pb) < 10)
+		return `En ${place}, los bonos a 2 y a 10 años pagan casi lo mismo (curva plana): el mercado no ve claro hacia dónde irán los tipos.`;
+	if (pb > 0) return `En ${place}, el bono a 10 años paga ${points(pb)} puntos más que el de 2 años: lo normal, prestar a más plazo se cobra más.`;
+	return `En ${place}, el bono a 2 años paga ${points(pb)} puntos más que el de 10 (curva invertida): el mercado espera bajadas de tipos, y a veces es aviso de recesión.`;
+}
+
+/** Los dos mercados de dinero a un día de BTMM: cómo se llama su tipo y qué paga su banco central. */
+const MONEY = {
+	us: { where: 'EE. UU.', rate: 'SOFR', paid: 'paga la Fed por las reservas (IORB)' },
+	ea: { where: 'la zona euro', rate: '€STR', paid: 'paga el BCE por los depósitos (facilidad de depósito)' }
+} as const;
+
+/**
+ * BTMM: ¿hay tensión en el dinero a un día? «En EE. UU., prestarse dinero a un día entre bancos (SOFR) cuesta 0,05 puntos
+ * más de lo que paga la Fed por las reservas (IORB): hay tensión…». `gap`: el tipo a un día menos lo que paga el banco
+ * central, en pb (SOFR − IORB o €STR − facilidad de depósito). Por encima, falta dinero; por debajo, sobra. A menos de
+ * 5 pb en un sentido u otro, es el ruido de cada día (fin de mes, sobre todo): la frase no cambia de opinión por eso.
+ */
+export function moneyPhrase(area: keyof typeof MONEY, gap: number | null | undefined): string | null {
+	if (gap == null) return null;
+	const { where, rate, paid } = MONEY[area];
+	const head = `En ${where}, prestarse dinero a un día entre bancos (${rate}) cuesta`;
+	if (Math.abs(gap) < 5) return `${head} casi lo mismo que lo que ${paid}: sin tensión.`;
+	if (gap > 0) return `${head} ${points(gap)} puntos más de lo que ${paid}: hay tensión, falta dinero a corto plazo.`;
+	return `${head} ${points(gap)} puntos menos de lo que ${paid}: sin tensión, hay dinero de sobra.`;
+}
+
+/**
+ * FUEL: «La gasolinera más barata de Menorca vende gasolina 95 a 1,489 € el litro, 9 céntimos menos que la media.»
+ * Sin la media, solo el precio. `fuel`, como en FUELS («Gasolina 95», «Diésel», «GLP»).
+ */
+export function cheapestPhrase(place: string, eurPerLitre: number | null | undefined, avg: number | null | undefined, fuel = 'Gasolina 95'): string | null {
+	if (eurPerLitre == null || !Number.isFinite(eurPerLitre)) return null;
+	// «Gasolina 95» va en minúscula dentro de la frase; una sigla («GLP»), tal cual.
+	const name = fuel === fuel.toUpperCase() ? fuel : fuel.charAt(0).toLowerCase() + fuel.slice(1);
+	const head = `La gasolinera más barata de ${place} vende ${name} a ${nf(eurPerLitre, 3)} € el litro`;
+	if (avg == null || !Number.isFinite(avg)) return `${head}.`;
+	const cents = Math.round((avg - eurPerLitre) * 100);
+	// Por encima de la media no puede estar la más barata: si los datos no cuadran, mejor no compararlas.
+	if (cents < 0) return `${head}.`;
+	if (cents === 0) return `${head}, casi lo mismo que la media.`;
+	return `${head}, ${cents} ${cents === 1 ? 'céntimo' : 'céntimos'} menos que la media.`;
+}
+
 /** Quita las que faltan. */
 export const phrases = (list: (string | null | undefined | false)[]) => list.filter((p): p is string => !!p);

@@ -12,6 +12,7 @@ import { d1FamilyStore } from './family.ts';
 import { d1FeedbackStore } from './feedback.ts';
 import { d1ForecastStore } from './forecasts.ts';
 import { d1Store } from './prefs.ts';
+import { d1PushStore } from './push.ts';
 import { d1RssStore } from './rss.ts';
 import { resetSchema } from './schema.ts';
 import { ENV, testKeys } from './testkeys.ts';
@@ -38,6 +39,12 @@ async function seed(db: ReturnType<typeof sqliteD1>) {
 		await touchSeen(db, user);
 		await d1FamilyStore(db).put(user, { id: user[0].repeat(16), name: user, accept: true });
 		await d1FamilyStore(db).logSent(user, Date.now());
+		await d1PushStore(db).put(
+			user,
+			{ endpoint: `https://push.example/${user}`, p256dh: 'p', auth: 'a' },
+			Date.now(),
+			5
+		);
 		await d1RssStore(db).put(user, ['https://example.com/feed.xml']);
 		await d1ForecastStore(db).setPlayer(user, { uid: user[0].repeat(16), alias: null });
 		await d1ForecastStore(db).setBet(user, { round: 'us10@2026-10-30T08:00Z', value: 4.1 });

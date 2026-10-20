@@ -112,7 +112,7 @@
 		--fg: #0a0a0a;
 		--muted: #595959;
 		--faint: #6b6b6b;
-		--amber: #e3000f;
+		--amber: #dc000e; /* 4,5:1 también sobre --raise; los bloques rojos siguen en --sz-red */
 		--amber-dim: #b8000c;
 		--amber-soft: rgba(227, 0, 15, 0.08);
 		--amber-edge: rgba(227, 0, 15, 0.45);

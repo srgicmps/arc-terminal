@@ -6,7 +6,7 @@
 // - POST { action: 'invite' | 'remove', email }: añade o quita el email de la política de Access (por defecto,
 //   la que se llama «Sergi»; Variable ACCESS_POLICY) con la API de Cloudflare. Al quitar, se cierran sus
 //   sesiones y se borran sus datos de D1: todas las tablas de USER_TABLES (ajustes, avisos, último acceso,
-//   familia, Mis RSS, predicciones y sugerencias).
+//   familia, navegadores con avisos, Mis RSS, predicciones y sugerencias).
 //   Al admin no se le puede quitar.
 // Necesita los Secrets de Pages CF_ACCESS_ADMIN_TOKEN (Access: Apps and Policies · Edit) y CF_ACCOUNT_ID; sin
 // ellos, la lista sale igual (solo con lo de D1) y no se puede invitar ni quitar.
@@ -216,6 +216,7 @@ export const USER_TABLES = [
 	'seen',
 	'family',
 	'family_sent',
+	'push_subs',
 	'rss',
 	'forecast_bets',
 	'forecast_players',
@@ -244,8 +245,8 @@ export function d1AdminStore(db: D1Database): AdminStore {
 			}));
 		},
 		async forget(email) {
-			// Las de los demás módulos (familia, Mis RSS, predicciones, sugerencias) solo existen si alguien los ha
-			// usado: se crean antes, como allí, para borrarlas todas de una vez. El batch de D1 es todo o nada: si falla
+			// Las de los demás módulos (familia, Web Push, Mis RSS, predicciones, sugerencias) solo existen si alguien los
+			// ha usado: se crean antes, como allí, para borrarlas todas de una vez. El batch de D1 es todo o nada: si falla
 			// una, no se borra ninguna y el error llega a quien llama («Quitar» y «Borrar mi cuenta» responden 503).
 			await ensure(db, ...USER_TABLES);
 			await db.batch(USER_TABLES.map((t) => db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email)));

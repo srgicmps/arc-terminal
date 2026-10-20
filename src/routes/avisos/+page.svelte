@@ -1,5 +1,6 @@
 <!--
-	AVISOS: los avisos al móvil de cada usuario (ntfy). Se guardan en su cuenta (/api/alerts, cloud/alerts.ts);
+	AVISOS: los avisos al móvil de cada usuario (ntfy y, sin instalar nada, en el navegador: PushDevice.svelte).
+	Se guardan en su cuenta (/api/alerts, cloud/alerts.ts);
 	la Action los reparte (scripts/alerts/users.ts). Solo en Cloudflare (arcterminal.dev), donde hay cuenta:
 	en GitHub Pages lo dice y no llama a nada. El canal (tema de ntfy) es secreto: solo se enseña aquí.
 -->
@@ -9,6 +10,7 @@
 	import HomeAlertsPanel from '#lib/components/HomeAlertsPanel.svelte';
 	import MyAlertsPanel from '#lib/components/MyAlertsPanel.svelte';
 	import Panel from '#lib/components/Panel.svelte';
+	import PushDevice from '#lib/components/PushDevice.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import ButtonRow from '#lib/components/ui/ButtonRow.svelte';
 	import ChipInput from '#lib/components/ui/ChipInput.svelte';
@@ -321,6 +323,7 @@
 				{#if !topic}
 					<p class="empty">Activa los avisos y aquí saldrá tu canal.</p>
 				{:else}
+					<PushDevice />
 					<ol class="steps">
 						<li>
 							Instala <strong>ntfy</strong>:

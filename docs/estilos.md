@@ -7,12 +7,13 @@ sale en el selector en cuanto existe su archivo. Solo se descarga la hoja de la 
 ## Reglas
 - Solo tocas tu archivo. Si necesitas un token o una letra nueva en el registro, pídelo a la sesión «Producto F
   Estética» (así no chocan varias a la vez).
-- Plantilla obligatoria (el test `src/lib/estilos.test.ts` la comprueba). Las letras, con `@import` de Google Fonts
-  al principio del archivo (solo así se cargan):
+- Plantilla obligatoria (el test `src/lib/estilos.test.ts` la comprueba). IBM Plex Mono, IBM Plex Sans Condensed e
+  Inter ya vienen con la web (`src/styles/fonts.css`): basta con nombrarlas. Otra letra, con `@import` de Google Fonts
+  al principio del archivo (solo así se carga):
 
 ```css
 /* ── Estética «Nombre» (src/lib/estilos.ts) ── qué es, en una o dos líneas */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600&display=swap');
 @layer tokens, estilos, ajustes;
 @layer estilos {
 	:root[data-style='id'],
@@ -41,7 +42,11 @@ sale en el selector en cuanto existe su archivo. Solo se descarga la hoja de la 
   el contraste (AA 4,5:1; «Alto contraste», AAA 7:1) en noche y día. `--amber` es «el acento», sea del color que sea.
   Verde (`--up`) y rojo (`--down`) solo para subidas y bajadas.
 - **Letras**: solo libres (Google Fonts/OFL) o del sistema, con el `@import` de arriba (el test solo deja
-  fonts.googleapis.com). Úsalas en `--sans`, `--mono`, `--font-ui`, `--title-font`. Cifras tabulares: `body` ya lleva `tabular-nums`.
+  fonts.googleapis.com). Plex Mono, Plex Sans Condensed e Inter no se importan: ya están en la web y saldrían dos
+  veces (el test lo vigila). De esas tres, la web solo sirve los grupos **latin** y **latin-ext** (sin cirílico,
+  griego ni vietnamita: un texto con esas letras sale con la de reserva), y son los woff2 sin «hinting» que da
+  Google, tal cual (`src/styles/fonts.css`).
+  Úsalas en `--sans`, `--mono`, `--font-ui`, `--title-font`. Cifras tabulares: `body` ya lleva `tabular-nums`.
 - **Sin** `!important`, sin marcas ni nombres ajenos, sin imágenes externas (dibujos con gradientes CSS en `--bg-image`).
 - **Rendimiento y accesibilidad**: efectos caros (`backdrop-filter`, brillos, animaciones) solo dentro de
   `@media (prefers-reduced-motion: no-preference)` o `@supports`, y fuera en `prefers-reduced-transparency: reduce`.
@@ -54,7 +59,7 @@ Colores (`--bg`, `--panel`, `--raise`, `--line`, `--fg`, `--muted`, `--faint`, `
 `--hair`, `--border`, `--panel-edge`, `--panel-blur`), rejillas (`--grid-gap`, `--grid-fill`, `--grid-edge`,
 `--grid-join`, `--col-fill`, `--stack-gap`, `--stack-edge`), títulos (`--fs-title`, `--title-case`, `--title-track`,
 `--title-color`), espaciado (`--sp-*`, `--pad-x`, `--row-y`, `--head-y`, `--gutter`), fondo (`--bg-image`) y
-movimiento (`--dur-ui`, `--dur-fast`, `--ease`), foco (`--focus-w`) y barras de desplazamiento (`--scroll-w`, `--scroll-thumb`, `--scroll-track`). Modo OS (`/os`): `--os-desk`, `--os-win-bg`,
+movimiento (`--dur-ui`, `--dur-fast`, `--ease` y `--dur-view`, el fundido al cambiar de vista: 0 = sin fundido), foco (`--focus-w`) y barras de desplazamiento (`--scroll-w`, `--scroll-thumb`, `--scroll-track`). Modo OS (`/os`): `--os-desk`, `--os-win-bg`,
 `--os-win-edge`, `--os-win-edge-active`, `--os-win-radius`, `--os-win-shadow`, `--os-title-h`, `--os-title-bg`,
 `--os-title-fg`, `--os-title-fg-active`, `--os-snap` y `--os-bar-h` (salen de los de arriba: no hace falta tocarlos; ganchos
 `data-ui="os-win"` y `"os-title"`). Ejemplo completo: `static/estilos/grafito.css`.
