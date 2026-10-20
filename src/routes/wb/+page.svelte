@@ -13,7 +13,7 @@
 	const short = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 </script>
 
-<ViewHeader code="WB" title="Bonos soberanos" sub="Tesoro de EE. UU., BCE y Ministerio de Finanzas de Japón" />
+<ViewHeader code="WB" title="Bonos soberanos" sub="Tesoro de EE. UU., BCE y Ministerio de Finanzas de Japón" plain={data.plain} />
 
 <div class="grid">
 	<div class="col">
