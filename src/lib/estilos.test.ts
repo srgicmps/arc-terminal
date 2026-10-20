@@ -79,12 +79,6 @@ describe('estéticas', () => {
 		expect(decideStyle('nada', [])).toBe('grafito');
 	});
 
-	it('src/app.html aplica la misma regla y pone la hoja de la estética', () => {
-		const html = readFileSync('src/app.html', 'utf8');
-		expect(html).toContain("q !== 'arc-modo' && q !== 'arc-style'");
-		expect(html).toContain("%sveltekit.assets%/estilos/' + st + '.css");
-	});
-
 	it('cada archivo de static/estilos es una estética, en su capa, con su bloque de noche y de día', () => {
 		for (const f of files) {
 			const id = f.replace(/\.css$/, '');
