@@ -65,7 +65,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   va igual, solo en local.
 - **Cabeceras** (`static/_headers`, solo lo estático): un año de caché (`private, immutable`) SOLO para lo que lleva hash en el nombre (`/_app/immutable/*`, el motor de ajedrez); en todo, `nosniff` y `frame-ancestors 'self'` (nunca `'none'`: Arc OS abre vistas en iframes).
 - La web es estática, así que **GitHub Actions hace de servidor**: cada 5–15 min un script de Node
-  descarga los datos, los guarda como JSON y vuelve a publicar la web. Así tampoco hay problemas de CORS. GitHub se salta casi todos sus cron: las lanza a su hora el **despertador** (`cloud/cron/`, un Worker de Cloudflare solo con Cron Triggers; se publica con la herramienta «despertador» de `deploy.yml`) y los `schedule` quedan de respaldo.
+  descarga los datos, los guarda como JSON y vuelve a publicar la web. Así tampoco hay problemas de CORS. GitHub se salta casi todos sus cron: las lanza a su hora el **despertador** (`cloud/cron/`, un Worker de Cloudflare solo con Cron Triggers; se publica con la herramienta «despertador» de `deploy.yml`, con sus propios Secrets `DESPERTADOR_GH_TOKEN` y `DESPERTADOR_CF_TOKEN`, este solo con Workers Scripts · Edit: el `CLOUDFLARE_API_TOKEN` de siempre no toca Workers) y los `schedule` quedan de respaldo.
 - **Dos velocidades**: `deploy.yml` (cada 15 min y en cada push a main) refresca todo lo caducado según el
   `maxAgeMinutes` de cada fuente; `fast.yml` (cada 5 min) fuerza solo las urgentes (lista `URGENT`: terremotos,
   avisos, titulares, IMP…) y publica. Comparten grupo de concurrencia, así que nunca publican a la vez.

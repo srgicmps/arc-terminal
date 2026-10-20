@@ -475,9 +475,12 @@ jobs:
 
   # A mano (herramienta «despertador», solo desde main): publica en Cloudflare el Worker de cloud/cron/, que con
   # sus Cron Triggers lanza fast.yml cada 5 min y esta pasada cada 15 (GitHub se salta casi todos los `schedule`),
-  # y le pasa el token de GitHub como secret. Hace falta el Secret DESPERTADOR_GH_TOKEN (token fine-grained solo de
-  # este repo, con Actions: lectura y escritura) y que CLOUDFLARE_API_TOKEN tenga el permiso «Workers Scripts:
-  # Edit». Si falta algo, lo dice en el resumen de la Action y no publica nada.
+  # y le pasa el token de GitHub como secret. Usa dos Secrets propios, que solo ve este job:
+  # - DESPERTADOR_GH_TOKEN: token fine-grained de GitHub solo de este repo, con Actions: lectura y escritura.
+  # - DESPERTADOR_CF_TOKEN: token de Cloudflare solo con Account · Workers Scripts · Edit en la cuenta. Va aparte
+  #   del CLOUDFLARE_API_TOKEN de siempre (mínimo privilegio): aquel corre en cientos de pasadas al día y no tiene
+  #   por qué poder tocar Workers. CLOUDFLARE_ACCOUNT_ID sí es el de siempre.
+  # Si falta algo, lo dice en el resumen de la Action y no publica nada.
   despertador:
     if: github.event_name == 'workflow_dispatch' && inputs.herramienta == 'despertador'
     runs-on: ubuntu-latest
@@ -496,10 +499,11 @@ jobs:
             exit 1
           }
           [ "$GITHUB_REF" = refs/heads/main ] || falta "Lánzalo desde main («Use workflow from: main»): se publica el Worker de esa rama."
-          [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || falta "Faltan los Secrets CLOUDFLARE_API_TOKEN o CLOUDFLARE_ACCOUNT_ID."
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || falta "Falta el Secret CLOUDFLARE_ACCOUNT_ID (el de siempre)."
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || falta "Falta el Secret DESPERTADOR_CF_TOKEN: un token de Cloudflare (My Profile → API Tokens → Create Token → Create Custom Token) solo con el permiso Account · Workers Scripts · Edit en tu cuenta. Es aparte: el CLOUDFLARE_API_TOKEN de siempre no se toca."
           [ -n "$GH_DISPATCH_TOKEN" ] || falta "Falta el Secret DESPERTADOR_GH_TOKEN (Settings → Secrets and variables → Actions): un token fine-grained de GitHub solo de este repo, con Actions: lectura y escritura."
           npx --yes wrangler@4.145.0 deploy -c cloud/cron/wrangler.toml ||
-            falta "Wrangler no ha podido publicar el Worker. Si el registro dice «Authentication error [code: 10000]», al token CLOUDFLARE_API_TOKEN le falta el permiso Cuenta → Workers Scripts → Edit."
+            falta "Wrangler no ha podido publicar el Worker. Si el registro dice «Authentication error [code: 10000]», al token DESPERTADOR_CF_TOKEN le falta el permiso Account · Workers Scripts · Edit, o es de otra cuenta."
           printf '%s' "$GH_DISPATCH_TOKEN" | npx --yes wrangler@4.145.0 secret put GH_DISPATCH_TOKEN -c cloud/cron/wrangler.toml ||
             falta "El Worker está publicado, pero no se ha podido guardar el token (secret GH_DISPATCH_TOKEN). Vuelve a lanzar la herramienta."
           cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
@@ -509,7 +513,8 @@ jobs:
           - Su registro: en el panel de Cloudflare, el Worker «arc-terminal-cron» → Logs.
           EOF
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # Wrangler lee el token de CLOUDFLARE_API_TOKEN: aquí es el propio del despertador, no el de siempre.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.DESPERTADOR_CF_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GH_DISPATCH_TOKEN: ${{ secrets.DESPERTADOR_GH_TOKEN }}
 
