@@ -2,10 +2,10 @@
 // país de la UE, con y sin impuestos. Sin clave. Sale los jueves con los precios del lunes.
 // https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en
 // Se usa el histórico (.xlsx): trae la media ponderada de la UE y columnas con nombre fijo
-// («ES_price_with_tax_euro95»), en dos hojas, con y sin impuestos. Se lee con exceljs, solo aquí.
-import ExcelJS from 'exceljs';
+// («ES_price_with_tax_euro95»), en dos hojas, con y sin impuestos. Se lee con scripts/xlsx.ts.
 import { parseOilBulletin, type EuFuelData } from '../../src/lib/fuel.ts';
 import { getText, request, type Source } from '../lib.ts';
+import { readXlsx } from '../xlsx.ts';
 
 const PAGE = 'https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en';
 // El enlace del histórico, por si la página cambia de forma: se busca primero en ella.
@@ -18,11 +18,6 @@ export function historyLink(html: string): string | null {
 	return path ? new URL(path.replaceAll('&amp;', '&'), PAGE).href : null;
 }
 
-/** El valor de una celda de exceljs, sin envoltorios: fórmulas → su resultado. */
-function plainCell(v: ExcelJS.CellValue): unknown {
-	return v && typeof v === 'object' && !(v instanceof Date) && 'result' in v ? v.result : v;
-}
-
 export const oilbulletin: Source<EuFuelData> = {
 	name: 'oilbulletin',
 	label: 'Gasolina y diésel en Europa · Comisión Europea (Weekly Oil Bulletin)',
@@ -32,17 +27,9 @@ export const oilbulletin: Source<EuFuelData> = {
 	deadlineMs: 150_000,
 	async fetch() {
 		const url = historyLink(await getText(PAGE).catch(() => '')) ?? HISTORY;
-		const book = new ExcelJS.Workbook();
-		await book.xlsx.load(await (await request(url)).arrayBuffer());
-		// Solo las hojas de precios; cada una, como matriz de celdas.
-		const sheets = book.worksheets
-			.filter((s) => /price/i.test(s.name))
-			.map((sheet) => {
-				const cells: unknown[][] = [];
-				sheet.eachRow((row) => cells.push((row.values as ExcelJS.CellValue[]).slice(1).map(plainCell)));
-				return cells;
-			});
-		const data = parseOilBulletin(sheets);
+		// Solo las hojas de precios (las demás ni se leen); cada una, como matriz de celdas.
+		const sheets = readXlsx(await (await request(url)).arrayBuffer(), (name) => /price/i.test(name));
+		const data = parseOilBulletin(sheets.map((s) => s.rows));
 		if (!data) throw new Error('el histórico del Oil Bulletin no trae precios de España');
 		return data;
 	}

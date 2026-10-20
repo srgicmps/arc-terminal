@@ -1,19 +1,17 @@
 // Incertidumbre económica (EPU, policyuncertainty.com): mundial mensual (.xlsx) y EE. UU. diario (.csv). Sin clave.
-// Ver src/lib/uncertainty.ts. El riesgo geopolítico (GPR) solo se publica en .xls antiguo, que exceljs no lee.
-import ExcelJS from 'exceljs';
+// Ver src/lib/uncertainty.ts. El riesgo geopolítico (GPR) solo se publica en .xls antiguo (binario), que
+// scripts/xlsx.ts no lee: solo lee .xlsx.
 import { epuSeries, EPU_URL, parseDailyEpu, parseGlobalEpu, type UncertaintyData } from '../../src/lib/uncertainty.ts';
 import { getText, request, type Source } from '../lib.ts';
+import { readXlsx } from '../xlsx.ts';
 
 const GLOBAL = `${EPU_URL}media/Global_Policy_Uncertainty_Data.xlsx`;
 const DAILY = `${EPU_URL}media/All_Daily_Policy_Data.csv`;
 
+/** La primera hoja del .xlsx mundial. */
 async function globalCells(): Promise<unknown[][]> {
-	const book = new ExcelJS.Workbook();
-	await book.xlsx.load(await (await request(GLOBAL)).arrayBuffer());
-	const sheet = book.worksheets[0];
-	const cells: unknown[][] = [];
-	sheet?.eachRow((row) => cells.push((row.values as unknown[]).slice(1)));
-	return cells;
+	const [sheet] = readXlsx(await (await request(GLOBAL)).arrayBuffer(), (_, i) => i === 0);
+	return sheet?.rows ?? [];
 }
 
 export const uncertainty: Source<UncertaintyData> = {
