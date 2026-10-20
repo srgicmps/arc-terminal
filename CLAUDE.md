@@ -63,6 +63,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   del equipo; el token necesita D1 · Edit y Access: Apps and Policies y Organizations · Read). Las Variables
   `D1_DATABASE_ID`, `ACCESS_TEAM_DOMAIN` y `ACCESS_AUD` son opcionales y mandan. Sin nada, /api/* responde 503 y la web
   va igual, solo en local.
+- **Tu cuenta** (panel de HELP, `src/lib/signout.svelte.ts`): «Cerrar sesión» borra de este navegador lo de la cuenta y va a `/cdn-cgi/access/logout`; «Borrar mi cuenta» (escribir BORRAR) → DELETE `/api/account` (`cloud/account.ts`, el `forget()` de «Quitar»).
 - **Cabeceras** (`static/_headers`, solo lo estático): un año de caché (`private, immutable`) SOLO para lo que lleva hash en el nombre (`/_app/immutable/*`, el motor de ajedrez); en todo, `nosniff` y `frame-ancestors 'self'` (nunca `'none'`: Arc OS abre vistas en iframes).
 - La web es estática, así que **GitHub Actions hace de servidor**: cada 15–30 min un script de Node
   descarga los datos, los guarda como JSON y vuelve a publicar la web. Así tampoco hay problemas de CORS.
