@@ -67,7 +67,11 @@ beforeEach(() => {
 	vi.stubGlobal('$state', <T>(v: T) => v);
 	vi.stubGlobal('localStorage', {
 		getItem: (k: string) => store.get(k) ?? null,
-		setItem: (k: string, v: string) => store.set(k, v)
+		setItem: (k: string, v: string) => store.set(k, v),
+		get length() {
+			return store.size;
+		},
+		key: (i: number) => [...store.keys()][i] ?? null
 	});
 	vi.stubGlobal('document', {
 		documentElement: root,
@@ -160,5 +164,26 @@ describe('al salir de Arc OS, theme-color vuelve al fondo de la estética (look.
 		els.get('style-sheet')?.load();
 		expect(root.dataset.style).toBe('grafito');
 		expect(meta.content).toBe('sin tocar');
+	});
+});
+
+describe('webLook solo pone estéticas de ESTILOS; si no, lo mismo que decideStyle (como src/app.html)', () => {
+	const web = async () => (await import('./look.ts')).webLook(root as unknown as HTMLElement);
+
+	it('un id que no existe no pide su hoja (daría 404): quien ya usaba la web, Terminal', async () => {
+		store.set('arc-style', 'inventada');
+		store.set('arc-theme', 'dark');
+		await web();
+		expect(root.dataset.style).toBe('terminal');
+		expect(els.has('style-sheet')).toBe(false);
+	});
+
+	it('quien llega nuevo, Grafito (también con «modern», su nombre antiguo)', async () => {
+		for (const stored of ['inventada', 'modern']) {
+			store.set('arc-style', stored);
+			await web();
+			expect(root.dataset.style, stored).toBe('grafito');
+			expect(els.get('style-sheet')?.href, stored).toBe('/estilos/grafito.css');
+		}
 	});
 });

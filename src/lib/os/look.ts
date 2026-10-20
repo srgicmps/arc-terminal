@@ -4,6 +4,8 @@
 // webLook las mantiene al día. Fuera de /os todo sigue igual: al salir se vuelve a lo guardado.
 // src/app.html hace lo mismo antes de pintar (data-os-look), para que no parpadee.
 
+import { decideStyle } from '../estilos.ts';
+
 /** Atributos de <html> que pone la web y que en Arc OS no se usan. */
 export const WEB_LOOK = ['style', 'accent', 'density'] as const;
 
@@ -59,9 +61,19 @@ async function barColor() {
 	syncThemeColor();
 }
 
+/** Las claves guardadas en localStorage (decideStyle mira si ya se usaba la web). */
+function storedKeys(): string[] {
+	try {
+		return Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i) ?? '');
+	} catch {
+		return [];
+	}
+}
+
 /**
- * Pone en `root` la estética, el acento y la densidad guardados (lo mismo que src/app.html al cargar). La promesa se
- * cumple cuando el <link> de la hoja ya apunta a la estética (no cuando ha cargado).
+ * Pone en `root` la estética, el acento y la densidad guardados. La estética, con decideStyle, como src/app.html al
+ * cargar: solo un id de ESTILOS (otro pediría una hoja que no existe) y, si no, la que tocaría a quien no ha elegido.
+ * La promesa se cumple cuando el <link> de la hoja ya apunta a la estética (no cuando ha cargado).
  */
 export function webLook(root: HTMLElement): Promise<void> {
 	const get = (k: string) => {
@@ -71,13 +83,10 @@ export function webLook(root: HTMLElement): Promise<void> {
 			return null;
 		}
 	};
-	const st = get('arc-style');
-	let ready = Promise.resolve();
-	if (st && /^[a-z]+$/.test(st)) {
-		if (root.dataset.style !== st) root.dataset.style = st;
-		// Con import(): apps.ts (y sus tests) llega aquí por embed.ts, y estilos-css necesita $app/paths.
-		ready = import('../estilos-css.ts').then((m) => m.useSheet(st, 'style-sheet'));
-	}
+	const st = decideStyle(get('arc-style'), storedKeys());
+	if (root.dataset.style !== st) root.dataset.style = st;
+	// Con import(): apps.ts (y sus tests) llega aquí por embed.ts, y estilos-css necesita $app/paths.
+	const ready = import('../estilos-css.ts').then((m) => m.useSheet(st, 'style-sheet'));
 	const a = get('arc-accent');
 	if (a === 'amber' || a === 'cyan' || a === 'blue') root.dataset.accent = a;
 	else delete root.dataset.accent;
