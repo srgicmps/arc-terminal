@@ -476,7 +476,9 @@ jobs:
   # A mano (herramienta «despertador», solo desde main): publica en Cloudflare el Worker de cloud/cron/, que con
   # sus Cron Triggers lanza fast.yml cada 5 min y esta pasada cada 15 (GitHub se salta casi todos los `schedule`),
   # y le pasa el token de GitHub como secret. Usa dos Secrets propios, que solo ve este job:
-  # - DESPERTADOR_GH_TOKEN: token fine-grained de GitHub solo de este repo, con Actions: lectura y escritura.
+  # - DESPERTADOR_GH_TOKEN: token fine-grained de GitHub solo de este repo, con Actions: lectura y escritura y
+  #   caducidad de 1 año (GitHub propone 30 días). Al caducar, el Worker recibe 401, lo registra como error y no
+  #   lanza nada: se vuelve a los `schedule` de GitHub hasta que se guarda otro aquí y se relanza esta herramienta.
   # - DESPERTADOR_CF_TOKEN: token de Cloudflare solo con Account · Workers Scripts · Edit en la cuenta. Va aparte
   #   del CLOUDFLARE_API_TOKEN de siempre (mínimo privilegio): aquel corre en cientos de pasadas al día y no tiene
   #   por qué poder tocar Workers. CLOUDFLARE_ACCOUNT_ID sí es el de siempre.
@@ -501,7 +503,7 @@ jobs:
           [ "$GITHUB_REF" = refs/heads/main ] || falta "Lánzalo desde main («Use workflow from: main»): se publica el Worker de esa rama."
           [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || falta "Falta el Secret CLOUDFLARE_ACCOUNT_ID (el de siempre)."
           [ -n "$CLOUDFLARE_API_TOKEN" ] || falta "Falta el Secret DESPERTADOR_CF_TOKEN: un token de Cloudflare (My Profile → API Tokens → Create Token → Create Custom Token) solo con el permiso Account · Workers Scripts · Edit en tu cuenta. Es aparte: el CLOUDFLARE_API_TOKEN de siempre no se toca."
-          [ -n "$GH_DISPATCH_TOKEN" ] || falta "Falta el Secret DESPERTADOR_GH_TOKEN (Settings → Secrets and variables → Actions): un token fine-grained de GitHub solo de este repo, con Actions: lectura y escritura."
+          [ -n "$GH_DISPATCH_TOKEN" ] || falta "Falta el Secret DESPERTADOR_GH_TOKEN (Settings → Secrets and variables → Actions): un token fine-grained de GitHub solo de este repo, con Actions: lectura y escritura y caducidad de 1 año (GitHub propone 30 días). Cuando caduque, el Worker no lanza nada y quedan solo los cron de GitHub hasta que guardes otro aquí y relances esta herramienta."
           npx --yes wrangler@4.145.0 deploy -c cloud/cron/wrangler.toml ||
             falta "Wrangler no ha podido publicar el Worker. Si el registro dice «Authentication error [code: 10000]», al token DESPERTADOR_CF_TOKEN le falta el permiso Account · Workers Scripts · Edit, o es de otra cuenta."
           printf '%s' "$GH_DISPATCH_TOKEN" | npx --yes wrangler@4.145.0 secret put GH_DISPATCH_TOKEN -c cloud/cron/wrangler.toml ||
@@ -511,6 +513,7 @@ jobs:
           - Worker «arc-terminal-cron» en Cloudflare, sin URL. Lanza fast.yml cada 5 min y deploy.yml en los minutos 7, 22, 37 y 52 (UTC).
           - Para comprobarlo: en Actions, filtra con «event:workflow_dispatch». En 10-15 min tienen que salir pasadas de «Vía rápida» y «Publicar en Pages».
           - Su registro: en el panel de Cloudflare, el Worker «arc-terminal-cron» → Logs.
+          - El token de GitHub caduca (1 año). Entonces el Worker deja de lanzar pasadas y apunta «HTTP 401» como error en su registro; quedan solo los cron de GitHub. Crea otro, guárdalo en DESPERTADOR_GH_TOKEN y vuelve a lanzar esta herramienta.
           EOF
         env:
           # Wrangler lee el token de CLOUDFLARE_API_TOKEN: aquí es el propio del despertador, no el de siempre.

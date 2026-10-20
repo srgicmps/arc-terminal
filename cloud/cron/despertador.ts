@@ -10,7 +10,11 @@
 //   · la normal no se lanza si ya espera otra normal. Si la que espera es una rápida, la sustituye: la normal
 //     hace lo mismo (todas las fuentes caducadas, también las urgentes) y además issues.ts y las miniaturas.
 // - Token: el secret GH_DISPATCH_TOKEN del Worker, un token fine-grained de GitHub solo de este repo con
-//   Actions: lectura y escritura. Sin él, lo dice en el registro y no hace nada. El token nunca se registra.
+//   Actions: lectura y escritura, creado con caducidad de 1 año (GitHub propone 30 días). Sin él, lo dice en el
+//   registro y no hace nada. El token nunca se registra.
+// - Cuando caduca (o se revoca), GitHub responde 401: el Worker no lanza nada y lo registra como error
+//   (console.error, nivel «error» en Logs de Cloudflare). Se vuelve a los `schedule` de GitHub hasta que se crea
+//   otro token, se guarda en el Secret DESPERTADOR_GH_TOKEN y se relanza la herramienta «despertador».
 // - Lo publica deploy.yml con la herramienta «despertador» (Actions → Publicar en Pages → Run workflow).
 // - Aquí está la lógica, con sus tests; la entrada del Worker es worker.ts (Cloudflare no admite otros exports).
 // - Plan gratuito de Cloudflare: 384 ejecuciones al día (de 100.000 peticiones), 2 Cron Triggers (de 5 por
@@ -53,12 +57,23 @@ type Registro = (mensaje: string) => void;
 
 /** Lo que se le dice a Sergi según lo que responda GitHub (sin el token, nunca). */
 export function motivo(status: number): string {
-	if (status === 401) return 'el token no vale o ha caducado: crea otro y guárdalo en el Secret DESPERTADOR_GH_TOKEN';
+	if (status === 401)
+		return 'el token no vale o ha caducado: crea otro (caducidad de 1 año), guárdalo en el Secret DESPERTADOR_GH_TOKEN y vuelve a lanzar la herramienta «despertador». Mientras, solo quedan los cron de GitHub';
 	if (status === 403 || status === 404)
 		return `el token no tiene permiso (o GitHub pide esperar): tiene que ser de ${REPO}, con Actions: lectura y escritura`;
 	if (status === 422) return `GitHub no acepta el lanzamiento: ¿el workflow sigue teniendo workflow_dispatch en ${RAMA}?`;
 	if (status === 429) return 'GitHub pide esperar (límite de peticiones)';
 	return 'GitHub no responde bien; se reintenta en la próxima';
+}
+
+/** GitHub ha respondido algo que no es 2xx. `status` decide cómo se registra (un 401 va como error). */
+class FalloGitHub extends Error {
+	status: number;
+	constructor(status: number, que: string) {
+		super(`HTTP ${status} al ${que}: ${motivo(status)}`);
+		this.name = 'FalloGitHub';
+		this.status = status;
+	}
 }
 
 function github(token: string) {
@@ -76,7 +91,7 @@ function github(token: string) {
 			body: payload ? JSON.stringify(payload) : undefined,
 			signal: AbortSignal.timeout(15_000)
 		});
-		if (!res.ok) throw new Error(`HTTP ${res.status} al ${que}: ${motivo(res.status)}`);
+		if (!res.ok) throw new FalloGitHub(res.status, que);
 		return res;
 	};
 }
@@ -99,9 +114,15 @@ async function esperando(api: ReturnType<typeof github>, workflow?: string): Pro
 
 /**
  * Lo que hace cada cron: mira la cola y, si toca, lanza su workflow en main. Nunca lanza un error: lo
- * registra y devuelve el resultado (para el registro de Cloudflare y para los tests).
+ * registra y devuelve el resultado (para el registro de Cloudflare y para los tests). Todo va a `log`, salvo
+ * un 401 de GitHub (token caducado o revocado), que va a `fallo` para que se vea entre los errores.
  */
-export async function despertar(cron: string, env: Entorno, log: Registro = console.log): Promise<Resultado> {
+export async function despertar(
+	cron: string,
+	env: Entorno,
+	log: Registro = console.log,
+	fallo: Registro = console.error
+): Promise<Resultado> {
 	const pasada = PASADAS[cron];
 	if (!pasada) {
 		log(`despertador: cron desconocido «${cron}»; no se lanza nada (mira PASADAS en cloud/cron/despertador.ts)`);
@@ -132,7 +153,8 @@ export async function despertar(cron: string, env: Entorno, log: Registro = cons
 				: error instanceof Error
 					? error.message
 					: String(error);
-		log(`despertador: ${workflow} no se ha lanzado. ${detalle}`);
+		const caducado = error instanceof FalloGitHub && error.status === 401;
+		(caducado ? fallo : log)(`despertador: ${workflow} no se ha lanzado. ${detalle}`);
 		return { estado: 'error', workflow, detalle };
 	}
 }

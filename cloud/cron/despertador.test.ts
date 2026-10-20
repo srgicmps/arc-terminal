@@ -100,24 +100,32 @@ describe('despertar', () => {
 		expect(lineas[0]).toContain('DESPERTADOR_GH_TOKEN');
 	});
 
-	it('un 401 de GitHub se registra con qué hacer, sin lanzar error ni lanzar la pasada', async () => {
+	it('un 401 de GitHub (token caducado) va al registro como error, con qué hacer, sin lanzar la pasada', async () => {
 		const { llamadas } = github({ falla: { [`/repos/${REPO}/actions/runs`]: 401 } });
 		const { lineas, log } = registro();
-		const r = await despertar(FAST, { GH_DISPATCH_TOKEN: TOKEN }, log);
+		const errores = registro();
+		const r = await despertar(FAST, { GH_DISPATCH_TOKEN: TOKEN }, log, errores.log);
 		expect(r).toMatchObject({ estado: 'error', workflow: 'fast.yml' });
-		expect(lineas[0]).toContain('HTTP 401 al mirar la cola');
-		expect(lineas[0]).toContain('caducado');
+		expect(lineas).toEqual([]);
+		expect(errores.lineas[0]).toContain('HTTP 401 al mirar la cola');
+		expect(errores.lineas[0]).toContain('caducado');
+		expect(errores.lineas[0]).toContain('1 año');
+		expect(errores.lineas[0]).toContain('herramienta «despertador»');
+		expect(errores.lineas.join('\n')).not.toContain(TOKEN);
 		expect(llamadas.some((l) => l.method === 'POST')).toBe(false);
 	});
 
 	it('un 404 al lanzar (token sin permiso) se registra; el token nunca sale en el registro', async () => {
 		github({ falla: { [`/repos/${REPO}/actions/workflows/fast.yml/dispatches`]: 404 } });
 		const { lineas, log } = registro();
-		const r = await despertar(FAST, { GH_DISPATCH_TOKEN: TOKEN }, log);
+		const errores = registro();
+		const r = await despertar(FAST, { GH_DISPATCH_TOKEN: TOKEN }, log, errores.log);
 		expect(r).toMatchObject({ estado: 'error', workflow: 'fast.yml' });
 		expect(lineas[0]).toContain('HTTP 404 al lanzar fast.yml');
 		expect(lineas[0]).toContain('Actions: lectura y escritura');
 		expect(lineas.join('\n')).not.toContain(TOKEN);
+		// Solo el 401 va como error: lo demás puede ser pasajero o de configuración y ya lo explica el texto.
+		expect(errores.lineas).toEqual([]);
 	});
 
 	it('si GitHub no responde o se corta la red, lo registra y no lanza error', async () => {
@@ -163,6 +171,16 @@ describe('scheduled', () => {
 		await worker.scheduled({ cron: FAST }, { GH_DISPATCH_TOKEN: TOKEN });
 		expect(llamadas.at(-1)?.path).toBe(`/repos/${REPO}/actions/workflows/fast.yml/dispatches`);
 		expect(log).toHaveBeenCalledWith('despertador: fast.yml lanzada en main');
+	});
+
+	it('con el token caducado, el Worker lo deja como error (console.error), no como una línea más', async () => {
+		github({ falla: { [`/repos/${REPO}/actions/workflows/deploy.yml/runs`]: 401 } });
+		const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+		const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+		await worker.scheduled({ cron: DEPLOY }, { GH_DISPATCH_TOKEN: TOKEN });
+		expect(error).toHaveBeenCalledOnce();
+		expect(error.mock.calls[0][0]).toContain('HTTP 401');
+		expect(log).not.toHaveBeenCalled();
 	});
 });
 
