@@ -19,7 +19,7 @@
 	import { getPanelIndex } from '#lib/panelindex.svelte.ts';
 	import { hashPanel, samePanel } from '#lib/panelhash.ts';
 	import type { ShareSource } from '#lib/share.ts';
-	import { hiddenPanels, isSimple, modo, trimming } from '#lib/modo.svelte.ts';
+	import { hiddenPanels, isSimple, setAll, trimming } from '#lib/modo.svelte.ts';
 	import { isEssential, plainTitle } from '#lib/simple.ts';
 	import Note from './ui/Note.svelte';
 	import Term from './ui/Term.svelte';
@@ -64,7 +64,9 @@
 
 	// Modo Sencillo (modo.ts): los paneles que no son esenciales en esta vista no se pintan (salvo los fijados
 	// en TOP, los que dejaste a la vista en la modular y con «Ver todos»), y el título se lee en español claro.
-	// Los ocultos se apuntan para ViewHeader.
+	// Los ocultos se apuntan para ViewHeader. El HTML prerenderizado sale en Terminal, con todos los paneles: el
+	// <section> lleva data-essential y una regla CSS (abajo) esconde los demás antes de que arranque Svelte. Así,
+	// cuando el {#if !gone} los quita, ya no se veían y no se mueve nada.
 	const essential = $derived(!!pinArea || !!tools || isEssential(page.route.id, title, id));
 	const gone = $derived(trimming() && !essential && !tv.on);
 	$effect(() => {
@@ -104,7 +106,7 @@
 		if (!want || !samePanel(want, title)) return;
 		// En el modo Sencillo un panel no esencial no se pinta: para ir a él, se enseñan todos («Ver todos»).
 		if (gone) {
-			modo.all = true;
+			setAll(true);
 			return;
 		}
 		untrack(() => isFolded(fkey) && toggleFold(fkey));
@@ -175,7 +177,7 @@
 	<div class="scrim" aria-hidden="true" onclick={close}></div>
 {/if}
 
-<section bind:this={section} class="panel" data-ui="panel" class:max class:folded={shut} class:flash role={max ? 'dialog' : undefined} aria-modal={max ? 'true' : undefined} aria-label={max ? title : undefined}>
+<section bind:this={section} class="panel" data-ui="panel" data-essential={essential || undefined} class:max class:folded={shut} class:flash role={max ? 'dialog' : undefined} aria-modal={max ? 'true' : undefined} aria-label={max ? title : undefined}>
 	<header class="ph" data-ui="panel-head">
 		<h2>
 			<button
@@ -269,6 +271,13 @@
 {/if}
 
 <style>
+	/* Modo Sencillo: los paneles que no son esenciales no se ven desde el primer pintado (antes de hidratar, el HTML
+	   los trae todos). Es la misma condición que `gone`: <html data-modo> lo pone app.html antes de pintar, data-all
+	   «Ver todos» (setAll) y data-tv el modo TV. Fuera de capas, para que ninguna estética lo pise. */
+	:global(html[data-modo='sencillo']:not([data-all], [data-tv])) .panel:not([data-essential]) {
+		display: none;
+	}
+
 	/* Al saltar desde el índice de paneles del móvil, el panel queda justo debajo de él. */
 	@media (max-width: 720px) {
 		.panel {
