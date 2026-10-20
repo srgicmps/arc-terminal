@@ -1,6 +1,7 @@
 // «Borrar mi cuenta» (DELETE /api/account) con el SQL de verdad (D1 de mentira sobre SQLite) y JWT de Access firmados
 // con las claves de prueba: borra solo las filas de quien lo pide, y nada sin identidad, desde otra web o sin confirmar.
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { onRequest } from '../functions/api/account.ts';
 import { parseConfig } from '../src/lib/alertconfig.ts';
 import { handleAccount } from './account.ts';
 import { clearKeyCache } from './access.ts';
@@ -57,22 +58,21 @@ interface Opts {
 	type?: string;
 }
 
-async function call(
-	db: ReturnType<typeof sqliteD1>,
-	{ method = 'DELETE', body, email = ANA, service, origin, type }: Opts = {}
-) {
+async function request({ method = 'DELETE', body, email = ANA, service, origin, type }: Opts = {}) {
 	const headers: Record<string, string> = {};
 	if (service) headers['cf-access-jwt-assertion'] = await k.sign({ common_name: 'svc.access' });
 	else if (email) headers['cf-access-jwt-assertion'] = await k.sign({ email });
 	if (origin) headers.origin = origin;
 	if (body !== undefined) headers['content-type'] = type ?? 'application/json';
-	const request = new Request('https://arcterminal.dev/api/account', {
+	return new Request('https://arcterminal.dev/api/account', {
 		method,
 		headers,
 		body: body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body)
 	});
-	return handleAccount(request, ENV, d1AdminStore(db), k.certs);
 }
+
+const call = async (db: ReturnType<typeof sqliteD1>, opts: Opts = {}) =>
+	handleAccount(await request(opts), ENV, d1AdminStore(db), k.certs);
 
 const errorOf = async (res: Response) => ((await res.json()) as { error?: string }).error;
 
@@ -149,6 +149,20 @@ describe('DELETE /api/account', () => {
 			expect((await call(db, { method, body: method === 'GET' ? undefined : { confirm: ANA } })).status, method).toBe(
 				405
 			);
+	});
+
+	it('si falla el borrado en una tabla, no se borra nada de ninguna (todo o nada) y la Function responde 503', async () => {
+		const db = sqliteD1();
+		await seed(db);
+		// Un fallo de D1 en la última tabla (sugerencias), después de borrar las demás en la misma pasada.
+		db.raw.exec("CREATE TRIGGER falla BEFORE DELETE ON feedback BEGIN SELECT RAISE(ABORT, 'D1 caída'); END");
+		await expect(call(db, { body: { confirm: ANA } })).rejects.toThrow('D1 caída');
+		// Como la llama Cloudflare: el envoltorio (functions/api/account.ts) lo convierte en 503, y el navegador dice
+		// «No se ha borrado nada», que es verdad. Las claves de Access, con el fetch global.
+		vi.stubGlobal('fetch', vi.fn(k.certs));
+		const res = await onRequest({ request: await request({ body: { confirm: ANA } }), env: { ...ENV, DB: db } });
+		expect(res.status).toBe(503);
+		for (const t of USER_TABLES) expect(left(db, t, ANA), t).toBe(1);
 	});
 
 	it('sin base: 503 «sin configurar»', async () => {
