@@ -5,9 +5,10 @@
 	Lógica en src/lib/webpush.ts.
 -->
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { asset } from '$app/paths';
 	import ButtonRow from './ui/ButtonRow.svelte';
-	import { iosSafari } from '#lib/install.ts';
+	import { installPlatform, iosSafari } from '#lib/install.ts';
 	import { currentSub, disablePush, enablePush, pushApi, pushSupport, sameKey, testPush } from '#lib/webpush.ts';
 
 	const url = asset('api/push' as Parameters<typeof asset>[0]);
@@ -18,6 +19,11 @@
 	let busy = $state(false);
 	let msg = $state('');
 	let safari = $state(true);
+	// La web instalada en el iPhone o el iPad: sin barra del navegador para cambiar el permiso ni recargar.
+	let iosApp = $state(false);
+	let enableBtn = $state<HTMLButtonElement>();
+	let testBtn = $state<HTMLButtonElement>();
+	const id = $props.id();
 
 	$effect(() => {
 		void start();
@@ -39,6 +45,7 @@
 			touchPoints: navigator.maxTouchPoints
 		});
 		safari = iosSafari(navigator.userAgent);
+		iosApp = standalone && installPlatform(navigator.userAgent, false, navigator.maxTouchPoints) === 'ios';
 		if (support !== 'ok') return void (phase = support);
 		if (Notification.permission === 'denied') return void (phase = 'denied');
 		const sub = await currentSub().catch(() => null);
@@ -64,6 +71,10 @@
 			msg = 'No ha salido bien. Prueba otra vez.';
 		}
 		busy = false;
+		// El botón pulsado se desactiva y el foco se iría a <body> (un lector de pantalla pierde su sitio): pasa al
+		// que toca ahora, «Probar» con los avisos activados y, si no, «Activar».
+		await tick();
+		(phase === 'on' ? testBtn : phase === 'off' ? enableBtn : undefined)?.focus();
 	}
 
 	// Sin await antes de enablePush: el permiso tiene que pedirse justo al tocar.
@@ -105,29 +116,42 @@
 
 {#if phase !== 'loading' && phase !== 'hidden'}
 	<div class="device">
-		<span class="label">En este dispositivo</span>
+		<span class="label" id="{id}-label">En este dispositivo</span>
 		<span class="state" class:on={phase === 'on'}>{STATE[phase]}</span>
 	</div>
 	{#if phase === 'install'}
 		<p class="hint">
-			En el iPhone, los avisos solo llegan con la web instalada{safari ? '' : ' desde Safari'}: Compartir → «Añadir a
-			pantalla de inicio», ábrela desde ahí y vuelve a AVISOS (iOS 16.4 o posterior).
+			En el iPhone o el iPad, los avisos solo llegan con la web instalada{safari ? '' : ' desde Safari'}: Compartir →
+			«Añadir a pantalla de inicio», ábrela desde ahí y vuelve a AVISOS (iOS 16.4 o posterior).
 		</p>
 	{:else if phase === 'no'}
 		<p class="hint">Este navegador no recibe avisos. Usa ntfy, aquí debajo.</p>
 	{:else if phase === 'denied'}
-		<p class="hint">Tienes los avisos de esta web bloqueados: permítelos en los ajustes del navegador y recarga.</p>
+		<p class="hint">
+			Tienes los avisos de esta web bloqueados: {iosApp
+				? 'permítelos en Ajustes → Notificaciones → Arc Terminal y vuelve a abrirla.'
+				: 'permítelos en los ajustes del navegador y recarga.'}
+		</p>
 	{:else}
-		<ButtonRow>
-			<button type="button" disabled={busy || phase === 'on'} onclick={enable}>Activar</button>
-			<button type="button" disabled={busy || phase !== 'on'} onclick={test}>Probar</button>
-			<button type="button" disabled={busy || phase !== 'on'} onclick={remove}>Quitar</button>
-		</ButtonRow>
+		<!-- Con nombre, para que un lector de pantalla sepa de qué son «Activar», «Probar» y «Quitar». -->
+		<div role="group" aria-labelledby="{id}-label">
+			<ButtonRow>
+				<button type="button" bind:this={enableBtn} disabled={busy || phase === 'on'} onclick={enable}>Activar</button>
+				<button type="button" bind:this={testBtn} disabled={busy || phase !== 'on'} onclick={test}>Probar</button>
+				<button type="button" disabled={busy || phase !== 'on'} onclick={remove}>Quitar</button>
+			</ButtonRow>
+		</div>
 	{/if}
-	{#if msg}<p class="hint" role="status">{msg}</p>{/if}
+	<!-- Siempre en la página: un aviso que entra ya con el texto puesto a menudo no se lee (VoiceOver). -->
+	<p class="hint" class:empty={!msg} role="status">{msg}</p>
 	<p class="hint or">
-		{phase === 'install' || phase === 'no' ? '' : 'Llegan a este navegador sin instalar nada, aunque tengas la web cerrada. '}O
-		con la app ntfy, en cualquier móvil:
+		{#if phase === 'on' || phase === 'off'}
+			Llegan a este navegador sin instalar nada, aunque tengas la web cerrada. O con la app ntfy, en cualquier móvil:
+		{:else if phase === 'no'}
+			Con la app ntfy, en cualquier móvil:
+		{:else}
+			O con la app ntfy, en cualquier móvil:
+		{/if}
 	</p>
 {/if}
 
@@ -160,6 +184,9 @@
 		font-size: var(--fs-s);
 		line-height: var(--lh-text);
 		color: var(--muted);
+	}
+	.hint.empty {
+		padding: 0;
 	}
 	.or {
 		padding-top: var(--row-y);
