@@ -54,7 +54,10 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   los cortaba.
 - **Tests que vigilan reglas** (fallan con el archivo y el motivo): `tokens-guard` (colores y fuentes escritos a mano),
   `paneltitles` (nombres de panel escritos a mano), `dataset-names` (nombres de datos), `bundle-data` (ningún JSON
-  en el código del navegador), `manual` (la ficha de cada comando) y `docs` (su fila en «Comandos y fuentes»).
+  en el código del navegador), `manual` (la ficha de cada comando), `docs` (su fila en «Comandos y fuentes»),
+  `estilos` (la plantilla de cada estética, contraste AA, AAA en «Alto contraste», de día y de noche, las letras y las
+  zonas seguras del iPhone) y `contraste-suave` (texto sobre `--amber-soft` y en la barra de comandos, AA en cada
+  estética).
 - `scripts/probe.ts` + `scripts/probe.txt`: en los PR que tocan `scripts/`, la Action consulta esas URL y deja la
   respuesta en el registro. Sirve para explorar APIs nuevas cuando el entorno de desarrollo no tiene red.
 - **Probar una fuente sin la pasada completa**: Actions → «Publicar en Pages» → Run workflow, con «fuentes»
