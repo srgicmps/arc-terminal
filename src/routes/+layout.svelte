@@ -9,11 +9,12 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import { isOnRoute, neighbour, nudge, SWIPE, swipeDirection } from '#lib/swipe.ts';
 	import { asset, resolve } from '$app/paths';
-	import { page, updated } from '$app/state';
+	import { navigating, page, updated } from '$app/state';
 	import { startClock } from '#lib/clock.svelte.ts';
 	import { COMMANDS } from '#lib/commands.ts';
 	import Clocks from '#lib/components/Clocks.svelte';
 	import Logo from '#lib/components/Logo.svelte';
+	import NavProgress from '#lib/components/NavProgress.svelte';
 	import Menu from '#lib/components/ui/Menu.svelte';
 	import CommandBar from '#lib/components/CommandBar.svelte';
 	import ExpLauncher from '#lib/components/ExpLauncher.svelte';
@@ -236,6 +237,8 @@
 <div class="app" data-ui="app">
 	<!-- Para el teclado y los lectores de pantalla: sin pasar por la cabecera y las pestañas. Solo se ve con el foco. -->
 	<a class="skip" href="#contenido">Saltar al contenido</a>
+	<!-- Línea de carga arriba mientras se abre otra vista (solo si tarda). -->
+	<NavProgress />
 	<header class="top" data-ui="top">
 		<a class="brand" data-ui="brand" href={resolve('/')}>
 			<Logo />
@@ -328,6 +331,7 @@
 		id="contenido"
 		tabindex="-1"
 		data-ui="main"
+		aria-busy={navigating.to ? 'true' : undefined}
 		class:nudged={shift !== 0}
 		style:translate={shift ? `${shift}px 0` : undefined}
 		ontouchstart={onSwipeStart}
