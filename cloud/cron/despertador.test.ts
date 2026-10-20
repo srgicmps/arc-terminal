@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import worker, { ESPERANDO, PASADAS, REPO, despertar, motivo } from './despertador.ts';
+import { ESPERANDO, PASADAS, REPO, despertar, motivo } from './despertador.ts';
+import worker from './worker.ts';
 
 const TOKEN = 'github_pat_de_prueba_123';
 const FAST = '*/5 * * * *';
@@ -180,6 +181,6 @@ describe('wrangler.toml', () => {
 		expect(toml).toMatch(/^preview_urls = false$/m);
 		expect(toml).not.toMatch(/^\s*(routes?|route)\s*=/m);
 		expect(toml).not.toMatch(/GH_DISPATCH_TOKEN\s*=|ghp_|github_pat_/);
-		expect(toml).toMatch(/^main = "despertador.ts"$/m);
+		expect(toml).toMatch(/^main = "worker.ts"$/m);
 	});
 });

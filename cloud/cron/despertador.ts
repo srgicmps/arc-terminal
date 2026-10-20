@@ -12,6 +12,7 @@
 // - Token: el secret GH_DISPATCH_TOKEN del Worker, un token fine-grained de GitHub solo de este repo con
 //   Actions: lectura y escritura. Sin él, lo dice en el registro y no hace nada. El token nunca se registra.
 // - Lo publica deploy.yml con la herramienta «despertador» (Actions → Publicar en Pages → Run workflow).
+// - Aquí está la lógica, con sus tests; la entrada del Worker es worker.ts (Cloudflare no admite otros exports).
 // - Plan gratuito de Cloudflare: 384 ejecuciones al día (de 100.000 peticiones), 2 Cron Triggers (de 5 por
 //   cuenta) y 3 subpeticiones como mucho (de 50). La CPU apenas se usa: casi todo es esperar a GitHub.
 
@@ -135,14 +136,3 @@ export async function despertar(cron: string, env: Entorno, log: Registro = cons
 		return { estado: 'error', workflow, detalle };
 	}
 }
-
-/** Lo mínimo del ScheduledController de Cloudflare que se usa aquí. */
-interface Controlador {
-	cron: string;
-}
-
-export default {
-	async scheduled(controller: Controlador, env: Entorno): Promise<void> {
-		await despertar(controller.cron, env);
-	}
-};

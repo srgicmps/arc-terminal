@@ -3,7 +3,8 @@
 # Lo publica deploy.yml con la herramienta «despertador»: `wrangler deploy -c cloud/cron/wrangler.toml`.
 # Sin secretos: el token de GitHub va como secret del Worker (GH_DISPATCH_TOKEN), que sube la misma herramienta.
 name = "arc-terminal-cron"
-main = "despertador.ts"
+# La entrada solo exporta el manejador; la lógica está en despertador.ts.
+main = "worker.ts"
 compatibility_date = "2026-10-01"
 
 # Sin URL pública: ni *.workers.dev ni URL de vista previa. Solo corre con el cron.
