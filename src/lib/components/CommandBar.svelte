@@ -7,7 +7,7 @@
 	import { isShortcut } from '#lib/shortcuts.ts';
 	import { routeHref } from '#lib/routes.ts';
 	import { toggleFullscreen } from '#lib/fit.svelte.ts';
-	import { keyboardInset } from '#lib/keyboard.ts';
+	import { keyboardInset, sheetRoom } from '#lib/keyboard.ts';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { isEmbedded } from '#lib/os/embed.ts';
@@ -96,6 +96,14 @@
 			vv.removeEventListener('scroll', fit);
 			kb = null;
 		};
+	});
+	// Alto para las sugerencias (--kb-h): lo que se ve menos lo que la hoja deja debajo. La hoja va en max(barra
+	// inferior, teclado) y cada estética le pone su margen, así que se mide dónde ha quedado (los $effect corren con
+	// --kb-bottom ya aplicado) en vez de repetir aquí sus cuentas.
+	let form = $state<HTMLFormElement>();
+	let room = $state<number | null>(null);
+	$effect(() => {
+		room = kb && form ? sheetRoom(kb, innerHeight - form.getBoundingClientRect().bottom) : null;
 	});
 	let selected = $state(-1);
 	let open = $state(false);
@@ -400,8 +408,9 @@
 	class="cmd"
 	data-ui="cmd"
 	class:sheet={ui.sheet}
+	bind:this={form}
 	style:--kb-bottom={kb ? `${kb.bottom}px` : undefined}
-	style:--kb-h={kb ? `${kb.h}px` : undefined}
+	style:--kb-h={room !== null ? `${room}px` : undefined}
 	role="search"
 	autocomplete="off"
 	{onsubmit}
@@ -618,8 +627,9 @@
 		bottom: 100%;
 		border-top-color: var(--amber);
 		border-bottom-color: var(--line);
-		/* Con el teclado, caben en lo que queda a la vista sobre el campo (--kb-h), con aire para el margen que les
-		   dan algunas estéticas. Sin teclado, la mitad de la pantalla, como siempre. */
+		/* Con el teclado, caben en lo que queda a la vista sobre el campo (--kb-h: lo visible menos lo que la hoja deja
+		   debajo, como la barra de pestañas), con aire para el margen que les dan algunas estéticas. Sin teclado, la
+		   mitad de la pantalla, como siempre. */
 		max-height: min(50vh, calc(var(--kb-h, 100vh) - var(--touch) - var(--sp-24)));
 	}
 
