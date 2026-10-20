@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { decideModo } from './modo.ts';
-import { isEssential, plainTitle } from './simple.ts';
+import { hasTrim, isEssential, plainTitle } from './simple.ts';
 
 describe('decideModo', () => {
 	it('lo guardado manda', () => {
@@ -32,6 +32,13 @@ describe('paneles del modo Sencillo', () => {
 		expect(isEssential('/eco', 'Balances de los bancos centrales')).toBe(false);
 		expect(isEssential('/', 'Gasolina 95 · Madrid', 'fuel')).toBe(true);
 		expect(isEssential('/', 'Hacker News', 'hn')).toBe(false);
+	});
+	it('«Ver todos» solo en las vistas con lista', () => {
+		expect(hasTrim('/eco')).toBe(true);
+		expect(hasTrim('/')).toBe(true);
+		expect(hasTrim('/boe')).toBe(false);
+		expect(hasTrim(null)).toBe(false);
+		expect(hasTrim('toString')).toBe(false);
 	});
 	it('títulos en español claro, conservando lo de detrás de « · »', () => {
 		expect(plainTitle('PIB')).toBe('Crecimiento de la economía (PIB)');
