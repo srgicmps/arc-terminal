@@ -4,7 +4,7 @@ export default {
 	order: 160, code: 'MIS', route: '/mis', key: 'Mis valores', desc: 'Tu lista de valores, con cotización en directo', sources: 'TradingView, FINRA', pinned: true,
 	manual: {
 		section: 'Economía y mercados',
-		what: 'Tu lista de valores con cotización en directo, sus titulares y sus próximos resultados. La lista se guarda solo en este navegador.',
+		what: 'Tu lista de valores con cotización en directo, sus titulares y sus próximos resultados. La lista se guarda en este navegador y, si tienes cuenta, también en ella (la ves en tus otros dispositivos).',
 		tips: ['Añade cualquier código de TradingView (NVDA, SAN, BME:REP…) o toca una sugerencia.'],
 		panels: [
 			{ name: 'Cotizaciones', what: 'Tus valores en directo.' },
