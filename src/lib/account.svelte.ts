@@ -29,8 +29,11 @@ async function leave() {
 	location.assign(LOGOUT);
 }
 
-/** El último DELETE se quedó sin respuesta: no se sabe si se ha borrado y la pestaña sigue sin sincronizar (hold). */
-let unsure = false;
+/**
+ * unsure: un DELETE se quedó sin respuesta, no se sabe si se ha borrado y la pestaña sigue sin sincronizar (hold) hasta
+ * que se vuelva a pulsar o se recargue. Reactivo, como un ref() de Vue: la fila «Tu cuenta» lo dice mientras dure.
+ */
+export const account = $state({ unsure: false });
 
 /** Lo que dice el navegador ahora (puede cambiar mientras se espera la respuesta). */
 const online = () => navigator.onLine !== false;
@@ -59,23 +62,25 @@ async function send(user: string): Promise<Response | null> {
 export async function deleteAccount(): Promise<string | null> {
 	const user = cloud.user;
 	if (!user) return `No hay cuenta. ${KEPT}`;
-	if (!online()) return offlineMsg(unsure);
+	if (!online()) return offlineMsg(account.unsure);
 	// Con la duda de antes, la pestaña ya está parada: no hay que esperar a nada.
-	const resume = unsure ? null : await hold();
-	if (!unsure && !resume) return `Se están guardando tus cambios: vuelve a probar en un momento. ${KEPT}`;
+	const resume = account.unsure ? null : await hold();
+	if (!account.unsure && !resume) return `Se están guardando tus cambios: vuelve a probar en un momento. ${KEPT}`;
 	let res = await send(user);
+	// El primer envío sin respuesta pudo llegar y borrarlo: la duda sigue aunque el reintento dé un error.
+	const lost = !res;
 	// Un corte suelto (el móvil pasa de wifi a datos): un reintento a los 2 s antes de dejar la duda.
 	if (!res && online()) {
 		await new Promise((r) => setTimeout(r, 2000));
 		res = await send(user);
 	}
-	const out = deleteOutcome(res, unsure);
+	const out = deleteOutcome(res, account.unsure || lost);
 	if (out.done) {
-		unsure = false;
+		account.unsure = false;
 		await leave();
 		return null;
 	}
-	unsure = out.held;
+	account.unsure = out.held;
 	if (!out.held) resume?.();
 	return out.msg;
 }

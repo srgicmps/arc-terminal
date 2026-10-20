@@ -2,6 +2,7 @@
 // account.svelte.ts) sobre un navegador de mentira: localStorage, sessionStorage, eventos, reloj y fetch. Los tests no
 // pasan por el compilador de Svelte: $state va de mentira (devuelve el objeto tal cual), igual que $app/paths.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { KEPT, LOGOUT } from './account.ts';
 import { HOLD, HOLD_MS, MEMORY, NOBODY } from './cloud.ts';
 
 vi.mock('$app/paths', () => ({ asset: (p: string) => `/${p}` }));
@@ -155,5 +156,30 @@ describe('la pestaña que borra (cloud.svelte.ts)', () => {
 		await vi.advanceTimersByTimeAsync(15_000);
 		expect(local.getItem(HOLD)).toBeNull();
 		expect(local.getItem(MEMORY)).toBe(JSON.stringify(NOBODY));
+	});
+});
+
+describe('deleteAccount (account.svelte.ts)', () => {
+	it('primer intento sin respuesta y reintento con error: sigue la duda y no dice «No se ha borrado nada»', async () => {
+		await boot();
+		const { account, deleteAccount } = await import('./account.svelte.ts');
+		let tries = 0;
+		answer = (method) => {
+			if (method !== 'DELETE') return reply(200, { user: ANA, prefs: {} });
+			if (tries++ === 0) throw new TypeError('Failed to fetch');
+			return reply(503, { error: 'no disponible' });
+		};
+		const pending = deleteAccount();
+		await settle();
+		await vi.advanceTimersByTimeAsync(2000);
+		const msg = await pending;
+		expect(requests).toEqual(['GET /api/prefs', 'DELETE /api/account', 'DELETE /api/account']);
+		expect(msg).not.toContain(KEPT);
+		expect(msg).toMatch(/No se ha podido comprobar si se ha borrado/);
+		expect(account.unsure).toBe(true);
+		// La pausa sigue (y se renueva) en todas las pestañas: nada sube a la cuenta que quizá ya no existe.
+		await vi.advanceTimersByTimeAsync(HOLD_MS * 2);
+		expect(Number(local.getItem(HOLD))).toBeGreaterThan(Date.now() - HOLD_MS);
+		expect(requests.filter((r) => r.endsWith('/api/prefs'))).toEqual(['GET /api/prefs']);
 	});
 });

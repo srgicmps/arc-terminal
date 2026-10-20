@@ -5,12 +5,14 @@
 	otra persona, la sincronización cambia lo de este navegador por lo de su cuenta (startPlan en cloud.ts).
 	«Borrar mi cuenta» va en dos pasos, sin ventana encima: el botón abre la confirmación debajo y hay que escribir
 	BORRAR. Igual para todos, también para el admin. Si no se puede, el aviso sale encima del campo (en el móvil, el
-	teclado tapa lo de debajo) y el campo lo lleva en su descripción. La lógica, en src/lib/account.svelte.ts.
+	teclado tapa lo de debajo) y el campo lo lleva en su descripción. Si no se sabe si se ha borrado (account.unsure),
+	la fila lo dice en lugar de «Todo esto se guarda…», aunque se cierre la confirmación con «Cancelar»: mientras, nada
+	se guarda en la cuenta. La lógica, en src/lib/account.svelte.ts.
 -->
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { LOGOUT } from '#lib/account.ts';
-	import { deleteAccount } from '#lib/account.svelte.ts';
+	import { account, deleteAccount } from '#lib/account.svelte.ts';
 	import { cloud, flushNow } from '#lib/cloud.svelte.ts';
 
 	const WORD = 'BORRAR';
@@ -68,7 +70,13 @@
 			onclick={toggle}>{confirming ? 'Cancelar' : 'Borrar mi cuenta'}</button
 		>
 	</span>
-	<span class="what">Todo esto se guarda en tu cuenta ({cloud.user}) y llega solo a tus otros dispositivos.</span>
+	{#if account.unsure}
+		<span class="what" role="status"
+			>No se sabe si se ha borrado tu cuenta. Hasta que recargues la página, nada de aquí se guarda en ella.</span
+		>
+	{:else}
+		<span class="what">Todo esto se guarda en tu cuenta ({cloud.user}) y llega solo a tus otros dispositivos.</span>
+	{/if}
 </div>
 {#if confirming}
 	<form
