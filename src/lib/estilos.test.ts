@@ -192,13 +192,19 @@ describe('iPhone: zonas seguras y color de la barra', () => {
 		expect(meta?.[1].split(',').map((p) => p.trim())).toContain('viewport-fit=cover');
 	});
 
-	it('al cambiar de estética, theme-color se pone otra vez cuando carga su hoja (y en el acto, para Terminal)', () => {
+	it('al cambiar de estética, theme-color se pone otra vez cuando carga su hoja (y en el acto, para Terminal), salvo en Arc OS', () => {
 		const theme = readFileSync('src/lib/theme.svelte.ts', 'utf8');
 		expect(theme).toMatch(/export function syncThemeColor\(\)/);
 		expect(theme).toMatch(/function apply\(\) {[^}]*syncThemeColor\(\);/);
 		const setStyle = /export function setStyle\([^)]*\) {([\s\S]*?)\n}/.exec(readFileSync('src/lib/taste.svelte.ts', 'utf8'))?.[1] ?? '';
-		expect(setStyle).toMatch(/getElementById\('style-sheet'\)\?\.addEventListener\('load', syncThemeColor/);
-		expect(setStyle).toMatch(/\n\tsyncThemeColor\(\);$/);
+		const code = setStyle.replace(/\/\/.*$/gm, '');
+		expect(code).toMatch(/getElementById\('style-sheet'\)\?\.addEventListener\('load', syncThemeColor/);
+		expect(code).toMatch(/\n\tsyncThemeColor\(\);/);
+		// En Arc OS, src/lib/os/look.ts quita data-style justo después: leer --bg aquí daría el de la estética, no el
+		// del aspecto del escritorio. La guarda va antes de tocar theme-color.
+		const guard = code.indexOf("if ('osLook' in document.documentElement.dataset) return;");
+		expect(guard).toBeGreaterThan(-1);
+		expect(guard).toBeLessThan(code.indexOf('syncThemeColor'));
 	});
 
 	it('el panel ampliado y lo fijo a los bordes se apartan de la muesca y de la barra de inicio', () => {
@@ -211,4 +217,5 @@ describe('iPhone: zonas seguras y color de la barra', () => {
 		expect(/\.fresh {([^}]*)}/.exec(layout)?.[1]).toMatch(/right: max\([^;]*safe-area-inset-right[\s\S]*bottom: max\([^;]*safe-area-inset-bottom/);
 		expect(/\.thumb {\s*position: fixed;([^}]*)}/.exec(layout)?.[1]).toContain('padding-bottom: env(safe-area-inset-bottom');
 	});
+
 });
