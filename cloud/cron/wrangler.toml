@@ -1,0 +1,21 @@
+# Despertador (cloud/cron/despertador.ts): un Worker de Cloudflare sin URL, solo con Cron Triggers, que lanza
+# fast.yml y deploy.yml a su hora porque GitHub se salta casi todos sus `schedule`.
+# Lo publica deploy.yml con la herramienta «despertador»: `wrangler deploy -c cloud/cron/wrangler.toml`.
+# Sin secretos: el token de GitHub va como secret del Worker (GH_DISPATCH_TOKEN), que sube la misma herramienta.
+name = "arc-terminal-cron"
+# La entrada solo exporta el manejador; la lógica está en despertador.ts.
+main = "worker.ts"
+compatibility_date = "2026-10-01"
+
+# Sin URL pública: ni *.workers.dev ni URL de vista previa. Solo corre con el cron.
+workers_dev = false
+preview_urls = false
+
+# En UTC. Los mismos que PASADAS en despertador.ts (un test lo comprueba). Para que lance la vía rápida cada
+# 10 min en vez de cada 5: "*/10 * * * *" aquí y en PASADAS.
+[triggers]
+crons = ["*/5 * * * *", "7,22,37,52 * * * *"]
+
+# Registro de cada ejecución en el panel de Cloudflare: el Worker «arc-terminal-cron» → Logs.
+[observability]
+enabled = true

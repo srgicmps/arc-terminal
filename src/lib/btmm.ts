@@ -52,3 +52,19 @@ export function tenorSeries(curve: YieldCurveData | null | undefined, tenor: str
 export function gap(a: MoneyRow | null, b: MoneyRow | null): number | null {
 	return a && b ? Math.round((a.v - b.v) * 100) : null;
 }
+
+/**
+ * Diferencial a − b en pb, los dos del MISMO día (para las frases del modo Sencillo, que sacan conclusiones).
+ * `a`: un tipo diario (SOFR, €STR), que sale al día siguiente. `b`: lo que paga el banco central. Con `step`, `b` solo
+ * trae los días en que cambia (facilidad de depósito del BCE) y vale el que estaba en vigor el último día de `a`. Sin él,
+ * `b` es diario (IORB, de FRED) y se comparan en el último día que tienen los dos. Así, el día en que cambia el tipo no
+ * se mezcla el dato de antes con el tipo nuevo. Null si falta alguno.
+ */
+export function gapOn(a: Series | undefined, b: Series | undefined, step = false): number | null {
+	const lastA = a?.points.at(-1)?.t;
+	const lastB = b?.points.at(-1)?.t;
+	if (!a || !b || !lastA || !lastB) return null;
+	const day = a.points.findLast((p) => p.t <= (step || lastA <= lastB ? lastA : lastB));
+	const paid = day && b.points.findLast((p) => p.t <= day.t);
+	return day && paid ? Math.round((day.v - paid.v) * 100) : null;
+}

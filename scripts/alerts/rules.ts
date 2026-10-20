@@ -1483,13 +1483,13 @@ export function earningsRule(d: Inputs, { now, today }: RuleContext): Draft[] {
 	});
 }
 
-/** Fuente caída: la misma decisión que abre el issue en scripts/issues.ts (3 pasadas). Id: down:<fuente>:<inicio>. */
+/** Fuente caída: la misma decisión que abre el issue en scripts/issues.ts (45 min en error). Id: down:<fuente>:<inicio>. */
 export function downRule(d: Inputs, { now }: RuleContext): Draft[] {
 	const historyOf = new Map(list(d.history).map((h) => [h?.name, h]));
 	return list(d.status).flatMap((s) => {
 		const history = historyOf.get(s?.name);
-		if (!s?.name || decide(s, history, undefined).kind !== 'open') return [];
-		const span = downSpan(history)!;
+		if (!s?.name || decide(s, history, undefined, now).kind !== 'open') return [];
+		const span = downSpan(history, now)!;
 		const since = Date.parse(span.t);
 		if (!Number.isFinite(since) || now - since > DOWN.days * DAY) return [];
 		return [
