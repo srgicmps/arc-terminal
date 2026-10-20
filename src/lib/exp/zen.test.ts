@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { changeSentence, zenCards } from './zen.ts';
+import { cardIndex, changeSentence, zenCards } from './zen.ts';
 import type { Figure } from './figures.ts';
 
 const fig = (id: string, change: number | null): Figure =>
@@ -24,5 +24,19 @@ describe('Zen', () => {
 		);
 		expect(cards.map((c) => c.key)).toEqual(['n-a', 'f-x', 'n-b', 'n-c']);
 		expect(cards[0].kind === 'news' && cards[0].term?.term).toBe('Euríbor');
+	});
+
+	it('con datos nuevos sigues en la misma tarjeta, aunque cambie el orden o entre una delante', () => {
+		const deck = (...keys: string[]) => keys.map((key) => ({ key }));
+		// Leías la 3.ª (n-c); llega una nueva delante: sigue siendo n-c, ahora la 4.ª.
+		expect(cardIndex(deck('n-z', 'n-a', 'f-x', 'n-c'), 'n-c', 2)).toBe(3);
+		// Otro orden.
+		expect(cardIndex(deck('n-c', 'n-a', 'f-x'), 'n-c', 2)).toBe(0);
+		// Ya no está: la de su sitio, dentro de la baraja.
+		expect(cardIndex(deck('n-a', 'f-x', 'n-d'), 'n-c', 2)).toBe(2);
+		expect(cardIndex(deck('n-a'), 'n-c', 2)).toBe(0);
+		// Al entrar (sin clave aún), la primera.
+		expect(cardIndex(deck('n-a', 'f-x'), null, 0)).toBe(0);
+		expect(cardIndex([], null, 0)).toBe(0);
 	});
 });
