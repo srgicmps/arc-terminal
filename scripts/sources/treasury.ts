@@ -5,7 +5,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { parseMts, type MtsData, type MtsRow } from '../../src/lib/mts.ts';
 import { parseTic, type TicData } from '../../src/lib/tic.ts';
 import type { Auction, AuctionsData, SeriesData, YieldCurveData } from '../../src/lib/types.ts';
-import { getJson, getText, list, madridDay, num, type Source } from '../lib.ts';
+import { getJson, getText, inRange, list, madridDay, num, type Source } from '../lib.ts';
 
 const DEBT_API =
 	'https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_to_penny';
@@ -72,10 +72,22 @@ async function curveMonth(yyyymm: string): Promise<YieldCurveData['days']> {
 		.filter((d) => d.date);
 }
 
+/**
+ * Para validate: el último día de la curva tiene que traer los plazos (se tolera un hueco) con rentabilidades
+ * creíbles, entre -1 y 20 %. Si el Tesoro renombra los campos, los días siguen llegando con todo a null.
+ */
+export function checkCurve(data: YieldCurveData): string | null {
+	const last = data.days.at(-1);
+	const ok = last?.values.filter((v) => inRange(v, -1, 20)).length ?? 0;
+	const want = Math.max(1, TENORS.length - 1);
+	return ok < want ? `el último día (${last?.date ?? '?'}) solo trae ${ok} de ${TENORS.length} plazos entre -1 y 20 %` : null;
+}
+
 export const uscurve: Source<YieldCurveData> = {
 	name: 'uscurve',
 	label: 'Curva de tipos diaria · Tesoro de EE. UU.',
 	maxAgeMinutes: 115,
+	validate: checkCurve,
 	async fetch() {
 		// Mes actual y anterior, para tener siempre al menos un mes de historia, y los mismos meses de hace un
 		// año, para comparar la curva de hoy con la de entonces (WS).

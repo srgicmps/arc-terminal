@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { checkData, checkShrink } from '../lib.ts';
 import { auctions, toAuction, uscurve, usdebt } from '../sources/treasury.ts';
 import { mockFetch } from './mock.ts';
 
@@ -130,5 +131,24 @@ describe('auctions', () => {
 		// Con menos de 3 anteriores no hay media.
 		expect(data.recent.at(-1)).toMatchObject({ date: '2026-01-10', avgBidToCover: null });
 		expect(data.recent).toHaveLength(8);
+	});
+});
+
+describe('uscurve.validate', () => {
+	const tenors = ['1M', '3M', '6M', '1A', '2A', '5A', '10A', '30A'];
+	const day = (date: string, values: (number | null)[]) => ({ date, values });
+	const full = [4.12, 4.26, 4.34, 4.46, 4.74, 4.89, 5.09, 5.43];
+
+	it('da por buena una curva con todos los plazos, o con un hueco', () => {
+		expect(checkData({ tenors, days: [day('2026-10-19', full)] }, uscurve)).toBeNull();
+		expect(checkData({ tenors, days: [day('2026-10-19', [null, ...full.slice(1)])] }, uscurve)).toBeNull();
+	});
+
+	it('caza campos renombrados (todo a null), una curva de un plazo y rentabilidades en puntos básicos', () => {
+		const renamed = { tenors, days: [day('2026-10-16', full), day('2026-10-19', tenors.map(() => null))] };
+		expect(checkShrink(renamed, { tenors, days: [day('2026-10-16', full), day('2026-10-19', full)] }, uscurve)).toBeNull();
+		expect(checkData(renamed, uscurve)).toBe('datos raros: el último día (2026-10-19) solo trae 0 de 8 plazos entre -1 y 20 %');
+		expect(checkData({ tenors, days: [day('2026-10-19', [4.1])] }, uscurve)).toMatch(/1 de 8/);
+		expect(checkData({ tenors, days: [day('2026-10-19', full.map((v) => v * 100))] }, uscurve)).toMatch(/0 de 8/);
 	});
 });
