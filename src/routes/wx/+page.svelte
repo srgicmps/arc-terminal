@@ -393,11 +393,10 @@
 {#if !places.length}<p class="empty">Sin datos todavía.</p>{/if}
 
 <div class="grid grid-2e">
-	{#each places as p, i (p.name)}
+	{#each places as p (p.name)}
 		{@const now = sky(p.current.code)}
 		<div class="col">
-			<!-- En Sencillo (simple.ts, «id:tiempo»), solo la primera ficha: la de tu sitio (o la primera fija, mientras llega). -->
-			<Panel id={i === 0 ? 'tiempo' : undefined} title={p.name} meta={p === main ? `Tu sitio · ${now.label}` : now.label}>
+			<Panel title={p.name} meta={p === main ? `Tu sitio · ${now.label}` : now.label}>
 				<div class="now">
 					<span class="icon" aria-hidden="true">{now.icon}</span>
 					<b>{nf(p.current.temp, 0)}°</b>
@@ -437,13 +436,6 @@
 </p>
 
 <style>
-	/* Modo Sencillo (simple.ts): una columna que se queda sin paneles (las otras ciudades; fuera de Menorca, la de
-	   avisos, mar y sol) no se pinta. Si no, deja una línea de más o, en pantalla ancha, un hueco al lado. Con «Ver
-	   todos» (data-all) o en el modo TV se ve como siempre. */
-	:global(html[data-modo='sencillo']:not([data-all], [data-tv])) .col:not(:has(:global(.panel[data-essential]))) {
-		display: none;
-	}
-
 	.now {
 		display: flex;
 		align-items: center;

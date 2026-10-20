@@ -207,12 +207,6 @@
 {/if}
 
 <style>
-	/* Modo Sencillo (simple.ts): la rejilla de los repartos, que se queda sin paneles, no se pinta; si no, su
-	   borde deja una línea de más. Con «Ver todos» (data-all) o en el modo TV se ve como siempre. */
-	:global(html[data-modo='sencillo']:not([data-all], [data-tv])) .grid:not(:has(:global(.panel[data-essential]))) {
-		display: none;
-	}
-
 	input,
 	select,
 	button {
