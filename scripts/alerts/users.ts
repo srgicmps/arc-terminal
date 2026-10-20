@@ -7,6 +7,9 @@
 //   Sus valores: los que sigue Sergi (si lo elige) y los suyos (sus MIS).
 // - Cada uno tiene su historial (qué se le ha enviado), como el de Sergi, guardado SOLO en la caché de Actions
 //   (notify-users.json, junto a notify-log.json), con su uid. Nunca en static/data: no se publica.
+// - Si tiene avisos en algún navegador (Web Push, /api/push, cloud/push.ts), cada aviso sale también por ahí:
+//   el mismo aviso, el mismo cupo y una sola entrada en el historial (el canal no cuenta doble). La Action solo
+//   manda el uid y el texto; los endpoints de los navegadores no salen nunca de Cloudflare.
 // SECRETO: los temas de ntfy no se escriben en ningún registro ni archivo (notify.ts los quita de cada línea).
 import { DAILY_MAX, inQuiet, parseConfig, wants, type AlertConfig } from '../../src/lib/alertconfig.ts';
 import { accessHeaders } from '../lib.ts';
@@ -162,6 +165,84 @@ export function inputsFor(d: Inputs, config: AlertConfig, base: Set<string>): In
 	return { ...d, zone: undefined, alertQuotes };
 }
 
+/** Lo que responde /api/push?send=1: solo cuentas, nunca endpoints. */
+export interface PushResult {
+	sent: number;
+	gone: number;
+	/** Cuántos envíos con cada código (201, 410…; «0», sin respuesta; «web», /api/push no responde). */
+	codes: Record<string, number>;
+}
+
+/** Los uid con avisos en algún navegador (/api/push?all=1). null si no se puede (sin service token, sin clave VAPID…). */
+export async function loadPushUids(fetcher: typeof fetch = fetch): Promise<Set<string> | null> {
+	const headers = accessHeaders();
+	if (!Object.keys(headers).length) return null;
+	for (const site of [...new Set([SITE, PAGES_SITE])]) {
+		try {
+			const res = await fetcher(`${site}/api/push?all=1`, { headers, redirect: 'manual', signal: AbortSignal.timeout(20_000) });
+			if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+				const uids = ((await res.json()) as { uids?: unknown }).uids;
+				return new Set(Array.isArray(uids) ? uids.filter((u): u is string => typeof u === 'string' && UID.test(u)) : []);
+			}
+			// 503 (sin la clave VAPID): no hay push, y la otra dirección dirá lo mismo.
+			if (res.status === 503) return null;
+		} catch {
+			// La siguiente dirección.
+		}
+	}
+	return null;
+}
+
+/** El texto del aviso sin Markdown (en el navegador sale tal cual): sin ** ni __ y los enlaces, solo su texto. */
+export const plainBody = (alert: Alert) =>
+	alert.markdown ? alert.body.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/\*\*|__|`/g, '') : alert.body;
+
+/** Manda un aviso a los navegadores de un uid (/api/push?send=1). null si la web no responde. */
+export async function postPush(uid: string, alert: Alert, fetcher: typeof fetch = fetch): Promise<PushResult | null> {
+	const headers = accessHeaders();
+	if (!Object.keys(headers).length) return null;
+	const body = JSON.stringify({ uid, title: alert.title, body: plainBody(alert), url: alert.click || `${SITE}/`, level: alert.level });
+	for (const site of [...new Set([SITE, PAGES_SITE])]) {
+		try {
+			const res = await fetcher(`${site}/api/push?send=1`, {
+				method: 'POST',
+				headers: { ...headers, 'content-type': 'application/json' },
+				body,
+				redirect: 'manual',
+				signal: AbortSignal.timeout(30_000)
+			});
+			if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+				const r = (await res.json()) as Partial<PushResult>;
+				return { sent: Number(r.sent) || 0, gone: Number(r.gone) || 0, codes: r.codes && typeof r.codes === 'object' ? r.codes : {} };
+			}
+		} catch {
+			// La siguiente dirección.
+		}
+	}
+	return null;
+}
+
+/**
+ * El envío por push para el motor de avisos: solo para los uid que tienen algún navegador. undefined si no hay
+ * ninguno (o no hay /api/push): entonces todo sale como siempre, solo por ntfy.
+ */
+export async function pushSender(say: (line: string) => void = () => {}, fetcher: typeof fetch = fetch): Promise<Engine['push']> {
+	const uids = await loadPushUids(fetcher);
+	say(uids ? `push: ${uids.size} usuarios con avisos en el navegador` : 'push: sin /api/push (sin clave VAPID o sin service token)');
+	if (!uids?.size) return undefined;
+	return async (uid, alert) => (uids.has(uid) ? ((await postPush(uid, alert, fetcher)) ?? { sent: 0, gone: 0, codes: { web: 1 } }) : null);
+}
+
+/** Lo que ha pasado con push en una pasada, para una línea del registro (sin uids ni endpoints). */
+export function pushLine(t: { alerts: number; users: Set<string>; sent: number; gone: number; codes: Record<string, number> }): string {
+	const label = (c: string) => (c === '0' ? 'sin respuesta' : c === 'web' ? '/api/push no responde' : c);
+	const codes = Object.entries(t.codes)
+		.sort(([a], [b]) => a.localeCompare(b))
+		.map(([c, n]) => `${label(c)}×${n}`)
+		.join(', ');
+	return `push: ${t.alerts} avisos a ${t.users.size} usuarios, ${t.sent} entregados (${codes || 'sin envíos'})${t.gone ? `; ${t.gone} navegadores caducados, borrados` : ''}`;
+}
+
 /** Lo que hace falta de notify.ts (se pasa para no importarlo en círculo y para los tests). */
 export interface Engine {
 	pickAlerts: (
@@ -182,6 +263,8 @@ export interface Engine {
 	air?: (lat: number, lon: number) => Promise<AirData | null>;
 	/** Una gasolinera de FUEL por zona e id (notify.ts lee fuel.json o fuel/<zona>.json). */
 	station?: (zone: string, id: string) => Promise<FuelStation | null>;
+	/** Web Push (pushSender): null si ese uid no tiene navegadores. Sin él, solo ntfy. */
+	push?: (uid: string, alert: Alert) => Promise<PushResult | null>;
 }
 
 /** Un «Tu mañana» que también va por email: la web busca el email por el uid (cloud/brief.ts). */
@@ -215,6 +298,8 @@ export async function runUsers(
 		if (!skies.has(key)) skies.set(key, engine.weather?.(p.lat, p.lon) ?? Promise.resolve(null));
 		return skies.get(key)!;
 	};
+	// Lo de push en esta pasada: solo cuentas, para una línea al final.
+	const web = { alerts: 0, users: new Set<string>(), sent: 0, gone: 0, codes: {} as Record<string, number> };
 	const airs = new Map<string, Promise<AirData | null>>();
 	const airOf = (p: { lat: number; lon: number }) => {
 		const key = `${p.lat},${p.lon}`;
@@ -234,9 +319,18 @@ export async function runUsers(
 		const rules = [...rulesFor(u.config, now, all), ...ownRulesFor(u, now), ...home];
 		const input = inputsFor(d, u.config, base);
 		const who = `usuario ${u.uid.slice(0, 4)}`;
+		// Por ntfy y, si tiene, por sus navegadores, a la vez. Una sola entrada en el historial: el aviso cuenta una
+		// vez en el cupo y vale como enviado si ha llegado por cualquiera de los dos.
 		const send = async (alert: Alert, log: NotifyLog) => {
-			const { status } = await engine.post(topic, alert);
-			const ok = status !== null && status >= 200 && status < 300;
+			const [{ status }, pushed] = await Promise.all([engine.post(topic, alert), engine.push?.(u.uid, alert) ?? null]);
+			if (pushed) {
+				web.alerts++;
+				web.users.add(u.uid);
+				web.sent += pushed.sent;
+				web.gone += pushed.gone;
+				for (const [c, n] of Object.entries(pushed.codes)) web.codes[c] = (web.codes[c] ?? 0) + n;
+			}
+			const ok = (status !== null && status >= 200 && status < 300) || (pushed?.sent ?? 0) > 0;
 			log.entries.push({ k: alert.id, t: engine.minute(now), s: ok ? 'sent' : 'failed', p: alert.level });
 			return ok;
 		};
@@ -275,5 +369,6 @@ export async function runUsers(
 		}
 		out[u.uid] = log;
 	}
+	if (web.alerts) say(pushLine(web));
 	return out;
 }

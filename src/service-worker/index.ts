@@ -24,6 +24,7 @@ import { self } from '$app/service-worker';
 import { immutable, assets, prerendered } from '$app/manifest';
 import { version } from '$app/env';
 import { bootFiles } from './precache.ts';
+import { clickUrl, notice, openNotice } from './push.ts';
 
 // Archivos de la build: una caché por publicación; al publicar, `version` cambia y la anterior se borra.
 const CACHE = `arc-${version}`;
@@ -294,3 +295,25 @@ async function cacheFirst(request: Request, name = FONTS): Promise<Response> {
 	if (response.ok || response.type === 'opaque') await cache.put(request, response.clone());
 	return response;
 }
+
+// ---------- Avisos en el navegador (Web Push, cloud/push.ts y src/service-worker/push.ts) ----------
+
+// Llega un aviso: se enseña siempre (si no, el navegador acaba quitando el permiso).
+self.addEventListener('push', (event) => {
+	const { title, options } = notice(event.data?.text(), scope.href);
+	event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Al tocarlo: la ventana de la web que ya esté abierta va a la vista del aviso; si no, se abre otra (openNotice,
+// en push.ts). Solo las ventanas que controla este service worker: navigate() no puede mover las demás.
+// Con la sesión de Access caducada, sale antes el login.
+self.addEventListener('notificationclick', (event) => {
+	event.notification.close();
+	const target = clickUrl(event.notification.data, scope.href);
+	event.waitUntil(
+		(async () => {
+			const tabs = await self.clients.matchAll({ type: 'window' });
+			await openNotice(target, scope.href, tabs, (url) => self.clients.openWindow(url));
+		})()
+	);
+});

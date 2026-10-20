@@ -81,6 +81,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   (`/api/alerts?all=1`, sin emails) y `scripts/alerts/users.ts` reparte los avisos de la pasada según cada uno. Su
   historial va SOLO en la caché de Actions (`.notify-cache/notify-users.json`, por uid aleatorio), nunca en static/data.
   Los de Sergi siguen saliendo por `NTFY_TOPIC`.
+  **En el navegador, sin ntfy** (Web Push, se suma): «En este dispositivo» en AVISOS → `/api/push` (`cloud/push.ts`, VAPID y cifrado RFC 8291 en `cloud/webpush.ts`, tabla `push_subs`; endpoints solo en D1); `users.ts` y Familia mandan también ahí (mismo cupo). Secret de Pages `VAPID_PRIVATE_KEY` (`node scripts/vapid.ts`); sin él, 503 y la fila no sale.
 - **«Tu mañana»** (`scripts/alerts/brief.ts`, panel en AVISOS): resumen diario personal a la hora que elige cada uno
   (tiempo de su sitio con Open-Meteo, sus valores, su agenda y titulares de IMP de sus temas; 5 líneas). Por su ntfy y,
   si lo pide, por email: la Action manda el texto por uid a `/api/brief` (`cloud/brief.ts`) y la web lo envía con
@@ -261,3 +262,5 @@ Cuando termine una fase, actualiza esta lista.
 - «Próximo dato» de Eurostat (M10): el .ics `cache/RELEASE_CALENDAR/calendar_EN.ics` da 404 y no se ha encontrado el nuevo. El de INE y EE. UU. (fechas de FRED; el .ics del BLS prohíbe robots) sí funcionan.
 - Oro de los bancos centrales en toneladas (lote 24.5): la API nueva del FMI (2025) tiene el flujo IRFCL, pero su lista de
   indicadores no incluye el oro (seis sondeos en el #282). El World Gold Council pide registro.
+- Barra ordenada por uso (F13): `arc-cmd-history` se sincroniza con la cuenta y solo guarda lo reciente, sin recuentos, y
+  reordenar cambiaría lo que abre Intro con «M» o «W». Lo decide Sergi; la tolerancia a erratas (`didYouMean`) ya está.

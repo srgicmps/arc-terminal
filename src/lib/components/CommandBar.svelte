@@ -16,6 +16,7 @@
 	import {
 		calcInput,
 		canonical,
+		didYouMean,
 		findCommand,
 		historyOptions,
 		historyStep,
@@ -147,7 +148,12 @@
 		if (parseConversion(value)) loadFxRates();
 	});
 	const results = $derived(searchOptions(value, suggestions, index));
-	const options = $derived([...suggestions, ...results]);
+	// Erratas («GOE», «ECOO»): si nada encaja, «Quizá GEO» entre las sugerencias y la búsqueda. Solo en la barra:
+	// suggest() no cambia, así que la Terminal y el Spotlight de Arc OS siguen igual.
+	const hints = $derived(!suggestions.length && value.trim() ? didYouMean(value, ALL) : []);
+	const options = $derived([...suggestions, ...hints, ...results]);
+	/** Dónde empiezan los resultados de búsqueda, que van separados por una línea. */
+	const firstHit = $derived(suggestions.length + hints.length);
 
 	// Al abrir la hoja desde la barra inferior del móvil, el cursor va directo a la barra.
 	$effect(() => {
@@ -297,8 +303,9 @@
 			selected = (selected - 1 + n) % n;
 		} else if (isShortcut(e, 'complete') && !e.shiftKey && n && value.trim()) {
 			// Tab completa la barra con la sugerencia marcada (o la primera) sin abrirla. Si es un comando
-			// que acepta texto, deja un espacio: así salen sus opciones («LID» → «LIDER »).
-			const o = options[selected >= 0 ? selected : 0];
+			// que acepta texto, deja un espacio: así salen sus opciones («LID» → «LIDER »). Con una pista («TECK»)
+			// y sin moverse con ↑ ↓, la pista, aunque lo marcado sea lo que abre Intro.
+			const o = !moved && hints.length ? hints[0] : options[selected >= 0 ? selected : 0];
 			if (o.url) return;
 			e.preventDefault();
 			const text = pick(o);
@@ -334,6 +341,8 @@
 	function onsubmit(e: SubmitEvent) {
 		e.preventDefault();
 		if (open && moved && selected >= 0 && options[selected]) choose(options[selected]);
+		// Una errata clara («ECOO», «FEUL»: letras cambiadas de sitio o una repetida) abre lo que querías decir.
+		else if (hints[0]?.sure) choose(hints[0]);
 		// Sin sugerencias de comandos, Intro abre el primer resultado de búsqueda (si lo hay).
 		else if (!suggestions.length && results.length) choose(results[0]);
 		else run(value);
@@ -388,7 +397,9 @@
 			histIdx = -1;
 			open = true;
 			moved = false;
-			selected = options.length ? 0 : -1;
+			// Se marca lo que abre Intro. Con una pista dudosa («TECK» → TECH), Intro sigue abriendo el primer resultado
+			// (la ficha o la búsqueda, como antes): se marca ese, y la pista sale arriba sin marcar (Tab la completa).
+			selected = hints.length && !hints[0].sure ? (results.length ? firstHit : -1) : options.length ? 0 : -1;
 		}}
 		{onkeydown}
 		onfocus={() => {
@@ -435,7 +446,7 @@
 						role="option"
 						id="opt{i}"
 						class="hit"
-						class:first={i === suggestions.length && i > 0}
+						class:first={i === firstHit && i > 0}
 						aria-selected={i === selected}
 						onmousedown={(e) => e.preventDefault()}
 					>
@@ -449,9 +460,9 @@
 					<li
 						role="option"
 						id="opt{i}"
-						class:hit={i >= suggestions.length}
+						class:hit={i >= firstHit}
 						class:answer={o.kind === 'Dato'}
-						class:first={i === suggestions.length && i > 0}
+						class:first={i === firstHit && i > 0}
 						aria-selected={i === selected}
 						onmousedown={(e) => {
 							e.preventDefault();

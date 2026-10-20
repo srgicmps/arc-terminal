@@ -57,7 +57,7 @@ import { newPrice } from '../src/lib/alertconfig.ts';
 import { firedIds, ordersOf, userRules, type Orders, type UserInputs } from './alerts/user.ts';
 import { weatherAt } from './alerts/brief.ts';
 import { airAt } from './alerts/home.ts';
-import { loadUsers, postFired, postMigration, postMails, runUsers, type BriefMail, type RemoteUser } from './alerts/users.ts';
+import { loadUsers, postFired, postMigration, postMails, pushSender, runUsers, type BriefMail, type RemoteUser } from './alerts/users.ts';
 
 const NTFY = 'https://ntfy.sh';
 const DAY = 86_400_000;
@@ -516,7 +516,9 @@ export async function runNotify({
 		if (cache && users) {
 			const path = join(dirname(cache), USERS_FILE);
 			const logs = await readUserLogs(path);
-			const engine = { pickAlerts, baselineLog, trim, post, hello: HELLO, minute, weather: (lat: number, lon: number) => weatherAt(lat, lon), air: (lat: number, lon: number) => airAt(lat, lon), station: stationReader(inputs, dir) };
+			// Además de ntfy, a los navegadores con avisos (Web Push, /api/push).
+			const push = users.some((u) => u.topic) ? await pushSender(say) : undefined;
+			const engine = { pickAlerts, baselineLog, trim, post, hello: HELLO, minute, weather: (lat: number, lon: number) => weatherAt(lat, lon), air: (lat: number, lon: number) => airAt(lat, lon), station: stationReader(inputs, dir), push };
 			const mails: BriefMail[] = [];
 			const next = await runUsers(users, inputs, base, logs, now, engine, say, undefined, mails);
 			await writeFile(path, JSON.stringify({ users: next }) + '\n');
