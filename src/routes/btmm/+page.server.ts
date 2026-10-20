@@ -1,4 +1,4 @@
-import { gap, moneyRow, tenorSeries, type MoneyRow } from '#lib/btmm.ts';
+import { gap, gapOn, moneyRow, tenorSeries, type MoneyRow } from '#lib/btmm.ts';
 import { dataset } from '#lib/data.ts';
 import { moneyPhrase, phrases } from '#lib/plain.ts';
 import { seriesMap } from '#lib/series.ts';
@@ -20,7 +20,6 @@ export const load: PageServerLoad = async () => {
 	const sofr = moneyRow(get('nyfed-sofr'), 'SOFR', get('nyfed-sofr-vol')) ?? moneyRow(get('sofr-us'), 'SOFR');
 	const iorb = moneyRow(get('iorb-us'), 'Remuneración de las reservas (IORB)');
 	const estr = moneyRow(get('estr'), '€STR');
-	const dfr = moneyRow(get('ecb-dfr'), 'Facilidad de depósito del BCE');
 	const usRows = ok([
 		sofr,
 		moneyRow(get('nyfed-tgcr'), 'TGCR (repo tripartito)', get('nyfed-tgcr-vol')),
@@ -33,7 +32,7 @@ export const load: PageServerLoad = async () => {
 		moneyRow(tenorSeries(us?.data, '6M', 'bill6m', 'Letra a 6 meses'))
 	]);
 	const eaRows = ok([
-		dfr,
+		moneyRow(get('ecb-dfr'), 'Facilidad de depósito del BCE'),
 		estr,
 		moneyRow(get('euribor-3m'), 'Euríbor a 3 meses'),
 		moneyRow(get('euribor-12m'), 'Euríbor a 12 meses'),
@@ -47,7 +46,12 @@ export const load: PageServerLoad = async () => {
 		sofrEstr: gap(sofr, estr),
 		// Modo Sencillo: ¿hay tensión en el dinero a un día? En frases (plain.ts), escritas al construir. La de la zona
 		// euro (€STR frente a la facilidad de depósito) sale también sin la clave de FRED, que es la que trae IORB.
-		plain: phrases([moneyPhrase('us', gap(sofr, iorb)), moneyPhrase('ea', gap(estr, dfr))]),
+		// Cada tipo, frente a lo que pagaba el banco central ESE día (gapOn): el día en que cambia el tipo, el último
+		// dato a un día es aún del de antes, y compararlo con el nuevo daría una conclusión falsa.
+		plain: phrases([
+			moneyPhrase('us', gapOn([get('nyfed-sofr'), get('sofr-us')].find((s) => s?.points.length), get('iorb-us'))),
+			moneyPhrase('ea', gapOn(get('estr'), get('ecb-dfr'), true))
+		]),
 		fetchedAt: { us: nyfed?.fetchedAt ?? us?.fetchedAt, ea: ecb?.fetchedAt }
 	};
 };
