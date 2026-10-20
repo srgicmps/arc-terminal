@@ -116,6 +116,16 @@ export function startPlan(local: Prefs, remote: Prefs, memory: SyncMemory | null
 export const replaced = (mine: SyncMemory | null, saved: SyncMemory | null): boolean =>
 	!!mine && !!saved && saved.user !== mine.user;
 
+/** Dónde guarda este navegador su SyncMemory (localStorage). */
+export const MEMORY = 'arc-sync';
+
+/**
+ * La memoria tras «Borrar mi cuenta» (HELP): de nadie. No se borra la memoria, se cambia por esta: las demás pestañas
+ * de la cuenta borrada la ven como otra cuenta (replaced) y salen, y para quien entre después (también la misma
+ * persona) es como si entrara otra: manda lo de su cuenta y no se sube nada de lo que quede aquí (startPlan).
+ */
+export const NOBODY: SyncMemory = { user: '', base: {} };
+
 /** Qué cambiar en `from` para que quede como `to`. */
 export function diff(from: Prefs, to: Prefs): Patch {
 	const set: Prefs = {};

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diff, LIMITS, merge, mergeFitting, oversized, readMemory, replaced, startPlan } from './cloud.ts';
+import { diff, LIMITS, merge, mergeFitting, NOBODY, oversized, readMemory, replaced, startPlan } from './cloud.ts';
 
 describe('merge', () => {
 	it('primera vez con el servidor vacío: sube todo lo de aquí (migración)', () => {
@@ -54,6 +54,20 @@ describe('«Cerrar sesión» y entra otra persona', () => {
 
 	it('una pestaña que se queda con la cuenta de Ana cuando otra ya ha entrado con la de Luis: replaced', () => {
 		expect(replaced(ana, luis)).toBe(true);
+	});
+
+	it('tras «Borrar mi cuenta» (memoria de nadie): las otras pestañas lo ven y nada de aquí sube a quien entre', () => {
+		expect(readMemory(JSON.stringify(NOBODY))).toEqual(NOBODY);
+		expect(replaced(ana, NOBODY)).toBe(true);
+		const left = { 'arc-portfolio': 'de Ana, escrito por una pestaña vieja' };
+		for (const [who, remote] of [
+			[luis.user, luis.base],
+			[ana.user, {}]
+		] as const) {
+			const plan = startPlan(left, remote, NOBODY, who);
+			expect(plan.push, who).toEqual({ set: {}, del: [] });
+			expect(plan.result, who).toEqual(remote);
+		}
 	});
 
 	it('la misma cuenta, sin memoria guardada (borrada o sin sincronizar aún) o pestaña sin memoria: sigue', () => {

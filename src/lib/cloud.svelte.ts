@@ -4,9 +4,20 @@
 import { asset } from '$app/paths';
 import { collect } from './transfer.ts';
 import { PREFS } from './prefs.ts';
-import { isEmpty, mergeFitting, readMemory, replaced, startPlan, type Patch, type Prefs, type SyncMemory } from './cloud.ts';
+import { LOGOUT } from './account.ts';
+import {
+	isEmpty,
+	MEMORY,
+	mergeFitting,
+	NOBODY,
+	readMemory,
+	replaced,
+	startPlan,
+	type Patch,
+	type Prefs,
+	type SyncMemory
+} from './cloud.ts';
 
-const MEMORY = 'arc-sync';
 const RELOADED = 'arc-sync-reload';
 const EVERY = 5000;
 const RETRY = 60_000;
@@ -31,6 +42,8 @@ let memory: SyncMemory | null = null;
 let busy = false;
 /** Esta pestaña se ha quedado con la cuenta anterior (otra ha entrado con otra): no sincroniza más y se recarga. */
 let stale = false;
+/** «Borrar mi cuenta» en marcha en esta pestaña (hold): no sube ni baja nada, que lo recrearía. */
+let held = false;
 
 const url = () => asset('api/prefs' as Parameters<typeof asset>[0]);
 
@@ -125,7 +138,7 @@ let lastPull = 0;
 
 /** Trae lo del servidor, junta y sube. Si ha cambiado algo de aquí, recarga para que las vistas lo lean. */
 async function pull() {
-	if (busy || stale) return;
+	if (busy || stale || held) return;
 	busy = true;
 	lastPull = Date.now();
 	try {
@@ -164,10 +177,11 @@ async function pull() {
 /**
  * Sube lo que haya cambiado aquí desde la última vez. Con la sesión cerrada o caducada (auth) no: la próxima cookie
  * puede ser de otra persona, y esto iría a su cuenta. Lo de aquí sigue guardado y sube en el próximo pull, que mira
- * antes de quién es la cuenta (startPlan).
+ * antes de quién es la cuenta (startPlan). Tampoco sin una cuenta confirmada por un pull en esta pestaña (cloud.user):
+ * con la memoria de nadie (NOBODY, tras «Borrar mi cuenta») subiría todo lo de aquí a quien entrase.
  */
 async function flush(keepalive = false) {
-	if (busy || stale || !memory || cloud.state === 'auth') return;
+	if (busy || stale || held || !memory?.user || memory.user !== cloud.user || cloud.state === 'auth') return;
 	if (!refreshMemory()) return;
 	const plan = mergeFitting(collect(localStorage), memory.base, memory.base);
 	setFrozen(plan.frozen);
@@ -212,9 +226,16 @@ export function initCloud() {
 	}, EVERY);
 	const onOnline = () => void pull();
 	addEventListener('online', onOnline);
-	// Otra pestaña ha entrado con otra cuenta: esta enseña lo de la anterior y no puede seguir así ni un momento.
+	// Otra pestaña ha entrado con otra cuenta: esta enseña lo de la anterior y no puede seguir así ni un momento. Si
+	// la otra ha borrado la cuenta (memoria de nadie), esta sale también, sin recargar: recargar antes de que se cierre
+	// la sesión volvería a pedir /api/prefs con la cuenta borrada.
 	const onStorage = (e: StorageEvent) => {
-		if (e.key === MEMORY && replaced(memory, readMemory(e.newValue))) reloadStale();
+		if (e.key !== MEMORY) return;
+		const saved = readMemory(e.newValue);
+		if (memory && saved?.user === NOBODY.user) {
+			stale = true;
+			location.assign(LOGOUT);
+		} else if (replaced(memory, saved)) reloadStale();
 	};
 	addEventListener('storage', onStorage);
 	const onVisibility = () => {
@@ -235,3 +256,29 @@ export function initCloud() {
  * cierre esta página, así que el flush de visibilitychange llegaría sin sesión. keepalive deja acabar el envío.
  */
 export const flushNow = () => void flush(true);
+
+/**
+ * «Borrar mi cuenta» (account.svelte.ts, solo en HELP): esta pestaña deja de sincronizar (subir ahora recrearía la
+ * cuenta) y espera a que acabe lo que estuviera en marcha, como mucho 5 s. Devuelve cómo seguir si al final no se
+ * borra, o null si sigue en marcha (entonces no se puede borrar todavía).
+ */
+export async function hold(): Promise<(() => void) | null> {
+	held = true;
+	for (let i = 0; busy && i < 50; i++) await new Promise((r) => setTimeout(r, 100));
+	const resume = () => void (held = false);
+	if (!busy) return resume;
+	resume();
+	return null;
+}
+
+/**
+ * Tras «Borrar mi cuenta»: la memoria pasa a ser de nadie (NOBODY en cloud.ts) y esta pestaña no sincroniza más. Va
+ * lo primero, antes de borrar nada: las demás pestañas lo ven (storage) y salen antes de poder subir lo de aquí.
+ */
+export function endSync() {
+	stale = true;
+	memory = null;
+	try {
+		localStorage.setItem(MEMORY, JSON.stringify(NOBODY));
+	} catch {}
+}
