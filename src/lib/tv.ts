@@ -7,8 +7,8 @@ export const TV_SECONDS = 30;
 export const TV_MIN = 10;
 export const TV_MAX = 600;
 
-/** Comandos que no tiene sentido poner en la tele (texto, ajustes o la propia TV). */
-const SKIP = new Set(['TV', 'HELP', 'MANUAL', 'DOC', 'MIS', 'NEWS', 'CHESS']);
+/** Comandos que no tiene sentido poner en la tele (texto, ajustes, la propia TV o PREGUNTA, que es con IA y a petición). */
+const SKIP = new Set(['TV', 'HELP', 'MANUAL', 'DOC', 'MIS', 'NEWS', 'CHESS', 'PREGUNTA']);
 
 export const tvCandidates = (): Command[] => COMMANDS.filter((c) => !SKIP.has(c.code));
 
