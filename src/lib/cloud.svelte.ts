@@ -153,18 +153,27 @@ function remember(user: string, base: Prefs) {
 
 /** Cambios de fuera que esperan a que dejes de escribir. */
 let postponed = false;
+/**
+ * Un pull que no se ha hecho por la pausa de «Borrar mi cuenta» (paused): se repite cuando acabe. Sin él, una pestaña
+ * que arranca con la pausa puesta no tiene cuenta (cloud.user) y flush no sube nada nunca.
+ */
+let missed = false;
 let lastPull = 0;
 
 /** Trae lo del servidor, junta y sube. Si ha cambiado algo de aquí, recarga para que las vistas lo lean. */
 async function pull() {
-	if (busy || stale || paused()) return;
+	if (busy || stale) return;
+	missed = paused();
+	if (missed) return;
 	busy = true;
 	lastPull = Date.now();
 	try {
 		if (cloud.state !== 'ok') cloud.state = 'sync';
 		const remote = await getRemote();
 		// Mientras llegaba la respuesta, otra pestaña puede haber empezado a borrar la cuenta: no se sube nada.
-		if (!remote || !refreshMemory() || paused()) return;
+		if (!remote || !refreshMemory()) return;
+		missed = paused();
+		if (missed) return;
 		const local = collect(localStorage);
 		const switching = !!memory && memory.user !== remote.user;
 		const plan = startPlan(local, remote.prefs, memory, remote.user);
@@ -236,12 +245,14 @@ export function initCloud() {
 	}
 	cloud.state = 'sync';
 	void pull();
-	// Cada poco se sube lo de aquí. Si se dejó para luego, se vuelve a pedir lo de fuera al dejar de escribir; si
-	// falló (sin conexión, error), como mucho una vez por minuto. Sin cuenta configurada (503) ni se insiste.
+	// Cada poco se sube lo de aquí. Si se dejó para luego, se vuelve a pedir lo de fuera al dejar de escribir o al
+	// acabar la pausa de «Borrar mi cuenta» (missed); si falló (sin conexión, error), como mucho una vez por minuto. Sin
+	// cuenta configurada (503) ni se insiste.
 	const id = setInterval(() => {
 		// Borrando la cuenta aquí: se renueva la pausa de las demás pestañas (también con la duda, unsure).
 		if (held) markHold();
 		else if (postponed && !typing()) void pull();
+		else if (missed && !paused()) void pull();
 		else if (cloud.state === 'error' || cloud.state === 'offline') {
 			if (Date.now() - lastPull > RETRY) void pull();
 		} else if (memory) void flush();
@@ -308,6 +319,8 @@ export async function hold(): Promise<(() => void) | null> {
 export function endSync() {
 	stale = true;
 	memory = null;
+	// Sin held, el intervalo deja de renovar la marca: si no, volvería mientras llega la salida de Access.
+	held = false;
 	try {
 		localStorage.setItem(MEMORY, JSON.stringify(NOBODY));
 		localStorage.removeItem(HOLD);
