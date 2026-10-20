@@ -1,13 +1,14 @@
 <!--
 	Panel «Tu cuenta» de HELP: con qué cuenta has entrado, «Cerrar sesión» y «Borrar mi cuenta». Solo sale con cuenta
-	(cloud.user: en arcterminal.dev, detrás de Cloudflare Access), como AVISOS. La lógica está en src/lib/cloud.svelte.ts.
-	Borrar va en dos pasos, sin ventana encima: el botón abre la confirmación y hay que escribir BORRAR. Igual para todos,
-	también para el admin.
+	(cloud.user: en arcterminal.dev, detrás de Cloudflare Access), como AVISOS. La lógica, en src/lib/signout.svelte.ts.
+	Borrar va en dos pasos, sin ventana encima: el botón abre la confirmación y hay que escribir BORRAR. Igual para
+	todos, también para el admin.
 -->
 <script lang="ts">
 	import Panel from './Panel.svelte';
 	import ButtonRow from './ui/ButtonRow.svelte';
-	import { cloud, deleteAccount, signOut, type Blocked } from '#lib/cloud.svelte.ts';
+	import { cloud } from '#lib/cloud.svelte.ts';
+	import { deleteAccount, signOut, type Blocked } from '#lib/signout.svelte.ts';
 
 	const WORD = 'BORRAR';
 	let confirming = $state(false);
@@ -45,6 +46,7 @@
 
 {#if cloud.user}
 	<Panel title="Tu cuenta" meta={cloud.user}>
+		<p class="line">Tus ajustes y tus datos se guardan en tu cuenta y llegan solos a tus otros dispositivos.</p>
 		<ButtonRow>
 			<button type="button" class:warn={blocked?.force} disabled={busy} onclick={out}
 				>{blocked?.force ? 'Salir igual' : 'Cerrar sesión'}</button
@@ -53,7 +55,7 @@
 				type="button"
 				disabled={busy}
 				aria-expanded={confirming}
-				aria-controls="account-delete"
+				aria-controls={confirming ? 'account-delete' : undefined}
 				onclick={toggle}>{confirming ? 'Cancelar' : 'Borrar mi cuenta'}</button
 			>
 		</ButtonRow>
@@ -83,7 +85,7 @@
 				<button type="submit" disabled={!ready || busy}>Borrar para siempre</button>
 			</form>
 		{/if}
-		{#if blocked}<p class="msg" role="alert">{blocked.text}</p>{/if}
+		{#if blocked}<p class="line msg" role="alert">{blocked.text}</p>{/if}
 		{#snippet note()}
 			«Cerrar sesión» sale de tu cuenta en este dispositivo y borra de él lo tuyo, que vuelve al entrar: útil en uno
 			compartido.
@@ -139,10 +141,15 @@
 		cursor: default;
 	}
 
-	.msg {
+	.line {
 		margin: 0;
 		padding: var(--row-y) var(--pad-x);
+		font-family: var(--sans);
 		font-size: var(--fs-s);
+		color: var(--muted);
+	}
+
+	.msg {
 		color: var(--amber);
 	}
 </style>

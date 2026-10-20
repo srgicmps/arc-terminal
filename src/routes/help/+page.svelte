@@ -100,7 +100,7 @@
 				{/each}
 			</ul>
 		</Panel>
-		<Panel title="A tu gusto" meta="Solo en este navegador">
+		<Panel title="A tu gusto" meta={cloud.user ? 'En tu cuenta' : 'Solo en este navegador'}>
 			{#if incoming}
 				{@const n = Object.keys(incoming).length}
 				<div class="incoming" role="status">
@@ -143,10 +143,6 @@
 				</dd>
 				<dt>Primeros pasos</dt>
 				<dd class="send"><a href={resolve('/bienvenida')}>Repetir la bienvenida</a> · <button class="tourbtn" type="button" onclick={() => startTour()}>Ver el recorrido</button></dd>
-				{#if cloud.user}
-					<dt>Tu cuenta</dt>
-					<dd>Todo esto se guarda en tu cuenta ({cloud.user}) y llega solo a tus otros dispositivos.</dd>
-				{/if}
 				<dt>Otro dispositivo</dt>
 				<dd class="send"><Share source={transferLink} /> Enlace con todo lo tuyo: estos ajustes, MIS, palabras vigiladas, tu sitio…</dd>
 			</dl>
