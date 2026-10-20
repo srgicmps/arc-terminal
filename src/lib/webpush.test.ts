@@ -82,7 +82,8 @@ describe('enablePush, testPush y disablePush (con un navegador de mentira)', () 
 		other[5] ^= 1;
 		const steps = browser('granted', other);
 		expect(await enablePush(API, KEY)).toBe('ok');
-		expect(steps.slice(0, 3)).toEqual(['permiso', 'unsubscribe', 'subscribe 65']);
+		// La vieja se borra también de la cuenta: con la clave nueva da 403 y deliver() no la quitaría nunca.
+		expect(steps.slice(0, 4)).toEqual(['permiso', `DELETE ${API} {"endpoint":"${ENDPOINT}"}`, 'unsubscribe', 'subscribe 65']);
 	});
 
 	it('si la cuenta no la acepta (400), no es compatible y se deshace aquí', async () => {

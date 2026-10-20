@@ -67,6 +67,8 @@ export async function enablePush(url: string, key: string): Promise<'ok' | 'deni
 		const reg = await worker();
 		let sub = await reg.pushManager.getSubscription();
 		if (sub && !sameKey(sub.options.applicationServerKey, key)) {
+			// También de la cuenta: con la clave cambiada, el servicio de push da 403 (no 404/410) y nunca se borraría.
+			await pushApi(url, 'DELETE', { endpoint: sub.endpoint }).catch(() => null);
 			await sub.unsubscribe();
 			sub = null;
 		}
