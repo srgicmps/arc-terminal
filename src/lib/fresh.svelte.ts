@@ -1,8 +1,10 @@
 // Datos nuevos sin recargar (F04): el estado de los avisos y el bucle, conectado con SvelteKit. La lógica, en
 // fresh.ts. Lo arranca +layout.svelte con $effect(startFresh) (como un onMounted de Vue que devuelve su limpieza).
+// Ojo al refrescar: SvelteKit cambia page.url y page.route por objetos nuevos (con lo mismo dentro). Un $effect que
+// lea page.url se vuelve a ejecutar; por eso los que mueven algo leen un $derived con el texto (urlstate.svelte.ts).
 import { tick } from 'svelte';
 import { dev, version } from '$app/env';
-import { invalidateAll } from '$app/navigation';
+import { refreshAll } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import type { FreshState } from './fresh.ts';
@@ -27,14 +29,21 @@ export function startFresh() {
 				// Su commit lo aprende de /code.json (fresh.ts): así el código del navegador no cambia con cada commit.
 				mine: { v: version },
 				read: () => m.readBuild(fetch, resolve('/code.json')),
-				// invalidateAll vuelve a pedir el __data.json de la vista (el service worker lo trae de la red primero).
+				// refreshAll vuelve a pedir el __data.json de la vista (el service worker lo trae de la red primero) y,
+				// a diferencia de invalidateAll, conserva page.state. Si acaba en la página de error, falla (loadOrFail).
 				refresh: () =>
-					m.keepPlace(window, async () => {
-						await invalidateAll();
-						await tick();
-					}),
+					m.keepPlace(window, () =>
+						m.loadOrFail(
+							async () => {
+								await refreshAll();
+								await tick();
+							},
+							() => !!page.error
+						)
+					),
 				auto: () => tv.on || page.route.id === '/',
-				typing: () => m.isField(document.activeElement),
+				tv: () => tv.on,
+				typing: () => m.holdsFocus(document.activeElement),
 				doc: document,
 				win: window
 			});
@@ -49,5 +58,13 @@ export function startFresh() {
 	};
 }
 
-/** El botón «Actualizar»: refresca ya, en su sitio. */
-export const refreshNow = () => void apply?.();
+/**
+ * El botón «Actualizar»: refresca ya, en su sitio. El botón desaparece al terminar; si tenía el foco (con el
+ * teclado), pasa a la vista (#contenido), no al principio de la página.
+ */
+export async function refreshNow() {
+	const from = document.activeElement;
+	await apply?.();
+	await tick();
+	if (from && from !== document.body && !from.isConnected) document.getElementById('contenido')?.focus({ preventScroll: true });
+}

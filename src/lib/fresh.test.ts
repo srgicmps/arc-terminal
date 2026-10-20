@@ -1,5 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { decide, FIRST_MS, GESTURE_MS, isField, keepPlace, LOCAL, POLL_MS, readBuild, RETRY_MS, watch, type Build, type Situation } from './fresh.ts';
+import {
+	decide,
+	FIRST_MS,
+	GESTURE_MS,
+	holdsFocus,
+	isField,
+	keepPlace,
+	loadOrFail,
+	LOCAL,
+	POLL_MS,
+	readBuild,
+	RETRY_MS,
+	watch,
+	type Build,
+	type Situation
+} from './fresh.ts';
 
 vi.mock('$app/env', () => ({ dev: false, version: '1792496039255' }));
 
@@ -38,6 +53,15 @@ describe('decide', () => {
 		expect(decide({ ...base, latest, typing: true })).toBe('aviso');
 		expect(decide({ ...base, latest, typing: true, resumed: true })).toBe('aviso');
 		expect(decide({ ...base, latest, typing: true, auto: true })).toBe('datos');
+	});
+
+	it('leyendo más abajo: aviso, también en TOP (lo nuevo movería lo que lees)', () => {
+		const latest = { v: '200', code: 'abc' };
+		expect(decide({ ...base, latest, away: true })).toBe('aviso');
+		expect(decide({ ...base, latest, away: true, auto: true })).toBe('aviso');
+		expect(decide({ ...base, latest, away: true, resumed: true })).toBe('aviso');
+		// El código nuevo sigue siendo «Recargar».
+		expect(decide({ ...base, latest: { v: '200', code: 'def' }, away: true })).toBe('codigo');
 	});
 
 	it('commit aún desconocido: cualquier cambio cuenta como código', () => {
@@ -93,23 +117,80 @@ describe('isField', () => {
 	});
 });
 
+describe('holdsFocus', () => {
+	/** Un elemento dentro (o fuera) de la vista, con el foco de teclado (:focus-visible) o de un clic. */
+	const el = (tagName: string, opts: { inView?: boolean; keyboard?: boolean | 'throws'; type?: string } = {}) =>
+		({
+			tagName,
+			type: opts.type,
+			parentElement: { closest: (sel: string) => (sel === '#contenido' && opts.inView ? {} : null) },
+			matches: (sel: string) => {
+				if (opts.keyboard === 'throws') throw new SyntaxError(sel);
+				return sel === ':focus-visible' && !!opts.keyboard;
+			}
+		}) as unknown as Element;
+
+	it('un campo, esté donde esté (también la barra de comandos)', () => {
+		expect(holdsFocus(el('INPUT', { type: 'search' }))).toBe(true);
+	});
+
+	it('el foco de teclado en una fila o un enlace de la vista', () => {
+		expect(holdsFocus(el('A', { inView: true, keyboard: true }))).toBe(true);
+		expect(holdsFocus(el('TR', { inView: true, keyboard: true }))).toBe(true);
+	});
+
+	it('con ratón o dedo, fuera de la vista, sin foco o sin :focus-visible: no', () => {
+		expect(holdsFocus(el('A', { inView: true, keyboard: false }))).toBe(false);
+		// La vista entera (#contenido): su padre no está dentro de #contenido.
+		expect(holdsFocus(el('MAIN', { inView: false, keyboard: true }))).toBe(false);
+		expect(holdsFocus(el('A', { inView: false, keyboard: true }))).toBe(false);
+		expect(holdsFocus(el('A', { inView: true, keyboard: 'throws' }))).toBe(false);
+		expect(holdsFocus(null)).toBe(false);
+	});
+});
+
+describe('loadOrFail', () => {
+	it('si la vista carga, nada; si acaba en la página de error (sin rechazar), falla', async () => {
+		let error = false;
+		await expect(loadOrFail(async () => {}, () => error)).resolves.toBeUndefined();
+		// Como refreshAll con un 503 en el __data.json: resuelve, pero pinta +error.svelte.
+		await expect(
+			loadOrFail(
+				async () => {
+					error = true;
+				},
+				() => error
+			)
+		).rejects.toThrow();
+	});
+});
+
 describe('keepPlace', () => {
 	/**
 	 * Una página con scroll y un elemento en el centro que baja `shift` px al refrescar. Con `inner`, va dentro
 	 * de una lista con scroll propio, que además mete 20 px encima de él (eso no lo arregla la página).
 	 */
-	function page(shift: number, opts: { scrollY?: number; inner?: boolean } = {}) {
+	function page(shift: number, opts: { scrollY?: number; inner?: boolean; userScroll?: number } = {}) {
 		let moved = 0;
 		let inside = 0;
 		const body = {};
-		const box = { isConnected: true, scrollHeight: 900, clientHeight: 300, getBoundingClientRect: () => ({ top: 200 + moved }), parentElement: body };
+		const start = opts.scrollY ?? 800;
+		// En pantalla, lo de la página sube lo que deslizas hacia abajo.
+		const scrolled = () => win.scrollY - start;
+		const box = {
+			isConnected: true,
+			scrollHeight: 900,
+			clientHeight: 300,
+			getBoundingClientRect: () => ({ top: 200 + moved - scrolled() }),
+			parentElement: body
+		};
 		const el = {
 			isConnected: true,
-			getBoundingClientRect: () => ({ top: 300 + moved + inside }),
+			getBoundingClientRect: () => ({ top: 300 + moved + inside - scrolled() }),
 			parentElement: opts.inner ? box : body
 		};
 		const win = {
-			scrollY: opts.scrollY ?? 800,
+			scrollY: start,
 			innerWidth: 400,
 			innerHeight: 800,
 			scrollBy: vi.fn(),
@@ -119,6 +200,8 @@ describe('keepPlace', () => {
 		const run = vi.fn(async () => {
 			moved += shift;
 			if (opts.inner) inside += 20;
+			// Mientras llegan los datos, deslizas.
+			win.scrollY += opts.userScroll ?? 0;
 		});
 		return { win: win as unknown as Window, run, el, scrollBy: win.scrollBy };
 	}
@@ -144,6 +227,17 @@ describe('keepPlace', () => {
 		expect(native.scrollBy).not.toHaveBeenCalled();
 	});
 
+	it('si deslizas mientras llegan los datos, solo compensa lo que ha entrado encima, no tu scroll', async () => {
+		// El caso del iPhone: a 800, deslizas 500 hacia abajo y entran 48 px encima. Debe acabar en 1348, no en 848.
+		const p = page(48, { userScroll: 500 });
+		await keepPlace(p.win, p.run);
+		expect(p.scrollBy).toHaveBeenCalledWith(0, 48);
+		// Y si no entra nada, tu scroll se queda como está.
+		const still = page(0, { userScroll: 500 });
+		await keepPlace(still.win, still.run);
+		expect(still.scrollBy).not.toHaveBeenCalled();
+	});
+
 	it('dentro de una lista con scroll propio, se ancla la lista (se mueve con la página)', async () => {
 		const p = page(48, { inner: true });
 		await keepPlace(p.win, p.run);
@@ -167,9 +261,9 @@ describe('watch', () => {
 	/** Pestaña cargada con la versión 100 del commit abc (o sin commit conocido, con `code: null`). */
 	function setup(first: Build | null = { v: '200', code: 'abc' }, code: string | null = 'abc') {
 		const doc = Object.assign(new EventTarget(), { visibilityState: 'visible' as DocumentVisibilityState });
-		const win = new EventTarget();
+		const win = Object.assign(new EventTarget(), { scrollY: 0 });
 		const state = { aviso: false, codigo: false };
-		const env = { latest: first, auto: false, typing: false };
+		const env = { latest: first, auto: false, tv: false, typing: false };
 		const read = vi.fn(async () => env.latest);
 		const refresh = vi.fn(async () => {});
 		const w = watch(state, {
@@ -177,6 +271,7 @@ describe('watch', () => {
 			read,
 			refresh,
 			auto: () => env.auto,
+			tv: () => env.tv,
 			typing: () => env.typing,
 			doc: doc as unknown as Document,
 			win: win as unknown as Window
@@ -286,6 +381,73 @@ describe('watch', () => {
 		t.w.stop();
 	});
 
+	it('a media página: aviso, sin mover nada; al volver arriba, refresca solo y lo quita', async () => {
+		const t = setup();
+		t.win.scrollY = 1200;
+		await vi.advanceTimersByTimeAsync(FIRST_MS + RETRY_MS * 3);
+		expect(t.state.aviso).toBe(true);
+		expect(t.refresh).not.toHaveBeenCalled();
+		t.win.scrollY = 0;
+		t.win.dispatchEvent(new Event('scroll'));
+		// Espera a que acabe el gesto (GESTURE_MS) y a la siguiente mirada.
+		await vi.advanceTimersByTimeAsync(RETRY_MS);
+		expect(t.refresh).toHaveBeenCalledOnce();
+		expect(t.state.aviso).toBe(false);
+		t.w.stop();
+	});
+
+	it('también en TOP; con «Actualizar» refresca ya, en su sitio', async () => {
+		const t = setup();
+		t.env.auto = true;
+		t.win.scrollY = 1200;
+		await vi.advanceTimersByTimeAsync(FIRST_MS);
+		expect(t.state.aviso).toBe(true);
+		expect(t.refresh).not.toHaveBeenCalled();
+		await t.w.apply();
+		expect(t.refresh).toHaveBeenCalledOnce();
+		expect(t.state.aviso).toBe(false);
+		t.w.stop();
+	});
+
+	it('una lista con scroll propio bajada (al encajar en pantalla) cuenta como leer más abajo', async () => {
+		const t = setup();
+		const list = Object.assign(new EventTarget(), { isConnected: true, scrollTop: 300 });
+		// El scroll de una lista no burbujea: llega a window en captura, con la lista como target.
+		const ev = new Event('scroll');
+		Object.defineProperty(ev, 'target', { value: list });
+		t.win.dispatchEvent(ev);
+		await vi.advanceTimersByTimeAsync(FIRST_MS);
+		expect(t.state.aviso).toBe(true);
+		expect(t.refresh).not.toHaveBeenCalled();
+		// La lista vuelve arriba: ya refresca.
+		list.scrollTop = 0;
+		await vi.advanceTimersByTimeAsync(RETRY_MS);
+		expect(t.refresh).toHaveBeenCalledOnce();
+		t.w.stop();
+	});
+
+	it('una lista bajada que ya no está (otra vista) no cuenta', async () => {
+		const t = setup();
+		const list = Object.assign(new EventTarget(), { isConnected: false, scrollTop: 300 });
+		const ev = new Event('scroll');
+		Object.defineProperty(ev, 'target', { value: list });
+		t.win.dispatchEvent(ev);
+		await vi.advanceTimersByTimeAsync(FIRST_MS + RETRY_MS);
+		expect(t.refresh).toHaveBeenCalledOnce();
+		t.w.stop();
+	});
+
+	it('en el modo TV refresca siempre, aunque la página no esté arriba', async () => {
+		const t = setup();
+		t.env.auto = true;
+		t.env.tv = true;
+		t.win.scrollY = 600;
+		await vi.advanceTimersByTimeAsync(FIRST_MS);
+		expect(t.refresh).toHaveBeenCalledOnce();
+		expect(t.state.aviso).toBe(false);
+		t.w.stop();
+	});
+
 	it('en TV y TOP refresca aunque haya un campo con el foco', async () => {
 		const t = setup();
 		t.env.typing = true;
@@ -320,13 +482,60 @@ describe('watch', () => {
 		t.w.stop();
 	});
 
-	it('si el refresco falla, lo reintenta en la pregunta siguiente, no cada pocos segundos', async () => {
+	it('si el refresco acaba en la página de error, no da los datos por vistos: lo reintenta en la pregunta siguiente', async () => {
 		const t = setup();
-		t.refresh.mockRejectedValueOnce(new Error('sin red'));
+		// Como en fresh.svelte.ts: refreshAll no rechaza con un 503 en el __data.json, deja page.error puesto.
+		let pageError = false;
+		let fails = 1;
+		t.refresh.mockImplementation(() =>
+			loadOrFail(
+				async () => {
+					pageError = fails-- > 0;
+				},
+				() => pageError
+			)
+		);
 		await vi.advanceTimersByTimeAsync(FIRST_MS + RETRY_MS * 5);
 		expect(t.refresh).toHaveBeenCalledOnce();
+		expect(pageError).toBe(true);
+		expect(t.state.aviso).toBe(false);
+		// No cada pocos segundos: en la pregunta siguiente, que devuelve la vista.
 		await vi.advanceTimersByTimeAsync(POLL_MS - FIRST_MS - RETRY_MS * 5);
 		expect(t.refresh).toHaveBeenCalledTimes(2);
+		expect(pageError).toBe(false);
+		// Ya vista: la misma publicación no vuelve a refrescar.
+		await vi.advanceTimersByTimeAsync(POLL_MS * 2);
+		expect(t.refresh).toHaveBeenCalledTimes(2);
+		t.w.stop();
+	});
+
+	it('si el refresco falla al pulsar «Actualizar», quita el aviso hasta la pregunta siguiente (su botón no haría nada)', async () => {
+		const t = setup();
+		t.env.typing = true;
+		await vi.advanceTimersByTimeAsync(FIRST_MS);
+		expect(t.state.aviso).toBe(true);
+		t.refresh.mockRejectedValueOnce(new Error('sin red'));
+		await t.w.apply();
+		expect(t.state.aviso).toBe(false);
+		await vi.advanceTimersByTimeAsync(POLL_MS);
+		expect(t.state.aviso).toBe(true);
+		t.w.stop();
+	});
+
+	it('con datos a la espera, si la pestaña se oculta no refresca en segundo plano; al volver, sí', async () => {
+		const t = setup();
+		t.win.dispatchEvent(new Event('touchstart'));
+		await vi.advanceTimersByTimeAsync(FIRST_MS);
+		expect(t.refresh).not.toHaveBeenCalled();
+		// Se va a otra app con el dedo aún en la pantalla; el navegador cancela el toque.
+		t.doc.visibilityState = 'hidden';
+		t.win.dispatchEvent(new Event('touchcancel'));
+		await vi.advanceTimersByTimeAsync(RETRY_MS * 5);
+		expect(t.refresh).not.toHaveBeenCalled();
+		t.doc.visibilityState = 'visible';
+		t.doc.dispatchEvent(new Event('visibilitychange'));
+		await vi.advanceTimersByTimeAsync(0);
+		expect(t.refresh).toHaveBeenCalledOnce();
 		t.w.stop();
 	});
 

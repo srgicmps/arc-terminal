@@ -1,7 +1,9 @@
 // Datos nuevos sin recargar (F04). La Action publica cada 5–15 min: casi siempre solo datos, a veces código.
 // Una pestaña abierta pregunta cada minuto (y al volver a ella) a /code.json, que dice qué publicación hay:
-// - Solo datos nuevos (mismo código): la vista se refresca en su sitio con invalidateAll(), que vuelve a pedir
-//   su __data.json; TradingView, el globo, el scroll y lo que estés tocando se quedan como estaban.
+// - Solo datos nuevos (mismo código): la vista se refresca en su sitio con refreshAll(), que vuelve a pedir su
+//   __data.json; TradingView, el globo, el scroll y lo que estés tocando se quedan como estaban. Sola, solo si
+//   estás arriba del todo (o en el modo TV): más abajo, lo nuevo empujaría lo que lees (muchas listas reutilizan
+//   sus filas por posición y cambia el texto bajo el dedo), así que sale «Hay datos nuevos · Actualizar».
 // - Código nuevo: el aviso «Recargar» de siempre, porque el código de la pestaña ya no casa con el publicado.
 // El código del navegador no lleva el commit escrito (si lo llevara, cada commit cambiaría el nombre del archivo
 // del layout y de app.js, ~26 KB gzip, y el service worker los volvería a bajar): la pestaña lo aprende de la
@@ -34,8 +36,9 @@ export const GESTURE_MS = 2_000;
 export const RETRY_MS = 3_000;
 
 /**
- * Qué hacer: 'nada'; 'datos', refrescar ya; 'aviso', hay datos nuevos pero estás escribiendo (sale «Actualizar»
- * y se refresca al pulsar o al dejar el campo); 'codigo', hay otra versión de la web (sale «Recargar»).
+ * Qué hacer: 'nada'; 'datos', refrescar ya; 'aviso', hay datos nuevos pero estás leyendo más abajo o escribiendo
+ * (sale «Actualizar»; se refresca al pulsar, al volver arriba o al dejar el campo); 'codigo', hay otra versión de
+ * la web (sale «Recargar»).
  */
 export type Step = 'nada' | 'datos' | 'aviso' | 'codigo';
 
@@ -52,8 +55,10 @@ export interface Situation {
 	resumed?: boolean;
 	/** Vista que se refresca sola aunque estés escribiendo: el modo TV y TOP. */
 	auto?: boolean;
-	/** Hay un campo de texto con el foco. */
+	/** Hay un campo de texto con el foco (o el foco de teclado en la vista). */
 	typing?: boolean;
+	/** Estás leyendo más abajo: la página, o una lista con scroll propio, no está arriba del todo (nunca en TV). */
+	away?: boolean;
 }
 
 /** Decide qué hacer con lo que dice /code.json. Nunca se mueve nada a mitad de un gesto: se espera a que acabe. */
@@ -62,9 +67,9 @@ export function decide(s: Situation): Step {
 	if (!latest || latest.v === seen) return 'nada';
 	// Otro commit, uno que no se sabe (null) o una build local: puede haber cambiado el código.
 	if (latest.code !== mine.code || mine.code === LOCAL) return 'codigo';
-	const still = s.resumed || s.idleMs >= GESTURE_MS;
-	if (!s.auto && s.typing) return 'aviso';
-	return still ? 'datos' : 'nada';
+	// Más abajo, lo que entra arriba movería lo que lees: aviso, también en TOP.
+	if (s.away || (!s.auto && s.typing)) return 'aviso';
+	return s.resumed || s.idleMs >= GESTURE_MS ? 'datos' : 'nada';
 }
 
 /** Lee /code.json sin caché. Si falla (sin red, sesión de Access caducada, respuesta rara), null: no se hace nada. */
@@ -91,11 +96,30 @@ export function isField(el: Element | null): boolean {
 }
 
 /**
- * Refresca sin mover lo que estás leyendo: apunta qué hay en el centro de la pantalla y dónde está; si al
- * refrescar ha entrado contenido encima y lo ha empujado, devuelve la página a su sitio. Chrome y Firefox ya lo
- * hacen solos (scroll anchoring, `overflow-anchor`); Safari no, y en el iPhone las listas saltarían.
+ * ¿Hay algo con el foco que un refresco cambiaría bajo tus ojos? Un campo, o el foco de teclado (Tab, j/k) en una
+ * fila o un enlace de la vista: la fila podría pasar a ser otro titular. Con ratón o dedo no cuenta, porque un clic
+ * no activa :focus-visible. La vista entera (#contenido, tras «Saltar al contenido» o «Actualizar») tampoco.
+ */
+export function holdsFocus(el: Element | null): boolean {
+	if (isField(el)) return true;
+	if (!el?.parentElement?.closest('#contenido')) return false;
+	try {
+		return el.matches(':focus-visible');
+	} catch {
+		return false; // un navegador sin :focus-visible
+	}
+}
+
+/**
+ * Refresca sin mover lo que estás leyendo (al pulsar «Actualizar» a media página): apunta qué hay en el centro de
+ * la pantalla y dónde está en la página; si al refrescar ha entrado contenido encima y lo ha empujado, devuelve la
+ * página a su sitio. Chrome y Firefox ya lo hacen solos con los nodos que se mueven (scroll anchoring,
+ * `overflow-anchor`); Safari no. Una lista que reutiliza sus filas por posición cambia de texto sin mover ningún
+ * nodo: eso no lo arregla ninguno de los dos, y por eso la vista no se refresca sola a media página.
  * Si lo del centro va dentro de algo con scroll vertical propio (una lista larga de un panel), se toma ese bloque,
  * que se mueve con la página.
+ * Se mide respecto a la página, no a la pantalla: si mientras llegan los datos deslizas, solo se compensa lo que
+ * ha entrado encima, no tu scroll.
  */
 export async function keepPlace(win: Window, run: () => Promise<unknown>): Promise<void> {
 	const doc = win.document;
@@ -104,14 +128,25 @@ export async function keepPlace(win: Window, run: () => Promise<unknown>): Promi
 	for (let e = anchor?.parentElement; e && e !== doc.body && e !== doc.documentElement; e = e.parentElement) {
 		if (e.scrollHeight > e.clientHeight && /^(auto|scroll)$/.test(win.getComputedStyle(e).overflowY)) anchor = e;
 	}
-	const before = anchor?.getBoundingClientRect().top;
+	const at = () => (anchor ? anchor.getBoundingClientRect().top + win.scrollY : 0);
+	const before = anchor ? at() : undefined;
 	await run();
 	if (!anchor?.isConnected || before === undefined) return;
-	const delta = anchor.getBoundingClientRect().top - before;
+	const delta = at() - before;
 	if (Math.abs(delta) >= 1) win.scrollBy(0, delta);
 }
 
-/** Lo que el bucle enseña: el aviso de datos nuevos (solo si estás escribiendo) y el de versión nueva. */
+/**
+ * Refresca con `run` (refreshAll) y falla si la vista ha acabado en la página de error: refreshAll no rechaza
+ * cuando el __data.json no llega (un 503 del borde, sin red), SvelteKit pinta +error.svelte. Así `watch` no da los
+ * datos por vistos y lo vuelve a intentar en la pregunta siguiente, que devuelve la vista.
+ */
+export async function loadOrFail(run: () => Promise<unknown>, failed: () => boolean): Promise<void> {
+	await run();
+	if (failed()) throw new Error('No se han podido cargar los datos nuevos');
+}
+
+/** Lo que el bucle enseña: el aviso de datos nuevos (si estás más abajo o escribiendo) y el de versión nueva. */
 export interface FreshState {
 	aviso: boolean;
 	codigo: boolean;
@@ -122,14 +157,16 @@ export interface FreshEnv {
 	mine: { v: string; code?: string | null };
 	/** Pide /code.json (readBuild). */
 	read: () => Promise<Build | null>;
-	/** Refresca los datos de la vista (invalidateAll, con keepPlace). */
+	/** Refresca los datos de la vista (refreshAll, con keepPlace y loadOrFail). */
 	refresh: () => Promise<unknown>;
-	/** ¿Vista que se refresca sola (TV o TOP)? */
+	/** ¿Vista que se refresca sola aunque escribas (TV o TOP)? */
 	auto: () => boolean;
-	/** ¿Foco en un campo? */
+	/** ¿Modo TV? Ahí siempre se refresca sola: nadie lee a media página. */
+	tv: () => boolean;
+	/** ¿Foco en un campo (holdsFocus)? */
 	typing: () => boolean;
 	doc: Pick<Document, 'visibilityState' | 'addEventListener' | 'removeEventListener'>;
-	win: Pick<Window, 'addEventListener' | 'removeEventListener'>;
+	win: Pick<Window, 'addEventListener' | 'removeEventListener' | 'scrollY'>;
 }
 
 /** Eventos que cuentan como gesto en marcha. `scroll` en captura, para enterarse también del de las listas con scroll propio. */
@@ -139,7 +176,8 @@ const PASSIVE = { capture: true, passive: true };
 /**
  * El bucle: pregunta a los FIRST_MS de abrir, cada POLL_MS con la pestaña a la vista y al volver a ella, y aplica
  * lo que diga decide().
- * Con datos nuevos a la espera (a mitad de un gesto o escribiendo), vuelve a mirar cada RETRY_MS sin red.
+ * Con datos nuevos a la espera (a mitad de un gesto, más abajo o escribiendo), vuelve a mirar cada RETRY_MS sin
+ * red, mientras la pestaña esté a la vista (al volver a ella ya se pregunta otra vez).
  * Devuelve `apply` (el botón «Actualizar») y `stop`.
  */
 export function watch(state: FreshState, env: FreshEnv) {
@@ -150,8 +188,22 @@ export function watch(state: FreshState, env: FreshEnv) {
 	let fingers = 0;
 	let working = false;
 	let retry: ReturnType<typeof setTimeout> | undefined;
+	/** Lo que has desplazado por dentro (una lista de un panel, la vista al encajar en pantalla). */
+	const scrollers = new Set<Element>();
 
 	const pending = () => !state.codigo && !!latest && latest.v !== seen;
+	const visible = () => env.doc.visibilityState === 'visible';
+
+	/** ¿Lejos de arriba? La página o algo que has desplazado por dentro (no en el modo TV). */
+	function away() {
+		if (env.tv()) return false;
+		if (env.win.scrollY >= 1) return true;
+		for (const el of scrollers) {
+			if (!el.isConnected) scrollers.delete(el);
+			else if (el.scrollTop >= 1) return true;
+		}
+		return false;
+	}
 
 	async function apply() {
 		if (!latest || working || state.codigo) return;
@@ -162,8 +214,10 @@ export function watch(state: FreshState, env: FreshEnv) {
 			seen = target;
 			state.aviso = false;
 		} catch {
-			// Se vuelve a intentar en la próxima pregunta a /code.json, no cada RETRY_MS.
+			// Se vuelve a intentar en la próxima pregunta a /code.json, no cada RETRY_MS. Hasta entonces, sin aviso:
+			// su botón no haría nada (y en la página de error ya está «Reintentar»).
 			latest = null;
+			state.aviso = false;
 		} finally {
 			working = false;
 		}
@@ -180,19 +234,21 @@ export function watch(state: FreshState, env: FreshEnv) {
 			idleMs: fingers > 0 ? 0 : Date.now() - lastGesture,
 			resumed,
 			auto: env.auto(),
-			typing: env.typing()
+			typing: env.typing(),
+			away: away()
 		});
 		if (what === 'codigo') {
 			state.codigo = true;
 			state.aviso = false;
 		} else if (what === 'aviso') state.aviso = true;
-		else if (what === 'datos') await apply();
-		if (pending()) retry = setTimeout(step, RETRY_MS);
+		// Con la pestaña oculta no se descarga nada: al volver a ella se pregunta y se refresca.
+		else if (what === 'datos' && visible()) await apply();
+		if (pending() && visible()) retry = setTimeout(step, RETRY_MS);
 	}
 
 	/** `always`: también con la pestaña oculta (la primera, para aprender el commit aunque se abra en segundo plano). */
 	async function poll(resumed = false, always = false) {
-		if ((!always && env.doc.visibilityState !== 'visible') || state.codigo || working) return;
+		if ((!always && !visible()) || state.codigo || working) return;
 		working = true;
 		try {
 			const got = await env.read();
@@ -205,10 +261,13 @@ export function watch(state: FreshState, env: FreshEnv) {
 		await step(resumed);
 	}
 
-	const onVisible = () => void (env.doc.visibilityState === 'visible' && poll(true));
+	const onVisible = () => void (visible() && poll(true));
 	const onGesture = (e: Event) => {
 		lastGesture = Date.now();
 		if (e.type === 'touchstart') fingers = (e as TouchEvent).touches?.length ?? 1;
+		// El scroll de la página llega desde document (sin scrollTop); el de una lista, desde ella.
+		const target = e.target as Element | null;
+		if (e.type === 'scroll' && target && 'scrollTop' in target) scrollers.add(target);
 	};
 	const onTouchEnd = (e: Event) => {
 		fingers = (e as TouchEvent).touches?.length ?? 0;
@@ -234,6 +293,7 @@ export function watch(state: FreshState, env: FreshEnv) {
 			clearTimeout(first);
 			clearInterval(timer);
 			clearTimeout(retry);
+			scrollers.clear();
 			env.doc.removeEventListener('visibilitychange', onVisible);
 			for (const type of GESTURES) env.win.removeEventListener(type, onGesture, PASSIVE);
 			env.win.removeEventListener('touchend', onTouchEnd, PASSIVE);

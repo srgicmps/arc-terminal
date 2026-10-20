@@ -343,8 +343,9 @@
 		</div>
 	{/if}
 
-	<!-- Datos nuevos: la vista se refresca sola en su sitio (src/lib/fresh.ts). Este aviso discreto solo sale si
-	     estás escribiendo en un campo (se refresca al pulsar o al salir de él) o si se ha publicado código nuevo. -->
+	<!-- Datos nuevos: la vista se refresca sola en su sitio si estás arriba (src/lib/fresh.ts). Este aviso discreto
+	     sale si estás leyendo más abajo o escribiendo en un campo (se refresca al pulsar, al volver arriba o al salir
+	     del campo) o si se ha publicado código nuevo. -->
 	{#if fresh.codigo}
 		<button class="fresh" type="button" onclick={() => location.reload()}>
 			Hay una versión nueva · <b>Recargar</b>
