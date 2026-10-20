@@ -64,7 +64,7 @@ export const OFFLINE: GuideSection = {
 		'Arc Terminal se puede instalar como una app: en el móvil, «Añadir a pantalla de inicio» desde el menú del navegador (en el iPhone, desde Compartir en Safari).',
 		'Sin conexión sigue funcionando con la última copia guardada: la portada siempre, y cada vista que hayas abierto antes. Arriba sale «Sin conexión» mientras dure.',
 		'Las cotizaciones y gráficos de TradingView, el tiempo de tu sitio y otros datos en directo necesitan red.',
-		'Cuando la web se publica de nuevo con datos frescos, sale el aviso «Hay datos nuevos · Recargar».'
+		'Cuando llegan datos frescos, la vista se pone al día sola, sin recargar y sin moverte de donde estás (si estás escribiendo, sale «Hay datos nuevos · Actualizar»). Si cambia la propia web, sale «Hay una versión nueva · Recargar».'
 	]
 };
 
