@@ -93,7 +93,7 @@
 			<tr><th>Trimestre</th><th>BPA esperado</th><th>BPA real</th><th>Sorpresa</th></tr>
 		</thead>
 		<tbody>
-			{#each a.surprises as s (s.period)}
+			{#each a.surprises as s, i (i)}
 				<tr>
 					<td>{quarter(s.period)}</td>
 					<td class="mut">{usd(s.estimate)}</td>
@@ -110,7 +110,8 @@
 		<tr><th>Directivos · 90 días</th><th class="l">Operación</th><th>Acciones</th><th class="wide">Precio</th></tr>
 	</thead>
 	<tbody>
-		{#each a.insiders as t (t.date + t.name + t.change)}
+		<!-- Clave por posición: un directivo puede vender dos veces lo mismo el mismo día a precios distintos. -->
+		{#each a.insiders as t, i (i)}
 			<tr>
 				<td class="name">{t.name}<span class="sub">{dm(`${t.date}T12:00:00Z`)}</span></td>
 				<td class="l" class:up={t.code === 'P'} class:down={t.code === 'S'}>{t.code === 'P' ? 'Compra' : 'Venta'}</td>
