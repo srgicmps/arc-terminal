@@ -38,7 +38,7 @@ export const load: PageServerLoad = async () => {
 		steps: [...deployYml.matchAll(/^\s*(?:-\s*)?run:\s*(.+)$/gm)].map((m) => m[1].trim()),
 		snippets: {
 			load: excerpt('src/routes/fuel/+page.server.ts', fuelLoadSrc, 'export const load', 5),
-			state: excerpt('src/routes/fuel/+page.svelte', fuelPageSrc, '$state<FuelKey>', 2),
+			state: excerpt('src/routes/fuel/+page.svelte', fuelPageSrc, 'let zone = $state(', 2),
 			derived: excerpt('src/routes/fuel/+page.svelte', fuelPageSrc, 'const provinces = $derived', 2),
 			props: excerpt('src/lib/components/Panel.svelte', panelSrc, '= $props()', 1),
 			snippet: excerpt('src/lib/components/Panel.svelte', panelSrc, '{#if note}', 3),
