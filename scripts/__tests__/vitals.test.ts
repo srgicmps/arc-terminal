@@ -1,6 +1,6 @@
 // Core Web Vitals de laboratorio (scripts/vitals.ts): mediana, presupuestos, avisos y la tabla del resumen.
 import { describe, expect, it } from 'vitest';
-import { budgetFor, GOOD, median, overBudget, summaryTable, warnings, type Row } from '../vitals.ts';
+import { budgetFor, GOOD, median, overBudget, sessionCls, summaryTable, warnings, type Row } from '../vitals.ts';
 
 const row = (path: string, profile: string, lcp: number, cls: number, extra: Partial<Row['vitals']> = {}): Row => ({
 	path,
@@ -17,6 +17,21 @@ describe('vitals', () => {
 		expect(median([4, 1, 3, 2])).toBe(2.5);
 		expect(median([0.1])).toBe(0.1);
 		expect(median([])).toBeNaN();
+	});
+
+	it('CLS como web.dev: la peor ventana de sesión, no la suma de todos los saltos', () => {
+		expect(sessionCls([])).toBe(0);
+		expect(sessionCls([{ t: 300, v: 0.04 }])).toBe(0.04);
+		// A menos de 1 s, la misma ventana: se suman.
+		expect(sessionCls([{ t: 0, v: 0.05 }, { t: 900, v: 0.04 }])).toBeCloseTo(0.09);
+		// A 1 s o más, ventanas distintas: cuenta la mayor, no la suma.
+		expect(sessionCls([{ t: 0, v: 0.05 }, { t: 1000, v: 0.04 }])).toBe(0.05);
+		expect(sessionCls([{ t: 2500, v: 0.04 }, { t: 0, v: 0.03 }, { t: 4000, v: 0.02 }])).toBe(0.04);
+		// La ventana dura 5 s como mucho: un salto cada 0,9 s (siete en 5,4 s) no va todo junto.
+		const steady = [0, 900, 1800, 2700, 3600, 4500, 5400].map((t) => ({ t, v: 0.01 }));
+		expect(sessionCls(steady)).toBeCloseTo(0.06);
+		// La segunda ventana gana si suma más.
+		expect(sessionCls([...steady.slice(0, 6), { t: 5400, v: 0.08 }])).toBeCloseTo(0.08);
 	});
 
 	it('avisa solo por encima del presupuesto: igual no cuenta', () => {

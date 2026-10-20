@@ -2,7 +2,8 @@
 // Core Web Vitals de laboratorio en el móvil (`pnpm vitals`, después de `pnpm build` y con static/data). Abre TOP, GEO,
 // WS y FUEL a 390×844 con Chromium, la CPU 4 veces más lenta y una 4G lenta, sin service worker, y mide:
 // - LCP: cuándo se pinta lo más grande de la vista (bueno, hasta 2,5 s);
-// - CLS: cuánto salta la vista mientras carga (bueno, hasta 0,1);
+// - CLS: cuánto salta la vista mientras carga (bueno, hasta 0,1), como lo cuenta web.dev: la peor ráfaga de saltos
+//   (sessionCls), no la suma de todos;
 // - TBT aproximado: lo que el hilo principal pasa bloqueado (tareas de más de 50 ms). Sin nadie tocando la pantalla no
 //   hay INP, y el TBT es lo que más se le parece en el laboratorio.
 // Tres cargas en frío por vista y perfil (Terminal y Sencillo); se queda la mediana. Solo AVISA (::warning) si una vista
@@ -64,6 +65,35 @@ export function median(values: number[]): number {
 	const s = [...values].sort((a, b) => a - b);
 	const mid = Math.floor(s.length / 2);
 	return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
+/** Un salto de la vista (layout-shift sin que nadie haya tocado la pantalla): cuándo (ms) y cuánto. */
+export interface Shift {
+	t: number;
+	v: number;
+}
+
+/**
+ * CLS como lo cuenta web.dev: los saltos se agrupan en «ventanas de sesión» (cada salto a menos de 1 s del anterior y
+ * la ventana de 5 s como mucho) y el CLS es la ventana que más suma. Así, dos saltos pequeños separados no se suman.
+ */
+export function sessionCls(shifts: Shift[]): number {
+	let worst = 0;
+	let sum = 0;
+	let first = 0;
+	let last = 0;
+	[...shifts]
+		.sort((a, b) => a.t - b.t)
+		.forEach((s, i) => {
+			if (i > 0 && s.t - last < 1000 && s.t - first < 5000) sum += s.v;
+			else {
+				sum = s.v;
+				first = s.t;
+			}
+			last = s.t;
+			worst = Math.max(worst, sum);
+		});
+	return worst;
 }
 
 /** Qué pasa del presupuesto (estrictamente por encima: igual, no avisa). */
@@ -169,8 +199,8 @@ async function main() {
 						localStorage.setItem('arc-os-invite', '1');
 						localStorage.setItem('arc-install-hint', 'no');
 					} catch {}
-					const w = window as unknown as { __vitals: { lcp: number; cls: number; tbt: number; el: string } };
-					w.__vitals = { lcp: 0, cls: 0, tbt: 0, el: '' };
+					const w = window as unknown as { __vitals: { lcp: number; shifts: Shift[]; tbt: number; el: string } };
+					w.__vitals = { lcp: 0, shifts: [], tbt: 0, el: '' };
 					const watch = (type: string, fn: (e: PerformanceEntry) => void) => {
 						if (PerformanceObserver.supportedEntryTypes?.includes(type)) new PerformanceObserver((l) => l.getEntries().forEach(fn)).observe({ type, buffered: true });
 					};
@@ -182,9 +212,10 @@ async function main() {
 						const text = (el?.textContent ?? '').trim().replace(/\s+/g, ' ');
 						w.__vitals.el = el ? `${el.tagName.toLowerCase()}${cls}${text ? ` «${text.slice(0, 30)}${text.length > 30 ? '…' : ''}»` : ''}` : '';
 					});
+					// Cada salto por separado: el CLS (la peor ventana de sesión) se calcula después, en sessionCls.
 					watch('layout-shift', (e) => {
 						const s = e as PerformanceEntry & { value: number; hadRecentInput: boolean };
-						if (!s.hadRecentInput) w.__vitals.cls += s.value;
+						if (!s.hadRecentInput) w.__vitals.shifts.push({ t: s.startTime, v: s.value });
 					});
 					watch('longtask', (e) => (w.__vitals.tbt += Math.max(0, e.duration - 50)));
 				},
@@ -222,8 +253,8 @@ async function main() {
 			await page.goto(root + path, { waitUntil: 'load', timeout: 60_000 });
 			// Sin tocar nada: el LCP y los saltos que llegan después del «load» (datos, mapas, letra) también cuentan.
 			await page.waitForTimeout(4000);
-			const m = await page.evaluate(() => (window as unknown as { __vitals: { lcp: number; cls: number; tbt: number; el: string } }).__vitals);
-			return { ...m, selfBytes, fontsOk };
+			const { shifts, ...m } = await page.evaluate(() => (window as unknown as { __vitals: { lcp: number; shifts: Shift[]; tbt: number; el: string } }).__vitals);
+			return { ...m, cls: sessionCls(shifts), selfBytes, fontsOk };
 		} finally {
 			await context.close();
 		}
