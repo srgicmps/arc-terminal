@@ -39,10 +39,12 @@
 	let simple = $state<'1' | '0'>('1');
 	let again = $state(false);
 
-	// Al cambiar de paso, el foco va al título del paso nuevo y la vista sube al indicador de pasos: el lector de
-	// pantalla anuncia «¿Dónde estás?» y en el móvil no te quedas a media página. Sin esto el foco caía en <body>,
-	// porque el botón pulsado desaparece con su paso. `heading` es el h2 del paso que se ve (bind:this en los cuatro):
-	// cuando cambia, es que hay paso nuevo. El primero no cuenta: al abrir la vista no se roba el foco ni se mueve.
+	// Al cambiar de paso, el foco va al título del paso nuevo y, si el indicador de pasos ha quedado por encima de la
+	// pantalla, la vista sube hasta él: el lector de pantalla anuncia «¿Dónde estás?» y en el móvil no te quedas a media
+	// página. Si el indicador ya se ve, no se mueve nada (en el escritorio no se pierden la barra ni el título). Sin esto
+	// el foco caía en <body>, porque el botón pulsado desaparece con su paso. `heading` es el h2 del paso que se ve
+	// (bind:this en los cuatro): cuando cambia, es que hay paso nuevo. El primero no cuenta: al abrir la vista no se
+	// roba el foco ni se mueve. La prueba de humo (scripts/smoke.ts, `bienvenida`) lo vigila a 390 px.
 	let heading = $state<HTMLHeadingElement | null>(null);
 	let indicator = $state<HTMLOListElement>();
 	let opened = false;
@@ -53,8 +55,9 @@
 			return;
 		}
 		heading.focus({ preventScroll: true });
+		if (!indicator || indicator.getBoundingClientRect().top >= 0) return;
 		const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-		indicator?.scrollIntoView({ block: 'start', behavior: smooth ? 'smooth' : 'auto' });
+		indicator.scrollIntoView({ block: 'start', behavior: smooth ? 'smooth' : 'auto' });
 	});
 
 	// Al abrir: lo que elegiste la otra vez. Si llegó sola (?primera=1) y tus ajustes ya la traían hecha (de tu
@@ -329,9 +332,10 @@
 		color: var(--fg);
 	}
 	/* El título recibe el foco al cambiar de paso solo para que se anuncie (como <main> en el layout): no es un
-	   control, así que sin contorno. */
+	   control, así que sin contorno ni el halo que algunas estéticas (Cupertino) ponen a :focus-visible. */
 	h2:focus {
 		outline: none;
+		box-shadow: none;
 	}
 	h3 {
 		margin: var(--sp-18) 0 var(--sp-8);
