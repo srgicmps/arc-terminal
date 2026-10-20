@@ -33,7 +33,7 @@
 	import { zoneFor } from '#lib/fuel.ts';
 	import { inMenorca, inSpain, place } from '#lib/place.svelte.ts';
 	import { initVisit, newCount, newSinceText, visit } from '#lib/visit.svelte.ts';
-	import { initTitles, shown } from '#lib/titles.svelte.ts';
+	import { initTitles, langOf, shown } from '#lib/titles.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -227,7 +227,7 @@
 	<Panel id="week" title="Tu semana en 2 minutos" meta="Últimos 7 días" jump={{ code: 'SEMANA', href: resolve('/semana') }}>
 		<ul class="mini">
 			{#each data.week.top as t (t.k)}
-				<li><a class="l" href={t.url} target="_blank" rel="noopener">{shown(t).text}</a><b class="mut">{t.days} {t.days === 1 ? 'día' : 'días'}</b></li>
+				<li><a class="l" href={t.url} target="_blank" rel="noopener" lang={langOf(t)}>{shown(t).text}</a><b class="mut">{t.days} {t.days === 1 ? 'día' : 'días'}</b></li>
 			{/each}
 			{#each data.week.markets as m (m.label)}
 				<li>
@@ -246,7 +246,7 @@
 			<ul class="mini">
 				{#each important as e (e.k)}
 					<li>
-						<a class="l" href={e.url} target="_blank" rel="noopener">{shown(e).text}</a>
+						<a class="l" href={e.url} target="_blank" rel="noopener" lang={langOf(e)}>{shown(e).text}</a>
 						<b class="mut">{e.sources.length} {e.sources.length === 1 ? 'medio' : 'medios'}</b>
 					</li>
 				{/each}
@@ -387,7 +387,8 @@
 			{#each (data.predictions?.data.geopolitics ?? []).slice(0, 4) as e (e.id)}
 				{@const top = e.outcomes[0]}
 				<li>
-					<a class="l" href={e.url} target="_blank" rel="noopener">{e.title}<small>{top.label}</small></a>
+					<!-- Polymarket va en inglés; de las respuestas, solo «Sí» llega traducida (scripts/sources/predictions.ts). -->
+					<a class="l" href={e.url} target="_blank" rel="noopener" lang="en">{e.title}<small lang={top.label === 'Sí' ? 'es' : undefined}>{top.label}</small></a>
 					<b>{nf(top.p * 100, 0)} %</b>
 				</li>
 			{/each}

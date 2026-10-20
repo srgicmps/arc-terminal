@@ -28,7 +28,7 @@
 				<ol class="stories">
 					{#each data.stories as s (s.url)}
 						<li>
-							<a class="title" href={s.url} target="_blank" rel="noopener">{s.title}</a>
+							<a class="title" href={s.url} target="_blank" rel="noopener" lang={s.lang}>{s.title}</a>
 							<p class="regions" aria-label="Regiones">
 								{#each shown(s) as r (r.key)}
 									{@const on = s.regions.includes(r.key)}
