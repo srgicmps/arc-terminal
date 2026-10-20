@@ -19,6 +19,7 @@ export const load: PageServerLoad = async () => {
 	const sofr = moneyRow(get('nyfed-sofr'), 'SOFR', get('nyfed-sofr-vol')) ?? moneyRow(get('sofr-us'), 'SOFR');
 	const iorb = moneyRow(get('iorb-us'), 'Remuneración de las reservas (IORB)');
 	const estr = moneyRow(get('estr'), '€STR');
+	const dfr = moneyRow(get('ecb-dfr'), 'Facilidad de depósito del BCE');
 	const usRows = ok([
 		sofr,
 		moneyRow(get('nyfed-tgcr'), 'TGCR (repo tripartito)', get('nyfed-tgcr-vol')),
@@ -31,7 +32,7 @@ export const load: PageServerLoad = async () => {
 		moneyRow(tenorSeries(us?.data, '6M', 'bill6m', 'Letra a 6 meses'))
 	]);
 	const eaRows = ok([
-		moneyRow(get('ecb-dfr'), 'Facilidad de depósito del BCE'),
+		dfr,
 		estr,
 		moneyRow(get('euribor-3m'), 'Euríbor a 3 meses'),
 		moneyRow(get('euribor-12m'), 'Euríbor a 12 meses'),
@@ -43,6 +44,8 @@ export const load: PageServerLoad = async () => {
 		eaRows,
 		sofrIorb: gap(sofr, iorb),
 		sofrEstr: gap(sofr, estr),
+		// Para la frase del modo Sencillo: €STR frente a lo que paga el BCE (sale sin la clave de FRED, que trae IORB).
+		estrDfr: gap(estr, dfr),
 		fetchedAt: { us: nyfed?.fetchedAt ?? us?.fetchedAt, ea: ecb?.fetchedAt }
 	};
 };
