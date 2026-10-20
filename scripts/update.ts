@@ -29,6 +29,7 @@ import {
 	type Source,
 	type SourceContext
 } from './lib.ts';
+import { cleanLinks, linksWarning } from './links.ts';
 import { buildNewsIndex } from './news-index.ts';
 import { loadSources } from './registry.ts';
 
@@ -56,6 +57,9 @@ async function published(name: string): Promise<Dataset<unknown> | null> {
 const saved = new Map<string, unknown>();
 
 async function save(dataset: Dataset<unknown>) {
+	// Un enlace que no es http(s) (un «javascript:» de una API) se vacía antes de que llegue a la web.
+	const warning = linksWarning(dataset.name, cleanLinks(dataset.data));
+	if (warning) console.log(warning);
 	saved.set(dataset.name, dataset.data);
 	await writeFile(`${OUT_DIR}/${dataset.name}.json`, JSON.stringify(dataset) + '\n');
 }

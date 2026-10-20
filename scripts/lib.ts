@@ -1,5 +1,6 @@
 /// <reference types="node" />
 // Herramientas comunes para los scripts que descargan datos.
+import { cleanLinks, linksWarning } from './links.ts';
 import { PAGES_SITE, SITE } from './site.ts';
 
 /** Una fuente de datos: cómo se llama, cada cuánto merece la pena refrescarla y cómo descargarla. */
@@ -299,8 +300,10 @@ export function blockedMessage(paths: Iterable<string>, shown = 5): string | nul
 	);
 }
 
-/** Escribe un archivo extra de una fuente en static/data/<path>. */
+/** Escribe un archivo extra de una fuente en static/data/<path>, sin enlaces raros (como save() en update.ts). */
 export async function writeExtra(path: string, content: unknown) {
+	const warning = linksWarning(path, cleanLinks(content));
+	if (warning) console.log(warning);
 	const { mkdir, writeFile } = await import('node:fs/promises');
 	const full = `static/data/${path}`;
 	await mkdir(full.slice(0, full.lastIndexOf('/')), { recursive: true });
