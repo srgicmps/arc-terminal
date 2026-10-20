@@ -42,7 +42,9 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   pero solo lo que sale en todas las vistas (`status`, que lee `Updated`) o se pide al usarlo (el índice de búsqueda,
   al enfocar la barra); lo demás va recortado en el `load` del `+page.server.ts`. Lo que se pide así no cuenta en el
   tope de peso de `scripts/weight.ts`.
-- Componentes comunes en `src/lib/components/` (Panel, NewsList, SeriesTable, LineChart, TvWidget…).
+- Componentes comunes en `src/lib/components/` (Panel, NewsList, SeriesTable, LineChart, TvWidget…). Un titular
+  suelto que enseña `shown()` lleva `lang={langOf(…)}` (`src/lib/titles.svelte.ts`; NewsList ya lo hace) para que el
+  original en inglés se lea con su voz.
 - Atajos de teclado: registro único en `src/lib/shortcuts.ts` (`SHORTCUTS` + `isShortcut`). De ahí salen HELP, el MANUAL y las teclas que escuchan la barra, los paneles y el modo TV.
 - Barra de comandos: la lógica, sin Svelte, en `src/lib/cmdline.ts` (también las erratas: «GOE» → GEO con
   `didYouMean`). Página de error propia en `src/routes/+error.svelte`: 404 con «¿Querías decir…?», 401 de Access y,
