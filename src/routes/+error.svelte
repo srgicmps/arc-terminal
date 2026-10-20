@@ -39,6 +39,15 @@
 	const kind = $derived(page.status === 404 ? 'missing' : page.status === 401 ? 'login' : online ? 'failed' : 'offline');
 	const guess = $derived(kind === 'missing' ? guessCommand(path) : undefined);
 
+	/** La dirección del 404 como se escribió («€» y no «%E2%82%AC») y recortada si es muy larga. */
+	const shownPath = $derived.by(() => {
+		let text = path;
+		try {
+			text = decodeURIComponent(path);
+		} catch {}
+		return text.length > 60 ? `${text.slice(0, 59)}…` : text;
+	});
+
 	// Vistas guardadas en este dispositivo (la caché de páginas del service worker), la más reciente primero. Si
 	// el navegador no tiene Cache API o falla (Safari en privado), la lista no sale y ya está.
 	let saved = $state.raw<Command[]>([]);
@@ -49,7 +58,9 @@
 			try {
 				if (!('caches' in window) || !(await caches.has(PAGES_CACHE))) return;
 				const keys = await (await caches.open(PAGES_CACHE)).keys();
-				const views = savedViews(keys.map((r) => r.url).reverse(), base).filter((c) => c.route !== (path.replace(/\/$/, '') || '/'));
+				// Sin TOP (ya está en los botones de arriba) ni la vista que ha fallado.
+				const here = path.replace(/\/$/, '') || '/';
+				const views = savedViews(keys.map((r) => r.url).reverse(), base).filter((c) => c.route !== '/' && c.route !== here);
 				if (alive) saved = views;
 			} catch {}
 		})();
@@ -63,7 +74,7 @@
 
 	const head = $derived(
 		kind === 'missing'
-			? { code: '404', title: 'Esta vista no existe', sub: `No hay ninguna vista en ${path}.` }
+			? { code: '404', title: 'Esta vista no existe', sub: 'Esa dirección no lleva a ninguna vista.' }
 			: kind === 'login'
 				? { code: '401', title: 'Tu sesión ha caducado', sub: 'Te llevamos a la pantalla de entrada…' }
 				: kind === 'offline'
@@ -102,7 +113,8 @@
 
 	<Note>
 		{#if kind === 'missing'}
-			Para abrir una vista, escribe su código en la barra (ECO, FUEL…) o búscala por su nombre.
+			<code>{shownPath}</code> no es ninguna vista. Para abrir una, escribe su código en la barra (ECO, FUEL…) o búscala
+			por su nombre.
 		{:else if kind === 'login'}
 			Si no pasa nada en unos segundos, vuelve a abrir Arc Terminal.
 		{:else if kind === 'offline'}
@@ -124,6 +136,22 @@
 		overflow: clip;
 		/* Lo que ocupan dos columnas de paneles: en una pantalla ancha, los botones no se estiran de lado a lado. */
 		max-width: calc(2 * var(--col-min));
+	}
+
+	/* La caja recorta: el foco va hacia dentro, como en Panel, para que el contorno de los botones no se corte. */
+	.box :global(:focus-visible) {
+		outline-offset: calc(-1 * var(--focus-w));
+	}
+
+	/* Sin nada entre los botones y la nota, ya las separa la línea de abajo de los botones: 1 px, no 2. */
+	.box > :global([data-ui='note']:nth-child(2)) {
+		border-top: 0;
+	}
+
+	/* La dirección del 404 se parte por cualquier sitio: una muy larga no ensancha la página en el móvil. */
+	code {
+		font-family: var(--mono);
+		overflow-wrap: anywhere;
 	}
 
 	h2 {
