@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TV_DEFAULT, parseTv, routeOf, tvCandidates, tvQuery } from './tv.ts';
+import { TV_DEFAULT, parseTv, routeOf, tvCandidates, tvDelta, tvQuery } from './tv.ts';
 
 describe('modo TV', () => {
 	it('lee las vistas y los segundos de la URL', () => {
@@ -21,5 +21,13 @@ describe('modo TV', () => {
 		expect(tvQuery(['TOP', 'WS'], 30)).toBe('?tv=TOP,WS&s=30');
 		expect(routeOf('WS')).toBe('/ws');
 		expect(routeOf('NADA')).toBe('/');
+	});
+
+	it('el reloj cuenta tiempo real y se para con la pestaña oculta', () => {
+		expect(tvDelta(1000, 1250, false)).toBe(0.25);
+		// Con la CPU cargada el intervalo llega tarde: cuenta lo que de verdad ha pasado.
+		expect(tvDelta(1000, 2500, false)).toBe(1.5);
+		expect(tvDelta(1000, 61000, true)).toBe(0);
+		expect(tvDelta(2000, 1000, false)).toBe(0);
 	});
 });

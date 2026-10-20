@@ -39,11 +39,11 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   respuesta en el registro. Sirve para explorar APIs nuevas cuando el entorno de desarrollo no tiene red.
 - **Probar una fuente sin la pasada completa**: Actions → «Publicar en Pages» → Run workflow, con «fuentes»
   (p. ej. `fao climate`). Descarga solo esas fuentes, sin copia guardada, y lanza el sondeo, sin publicar.
-- En los PR, la Action va en jobs a la vez: `checks` (check, test, build y el tope de peso por vista de
+- En los PR, la Action va en jobs a la vez: `checks` (check, `pnpm test:cov` con suelo por carpeta en `vitest.config.ts`, build y el tope de peso por vista de
   `scripts/weight.ts`: el verde o el rojo rápido; Arc OS, `/os`, no tiene tope por decisión de Sergi, y lo que solo
   carga dentro de `/os` tampoco), `smoke`
   (datos reales y prueba de humo) y `probe` solo si el PR toca `scripts/`. `compare` (vistas del PR frente a
-  main) y `tv-shots` se lanzan a mano: Run workflow sobre la rama, con «herramienta».
+  main) y `tv-shots` se lanzan a mano: Run workflow sobre la rama, con «herramienta». Cada `uses:` va fijado por SHA (cómo subirlo, en la cabecera de `deploy.yml`).
 
 ## Arquitectura
 - **La web es privada**: **Cloudflare Pages** la sirve en https://arcterminal.dev (dominio propio; también en https://arc-terminal.pages.dev), en la raíz, con
@@ -81,6 +81,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   (`/api/alerts?all=1`, sin emails) y `scripts/alerts/users.ts` reparte los avisos de la pasada según cada uno. Su
   historial va SOLO en la caché de Actions (`.notify-cache/notify-users.json`, por uid aleatorio), nunca en static/data.
   Los de Sergi siguen saliendo por `NTFY_TOPIC`.
+  **En el navegador, sin ntfy** (Web Push, se suma): «En este dispositivo» en AVISOS → `/api/push` (`cloud/push.ts`, VAPID y cifrado RFC 8291 en `cloud/webpush.ts`, tabla `push_subs`; endpoints solo en D1); `users.ts` y Familia mandan también ahí (mismo cupo). Secret de Pages `VAPID_PRIVATE_KEY` (`node scripts/vapid.ts`); sin él, 503 y la fila no sale.
 - **«Tu mañana»** (`scripts/alerts/brief.ts`, panel en AVISOS): resumen diario personal a la hora que elige cada uno
   (tiempo de su sitio con Open-Meteo, sus valores, su agenda y titulares de IMP de sus temas; 5 líneas). Por su ntfy y,
   si lo pide, por email: la Action manda el texto por uid a `/api/brief` (`cloud/brief.ts`) y la web lo envía con
@@ -93,6 +94,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - **Sugerencias** (pie de cada vista, `Feedback.svelte`): `/api/feedback` (`cloud/feedback.ts`) las guarda en D1
   (tabla `feedback`) y avisa a Sergi por ntfy si Pages tiene el Secret `NTFY_TOPIC`. Leerlas, solo el admin
   (Secret de Pages `ADMIN_EMAIL`, nunca en el repo).
+- **Errores del navegador** (F29): `src/hooks.client.ts` manda los fallos de la web publicada a `/api/errors` (`cloud/errors.ts`, tabla `errors`, agrupados por firma), limpios y sin quién (`src/lib/errreport.ts`). Se ven en ADMIN.
 - **ADMIN** (`/admin`, `cloud/admin.ts`, `/api/admin`): solo para `ADMIN_EMAIL`. Usuarios (último acceso, tabla
   `seen` que apunta `/api/prefs`; avisos), invitar o quitar emails de la política de Access «Sergi» (Variable
   `ACCESS_POLICY` si se llama distinto) con los Secrets de Pages `CF_ACCESS_ADMIN_TOKEN` (Access: Apps and Policies ·

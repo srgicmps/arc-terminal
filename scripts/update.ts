@@ -16,6 +16,7 @@ import { withHistory } from './history.ts';
 import {
 	blocked,
 	blockedMessage,
+	checkData,
 	checkShrink,
 	deadlineFor,
 	makeContext,
@@ -28,6 +29,7 @@ import {
 	type Source,
 	type SourceContext
 } from './lib.ts';
+import { cleanLinks, linksWarning } from './links.ts';
 import { buildNewsIndex } from './news-index.ts';
 import { loadSources } from './registry.ts';
 
@@ -55,6 +57,9 @@ async function published(name: string): Promise<Dataset<unknown> | null> {
 const saved = new Map<string, unknown>();
 
 async function save(dataset: Dataset<unknown>) {
+	// Un enlace que no es http(s) (un «javascript:» de una API) se vacía antes de que llegue a la web.
+	const warning = linksWarning(dataset.name, cleanLinks(dataset.data));
+	if (warning) console.log(warning);
 	saved.set(dataset.name, dataset.data);
 	await writeFile(`${OUT_DIR}/${dataset.name}.json`, JSON.stringify(dataset) + '\n');
 }
@@ -110,8 +115,9 @@ async function run(source: Source, ctx: SourceContext = NO_CONTEXT): Promise<Sou
 			deadline,
 			`tiempo agotado (${deadline / 1000} s)`
 		);
-		// Vacío o encogido de golpe: se trata como un fallo (camino «stale», con la copia anterior).
-		const suspicious = checkShrink(data, previous?.data, source);
+		// Vacío o encogido de golpe, o datos que no tienen sentido (su validate): se trata como un fallo
+		// (camino «stale», con la copia anterior y el motivo en STATUS).
+		const suspicious = checkShrink(data, previous?.data, source) ?? checkData(data, source);
 		if (suspicious) throw new Error(suspicious);
 		const dataset = { name: source.name, fetchedAt: new Date().toISOString(), data };
 		await save(dataset);

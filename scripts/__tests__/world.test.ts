@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { checkData, checkShrink } from '../lib.ts';
 import { crypto, hn, power, quakes, weather } from '../sources/world.ts';
 import { mockFetch } from './mock.ts';
 
@@ -181,5 +182,48 @@ describe('hn (Hacker News)', () => {
 			['2', 'https://www.example.org/post', 'example.org', 300],
 			['1', 'https://news.ycombinator.com/item?id=1', 'news.ycombinator.com', 10]
 		]);
+	});
+});
+
+describe('validate de quakes, power y weather', () => {
+	const quake = (mag: number, lat: number, lon: number) => ({ id: 'x', mag, place: '', time: '', url: '', tsunami: false, alert: null, lat, lon, depth: 10 });
+
+	it('quakes: magnitud y coordenadas de verdad, o datos raros', () => {
+		const good = Array.from({ length: 10 }, () => quake(5.1, 35.2, 140.1));
+		expect(checkData(good, quakes)).toBeNull();
+		// Uno raro de cada diez se tolera.
+		expect(checkData([...good.slice(1), quake(5, NaN, NaN)], quakes)).toBeNull();
+		// Campo de la magnitud renombrado: `mag ?? 0` deja todo a 0; y sin geometría, coordenadas NaN.
+		const renamed = good.map((q) => ({ ...q, mag: 0 }));
+		expect(checkShrink(renamed, good, quakes)).toBeNull();
+		expect(checkData(renamed, quakes)).toBe('datos raros: solo el 0 % de los terremotos trae magnitud y coordenadas válidas');
+		expect(checkData(good.map((q) => ({ ...q, lat: NaN })), quakes)).toMatch(/0 %/);
+	});
+
+	const hours = (day: string, n: number, v = 120) => Array.from({ length: n }, (_, h) => ({ t: `${day}T${String(h).padStart(2, '0')}:00:00.000+02:00`, v }));
+
+	it('power: precios en €/MWh y el PVPC de hoy entero (23 a 25 horas)', () => {
+		expect(checkData({ pvpc: hours('2026-10-14', 24), spot: hours('2026-10-14', 24, -2) }, power)).toBeNull();
+		// El día del cambio de hora tiene 23; mañana puede llegar a medias; puede faltar el PVPC.
+		expect(checkData({ pvpc: [...hours('2026-10-25', 23), ...hours('2026-10-26', 5)], spot: [] }, power)).toBeNull();
+		expect(checkData({ pvpc: [], spot: hours('2026-10-14', 24) }, power)).toBeNull();
+	});
+
+	it('power: caza valores sin sentido y un PVPC a medias', () => {
+		const strings = { pvpc: hours('2026-10-14', 24).map((p) => ({ ...p, v: String(p.v) as unknown as number })), spot: [] };
+		expect(checkShrink(strings, { pvpc: hours('2026-10-14', 24), spot: [] }, power)).toBeNull();
+		expect(checkData(strings, power)).toBe('datos raros: PVPC: solo el 0 % de los precios entre -50 y 2000 €/MWh');
+		expect(checkData({ pvpc: hours('2026-10-14', 24), spot: hours('2026-10-14', 24, 99_999) }, power)).toMatch(/^datos raros: mayorista/);
+		expect(checkData({ pvpc: hours('2026-10-14', 6), spot: [] }, power)).toBe('datos raros: PVPC sin ningún día entero (6 horas)');
+	});
+
+	it('weather: temperaturas creíbles en casi todos los sitios', () => {
+		const place = (temp: unknown) => ({ name: 'Maó', current: { time: '', temp: temp as number, code: 0, wind: 0, windDir: 0, humidity: 0 }, daily: [], sea: null });
+		const good = { places: [19.7, 19.7, 16.3, 19.1, 7.5].map(place) };
+		expect(checkData(good, weather)).toBeNull();
+		expect(checkData({ places: [...good.places.slice(1), place(NaN)] }, weather)).toBeNull();
+		const broken = { places: [place(null), place(null), place(19.1), place(undefined), place(7.5)] };
+		expect(checkShrink(broken, good, weather)).toBeNull();
+		expect(checkData(broken, weather)).toBe('datos raros: solo el 40 % de los sitios trae una temperatura entre -60 y 60 °C');
 	});
 });

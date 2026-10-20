@@ -16,7 +16,7 @@
 	import { names } from '#lib/news.ts';
 	import { persisted } from '#lib/persisted.svelte.ts';
 	import { TICKERS } from '#lib/tickers.ts';
-	import { shown } from '#lib/titles.svelte.ts';
+	import { langOf, shown } from '#lib/titles.svelte.ts';
 	import { watchlist } from '#lib/watchlist.svelte.ts';
 	import { initWatchwords, watchwords } from '#lib/watchwords.svelte.ts';
 	import type { PageProps } from './$types';
@@ -87,9 +87,9 @@
 						<span class="src">{i.source}</span>
 					</p>
 					{#if i.url}
-						<a class="title" href={i.url} rel="noopener" target="_blank">{shown(i).text}</a>
+						<a class="title" href={i.url} rel="noopener" target="_blank" lang={langOf(i)}>{shown(i).text}</a>
 					{:else}
-						<span class="title">{i.title}</span>
+						<span class="title" lang={i.lang}>{i.title}</span>
 					{/if}
 					{#if i.detail}<p class="detail">{i.detail}</p>{/if}
 					{#if i.view}<a class="more" href={href(i.view)}>Seguir en Arc ›</a>{/if}

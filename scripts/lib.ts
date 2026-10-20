@@ -1,5 +1,6 @@
 /// <reference types="node" />
 // Herramientas comunes para los scripts que descargan datos.
+import { cleanLinks, linksWarning } from './links.ts';
 import { PAGES_SITE, SITE } from './site.ts';
 
 /** Una fuente de datos: cómo se llama, cada cuánto merece la pena refrescarla y cómo descargarla. */
@@ -37,6 +38,14 @@ export interface Source<T = unknown> {
 	allowEmpty?: true;
 	/** Mínimo de elementos (ver countItems) para dar los datos por buenos. */
 	minItems?: number;
+	/**
+	 * Comprueba que los datos tienen sentido, no solo que hay elementos: devuelve el motivo para no fiarse
+	 * de ellos, o null si están bien. Caza lo que checkShrink no ve, como una API que renombra el campo del
+	 * precio y deja las 11 000 gasolineras con todos los precios a null. update.ts lo ejecuta después de
+	 * checkShrink (con checkData) y, si falla, sigue el camino de un error: la copia anterior y el motivo en
+	 * STATUS. Mejor umbrales tolerantes (con share e inRange) que exigir que todo cuadre.
+	 */
+	validate?: (data: T) => string | null;
 	/**
 	 * Fuente derivada: no descarga (o casi) y se calcula con los datos de otras fuentes. update.ts la
 	 * ejecuta cuando las demás ya han terminado y le pasa sus datos en `ctx`.
@@ -131,6 +140,35 @@ export function checkShrink(
 	}
 	return null;
 }
+
+/**
+ * El `validate` de la fuente, si lo tiene: el motivo con el prefijo «datos raros:», o null si los datos están
+ * bien. Si validate lanza (p. ej., falta la lista que mira), también cuenta como datos raros.
+ */
+export function checkData<T>(data: T, source: Pick<Source<T>, 'validate'>): string | null {
+	if (!source.validate) return null;
+	let bad: string | null;
+	try {
+		bad = source.validate(data);
+	} catch (error) {
+		bad = error instanceof Error ? error.message : String(error);
+	}
+	return bad ? `datos raros: ${bad}` : null;
+}
+
+/** Fracción de `items` que cumple `ok`, de 0 a 1 (0 si no hay ninguno). Para los validate: «al menos la mitad…». */
+export function share<I>(items: readonly I[] | null | undefined, ok: (item: I) => boolean): number {
+	if (!items?.length) return 0;
+	return items.filter(ok).length / items.length;
+}
+
+/** ¿Es un número de verdad (no un texto, null ni NaN) entre `min` y `max`, los dos incluidos? */
+export function inRange(value: unknown, min: number, max: number): value is number {
+	return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max;
+}
+
+/** «37 %»: una fracción de share() para los motivos de validate. */
+export const pct = (fraction: number) => `${Math.round(fraction * 100)} %`;
 
 /**
  * Espera a `promise` como mucho `ms` milisegundos; si tarda más, falla con `message`. El temporizador se
@@ -262,8 +300,10 @@ export function blockedMessage(paths: Iterable<string>, shown = 5): string | nul
 	);
 }
 
-/** Escribe un archivo extra de una fuente en static/data/<path>. */
+/** Escribe un archivo extra de una fuente en static/data/<path>, sin enlaces raros (como save() en update.ts). */
 export async function writeExtra(path: string, content: unknown) {
+	const warning = linksWarning(path, cleanLinks(content));
+	if (warning) console.log(warning);
 	const { mkdir, writeFile } = await import('node:fs/promises');
 	const full = `static/data/${path}`;
 	await mkdir(full.slice(0, full.lastIndexOf('/')), { recursive: true });

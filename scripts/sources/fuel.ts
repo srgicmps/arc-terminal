@@ -11,7 +11,7 @@ import {
 	type FuelSpainData,
 	type FuelStation
 } from '../../src/lib/fuel.ts';
-import { appendDaily, getJson, madridDay, num, tidy, writeExtra, type Source } from '../lib.ts';
+import { appendDaily, getJson, inRange, madridDay, num, pct, share, tidy, writeExtra, type Source } from '../lib.ts';
 
 const API = 'https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/';
 
@@ -69,10 +69,24 @@ function stats(stations: FuelStation[]): { avg: FuelPrices; min: FuelPrices } {
 	};
 }
 
+/** ¿Tiene algún precio creíble (entre 0,5 y 4 €/L, con mucho margen sobre lo que se paga hoy)? */
+const credible = (prices: FuelPrices) => FUELS.some((f) => inRange(prices[f.key], 0.5, 4));
+
+/**
+ * Para validate: datos raros si menos de la mitad de las gasolineras (o provincias) tienen algún precio
+ * creíble. Si la API renombra el campo del precio, todas siguen ahí con los precios a null y checkShrink no
+ * lo ve; si los diera en céntimos (159,9), tampoco.
+ */
+export function checkPrices(what: string, all: FuelPrices[]): string | null {
+	const ok = share(all, credible);
+	return ok < 0.5 ? `solo el ${pct(ok)} de las ${what} tiene algún precio entre 0,5 y 4 €/L` : null;
+}
+
 export const fuel: Source<FuelData> = {
 	name: 'fuel',
 	label: 'Gasolineras de Menorca · Ministerio para la Transición Ecológica',
 	maxAgeMinutes: 12,
+	validate: (data) => checkPrices('gasolineras', data.stations.map((s) => s.prices)),
 	async fetch(previous) {
 		const body = await download('FiltroProvincia/07');
 		const stations = body.ListaEESSPrecio.filter((raw) => MENORCA_CP.test(raw['C.P.'] ?? ''))
@@ -90,6 +104,9 @@ export const fuelSpain: Source<FuelSpainData> = {
 	label: 'Gasolineras de toda España, por provincias · Ministerio para la Transición Ecológica',
 	maxAgeMinutes: 25,
 	files: (data) => data.provinces.flatMap((p) => [`fuel/${p.id}.json`, `fuel/history/${p.id}.json`]),
+	validate: (data) =>
+		checkPrices('provincias', data.provinces.map((p) => p.avg)) ??
+		(credible(data.avg) ? null : 'la media de España no tiene ningún precio entre 0,5 y 4 €/L'),
 	async fetch(previous) {
 		const body = await download();
 		const byProvince = new Map<string, { name: string; stations: FuelStation[] }>();

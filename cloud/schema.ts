@@ -15,6 +15,9 @@ export const TABLES = {
 		'CREATE TABLE IF NOT EXISTS alerts (user TEXT PRIMARY KEY, uid TEXT NOT NULL, topic TEXT, config TEXT NOT NULL, updated INTEGER NOT NULL)',
 	/** «Tu mañana» por email: uno al día por uid (sin email). */
 	brief_mail: 'CREATE TABLE IF NOT EXISTS brief_mail (uid TEXT NOT NULL, day TEXT NOT NULL, PRIMARY KEY (uid, day))',
+	/** Avisos en el navegador (Web Push, cloud/push.ts): una fila por navegador. El endpoint es secreto. */
+	push_subs:
+		'CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, user TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created INTEGER NOT NULL)',
 	/** «Mandar a la familia»: una fila por persona y los envíos, para el tope diario. */
 	family:
 		'CREATE TABLE IF NOT EXISTS family (user TEXT PRIMARY KEY, id TEXT NOT NULL, name TEXT NOT NULL, accept INTEGER NOT NULL, updated INTEGER NOT NULL)',
@@ -22,6 +25,9 @@ export const TABLES = {
 	/** Sugerencias del pie de cada vista. */
 	feedback:
 		'CREATE TABLE IF NOT EXISTS feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT NOT NULL, view TEXT NOT NULL, text TEXT NOT NULL, at INTEGER NOT NULL)',
+	/** Errores de los navegadores (cloud/errors.ts): una fila por firma, con su contador. Sin quién: ni email ni uid. */
+	errors:
+		'CREATE TABLE IF NOT EXISTS errors (sig TEXT PRIMARY KEY, msg TEXT NOT NULL, stack TEXT NOT NULL, path TEXT NOT NULL, ver TEXT NOT NULL, ua TEXT NOT NULL, style TEXT NOT NULL, modo TEXT NOT NULL, embed INTEGER NOT NULL, first INTEGER NOT NULL, last INTEGER NOT NULL, n INTEGER NOT NULL)',
 	/** Mis RSS: una fila por persona con su lista en JSON. */
 	rss: 'CREATE TABLE IF NOT EXISTS rss (user TEXT PRIMARY KEY, feeds TEXT NOT NULL, updated INTEGER NOT NULL)',
 	/** Juego de predicciones: jugadores y apuestas. */

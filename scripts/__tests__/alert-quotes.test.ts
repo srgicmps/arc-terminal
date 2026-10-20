@@ -2,7 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ALERT_TICKERS, BATCHES, alertQuotes, batchFor, fetchQuotes } from '../sources/alert-quotes.ts';
 import { mockFetch } from './mock.ts';
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+	vi.unstubAllGlobals();
+	vi.unstubAllEnvs();
+	vi.useRealTimers();
+});
 
 const quote = { c: 101.5, d: 1.5, dp: 1.5, h: 102, l: 99, o: 100, pc: 100, t: 1_791_986_400 };
 
@@ -24,11 +28,17 @@ describe('alert-quotes', () => {
 		expect((init?.headers as Record<string, string>)['X-Finnhub-Token']).toBe('k');
 	});
 
+	// alertQuotes.fetch espera GAP_MS (300 ms) entre llamada y llamada: unas 20 pausas por lote, ~6 s de
+	// verdad por test. Con el reloj falso, esas pausas pasan al momento (vi.runAllTimersAsync).
 	it('necesita la clave de Finnhub; sin ninguna cotización, falla', async () => {
+		vi.useFakeTimers({ toFake: ['setTimeout'] });
 		expect(alertQuotes.requires).toBe('FINNHUB_API_KEY');
 		mockFetch(() => ({ c: 0 }));
-		await expect(alertQuotes.fetch(undefined)).rejects.toThrow('ningún símbolo');
-	}, 20_000);
+		// Primero se engancha el «rejects» (si no, la promesa fallaría sin nadie escuchando), luego corre el reloj.
+		const fails = expect(alertQuotes.fetch(undefined)).rejects.toThrow('ningún símbolo');
+		await vi.runAllTimersAsync();
+		await fails;
+	});
 
 	it('por turnos: cada pasada pide un lote y entre todas cubren la lista, sin pasar de 30 llamadas', () => {
 		const slot = 5 * 60_000;
@@ -39,7 +49,7 @@ describe('alert-quotes', () => {
 	});
 
 	it('guarda la cotización anterior de los del otro lote, y olvida los que ya no se siguen', async () => {
-		vi.useFakeTimers({ toFake: ['Date'] });
+		vi.useFakeTimers({ toFake: ['Date', 'setTimeout'] });
 		vi.setSystemTime(0);
 		vi.stubEnv('FINNHUB_API_KEY', 'k');
 		const batch = batchFor(0);
@@ -48,10 +58,10 @@ describe('alert-quotes', () => {
 		const old = { symbol: other, price: 1, change: 0, changePct: 0, prevClose: 1, time: 'x' };
 		const gone = { ...old, symbol: 'ZZZZ' };
 		const mine = { ...old, symbol: batch[0] };
-		const out = await alertQuotes.fetch([old, gone, mine]);
+		const pending = alertQuotes.fetch([old, gone, mine]);
+		await vi.runAllTimersAsync();
+		const out = await pending;
 		expect(out.map((q) => q.symbol).sort()).toEqual([...batch, other].sort());
 		expect(out.find((q) => q.symbol === batch[0])!.price).toBe(101.5);
-		vi.useRealTimers();
-		vi.unstubAllEnvs();
-	}, 30_000);
+	});
 });
