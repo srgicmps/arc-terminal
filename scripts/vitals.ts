@@ -22,17 +22,13 @@ export interface Budget {
 export const GOOD: Budget = { lcp: 2500, cls: 0.1 };
 
 /**
- * Presupuesto por vista, en modo trinquete: el umbral «bueno» o, si la vista ya pasaba de él, su medida de partida +15 %
- * (lo que sea mayor), para que el aviso salte cuando empeora y no en cada PR. Cuando una vista baje de «bueno», se le
- * quita de aquí. Las que no salen usan GOOD.
- * - GEO: su LCP ronda los 3 s en Terminal (el texto de los terremotos, que llega con los datos tras casi 3 s de hilo
- *   bloqueado). Los 5,7 s de la medida de partida eran el aviso «No se ha podido cargar TradingView», que salía porque
- *   se cortaba su script.
- * - TOP y WS ya no saltan al cargar (CLS de 0,06 y 0,03 tras #619 y #621): van con GOOD.
+ * Excepciones al presupuesto, en modo trinquete: una vista que ya pase de «bueno» lleva aquí su medida de partida +15 %,
+ * para que el aviso salte cuando empeora y no en cada PR; cuando baje de «bueno», se le quita. Las demás usan GOOD.
+ * Hoy no hay ninguna: en el runner de GitHub (octubre de 2026) las cuatro vistas cargan en 1,4-1,8 s y saltan como mucho
+ * 0,06. Los 5,7 s de GEO de la medida de partida eran el aviso «No se ha podido cargar TradingView», que salía porque se
+ * cortaba su script; y TOP y WS ya no saltan al cargar desde #619 y #621.
  */
-export const BUDGETS: Record<string, Budget> = {
-	'/geo': { lcp: 3500, cls: GOOD.cls }
-};
+export const BUDGETS: Record<string, Budget> = {};
 export const budgetFor = (path: string): Budget => BUDGETS[path] ?? GOOD;
 
 /** Perfiles que se miden: modo y estética fijados para que la medida no cambie sola (app.html decide sin ellos). */
@@ -107,7 +103,7 @@ export function summaryTable(rows: Row[], runs = 3): string {
 		'|---|---|--:|--:|--:|--:|--:|',
 		...lines,
 		'',
-		`⚠ pasa del presupuesto (solo avisa). Bueno, según web.dev: LCP hasta ${plain(GOOD.lcp / 1000)} s y CLS hasta ${plain(GOOD.cls)}; una vista que ya pasaba tiene de presupuesto su medida de partida +15 % (scripts/vitals.ts).`,
+		`⚠ pasa del presupuesto (solo avisa). Bueno, según web.dev: LCP hasta ${plain(GOOD.lcp / 1000)} s y CLS hasta ${plain(GOOD.cls)}${rows.some((r) => limit(r.budget) !== limit(GOOD)) ? '; una vista que ya pasaba tiene de presupuesto su medida de partida +15 % (BUDGETS en scripts/vitals.ts)' : ''}.`,
 		'TBT aprox.: lo que pasan de 50 ms las tareas largas hasta 4 s después de cargar; sin nadie tocando la pantalla, es lo que más se parece al INP.',
 		...fonts
 	].join('\n');
@@ -264,9 +260,11 @@ async function main() {
 	const table = summaryTable(rows, RUNS);
 	console.log(`\n${table}\n`);
 	if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${table}\n`);
-	// ::warning:: hace que GitHub enseñe el aviso en el resumen de la Action y en el PR.
-	for (const w of warnings(rows)) console.log(`::warning title=Core Web Vitals::${w}`);
-	for (const f of failed) console.log(`::warning title=Core Web Vitals::no se ha podido medir ${f}`);
+	// ::warning:: hace que GitHub enseñe el aviso en el resumen de la Action y en el PR. El texto del LCP viene de los
+	// datos: un «%» o un salto de línea romperían el comando.
+	const escape = (s: string) => s.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+	for (const w of warnings(rows)) console.log(`::warning title=Core Web Vitals::${escape(w)}`);
+	for (const f of failed) console.log(`::warning title=Core Web Vitals::no se ha podido medir ${escape(f)}`);
 	const secs = Math.round((Date.now() - started) / 1000);
 	console.log(`Core Web Vitals: ${rows.length} medidas (${VIEWS.length} vistas × ${profiles.length} perfiles × ${RUNS} cargas) en ${Math.floor(secs / 60)} min ${secs % 60} s`);
 }

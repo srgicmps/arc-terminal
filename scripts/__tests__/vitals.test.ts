@@ -63,5 +63,15 @@ describe('vitals', () => {
 		for (const l of lines.filter((l) => l.startsWith('| ') && !l.startsWith('| Vista'))) expect(cols(l)).toBe(cols(lines.find((l) => l.startsWith('| Vista'))!));
 		expect(summaryTable([], 1)).toContain('mediana de 1 carga en frío');
 		expect(summaryTable([row('/', 'Terminal', 1800, 0.059)])).not.toContain('¹ Google Fonts');
+		expect(table).not.toContain('+15 %');
+	});
+
+	it('una vista con presupuesto propio (trinquete) lo enseña y la leyenda lo explica', () => {
+		const geo = { ...row('/geo', 'Terminal', 3200, 0.02), budget: { lcp: 3500, cls: 0.1 } };
+		const table = summaryTable([geo]);
+		expect(table).toContain('| GEO | Terminal | 3,2 s | 0,020 | 1,2 s | 297 | 3,5 s · 0,1 |');
+		expect(table).toContain('medida de partida +15 %');
+		expect(warnings([geo])).toEqual([]);
+		expect(warnings([{ ...geo, vitals: { ...geo.vitals, lcp: 3600 } }])[0]).toMatch(/^GEO \(Terminal\): LCP 3,6 s \(presupuesto 3,5 s\)/);
 	});
 });
