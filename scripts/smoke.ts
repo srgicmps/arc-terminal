@@ -1,8 +1,6 @@
 /// <reference types="node" />
 // Prueba de humo de todas las vistas (`pnpm smoke`, después de `pnpm build`). Arranca `vite preview`, abre
 // cada vista de build/, las experiencias de build/x/ y la ficha de NVDA a 390 y 1280 px con Chromium, y falla si:
-// (Abre SMOKE_CONCURRENCY vistas a la vez, 3 por defecto, cada una en su propio contexto: así tarda ~3 min, no ~7.
-// Con 1 va de una en una. Lo demás, del teclado a la bienvenida, va después y en serie.)
 // - hay errores en la consola o excepciones sin capturar;
 // - a 390 px la página es más ancha que la pantalla (scroll horizontal);
 // - sale «NaN», «undefined», «Infinity» o «[object Object]» en el texto de la vista;
@@ -11,15 +9,19 @@
 // - a 390 px el índice de paneles ocupa sitio en la página, o <main> no está a la misma altura antes y después de
 //   hidratar en TOP y WS (el índice empujaría la vista al cargar: mobileLayout);
 // - al navegar tocando las pestañas (en el cliente), con una vista lenta no sale la línea de carga, quedan errores
-//   o el fundido no hace caso a la estética (navigation).
+//   o el fundido no hace caso a la estética (navigation);
+// - a 390 px, axe-core encuentra un fallo de estructura (AXE_FAIL: nombres de controles, enlaces e imágenes, ARIA,
+//   cabeceras de tabla…). Dice la regla y el selector del primer elemento, para encontrarlo.
 // Y avisa (sin fallar) si TOP, WS o ECO saltan al cargar (CLS > 0,1) en el móvil con la CPU 4 veces más lenta.
 // Además avisa (sin fallar) si una vista pesa más de WEIGHT_LIMIT: lo que descarga de la propia web
 // (HTML, JS, CSS y datos) comprimido con gzip, como lo sirve GitHub Pages; sin TradingView ni otras webs.
-// También avisa (sin fallar, de momento) de los fallos de accesibilidad de axe-core en contraste y nombres de
-// controles, enlaces e imágenes (AXE_RULES), a 390 px, y de las vistas que saltan al cargar (CLS de más de CLS_LIMIT).
+// También avisa (sin fallar) del contraste de axe-core (AXE_WARN), que depende de los datos y de la estética, y de las
+// vistas que saltan al cargar (CLS de más de CLS_LIMIT).
 // En Sencillo falla si, ya arrancada la vista, queda algún panel sin data-essential: Panel los quita con `gone` y su
 // CSS los esconde antes de arrancar, y las dos cosas tienen que decir lo mismo.
 // Las peticiones a otras webs (TradingView, fuentes…) se contestan vacías: así la prueba no depende de la red.
+// Abre SMOKE_CONCURRENCY vistas a la vez (3 por defecto; con 1, de una en una), cada una en su propio contexto: así
+// tarda ~3 min, no ~7. Lo demás, de Arc OS a la bienvenida, va después y en serie.
 import { createRequire } from 'node:module';
 import { gzipSync } from 'node:zlib';
 import type { Browser, BrowserContext, Page } from 'playwright-core';
@@ -52,14 +54,23 @@ const NO_WEIGHT_LIMIT = new Set(['/os']);
  */
 const ONLY_PUBLISHED = ['/data/notify-log.json'];
 /**
- * Reglas de axe-core que se miran: contraste, que todo control, enlace e imagen tenga nombre o etiqueta, que lo que
- * hace scroll se pueda alcanzar con el teclado, ARIA bien formado y título y lengua de la página.
+ * Reglas de axe-core de estructura, que dependen solo del código y fallan: que todo control, enlace e imagen tenga
+ * nombre o etiqueta, que lo que hace scroll se pueda alcanzar con el teclado, ARIA bien formado, cabeceras de tabla
+ * con texto y título y lengua de la página.
  */
-const AXE_RULES = [
-	'color-contrast', 'label', 'select-name', 'button-name', 'link-name', 'image-alt', 'input-button-name', 'aria-input-field-name',
+const AXE_FAIL = [
+	'label', 'select-name', 'button-name', 'link-name', 'image-alt', 'input-button-name', 'aria-input-field-name',
 	'scrollable-region-focusable', 'nested-interactive', 'aria-allowed-attr', 'aria-valid-attr-value', 'aria-required-children',
 	'aria-required-parent', 'empty-table-header', 'document-title', 'html-has-lang', 'frame-title', 'list', 'listitem'
 ];
+/** El contraste solo avisa: depende de los datos (un chip rojo solo sale los días de caídas) y de la estética. */
+const AXE_WARN = ['color-contrast'];
+const AXE_RULES = [...AXE_FAIL, ...AXE_WARN];
+/**
+ * Fallos de estructura conocidos que, mientras se arreglan, solo avisan: «/vista regla», con su porqué al lado. Sin
+ * contar elementos (cambian con los datos). Se quitan a mano al arreglarlos.
+ */
+const AXE_KNOWN = new Set<string>([]);
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 
 /** Puerto de `vite preview` (SMOKE_PORT); la prueba del service worker usa el de 4 más arriba. */
@@ -71,7 +82,7 @@ const CONCURRENCY = Math.max(1, Number(process.env.SMOKE_CONCURRENCY) || 3);
 const { server, root: ROOT } = await preview(PORT);
 const failures: string[] = [];
 const warnings: string[] = [];
-/** Fallos de accesibilidad por vista (axe-core): solo avisan. */
+/** Avisos de accesibilidad por vista (axe-core: contraste y fallos conocidos). Los de estructura van a `failures`. */
 const a11y: string[] = [];
 /** Saltos al cargar (CLS): solo avisan. */
 const shifts: string[] = [];
@@ -264,13 +275,25 @@ async function checkPage(context: BrowserContext, path: string, mode: string, wi
 		if (width < 600 && check.cls > CLS_LIMIT) shifts.push(`${path} a 390 px (${mode}): CLS ${check.cls.toFixed(2).replace('.', ',')} (más de ${String(CLS_LIMIT).replace('.', ',')})`);
 		if (width < 600 && first) {
 			await page.addScriptTag({ path: AXE });
+			// Antes, que acabe de colocarse lo que depende de medir (Table solo se hace enfocable si mide que se desplaza):
+			// la letra cargada y dos fotogramas, o 1 s como mucho. Con la CPU muy cargada, axe llegaba a veces antes.
+			await page.evaluate(() =>
+				Promise.race([
+					document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))),
+					new Promise((r) => setTimeout(r, 1000))
+				])
+			);
 			const found = await page.evaluate(async (rules) => {
-				const r = await (window as unknown as { axe: { run: (c: Document, o: object) => Promise<{ violations: { id: string; nodes: unknown[] }[] }> } }).axe.run(document, {
+				type Result = { violations: { id: string; nodes: { target: unknown[] }[] }[] };
+				const r = await (window as unknown as { axe: { run: (c: Document, o: object) => Promise<Result> } }).axe.run(document, {
 					runOnly: { type: 'rule', values: rules }
 				});
-				return r.violations.map((v) => `${v.id} (${v.nodes.length})`);
+				// El selector del primer elemento con el fallo (target: uno por nivel de shadow DOM o de iframe).
+				return r.violations.map((v) => ({ id: v.id, text: `${v.id} (${v.nodes.length}) en ${v.nodes[0]?.target.flat().join(' ') ?? '?'}` }));
 			}, AXE_RULES);
-			if (found.length) a11y.push(`${path}: ${found.join(', ')}`);
+			const soft = found.filter((v) => AXE_WARN.includes(v.id) || AXE_KNOWN.has(`${path} ${v.id}`));
+			if (soft.length) a11y.push(`${path}: ${soft.map((v) => v.text).join(', ')}`);
+			for (const v of found) if (!soft.includes(v)) failures.push(`${where}: accesibilidad (axe-core): ${v.text}`);
 		}
 		const weight = (await Promise.all(sizes)).reduce((a, b) => a + b, 0);
 		if (width < 600 && first && weight > WEIGHT_LIMIT && !NO_WEIGHT_LIMIT.has(path)) {
@@ -578,7 +601,7 @@ for (const list of [failures, warnings, a11y, shifts]) list.sort();
 for (const w of warnings) console.log(`::warning title=Peso de las vistas::${w}`);
 for (const w of a11y) console.log(`::warning title=Accesibilidad (axe-core)::${w}`);
 for (const w of shifts) console.log(`::warning title=Saltos al cargar (CLS)::${w}`);
-if (!a11y.length) console.log(`axe-core: sin fallos de ${AXE_RULES.length} reglas en ${PATHS.length} vistas a 390 px`);
+if (!a11y.length && !failures.some((f) => f.includes('(axe-core)'))) console.log(`axe-core: sin fallos de ${AXE_RULES.length} reglas en ${PATHS.length} vistas a 390 px`);
 
 if (failures.length) {
 	console.log(`✗ Prueba de humo: ${failures.length} fallos\n${failures.map((f) => `  - ${f}`).join('\n')}`);

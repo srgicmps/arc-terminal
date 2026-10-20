@@ -36,9 +36,10 @@
 </script>
 
 <div class="map">
-	<svg viewBox="0 8 360 150" role="img" aria-label="Mapa del mundo con {points.length} puntos">
+	<!-- Un grupo, no una imagen: dentro hay botones (los puntos), y lo que va dentro de una imagen no se puede tocar. -->
+	<svg viewBox="0 8 360 150" role="group" aria-label="Mapa del mundo con {points.length} puntos">
 		<!-- El contorno, desde land.svg (un archivo en caché, compartido entre vistas): fuera del HTML y del JS. -->
-		<use class="land" href={LAND_HREF} />
+		<use class="land" href={LAND_HREF} aria-hidden="true" />
 		{#each points as p (p.id)}
 			{@const cx = x(p.lon)}
 			{@const cy = y(p.lat)}
