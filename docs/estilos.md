@@ -43,7 +43,9 @@ sale en el selector en cuanto existe su archivo. Solo se descarga la hoja de la 
   Verde (`--up`) y rojo (`--down`) solo para subidas y bajadas.
 - **Letras**: solo libres (Google Fonts/OFL) o del sistema, con el `@import` de arriba (el test solo deja
   fonts.googleapis.com). Plex Mono, Plex Sans Condensed e Inter no se importan: ya están en la web y saldrían dos
-  veces (el test lo vigila).
+  veces (el test lo vigila). De esas tres, la web solo sirve los grupos **latin** y **latin-ext** (sin cirílico,
+  griego ni vietnamita: un texto con esas letras sale con la de reserva), y son los woff2 sin «hinting» que da
+  Google, tal cual (`src/styles/fonts.css`).
   Úsalas en `--sans`, `--mono`, `--font-ui`, `--title-font`. Cifras tabulares: `body` ya lleva `tabular-nums`.
 - **Sin** `!important`, sin marcas ni nombres ajenos, sin imágenes externas (dibujos con gradientes CSS en `--bg-image`).
 - **Rendimiento y accesibilidad**: efectos caros (`backdrop-filter`, brillos, animaciones) solo dentro de
