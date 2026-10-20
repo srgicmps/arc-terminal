@@ -108,7 +108,8 @@ describe('/api/push: una persona', () => {
 
 	it('un navegador compartido: el guardado automático (refresh) no se lleva la suscripción de otra cuenta', async () => {
 		const { call, store } = setup();
-		const put = async (who: string, body: unknown) => (await (await call(who, 'PUT', body)).json()) as { mine: boolean };
+		const put = async (who: string, body: unknown) =>
+			(await (await call(who, 'PUT', body)).json()) as { mine: boolean };
 		expect(await put('ana@x.es', sub('movil'))).toMatchObject({ mine: true });
 		// Luis entra en el móvil de Ana y abre AVISOS: sigue siendo de Ana, y a Luis le sale «Sin activar».
 		expect(await put('luis@x.es', { ...sub('movil'), refresh: true })).toMatchObject({ mine: false });

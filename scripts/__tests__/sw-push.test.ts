@@ -73,7 +73,10 @@ describe('mainTab y openNotice (al tocar un aviso)', () => {
 	});
 
 	it('mueve la ventana y después la pone delante (focus, después de navigate)', async () => {
-		const b = browser([{ url: 'https://arcterminal.dev/imp?embed=1', frameType: 'nested' }, { url: 'https://arcterminal.dev/os', frameType: 'top-level' }]);
+		const b = browser([
+			{ url: 'https://arcterminal.dev/imp?embed=1', frameType: 'nested' },
+			{ url: 'https://arcterminal.dev/os', frameType: 'top-level' }
+		]);
 		await openNotice(GEO, SCOPE, b.tabs, b.openWindow);
 		expect(b.steps).toEqual([`navigate 1 ${GEO}`, 'focus 1']);
 	});
