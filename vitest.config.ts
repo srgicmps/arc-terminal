@@ -19,10 +19,13 @@ export default defineConfig({
 			// Suelo por carpeta (% de líneas): lo medido al ponerlo, redondeado hacia abajo. Si un PR baja de
 			// aquí, `pnpm test:cov` falla. Se sube a mano cuando la cobertura suba; nunca se baja para pasar.
 			// Sin autoUpdate: reescribiría este archivo en cada PR y chocarían las sesiones en paralelo.
+			// La raíz de scripts/ (smoke, e2e-os, tv-shots…, ~43 %) sale en el informe pero no tiene suelo: son
+			// herramientas de navegador que ya prueba su propio job.
 			thresholds: {
 				'src/lib/**': { lines: 94 },
 				'cloud/**': { lines: 89 },
-				'scripts/**': { lines: 79 }
+				'scripts/sources/**': { lines: 92 },
+				'scripts/alerts/**': { lines: 95 }
 			}
 		}
 	}

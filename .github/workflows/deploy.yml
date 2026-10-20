@@ -232,16 +232,18 @@ jobs:
         run: |
           node --input-type=module >> "$GITHUB_STEP_SUMMARY" <<'EOF'
           import { readFileSync } from 'node:fs';
-          import { resolve } from 'node:path';
+          import { dirname, resolve } from 'node:path';
           import { pathToFileURL } from 'node:url';
           const floors = (await import(pathToFileURL(resolve('vitest.config.ts')).href)).default.test.coverage.thresholds;
           const files = Object.entries(JSON.parse(readFileSync('coverage/coverage-summary.json', 'utf8')));
           const keys = ['lines', 'statements', 'branches', 'functions'];
           const pct = (c, t) => (t ? ((100 * c) / t).toFixed(2).replace('.', ',') : '—');
-          const rows = Object.entries(floors).map(([glob, floor]) => {
-            const mine = files.filter(([f]) => f.startsWith(resolve(glob.replace('/**', '')) + '/')).map(([, v]) => v);
+          // Las carpetas con suelo («x/**») y la raíz de scripts/, que no tiene.
+          const rows = [...Object.keys(floors), 'scripts/*.ts'].map((glob) => {
+            const dir = resolve(glob.replace(/\/\*\*$|\/\*\.ts$/, ''));
+            const mine = files.filter(([f]) => (glob.endsWith('/**') ? f.startsWith(dir + '/') : dirname(f) === dir)).map(([, v]) => v);
             const cols = keys.map((k) => pct(mine.reduce((a, v) => a + v[k].covered, 0), mine.reduce((a, v) => a + v[k].total, 0)));
-            return `| ${glob} | ${cols.join(' | ')} | ${floor.lines} |`;
+            return `| ${glob} | ${cols.join(' | ')} | ${floors[glob]?.lines ?? '—'} |`;
           });
           console.log(['### Cobertura de los tests (%)', '', '| Carpeta | Líneas | Sentencias | Ramas | Funciones | Suelo (líneas) |', '|---|--:|--:|--:|--:|--:|', ...rows].join('\n'));
           EOF
