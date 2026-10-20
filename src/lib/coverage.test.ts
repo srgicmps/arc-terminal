@@ -21,6 +21,30 @@ describe('stories', () => {
 		expect(coverageSentence(list)).toBe('La noticia más repetida la cuentan 4 medios de 3 regiones; no sale en Europa, EE. UU., Asia, África.');
 	});
 
+	it('marca con lang «en» solo el título que se queda en inglés', () => {
+		const bbc = (extra: object = {}) =>
+			item('BBC', 'Floods hit northern Italy after record rainfall', 'https://bbc.co.uk/f', '2026-10-15T10:00:00Z', {
+				lang: 'en',
+				also: [{ source: 'Al Jazeera', url: 'https://aljazeera.com/f' }],
+				...extra
+			});
+		// Sin traducción ni medio español: el original, en inglés.
+		const [original] = stories([bbc()]);
+		expect(original.title).toBe('Floods hit northern Italy after record rainfall');
+		expect(original.lang).toBe('en');
+		// Con traducción: el título es la traducción y hereda el español de la página.
+		const [translated] = stories([bbc({ titleEs: 'Inundaciones en el norte de Italia tras lluvias récord' })]);
+		expect(translated.title).toBe('Inundaciones en el norte de Italia tras lluvias récord');
+		expect(translated).not.toHaveProperty('lang');
+		// Si lo cuenta un medio español, manda su titular.
+		const [spanish] = stories([
+			bbc({ also: [{ source: 'El País', url: 'https://elpais.com/f' }] }),
+			item('El País', 'Inundaciones históricas en Italia', 'https://elpais.com/f', '2026-10-15T09:00:00Z')
+		]);
+		expect(spanish.title).toBe('Inundaciones históricas en Italia');
+		expect(spanish).not.toHaveProperty('lang');
+	});
+
 	it('no junta titulares parecidos con más de 24 h de diferencia', () => {
 		const list = stories([
 			item('El País', 'Terremoto de magnitud 7 en Japón', 'https://elpais.com/c', '2026-10-15T10:00:00Z'),

@@ -41,3 +41,9 @@ export function tvQuery(codes: readonly string[], seconds: number): string {
 export function routeOf(code: string): Command['route'] {
 	return COMMANDS.find((c) => c.code === code)?.route ?? '/';
 }
+
+/**
+ * Segundos que han pasado entre dos marcas de performance.now(): tiempo real, no ticks, para que la rotación no
+ * se retrase con la CPU cargada. Con la pestaña oculta no cuenta (ni avanza la barra ni cambia de vista).
+ */
+export const tvDelta = (last: number, now: number, hidden: boolean): number => (hidden ? 0 : Math.max(0, now - last) / 1000);

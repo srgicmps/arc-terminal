@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GROUPS, OWNER_ONLY, parseConfig } from '../../src/lib/alertconfig.ts';
 import { emptyLog, RULES, type Alert, type NotifyLog, type Rule } from '../alerts/rules.ts';
-import { parseUsers, runUsers, type Engine, type RemoteUser } from '../alerts/users.ts';
+import { parseUsers, plainBody, pushSender, runUsers, type Engine, type PushResult, type RemoteUser } from '../alerts/users.ts';
 import { baselineLog, HELLO, pickAlerts, runNotify, trim } from '../notify.ts';
 import { minute } from '../history.ts';
 import { mockFetch } from './mock.ts';
@@ -94,6 +94,85 @@ describe('runUsers', () => {
 		const { e } = engine();
 		const logs: Record<string, NotifyLog> = { ['e'.repeat(16)]: emptyLog() };
 		expect(await runUsers([], {}, new Set(), logs, NOW, e, () => {}, TEST_RULES)).toEqual({});
+	});
+});
+
+describe('Web Push (además de ntfy)', () => {
+	/** Un motor con ntfy y push: Ana tiene navegador; Luis, no. */
+	function both(ntfyStatus = 200, pushResult: PushResult = { sent: 1, gone: 0, codes: { 201: 1 } }) {
+		const { e, sent } = engine();
+		const pushed: { uid: string; id: string }[] = [];
+		e.post = async (topic, alert) => (sent.push({ topic, id: alert.id }), { status: ntfyStatus });
+		e.push = async (uid, alert) => (uid === 'a'.repeat(16) ? (pushed.push({ uid, id: alert.id }), pushResult) : null);
+		return { e, sent, pushed };
+	}
+	const ana = () => user('a'.repeat(16), T_ANA, { groups: ['mercados'], daily: 3, level: 2 });
+	const luis = () => user('b'.repeat(16), T_LUIS, { groups: ['mercados'], daily: 3, level: 2 });
+
+	it('con navegador, cada aviso sale por los dos; el cupo y el historial cuentan una sola vez', async () => {
+		const { e, sent, pushed } = both();
+		const lines: string[] = [];
+		const first = await runUsers([ana(), luis()], {}, new Set(), {}, NOW, e, (l) => lines.push(l), TEST_RULES);
+		// Al día siguiente (el aviso de prueba de hoy también cuenta en el tope).
+		const next = NOW + 86_400_000;
+		const logs = await runUsers([ana(), luis()], {}, new Set(), first, next, e, (l) => lines.push(l), TEST_RULES);
+		const anaNtfy = sent.filter((s) => s.topic === T_ANA).map((s) => s.id);
+		// Lo mismo por ntfy y por push: la prueba del primer día y, el segundo, su tope de 3, no 6.
+		expect(pushed.map((p) => p.id)).toEqual(anaNtfy);
+		expect(anaNtfy.filter((id) => id !== 'hello')).toHaveLength(3);
+		// Una sola entrada por aviso en su historial, aunque haya salido por dos sitios.
+		for (const id of anaNtfy) expect(logs['a'.repeat(16)].entries.filter((x) => x.k === id), id).toHaveLength(1);
+		// Luis no tiene navegador: solo ntfy.
+		expect(pushed.some((p) => p.uid === 'b'.repeat(16))).toBe(false);
+		expect(sent.filter((s) => s.topic === T_LUIS).length).toBeGreaterThan(0);
+		// Una línea por pasada, solo con cuentas.
+		expect(lines.filter((l) => l.startsWith('push:'))).toEqual([
+			'push: 1 avisos a 1 usuarios, 1 entregados (201×1)',
+			'push: 3 avisos a 1 usuarios, 3 entregados (201×3)'
+		]);
+	});
+
+	it('si ntfy falla pero llega al navegador, cuenta como enviado; si fallan los dos, no', async () => {
+		const ok = both(500);
+		const logs = await runUsers([ana()], {}, new Set(), {}, NOW, ok.e, () => {}, TEST_RULES);
+		expect(logs['a'.repeat(16)].entries.find((x) => x.k === 'hello')?.s).toBe('sent');
+		const gone = both(500, { sent: 0, gone: 1, codes: { 410: 1 } });
+		const lines: string[] = [];
+		const logs2 = await runUsers([ana()], {}, new Set(), {}, NOW, gone.e, (l) => lines.push(l), TEST_RULES);
+		expect(logs2['a'.repeat(16)].entries.find((x) => x.k === 'hello')?.s).toBe('failed');
+		expect(lines).toContain('push: 1 avisos a 1 usuarios, 0 entregados (410×1); 1 navegadores caducados, borrados');
+	});
+
+	it('pushSender: solo a los uid con navegador, con el service token; sin /api/push, nada', async () => {
+		vi.stubEnv('CF_ACCESS_CLIENT_ID', 'id.access');
+		vi.stubEnv('CF_ACCESS_CLIENT_SECRET', 'secreto');
+		const posts: Record<string, unknown>[] = [];
+		const fetch = mockFetch((url, init) => {
+			if (url.endsWith('/api/push?all=1')) return { uids: ['a'.repeat(16), 'no-vale'] };
+			if (url.endsWith('/api/push?send=1')) {
+				expect((init?.headers as Record<string, string>)['CF-Access-Client-Id']).toBe('id.access');
+				posts.push(JSON.parse(String(init?.body)));
+				return { sent: 2, gone: 0, codes: { 201: 2 } };
+			}
+		});
+		const lines: string[] = [];
+		const push = (await pushSender((l) => lines.push(l), fetch as unknown as typeof globalThis.fetch))!;
+		expect(lines).toEqual(['push: 1 usuarios con avisos en el navegador']);
+		const alert = { id: 'x', type: 'ai', level: 2 as const, title: 'Hola', body: '**Fed**: [baja](https://x.es) tipos', tags: '', click: 'https://arcterminal.dev/eco', time: NOW, markdown: true };
+		expect(await push('b'.repeat(16), alert)).toBeNull();
+		expect(await push('a'.repeat(16), alert)).toEqual({ sent: 2, gone: 0, codes: { 201: 2 } });
+		expect(posts).toEqual([{ uid: 'a'.repeat(16), title: 'Hola', body: 'Fed: baja tipos', url: 'https://arcterminal.dev/eco', level: 2 }]);
+		// Sin clave VAPID (503) o sin service token: sin push.
+		mockFetch((url) => (url.endsWith('/api/push?all=1') ? new Response('{}', { status: 503, headers: { 'content-type': 'application/json' } }) : undefined));
+		expect(await pushSender()).toBeUndefined();
+		vi.unstubAllEnvs();
+		expect(await pushSender()).toBeUndefined();
+	});
+
+	it('plainBody quita el Markdown solo si el aviso lo lleva', () => {
+		const a = { id: 'x', type: 't', level: 3 as const, title: '', body: '**a** [b](c) `d`', tags: '', click: '', time: 0 };
+		expect(plainBody(a)).toBe(a.body);
+		expect(plainBody({ ...a, markdown: true })).toBe('a b d');
 	});
 });
 

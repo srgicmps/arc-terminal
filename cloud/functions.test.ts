@@ -11,6 +11,7 @@ import { sqliteD1 } from './d1sqlite.ts';
 import type { D1Database } from './prefs.ts';
 import { resetSchema } from './schema.ts';
 import { ENV, testKeys } from './testkeys.ts';
+import { generateVapid } from './webpush.ts';
 
 type OnRequest = (context: { request: Request; env: Record<string, unknown> }) => Promise<Response>;
 const modules = import.meta.glob<{ onRequest?: OnRequest }>('../functions/api/*.ts', { eager: true });
@@ -48,12 +49,18 @@ const OK: Record<string, Call> = {
 	feedback: {},
 	forecasts: {},
 	prefs: {},
+	push: {},
 	rss: {}
 };
 const NAMES = Object.keys(OK);
 
 let k: Awaited<ReturnType<typeof testKeys>>;
-beforeAll(async () => void (k = await testKeys()));
+/** La clave VAPID de las pruebas (Secret VAPID_PRIVATE_KEY): sin ella, /api/push da 503. */
+let vapid = '';
+beforeAll(async () => {
+	k = await testKeys();
+	vapid = JSON.stringify((await generateVapid()).jwk);
+});
 beforeEach(() => {
 	clearKeyCache();
 	resetSchema();
@@ -61,7 +68,7 @@ beforeEach(() => {
 	vi.stubGlobal('fetch', vi.fn(k.certs));
 });
 
-/** El env de Pages, completo: Access, la base, Workers AI y los archivos de la web (ask) y los Secrets que miran admin, feedback y brief. */
+/** El env de Pages, completo: Access, la base, Workers AI y los archivos de la web (ask) y los Secrets que miran admin, feedback, brief y push. */
 const fullEnv = (db: D1Database) => ({
 	...ENV,
 	DB: db,
@@ -69,7 +76,8 @@ const fullEnv = (db: D1Database) => ({
 	ASSETS: { fetch: async () => new Response('', { status: 404 }) },
 	ADMIN_EMAIL: ADMIN,
 	BREVO_API_KEY: 'clave-de-prueba',
-	BREVO_SENDER: 'arc@x.es'
+	BREVO_SENDER: 'arc@x.es',
+	VAPID_PRIVATE_KEY: vapid
 });
 
 async function call(

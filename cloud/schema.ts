@@ -15,6 +15,9 @@ export const TABLES = {
 		'CREATE TABLE IF NOT EXISTS alerts (user TEXT PRIMARY KEY, uid TEXT NOT NULL, topic TEXT, config TEXT NOT NULL, updated INTEGER NOT NULL)',
 	/** «Tu mañana» por email: uno al día por uid (sin email). */
 	brief_mail: 'CREATE TABLE IF NOT EXISTS brief_mail (uid TEXT NOT NULL, day TEXT NOT NULL, PRIMARY KEY (uid, day))',
+	/** Avisos en el navegador (Web Push, cloud/push.ts): una fila por navegador. El endpoint es secreto. */
+	push_subs:
+		'CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, user TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created INTEGER NOT NULL)',
 	/** «Mandar a la familia»: una fila por persona y los envíos, para el tope diario. */
 	family:
 		'CREATE TABLE IF NOT EXISTS family (user TEXT PRIMARY KEY, id TEXT NOT NULL, name TEXT NOT NULL, accept INTEGER NOT NULL, updated INTEGER NOT NULL)',

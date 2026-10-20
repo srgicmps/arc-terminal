@@ -10,6 +10,16 @@ export function swipeDirection(dx: number, dy: number, ms: number): -1 | 0 | 1 {
 	return dx < 0 ? 1 : -1;
 }
 
+/**
+ * Hacia dónde precargar mientras el dedo aún se mueve: en cuanto el gesto va por la mitad del mínimo y es el doble
+ * de horizontal que de vertical, ya se sabe a qué vista va. Así los datos de esa vista (solo esa) llegan antes de
+ * soltar. −1: anterior · 1: siguiente · 0: aún no se sabe.
+ */
+export function preloadDirection(dx: number, dy: number): -1 | 0 | 1 {
+	if (Math.abs(dx) < SWIPE.min / 2 || Math.abs(dx) < SWIPE.ratio * Math.abs(dy)) return 0;
+	return dx < 0 ? 1 : -1;
+}
+
 /** La vista de al lado en la lista, sin dar la vuelta: en la primera y la última no pasa nada. */
 export function neighbour<T>(list: T[], index: number, dir: -1 | 1): T | null {
 	if (index < 0) return null;
