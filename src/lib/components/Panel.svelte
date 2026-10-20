@@ -547,12 +547,17 @@
 	}
 
 	.max {
+		/* Separado del borde lo que la página, pero nunca bajo la muesca ni la barra de inicio del iPhone (zonas
+		   seguras, que valen algo gracias a viewport-fit=cover de src/app.html; en el resto, 0). */
+		--max-top: max(var(--gutter), env(safe-area-inset-top, 0px));
+		--max-bottom: max(var(--gutter), env(safe-area-inset-bottom, 0px));
 		position: fixed;
-		inset: var(--gutter);
+		inset: var(--max-top) max(var(--gutter), env(safe-area-inset-right, 0px)) var(--max-bottom)
+			max(var(--gutter), env(safe-area-inset-left, 0px));
 		z-index: var(--z-modal);
 		/* Mide lo que la ventana y desplaza su contenido, aunque una regla de la vista le dé otro alto. */
 		height: auto;
-		max-height: calc(100dvh - 2 * var(--gutter));
+		max-height: calc(100dvh - var(--max-top) - var(--max-bottom));
 		display: flex;
 		flex-direction: column;
 		overflow: auto;
@@ -601,12 +606,13 @@
 		}
 	}
 
-	/* En el móvil, a pantalla completa y sin márgenes. */
+	/* En el móvil, a pantalla completa y sin márgenes; lo último que se lee queda por encima de la barra de inicio. */
 	@media (max-width: 720px) {
 		.max {
 			inset: 0;
 			max-height: 100dvh;
 			border: 0;
+			padding-bottom: env(safe-area-inset-bottom, 0px);
 		}
 	}
 

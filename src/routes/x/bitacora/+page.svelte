@@ -179,7 +179,7 @@
 			{#if ideas.length}
 				<Table csv={false}>
 					<thead>
-						<tr><th>Idea</th><th>Entrada</th><th>Ahora</th><th>Desde que la anotaste</th><th></th></tr>
+						<tr><th>Idea</th><th>Entrada</th><th>Ahora</th><th>Desde que la anotaste</th><th><span class="sr">Acciones</span></th></tr>
 					</thead>
 					<tbody>
 						{#each ideas as e (e.id)}

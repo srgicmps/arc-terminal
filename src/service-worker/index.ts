@@ -27,6 +27,7 @@ import { immutable, assets, prerendered } from '$app/manifest';
 import { version } from '$app/env';
 import { bootFiles, precacheable, servedByWeb } from './precache.ts';
 import { clickUrl, notice, openNotice } from './push.ts';
+import { buffered } from './respond.ts';
 
 // Archivos de la build: una caché por publicación; al publicar, `version` cambia y la anterior se borra.
 const CACHE = `arc-${version}`;
@@ -266,7 +267,8 @@ async function prune(cache: Cache, max: number, keep: string[] = []) {
  */
 async function chunk(request: Request): Promise<Response> {
 	const cached = (await caches.match(request, { ...SAME_FILE, cacheName: CACHE })) ?? (await caches.match(request, { ...SAME_FILE, cacheName: CHUNKS }));
-	if (cached) return cached;
+	// Ya leído entero, no en streaming: así Chromium no corta el modulepreload (ver buffered()).
+	if (cached) return buffered(cached);
 	try {
 		const response = await fetch(request);
 		if (response.ok && !response.redirected) {

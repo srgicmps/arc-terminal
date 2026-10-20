@@ -206,9 +206,9 @@ export async function touchSeen(db: D1Database, user: string, now = Date.now()) 
 }
 
 /**
- * Las tablas con datos de una persona (columna user, su email): «Quitar» las borra todas. Una tabla nueva con
- * columna user tiene que estar aquí; si no, falla schema.test.ts. brief_mail no está: va por uid aleatorio, sin
- * email, y al borrar su fila de alerts ya no se puede relacionar con nadie.
+ * Las tablas con datos de una persona (columna user, su email): «Quitar» y «Borrar mi cuenta» (cloud/account.ts)
+ * las borran todas. Una tabla nueva con columna user tiene que estar aquí; si no, falla schema.test.ts. brief_mail
+ * no está: va por uid aleatorio, sin email, y al borrar su fila de alerts ya no se puede relacionar con nadie.
  */
 export const USER_TABLES = [
 	'prefs',
@@ -246,13 +246,11 @@ export function d1AdminStore(db: D1Database): AdminStore {
 			}));
 		},
 		async forget(email) {
-			await ready();
-			await db.batch(OWN.map((t) => db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email)));
-			// Las de los demás módulos solo existen si alguien los ha usado: una a una, para que la que falte no
-			// impida borrar las otras. Familia (cloud/family.ts), Web Push (cloud/push.ts), Mis RSS (cloud/rss.ts), predicciones
-			// (cloud/forecasts.ts) y sugerencias (cloud/feedback.ts).
-			for (const t of USER_TABLES.filter((t) => !OWN.includes(t)))
-				await db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email).run().catch(() => {});
+			// Las de los demás módulos (familia, Web Push, Mis RSS, predicciones, sugerencias) solo existen si alguien los
+			// ha usado: se crean antes, como allí, para borrarlas todas de una vez. El batch de D1 es todo o nada: si falla
+			// una, no se borra ninguna y el error llega a quien llama («Quitar» y «Borrar mi cuenta» responden 503).
+			await ensure(db, ...USER_TABLES);
+			await db.batch(USER_TABLES.map((t) => db.prepare(`DELETE FROM ${t} WHERE user = ?`).bind(email)));
 		}
 	};
 }

@@ -77,8 +77,9 @@
 <style>
 	.install {
 		position: fixed;
-		left: var(--sp-8);
-		right: var(--sp-8);
+		/* En horizontal, fuera de la muesca (zonas seguras: viewport-fit=cover de src/app.html). */
+		left: max(var(--sp-8), env(safe-area-inset-left, 0px));
+		right: max(var(--sp-8), env(safe-area-inset-right, 0px));
 		bottom: calc(var(--tabbar-h) + var(--sp-8) + env(safe-area-inset-bottom, 0px));
 		z-index: 36;
 		display: flex;

@@ -9,19 +9,24 @@
 // - a 390 px el índice de paneles ocupa sitio en la página, o <main> no está a la misma altura antes y después de
 //   hidratar en TOP y WS (el índice empujaría la vista al cargar: mobileLayout);
 // - al navegar tocando las pestañas (en el cliente), con una vista lenta no sale la línea de carga, quedan errores
-//   o el fundido no hace caso a la estética (navigation).
-// - en el móvil, un acceso de la navegación no dice al lector el código y el nombre («WS Wall Street»).
+//   o el fundido no hace caso a la estética (navigation);
+// - en el móvil, un acceso de la navegación no dice al lector el código y el nombre («WS Wall Street»: navegacion);
+// - a 390 px en modo Terminal (con todos los paneles), axe-core encuentra un fallo de estructura (AXE_FAIL: nombres de
+//   controles, enlaces e imágenes, ARIA, cabeceras de tabla…). Dice la regla y el selector del primer elemento.
 // Y avisa (sin fallar) si TOP, WS o ECO saltan al cargar (CLS > 0,1) en el móvil con la CPU 4 veces más lenta.
 // Además avisa (sin fallar) si una vista pesa más de WEIGHT_LIMIT: lo que descarga de la propia web
 // (HTML, JS, CSS y datos) comprimido con gzip, como lo sirve GitHub Pages; sin TradingView ni otras webs.
-// También avisa (sin fallar, de momento) de los fallos de accesibilidad de axe-core en contraste y nombres de
-// controles, enlaces e imágenes (AXE_RULES), a 390 px, y de las vistas que saltan al cargar (CLS de más de CLS_LIMIT).
+// También avisa (sin fallar) del contraste de axe-core (AXE_WARN), que depende de los datos y de la estética, y de las
+// vistas que saltan al cargar (CLS de más de CLS_LIMIT).
 // En Sencillo falla si, ya arrancada la vista, queda algún panel sin data-essential: Panel los quita con `gone` y su
 // CSS los esconde antes de arrancar, y las dos cosas tienen que decir lo mismo.
 // Las peticiones a otras webs (TradingView, fuentes…) se contestan vacías: así la prueba no depende de la red.
+// Abre SMOKE_CONCURRENCY vistas a la vez (3 por defecto; con 1, de una en una), cada una en su propio contexto: así
+// se solapan las esperas de cada vista (red quieta y 300 ms). Lo demás, de Arc OS a la bienvenida, va después y en
+// serie. SMOKE_PORT cambia el puerto (4317), por si hay otra prueba a la vez en la misma máquina.
 import { createRequire } from 'node:module';
 import { gzipSync } from 'node:zlib';
-import type { Page } from 'playwright-core';
+import type { Browser, BrowserContext, Page } from 'playwright-core';
 import { launch, preview, viewPaths } from './browser.ts';
 import { osChecks } from './smoke-os.ts';
 import { swChecks } from './smoke-sw.ts';
@@ -51,21 +56,37 @@ const NO_WEIGHT_LIMIT = new Set(['/os']);
  */
 const ONLY_PUBLISHED = ['/data/notify-log.json'];
 /**
- * Reglas de axe-core que se miran: contraste, que todo control, enlace e imagen tenga nombre o etiqueta, que lo que
- * hace scroll se pueda alcanzar con el teclado, ARIA bien formado y título y lengua de la página.
+ * Reglas de axe-core de estructura, que dependen solo del código y fallan: que todo control, enlace e imagen tenga
+ * nombre o etiqueta, que lo que hace scroll se pueda alcanzar con el teclado, ARIA bien formado, cabeceras de tabla
+ * con texto y título y lengua de la página.
  */
-const AXE_RULES = [
-	'color-contrast', 'label', 'select-name', 'button-name', 'link-name', 'image-alt', 'input-button-name', 'aria-input-field-name',
+const AXE_FAIL = [
+	'label', 'select-name', 'button-name', 'link-name', 'image-alt', 'input-button-name', 'aria-input-field-name',
 	'scrollable-region-focusable', 'nested-interactive', 'aria-allowed-attr', 'aria-valid-attr-value', 'aria-required-children',
 	'aria-required-parent', 'empty-table-header', 'document-title', 'html-has-lang', 'frame-title', 'list', 'listitem'
 ];
+/** El contraste solo avisa: depende de los datos (un chip rojo solo sale los días de caídas) y de la estética. */
+const AXE_WARN = ['color-contrast'];
+const AXE_RULES = [...AXE_FAIL, ...AXE_WARN];
+/**
+ * Fallos de estructura conocidos que, mientras se arreglan, solo avisan: «/vista regla», con su porqué al lado. Sin
+ * contar elementos (cambian con los datos). Se quitan a mano al arreglarlos.
+ */
+const AXE_KNOWN = new Set<string>([]);
+/** axe mira el modo Terminal, que enseña todos los paneles (Sencillo esconde los que no son esenciales). */
+const AXE_MODE = MODES.includes('terminal') ? 'terminal' : MODES[0];
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 
+/** Puerto de `vite preview` (SMOKE_PORT); la prueba del service worker usa el de 4 más arriba. */
+const PORT = Number(process.env.SMOKE_PORT) || 4317;
+/** Vistas abiertas a la vez, cada una en su propio contexto (SMOKE_CONCURRENCY; 1 = de una en una, como antes). */
+const CONCURRENCY = Math.max(1, Number(process.env.SMOKE_CONCURRENCY) || 3);
+
 // Para probar solo unas vistas: SMOKE_ONLY=/x/zen,/eco pnpm smoke
-const { server, root: ROOT } = await preview(4317);
+const { server, root: ROOT } = await preview(PORT);
 const failures: string[] = [];
 const warnings: string[] = [];
-/** Fallos de accesibilidad por vista (axe-core): solo avisan. */
+/** Avisos de accesibilidad por vista (axe-core: contraste y fallos conocidos). Los de estructura van a `failures`. */
 const a11y: string[] = [];
 /** Saltos al cargar (CLS): solo avisan. */
 const shifts: string[] = [];
@@ -74,165 +95,34 @@ try {
 	const browser = await launch();
 	for (const mode of MODES)
 	for (const width of WIDTHS) {
-		const context = await browser.newContext({ viewport: { width, height: 900 }, isMobile: width < 600, hasTouch: width < 600 });
-		await context.addInitScript(
-			([m, style]) => {
-				localStorage.setItem('arc-modo', m);
-				// Saltos al cargar (CLS): se suman todos desde el primer pintado. Aquí nadie toca la pantalla antes de medir,
-				// pero con el móvil emulado Chromium marca como «con toque reciente» (hadRecentInput) lo que pasa en el
-				// primer medio segundo, que es justo el salto al arrancar: por eso no se descartan. WebKit no lo mide.
-				const w = window as unknown as { __cls: number };
-				w.__cls = 0;
-				if (PerformanceObserver.supportedEntryTypes?.includes('layout-shift')) {
-					new PerformanceObserver((list) => {
-						for (const e of list.getEntries() as (PerformanceEntry & { value: number })[]) w.__cls += e.value;
-					}).observe({ type: 'layout-shift', buffered: true });
-				}
-				if (!style) return;
-				localStorage.setItem('arc-style', style);
-				localStorage.setItem('arc-theme', 'light');
-				localStorage.setItem('arc-accent', 'blue');
-			},
-			[mode, STYLE]
-		);
-		// Peso y accesibilidad se miran una vez, en el primer modo.
+		// El peso se mira una vez, en el primer modo; la accesibilidad, en AXE_MODE.
 		const first = mode === MODES[0];
-		await context.route('**/*', (route) => {
-			const url = new URL(route.request().url());
-			// /api/* son Pages Functions: en vite preview no existen. Una respuesta vacía (sin JSON) es «sin cuenta».
-			const local = url.hostname === 'localhost' && !url.pathname.startsWith('/api/');
-			return local ? route.continue() : route.fulfill({ status: 200, body: '' });
-		});
 		// La primera vez, la portada lleva a la bienvenida: se comprueba aquí y luego se da por vista.
-		const fresh = await context.newPage();
+		const blank = await newCtx(browser, mode, width);
+		const fresh = await blank.newPage();
 		await fresh.goto(ROOT + '/', { waitUntil: 'networkidle' });
 		if (!WEBKIT) await fresh.waitForURL(/\/bienvenida\?primera=1$/, { timeout: 5000 }).catch(() => failures.push(`/ a ${width} px: la primera vez no lleva a la bienvenida`));
-		await fresh.close();
-		await context.addInitScript(() => {
-			if (!localStorage.getItem('arc-welcome')) localStorage.setItem('arc-welcome', JSON.stringify({ v: 1, profile: null, interests: [], alerts: { groups: [], level: 2, daily: 10, mis: [] }, at: '' }));
-		});
-		for (const path of PATHS) {
-			const where = `${path} a ${width} px (${mode})`;
-			const page = await context.newPage();
-			page.on('console', (m) => {
-				// WebKit escribe en la consola cada 404 de /api/* (aquí no hay Pages Functions) y los avisos del widget de
-				// TradingView: no dicen nada del diseño, que es lo que mira esa pasada.
-				if (m.type() !== 'error' || WEBKIT) return;
-				if (/ 404 /.test(m.text()) && ONLY_PUBLISHED.some((f) => m.location().url.endsWith(f))) return;
-				failures.push(`${where}: consola: ${m.text()} (${m.location().url})`);
-			});
-			page.on('pageerror', (e) => failures.push(`${where}: excepción: ${e.message}`));
-			// Peso de la vista: cada respuesta de la propia web, comprimida (también las que el navegador ya tenía
-			// en caché de una vista anterior, para medir la vista como si se abriera en frío). Sin las letras (.woff2):
-			// antes venían de Google y no contaban, y el tope de scripts/weight.ts tampoco las suma.
-			const sizes: Promise<number>[] = [];
-			page.on('response', (res) => {
-				const { hostname, pathname } = new URL(res.url());
-				if (hostname !== 'localhost' || pathname.endsWith('.woff2')) return;
-				sizes.push(res.body().then((b) => gzipSync(b).length, () => 0));
-			});
-			const res = await page.goto(ROOT + path, { waitUntil: 'networkidle' });
-			if (!res?.ok()) failures.push(`${where}: HTTP ${res?.status()}`);
-			// Deja que arranquen el reloj y los $effect.
-			await page.waitForTimeout(300);
-			const check = await page.evaluate(() => ({
-				// clientWidth, no innerWidth: en el móvil, innerWidth crece con la página si algo se sale y la resta da 0.
-				scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-				// Qué se sale: se oculta cada hijo por turnos y se baja por el que quita el scroll.
-				culprit: (() => {
-					const root = document.documentElement;
-					const over = () => root.scrollWidth - root.clientWidth;
-					if (over() <= 0) return '';
-					const path: string[] = [];
-					let el: Element = document.body;
-					for (let depth = 0; depth < 14; depth++) {
-						const before = over();
-						const kid = [...el.children].find((c) => {
-							const h = c as HTMLElement;
-							const prev = h.style.display;
-							h.style.display = 'none';
-							const gone = over() < before;
-							h.style.display = prev;
-							return gone;
-						});
-						if (!kid) break;
-						const cls = [...kid.classList].filter((c) => !c.startsWith('svelte-')).slice(0, 2).join('.');
-						path.push(kid.tagName.toLowerCase() + (cls ? '.' + cls : '') + (kid.getAttribute('data-ui') ? `[${kid.getAttribute('data-ui')}]` : ''));
-						el = kid;
-					}
-					return path.slice(-5).join(' > ') + ` «${(el.textContent ?? '').trim().slice(0, 40)}»`;
-				})(),
-				// Campos con letra de menos de 16 px: Safari del iPhone amplía la página al tocarlos (app.css lo evita).
-				zoom: [...document.querySelectorAll<HTMLElement>('input, select, textarea')]
-					.filter((e) => !/^(checkbox|radio|range|color|button|submit|hidden)$/.test((e as HTMLInputElement).type) && e.offsetParent)
-					.filter((e) => parseFloat(getComputedStyle(e).fontSize) < 16)
-					.map((e) => e.id || e.getAttribute('aria-label') || e.tagName.toLowerCase()),
-				// Pestañas de arriba (TOP, ECO… y «Más»): todas del mismo alto. Un botón estirado por el mínimo táctil
-				// de app.css descolocaba la fila entera.
-				keys: [...new Set([...document.querySelectorAll('.keys .key')].map((e) => Math.round(e.getBoundingClientRect().height)))],
-				// El índice de paneles (PanelIndex) se pinta al hidratar: si ocupara sitio, empujaría la vista. También mira
-				// que ninguna estética le cambie la posición.
-				index: (() => {
-					const i = document.querySelector('[data-ui="panel-index"]');
-					return i ? getComputedStyle(i).position : '';
-				})(),
-				panels: document.querySelectorAll('section.panel').length,
-				cls: (window as unknown as { __cls?: number }).__cls ?? 0,
-				// Sencillo, sin «Ver todos» ni modo TV: los paneles que no son esenciales ya no están (`gone` en Panel).
-				stray: document.documentElement.matches("[data-modo='sencillo']:not([data-all], [data-tv])")
-					? [...document.querySelectorAll("[data-ui='panel']:not([data-essential])")].map((s) => s.querySelector('h2')?.textContent?.trim() || '?')
-					: [],
-				missing: [...document.querySelectorAll('.empty')]
-					.map((e) => e.textContent?.trim() ?? '')
-					.filter((t) => /todav[ií]a/i.test(t)),
-				// Restos de un fallo técnico que no deben llegar nunca a la vista. Se salta el texto de los enlaces
-				// externos (titulares, títulos de PR): es de otros y puede decir «undefined» a propósito.
-				glitches: (() => {
-					const found = new Set<string>();
-					const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-					for (let n = walk.nextNode(); n; n = walk.nextNode()) {
-						if (n.parentElement?.closest('a[target="_blank"], script, style, noscript, template')) continue;
-						for (const m of n.textContent?.match(/\b(?:NaN|undefined|Infinity)\b|\[object Object\]/g) ?? []) found.add(m);
-					}
-					return [...found];
-				})()
-			}));
-			if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px (${check.culprit})`);
-			if (width < 600) for (const f of new Set(check.zoom)) failures.push(`${where}: el campo «${f}» tiene letra de menos de 16 px (el iPhone amplía al tocarlo)`);
-			if (check.keys.length > 1) failures.push(`${where}: pestañas de arriba de alturas distintas (${check.keys.join(', ')} px)`);
-			if (width < 600 && check.index && check.index !== 'fixed') failures.push(`${where}: el índice de paneles ocupa sitio en el móvil (position: ${check.index}): empuja la vista al hidratar`);
-			if (!NO_PANELS.has(path) && !path.startsWith('/x/') && !check.panels) failures.push(`${where}: sin paneles`);
-			for (const text of check.missing) failures.push(`${where}: panel sin datos («${text}»)`);
-			for (const text of check.glitches) failures.push(`${where}: «${text}» en la vista`);
-			// Una línea por vista: si la vista no ha llegado a arrancar, salen todos sus paneles no esenciales.
-			if (check.stray.length) {
-				const n = check.stray.length;
-				const names = `«${check.stray.slice(0, 3).join('», «')}»${n > 3 ? '…' : ''}`;
-				failures.push(`${where}: en Sencillo ${n === 1 ? 'sigue montado un panel no esencial' : `siguen montados ${n} paneles no esenciales`} (${names}): el CSS de Panel los esconde, pero \`gone\` no los quita`);
+		// Lo que guarda esa primera visita (la estética que app.html da a un navegador nuevo, Grafito) es el punto de
+		// partida de todas las vistas, como cuando iban de una en una en este mismo contexto.
+		const state = await blank.storageState();
+		await blank.close();
+		// Un grupo de CONCURRENCY trabajadores, cada uno con su contexto (no comparten localStorage), que van sacando
+		// la siguiente vista de la lista. Un fallo inesperado en una vista se apunta y se sigue con las demás.
+		let next = 0;
+		const worker = async () => {
+			const context = await newCtx(browser, mode, width, state);
+			while (next < PATHS.length) {
+				const path = PATHS[next++];
+				await checkPage(context, path, mode, width, first).catch((e) => failures.push(`${path} a ${width} px (${mode}): ${e}`));
 			}
-			if (width < 600 && check.cls > CLS_LIMIT) shifts.push(`${path} a 390 px (${mode}): CLS ${check.cls.toFixed(2).replace('.', ',')} (más de ${String(CLS_LIMIT).replace('.', ',')})`);
-			if (width < 600 && first) {
-				await page.addScriptTag({ path: AXE });
-				const found = await page.evaluate(async (rules) => {
-					const r = await (window as unknown as { axe: { run: (c: Document, o: object) => Promise<{ violations: { id: string; nodes: unknown[] }[] }> } }).axe.run(document, {
-						runOnly: { type: 'rule', values: rules }
-					});
-					return r.violations.map((v) => `${v.id} (${v.nodes.length})`);
-				}, AXE_RULES);
-				if (found.length) a11y.push(`${path}: ${found.join(', ')}`);
-			}
-			const weight = (await Promise.all(sizes)).reduce((a, b) => a + b, 0);
-			if (width < 600 && first && weight > WEIGHT_LIMIT && !NO_WEIGHT_LIMIT.has(path)) {
-				warnings.push(`${path} pesa ${Math.round(weight / 1024)} KB (gzip, sin terceros ni letras); el límite es ${WEIGHT_LIMIT / 1024} KB`);
-			}
-			await page.close();
-		}
-		await context.close();
+			await context.close();
+		};
+		await Promise.all(Array.from({ length: Math.min(CONCURRENCY, PATHS.length) }, worker));
 	}
 	// Arc OS en el escritorio, con 12 ventanas (scripts/smoke-os.ts).
 	if (!WEBKIT) failures.push(...(await osChecks(browser, ROOT)));
 	// Sin conexión, con lo que guarda el service worker, TOP y ECO arrancan (scripts/smoke-sw.ts).
-	if (!WEBKIT) failures.push(...(await swChecks(browser)));
+	if (!WEBKIT) failures.push(...(await swChecks(browser, PORT + 4)));
 	// La pasada acotada de WebKit solo mira el móvil.
 	if (!WEBKIT) await keyboard(browser);
 	if (!WEBKIT) await navigation(browser);
@@ -246,6 +136,201 @@ try {
 	failures.push(String(error));
 } finally {
 	server.kill();
+}
+
+/**
+ * Un contexto (como una ventana de incógnito) a `width` px en `mode`, con las otras webs y /api/* contestadas vacías.
+ * Con `state` (lo guardado en una visita anterior), además, como si ya se hubiera pasado por la bienvenida; sin él, la
+ * portada lleva a ella, y sin service worker: ese contexto solo mira la redirección y no hace falta que precargue la web.
+ */
+async function newCtx(browser: Browser, mode: string, width: number, state?: Awaited<ReturnType<BrowserContext['storageState']>>) {
+	const context = await browser.newContext({
+		viewport: { width, height: 900 },
+		isMobile: width < 600,
+		hasTouch: width < 600,
+		storageState: state,
+		serviceWorkers: state ? 'allow' : 'block'
+	});
+	await context.addInitScript(
+		([m, style]) => {
+			localStorage.setItem('arc-modo', m);
+			// Saltos al cargar (CLS): se suman todos desde el primer pintado. Aquí nadie toca la pantalla antes de medir,
+			// pero con el móvil emulado Chromium marca como «con toque reciente» (hadRecentInput) lo que pasa en el
+			// primer medio segundo, que es justo el salto al arrancar: por eso no se descartan. WebKit no lo mide.
+			const w = window as unknown as { __cls: number };
+			w.__cls = 0;
+			if (PerformanceObserver.supportedEntryTypes?.includes('layout-shift')) {
+				new PerformanceObserver((list) => {
+					for (const e of list.getEntries() as (PerformanceEntry & { value: number })[]) w.__cls += e.value;
+				}).observe({ type: 'layout-shift', buffered: true });
+			}
+			if (!style) return;
+			localStorage.setItem('arc-style', style);
+			localStorage.setItem('arc-theme', 'light');
+			localStorage.setItem('arc-accent', 'blue');
+		},
+		[mode, STYLE]
+	);
+	if (state) {
+		await context.addInitScript(() => {
+			if (!localStorage.getItem('arc-welcome')) localStorage.setItem('arc-welcome', JSON.stringify({ v: 1, profile: null, interests: [], alerts: { groups: [], level: 2, daily: 10, mis: [] }, at: '' }));
+		});
+	}
+	await context.route('**/*', (route) => {
+		const url = new URL(route.request().url());
+		// /api/* son Pages Functions: en vite preview no existen. Una respuesta vacía (sin JSON) es «sin cuenta».
+		const local = url.hostname === 'localhost' && !url.pathname.startsWith('/api/');
+		return local ? route.continue() : route.fulfill({ status: 200, body: '' });
+	});
+	return context;
+}
+
+/** Abre `path` en `context` y apunta lo que falle (`failures`) o solo avise (`warnings`, `a11y`, `shifts`). */
+async function checkPage(context: BrowserContext, path: string, mode: string, width: number, first: boolean) {
+	const where = `${path} a ${width} px (${mode})`;
+	const page = await context.newPage();
+	try {
+		page.on('console', (m) => {
+			// WebKit escribe en la consola cada 404 de /api/* (aquí no hay Pages Functions) y los avisos del widget de
+			// TradingView: no dicen nada del diseño, que es lo que mira esa pasada.
+			if (m.type() !== 'error' || WEBKIT) return;
+			if (/ 404 /.test(m.text()) && ONLY_PUBLISHED.some((f) => m.location().url.endsWith(f))) return;
+			failures.push(`${where}: consola: ${m.text()} (${m.location().url})`);
+		});
+		page.on('pageerror', (e) => failures.push(`${where}: excepción: ${e.message}`));
+		// Peso de la vista: cada respuesta de la propia web, comprimida (también las que el navegador ya tenía
+		// en caché de una vista anterior, para medir la vista como si se abriera en frío). Sin las letras (.woff2):
+		// antes venían de Google y no contaban, y el tope de scripts/weight.ts tampoco las suma.
+		const sizes: Promise<number>[] = [];
+		page.on('response', (res) => {
+			const { hostname, pathname } = new URL(res.url());
+			if (hostname !== 'localhost' || pathname.endsWith('.woff2')) return;
+			sizes.push(res.body().then((b) => gzipSync(b).length, () => 0));
+		});
+		const res = await page.goto(ROOT + path, { waitUntil: 'networkidle' });
+		if (!res?.ok()) failures.push(`${where}: HTTP ${res?.status()}`);
+		// Deja que arranquen el reloj y los $effect.
+		await page.waitForTimeout(300);
+		const check = await page.evaluate(() => ({
+			// clientWidth, no innerWidth: en el móvil, innerWidth crece con la página si algo se sale y la resta da 0.
+			scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+			// Qué se sale: se oculta cada hijo por turnos y se baja por el que quita el scroll.
+			culprit: (() => {
+				const root = document.documentElement;
+				const over = () => root.scrollWidth - root.clientWidth;
+				if (over() <= 0) return '';
+				const path: string[] = [];
+				let el: Element = document.body;
+				for (let depth = 0; depth < 14; depth++) {
+					const before = over();
+					const kid = [...el.children].find((c) => {
+						const h = c as HTMLElement;
+						const prev = h.style.display;
+						h.style.display = 'none';
+						const gone = over() < before;
+						h.style.display = prev;
+						return gone;
+					});
+					if (!kid) break;
+					const cls = [...kid.classList].filter((c) => !c.startsWith('svelte-')).slice(0, 2).join('.');
+					path.push(kid.tagName.toLowerCase() + (cls ? '.' + cls : '') + (kid.getAttribute('data-ui') ? `[${kid.getAttribute('data-ui')}]` : ''));
+					el = kid;
+				}
+				return path.slice(-5).join(' > ') + ` «${(el.textContent ?? '').trim().slice(0, 40)}»`;
+			})(),
+			// Campos con letra de menos de 16 px: Safari del iPhone amplía la página al tocarlos (app.css lo evita).
+			zoom: [...document.querySelectorAll<HTMLElement>('input, select, textarea')]
+				.filter((e) => !/^(checkbox|radio|range|color|button|submit|hidden)$/.test((e as HTMLInputElement).type) && e.offsetParent)
+				.filter((e) => parseFloat(getComputedStyle(e).fontSize) < 16)
+				.map((e) => e.id || e.getAttribute('aria-label') || e.tagName.toLowerCase()),
+			// Pestañas de arriba (TOP, ECO… y «Más»): todas del mismo alto. Un botón estirado por el mínimo táctil
+			// de app.css descolocaba la fila entera.
+			keys: [...new Set([...document.querySelectorAll('.keys .key')].map((e) => Math.round(e.getBoundingClientRect().height)))],
+			// El índice de paneles (PanelIndex) se pinta al hidratar: si ocupara sitio, empujaría la vista. También mira
+			// que ninguna estética le cambie la posición.
+			index: (() => {
+				const i = document.querySelector('[data-ui="panel-index"]');
+				return i ? getComputedStyle(i).position : '';
+			})(),
+			panels: document.querySelectorAll('section.panel').length,
+			cls: (window as unknown as { __cls?: number }).__cls ?? 0,
+			// Sencillo, sin «Ver todos» ni modo TV: los paneles que no son esenciales ya no están (`gone` en Panel).
+			stray: document.documentElement.matches("[data-modo='sencillo']:not([data-all], [data-tv])")
+				? [...document.querySelectorAll("[data-ui='panel']:not([data-essential])")].map((s) => s.querySelector('h2')?.textContent?.trim() || '?')
+				: [],
+			missing: [...document.querySelectorAll('.empty')]
+				.map((e) => e.textContent?.trim() ?? '')
+				.filter((t) => /todav[ií]a/i.test(t)),
+			// Restos de un fallo técnico que no deben llegar nunca a la vista. Se salta el texto de los enlaces
+			// externos (titulares, títulos de PR): es de otros y puede decir «undefined» a propósito.
+			glitches: (() => {
+				const found = new Set<string>();
+				const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+				for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+					if (n.parentElement?.closest('a[target="_blank"], script, style, noscript, template')) continue;
+					for (const m of n.textContent?.match(/\b(?:NaN|undefined|Infinity)\b|\[object Object\]/g) ?? []) found.add(m);
+				}
+				return [...found];
+			})()
+		}));
+		if (width < 600 && check.scroll > 0) failures.push(`${where}: scroll horizontal de ${check.scroll} px (${check.culprit})`);
+		if (width < 600) for (const f of new Set(check.zoom)) failures.push(`${where}: el campo «${f}» tiene letra de menos de 16 px (el iPhone amplía al tocarlo)`);
+		if (check.keys.length > 1) failures.push(`${where}: pestañas de arriba de alturas distintas (${check.keys.join(', ')} px)`);
+		if (width < 600 && check.index && check.index !== 'fixed') failures.push(`${where}: el índice de paneles ocupa sitio en el móvil (position: ${check.index}): empuja la vista al hidratar`);
+		if (!NO_PANELS.has(path) && !path.startsWith('/x/') && !check.panels) failures.push(`${where}: sin paneles`);
+		for (const text of check.missing) failures.push(`${where}: panel sin datos («${text}»)`);
+		for (const text of check.glitches) failures.push(`${where}: «${text}» en la vista`);
+		// Una línea por vista: si la vista no ha llegado a arrancar, salen todos sus paneles no esenciales.
+		if (check.stray.length) {
+			const n = check.stray.length;
+			const names = `«${check.stray.slice(0, 3).join('», «')}»${n > 3 ? '…' : ''}`;
+			failures.push(`${where}: en Sencillo ${n === 1 ? 'sigue montado un panel no esencial' : `siguen montados ${n} paneles no esenciales`} (${names}): el CSS de Panel los esconde, pero \`gone\` no los quita`);
+		}
+		if (width < 600 && check.cls > CLS_LIMIT) shifts.push(`${path} a 390 px (${mode}): CLS ${check.cls.toFixed(2).replace('.', ',')} (más de ${String(CLS_LIMIT).replace('.', ',')})`);
+		if (width < 600 && mode === AXE_MODE) {
+			await page.addScriptTag({ path: AXE });
+			// Antes, que acabe de colocarse lo que depende de medir: la letra cargada (o 1 s como mucho) y que cada Table
+			// que se desplaza ya sea enfocable (su ResizeObserver le pone tabindex al medirlo), 3 s como mucho. Con la CPU
+			// muy cargada, axe llegaba a veces antes.
+			await page.evaluate(() => Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1000))]));
+			await page
+				.waitForFunction(
+					() =>
+						[...document.querySelectorAll('[data-ui="table"] > .scroll')].every(
+							(s) => s.hasAttribute('tabindex') || (s.scrollWidth <= s.clientWidth + 1 && s.scrollHeight <= s.clientHeight + 1)
+						),
+					null,
+					{ timeout: 3000 }
+				)
+				.catch(() => {});
+			const axe = (rules: string[]) =>
+				page.evaluate(async (rules) => {
+					type Result = { violations: { id: string; nodes: { target: unknown[] }[] }[] };
+					const r = await (window as unknown as { axe: { run: (c: Document, o: object) => Promise<Result> } }).axe.run(document, {
+						runOnly: { type: 'rule', values: rules }
+					});
+					// El selector del primer elemento con el fallo (target: uno por nivel de shadow DOM o de iframe).
+					return r.violations.map((v) => ({ id: v.id, text: `${v.id} (${v.nodes.length}) en ${v.nodes[0]?.target.flat().join(' ') ?? '?'}` }));
+				}, rules);
+			let found = await axe(AXE_RULES);
+			// Lo que se desplaza sin poder enfocarse puede ser aún un tabindex por llegar: se mira otra vez, solo esa
+			// regla, 1 s después. Si sigue, es de verdad.
+			if (found.some((v) => v.id === 'scrollable-region-focusable')) {
+				await page.waitForTimeout(1000);
+				const again = await axe(['scrollable-region-focusable']);
+				found = [...found.filter((v) => v.id !== 'scrollable-region-focusable'), ...again];
+			}
+			const soft = found.filter((v) => AXE_WARN.includes(v.id) || AXE_KNOWN.has(`${path} ${v.id}`));
+			if (soft.length) a11y.push(`${path}: ${soft.map((v) => v.text).join(', ')}`);
+			for (const v of found) if (!soft.includes(v)) failures.push(`${where}: accesibilidad (axe-core): ${v.text}`);
+		}
+		const weight = (await Promise.all(sizes)).reduce((a, b) => a + b, 0);
+		if (width < 600 && first && weight > WEIGHT_LIMIT && !NO_WEIGHT_LIMIT.has(path)) {
+			warnings.push(`${path} pesa ${Math.round(weight / 1024)} KB (gzip, sin terceros ni letras); el límite es ${WEIGHT_LIMIT / 1024} KB`);
+		}
+	} finally {
+		await page.close();
+	}
 }
 
 /**
@@ -581,11 +666,13 @@ async function navegacion(browser: Awaited<ReturnType<typeof launch>>) {
 	}
 }
 
+// Las vistas van a la vez y acaban en otro orden en cada pasada: se ordena todo para que el registro salga igual.
+for (const list of [failures, warnings, a11y, shifts]) list.sort();
 // ::warning:: hace que GitHub muestre el aviso en el resumen de la Action.
 for (const w of warnings) console.log(`::warning title=Peso de las vistas::${w}`);
 for (const w of a11y) console.log(`::warning title=Accesibilidad (axe-core)::${w}`);
 for (const w of shifts) console.log(`::warning title=Saltos al cargar (CLS)::${w}`);
-if (!a11y.length) console.log(`axe-core: sin fallos de ${AXE_RULES.length} reglas en ${PATHS.length} vistas a 390 px`);
+if (!a11y.length && !failures.some((f) => f.includes('(axe-core)'))) console.log(`axe-core: sin fallos de ${AXE_RULES.length} reglas en ${PATHS.length} vistas a 390 px (${AXE_MODE})`);
 
 if (failures.length) {
 	console.log(`✗ Prueba de humo: ${failures.length} fallos\n${failures.map((f) => `  - ${f}`).join('\n')}`);

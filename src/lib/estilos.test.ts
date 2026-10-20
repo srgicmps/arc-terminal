@@ -189,6 +189,56 @@ describe('estéticas', () => {
 	});
 });
 
+// Lo que Chromium no reproduce de un iPhone (zonas seguras, barra de estado), comprobado en el código para que no vuelva.
+describe('iPhone: zonas seguras y color de la barra', () => {
+	it('toda la web lleva viewport-fit=cover (sin él, Safari deja a 0 los env(safe-area-inset-*))', () => {
+		const meta = /<meta name="viewport" content="([^"]+)"/.exec(readFileSync('src/app.html', 'utf8'));
+		expect(meta?.[1].split(',').map((p) => p.trim())).toContain('viewport-fit=cover');
+	});
+
+	it('al cambiar de estética, theme-color se pone otra vez cuando carga su hoja (y en el acto, para Terminal), salvo en Arc OS', () => {
+		const theme = readFileSync('src/lib/theme.svelte.ts', 'utf8');
+		expect(theme).toMatch(/export function syncThemeColor\(\)/);
+		expect(theme).toMatch(/function apply\(\) {[^}]*syncThemeColor\(\);/);
+		const setStyle = /export function setStyle\([^)]*\) {([\s\S]*?)\n}/.exec(readFileSync('src/lib/taste.svelte.ts', 'utf8'))?.[1] ?? '';
+		const code = setStyle.replace(/\/\/.*$/gm, '');
+		expect(code).toMatch(/getElementById\('style-sheet'\)\?\.addEventListener\('load', syncThemeColor/);
+		expect(code).toMatch(/\n\tsyncThemeColor\(\);/);
+		// En Arc OS, src/lib/os/look.ts quita data-style justo después: leer --bg aquí daría el de la estética, no el
+		// del aspecto del escritorio. La guarda va antes de tocar theme-color.
+		const guard = code.indexOf("if ('osLook' in document.documentElement.dataset) return;");
+		expect(guard).toBeGreaterThan(-1);
+		expect(guard).toBeLessThan(code.indexOf('syncThemeColor'));
+	});
+
+	it('el panel ampliado y lo fijo a los bordes se apartan de la muesca y de la barra de inicio', () => {
+		const panel = readFileSync('src/lib/components/Panel.svelte', 'utf8');
+		const max = /\.max {([^}]*)}/.exec(panel)?.[1] ?? '';
+		for (const side of ['top', 'right', 'bottom', 'left']) expect(max).toContain(`env(safe-area-inset-${side}`);
+		// En el móvil va a pantalla completa: lo último del panel, por encima de la barra de inicio.
+		expect(/max-width: 720px\) {\s*\.max {([^}]*)}/.exec(panel)?.[1]).toContain('padding-bottom: env(safe-area-inset-bottom');
+		const layout = readFileSync('src/routes/+layout.svelte', 'utf8');
+		expect(/\.fresh {([^}]*)}/.exec(layout)?.[1]).toMatch(/right: max\([^;]*safe-area-inset-right[\s\S]*bottom: max\([^;]*safe-area-inset-bottom/);
+		expect(/\.thumb {\s*position: fixed;([^}]*)}/.exec(layout)?.[1]).toContain('padding-bottom: env(safe-area-inset-bottom');
+	});
+
+	it('las hojas pegadas a un borde y el aviso del Muro también se apartan', () => {
+		/** Algún bloque `selector {…}` del archivo usa la zona segura de cada lado. */
+		const uses = (file: string, selector: string, sides: string[]) => {
+			const text = readFileSync(file, 'utf8');
+			const at = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			const blocks = [...text.matchAll(new RegExp(`${at} {([^}]*)}`, 'g'))].map((m) => m[1]);
+			for (const side of sides) expect(blocks.some((b) => b.includes(`env(safe-area-inset-${side}`)), `${file} ${selector} ${side}`).toBe(true);
+		};
+		// Apariencia: a la derecha en escritorio (y en el iPhone en horizontal) y desde abajo en el móvil.
+		uses('src/lib/components/Appearance.svelte', '.in', ['right', 'bottom', 'left']);
+		uses('src/lib/components/ExpLauncher.svelte', '.foot', ['bottom']);
+		uses('src/routes/x/muro/+page.svelte', '.alert', ['top', 'right', 'bottom', 'left']);
+		// Retro pisa el relleno de los paneles con una regla más específica: tiene que volver a sumar la barra de inicio.
+		uses(`${DIR}/retro.css`, "[data-style='retro'][data-style] [data-ui='panel'].max", ['bottom']);
+	});
+});
+
 describe('letras de la propia web (src/styles/fonts.css)', () => {
 	const DIR_FONTS = 'src/styles/fonts';
 	const text = readFileSync('src/styles/fonts.css', 'utf8');

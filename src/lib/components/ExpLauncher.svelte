@@ -292,5 +292,10 @@
 		.hint {
 			display: none;
 		}
+
+		/* Sale desde abajo: los enlaces del pie, por encima de la barra de inicio del iPhone. */
+		.foot {
+			padding-bottom: calc(var(--sp-10) + env(safe-area-inset-bottom, 0px));
+		}
 	}
 </style>

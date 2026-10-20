@@ -107,7 +107,7 @@
 		{#if positions.length}
 			<Table>
 				<thead>
-					<tr><th class="l">Valor</th><th>Cant.</th><th>Precio</th><th class="hide-s">Hoy</th><th>Ganancia</th><th class="hide-s">Peso</th><th></th></tr>
+					<tr><th class="l">Valor</th><th>Cant.</th><th>Precio</th><th class="hide-s">Hoy</th><th>Ganancia</th><th class="hide-s">Peso</th><th><span class="sr">Acciones</span></th></tr>
 				</thead>
 				<tbody>
 					{#each s.rows as r, i (i)}

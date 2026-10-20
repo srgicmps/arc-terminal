@@ -23,7 +23,12 @@ function systemLight() {
 function apply() {
 	theme.resolved = theme.mode === 'auto' ? (systemLight() ? 'light' : 'dark') : theme.mode;
 	document.documentElement.dataset.theme = theme.resolved;
-	// Color de la barra del navegador en el móvil: el fondo del tema (token --bg).
+	syncThemeColor();
+}
+
+/** Color de la barra del navegador en el móvil (meta theme-color): el fondo que se ve, token --bg del tema y de la
+ *  estética. Lo llaman apply() y setStyle (src/lib/taste.svelte.ts), este cuando ha cargado la hoja nueva. */
+export function syncThemeColor() {
 	document.querySelector('meta[name="theme-color"]')?.setAttribute('content', token('--bg'));
 }
 

@@ -42,7 +42,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
 - En los PR, la Action va en jobs a la vez: `checks` (check, `pnpm test:cov` con suelo por carpeta en `vitest.config.ts`, build y el tope de peso por vista de
   `scripts/weight.ts`: el verde o el rojo rápido; Arc OS, `/os`, no tiene tope por decisión de Sergi, y lo que solo
   carga dentro de `/os` tampoco), `smoke`
-  (datos reales y prueba de humo) y `probe` solo si el PR toca `scripts/`. `compare` (vistas del PR frente a
+  (datos reales y prueba de humo, 3 vistas a la vez con `SMOKE_CONCURRENCY`; fallan axe de estructura y WebKit, el contraste avisa), `vitals` (Core Web Vitals de TOP, GEO, WS y FUEL a 390 px, `scripts/vitals.ts`, si el PR cambia la web; solo avisa; también a mano) y `probe` solo si el PR toca `scripts/`. `compare` (vistas del PR frente a
   main) y `tv-shots` se lanzan a mano: Run workflow sobre la rama, con «herramienta». Cada `uses:` va fijado por SHA (cómo subirlo, en la cabecera de `deploy.yml`).
 
 ## Arquitectura
@@ -63,6 +63,10 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   del equipo; el token necesita D1 · Edit y Access: Apps and Policies y Organizations · Read y, para PREGUNTA, Workers AI · Read). Las Variables
   `D1_DATABASE_ID`, `ACCESS_TEAM_DOMAIN` y `ACCESS_AUD` son opcionales y mandan. Sin nada, /api/* responde 503 y la web
   va igual, solo en local.
+- **Tu cuenta** (fila de «A tu gusto» en HELP, `AccountRow.svelte`): «Cerrar sesión» va a `/cdn-cgi/access/logout` sin borrar nada
+  de aquí; «Borrar mi cuenta» (escribir BORRAR) → DELETE `/api/account` (`cloud/account.ts`, el `forget()` de «Quitar»),
+  luego borra lo de este navegador y sale (`src/lib/account.svelte.ts`). La memoria `arc-sync` no se borra: pasa a ser
+  de nadie (`NOBODY` en `cloud.ts`), para que nada de lo que quede aquí suba a quien entre después.
 - **Cabeceras** (`static/_headers`, solo lo estático): un año de caché (`private, immutable`) SOLO para lo que lleva hash en el nombre (`/_app/immutable/*`, el motor de ajedrez); en todo, `nosniff` y `frame-ancestors 'self'` (nunca `'none'`: Arc OS abre vistas en iframes).
 - La web es estática, así que **GitHub Actions hace de servidor**: cada 5–15 min un script de Node
   descarga los datos, los guarda como JSON y vuelve a publicar la web. Así tampoco hay problemas de CORS. GitHub se salta casi todos sus cron: las lanza a su hora el **despertador** (`cloud/cron/`, un Worker de Cloudflare solo con Cron Triggers; se publica con la herramienta «despertador» de `deploy.yml`, con sus propios Secrets `DESPERTADOR_GH_TOKEN` y `DESPERTADOR_CF_TOKEN`, este solo con Workers Scripts · Edit: el `CLOUDFLARE_API_TOKEN` de siempre no toca Workers) y los `schedule` quedan de respaldo.

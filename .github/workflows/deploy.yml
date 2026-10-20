@@ -1,9 +1,10 @@
 # Descarga los datos, construye la web y la publica en Cloudflare Pages (web privada tras Cloudflare Access).
 # - push a main, cron y lanzamiento a mano sin «fuentes»: pasada completa y publicación (job build).
 # - PR: comprobaciones en jobs separados que corren a la vez, para que el verde o el rojo llegue antes:
-#   checks (check, test con cobertura, build, sin datos) · smoke (datos + prueba de humo) · probe (solo si
-#   el PR toca scripts/). Menos jobs a la vez = menos cola en los runners, que comparten todas las sesiones.
-# - A mano con «herramienta» (compare o tv-shots), sobre la rama que se elija: esa revisión, sin publicar.
+#   checks (check, test con cobertura, build, sin datos) · smoke (datos + prueba de humo) · vitals (Core Web
+#   Vitals en el móvil, solo avisa) · probe (solo si el PR toca scripts/). Menos jobs a la vez = menos cola en
+#   los runners, que comparten todas las sesiones.
+# - A mano con «herramienta» (compare, tv-shots o vitals), sobre la rama que se elija: esa revisión, sin publicar.
 #   «despertador» (solo desde main) publica el Worker de cloud/cron/, que lanza esta pasada y la de fast.yml a su hora.
 # - A mano con «fuentes»: solo `pnpm data <fuentes>` y el sondeo, para probar una fuente sin la pasada completa.
 # - Cada `uses:` va fijado al SHA de un commit (un tag se puede mover; un SHA, no), con su tag en el comentario.
@@ -29,9 +30,9 @@ on:
         required: false
         default: ''
       herramienta:
-        description: 'Herramienta sobre esta rama, sin publicar la web: compare (vistas frente a main), tv-shots (capturas de TradingView) o despertador (publica el Worker que lanza las pasadas; solo desde main).'
+        description: 'Herramienta sobre esta rama, sin publicar la web: compare (vistas frente a main), tv-shots (capturas de TradingView), vitals (Core Web Vitals en el móvil) o despertador (publica el Worker que lanza las pasadas; solo desde main).'
         type: choice
-        options: [ninguna, compare, tv-shots, despertador]
+        options: [ninguna, compare, tv-shots, vitals, despertador]
         default: ninguna
 
 # Permisos mínimos: por defecto, solo leer el código (la publicación en Cloudflare usa sus propios Secrets).
@@ -273,8 +274,9 @@ jobs:
       # Arc OS: cada vista como app (embebida a 390 px) y el escritorio con ventanas, sin datos (scripts/smoke-vistas-os.ts).
       - run: node scripts/smoke-vistas-os.ts
 
-  # PR: datos reales y prueba de humo. Abre todas las vistas a 390 y 1280 px con el Chrome del runner y
-  # falla si alguna da errores en la consola, tiene scroll horizontal en el móvil o se queda sin datos.
+  # PR: datos reales y prueba de humo. Abre todas las vistas a 390 y 1280 px con el Chrome del runner, tres a la vez
+  # (SMOKE_CONCURRENCY), y falla si alguna da errores en la consola, tiene scroll horizontal en el móvil, fallos de
+  # accesibilidad de estructura (axe-core) o se queda sin datos.
   smoke:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -311,28 +313,40 @@ jobs:
       - run: pnpm build --logLevel warn
       - run: pnpm smoke
       # Lo mismo en WebKit (motor de Safari) a 390 px con la estética del iPhone de Sergi: lo que Chromium no ve
-      # (scroll horizontal, campos que amplían…). De momento solo avisa.
-      - run: pnpm exec playwright-core install --with-deps webkit
+      # (scroll horizontal, campos que amplían…). Si falla, el PR sale en rojo; si lo que falla es instalar WebKit
+      # (red, apt), tras tres intentos se salta, sin poner nada en rojo.
+      - id: webkit
+        run: for i in 1 2 3; do pnpm exec playwright-core install --with-deps webkit && exit 0; sleep 10; done; exit 1
         continue-on-error: true
-      - run: pnpm smoke
-        continue-on-error: true
+      - if: steps.webkit.outcome == 'success'
+        run: pnpm smoke
         env:
+          # WebKit va más justo en el runner: dos vistas a la vez en vez de tres.
+          SMOKE_CONCURRENCY: '2'
           SMOKE_BROWSER: webkit
           SMOKE_WIDTHS: '390'
           SMOKE_MODES: terminal
           SMOKE_STYLE: cupertino
 
-  # PR: recorridos de punta a punta de Arc OS en el escritorio (scripts/e2e-os.ts), sin datos ni red. Chromium manda;
-  # Firefox y WebKit (los de Playwright) de momento solo avisan, hasta que se vea que van estables.
-  e2e-os:
-    if: github.event_name == 'pull_request'
+  # PR que cambia la web (y a mano, herramienta «vitals»): Core Web Vitals de laboratorio en el móvil (scripts/vitals.ts).
+  # LCP, CLS y TBT de TOP, GEO, WS y FUEL a 390 px con la CPU 4x y 4G lenta, en Terminal y en Sencillo: mediana de 3
+  # cargas. Va aparte de smoke porque tarda unos 3 min y así no alarga el PR (corre a la vez) ni comparte CPU con la
+  # prueba de humo. Solo avisa: tabla en el resumen de la Action y ::warning si una vista pasa de su presupuesto. Nunca
+  # pone el PR en rojo. Un PR que no toca la web (solo cloud/, docs/, otros scripts…) no lo lanza: changes → web.
+  # `!cancelled()`: a mano, changes no corre (es solo de los PR) y, sin él, vitals se saltaría también.
+  vitals:
+    needs: changes
+    if: >-
+      !cancelled() &&
+      ((github.event_name == 'pull_request' && needs.changes.outputs.web == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.herramienta == 'vitals'))
     runs-on: ubuntu-latest
-    timeout-minutes: 12
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox, webkit]
-    continue-on-error: ${{ matrix.browser != 'chromium' }}
+    timeout-minutes: 10
+    continue-on-error: true
+    # `pnpm data`: NOVEDADES (scripts/sources/changes.ts) lee los PR fusionados del propio repo.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
@@ -341,19 +355,65 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - if: matrix.browser != 'chromium'
-        run: pnpm exec playwright-core install --with-deps ${{ matrix.browser }}
+      - run: pnpm data
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GIE_API_KEY: ${{ secrets.GIE_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          CLOUDFLARE_RADAR_TOKEN: ${{ secrets.CLOUDFLARE_RADAR_TOKEN }}
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+          # Service token de Cloudflare Access: para leer la copia anterior de la web privada (scripts/lib.ts).
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          # URL de la web (scripts/site.ts). Variable de GitHub opcional: p. ej. al pasar a un dominio propio.
+          SITE_URL: ${{ vars.SITE_URL }}
       - run: pnpm build --logLevel warn
-      - run: pnpm e2e:os
+      - run: pnpm vitals
+        continue-on-error: true
+
+  # PR: recorridos de punta a punta de Arc OS en el escritorio (scripts/e2e-os.ts), sin datos ni red. Chromium y
+  # WebKit (Safari, el del iPhone de Sergi) mandan; Firefox de momento solo avisa. Si lo que falla es instalar el
+  # navegador (red, apt), tras tres intentos se salta, sin poner nada en rojo; si fallan las pruebas, sí.
+  e2e-os:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    continue-on-error: ${{ matrix.browser == 'firefox' }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - id: navegador
+        if: matrix.browser != 'chromium'
+        run: for i in 1 2 3; do pnpm exec playwright-core install --with-deps ${{ matrix.browser }} && exit 0; sleep 10; done; exit 1
+        continue-on-error: true
+      - if: matrix.browser == 'chromium' || steps.navegador.outcome == 'success'
+        run: pnpm build --logLevel warn
+      - if: matrix.browser == 'chromium' || steps.navegador.outcome == 'success'
+        run: pnpm e2e:os
         env:
           E2E_BROWSER: ${{ matrix.browser }}
 
-  # PR: si toca scripts/, para lanzar el sondeo solo cuando hace falta.
+  # PR: qué toca, para lanzar solo lo que hace falta. scripts → el sondeo (probe); web → vitals (lo que cambia lo que se
+  # sirve o cómo se mide: src/, static/, las fuentes, las dependencias, la configuración de la build y el propio vitals).
   changes:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     outputs:
       scripts: ${{ steps.diff.outputs.scripts }}
+      web: ${{ steps.diff.outputs.web }}
     steps:
       # La Action de un PR trabaja sobre el commit de merge: su primer padre es la base del PR.
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -364,6 +424,8 @@ jobs:
           files=$(git diff --name-only HEAD^1 HEAD)
           echo "$files"
           echo "scripts=$(grep -q '^scripts/' <<< "$files" && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          web='^(src/|static/|scripts/sources/|scripts/(update|browser|vitals)\.ts$|package\.json$|pnpm-lock\.yaml$|svelte\.config\.js$|vite\.config\.ts$)'
+          echo "web=$(grep -qE "$web" <<< "$files" && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
   # PR que toca scripts/: explora las URL de scripts/probe.txt (herramienta de desarrollo).
   probe:

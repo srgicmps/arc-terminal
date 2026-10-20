@@ -21,6 +21,7 @@
 	import Share from '#lib/components/ui/Share.svelte';
 	import { collect, decode, encode, HASH } from '#lib/transfer.ts';
 	import { cloud } from '#lib/cloud.svelte.ts';
+	import AccountRow from '#lib/components/AccountRow.svelte';
 	import StylePicker from '#lib/components/StylePicker.svelte';
 	import { takesAccent } from '#lib/estilos.ts';
 	import Tour from '#lib/onboarding/Tour.svelte';
@@ -99,7 +100,7 @@
 				{/each}
 			</ul>
 		</Panel>
-		<Panel title="A tu gusto" meta="Solo en este navegador">
+		<Panel title="A tu gusto" meta={cloud.user ? 'En tu cuenta' : 'Solo en este navegador'}>
 			{#if incoming}
 				{@const n = Object.keys(incoming).length}
 				<div class="incoming" role="status">
@@ -143,8 +144,8 @@
 				<dt>Primeros pasos</dt>
 				<dd class="send"><a href={resolve('/bienvenida')}>Repetir la bienvenida</a> · <button class="tourbtn" type="button" onclick={() => startTour()}>Ver el recorrido</button></dd>
 				{#if cloud.user}
-					<dt>Tu cuenta</dt>
-					<dd>Todo esto se guarda en tu cuenta ({cloud.user}) y llega solo a tus otros dispositivos.</dd>
+					<dt class="top">Tu cuenta</dt>
+					<dd class="top"><AccountRow /></dd>
 				{/if}
 				<dt>Otro dispositivo</dt>
 				<dd class="send"><Share source={transferLink} /> Enlace con todo lo tuyo: estos ajustes, MIS, palabras vigiladas, tu sitio…</dd>
@@ -218,6 +219,12 @@
 	.taste dd {
 		margin: 0;
 		min-width: 0;
+	}
+
+	/* «Tu cuenta» crece hacia abajo (dos líneas, la confirmación de «Borrar mi cuenta»): su etiqueta va con la primera
+	   línea, no centrada en toda la fila. */
+	.taste .top {
+		align-self: first baseline;
 	}
 
 	/* En un panel estrecho (el móvil), cada etiqueta encima de sus botones. */

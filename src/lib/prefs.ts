@@ -75,6 +75,7 @@ export const PREFS: Pref[] = [
 	{ key: 'arc-os-desks', storage: 'local', what: 'Tus escritorios de Arc OS: nombres, apps abiertas, posiciones y tamaños de las ventanas', where: 'Arc OS (/os)', kind: 'dato' },
 	{ key: 'arc-os-phone-session', storage: 'session', what: 'Las apps abiertas en el Modo OS del móvil, para que sigan tras recargar', where: 'Arc OS en el móvil', kind: 'dato' },
 	{ key: 'arc-sync', storage: 'local', what: 'De quién son los ajustes de aquí y cómo quedaron en tu cuenta la última vez', where: 'Ajustes en tu cuenta (arcterminal.dev)', kind: 'caché' },
+	{ key: 'arc-sync-hold', storage: 'local', what: 'Pausa de la sincronización en todas las pestañas mientras se borra la cuenta (dura 30 s si no se renueva)', where: 'HELP, «Tu cuenta», «Borrar mi cuenta»', kind: 'caché' },
 	{ key: 'arc-sync-reload', storage: 'session', what: 'Esta pestaña ya ha recargado para traer los ajustes de tus otros dispositivos', where: 'Ajustes en tu cuenta', kind: 'dato' },
 	{ key: 'arc-login-reload', storage: 'session', what: 'Esta pestaña ya ha recargado para volver al login de Cloudflare Access (sesión caducada)', where: 'Al entrar', kind: 'dato' },
 	{ key: 'arc-localwx:<lat>,<lon>', prefix: 'arc-localwx:', storage: 'local', what: 'El tiempo de tu sitio, para no volver a pedirlo enseguida', where: 'WX', kind: 'caché' },
