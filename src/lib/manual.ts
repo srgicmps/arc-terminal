@@ -245,7 +245,7 @@ export const FAQ: Faq[] = [
 	},
 	{
 		q: '¿Usa inteligencia artificial?',
-		a: 'No para decidir qué es importante: IMP y los avisos usan reglas y puntos fijos. Solo se traducen titulares al español con un servicio de traducción automática o, si no, con el traductor del propio navegador.'
+		a: 'Todo Arc funciona sin IA salvo PREGUNTA, que es aparte, opcional y va siempre marcada como «Generado con IA»: contesta con Workers AI (Cloudflare) usando solo los datos de hoy, y si cita una cifra que no está en ellos, la respuesta se descarta. IMP, QUIEN, TEST, los avisos y las preguntas sencillas de la barra usan reglas y puntos fijos. Los titulares se traducen al español con un servicio de traducción automática o, si no, con el traductor del propio navegador.'
 	}
 ];
 

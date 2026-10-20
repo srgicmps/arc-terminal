@@ -219,6 +219,7 @@ vista `HELP`. Resumen:
 | `FONDOS` | Carteras 13F de grandes fondos: mayores posiciones, compras y ventas | SEC* |
 | `HDS` | Qué fondos de FONDOS tienen un valor (13F al revés, con 45 días de retraso) | SEC* |
 | `RSS` | Mis RSS (como Feedly): tus feeds en tu cuenta, leídos por `/api/rss` (`cloud/rss.ts`, caché de 15 min y topes; solo con cuenta) | Tus feeds |
+| `PREGUNTA` | Pregunta a Arc: la ÚNICA pieza con IA, aparte y etiquetada (`/api/ask`, `cloud/ask.ts`, binding `AI` que pone `cf-config.ts`): contesta solo con 1–4 JSON de hoy y descarta la respuesta si cita una cifra que no está en ellos; 20 al día por persona. Lo demás sigue sin IA | Workers AI (Cloudflare) sobre static/data |
 | `ESTILO` | Estética: Terminal, Grafito, Cristal, Fósforo… (17), con vista previa | — |
 | `AVISOS` | Tus avisos al móvil: temas, nivel, tope, valores y silencio (solo con cuenta, en arcterminal.dev) | ntfy |
 | `QUIEN` | Quién lo cuenta: el mismo hecho en varios medios, cobertura por región y ángulos muertos (sin IA) | Todos los titulares |
