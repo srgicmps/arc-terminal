@@ -80,6 +80,27 @@ describe('fundido entre vistas: cómo', () => {
 		await expect(done).resolves.toBeUndefined();
 	});
 
+	it('si la navegación falla (nav.complete rechaza), tampoco deja errores sin capturar', async () => {
+		// Como el navegador: las tres promesas del fundido salen de lo que devuelve el callback, así que heredan el fallo.
+		let done: Promise<void> | undefined;
+		const doc = {
+			startViewTransition: (cb: () => Promise<void>) => {
+				const updateCallbackDone = Promise.resolve().then(cb);
+				done = updateCallbackDone;
+				const ready = updateCallbackDone.then(() => undefined);
+				return { ready, finished: ready.then(() => undefined), updateCallbackDone, skipTransition() {}, types: new Set() };
+			}
+		} as unknown as Pick<Document, 'startViewTransition'>;
+		// SvelteKit ya captura su propio `complete` (client.js: complete.catch(noop)); lo que podría quedar suelto son
+		// ready y finished. Sin los catch de fade, Vitest lo contaría como error sin capturar y el test fallaría.
+		const complete = Promise.reject(new Error('Not found'));
+		complete.catch(() => {});
+		await expect(fade(complete, doc)).resolves.toBeUndefined();
+		await expect(done).rejects.toThrow('Not found');
+		// Un turno más, para que Node llegue a ver cualquier rechazo sin capturar.
+		await new Promise((r) => setTimeout(r, 0));
+	});
+
 	it('si el navegador no puede, se navega sin fundido', async () => {
 		const doc = {
 			startViewTransition: () => {

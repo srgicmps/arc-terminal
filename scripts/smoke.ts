@@ -7,7 +7,9 @@
 // - la vista no tiene paneles o alguno dice «… todavía» (le faltan sus datos). Una fuente que ha respondido
 //   sin nada que contar (hoy no hay terremotos ni avisos) tiene que decirlo con otro aviso, sin «todavía»;
 // - a 390 px el índice de paneles ocupa sitio en la página, o <main> no está a la misma altura antes y después de
-//   hidratar en TOP y WS (el índice empujaría la vista al cargar: mobileLayout).
+//   hidratar en TOP y WS (el índice empujaría la vista al cargar: mobileLayout);
+// - al navegar tocando las pestañas (en el cliente), con una vista lenta no sale la línea de carga, quedan errores
+//   o el fundido no hace caso a la estética (navigation).
 // Y avisa (sin fallar) si TOP, WS o ECO saltan al cargar (CLS > 0,1) en el móvil con la CPU 4 veces más lenta.
 // Además avisa (sin fallar) si una vista pesa más de WEIGHT_LIMIT: lo que descarga de la propia web
 // (HTML, JS, CSS y datos) comprimido con gzip, como lo sirve GitHub Pages; sin TradingView ni otras webs.
@@ -204,6 +206,7 @@ try {
 	if (!WEBKIT) failures.push(...(await swChecks(browser)));
 	// La pasada acotada de WebKit solo mira el móvil.
 	if (!WEBKIT) await keyboard(browser);
+	if (!WEBKIT) await navigation(browser);
 	// Con Chromium (DevTools Protocol para frenar la CPU).
 	if (!WEBKIT) await mobileLayout(browser);
 	if (!WEBKIT) await bienvenida(browser);
@@ -251,6 +254,127 @@ async function keyboard(browser: Awaited<ReturnType<typeof launch>>) {
 	});
 	if (top === null || Math.abs(top) > 200) failures.push(`teclado: /eco#panel=Paro juvenil en Sencillo no enseña ni baja al panel (${top})`);
 	await context.close();
+}
+
+/**
+ * Navegar dentro de la web en el móvil (390 px). page.goto hace cargas completas y no pasa por onNavigate ni por la
+ * línea de carga; tocar las pestañas de arriba sí. Con Grafito (funde las vistas) y con Terminal (no funde):
+ * - de TOP a ECO, con su __data.json 1,5 s tarde (como una 4G mala): la línea de carga (NavProgress) se ve antes de
+ *   600 ms, pero no sin su retardo (con red rápida parpadearía), <main> lleva aria-busy y, al llegar, se van las dos;
+ *   nada se sale de lado mientras tanto;
+ * - de ECO a WS: sin excepciones ni rechazos sin capturar (un fundido cancelado da AbortError), el foco en <main> o
+ *   en body, y un fundido por cambio de vista solo si la estética tiene --dur-view.
+ */
+async function navigation(browser: Awaited<ReturnType<typeof launch>>) {
+	for (const style of ['grafito', 'terminal']) {
+		const where = `navegar de TOP a ECO y WS a 390 px (${style})`;
+		const context = await browser.newContext({ viewport: { width: 390, height: 900 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
+		await context.addInitScript((s) => {
+			localStorage.setItem('arc-style', s);
+			localStorage.setItem('arc-welcome', JSON.stringify({ v: 1, profile: null, interests: [], alerts: { groups: [], level: 2, daily: 10, mis: [] }, at: '' }));
+			// Cuenta los fundidos y los rechazos de promesas sin capturar.
+			const w = window as unknown as { fades: number; rejections: string[] };
+			w.fades = 0;
+			w.rejections = [];
+			addEventListener('unhandledrejection', (e) => w.rejections.push(String(e.reason)));
+			const start = document.startViewTransition;
+			if (start)
+				document.startViewTransition = function (this: Document, ...args: Parameters<typeof start>) {
+					w.fades++;
+					return start.apply(this, args);
+				} as typeof start;
+		}, style);
+		await context.route('**/*', async (route) => {
+			const url = new URL(route.request().url());
+			if (url.hostname !== 'localhost' || url.pathname.startsWith('/api/')) return route.fulfill({ status: 200, body: '' });
+			if (url.pathname === '/eco/__data.json') await new Promise((r) => setTimeout(r, 1500));
+			return route.continue();
+		});
+		const page = await context.newPage();
+		page.on('pageerror', (e) => failures.push(`${where}: excepción: ${e.message}`));
+		page.on('console', (m) => {
+			if (m.type() !== 'error') return;
+			if (/ 404 /.test(m.text()) && ONLY_PUBLISHED.some((f) => m.location().url.endsWith(f))) return;
+			failures.push(`${where}: consola: ${m.text()} (${m.location().url})`);
+		});
+		await page.goto(ROOT + '/', { waitUntil: 'networkidle' });
+		// Desde el clic (en la página: sin lo que tarda Playwright en tocar): cuándo aparece la línea (`born`) y cuándo
+		// se ve (opaca y con ancho).
+		const [line] = await Promise.all([
+			page.evaluate(
+				() =>
+					new Promise<{ ms: number; wait: number; busy: string | null; scroll: number } | null>((resolve) => {
+						let t0 = performance.now();
+						addEventListener('click', () => (t0 = performance.now()), { capture: true, once: true });
+						let born = 0;
+						const tick = () => {
+							const now = performance.now();
+							const el = document.querySelector('[data-ui="nav-progress"]');
+							if (el && !born) born = now;
+							if (el && parseFloat(getComputedStyle(el).opacity) > 0.5 && el.getBoundingClientRect().width > 0) {
+								const root = document.documentElement;
+								return resolve({
+									ms: Math.round(now - t0),
+									wait: Math.round(now - born),
+									busy: document.getElementById('contenido')?.getAttribute('aria-busy') ?? null,
+									scroll: root.scrollWidth - root.clientWidth
+								});
+							}
+							if (now - t0 > 3000) return resolve(null);
+							requestAnimationFrame(tick);
+						};
+						tick();
+					})
+			),
+			page.tap('.keys a[data-code="ECO"]')
+		]);
+		if (!line) failures.push(`${where}: con ECO tardando 1,5 s no sale la línea de carga`);
+		else {
+			if (line.ms > 600) failures.push(`${where}: la línea de carga tarda ${line.ms} ms en verse (máximo 600)`);
+			if (line.wait < 100) failures.push(`${where}: la línea de carga se ve a los ${line.wait} ms de aparecer, sin su retardo de 150 ms (parpadearía con red rápida)`);
+			if (line.busy !== 'true') failures.push(`${where}: mientras carga, <main> no lleva aria-busy="true" (${line.busy})`);
+			if (line.scroll > 0) failures.push(`${where}: con la línea de carga, scroll horizontal de ${line.scroll} px`);
+		}
+		await page.waitForURL(/\/eco$/, { timeout: 5000 }).catch(() => failures.push(`${where}: no llega a ECO`));
+		const gone = await page.locator('[data-ui="nav-progress"]').waitFor({ state: 'detached', timeout: 3000 }).then(
+			() => true,
+			() => false
+		);
+		if (!gone) failures.push(`${where}: la línea de carga sigue al llegar a ECO`);
+		const eco = await page.evaluate(() => ({
+			busy: document.getElementById('contenido')?.getAttribute('aria-busy') ?? null,
+			scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth
+		}));
+		if (eco.busy !== null) failures.push(`${where}: en ECO, <main> sigue con aria-busy="${eco.busy}"`);
+		if (eco.scroll > 0) failures.push(`${where}: en ECO, scroll horizontal de ${eco.scroll} px`);
+		await page.tap('.keys a[data-code="WS"]');
+		// La URL cambia antes del fundido: la navegación acaba cuando WS es la pestaña actual y <main> ya no está ocupado
+		// (SvelteKit ya ha devuelto el foco). Luego, lo que dura un fundido largo, con margen.
+		const arrived = await page
+			.waitForFunction(() => document.querySelector('.keys a[data-code="WS"]')?.getAttribute('aria-current') === 'page' && !document.getElementById('contenido')?.hasAttribute('aria-busy'), null, { timeout: 5000 })
+			.then(
+				() => true,
+				() => false
+			);
+		if (!arrived) failures.push(`${where}: no llega a WS`);
+		await page.waitForTimeout(400);
+		const ws = await page.evaluate(() => {
+			const w = window as unknown as { fades: number; rejections: string[] };
+			const a = document.activeElement;
+			return {
+				fades: w.fades,
+				rejections: w.rejections,
+				focus: a === document.body || a?.id === 'contenido' ? '' : a?.id || a?.tagName || '?',
+				supported: typeof document.startViewTransition === 'function',
+				dur: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dur-view')) > 0
+			};
+		});
+		for (const r of ws.rejections) failures.push(`${where}: promesa rechazada sin capturar: ${r}`);
+		if (ws.focus) failures.push(`${where}: tras navegar, el foco está en «${ws.focus}», no en <main> ni en body`);
+		// Dos cambios de vista: dos fundidos si la estética funde, ninguno si no.
+		if (ws.supported && (ws.dur ? ws.fades !== 2 : ws.fades !== 0)) failures.push(`${where}: ${ws.fades} fundidos en 2 cambios de vista (--dur-view ${ws.dur ? '> 0' : '0'})`);
+		await context.close();
+	}
 }
 
 /**
