@@ -395,7 +395,11 @@
 
 <div class="grid chess">
 	{#if mode === 'puzzle' && puzzle}
-		<ChessPuzzle {puzzle} />
+		<!-- Si llega el problema del día siguiente con la vista abierta (fresh.ts), empieza de cero: sin las jugadas
+		     ni el «Correcto» del anterior. El mismo problema refrescado no se toca. -->
+		{#key puzzle.id}
+			<ChessPuzzle {puzzle} />
+		{/key}
 	{:else}
 		<div class="col">
 			<Panel
