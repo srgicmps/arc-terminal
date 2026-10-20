@@ -31,7 +31,7 @@ describe('handleError', () => {
 		const handleError = await load();
 		const log = vi.spyOn(console, 'error').mockImplementation(() => {});
 		await handleError({ kind: 'framework', error: { status: 404, message: 'Not Found' }, event });
-		await handleError({ kind: 'app', error: { message: 'No hay datos' }, event });
+		await handleError({ kind: 'app', error: { status: 404, message: 'No hay datos' }, event });
 		expect(log).not.toHaveBeenCalled();
 	});
 });
