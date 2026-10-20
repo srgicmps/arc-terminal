@@ -24,7 +24,7 @@ import { self } from '$app/service-worker';
 import { immutable, assets, prerendered } from '$app/manifest';
 import { version } from '$app/env';
 import { bootFiles } from './precache.ts';
-import { clickUrl, notice } from './push.ts';
+import { clickUrl, notice, openNotice } from './push.ts';
 
 // Archivos de la build: una caché por publicación; al publicar, `version` cambia y la anterior se borra.
 const CACHE = `arc-${version}`;
@@ -304,27 +304,16 @@ self.addEventListener('push', (event) => {
 	event.waitUntil(self.registration.showNotification(title, options));
 });
 
-// Al tocarlo: si la web ya está abierta, esa pestaña va a la vista del aviso; si no (o es un enlace de fuera,
-// como los de Familia), se abre una nueva. Con la sesión de Access caducada, sale antes el login.
+// Al tocarlo: la ventana de la web que ya esté abierta va a la vista del aviso; si no, se abre otra (openNotice,
+// en push.ts). Solo las ventanas que controla este service worker: navigate() no puede mover las demás.
+// Con la sesión de Access caducada, sale antes el login.
 self.addEventListener('notificationclick', (event) => {
 	event.notification.close();
 	const target = clickUrl(event.notification.data, scope.href);
 	event.waitUntil(
 		(async () => {
-			if (new URL(target).origin === scope.origin) {
-				const tabs = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-				const tab = tabs.find((t) => new URL(t.url).origin === scope.origin);
-				if (tab) {
-					await tab.focus().catch(() => null);
-					try {
-						await tab.navigate(target);
-						return;
-					} catch {
-						// Una pestaña que este service worker no controla no se puede mover: se abre otra.
-					}
-				}
-			}
-			await self.clients.openWindow(target);
+			const tabs = await self.clients.matchAll({ type: 'window' });
+			await openNotice(target, scope.href, tabs, (url) => self.clients.openWindow(url));
 		})()
 	);
 });
