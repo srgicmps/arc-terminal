@@ -1,9 +1,11 @@
 // Los errores que ven los usuarios en su navegador llegan a /admin (F29), sin datos personales.
-// SvelteKit llama a handleError cuando algo falla al navegar o al pintar una vista (como app.config.errorHandler
-// en Vue). Lo que falla después, en un clic o en un efecto, no pasa por ahí: llega a window como 'error' o
-// 'unhandledrejection', y por eso se escuchan también. Todo acaba en report(): solo en la web publicada (ni en
-// `pnpm dev` ni en localhost, así la prueba de humo y los e2e no informan), como mucho 5 por carga y uno por
-// firma, y limpio (src/lib/errreport.ts). Informar nunca puede provocar otro error.
+// SvelteKit llama a handleError cuando algo falla al navegar, en un load o dentro de una vista: al pintar, en un
+// $derived o en un $effect (cada vista va en un <svelte:boundary>; como app.config.errorHandler en Vue). Lo que
+// falla fuera, en un clic o en un setTimeout, llega a window como 'error' o 'unhandledrejection', y por eso se
+// escuchan también. Exportar handleError sustituye el de SvelteKit, que escribía el error en la consola: aquí se
+// sigue escribiendo, porque la prueba de humo y los e2e lo cazan ahí. Todo acaba en report(): solo en la web
+// publicada (ni en `pnpm dev` ni en localhost, así la prueba de humo y los e2e no informan), como mucho 5 por
+// carga y uno por firma, y limpio (src/lib/errreport.ts). Informar nunca puede provocar otro error.
 // Este archivo va en el arranque de todas las vistas, así que es mínimo: errreport.ts solo se descarga (import())
 // la primera vez que hay un error.
 import { dev, version } from '$app/env';
@@ -52,13 +54,16 @@ function report(err: unknown, fallback?: string) {
 			})
 			.catch(() => {});
 	} catch {
-		// Nada: el error de verdad ya está en la consola.
+		// Nada: informar nunca puede provocar otro error (el de verdad ya está en la consola).
 	}
 }
 
 export const handleError: HandleClientError = ({ kind, error }) => {
 	// Solo los fallos de nuestro código: ni los 404 (framework) ni los error() lanzados a propósito (app).
-	if (kind === 'unknown') report(error);
+	if (kind !== 'unknown') return;
+	// Lo que hacía el de SvelteKit: sin esto, el error no sale en la consola (ni en `pnpm dev`).
+	console.error(error);
+	report(error);
 };
 
 addEventListener('error', (e) => report(e.error, e.message));
