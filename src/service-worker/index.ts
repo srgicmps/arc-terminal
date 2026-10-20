@@ -25,7 +25,7 @@
 import { self } from '$app/service-worker';
 import { immutable, assets, prerendered } from '$app/manifest';
 import { version } from '$app/env';
-import { bootFiles } from './precache.ts';
+import { bootFiles, precacheable } from './precache.ts';
 
 // Archivos de la build: una caché por publicación; al publicar, `version` cambia y la anterior se borra.
 const CACHE = `arc-${version}`;
@@ -71,13 +71,13 @@ const TOP = [scope.href, ...(prerendered.some((f) => url(f.path) === TOP_DATA) ?
 /** Lo que nunca sale de la caché de páginas: TOP, el índice de la barra y el estado de las fuentes (los usan todas las vistas). */
 const KEEP = [...TOP, url('data/search.json'), url('data/status.json')];
 
-/** Lo que arranca las vistas, según la lista de la build; sin lista (o si falla), todo _app/immutable. */
+/** Lo que arranca las vistas, según la lista de la build; sin lista (o si falla), todo _app/immutable menos las letras. */
 async function bootList(): Promise<string[]> {
 	try {
 		const response = await fetch(LIST, { cache: 'no-cache' });
 		return bootFiles(response.ok && !response.redirected ? await response.json() : null, version, IMMUTABLE, url);
 	} catch {
-		return IMMUTABLE;
+		return precacheable(IMMUTABLE);
 	}
 }
 

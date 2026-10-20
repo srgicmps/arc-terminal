@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { bootFiles } from '../../src/service-worker/precache.ts';
+import { bootFiles, precacheable } from '../../src/service-worker/precache.ts';
 import { LIST_PATH, precacheList, unlisted, writePrecache } from '../precache.ts';
 
 let dir = '';
@@ -147,5 +147,13 @@ describe('bootFiles (service worker)', () => {
 		expect(bootFiles(list, 'v2', withFonts, url)).toEqual(immutable);
 		const listed = { version: 'v1', files: ['_app/immutable/entry/start.js', '_app/immutable/assets/inter-latin.b2.woff2'] };
 		expect(bootFiles(listed, 'v1', withFonts, url)).toEqual([url('_app/immutable/entry/start.js')]);
+	});
+
+	it('si no se puede leer la lista (sin red al instalar), tampoco las letras: precacheable, como bootFiles sin lista', () => {
+		const fonts = ['plex-mono-400-latin.a1.woff2', 'inter-latin-ext.c3.woff2'].map((f) => url(`_app/immutable/assets/${f}`));
+		const withFonts = [fonts[0], ...immutable, fonts[1]];
+		expect(precacheable(withFonts)).toEqual(immutable);
+		expect(precacheable(withFonts)).toEqual(bootFiles(null, 'v1', withFonts, url));
+		expect(precacheable(immutable)).toEqual(immutable);
 	});
 });

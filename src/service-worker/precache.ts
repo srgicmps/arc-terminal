@@ -13,13 +13,18 @@ export interface PrecacheList {
  */
 const FONT = /\.woff2$/;
 
+/** De los archivos de la build, los que pueden ir en la precaché: todos menos las letras. */
+export function precacheable(immutable: string[]): string[] {
+	return immutable.filter((href) => !FONT.test(href));
+}
+
 /**
  * De los archivos de la build (`immutable`, URL completas), los que van a la precaché: los de la lista, si es de
  * esta misma publicación. Si la lista falta, es de otra publicación o no casa con ningún archivo, todos menos las
  * letras (como antes): mejor descargar de más que dejar una vista sin su código.
  */
 export function bootFiles(list: unknown, version: string, immutable: string[], url: (path: string) => string): string[] {
-	const code = immutable.filter((href) => !FONT.test(href));
+	const code = precacheable(immutable);
 	const l = list as Partial<PrecacheList> | null;
 	if (!l || l.version !== version || !Array.isArray(l.files)) return code;
 	const wanted = new Set(l.files.filter((f): f is string => typeof f === 'string').map(url));
