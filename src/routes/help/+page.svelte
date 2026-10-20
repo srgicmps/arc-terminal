@@ -20,7 +20,7 @@
 	import { modo, MODOS, setModo } from '#lib/modo.svelte.ts';
 	import Share from '#lib/components/ui/Share.svelte';
 	import { collect, decode, encode, HASH } from '#lib/transfer.ts';
-	import { cloud } from '#lib/cloud.svelte.ts';
+	import { cloud, flushNow } from '#lib/cloud.svelte.ts';
 	import StylePicker from '#lib/components/StylePicker.svelte';
 	import { takesAccent } from '#lib/estilos.ts';
 	import Tour from '#lib/onboarding/Tour.svelte';
@@ -144,7 +144,9 @@
 				<dd class="send"><a href={resolve('/bienvenida')}>Repetir la bienvenida</a> · <button class="tourbtn" type="button" onclick={() => startTour()}>Ver el recorrido</button></dd>
 				{#if cloud.user}
 					<dt>Tu cuenta</dt>
-					<dd>Todo esto se guarda en tu cuenta ({cloud.user}) y llega solo a tus otros dispositivos.</dd>
+					<!-- «Cerrar sesión» es la salida de Access (el service worker deja pasar /cdn-cgi/). No borra nada de aquí: si
+					entra otra persona, la sincronización cambia lo de este navegador por lo de su cuenta (startPlan en cloud.ts). -->
+					<dd class="send account"><a href="/cdn-cgi/access/logout" data-sveltekit-reload onclick={() => flushNow()}>Cerrar sesión</a> Todo esto se guarda en tu cuenta ({cloud.user}) y llega solo a tus otros dispositivos.</dd>
 				{/if}
 				<dt>Otro dispositivo</dt>
 				<dd class="send"><Share source={transferLink} /> Enlace con todo lo tuyo: estos ajustes, MIS, palabras vigiladas, tu sitio…</dd>
@@ -238,6 +240,15 @@
 		gap: var(--sp-8);
 		color: var(--faint);
 		font-size: var(--fs-s);
+	}
+
+	/* «Tu cuenta»: un email largo baja de línea en vez de salirse del panel, y «Cerrar sesión» no se parte. */
+	.account {
+		overflow-wrap: anywhere;
+	}
+
+	.account a {
+		flex: none;
 	}
 
 	.incoming {
