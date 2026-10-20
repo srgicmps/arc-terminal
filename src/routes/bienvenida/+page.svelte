@@ -169,7 +169,6 @@
 	</ol>
 
 	{#if step === 0}
-		<OsInvite />
 		<section aria-labelledby="q1">
 			<h2 id="q1" tabindex="-1" bind:this={heading}>¿Qué te interesa?</h2>
 			<p class="lead">Elige un perfil ya hecho o marca los temas que quieras. Todo se puede cambiar después.</p>
@@ -195,6 +194,9 @@
 				<button type="button" class="go" onclick={() => (step = 1)}>{interests.length ? 'Siguiente' : 'Quiero verlo todo'}</button>
 			</div>
 		</section>
+		<!-- La invitación al Modo OS, debajo de la pregunta y sus botones: en el móvil la tapaba, y su «Probar» era el
+			primer botón principal que veía alguien nuevo. -->
+		<div class="os"><OsInvite /></div>
 	{:else if step === 1}
 		<section aria-labelledby="q2">
 			<h2 id="q2" tabindex="-1" bind:this={heading}>¿Dónde estás?</h2>
@@ -493,6 +495,9 @@
 		color: var(--on-amber);
 		background: var(--amber);
 		border-color: var(--amber);
+	}
+	.os {
+		margin-top: var(--sp-24);
 	}
 	.foot {
 		margin: var(--sp-24) 0 0;
