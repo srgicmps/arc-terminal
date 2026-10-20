@@ -60,7 +60,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   `src/lib/cloud.svelte.ts` (fusión a tres bandas en `cloud.ts`): localStorage sigue siendo la caché y el modo sin
   conexión; la primera vez sube lo que haya (migración). `wrangler.toml` no lleva secretos: `scripts/cf-config.ts`
   lo rellena al publicar con la API de Cloudflare (crea la base si no está, lee el AUD de la app de Access y el dominio
-  del equipo; el token necesita D1 · Edit y Access: Apps and Policies y Organizations · Read). Las Variables
+  del equipo; el token necesita D1 · Edit y Access: Apps and Policies y Organizations · Read y, para PREGUNTA, Workers AI · Read). Las Variables
   `D1_DATABASE_ID`, `ACCESS_TEAM_DOMAIN` y `ACCESS_AUD` son opcionales y mandan. Sin nada, /api/* responde 503 y la web
   va igual, solo en local.
 - **Cabeceras** (`static/_headers`, solo lo estático): un año de caché (`private, immutable`) SOLO para lo que lleva hash en el nombre (`/_app/immutable/*`, el motor de ajedrez); en todo, `nosniff` y `frame-ancestors 'self'` (nunca `'none'`: Arc OS abre vistas en iframes).
