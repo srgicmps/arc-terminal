@@ -29,7 +29,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				{#each table.rows as r, i (r.name)}
+				{#each table.rows as r (r.name)}
 					<tr>
 						<td><a class="name" href={r.url} target="_blank" rel="noopener">{r.name}</a></td>
 						{#each table.years as y (y)}

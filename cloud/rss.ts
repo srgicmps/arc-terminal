@@ -4,8 +4,9 @@
 // - Hace de proxy de RSS, así que va con topes: 20 feeds, 1 MB por feed, 8 s, 3 redirecciones, solo
 //   http(s) a nombres públicos (nada de IP, localhost ni puertos raros), y caché de 15 min por feed.
 // - Solo devuelve titulares, enlaces http(s) y fechas: nunca HTML del feed.
-import { tokenOf, verifyIdentity, type AccessConfig } from './access.ts';
+import { person } from './access.ts';
 import { json, type D1Database, type Env } from './prefs.ts';
+import { ensure } from './schema.ts';
 
 export const RSS_LIMITS = {
 	feeds: 20,
@@ -220,15 +221,10 @@ export async function handleRss(
 	fetcher?: (url: string) => Promise<Response>,
 	feedFetch: Fetch = (u, i) => fetch(u, i)
 ): Promise<Response> {
-	if (!store || !env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) return json(503, { error: 'sin configurar' });
-	const origin = request.headers.get('origin');
-	if (origin && origin !== new URL(request.url).origin) return json(403, { error: 'origen' });
-
-	const token = tokenOf(request);
-	const config: AccessConfig = { teamDomain: env.ACCESS_TEAM_DOMAIN, aud: env.ACCESS_AUD };
-	const who = token ? await verifyIdentity(token, config, fetcher).catch(() => null) : null;
-	if (!who) return json(401, { error: 'sin identificar' });
-	if (who.service !== undefined) return json(403, { error: 'solo personas' });
+	if (!store) return json(503, { error: 'sin configurar' });
+	// Sin configurar, desde otra web, sin identificar o un token de servicio: fuera (access.ts).
+	const who = await person(request, env, fetcher);
+	if (who instanceof Response) return who;
 	const user = who.email;
 
 	if (request.method === 'GET') {
@@ -262,15 +258,9 @@ export async function handleRss(
 	return json(405, { error: 'método' });
 }
 
-let tableReady = false;
-
-/** D1: tabla rss, una fila por persona con su lista en JSON. Se crea sola la primera vez. */
+/** D1: tabla rss, una fila por persona con su lista en JSON. Se crea sola la primera vez (cloud/schema.ts). */
 export function d1RssStore(db: D1Database): RssStore {
-	const ready = async () => {
-		if (tableReady) return;
-		await db.exec('CREATE TABLE IF NOT EXISTS rss (user TEXT PRIMARY KEY, feeds TEXT NOT NULL, updated INTEGER NOT NULL)');
-		tableReady = true;
-	};
+	const ready = () => ensure(db, 'rss');
 	return {
 		async get(user) {
 			await ready();

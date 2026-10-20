@@ -2,14 +2,14 @@
 # vuelve a publicar la web. La vía normal (deploy.yml, cada 15 min y en cada push a main) sigue igual.
 # - Las demás fuentes no se descargan: `pnpm data` reutiliza su copia publicada mientras no pase su
 #   maxAgeMinutes, así que no se gastan los límites de Finnhub, SEC, etc.
-# - Sin check ni test: el código es el de main, que ya pasó las comprobaciones al mezclarse.
+# - Con check y test, como deploy.yml: si main está en rojo, no se publica.
 # - Comparte el grupo de concurrencia con deploy.yml: nunca publican a la vez y, si llega otra pasada
 #   mientras hay una en marcha, espera (y una pendiente más nueva sustituye a la anterior, no se acumulan).
 name: Vía rápida
 
 on:
   # Minutos 4, 9, 14… Nunca coinciden con los de deploy.yml (7, 22, 37, 52): si coincidieran, una pasada
-  # rápida pendiente podría sustituir a una normal y esa vez no correrían check, test ni issues.ts.
+  # rápida pendiente podría sustituir a una normal y esa vez no correrían issues.ts ni las miniaturas.
   # GitHub puede retrasar el cron unos minutos cuando va cargado.
   schedule:
     - cron: '4-59/5 * * * *'
@@ -119,11 +119,15 @@ jobs:
           key: thumbs-solo-restaurar
           restore-keys: thumbs-
 
+      - run: pnpm check
+      - run: pnpm test
       - run: pnpm build --logLevel warn
 
       # Publica en Cloudflare Pages (web privada, Cloudflare Access delante), como deploy.yml.
+      # Si update.ts no pudo leer la copia anterior (.publish-blocked), no se publica: se perderían historiales.
       - if: github.event_name != 'pull_request'
         run: |
+          if [ -f .publish-blocked ]; then echo "::error::$(cat .publish-blocked)"; exit 1; fi
           node scripts/cf-config.ts
           npx --yes wrangler@4.145.0 pages project create arc-terminal --production-branch=main || true
           npx --yes wrangler@4.145.0 pages deploy build --project-name=arc-terminal --branch=main --commit-dirty=true

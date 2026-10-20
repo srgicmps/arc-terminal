@@ -5,6 +5,7 @@
 import { LIMITS } from '../src/lib/cloud.ts';
 import { portable } from '../src/lib/transfer.ts';
 import { tokenOf, verifyAccess, type AccessConfig } from './access.ts';
+import { ensure } from './schema.ts';
 
 /** Topes (en src/lib/cloud.ts, para que el navegador los respete antes de subir): de sobra para lo de hoy. */
 export { LIMITS };
@@ -24,10 +25,14 @@ export interface Env {
 	ACCESS_AUD?: string;
 }
 
+/**
+ * Todas las respuestas de /api salen de aquí: JSON, sin caché (son datos de cada uno) y con nosniff, para que el
+ * navegador nunca las interprete como otra cosa (static/_headers no se aplica a las Functions).
+ */
 export const json = (status: number, body: unknown) =>
 	new Response(JSON.stringify(body), {
 		status,
-		headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }
+		headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' }
 	});
 
 const size = (prefs: Record<string, string>) => Object.entries(prefs).reduce((n, [k, v]) => n + k.length + v.length, 0);
@@ -105,17 +110,9 @@ export interface D1Statement {
 	run(): Promise<unknown>;
 }
 
-let tableReady = false;
-
-/** D1: una tabla, (email, clave) única. La tabla se crea sola la primera vez. */
+/** D1: una tabla, (email, clave) única. La tabla se crea sola la primera vez (cloud/schema.ts). */
 export function d1Store(db: D1Database): Store {
-	const ready = async () => {
-		if (tableReady) return;
-		await db.exec(
-			'CREATE TABLE IF NOT EXISTS prefs (user TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, updated INTEGER NOT NULL, PRIMARY KEY (user, key))'
-		);
-		tableReady = true;
-	};
+	const ready = () => ensure(db, 'prefs');
 	return {
 		async all(user) {
 			await ready();

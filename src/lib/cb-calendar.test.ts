@@ -31,6 +31,35 @@ describe('cb-calendar', () => {
 		}
 	});
 
+	it('zonedInstant con el formateador guardado da lo mismo que antes', () => {
+		// Versión anterior, con un Intl.DateTimeFormat nuevo en cada llamada.
+		const before = (date: string, time: string, tz: string) => {
+			const guess = new Date(`${date}T${time}:00Z`);
+			const parts = new Intl.DateTimeFormat('en-GB', {
+				timeZone: tz,
+				hourCycle: 'h23',
+				year: 'numeric',
+				month: '2-digit',
+				day: '2-digit',
+				hour: '2-digit',
+				minute: '2-digit'
+			}).formatToParts(guess);
+			const p = (t: string) => Number(parts.find((x) => x.type === t)?.value);
+			return new Date(guess.getTime() - (Date.UTC(p('year'), p('month') - 1, p('day'), p('hour'), p('minute')) - guess.getTime()));
+		};
+		const zones = [...new Set(Object.values(CB).map((b) => b.tz))];
+		const times = ['00:30', '02:00', '09:45', '12:00', '14:15', '23:59'];
+		// Un día de cada 3 durante dos años, alternando zonas y horas.
+		for (let i = 0; i < 250; i++) {
+			const date = new Date(Date.UTC(2026, 0, 1 + i * 3)).toISOString().slice(0, 10);
+			const tz = zones[i % zones.length];
+			const time = times[i % times.length];
+			expect(zonedInstant(date, time, tz).toISOString(), `${date} ${time} ${tz}`).toBe(before(date, time, tz).toISOString());
+		}
+		// Y cada reunión de la lista, con su zona.
+		for (const m of CB_MEETINGS.filter((x) => x.at)) expect(m.at).toBe(before(m.date, CB[m.bank].time!, CB[m.bank].tz).toISOString());
+	});
+
 	it('mueve el LPR del fin de semana al lunes', () => {
 		const d = lprDates(2026);
 		expect(d).toHaveLength(12);

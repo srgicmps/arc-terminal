@@ -1,7 +1,6 @@
 // Palabras vigiladas del BOE («Menorca», «vivienda»…), guardadas en este navegador como la lista MIS.
 // Si el navegador no deja guardar (modo privado…), siguen en memoria mientras dure la visita.
-import type { BoeData } from './types.ts';
-import { countWatchedToday, fold } from './watchwords.ts';
+import { fold } from './watchwords.ts';
 
 export { highlight, matches, watched } from './watchwords.ts';
 
@@ -40,9 +39,4 @@ export function addWatchword(word: string) {
 export function removeWatchword(word: string) {
 	watchwords.words = watchwords.words.filter((w) => w !== word);
 	save();
-}
-
-/** Cuántas disposiciones del BOE de hoy nombran alguna de las palabras guardadas (para TOP). */
-export function watchedToday(boe: BoeData | undefined, now = Date.now()): number {
-	return countWatchedToday(boe, watchwords.words, now);
 }
