@@ -9,10 +9,34 @@
 	Debajo, un «⤓ CSV» discreto descarga la tabla tal y como se ve (en el ordenador, al pasar por encima);
 	con csv={false} no sale. El archivo se llama como el panel y la fecha.
 -->
+<script module lang="ts">
+	// Un solo ResizeObserver para todas las tablas de la vista. Avisa ya colocado (al montar, al cambiar de tamaño y
+	// al llegar filas), y en cada aviso se miden todas las tablas antes de que Svelte escriba nada en la página. Con
+	// uno por tabla, lo que escribía una obligaba al navegador a recalcularlo todo antes de medir la siguiente.
+	const checks = new Map<Element, () => void>();
+	let observer: ResizeObserver | undefined;
+
+	function watch(els: Element[], check: () => void): () => void {
+		observer ??= new ResizeObserver((entries) => {
+			for (const run of new Set(entries.map((e) => checks.get(e.target)))) run?.();
+		});
+		for (const el of els) {
+			checks.set(el, check);
+			observer.observe(el);
+		}
+		return () => {
+			for (const el of els) {
+				checks.delete(el);
+				observer?.unobserve(el);
+			}
+		};
+	}
+</script>
+
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { cellText, csvName, toCsv } from '#lib/csv.ts';
-	import { edgeFade } from '#lib/edgefade.ts';
+	import { fadeSide } from '#lib/edgefade.ts';
 
 	interface Props {
 		/** Alto máximo (p. ej. «420px»): a partir de ahí, la tabla se desplaza en vertical. */
@@ -30,16 +54,18 @@
 	// se vuelve una región enfocable con el nombre del panel. Si cabe, no añade una parada más al Tab.
 	let scrolls = $state(false);
 	let name = $state('Tabla');
-	$effect(() => {
-		const check = () => {
+	// Lado por el que sigue la tabla si es más ancha que el panel («start», «end», «both» o nada): el fundido de app.css.
+	let fade = $state<ReturnType<typeof fadeSide>>('');
+	const updateFade = () => (fade = fadeSide(scroller.scrollLeft, scroller.clientWidth, scroller.scrollWidth));
+	// El fundido se calcula aquí, con el ResizeObserver compartido, y no con use:edgeFade, que medía la tabla nada más
+	// montarla y obligaba a calcular la página a medio montar.
+	$effect(() =>
+		watch([scroller, table], () => {
 			scrolls = scroller.scrollWidth > scroller.clientWidth + 1 || scroller.scrollHeight > scroller.clientHeight + 1;
 			name = cellText(table.closest('section')?.querySelector('h2')?.textContent ?? '') || 'Tabla';
-		};
-		const ro = new ResizeObserver(check);
-		ro.observe(scroller);
-		ro.observe(table);
-		return () => ro.disconnect();
-	});
+			updateFade();
+		})
+	);
 
 	/** Descarga la tabla en CSV: cabecera y filas tal y como se ven, con el nombre del panel y la fecha de hoy. */
 	function download() {
@@ -55,7 +81,7 @@
 	}
 </script>
 
-<!-- Si es más ancha que el panel (móvil), un fundido leve en el lado por el que sigue: use:edgeFade. -->
+<!-- Si es más ancha que el panel (móvil), un fundido leve en el lado por el que sigue: data-fade, al montar y al deslizar. -->
 <div class="wrap" data-ui="table">
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex (solo cuando se desplaza: así se mueve con las flechas) -->
 	<div
@@ -66,7 +92,8 @@
 		tabindex={scrolls ? 0 : undefined}
 		role={scrolls ? 'region' : undefined}
 		aria-label={scrolls ? name : undefined}
-		use:edgeFade
+		data-fade={fade || undefined}
+		onscroll={updateFade}
 	>
 		<table class="t" bind:this={table}>
 			{@render children()}
