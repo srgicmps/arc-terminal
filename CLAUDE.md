@@ -60,7 +60,7 @@ una barra de comandos (`NVDA`, `ECO`, `FUEL`…) y paneles densos.
   `src/lib/cloud.svelte.ts` (fusión a tres bandas en `cloud.ts`): localStorage sigue siendo la caché y el modo sin
   conexión; la primera vez sube lo que haya (migración). `wrangler.toml` no lleva secretos: `scripts/cf-config.ts`
   lo rellena al publicar con la API de Cloudflare (crea la base si no está, lee el AUD de la app de Access y el dominio
-  del equipo; el token necesita D1 · Edit y Access: Apps and Policies y Organizations · Read). Las Variables
+  del equipo; el token necesita D1 · Edit y Access: Apps and Policies y Organizations · Read y, para PREGUNTA, Workers AI · Read). Las Variables
   `D1_DATABASE_ID`, `ACCESS_TEAM_DOMAIN` y `ACCESS_AUD` son opcionales y mandan. Sin nada, /api/* responde 503 y la web
   va igual, solo en local.
 - **Tu cuenta** (fila de «A tu gusto» en HELP, `AccountRow.svelte`): «Cerrar sesión» va a `/cdn-cgi/access/logout` sin borrar nada
@@ -224,6 +224,7 @@ vista `HELP`. Resumen:
 | `FONDOS` | Carteras 13F de grandes fondos: mayores posiciones, compras y ventas | SEC* |
 | `HDS` | Qué fondos de FONDOS tienen un valor (13F al revés, con 45 días de retraso) | SEC* |
 | `RSS` | Mis RSS (como Feedly): tus feeds en tu cuenta, leídos por `/api/rss` (`cloud/rss.ts`, caché de 15 min y topes; solo con cuenta) | Tus feeds |
+| `PREGUNTA` | Pregunta a Arc: la ÚNICA pieza con IA, aparte y etiquetada (`/api/ask`, `cloud/ask.ts`, binding `AI` que pone `cf-config.ts`): contesta solo con 1–4 JSON de hoy y descarta la respuesta si cita una cifra que no está en ellos; 20 al día por persona. Lo demás sigue sin IA | Workers AI (Cloudflare) sobre static/data |
 | `ESTILO` | Estética: Terminal, Grafito, Cristal, Fósforo… (17), con vista previa | — |
 | `AVISOS` | Tus avisos al móvil: temas, nivel, tope, valores y silencio (solo con cuenta, en arcterminal.dev) | ntfy |
 | `QUIEN` | Quién lo cuenta: el mismo hecho en varios medios, cobertura por región y ángulos muertos (sin IA) | Todos los titulares |
