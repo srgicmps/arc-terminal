@@ -1,88 +1,128 @@
+// @ts-nocheck
 /// <reference types="node" />
-// Herramienta de desarrollo: consulta las URL de scripts/probe.txt y enseña el principio de cada
-// respuesta. Solo se ejecuta en los PR, para explorar APIs nuevas antes de convertirlas en fuentes.
-// Formato de cada línea: «URL» o «URL ~ patrón» (si la respuesta es una lista JSON, solo enseña los
-// elementos que contienen el patrón; si es un feed Atom, solo las <entry> que lo contienen; si es una
-// página web, solo los trozos de texto que encajan o, si no hay ninguno, los del HTML sin quitar etiquetas).
-// Si es un .xlsx, enseña las primeras filas de cada hoja (con patrón, solo las filas que lo contienen).
-import { readFile } from 'node:fs/promises';
+// TEMPORAL (rama de comparación, no se fusiona): descarga los .xlsx de SIPRI, Pink Sheet, EPU y Oil Bulletin y
+// compara exceljs (como en main) con readXlsx (scripts/xlsx.ts) sobre los mismos bytes: celda a celda y la salida
+// de cada parser.
+import ExcelJS from 'exceljs';
+import { createHash } from 'node:crypto';
+import { parseOilBulletin } from '../src/lib/fuel.ts';
+import { parseMilex } from '../src/lib/milex.ts';
+import { parsePinkSheet, pinkLink } from '../src/lib/pinksheet.ts';
+import { EPU_URL, parseGlobalEpu } from '../src/lib/uncertainty.ts';
+import { getText, request } from './lib.ts';
+import { historyLink } from './sources/oilbulletin.ts';
+import { milexLink } from './sources/sipri.ts';
 import { readXlsx } from './xlsx.ts';
 
-/** Una celda como texto: las fechas, «2026-10-12». */
-const cellText = (v: unknown) => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v ?? ''));
+const plainCell = (v) => (v && typeof v === 'object' && !(v instanceof Date) && 'result' in v ? v.result : v);
+const rowsOf = (sheet, plain = true) => {
+	const cells = [];
+	sheet?.eachRow((row) => cells.push(plain ? row.values.slice(1).map(plainCell) : row.values.slice(1)));
+	return cells;
+};
 
-/**
- * Las primeras filas de cada hoja de un .xlsx, como texto: «[Hoja] 40 filas con datos» y «rows[3]: a | b | c».
- * El número es la posición en las filas que da readXlsx (scripts/xlsx.ts), la que verá el parser.
- */
-function sheets(data: ArrayBuffer, pattern?: string): string {
-	const re = pattern ? new RegExp(pattern, 'i') : null;
-	const out: string[] = [];
-	for (const sheet of readXlsx(data)) {
-		out.push(`[${sheet.name}] ${sheet.rows.length} filas con datos`);
-		let shown = 0;
-		sheet.rows.forEach((row, n) => {
-			const text = Array.from(row, cellText).join(' | ');
-			if (shown < 15 && (!re || re.test(text))) {
-				out.push(`rows[${n}]: ${text.slice(0, 600)}`);
-				shown++;
-			}
-		});
-	}
-	return out.join('\n');
-}
+const FILES = {
+	sipri: async () => {
+		const page = 'https://www.sipri.org/databases/milex';
+		const year = new Date().getUTCFullYear();
+		return (
+			milexLink(await getText(page).catch(() => '')) ??
+			`https://www.sipri.org/sites/default/files/SIPRI-Milex-data-1949-${year - 1}.xlsx`
+		);
+	},
+	pinksheet: async () => pinkLink(await getText('https://www.worldbank.org/en/research/commodity-markets')),
+	uncertainty: async () => `${EPU_URL}media/Global_Policy_Uncertainty_Data.xlsx`,
+	oilbulletin: async () =>
+		historyLink(await getText('https://energy.ec.europa.eu/data-and-analysis/weekly-oil-bulletin_en').catch(() => '')) ??
+		'https://energy.ec.europa.eu/document/download/906e60ca-8b6a-44e7-8589-652854d2fd3f_en?filename=Weekly_Oil_Bulletin_Prices_History_maticni_4web.xlsx'
+};
 
-/**
- * La SEC responde 403 sin un User-Agent con nombre y correo: a sec.gov se le manda el del secreto
- * SEC_USER_AGENT (la Action lo pasa a este paso), y a las demás webs, el genérico.
- */
-function userAgent(url: string): string {
-	const secret = process.env.SEC_USER_AGENT;
-	const host = new URL(url).hostname;
-	if (secret && (host === 'sec.gov' || host.endsWith('.sec.gov'))) return secret;
-	return 'ArcTerminal/1.0 (+https://github.com/srgicmps/arc-terminal)';
-}
+// Lo que hacía cada fuente en main (exceljs) y lo que hace en la rama (readXlsx).
+const OLD = {
+	sipri: (book) =>
+		parseMilex(
+			book.worksheets
+				.filter((s) => /^(current|constant|share of gdp)/i.test(s.name))
+				.map((s) => ({ name: s.name, cells: rowsOf(s) }))
+		),
+	pinksheet: (book) => ({ rows: parsePinkSheet(rowsOf(book.worksheets.find((s) => /monthly prices/i.test(s.name)))) }),
+	uncertainty: (book) => parseGlobalEpu(rowsOf(book.worksheets[0], false)),
+	oilbulletin: (book) => parseOilBulletin(book.worksheets.filter((s) => /price/i.test(s.name)).map((s) => rowsOf(s)))
+};
+const NEW = {
+	sipri: (bytes) =>
+		parseMilex(
+			readXlsx(bytes, (name) => /^(current|constant|share of gdp)/i.test(name)).map(({ name, rows }) => ({ name, cells: rows }))
+		),
+	pinksheet: (bytes) => ({ rows: parsePinkSheet(readXlsx(bytes, (name) => /monthly prices/i.test(name))[0].rows) }),
+	uncertainty: (bytes) => parseGlobalEpu(readXlsx(bytes, (_, i) => i === 0)[0]?.rows ?? []),
+	oilbulletin: (bytes) => parseOilBulletin(readXlsx(bytes, (name) => /price/i.test(name)).map((s) => s.rows))
+};
 
-const lines = (await readFile('scripts/probe.txt', 'utf8'))
-	.split('\n')
-	.map((l) => l.trim())
-	.filter((l) => l && !l.startsWith('#'));
+const sorted = (v) =>
+	JSON.stringify(v, (_, x) =>
+		x && typeof x === 'object' && !Array.isArray(x)
+			? Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b)))
+			: x
+	);
+const hash = (s) => createHash('sha256').update(s).digest('hex').slice(0, 16);
+const show = (v) => (v instanceof Date ? `Date(${v.toISOString()})` : (JSON.stringify(v) ?? String(v)));
+const same = (a, b) => {
+	if (a instanceof Date || b instanceof Date) return a instanceof Date && b instanceof Date && a.getTime() === b.getTime();
+	if (typeof a === 'number' && typeof b === 'number') return Object.is(a, b) || (Number.isNaN(a) && Number.isNaN(b));
+	if (a && typeof a === 'object') return JSON.stringify(a) === JSON.stringify(b);
+	return a === b;
+};
 
-for (const line of lines) {
-	const [url, pattern] = line.split(/\s+~\s+/);
+for (const [name, link] of Object.entries(FILES)) {
 	try {
-		const res = await fetch(url, {
-			headers: { 'User-Agent': userAgent(url), Accept: '*/*' },
-			signal: AbortSignal.timeout(30_000)
-		});
-		if (/\.xlsx($|\?|&)/i.test(url) || (res.headers.get('content-type') ?? '').includes('spreadsheet')) {
-			console.log(`\nPROBE ${res.status} ${line}\n${sheets(await res.arrayBuffer(), pattern).slice(0, 20000)}`);
-			continue;
-		}
-		let body = (await res.text()).replace(/\s+/g, ' ');
-		if (pattern) {
-			const re = new RegExp(pattern, 'i');
-			try {
-				const items = JSON.parse(body) as unknown[];
-				body = JSON.stringify(items.filter((i) => re.test(JSON.stringify(i))));
-			} catch {
-				// No es JSON: si es un feed Atom, solo las entradas que contienen el patrón.
-				const entries = body.match(/<entry[\s>].*?<\/entry>/g);
-				if (entries) {
-					const hits = entries.filter((e) => re.test(e));
-					body = `${entries.length} entradas, ${hits.length} con «${pattern}»: ${hits.join(' ')}`;
-				} else {
-					// Una página web: quita las etiquetas y enseña solo los trozos que encajan.
-					const text = body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-					// Si en el texto no sale nada, se busca en el HTML tal cual (enlaces, atributos…).
-					const find = (s: string) => [...s.matchAll(new RegExp(pattern, 'gi'))].map((m) => m[0]);
-					const hits = find(text);
-					body = (hits.length ? hits : find(body)).join('\n');
+		const url = await link();
+		const bytes = new Uint8Array(await (await request(url)).arrayBuffer());
+		console.log(`\nCOMPARA ${name}: ${(bytes.length / 1e6).toFixed(2)} MB · ${url}`);
+		let t = performance.now();
+		const book = new ExcelJS.Workbook();
+		await book.xlsx.load(bytes);
+		const tOld = Math.round(performance.now() - t);
+		t = performance.now();
+		const mine = readXlsx(bytes);
+		const tNew = Math.round(performance.now() - t);
+		console.log(`COMPARA ${name}: lectura de todas las hojas · exceljs ${tOld} ms · readXlsx ${tNew} ms`);
+		const names = book.worksheets.map((s) => s.name);
+		console.log(`COMPARA ${name}: hojas iguales ${sorted(names) === sorted(mine.map((s) => s.name))} · ${names.join(' | ')}`);
+		const kinds = new Map();
+		const add = (k, msg) => kinds.set(k, [...(kinds.get(k) ?? []), msg]);
+		let seen = 0;
+		book.worksheets.forEach((sheet, k) => {
+			const old = rowsOf(sheet);
+			const neu = mine[k]?.rows ?? [];
+			if (old.length !== neu.length) add('número de filas', `${sheet.name}: ${old.length} vs ${neu.length}`);
+			for (let i = 0; i < Math.max(old.length, neu.length); i++) {
+				const a = old[i] ?? [];
+				const b = neu[i] ?? [];
+				if (a.length !== b.length) add('largo de fila', `${sheet.name} [${i}]: ${a.length} vs ${b.length}`);
+				for (let j = 0; j < Math.max(a.length, b.length); j++) {
+					seen++;
+					if (j in a !== j in b) add(`hueco (exceljs ${j in a ? 'tiene' : 'no tiene'})`, `${sheet.name} [${i}][${j}] ${show(a[j])} vs ${show(b[j])}`);
+					else if (!same(a[j], b[j])) {
+						const ta = a[j] instanceof Date ? 'Date' : a[j] && typeof a[j] === 'object' ? Object.keys(a[j]).join('+') : typeof a[j];
+						const tb = b[j] instanceof Date ? 'Date' : typeof b[j];
+						add(`valor ${ta} → ${tb}`, `${sheet.name} [${i}][${j}] ${show(a[j])} vs ${show(b[j])}`);
+					}
 				}
 			}
+		});
+		console.log(`COMPARA ${name}: ${seen} celdas comparadas${kinds.size ? '' : ' · MATRICES IDÉNTICAS celda a celda'}`);
+		for (const [k, list] of kinds) console.log(`COMPARA ${name}: DIFERENCIA ${k}: ${list.length}\n   ${list.slice(0, 8).join('\n   ')}`);
+		const o = sorted(OLD[name](book));
+		const n = sorted(NEW[name](bytes));
+		console.log(`COMPARA ${name}: salida del parser · exceljs ${hash(o)} · readXlsx ${hash(n)} · ${o === n ? 'IDÉNTICA' : 'DISTINTA'} (${o.length} bytes)`);
+		if (o !== n) {
+			let d = 0;
+			while (o[d] === n[d]) d++;
+			console.log(`   exceljs  …${o.slice(Math.max(0, d - 100), d + 150)}\n   readXlsx …${n.slice(Math.max(0, d - 100), d + 150)}`);
 		}
-		console.log(`\nPROBE ${res.status} ${line}\n${body.slice(0, 3000)}`);
+		console.log(`COMPARA ${name}: muestra ${n.slice(0, 400)}`);
 	} catch (error) {
-		console.log(`\nPROBE ERROR ${line}\n${error}`);
+		console.log(`COMPARA ${name}: ERROR ${error?.stack ?? error}`);
 	}
 }
