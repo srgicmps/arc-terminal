@@ -163,7 +163,7 @@
 	<ol class="steps" aria-label="Pasos" bind:this={indicator}>
 		{#each STEPS as s, i (s)}
 			<li class:on={i === step} class:done={i < step} aria-current={i === step ? 'step' : undefined}>
-				<button type="button" disabled={i > step} onclick={() => (step = i)}>{i + 1}. {s}</button>
+				<button type="button" disabled={i > step} onclick={() => (step = i)}><span class="n">{i + 1}.</span><span class="of">Paso {i + 1} de {STEPS.length} ·</span> {s}</button>
 			</li>
 		{/each}
 	</ol>
@@ -298,6 +298,27 @@
 	}
 	.steps .on button {
 		color: var(--amber);
+	}
+	.steps .of {
+		display: none;
+	}
+	/* En el móvil, una sola línea: «Paso 1 de 4 · Qué te interesa». Los demás pasos siguen en la lista para el lector
+	   de pantalla, ocultos a la vista como .sr de app.css; uno de ellos reaparece si le llega el foco con el teclado. */
+	@media (max-width: 720px) {
+		.steps .n {
+			display: none;
+		}
+		.steps .of {
+			display: inline;
+		}
+		.steps li:not(.on, :focus-within) {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip-path: inset(50%);
+			white-space: nowrap;
+		}
 	}
 	h2 {
 		margin: 0 0 var(--sp-6);
