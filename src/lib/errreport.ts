@@ -36,8 +36,8 @@ export interface ErrorReport {
 const URL_RE = /\b[a-z][\w+.-]*:\/\/[^\s()'"<>]+/gi;
 /** El origen de una URL («https://arcterminal.dev»). */
 const ORIGIN_RE = /\b[a-z][\w+.-]*:\/\/[^/\s()'"<>]+/gi;
-/** Una ruta suelta con consulta o # («/s?q=…»). */
-const PATH_QUERY_RE = /(^|[\s(])(\/[^\s?#()'"<>]*)[?#][^\s()'"<>]*/g;
+/** Una ruta suelta con consulta o # («/s?q=…»), también entre comillas o tras «=», «:» o «,». */
+const PATH_QUERY_RE = /(^|[\s('"`=:,])(\/[^\s?#()'"<>]*)[?#][^\s()'"<>]*/g;
 /** Un email suelto (algo que el usuario haya escrito). Los marcos «función@https://…» no casan. */
 const EMAIL_RE = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g;
 

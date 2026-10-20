@@ -29,6 +29,10 @@ group('scrub', () => {
 
 	it('quita la consulta de una ruta suelta y tapa los emails, pero no los marcos de Firefox y Safari', () => {
 		expect(scrub('No se pudo abrir /viaje?ciudad=Maó')).toBe('No se pudo abrir /viaje');
+		// Entre comillas o tras «=» y «:» (History, new URL…), también.
+		expect(scrub("No se pudo abrir '/viaje?ciudad=Maó'")).toBe("No se pudo abrir '/viaje'");
+		expect(scrub('Unexpected "/s?sym=NVDA#x" here')).toBe('Unexpected "/s" here');
+		expect(scrub('url=/viaje?ciudad=Maó ruta:/s?q=NVDA')).toBe('url=/viaje ruta:/s');
 		expect(scrub('Sin acceso: ana.perez@correo.es')).toBe('Sin acceso: [email]');
 		const frame = `render@${ORIGIN}/_app/immutable/nodes/3.Abc.js:1:2`;
 		expect(scrub(frame)).toBe(frame);
