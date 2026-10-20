@@ -61,7 +61,7 @@ describe('conversión de las respuestas', () => {
 
 	it('directivos: quita las filas repetidas, pero no dos ventas iguales a precios distintos', () => {
 		const sale = { name: 'KRESS COLETTE', share: 1, change: -5000, transactionPrice: 181, transactionDate: '2026-10-02', transactionCode: 'S' };
-		const out = toInsiders({ symbol: 'NVDA', data: [sale, { ...sale }, { ...sale, transactionPrice: 182 }] }, NOW);
+		const out = toInsiders({ data: [sale, { ...sale }, { ...sale, transactionPrice: 182 }] }, NOW);
 		expect(out.map((t) => t.price)).toEqual([181, 182]);
 	});
 
