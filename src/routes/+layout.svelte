@@ -330,7 +330,8 @@
 
 	<nav class="thumb" data-ui="tabs" aria-label="Accesos rápidos">
 		{#each thumb as c (c.code)}
-			<a href={routeHref(c.route)} data-code={c.code} aria-current={isOn(c.route) ? 'page' : undefined}>{c.code}</a>
+			<!-- Se ve el código; el lector de pantalla oye también el nombre: «WS Wall Street». -->
+			<a href={routeHref(c.route)} data-code={c.code} aria-current={isOn(c.route) ? 'page' : undefined}>{c.code}<span class="sr"> {c.key}</span></a>
 		{/each}
 		<ExpLauncher variant="thumb" />
 		<button type="button" aria-label="Buscar o escribir un comando" aria-pressed={ui.sheet} onclick={() => (ui.sheet = !ui.sheet)}>
@@ -758,8 +759,15 @@
 			bottom: calc(var(--tabbar-h) + var(--sp-12) + env(safe-area-inset-bottom, 0px));
 		}
 
+		/* El nombre no se ve, pero el lector de pantalla lo sigue leyendo («WS Wall Street»): el mismo patrón
+		   que .sr de app.css. Con display: none también desaparecía para VoiceOver. */
 		.keys :global(.key span:not([aria-hidden])) {
-			display: none;
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip: rect(0 0 0 0);
+			white-space: nowrap;
 		}
 
 		/* Accesos en una sola fila que se desliza en horizontal: la cabecera ocupa una línea menos. Un fundido
