@@ -14,7 +14,6 @@
 	import Tiles from '#lib/components/ui/Tiles.svelte';
 	import { nf, period, signed } from '#lib/format.ts';
 	import { amortization, balanceAfter, firstYearPaid, monthlyPayment, nextReview } from '#lib/mortgage.ts';
-	import { euriborPhrase, phrases } from '#lib/plain.ts';
 	import { last } from '#lib/series.ts';
 
 	let { data } = $props();
@@ -49,10 +48,7 @@
 	];
 	const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
-	const euriborSeries = $derived(data.ecb?.data.series.find((s) => s.id === 'euribor-12m'));
-	const euribor = $derived(last(euriborSeries));
-	// Modo Sencillo: el euríbor de hoy frente a hace un año, en una frase (src/lib/plain.ts).
-	const plain = $derived(phrases([euriborPhrase(euriborSeries?.points)]));
+	const euribor = $derived(last(data.ecb?.data.series.find((s) => s.id === 'euribor-12m')));
 	const pay = $derived(monthlyPayment(form.capital, form.years, form.rate));
 	const rows = $derived(amortization(form.capital, form.years, form.rate));
 	const interest = $derived(rows.reduce((s, r) => s + r.interest, 0));
@@ -74,7 +70,7 @@
 	const when = $derived(review ? (review.months === 0 ? 'este mes' : review.months === 1 ? 'el mes que viene' : `en ${review.months} meses`) : '');
 </script>
 
-<ViewHeader code="HIPOTECA" title="Tu hipoteca" sub="Cuota, cuadro de amortización y tu próxima revisión con el euríbor de hoy" {plain} />
+<ViewHeader code="HIPOTECA" title="Tu hipoteca" sub="Cuota, cuadro de amortización y tu próxima revisión con el euríbor de hoy" plain={data.plain} />
 
 <div class="grid grid-2">
 	<Panel title="Tus datos">

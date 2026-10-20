@@ -5,20 +5,15 @@
 	import Change from '#lib/components/ui/Change.svelte';
 	import Table from '#lib/components/ui/Table.svelte';
 	import { nf } from '#lib/format.ts';
-	import { curvePhrase, phrases } from '#lib/plain.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
-
-	// Modo Sencillo: la pendiente 2–10 de EE. UU. y de la zona euro, contada en frases (src/lib/plain.ts).
-	const slope = (code: string) => data.rows.find((r) => r.code === code)?.s2s10;
-	const plain = $derived(phrases([curvePhrase('EE. UU.', slope('US')), curvePhrase('la zona euro', slope('EA'))]));
 
 	const cell = (v: number | null) => (v === null ? '—' : nf(v, 2));
 	const short = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 </script>
 
-<ViewHeader code="WB" title="Bonos soberanos" sub="Tesoro de EE. UU., BCE y Ministerio de Finanzas de Japón" {plain} />
+<ViewHeader code="WB" title="Bonos soberanos" sub="Tesoro de EE. UU., BCE y Ministerio de Finanzas de Japón" plain={data.plain} />
 
 <div class="grid">
 	<div class="col">

@@ -1,5 +1,6 @@
 import { gap, moneyRow, tenorSeries, type MoneyRow } from '#lib/btmm.ts';
 import { dataset } from '#lib/data.ts';
+import { moneyPhrase, phrases } from '#lib/plain.ts';
 import { seriesMap } from '#lib/series.ts';
 import type { SeriesData, YieldCurveData } from '#lib/types.ts';
 import type { PageServerLoad } from './$types';
@@ -44,8 +45,9 @@ export const load: PageServerLoad = async () => {
 		eaRows,
 		sofrIorb: gap(sofr, iorb),
 		sofrEstr: gap(sofr, estr),
-		// Para la frase del modo Sencillo: €STR frente a lo que paga el BCE (sale sin la clave de FRED, que trae IORB).
-		estrDfr: gap(estr, dfr),
+		// Modo Sencillo: ¿hay tensión en el dinero a un día? En frases (plain.ts), escritas al construir. La de la zona
+		// euro (€STR frente a la facilidad de depósito) sale también sin la clave de FRED, que es la que trae IORB.
+		plain: phrases([moneyPhrase('us', gap(sofr, iorb)), moneyPhrase('ea', gap(estr, dfr))]),
 		fetchedAt: { us: nyfed?.fetchedAt ?? us?.fetchedAt, ea: ecb?.fetchedAt }
 	};
 };

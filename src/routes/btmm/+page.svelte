@@ -4,18 +4,14 @@
 	import Updated from '#lib/components/Updated.svelte';
 	import ViewHeader from '#lib/components/ViewHeader.svelte';
 	import { signed } from '#lib/format.ts';
-	import { moneyPhrase, phrases } from '#lib/plain.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
-	// Modo Sencillo: ¿hay tensión en el dinero a un día? En EE. UU. (SOFR − IORB) y en la zona euro (€STR − depósito).
-	const plain = $derived(phrases([moneyPhrase('us', data.sofrIorb), moneyPhrase('ea', data.estrDfr)]));
-
 	const pb = (v: number | null) => (v === null ? '—' : `${signed(v, 0)} pb`);
 </script>
 
-<ViewHeader code="BTMM" title="Mercado monetario" sub="Fed de Nueva York, FRED, Tesoro de EE. UU. y BCE" {plain} />
+<ViewHeader code="BTMM" title="Mercado monetario" sub="Fed de Nueva York, FRED, Tesoro de EE. UU. y BCE" plain={data.plain} />
 
 <div class="grid grid-2e">
 	<div class="col">
