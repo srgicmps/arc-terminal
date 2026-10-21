@@ -5,6 +5,7 @@
 	import type { Snippet } from 'svelte';
 	import { hiddenPanels, modo, setAll } from '#lib/modo.svelte.ts';
 	import { hasTrim } from '#lib/simple.ts';
+	import { navKey } from '#lib/urlstate.svelte.ts';
 
 	interface Props {
 		code: string;
@@ -20,10 +21,10 @@
 
 	let { code, title, sub, aside, summary, plain }: Props = $props();
 
-	// Modo Sencillo: «Ver todos» vuelve a enseñar los paneles que el modo oculta en esta vista. Al cambiar de
-	// vista, se vuelve a lo esencial.
+	// Modo Sencillo: «Ver todos» vuelve a enseñar los paneles que el modo oculta en esta vista. Al navegar, se
+	// vuelve a lo esencial (navKey). Un refresco de datos (fresh.ts) no navega: no cierra «Ver todos».
 	$effect(() => {
-		void page.url.pathname;
+		void navKey();
 		setAll(false);
 	});
 

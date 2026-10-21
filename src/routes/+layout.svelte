@@ -10,7 +10,7 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import { isOnRoute, neighbour, nudge, preloadDirection, SWIPE, swipeDirection } from '#lib/swipe.ts';
 	import { asset, resolve } from '$app/paths';
-	import { navigating, page, updated } from '$app/state';
+	import { navigating, page } from '$app/state';
 	import { startClock } from '#lib/clock.svelte.ts';
 	import { COMMANDS } from '#lib/commands.ts';
 	import Clocks from '#lib/components/Clocks.svelte';
@@ -38,6 +38,8 @@
 	import { initCloud } from '#lib/cloud.svelte.ts';
 	import { initEmbed, isEmbedded, reportPath, unembed } from '#lib/os/embed.ts';
 	import { listenServiceWorker } from '#lib/pwa.ts';
+	import { fresh, refreshNow, startFresh } from '#lib/fresh.svelte.ts';
+	import { navKey } from '#lib/urlstate.svelte.ts';
 	import PanelIndex from '#lib/components/PanelIndex.svelte';
 	import { setPanelIndex } from '#lib/panelindex.svelte.ts';
 	import { tvSymbol } from '#lib/tickers.ts';
@@ -59,8 +61,14 @@
 	setPanelIndex();
 	$effect(initTaste);
 	$effect(initPlace);
-	// «Tu sitio» por la URL al navegar: ?lugar=… o ?buscar=Tokio.
-	$effect(() => followPlaceUrl(page.url.searchParams));
+	// «Tu sitio» por la URL al navegar (también al repetir el enlace: navKey): ?lugar=… o ?buscar=Tokio. Con el texto
+	// de la búsqueda: un refresco de datos (src/lib/fresh.ts) cambia page.url por otro objeto igual y no debe volver
+	// a poner el sitio del enlace.
+	const search = $derived(page.url.search);
+	$effect(() => {
+		void navKey();
+		followPlaceUrl(new URLSearchParams(search));
+	});
 	$effect(initTheme);
 	$effect(initFit);
 	$effect(initTape);
@@ -75,6 +83,8 @@
 	onNavigate((nav) => (wants(nav, viewEnv()) ? fade(nav.complete) : undefined));
 	// Sesión de Cloudflare Access caducada: el service worker avisa y se recarga para ir al login.
 	$effect(listenServiceWorker);
+	// Publicación nueva: si solo son datos, la vista se refresca sola en su sitio; si es código, «Recargar».
+	$effect(startFresh);
 
 	// Modo TV: cualquier URL con ?tv=TOP,WS…&s=30 lo arranca y salta a la primera vista.
 	$effect(() => {
@@ -125,9 +135,11 @@
 		e.stopImmediatePropagation();
 	}
 
-	// En el móvil los accesos van en una fila con scroll: el de la vista actual, siempre a la vista.
+	// En el móvil los accesos van en una fila con scroll: el de la vista actual, siempre a la vista (al cambiar de
+	// vista; no al refrescar los datos, que cambia page.route por otro objeto igual).
+	const routeId = $derived(page.route.id);
 	$effect(() => {
-		void page.route.id;
+		void routeId;
 		if (!matchMedia('(max-width: 720px)').matches) return;
 		// Solo se mueve la fila: scrollIntoView movía también la página entera en Safari (logo y «⋯» cortados).
 		const row = document.querySelector<HTMLElement>('.keys');
@@ -336,12 +348,21 @@
 		</div>
 	{/if}
 
-	<!-- Aviso discreto cuando la Action ha publicado una versión nueva (datos o mejoras). -->
-	{#if updated.current}
+	<!-- Datos nuevos: la vista se refresca sola en su sitio si estás arriba (src/lib/fresh.ts). Este aviso discreto
+	     sale si estás leyendo más abajo o escribiendo en un campo (se refresca al pulsar, al volver arriba o al salir
+	     del campo) o si se ha publicado código nuevo. -->
+	{#if fresh.codigo}
 		<button class="fresh" type="button" onclick={() => location.reload()}>
-			Hay datos nuevos · <b>Recargar</b>
+			Hay una versión nueva · <b>Recargar</b>
+		</button>
+	{:else if fresh.aviso}
+		<button class="fresh" type="button" onclick={refreshNow} aria-disabled={fresh.busy || undefined}>
+			Hay datos nuevos · <b>{fresh.busy ? 'Actualizando…' : 'Actualizar'}</b>
 		</button>
 	{/if}
+	<!-- El lector de pantalla anuncia el aviso: la región viva está siempre (una que aparece con su texto no se
+	     anuncia) y solo cambia lo de dentro. -->
+	<p class="sr" role="status">{fresh.codigo ? 'Hay una versión nueva de la web.' : fresh.aviso ? 'Hay datos nuevos.' : ''}</p>
 
 	{#if !tv.on}<PanelIndex /><InstallHint /><OsNotice />{/if}
 
@@ -625,6 +646,10 @@
 	.fresh b {
 		color: var(--amber);
 		font-weight: var(--fw-medium);
+	}
+
+	.fresh[aria-disabled='true'] {
+		cursor: progress;
 	}
 
 	.status {

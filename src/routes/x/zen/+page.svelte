@@ -9,17 +9,28 @@
 	import { EXPERIENCES } from '#lib/experiences.ts';
 	import { swipeDirection } from '#lib/swipe.ts';
 	import { shown } from '#lib/titles.svelte.ts';
-	import type { ZenCard } from '#lib/exp/zen.ts';
+	import { cardIndex, type ZenCard } from '#lib/exp/zen.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	const exp = EXPERIENCES.find((e) => e.id === 'zen')!;
 	const cards = $derived(data.cards as ZenCard[]);
-	let index = $state(0);
-	const card = $derived(cards[Math.min(index, cards.length - 1)]);
+	// La tarjeta que lees va por su clave, no por su posición: si llegan datos nuevos (fresh.ts) con otro orden o con
+	// una tarjeta nueva delante, sigues en la misma. Si ya no está, la de su sitio.
+	let key = $state<string | null>(null);
+	let at = $state(0);
+	const index = $derived(cardIndex(cards, key, at));
+	const card = $derived(cards[index]);
+	// La primera también: si no, una tarjeta nueva delante cambiaría la que estás leyendo nada más entrar.
+	$effect(() => {
+		if (key === null && card) key = card.key;
+	});
 
-	const go = (dir: -1 | 1) => (index = Math.max(0, Math.min(cards.length - 1, index + dir)));
+	function go(dir: -1 | 1) {
+		at = Math.max(0, Math.min(cards.length - 1, index + dir));
+		key = cards[at]?.key ?? null;
+	}
 
 	function onKey(e: KeyboardEvent) {
 		const el = e.target as HTMLElement | null;

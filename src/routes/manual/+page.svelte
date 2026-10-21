@@ -33,6 +33,7 @@
 	} from '#lib/manual.ts';
 	import { PREFS } from '#lib/prefs.ts';
 	import { routeHref } from '#lib/routes.ts';
+	import { navKey } from '#lib/urlstate.svelte.ts';
 	import { keyJoin, SHORTCUTS, type ShortcutGroup } from '#lib/shortcuts.ts';
 
 	let { data } = $props();
@@ -115,9 +116,12 @@
 
 	const isOpen = (id: string) => (searching ? !!has.get(id) : (toggled[id] ?? !mobile));
 
-	// «ECO ?» en la barra abre /manual#cmd-ECO: en el móvil, su sección se abre para que se vea la ficha.
+	// «ECO ?» en la barra abre /manual#cmd-ECO: en el móvil, su sección se abre para que se vea la ficha, también si
+	// lo repites (navKey). Con el texto del hash: un refresco de datos (fresh.ts) no debe volver a llevarte a la ficha.
+	const hash = $derived(page.url.hash);
 	$effect(() => {
-		const code = page.url.hash.match(/^#cmd-(.+)$/)?.[1];
+		void navKey();
+		const code = hash.match(/^#cmd-(.+)$/)?.[1];
 		const section = COMMANDS.find((c) => c.code === code)?.manual?.section;
 		if (!section) return;
 		toggled[`sec-${slug(section)}`] = true;

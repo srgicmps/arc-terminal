@@ -25,6 +25,15 @@ export interface ZenFigure {
 
 export type ZenCard = ZenNews | ZenFigure;
 
+/**
+ * Qué tarjeta enseñar: la de la clave que lees (si llegan datos nuevos con otro orden o con una tarjeta nueva
+ * delante, sigues en la misma) o, si ya no está, la de su sitio (`at`), dentro de la baraja.
+ */
+export function cardIndex(cards: readonly { key: string }[], key: string | null, at: number): number {
+	const found = key === null ? -1 : cards.findIndex((c) => c.key === key);
+	return found >= 0 ? found : Math.max(0, Math.min(at, cards.length - 1));
+}
+
 const UNITS: Record<string, string> = { '%': 'puntos', pb: 'puntos básicos', $: 'dólares', pts: 'puntos' };
 
 /** «Ha bajado 0,05 puntos desde el dato anterior (sep 26).» */

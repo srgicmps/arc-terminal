@@ -28,13 +28,18 @@
 	import { compact, dm, nf, period, signed } from '#lib/format.ts';
 	import { peopleRange, vsYearText } from '#lib/food.ts';
 	import { sectionLabel } from '#lib/news.ts';
+	import { navKey } from '#lib/urlstate.svelte.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	let query = $state('');
+	// Con el texto del parámetro: un refresco de datos (fresh.ts) no vacía el buscador. Con navKey, repetir
+	// «PAIS Japón» lo vuelve a poner aunque hayas escrito otra cosa.
+	const fromUrl = $derived(page.url.searchParams.get('c') ?? '');
 	$effect(() => {
-		query = page.url.searchParams.get('c') ?? '';
+		void navKey();
+		query = fromUrl;
 	});
 
 	const country = $derived(findCountry(query));

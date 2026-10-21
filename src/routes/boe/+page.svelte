@@ -12,7 +12,7 @@
 	import { dayData } from '#lib/boe.ts';
 	import { EU_SHOWN } from '#lib/trim.ts';
 	import type { BoeData, BoeItem, BoeWeek } from '#lib/types.ts';
-	import { urlState } from '#lib/urlstate.svelte.ts';
+	import { navKey, urlState } from '#lib/urlstate.svelte.ts';
 	import { addWatchword, highlight, initWatchwords, removeWatchword, watched, watchwords } from '#lib/watchwords.svelte.ts';
 	import { onMount } from 'svelte';
 	import type { PageProps } from './$types';
@@ -22,9 +22,12 @@
 	const boe = $derived(data.boe?.data);
 	let query = $state('');
 
-	// «BOE vivienda» en la barra abre /boe?q=vivienda y rellena el buscador (solo en el navegador).
+	// «BOE vivienda» en la barra abre /boe?q=vivienda y rellena el buscador (solo en el navegador), también si lo
+	// repites (navKey). Con el texto del parámetro: un refresco de datos (fresh.ts) no vacía lo que hayas escrito.
+	const fromUrl = $derived(page.url.searchParams.get('q') ?? '');
 	$effect(() => {
-		query = page.url.searchParams.get('q') ?? '';
+		void navKey();
+		query = fromUrl;
 	});
 
 	// Filtra por palabras sueltas en el título, el ministerio o el epígrafe.
