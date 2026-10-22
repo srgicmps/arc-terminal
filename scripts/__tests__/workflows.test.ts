@@ -40,4 +40,15 @@ describe('workflows', () => {
 			expect(pnpm, `${job}: pnpm/action-setup antes de actions/setup-node`).toBeLessThan(node);
 		}
 	});
+
+	// Cada «herramienta» que se puede elegir en Run workflow tiene un job que la atiende (si no, la Action sale en
+	// verde sin hacer nada), y al revés.
+	it('cada herramienta de deploy.yml tiene su job', () => {
+		const text = readFileSync(`${DIR}/deploy.yml`, 'utf8');
+		const options = /herramienta:[\s\S]*?options:\s*\[([^\]]*)\]/.exec(text)?.[1].split(',').map((o) => o.trim());
+		expect(options).toContain('clave-push');
+		const handled = new Set([...text.matchAll(/inputs\.herramienta == '([\w-]+)'/g)].map((m) => m[1]));
+		for (const option of options!.filter((o) => o !== 'ninguna')) expect(handled, option).toContain(option);
+		for (const used of handled) expect(options, used).toContain(used);
+	});
 });
