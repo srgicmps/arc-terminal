@@ -2,7 +2,7 @@
 // la herramienta «clave-push» (--cloudflare) la guarda en Cloudflare sin enseñarla nunca.
 import { describe, expect, it } from 'vitest';
 import { parseVapid } from '../../cloud/webpush.ts';
-import { PROJECT, putVapidSecret, report, SECRET, vapidInstructions } from '../vapid.ts';
+import { PROJECT, putVapidSecret, reason, report, SECRET, vapidInstructions } from '../vapid.ts';
 
 describe('vapidInstructions', () => {
 	it('da un JWK que el Secret VAPID_PRIVATE_KEY acepta, y su clave pública', async () => {
@@ -33,10 +33,15 @@ const project = (env_vars: EnvVars | null) =>
 
 /**
  * Un Cloudflare de mentira: guarda los Secrets como el de verdad (PATCH que mezcla; al leer, sin el valor) y apunta
- * cada llamada. `patch` cambia la respuesta al PATCH.
+ * cada llamada. `patch` decide la respuesta al PATCH (recibe `save`, que lo guarda); `get` puede cambiar la n-ésima
+ * lectura (1, 2…). Las dos pueden lanzar, como un fetch sin respuesta.
  */
-function cloudflare(initial: EnvVars | null = { NTFY_TOPIC: { type: 'secret_text', value: '' } }, patch?: Response) {
+function cloudflare(
+	initial: EnvVars | null = { NTFY_TOPIC: { type: 'secret_text', value: '' } },
+	opts: { patch?: (save: () => void) => Response; get?: (n: number) => Response | undefined } = {}
+) {
 	let vars = initial;
+	let gets = 0;
 	const calls: { method: string; url: string; body?: string; auth?: string }[] = [];
 	const fetcher = (async (url: string, init?: RequestInit) => {
 		const method = init?.method ?? 'GET';
@@ -48,22 +53,37 @@ function cloudflare(initial: EnvVars | null = { NTFY_TOPIC: { type: 'secret_text
 		});
 		if (url !== API) return new Response('', { status: 404 });
 		if (method === 'PATCH') {
-			if (patch) return patch;
 			const sent = JSON.parse(init!.body as string).deployment_configs.production.env_vars as EnvVars;
-			vars = { ...vars, ...sent };
+			const save = () => {
+				vars = { ...vars, ...sent };
+			};
+			if (opts.patch) return opts.patch(save);
+			save();
 			return project(vars);
 		}
+		const special = opts.get?.(++gets);
+		if (special) return special;
 		// Cloudflare no devuelve el valor de un Secret.
 		return project(vars && Object.fromEntries(Object.entries(vars).map(([k, v]) => [k, { type: v.type, value: '' }])));
 	}) as typeof fetch;
 	return { fetcher, calls, vars: () => vars };
 }
 
+const timeout = () => {
+	throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+};
+
 describe('putVapidSecret (herramienta «clave-push»)', () => {
 	it('crea la clave y la guarda como Secret, como wrangler, sin que salga en el registro ni en el resumen', async () => {
 		const cf = cloudflare();
 		const logs: string[] = [];
-		const result = await putVapidSecret(ENV, cf.fetcher, (l) => logs.push(l));
+		// Cuántas líneas de registro había al salir el PATCH: la máscara tiene que estar puesta ya.
+		const atPatch: number[] = [];
+		const fetcher = ((url: string, init?: RequestInit) => {
+			if (init?.method === 'PATCH') atPatch.push(logs.length);
+			return cf.fetcher(url, init);
+		}) as typeof fetch;
+		const result = await putVapidSecret(ENV, fetcher, (l) => logs.push(l));
 		expect(result.status).toBe('creada');
 
 		// Lo que se manda: el JWK como secret_text en producción, con el hash de wrangler.toml del proyecto.
@@ -83,6 +103,7 @@ describe('putVapidSecret (herramienta «clave-push»)', () => {
 		// La parte secreta solo sale en ::add-mask::, y antes de mandarla a ninguna parte.
 		const d = JSON.parse(value).d as string;
 		expect(d.length).toBeGreaterThan(20);
+		expect(atPatch).toEqual([1]);
 		expect(logs[0]).toBe(`::add-mask::${d}`);
 		expect(logs.filter((l) => l.includes(d))).toEqual([`::add-mask::${d}`]);
 		const visible = [result.summary, report(result)].join('\n');
@@ -103,7 +124,10 @@ describe('putVapidSecret (herramienta «clave-push»)', () => {
 		expect(cf.calls.map((c) => c.method)).toEqual(['GET']);
 		expect(cf.vars()![SECRET].value).toBe('la-de-antes');
 		expect(logs).toEqual([]);
-		expect(report(result)).toMatch(/^::notice title=Clave de los avisos::/);
+		// Una anotación de GitHub no entiende Markdown: sin viñetas ni comillas invertidas.
+		const line = report(result);
+		expect(line).toMatch(/^::notice title=Clave de los avisos::VAPID_PRIVATE_KEY ya existe/);
+		expect(line).not.toMatch(/`| - /);
 	});
 
 	it('proyecto sin variables (env_vars null): la crea', async () => {
@@ -113,16 +137,16 @@ describe('putVapidSecret (herramienta «clave-push»)', () => {
 	});
 
 	it('si Cloudflare la rechaza, falla sin enseñar la clave y dice el código de error', async () => {
-		const cf = cloudflare(
-			undefined,
-			Response.json({ success: false, errors: [{ code: 8000000, message: 'eco del cuerpo' }] }, { status: 400 })
-		);
+		const cf = cloudflare(undefined, {
+			patch: () =>
+				Response.json({ success: false, errors: [{ code: 8000000, message: 'eco del cuerpo' }] }, { status: 400 })
+		});
 		const logs: string[] = [];
 		const result = await putVapidSecret(ENV, cf.fetcher, (l) => logs.push(l));
 		expect(result.status).toBe('error');
 		const d = logs[0].replace('::add-mask::', '');
 		const line = report(result);
-		expect(line).toMatch(/^::error title=Clave de los avisos::/);
+		expect(line).toMatch(/^::error title=Clave de los avisos::Cloudflare no ha aceptado la clave/);
 		expect(line).toContain('400 (8000000)');
 		expect(line).not.toContain('eco del cuerpo');
 		expect(line).not.toContain(d);
@@ -131,8 +155,50 @@ describe('putVapidSecret (herramienta «clave-push»)', () => {
 		expect(line).not.toContain('/accounts/acc');
 	});
 
+	it('si el PATCH se queda sin respuesta pero Cloudflare la guardó, la da por creada (lo comprueba)', async () => {
+		const cf = cloudflare(undefined, {
+			patch: (save) => {
+				save();
+				return timeout();
+			}
+		});
+		const result = await putVapidSecret(ENV, cf.fetcher, () => {});
+		expect(result.status).toBe('creada');
+		expect(cf.calls.map((c) => c.method)).toEqual(['GET', 'PATCH', 'GET']);
+	});
+
+	it('si el PATCH falla y no se guardó, lo dice sin afirmar más de lo que sabe', async () => {
+		for (const patch of [timeout, () => Response.json({ success: false }, { status: 502 })]) {
+			const result = await putVapidSecret(ENV, cloudflare(undefined, { patch }).fetcher, () => {});
+			expect(result.status).toBe('error');
+			expect(result.summary).toContain('no está en el proyecto');
+			expect(result.summary).not.toContain('no se ha guardado nada');
+		}
+		const sinRespuesta = await putVapidSecret(ENV, cloudflare(undefined, { patch: timeout }).fetcher, () => {});
+		expect(sinRespuesta.summary).toContain('sin respuesta en 20 s');
+	});
+
+	it('si fallan el PATCH y la comprobación, no dice ni «guardada» ni «no guardada»: pide relanzar', async () => {
+		const cf = cloudflare(undefined, { patch: timeout, get: (n) => (n === 2 ? timeout() : undefined) });
+		const result = await putVapidSecret(ENV, cf.fetcher, () => {});
+		expect(result.status).toBe('error');
+		expect(result.summary).toContain('no se ha podido comprobar si está');
+		expect(result.summary).toContain('si ya está, lo dirá y no la tocará');
+	});
+
+	it('si el PATCH va bien pero la comprobación falla: guardada sin comprobar (aviso, no error)', async () => {
+		const cf = cloudflare(undefined, { get: (n) => (n === 2 ? timeout() : undefined) });
+		const result = await putVapidSecret(ENV, cf.fetcher, () => {});
+		expect(result.status).toBe('sin-comprobar');
+		expect(result.summary).toContain('sin comprobar');
+		expect(result.summary).toContain('si dice «ya estaba», está bien');
+		expect(report(result)).toMatch(/^::warning title=Clave de los avisos::/);
+		// Sí está guardada.
+		expect(cf.vars()![SECRET].type).toBe('secret_text');
+	});
+
 	it('si tras guardarla no aparece en el proyecto, lo dice (no la da por guardada)', async () => {
-		const cf = cloudflare(undefined, project({}));
+		const cf = cloudflare(undefined, { patch: () => project({}) });
 		// El PATCH «va bien», pero el proyecto no cambia.
 		const result = await putVapidSecret(ENV, cf.fetcher, () => {});
 		expect(result.status).toBe('error');
@@ -159,6 +225,7 @@ describe('putVapidSecret (herramienta «clave-push»)', () => {
 		const result = await putVapidSecret(ENV, fetcher, (l) => logs.push(l));
 		expect(result.status).toBe('error');
 		expect(result.summary).toContain('403 (10000)');
+		expect(result.summary).toContain('pásale este mensaje a Claude');
 		expect(logs).toEqual([]);
 	});
 
@@ -174,5 +241,14 @@ describe('putVapidSecret (herramienta «clave-push»)', () => {
 		const line = report({ status: 'error', summary: '### T\n\nUn 50% de\nlo que sea.\n' });
 		expect(line).toBe('::error title=Clave de los avisos::Un 50%25 de lo que sea.');
 		expect(line).not.toContain('\n');
+	});
+
+	it('reason: el error de la API tal cual; tiempo y red, en español y sin detalles', () => {
+		expect(reason(new Error('/accounts/…/pages/projects/arc-terminal: 403 (10000)'))).toBe(
+			'/accounts/…/pages/projects/arc-terminal: 403 (10000)'
+		);
+		expect(reason(new DOMException('x', 'TimeoutError'))).toBe('sin respuesta en 20 s');
+		expect(reason(new TypeError('fetch failed'))).toBe('error de red');
+		expect(reason(undefined)).toBe('error de red');
 	});
 });
