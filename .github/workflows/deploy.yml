@@ -551,7 +551,10 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-      # Solo Node (el de .nvmrc) para wrangler: el Worker no importa nada, no hace falta instalar dependencias.
+      # pnpm antes que Node: setup-node v5 ve «packageManager: pnpm» en package.json y prepara su caché él solo,
+      # y sin pnpm instalado se para («Unable to locate executable file: pnpm»).
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      # Node (el de .nvmrc) para wrangler: el Worker no importa nada, no hace falta instalar dependencias.
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
