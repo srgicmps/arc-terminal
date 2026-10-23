@@ -56,17 +56,32 @@ export function fill(toml: string, v: { db: string; team: string; aud: string })
 /** wrangler.toml sin el bloque de Workers AI (entre «# <ai>» y «# </ai>»). */
 export const withoutAi = (toml: string) => toml.replace(/^# <ai>\n[\s\S]*?^# <\/ai>\n?/m, '');
 
-type Fetch = typeof fetch;
+export type Fetch = typeof fetch;
 
-async function api<T>(fetcher: Fetch, token: string, path: string, init?: RequestInit): Promise<T> {
+/**
+ * Una llamada a la API de Cloudflare: devuelve `result` o lanza «ruta: estado (códigos)». En el error van solo los
+ * números de error de Cloudflare (10000 = token sin permiso…), nunca sus mensajes ni el cuerpo: así no puede
+ * colarse nada de lo enviado. También lo usa scripts/vapid.ts.
+ */
+export async function api<T>(fetcher: Fetch, token: string, path: string, init?: RequestInit): Promise<T> {
 	const res = await fetcher(`${API}${path}`, {
 		...init,
 		headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
 		signal: AbortSignal.timeout(20_000)
 	});
-	const body = (await res.json().catch(() => null)) as { success?: boolean; result?: T } | null;
-	if (!res.ok || !body?.success)
-		throw new Error(`${path.split('?')[0].replace(/\/accounts\/[^/]+/, '/accounts/…')}: ${res.status}`);
+	const body = (await res.json().catch(() => null)) as {
+		success?: boolean;
+		result?: T;
+		errors?: { code?: unknown }[];
+	} | null;
+	if (!res.ok || !body?.success) {
+		const codes = (Array.isArray(body?.errors) ? body.errors : [])
+			.map((e) => e?.code)
+			.filter((c): c is number => Number.isInteger(c));
+		throw new Error(
+			`${path.split('?')[0].replace(/\/accounts\/[^/]+/, '/accounts/…')}: ${res.status}${codes.length ? ` (${codes.join(', ')})` : ''}`
+		);
+	}
 	return body.result as T;
 }
 
